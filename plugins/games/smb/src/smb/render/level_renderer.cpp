@@ -34,16 +34,18 @@ constexpr std::array<int, 55> castleStructure {
     0x47,0x47,0x47,0x47,0x47, 0x4a,0x47,0x4a,0x47,0x4a,
     0x4b,0x47,0x4b,0x47,0x4b};
 
-struct PositionedObject final { SmbAreaObject object; int page = 0; int x = 0; };
+int objectWidth(const SmbAreaObject &object);
 
-QVector<PositionedObject> positionObjects(const QVector<SmbAreaObject> &objects)
+QVector<SmbPositionedObject> positionObjects(const QVector<SmbAreaObject> &objects)
 {
-    QVector<PositionedObject> result;
+    QVector<SmbPositionedObject> result;
     int page = 0;
-    for (const auto &object : objects) {
+    for (int index = 0; index < objects.size(); ++index) {
+        const auto &object = objects[index];
         if (object.pageAdvance) ++page;
         if (object.row == 13 && !(object.control & 0x40)) page = object.control & 0x1f;
-        result.push_back({object, page, page * 16 + object.column});
+        result.push_back({object, index, page, page * 16 + object.column,
+            objectWidth(object)});
     }
     return result;
 }
@@ -63,10 +65,10 @@ QVector<SmbPositionedEnemy> positionEnemies(const QVector<SmbEnemyRecord> &recor
     return result;
 }
 
-int objectWidth(const PositionedObject &item)
+int objectWidth(const SmbAreaObject &object)
 {
-    const int row = item.object.row;
-    const int control = item.object.control;
+    const int row = object.row;
+    const int control = object.control;
     if (row <= 12) {
         const int identifier = (control >> 4) & 7;
         if (row == 12 || identifier == 1 || identifier == 2
@@ -147,9 +149,11 @@ void renderStyle(QVector<QVector<int>> &grid, int column, int row, int length,
                 : offset == length ? rendering.secondaryLedgeMetatiles[2]
                 : rendering.secondaryLedgeMetatiles[1]);
         }
-        const int center = column + (length + 1) / 2;
-        write(grid, center, row + 1, rendering.secondaryLedgeSupportMetatiles[0]);
-        fillDown(grid, center, row + 2, 12, rendering.secondaryLedgeSupportMetatiles[1]);
+        if (rendering.secondaryLedgeSupportMetatiles.size() >= 2) {
+            const int center = column + (length + 1) / 2;
+            write(grid, center, row + 1, rendering.secondaryLedgeSupportMetatiles[0]);
+            fillDown(grid, center, row + 2, 12, rendering.secondaryLedgeSupportMetatiles[1]);
+        }
     } else if (style == 2) {
         write(grid, column, row, rendering.cannonMetatiles[0]);
         if (length) write(grid, column, row + 1, rendering.cannonMetatiles[1]);
@@ -248,10 +252,10 @@ void renderRowF(QVector<QVector<int>> &grid, int column, int identifier,
     }
 }
 
-void renderObject(QVector<QVector<int>> &grid, const PositionedObject &item,
+void renderObject(QVector<QVector<int>> &grid, const SmbPositionedObject &item,
     int areaType, bool cloud, int style, const SmbLevelRendering &rendering)
 {
-    const int column = item.x, row = item.object.row, control = item.object.control;
+    const int column = item.x, row = item.record.row, control = item.record.control;
     const int value = control & 15, identifier = (control >> 4) & 7;
     if (row <= 11) {
         if (identifier == 0 && value < rendering.smallObjects.size()) {
@@ -277,6 +281,32 @@ void renderObject(QVector<QVector<int>> &grid, const PositionedObject &item,
     else if (row == 15) renderRowF(grid, column, identifier, value, item.page, rendering);
 }
 
+void validateRendering(const SmbLevelRendering &rendering)
+{
+    const bool fixedTablesValid = rendering.terrainMetatiles.size() >= 4
+        && rendering.foregroundSceneryMetatiles.size() >= 39
+        && rendering.brickMetatiles.size() >= 5
+        && rendering.solidMetatiles.size() >= 4
+        && rendering.coinMetatiles.size() >= 4
+        && rendering.sidePipeTopMetatiles.size() >= 4
+        && rendering.sidePipeBottomMetatiles.size() >= 4
+        && rendering.castleSpecialMetatiles.size() >= 3
+        && rendering.secondaryLedgeMetatiles.size() >= 3
+        && (rendering.secondaryLedgeSupportMetatiles.isEmpty()
+            || rendering.secondaryLedgeSupportMetatiles.size() >= 2)
+        && rendering.cannonMetatiles.size() >= 3
+        && rendering.flagpoleMetatiles.size() >= 3
+        && rendering.smallObjects.size() >= 12;
+    if (!fixedTablesValid) {
+        throw NesResourceDocumentError("invalid SMB level rendering tables");
+    }
+    for (const auto &variants : rendering.smallObjects) {
+        if (variants.size() < 2 || variants[0].isEmpty() || variants[1].isEmpty()) {
+            throw NesResourceDocumentError("invalid SMB small-object rendering table");
+        }
+    }
+}
+
 } // namespace
 
 SmbLevelRendering SmbLevelRendering::smb1()
@@ -298,12 +328,69 @@ SmbLevelRendering SmbLevelRendering::smb1()
     result.cannonMetatiles = {0x64,0x65,0x66};
     result.flagpoleMetatiles = {0x24,0x25,0x61};
     result.smallObjects = {
-        {{{0xc1},{0xc1}}}, {{{0xc0},{0xc0}}}, {{{0x5f},{0x5f}}},
-        {{{0x60},{0x60}}}, {{{0x55},{0x5a}}}, {{{0x56},{0x5b}}},
-        {{{0x57},{0x5c}}}, {{{0x58},{0x5d}}}, {{{0x59},{0x5e}}},
-        {{{0x6b,0x6c},{0x6b,0x6c}}}, {{{0xc4},{0xc4}}},
-        {{{0x67,0x68},{0x67,0x68}}}};
+        {{0xc1},{0xc1}}, {{0xc0},{0xc0}}, {{0x5f},{0x5f}},
+        {{0x60},{0x60}}, {{0x55},{0x5a}}, {{0x56},{0x5b}},
+        {{0x57},{0x5c}}, {{0x58},{0x5d}}, {{0x59},{0x5e}},
+        {{0x6b,0x6c},{0x6b,0x6c}}, {{0xc4},{0xc4}},
+        {{0x67,0x68},{0x67,0x68}}};
     return result;
+}
+
+SmbLevelRendering SmbLevelRendering::ann()
+{
+    auto result = smb1();
+    result.terrainMetatiles = {0x69,0x6a,0x52,0x62};
+    result.residualFlagMetatile = 0x6e;
+    result.upsideDownPipes = true;
+    result.smallObjects = {
+        {{0xc1},{0xc1}}, {{0xc0},{0xc0}}, {{0x5e},{0x5e}},
+        {{0x5f},{0x5f}}, {{0x60},{0x60}}, {{0x54},{0x59}},
+        {{0x55},{0x5a}}, {{0x56},{0x5b}}, {{0x57},{0x5c}},
+        {{0x58},{0x5d}}, {{0x6c,0x6d},{0x6c,0x6d}}, {{0xc4},{0xc4}},
+        {{0x67,0x68},{0x67,0x68}}};
+    return result;
+}
+
+SmbLevelRendering SmbLevelRendering::smb2()
+{
+    auto result = smb1();
+    result.terrainMetatiles = {0x6a,0x6b,0x50,0x63};
+    result.foregroundSceneryMetatiles = {
+        0x86,0x87,0x87,0x87,0x87,0x87,0x87,0x87,0x87,0x87,0x87,0x6a,0x6a,
+        0,0,0,0,0,0x45,0x47,0x47,0x47,0x47,0x47,0,0,
+        0,0,0,0,0,0,0,0,0,0,0,0x86,0x87};
+    result.brickMetatiles = {0x1f,0x4f,0x50,0x50,0x88};
+    result.solidMetatiles = {0x6a,0x62,0x62,0x63};
+    result.coinMetatiles = {0xc4,0xc3,0xc3,0xc3};
+    result.sidePipeTopMetatiles = {0x19,0x1a,0x1b,0x15};
+    result.sidePipeBottomMetatiles = {0x1c,0x1d,0x1e,0x15};
+    result.castleSpecialMetatiles = {0xc6,0x0c,0x89};
+    result.secondaryLedgeMetatiles = {0x8a,0x8b,0x8c};
+    result.secondaryLedgeSupportMetatiles.clear();
+    result.cannonMetatiles = {0x65,0x66,0x67};
+    result.bridgeMetatile = 0x64;
+    result.flagpoleMetatiles = {0x21,0x22,0x62};
+    result.staircaseMetatile = 0x62;
+    result.residualFlagMetatile = 0x6f;
+    result.upsideDownPipes = true;
+    result.smallObjects = {
+        {{0xc1},{0xc1}}, {{0xc2},{0xc2}}, {{0xc0},{0xc0}},
+        {{0x5e},{0x5e}}, {{0x5f},{0x5f}}, {{0x60},{0x60}},
+        {{0x61},{0x61}}, {{0x52},{0x58}}, {{0x53},{0x59}},
+        {{0x54},{0x5a}}, {{0x55},{0x5b}}, {{0x56},{0x5c}},
+        {{0x57},{0x5d}}, {{0x6d,0x6e},{0x6d,0x6e}}, {{0xc5},{0xc5}},
+        {{0x68,0x69},{0x68,0x69}}};
+    return result;
+}
+
+SmbLevelRendering SmbLevelRendering::fromId(const QString &id)
+{
+    if (id == QStringLiteral("smb1")) return smb1();
+    if (id == QStringLiteral("ann")) return ann();
+    if (id == QStringLiteral("smb2")) return smb2();
+    throw NesResourceDocumentError(
+        (QStringLiteral("unsupported SMB level rendering profile: ") + id)
+            .toStdString());
 }
 
 SmbLevelScene renderSmbLevelScene(const QString &name, const QVector<int> &header,
@@ -321,6 +408,7 @@ SmbLevelScene renderSmbLevelScene(const QString &name, const QVector<int> &heade
     if (header.size() != 6 || world < 0 || world > 7) {
         throw NesResourceDocumentError("invalid SMB level renderer input");
     }
+    validateRendering(rendering);
     const QString prefix = name.section(QLatin1Char('_'), 0, -2);
     const QStringList types {QStringLiteral("water"), QStringLiteral("ground"),
         QStringLiteral("underground"), QStringLiteral("castle")};
@@ -329,28 +417,28 @@ SmbLevelScene renderSmbLevelScene(const QString &name, const QVector<int> &heade
     const auto positioned = positionObjects(objects);
     const auto positionedEnemies = positionEnemies(enemies);
     int maximum = 32;
-    for (const auto &item : positioned) maximum = std::max(maximum, item.x + objectWidth(item));
+    for (const auto &item : positioned) maximum = std::max(maximum, item.x + item.width);
     for (const auto &item : positionedEnemies) maximum = std::max(maximum, item.x + 2);
     const int width = maximum + 2;
     int foreground = header[2] < 4 ? header[2] : 0;
     int background = header[4], terrain = header[5], style = header[3];
     const bool cloud = style == 3;
-    QVector<QVector<PositionedObject>> modifiers(width);
-    for (const auto &item : positioned) if (item.object.row == 14) modifiers[item.x].push_back(item);
+    QVector<QVector<SmbPositionedObject>> modifiers(width);
+    for (const auto &item : positioned) if (item.record.row == 14) modifiers[item.x].push_back(item);
     QVector<QVector<int>> grid;
     grid.reserve(width);
     for (int column = 0; column < width; ++column) {
         grid.push_back(baseColumn(column, areaType, world, foreground,
             background, terrain, cloud, rendering));
         for (const auto &modifier : modifiers[column]) {
-            const int control = modifier.object.control;
+            const int control = modifier.record.control;
             if (control & 0x40) foreground = (control & 7) < 4 ? control & 7 : 0;
             else { terrain = control & 15; background = (control >> 4) & 3; }
         }
     }
     for (const auto &item : positioned) renderObject(grid, item, areaType,
         cloud, cloud ? 0 : style, rendering);
-    return {grid, positionedEnemies, width};
+    return {grid, positionedEnemies, positioned, width};
 }
 
 } // namespace retrolarium

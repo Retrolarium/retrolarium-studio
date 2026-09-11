@@ -14,6 +14,14 @@ struct SmbPositionedEnemy final {
     int x = 0;
 };
 
+struct SmbPositionedObject final {
+    SmbAreaObject record;
+    int index = 0;
+    int page = 0;
+    int x = 0;
+    int width = 1;
+};
+
 struct SmbLevelRendering final {
     QVector<int> terrainMetatiles;
     QVector<int> foregroundSceneryMetatiles;
@@ -34,12 +42,16 @@ struct SmbLevelRendering final {
     bool upsideDownPipes = false;
 
     [[nodiscard]] static SmbLevelRendering smb1();
+    [[nodiscard]] static SmbLevelRendering ann();
+    [[nodiscard]] static SmbLevelRendering smb2();
+    [[nodiscard]] static SmbLevelRendering fromId(const QString &id);
 };
 
 struct SmbLevelScene final {
     // Column-major 13-row engine metatile buffer.
     QVector<QVector<int>> metatiles;
     QVector<SmbPositionedEnemy> enemies;
+    QVector<SmbPositionedObject> objects;
     int width = 0;
 };
 
