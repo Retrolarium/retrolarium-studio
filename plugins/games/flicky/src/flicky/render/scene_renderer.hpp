@@ -31,6 +31,14 @@ public:
 
     [[nodiscard]] QImage render(
         const retrolarium::FlickyLevelDocument &levels, int round) const;
+    // Isolated, pixel-accurate sprite preview using the same tiles and CRAM
+    // path as the level scene. Round is one-based for the editor control.
+    [[nodiscard]] QImage renderMappingPreview(
+        const QString &mappingId, int round) const;
+    // UI animations point to 3x1 or 3x3 source tile-word tables rather than
+    // sprite mappings. Render them through the same 4bpp/CRAM VDP path.
+    [[nodiscard]] QImage renderTilemapFramePreview(
+        const QString &frameId, int round) const;
 
 private:
     using Plane = std::array<int, 32 * 28>;
@@ -49,6 +57,7 @@ private:
                                  int x, int y, int theme) const;
     static QRgb mdColour(int word);
 
+    QString sourceRoot_;
     QHash<QString, QVector<int>> tables_;
     mutable QHash<int, retrolarium::FlickyTile> tileCache_;
     std::array<int, 64> sharedPalette_ {};

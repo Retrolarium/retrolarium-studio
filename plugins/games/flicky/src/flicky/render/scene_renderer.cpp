@@ -7,6 +7,7 @@
 #include <QSet>
 
 #include <algorithm>
+#include <utility>
 
 namespace {
 
@@ -137,12 +138,13 @@ FlickyLevelSceneRenderer::FlickyLevelSceneRenderer(
     std::shared_ptr<retrolarium::FlickyGraphicsDocument> graphics,
     std::shared_ptr<retrolarium::FlickySemanticsDocument> semantics,
     std::shared_ptr<retrolarium::FlickySequencesDocument> sequences)
-    : graphics_(std::move(graphics)), semantics_(std::move(semantics)),
+    : sourceRoot_(std::move(sourceRoot)),
+      graphics_(std::move(graphics)), semantics_(std::move(semantics)),
       sequences_(std::move(sequences))
 {
     if (!graphics_ || !semantics_ || !sequences_)
         fail(QStringLiteral("Flicky VDP scene needs graphics, palettes and mappings"));
-    const QDir source(sourceRoot);
+    const QDir source(sourceRoot_);
     const auto tablesPath = source.filePath(QStringLiteral("src/data/tables.s"));
     QSet<QString> names {QStringLiteral("Level_DrawPlayerStartDoorData"),
         QStringLiteral("Level_BgObject0Data"),
@@ -339,6 +341,51 @@ void FlickyLevelSceneRenderer::drawMapping(
     }
 }
 
+QImage FlickyLevelSceneRenderer::renderMappingPreview(
+    const QString &mappingId, int round) const
+{
+    tileCache_.clear();
+    const auto palette = paletteForRound(round);
+    QImage frame(screenWidth, screenHeight, QImage::Format_RGB32);
+    frame.fill(mdColour(palette[0]));
+    drawMapping(frame, palette, mappingId, screenWidth / 2, screenHeight / 2);
+    return frame;
+}
+
+QImage FlickyLevelSceneRenderer::renderTilemapFramePreview(
+    const QString &frameId, int round) const
+{
+    tileCache_.clear();
+    const auto palette = paletteForRound(round);
+    const QString label = frameId == QStringLiteral("UI_CatCountReverseData3")
+        ? QStringLiteral("UI_CountdownFrame3") : frameId;
+    QVector<int> words;
+    if (tables_.contains(label)) {
+        words = table(label);
+    } else {
+        const QDir source(sourceRoot_);
+        try {
+            words = tableWords(source.filePath(QStringLiteral("src/data/tables.s")),
+                label);
+        } catch (const FlickyLevelSceneError &) {
+            words = tableWords(source.filePath(QStringLiteral("src/rendering/hud.s")),
+                label);
+        }
+    }
+    if (words.size() != 3 && words.size() != 9)
+        fail(QStringLiteral("Flicky UI animation frame must contain 3 or 9 tiles: ")
+            + frameId);
+    QImage frame(screenWidth, screenHeight, QImage::Format_RGB32);
+    frame.fill(mdColour(palette[0]));
+    const int rows = words.size() / 3;
+    const int left = (screenWidth - 3 * tileSize) / 2;
+    const int top = (screenHeight - rows * tileSize) / 2;
+    for (int index = 0; index < words.size(); ++index)
+        drawTile(frame, palette, left + index % 3 * tileSize,
+            top + index / 3 * tileSize, words.at(index), true);
+    return frame;
+}
+
 QImage FlickyLevelSceneRenderer::render(
     const retrolarium::FlickyLevelDocument &levels, int round) const
 {
@@ -399,7 +446,10 @@ QImage FlickyLevelSceneRenderer::render(
     QImage frame(screenWidth, screenHeight, QImage::Format_RGB32);
     frame.fill(mdColour(palette[0]));
     drawPlane(frame, palette, planeB, -1);
-    drawPlane(frame, palette, planeA, 0);
+    // Game_SetupLevel initializes CameraX=1; Gfx_UpdateScrollRegs writes
+    // -CameraX for both planes. The source preview leaves Plane A at zero,
+    // which MAME disproves most clearly in rounds 4 and 20.
+    drawPlane(frame, palette, planeA, -1);
     drawMapping(frame, palette, QStringLiteral("Player_WalkFrame1"),
         player.x() * 8 + 11, player.y() * 8 + 24);
     const auto chickMapping = QStringLiteral("Throwable_ThrownAnim%1Data0")
