@@ -28,6 +28,43 @@ int integer(const QJsonValue &value, int minimum, int maximum, const QString &fi
     return result;
 }
 
+const QStringList &bonusPlacementIds()
+{
+    static const QStringList ids {QStringLiteral("seesaw"),
+        QStringLiteral("tiger"), QStringLiteral("chick_spawn")};
+    return ids;
+}
+
+void validateBonusPlacements(const QJsonObject &root)
+{
+    const auto value = root.value(QStringLiteral("bonus_placements"));
+    if (value.isUndefined()) return;
+    if (!value.isArray() || value.toArray().size() != 3)
+        fail(QStringLiteral("Flicky bonus placements need three shared groups"));
+    const auto records = value.toArray();
+    for (int index = 0; index < 3; ++index) {
+        const auto record = records.at(index).toObject();
+        const auto id = bonusPlacementIds().at(index);
+        if (record.value(QStringLiteral("id")).toString() != id
+            || record.value(QStringLiteral("source")).toString()
+                != QStringLiteral("game/bonus/objects.s"))
+            fail(QStringLiteral("Flicky bonus placement identity changed: ") + id);
+        const auto xs = record.value(QStringLiteral("x")).toArray();
+        const auto baselineXs = record.value(QStringLiteral("baseline_x")).toArray();
+        if (xs.size() != 2 || baselineXs.size() != 2)
+            fail(QStringLiteral("Flicky bonus placement needs two X positions: ") + id);
+        for (int side = 0; side < 2; ++side) {
+            (void)integer(xs.at(side), 0x80, 0x17F, id + QStringLiteral(" X"));
+            (void)integer(baselineXs.at(side), 0x80, 0x17F,
+                          id + QStringLiteral(" baseline X"));
+        }
+        (void)integer(record.value(QStringLiteral("y")), 0x80, 0x17F,
+                      id + QStringLiteral(" Y"));
+        (void)integer(record.value(QStringLiteral("baseline_y")), 0x80, 0x17F,
+                      id + QStringLiteral(" baseline Y"));
+    }
+}
+
 FlickyCollisionGrid gridFromJson(const QJsonValue &value, int layout)
 {
     const auto rows = value.toArray();
@@ -311,6 +348,7 @@ FlickyLevelDocument FlickyLevelDocument::fromJson(const QJsonObject &root)
         1000000, QStringLiteral("level_data_bytes capacity"));
     (void)integer(capacities.value(QStringLiteral("special_tiles_bytes")), 1,
         1000000, QStringLiteral("special_tiles_bytes capacity"));
+    validateBonusPlacements(root);
     FlickyLevelDocument document;
     document.root_ = root;
     for (int round = 0; round < 48; ++round) {
@@ -561,6 +599,60 @@ QVector<int> FlickyLevelDocument::roundsForLayout(int layout) const
         if (layoutForRound(round) == layout) rounds.append(round);
     }
     return rounds;
+}
+
+bool FlickyLevelDocument::hasBonusPlacements() const noexcept
+{
+    return root_.contains(QStringLiteral("bonus_placements"));
+}
+
+QJsonObject FlickyLevelDocument::bonusPlacement(const QString &id) const
+{
+    const int index = bonusPlacementIds().indexOf(id);
+    if (index < 0 || !hasBonusPlacements())
+        fail(QStringLiteral("Flicky bonus placement is unavailable: ") + id);
+    return root_.value(QStringLiteral("bonus_placements")).toArray()
+        .at(index).toObject();
+}
+
+void FlickyLevelDocument::setBonusPlacement(
+    const QString &id, int side, int worldX)
+{
+    if (side < 0 || side > 1)
+        fail(QStringLiteral("Flicky bonus placement side must be 0 or 1"));
+    (void)integer(QJsonValue(worldX), 0x80, 0x17F,
+                  id + QStringLiteral(" X"));
+    const int index = bonusPlacementIds().indexOf(id);
+    auto record = bonusPlacement(id);
+    auto xs = record.value(QStringLiteral("x")).toArray();
+    xs.replace(side, worldX);
+    record.insert(QStringLiteral("x"), xs);
+    auto records = root_.value(QStringLiteral("bonus_placements")).toArray();
+    records.replace(index, record);
+    root_.insert(QStringLiteral("bonus_placements"), records);
+}
+
+void FlickyLevelDocument::setBonusPlacementY(const QString &id, int worldY)
+{
+    (void)integer(QJsonValue(worldY), 0x80, 0x17F,
+                  id + QStringLiteral(" Y"));
+    const int index = bonusPlacementIds().indexOf(id);
+    auto record = bonusPlacement(id);
+    record.insert(QStringLiteral("y"), worldY);
+    auto records = root_.value(QStringLiteral("bonus_placements")).toArray();
+    records.replace(index, record);
+    root_.insert(QStringLiteral("bonus_placements"), records);
+}
+
+void FlickyLevelDocument::restoreBonusPlacement(const QString &id)
+{
+    const int index = bonusPlacementIds().indexOf(id);
+    auto record = bonusPlacement(id);
+    record.insert(QStringLiteral("x"), record.value(QStringLiteral("baseline_x")));
+    record.insert(QStringLiteral("y"), record.value(QStringLiteral("baseline_y")));
+    auto records = root_.value(QStringLiteral("bonus_placements")).toArray();
+    records.replace(index, record);
+    root_.insert(QStringLiteral("bonus_placements"), records);
 }
 
 int FlickyLevelDocument::cell(int layout, int x, int y) const

@@ -3,12 +3,15 @@
 #include <retrolarium/flicky_level_document.hpp>
 
 #include <QFile>
+#include <QJsonArray>
+#include <QRegularExpression>
 #include <QSaveFile>
 #include <QStringList>
 
 #include <algorithm>
 #include <cstdint>
 #include <stdexcept>
+#include <string>
 #include <vector>
 
 namespace retrolarium {
@@ -130,6 +133,79 @@ void writeStagedFile(const QString &path, const QByteArray &bytes)
             + path.toStdString() + ": " + output.errorString().toStdString());
 }
 
+QByteArray bonusPlacementSource(const FlickyLevelDocument &document,
+                                const QString &path)
+{
+    QFile input(path);
+    if (!input.open(QIODevice::ReadOnly))
+        throw FlickyLevelDocumentError("cannot read staged Flicky bonus source: "
+                                       + path.toStdString());
+    QString source = QString::fromUtf8(input.readAll());
+    struct Group { const char *id; const char *start; const char *end; };
+    const Group groups[] = {
+        {"seesaw", "Obj_BonusSeesaw:", "Obj_BonusTiger:"},
+        {"tiger", "Obj_BonusTiger:", "Obj_BonusHeldChick:"},
+        {"chick_spawn", "BonusChick_StateWait:", "BonusChick_StateFly:"},
+    };
+    const QRegularExpression xWord(
+        QStringLiteral(R"(move\.w\s+#\$([0-9A-Fa-f]+),\$30\(a0\))"));
+    const QRegularExpression yWord(
+        QStringLiteral(R"(move\.w\s+#\$([0-9A-Fa-f]+),\$24\(a0\))"));
+    for (const auto &group : groups) {
+        const QString start = QString::fromLatin1(group.start);
+        const QString end = QString::fromLatin1(group.end);
+        const int begin = source.indexOf(start);
+        const int finish = source.indexOf(end);
+        if (begin < 0 || finish <= begin
+            || source.indexOf(start, begin + start.size()) >= 0
+            || source.indexOf(end, finish + end.size()) >= 0)
+            throw FlickyLevelDocumentError("ambiguous staged Flicky bonus source: "
+                                           + std::string(group.id));
+        QString block = source.mid(begin, finish - begin);
+        const auto record = document.bonusPlacement(QString::fromLatin1(group.id));
+        const auto baselineXs = record.value(QStringLiteral("baseline_x")).toArray();
+        const auto currentXs = record.value(QStringLiteral("x")).toArray();
+        struct Patch { int start; int length; QString value; };
+        std::vector<Patch> patches;
+        auto xMatches = xWord.globalMatch(block);
+        int count = 0;
+        while (xMatches.hasNext()) {
+            const auto match = xMatches.next();
+            bool okay = false;
+            const int actual = match.captured(1).toInt(&okay, 16);
+            if (count >= 2 || !okay || actual != baselineXs.at(count).toInt())
+                throw FlickyLevelDocumentError("staged Flicky bonus X differs from baseline: "
+                                               + std::string(group.id));
+            patches.push_back({match.capturedStart(1), match.capturedLength(1),
+                QString::number(currentXs.at(count).toInt(), 16).toUpper()});
+            ++count;
+        }
+        auto yMatches = yWord.globalMatch(block);
+        int yCount = 0;
+        while (yMatches.hasNext()) {
+            const auto match = yMatches.next();
+            bool okay = false;
+            const int actual = match.captured(1).toInt(&okay, 16);
+            if (!okay || actual != record.value(QStringLiteral("baseline_y")).toInt())
+                throw FlickyLevelDocumentError("staged Flicky bonus Y differs from baseline: "
+                                               + std::string(group.id));
+            patches.push_back({match.capturedStart(1), match.capturedLength(1),
+                QString::number(record.value(QStringLiteral("y")).toInt(), 16).toUpper()});
+            ++yCount;
+        }
+        if (count != 2 || yCount != 1)
+            throw FlickyLevelDocumentError("staged Flicky bonus placement is incomplete: "
+                                           + std::string(group.id));
+        std::sort(patches.begin(), patches.end(), [](const Patch &a, const Patch &b) {
+            return a.start > b.start;
+        });
+        for (const auto &patch : patches)
+            block.replace(patch.start, patch.length, patch.value);
+        source.replace(begin, finish - begin, block);
+    }
+    return source.toUtf8();
+}
+
 } // namespace
 
 void writeFlickyLevelSources(const FlickyLevelDocument &document,
@@ -145,8 +221,12 @@ void writeFlickyLevelSources(const FlickyLevelDocument &document,
     const auto special = replacedRange(specialPath,
         "Level_SpecialTilePointers:", "Tiger_JumpArcTable:",
         specialSection(document));
+    const auto bonusPath = stagedSource + QStringLiteral("/game/bonus/objects.s");
+    const auto bonus = document.hasBonusPlacements()
+        ? bonusPlacementSource(document, bonusPath) : QByteArray {};
     writeStagedFile(tablesPath, tables);
     writeStagedFile(specialPath, special);
+    if (document.hasBonusPlacements()) writeStagedFile(bonusPath, bonus);
 }
 
 } // namespace retrolarium

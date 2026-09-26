@@ -40,6 +40,15 @@ public:
     void setAnimationFrame(const QString &id, int index, const QString &frame);
     void restoreAnimation(const QString &id);
 
+    // Optional fixed-size bonus-motion tables are present in newly imported
+    // workspaces. Legacy sequences.json files remain readable without them.
+    [[nodiscard]] QStringList bonusMotionIds() const;
+    [[nodiscard]] QJsonObject bonusMotion(const QString &id) const;
+    [[nodiscard]] QJsonObject baselineBonusMotion(const QString &id) const;
+    void replaceBonusMotion(const QString &id, const QJsonObject &record);
+    void setBonusMotionWord(const QString &id, int index, int value);
+    void restoreBonusMotion(const QString &id);
+
 private:
     static void validate(const QJsonObject &root);
     static int recordIndex(const QJsonObject &root, const char *section,

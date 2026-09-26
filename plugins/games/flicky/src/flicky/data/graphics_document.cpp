@@ -80,6 +80,32 @@ QJsonArray assetArray(const QJsonObject &root)
     return root.value(QStringLiteral("assets")).toArray();
 }
 
+FlickyCompactPaletteEntry parseSegaPaletteEntry(const QJsonValue &value,
+                                                int position)
+{
+    const auto entry = value.toObject();
+    const int index = pixelValue(entry.value(QStringLiteral("index")), 63);
+    const int colour = pixelValue(entry.value(QStringLiteral("colour")), 0xEEE);
+    const auto last = entry.value(QStringLiteral("last"));
+    if ((colour & ~0xEEE) != 0 || !last.isBool()
+        || last.toBool() != (position == 9)) {
+        fail(QStringLiteral("invalid Flicky Sega compact CRAM entry"));
+    }
+    return {index, colour, last.toBool()};
+}
+
+void requireSegaEntry(int entry)
+{
+    if (entry < 0 || entry >= 10)
+        fail(QStringLiteral("Flicky Sega palette entry must be 0..9"));
+}
+
+void requireSegaCell(int cell)
+{
+    if (cell < 0 || cell >= 48)
+        fail(QStringLiteral("Flicky Sega tilemap cell must be 0..47"));
+}
+
 } // namespace
 
 FlickyGraphicsDocument FlickyGraphicsDocument::load(const QString &path)
@@ -128,13 +154,19 @@ FlickyGraphicsDocument FlickyGraphicsDocument::fromJson(const QJsonObject &root)
             const int maximum = index < 6 ? 15 : 1;
             for (const auto &tile : tiles) (void)parseTile(tile, maximum);
         } else if (index == 8) {
-            if (asset.value(QStringLiteral("entries")).toArray().size() != 10) {
+            const auto entries = asset.value(QStringLiteral("entries")).toArray();
+            if (entries.size() != 10) {
                 fail(QStringLiteral("Flicky compact palette needs ten entries"));
             }
+            for (int entry = 0; entry < 10; ++entry)
+                (void)parseSegaPaletteEntry(entries.at(entry), entry);
         } else if (asset.value(QStringLiteral("width")).toInt(-1) != 12
                    || asset.value(QStringLiteral("height")).toInt(-1) != 4
                    || asset.value(QStringLiteral("words")).toArray().size() != 48) {
             fail(QStringLiteral("Flicky Sega tilemap must be 12x4"));
+        } else {
+            for (const auto &word : asset.value(QStringLiteral("words")).toArray())
+                (void)pixelValue(word, 0xFFFF);
         }
     }
     FlickyGraphicsDocument document;
@@ -261,6 +293,68 @@ void FlickyGraphicsDocument::restoreTile(const QString &assetId, int tileIndex)
         .value(QStringLiteral("tiles")).toArray();
     replaceTile(asset, tileIndex,
                 parseTile(baselineTiles.at(tileIndex), asset < 6 ? 15 : 1));
+}
+
+FlickyCompactPaletteEntry FlickyGraphicsDocument::segaPaletteEntry(int entry) const
+{
+    requireSegaEntry(entry);
+    return parseSegaPaletteEntry(assetArray(root_).at(8).toObject()
+        .value(QStringLiteral("entries")).toArray().at(entry), entry);
+}
+
+FlickyCompactPaletteEntry FlickyGraphicsDocument::baselineSegaPaletteEntry(
+    int entry) const
+{
+    requireSegaEntry(entry);
+    return parseSegaPaletteEntry(assetArray(baseline_).at(8).toObject()
+        .value(QStringLiteral("entries")).toArray().at(entry), entry);
+}
+
+void FlickyGraphicsDocument::setSegaPaletteEntry(int entry, int cramIndex,
+                                                  int colour)
+{
+    requireSegaEntry(entry);
+    if (cramIndex < 0 || cramIndex > 63 || colour < 0 || colour > 0xEEE
+        || (colour & ~0xEEE) != 0)
+        fail(QStringLiteral("Flicky Sega CRAM edit is outside its domain"));
+    auto assets = assetArray(root_);
+    auto record = assets.at(8).toObject();
+    auto entries = record.value(QStringLiteral("entries")).toArray();
+    auto value = entries.at(entry).toObject();
+    value.insert(QStringLiteral("index"), cramIndex);
+    value.insert(QStringLiteral("colour"), colour);
+    entries.replace(entry, value);
+    record.insert(QStringLiteral("entries"), entries);
+    assets.replace(8, record);
+    root_.insert(QStringLiteral("assets"), assets);
+}
+
+int FlickyGraphicsDocument::segaTilemapWord(int cell) const
+{
+    requireSegaCell(cell);
+    return pixelValue(assetArray(root_).at(9).toObject()
+        .value(QStringLiteral("words")).toArray().at(cell), 0xFFFF);
+}
+
+int FlickyGraphicsDocument::baselineSegaTilemapWord(int cell) const
+{
+    requireSegaCell(cell);
+    return pixelValue(assetArray(baseline_).at(9).toObject()
+        .value(QStringLiteral("words")).toArray().at(cell), 0xFFFF);
+}
+
+void FlickyGraphicsDocument::setSegaTilemapWord(int cell, int word)
+{
+    requireSegaCell(cell);
+    if (word < 0 || word > 0xFFFF)
+        fail(QStringLiteral("Flicky Sega tilemap word must be 0..65535"));
+    auto assets = assetArray(root_);
+    auto record = assets.at(9).toObject();
+    auto words = record.value(QStringLiteral("words")).toArray();
+    words.replace(cell, word);
+    record.insert(QStringLiteral("words"), words);
+    assets.replace(9, record);
+    root_.insert(QStringLiteral("assets"), assets);
 }
 
 } // namespace retrolarium

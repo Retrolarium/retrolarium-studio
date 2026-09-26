@@ -6,6 +6,8 @@
 #include <QSaveFile>
 #include <QSet>
 
+#include <array>
+
 namespace retrolarium {
 namespace {
 
@@ -142,6 +144,57 @@ void FlickySequencesDocument::validate(const QJsonObject &root)
             if (!frame.isString() || frame.toString().isEmpty())
                 fail(QStringLiteral("invalid Flicky animation frame reference"));
         }
+    }
+    if (root.contains(QStringLiteral("bonus_motion"))) {
+        const auto motion = root.value(QStringLiteral("bonus_motion")).toArray();
+        if (motion.size() != 30)
+            fail(QStringLiteral("Flicky bonus motion needs 30 fixed tables"));
+        static const std::array<int, 9> trajectoryLengths {1, 5, 9, 7, 9, 9, 3, 7, 5};
+        int recordIndex = 0;
+        const auto validateGroup = [&](const char *prefix, const char *kind,
+                                       int count, int length) {
+            for (int tableIndex = 0; tableIndex < count; ++tableIndex) {
+                const auto entry = motion.at(recordIndex++).toObject();
+                const QString id = QString::fromLatin1(prefix) + QString::number(tableIndex);
+                const int expectedLength = length > 0 ? length
+                    : trajectoryLengths[static_cast<std::size_t>(tableIndex)];
+                const auto words = entry.value(QStringLiteral("words")).toArray();
+                if (entry.value(QStringLiteral("id")).toString() != id
+                    || entry.value(QStringLiteral("source")).toString()
+                        != QStringLiteral("game/bonus/objects.s")
+                    || entry.value(QStringLiteral("kind")).toString()
+                        != QString::fromLatin1(kind)
+                    || words.size() != expectedLength)
+                    fail(QStringLiteral("invalid Flicky bonus table identity/shape: ") + id);
+                if (entry.contains(QStringLiteral("rounds"))) {
+                    if (QString::fromLatin1(kind) == QStringLiteral("trajectory"))
+                        fail(QStringLiteral("indirect Flicky trajectory has no fixed rounds: ") + id);
+                    if (!entry.value(QStringLiteral("rounds")).isArray())
+                        fail(QStringLiteral("invalid Flicky bonus round aliases: ") + id);
+                    const auto rounds = entry.value(QStringLiteral("rounds")).toArray();
+                    QSet<int> uniqueRounds;
+                    for (const auto &value : rounds) {
+                        const int round = integer(value, 3, 47, id);
+                        if (round % 4 != 3 || uniqueRounds.contains(round))
+                            fail(QStringLiteral("invalid Flicky bonus round alias: ") + id);
+                        uniqueRounds.insert(round);
+                    }
+                }
+                for (int index = 0; index < words.size(); ++index) {
+                    const int word = integer(words.at(index), 0, 0xFFFF, id);
+                    if (QString::fromLatin1(kind) == QStringLiteral("trajectory_index")
+                        && ((word >> 8) > 8 || (word & 0xFF) > 8))
+                        fail(QStringLiteral("invalid Flicky bonus trajectory index: ") + id);
+                }
+                if (QString::fromLatin1(kind) == QStringLiteral("trajectory")
+                    && words.last().toInt() != 0xFFFF)
+                    fail(QStringLiteral("invalid Flicky bonus trajectory sentinel: ") + id);
+            }
+        };
+        validateGroup("Bonus_ChickDelays", "delay", 3, 20);
+        validateGroup("Bonus_ChickVelocities", "velocity", 9, 20);
+        validateGroup("Bonus_ChickTrajIndex", "trajectory_index", 9, 10);
+        validateGroup("Bonus_Trajectory", "trajectory", 9, 0);
     }
 }
 
@@ -332,6 +385,51 @@ void FlickySequencesDocument::setAnimationFrame(
 void FlickySequencesDocument::restoreAnimation(const QString &id)
 {
     replaceAnimation(id, baselineAnimation(id));
+}
+
+QStringList FlickySequencesDocument::bonusMotionIds() const
+{
+    return ids(root_, "bonus_motion");
+}
+
+QJsonObject FlickySequencesDocument::bonusMotion(const QString &id) const
+{
+    return record(root_, "bonus_motion", id);
+}
+
+QJsonObject FlickySequencesDocument::baselineBonusMotion(const QString &id) const
+{
+    return record(baseline_, "bonus_motion", id);
+}
+
+void FlickySequencesDocument::replaceBonusMotion(
+    const QString &id, const QJsonObject &replacement)
+{
+    const auto current = bonusMotion(id);
+    for (const auto *key : {"id", "source", "kind", "rounds"})
+        if (replacement.value(QLatin1String(key)) != current.value(QLatin1String(key)))
+            fail(QStringLiteral("Flicky bonus table identity cannot change"));
+    if (replacement.value(QStringLiteral("words")).toArray().size()
+        != current.value(QStringLiteral("words")).toArray().size())
+        fail(QStringLiteral("Flicky bonus table word count cannot change"));
+    replaceRecord("bonus_motion", id, replacement);
+}
+
+void FlickySequencesDocument::setBonusMotionWord(
+    const QString &id, int index, int value)
+{
+    auto next = bonusMotion(id);
+    auto words = next.value(QStringLiteral("words")).toArray();
+    if (index < 0 || index >= words.size())
+        fail(QStringLiteral("Flicky bonus word index is outside its table"));
+    words.replace(index, value);
+    next.insert(QStringLiteral("words"), words);
+    replaceBonusMotion(id, next);
+}
+
+void FlickySequencesDocument::restoreBonusMotion(const QString &id)
+{
+    replaceBonusMotion(id, baselineBonusMotion(id));
 }
 
 } // namespace retrolarium

@@ -40,6 +40,11 @@ public:
     [[nodiscard]] int objectLayoutForRound(int round, const QString &field) const;
     [[nodiscard]] QVector<int> roundsForLayout(int layout) const;
     [[nodiscard]] QVector<int> roundsForObjectLayout(int layout, const QString &field) const;
+    [[nodiscard]] bool hasBonusPlacements() const noexcept;
+    [[nodiscard]] QJsonObject bonusPlacement(const QString &id) const;
+    void setBonusPlacement(const QString &id, int side, int worldX);
+    void setBonusPlacementY(const QString &id, int worldY);
+    void restoreBonusPlacement(const QString &id);
     [[nodiscard]] static QStringList objectFields();
     [[nodiscard]] static bool isSpecialObjectField(const QString &field);
     [[nodiscard]] static bool isVariableObjectField(const QString &field);

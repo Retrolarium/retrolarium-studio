@@ -23,6 +23,7 @@ public:
 // in the level preview on dependency refresh.
 class FlickyLevelSceneRenderer final {
 public:
+    enum class Layer { Objects, Layout, Background };
     FlickyLevelSceneRenderer(
         QString sourceRoot,
         std::shared_ptr<retrolarium::FlickyGraphicsDocument> graphics,
@@ -31,6 +32,18 @@ public:
 
     [[nodiscard]] QImage render(
         const retrolarium::FlickyLevelDocument &levels, int round) const;
+    [[nodiscard]] QImage renderLayer(
+        const retrolarium::FlickyLevelDocument &levels, int round,
+        Layer layer) const;
+    [[nodiscard]] QImage renderPlacementPreview(
+        const QString &field, int round) const;
+    // Settled bonus scene after N frames from MAME's ready transition.
+    // Draws source-driven seesaw/Tiger, no-input player, held Chick and thrown
+    // Chick motion. Late-phase timing, live score/lives and joypad input remain
+    // outside the pixel-exact guarantee.
+    [[nodiscard]] QImage renderBonusPhase(
+        const retrolarium::FlickyLevelDocument &levels,
+        int round, int framesAfterReady) const;
     // Isolated, pixel-accurate sprite preview using the same tiles and CRAM
     // path as the level scene. Round is one-based for the editor control.
     [[nodiscard]] QImage renderMappingPreview(
@@ -46,11 +59,20 @@ private:
     [[nodiscard]] std::array<int, 64> paletteForRound(int round) const;
     [[nodiscard]] retrolarium::FlickyTile tile(int index) const;
     void drawTile(QImage &frame, const std::array<int, 64> &palette,
-                  int x, int y, int word, bool transparent) const;
+                  int x, int y, int word, bool transparent,
+                  bool wrapX = true) const;
     void drawPlane(QImage &frame, const std::array<int, 64> &palette,
                    const Plane &plane, int offsetX) const;
     void drawMapping(QImage &frame, const std::array<int, 64> &palette,
-                     const QString &id, int x, int y) const;
+                     const QString &id, int x, int y,
+                     bool objectFlipped = false, bool wrapX = true) const;
+    void drawBonusText(QImage &frame, const std::array<int, 64> &palette,
+                       const QString &id, int vramAddress) const;
+    void drawBonusString(QImage &frame, const std::array<int, 64> &palette,
+                         const QString &value, int vramAddress) const;
+    void drawBonusPriorityText(QImage &frame,
+                               const std::array<int, 64> &palette,
+                               int roundNumber) const;
     static void writeTilemap(Plane &plane, int x, int y,
                              const QVector<int> &words, int width, int height);
     [[nodiscard]] int groundWord(const retrolarium::FlickyCollisionGrid &grid,
