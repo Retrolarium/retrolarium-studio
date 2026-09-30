@@ -73,6 +73,7 @@ int main(int argc, char* argv[]) {
     if (parser.isSet(screenshotOption)) {
         const QString path = parser.value(screenshotOption);
         window.setAttribute(Qt::WA_DontShowOnScreen);
+        window.setProperty("rlDrawActive", true);
         window.show();
         if (parser.isSet(switchOption)) {
             const auto target = rl::theme::modeFromName(parser.value(switchOption),

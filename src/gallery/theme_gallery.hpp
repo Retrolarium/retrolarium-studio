@@ -1,19 +1,16 @@
 #pragma once
 
-#include <QMainWindow>
+#include "frame/studio_window.hpp"
 
 namespace rl::gallery {
 
 // Every themed component on one page, with a live theme switch. It is the
 // visual test bench of the design system: nothing here knows about games.
-class ThemeGallery final : public QMainWindow {
+class ThemeGallery final : public frame::StudioWindow {
     Q_OBJECT
 
 public:
     explicit ThemeGallery(QWidget* parent = nullptr);
-
-protected:
-    void showEvent(QShowEvent* event) override;
 
 private:
     void buildMenus();

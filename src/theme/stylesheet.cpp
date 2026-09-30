@@ -43,6 +43,8 @@ QMenuBar { background: @bg; color: @text; border: none; border-bottom: 1px solid
 QMenuBar::item { background: transparent; padding: 3px 9px; margin: 1px 0; }
 QMenuBar::item:selected { background: @hover; }
 QMenuBar::item:pressed { background: @accentSoft; color: @accentInk; }
+QMenuBar[titlebar="true"] { background: transparent; border: none; padding: 0; }
+QMenuBar[titlebar="true"]::item { padding: 5px 10px; margin: 0 1px 0 0; }
 QMenu { background: @panel; color: @text; border: 1px solid @lineStrong; padding: 4px 0; }
 QMenu::item { padding: 5px 28px 5px 12px; background: transparent; }
 QMenu::item:selected { background: @accentSoft; color: @accentInk; }

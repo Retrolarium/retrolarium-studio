@@ -1,10 +1,11 @@
 #include "gallery/theme_gallery.hpp"
 
+#include "frame/title_bar.hpp"
+
 #include "theme/icons.hpp"
 #include "theme/paint.hpp"
 #include "theme/theme.hpp"
 #include "theme/typography.hpp"
-#include "theme/window_frame.hpp"
 #include "widgets/badge.hpp"
 #include "widgets/budget_bar.hpp"
 #include "widgets/collapsible_section.hpp"
@@ -948,10 +949,22 @@ QWidget* controlsSample() {
 
 }  // namespace
 
-ThemeGallery::ThemeGallery(QWidget* parent) : QMainWindow(parent) {
+ThemeGallery::ThemeGallery(QWidget* parent) : StudioWindow(parent) {
     setWindowTitle(QStringLiteral("Theme gallery — Retrolarium"));
+    titleBar()->setTitle(QStringLiteral("Theme gallery"), QStringLiteral("Retrolarium"));
     setMinimumSize(1280, 780);
     buildMenus();
+    auto* themeButton = iconButton(theme::Theme::instance().mode() == theme::Mode::Dark
+                                       ? QStringLiteral("sun")
+                                       : QStringLiteral("moon"),
+                                   QStringLiteral("Toggle theme (Ctrl+Shift+L)"), 34, 16);
+    connect(themeButton, &QToolButton::clicked, this, [] { theme::Theme::instance().toggle(); });
+    connect(&theme::Theme::instance(), &theme::Theme::changed, themeButton,
+            [themeButton](theme::Mode mode) {
+                themeButton->setIcon(theme::icon(
+                    mode == theme::Mode::Dark ? QStringLiteral("sun") : QStringLiteral("moon")));
+            });
+    titleBar()->addTrailingWidget(themeButton);
 
     auto* root = surface("chrome");
     auto* layout = new QVBoxLayout(root);
@@ -963,14 +976,8 @@ ThemeGallery::ThemeGallery(QWidget* parent) : QMainWindow(parent) {
     setCentralWidget(root);
 }
 
-void ThemeGallery::showEvent(QShowEvent* event) {
-    QMainWindow::showEvent(event);
-    theme::applyWindowFrame(this, theme::current());
-}
-
 void ThemeGallery::buildMenus() {
-    QMenuBar* bar = menuBar();
-    bar->setFont(theme::font(theme::TextRole::Body, theme::size::kMenu));
+    QMenuBar* bar = menus();
     for (const char* title : {"File", "Project", "Edit", "View", "Build", "Help"}) {
         QMenu* menu = bar->addMenu(QString::fromUtf8(title));
         menu->setFont(theme::font(theme::TextRole::Body, theme::size::kMenu));
@@ -1064,18 +1071,6 @@ QWidget* ThemeGallery::buildToolbar() {
     actions->addWidget(build);
     actions->addSpacing(4);
     actions->addWidget(new ui::PrimaryButton(QStringLiteral("Play from 1-1"), QStringLiteral("play")));
-    actions->addSpacing(8);
-    auto* themeButton = iconButton(theme::Theme::instance().mode() == theme::Mode::Dark
-                                       ? QStringLiteral("sun")
-                                       : QStringLiteral("moon"),
-                                   QStringLiteral("Toggle theme (Ctrl+Shift+L)"));
-    connect(themeButton, &QToolButton::clicked, this, [] { theme::Theme::instance().toggle(); });
-    connect(&theme::Theme::instance(), &theme::Theme::changed, themeButton,
-            [themeButton](theme::Mode mode) {
-                themeButton->setIcon(theme::icon(
-                    mode == theme::Mode::Dark ? QStringLiteral("sun") : QStringLiteral("moon")));
-            });
-    actions->addWidget(themeButton);
     layout->addLayout(actions);
     return bar;
 }

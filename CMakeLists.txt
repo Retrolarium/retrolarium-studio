@@ -31,6 +31,10 @@ endfunction()
 
 # Theme and reusable widgets. Knows nothing about games or editors.
 add_library(studio_ui STATIC
+    src/frame/studio_window.cpp
+    src/frame/studio_window.hpp
+    src/frame/title_bar.cpp
+    src/frame/title_bar.hpp
     src/theme/icons.cpp
     src/theme/icons.hpp
     src/theme/industry_style.cpp

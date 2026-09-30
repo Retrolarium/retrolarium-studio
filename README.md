@@ -20,6 +20,7 @@ codecs, renderers, build and playtest steps) lives in `plugins/`.
 
 ```text
 src/
+  frame/     studio window: own title bar on the native Windows frame
   theme/     design tokens, fonts, style sheet, QProxyStyle, icons, painting helpers
   widgets/   reusable themed widgets (buttons, segments, chips, fields, lists, tabs)
   gallery/   theme gallery: every component on one page, the visual test bench
@@ -54,8 +55,12 @@ plugins/       platform and game code: nes/, megadrive/, smb1/, flicky/, stub/
 - Icons are Lucide-style paths rendered by `theme::icon(name, tone)`; their
   color follows the theme and the button state. Plugins can add glyphs with
   `theme::registerIcon`.
-- The native window frame stays (snapping, resizing); its caption is painted
-  in the theme colors through DWM on Windows 11.
+- Top-level windows derive from `frame::StudioWindow`. Its title bar holds the
+  app mark, the menus, a centred title and the window buttons. On Windows the
+  native frame stays (Aero Snap, shadow, resize borders, maximize animation,
+  Windows 11 snap layouts on the maximize button): only the caption is
+  removed in `WM_NCCALCSIZE` and `WM_NCHITTEST` maps the bar back to caption,
+  resize and maximize hits. Use `menus()` rather than `QMainWindow::menuBar()`.
 
 ## Build and run
 
