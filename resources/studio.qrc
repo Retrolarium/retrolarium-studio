@@ -1,0 +1,13 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+    <qresource prefix="/fonts">
+        <file alias="Barlow-Regular.ttf">fonts/Barlow-Regular.ttf</file>
+        <file alias="Barlow-Medium.ttf">fonts/Barlow-Medium.ttf</file>
+        <file alias="Barlow-SemiBold.ttf">fonts/Barlow-SemiBold.ttf</file>
+        <file alias="BarlowCondensed-Medium.ttf">fonts/BarlowCondensed-Medium.ttf</file>
+        <file alias="BarlowCondensed-SemiBold.ttf">fonts/BarlowCondensed-SemiBold.ttf</file>
+        <file alias="IBMPlexMono-Regular.ttf">fonts/IBMPlexMono-Regular.ttf</file>
+        <file alias="IBMPlexMono-Medium.ttf">fonts/IBMPlexMono-Medium.ttf</file>
+        <file alias="IBMPlexMono-SemiBold.ttf">fonts/IBMPlexMono-SemiBold.ttf</file>
+    </qresource>
+</RCC>
