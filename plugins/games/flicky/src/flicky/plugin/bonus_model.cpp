@@ -319,6 +319,10 @@ bool BonusRoundModel::setField(const QString& key, const QVariant& value, QStrin
     return place(actor, x, y, error, false);
 }
 
+QString BonusRoundModel::startPoint() const {
+    return QStringLiteral("Round ") + two(round_ + 1);
+}
+
 QString BonusRoundModel::statusText() const {
     const Actor actor = parseId(selected_);
     if (!actor.isValid()) {

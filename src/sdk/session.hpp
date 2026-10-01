@@ -42,15 +42,18 @@ public:
 
     virtual QVector<Diagnostic> diagnostics() const { return {}; }
 
-    // Label of the primary play action for a document ("Round 07"); empty
-    // when playtesting is not available.
-    virtual QString playLabel(const QString& kind, const QString& document) const;
-
     // Build and play are long operations the plugin runs through host().
     virtual bool canBuild() const { return false; }
     virtual void build() {}
-    virtual bool canPlay(const QString& kind, const QString& document) const;
-    virtual void play(const QString& kind, const QString& document);
+
+    // Playtesting. play() runs the game from power-on; playSelected() from
+    // the start point chosen in an editor (a round, a spot on a map), which
+    // the session keeps while other documents are open.
+    virtual bool canPlay() const { return false; }
+    virtual void play() {}
+    // The selected start point ("Round 07"); empty when there is none.
+    virtual QString selectedStart() const { return {}; }
+    virtual void playSelected() {}
 
     // Set by the studio right after the session opens.
     void attachHost(Host* host) { host_ = host; }
@@ -65,6 +68,7 @@ signals:
     void diagnosticsChanged();
     // Any document data changed; open editors re-render.
     void contentChanged();
+    void selectedStartChanged();
 
 private:
     QUndoStack* undoStack_;

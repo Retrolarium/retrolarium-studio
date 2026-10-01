@@ -28,6 +28,7 @@ public:
     bool isReadOnly() const override;
     QString readOnlyReason() const override;
     QString statusText() const override;
+    QString startPoint() const override;
     QString currentLibraryItem() const override { return libraryItem_; }
     void setCurrentLibraryItem(const QString& id) override;
 

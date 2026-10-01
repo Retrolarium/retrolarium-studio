@@ -51,11 +51,12 @@ public:
     bool canRevert(const QString& kind, const QString& document) const override;
     bool revert(const QString& kind, const QString& document, QString* error) override;
     QVector<sdk::Diagnostic> diagnostics() const override;
-    QString playLabel(const QString& kind, const QString& document) const override;
     bool canBuild() const override { return true; }
     void build() override;
-    bool canPlay(const QString& kind, const QString& document) const override;
-    void play(const QString& kind, const QString& document) override;
+    bool canPlay() const override { return true; }
+    void play() override;
+    QString selectedStart() const override;
+    void playSelected() override;
 
     const FlickyLevelSceneRenderer& renderer() const { return *renderer_; }
 
@@ -105,9 +106,14 @@ public:
     bool editSound(const QString& text, const std::function<void(FlickySoundDocument&)>& edit,
                    QString* error);
 
-    // Round (0-based) the Play action and the Playtest view start from.
+    // Round (0-based) "Play from selected" and the Playtest view start
+    // from. Opening a level selects it.
     int playRound() const { return playRound_; }
     void setPlayRound(int round);
+    // Round whose CRAM previews sprites. It follows the selected round, but
+    // picking one in a sprite editor does not move the start point.
+    int paletteRound() const { return paletteRound_; }
+    void setPaletteRound(int round);
     QString lastBuild() const { return lastBuild_; }
     QString projectDirectory() const { return project_.directory(); }
     QString projectPath() const { return project_.path(); }
@@ -146,9 +152,14 @@ signals:
     void sequencesChanged();
     void soundChanged();
     void playRoundChanged();
+    void paletteRoundChanged();
 
 private:
     FlickySession() = default;
+    // Saves, builds, asks the kit for the emulator command and launches it.
+    // `round` >= 0 runs the kit's round script, else the game from power-on.
+    void launch(int round);
+    void launchPlanned(const sdk::ProcessSpec& game, int round);
     void replaceLevels(const FlickyLevelDocument& levels);
     void setGraphics(const FlickyGraphicsDocument& doc, quint64 revision);
     void setSemantics(const FlickySemanticsDocument& doc, quint64 revision);
@@ -157,7 +168,16 @@ private:
     void notifySequences();
     void notifySound();
     // Saves if needed, then builds; `next(ok)` continues the operation.
-    void runBuild(std::function<void(bool)> next);
+    // Saves and builds. Unless `force`, a build whose inputs have not changed
+    // since the last one is skipped.
+    void runBuild(std::function<void(bool)> next, bool force = false);
+    // Size and modification time of every project file outside build/
+    // directories, and of the level writer: what a build reads.
+    QByteArray buildInputs(const QString& writer) const;
+    // build/studio-build.json keeps the last build's inputs across sessions.
+    QString buildRecordPath() const;
+    void loadBuildRecord();
+    void saveBuildRecord() const;
     void report(sdk::Severity severity, const QString& source, const QString& message);
     QVector<int> layoutsOfRound(int round) const;
     const QSet<int>& dirtyTiles(const QString& asset) const;
@@ -184,6 +204,12 @@ private:
     QHash<QString, QString> previewPalettes_;
     QHash<QString, QSet<int>> muted_;
     int playRound_ = 0;
+    int paletteRound_ = 0;
+    // The last successful build, and the emulator commands planned for it
+    // (by start point), so an unchanged project plays without the kit.
+    QByteArray builtInputs_;
+    QString builtRom_;
+    QHash<QString, sdk::ProcessSpec> plans_;
     int bonusPhase_ = 60;
     QString lastBuild_;
 };

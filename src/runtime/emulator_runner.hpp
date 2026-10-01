@@ -2,13 +2,16 @@
 
 #include "sdk/types.hpp"
 
+#include <QImage>
 #include <QObject>
 #include <QPointer>
 #include <QWidget>
 
 #include <functional>
+#include <memory>
 
 class QProcess;
+class QTemporaryDir;
 class QTimer;
 
 namespace rl::runtime {
@@ -44,11 +47,20 @@ public:
     // process has gone.
     enum class Phase { Idle, Starting, Running, Stopping };
     Phase phase() const { return phase_; }
+    // The game runs its start fast and unseen: views keep the picture covered
+    // while Starting.
+    bool hidesStart() const { return fastStart_; }
+    // Starting is a hot reload of the running game.
+    bool isReloading() const { return reloading_; }
     bool isRunning() const { return process_ != nullptr; }
     bool isPaused() const { return paused_; }
     QString title() const { return title_; }
     QStringList log() const { return log_; }
 
+    // Runs a game. While the same game runs (same program, working directory
+    // and arguments apart from the cartridge file and the autoboot script),
+    // it is hot-reloaded instead: the new build is mounted and the machine
+    // hard-resets into it, with the new environment and ready file.
     void start(const sdk::ProcessSpec& spec, const QString& title,
                std::function<void(const sdk::ProcessResult&)> finished);
     // Asks the emulator to close and returns; it is killed if it lingers.
@@ -57,6 +69,8 @@ public:
     void stopNow();
     bool togglePause();
     void focusEmulator();
+    // The picture as it is on screen, or null when nothing runs.
+    QImage picture() const;
     // Saves the emulator picture as PNG; returns the path or empty.
     QString saveScreenshot(const QString& directory, QString* error);
 
@@ -70,16 +84,29 @@ private:
     QPointer<EmulatorSurface> surface_;
     void watchStartup();
     void setPhase(Phase phase);
+    bool writeControl(const sdk::ProcessSpec& spec, const QString& gameScript, QString* error);
+    QString stageCart(const QString& source, QString* error);
+    bool reload(const sdk::ProcessSpec& spec, const QString& cartSource, const QString& gameScript,
+                const QString& title, std::function<void(const sdk::ProcessResult&)>& finished);
 
     QProcess* process_ = nullptr;
     Phase phase_ = Phase::Idle;
     QTimer* startupTimer_;
     int startupChecks_ = 0;
     QString readyFile_;
+    bool fastStart_ = false;
+    bool reloading_ = false;
+    // The running game's temporary folder: control script, command file and
+    // cartridge copies.
+    std::unique_ptr<QTemporaryDir> stage_;
+    QString cart_;                  // the copy MAME has mounted
+    int cartSerial_ = 0;
+    QStringList signature_;         // what a launch must match to reload
     std::function<void(const sdk::ProcessResult&)> finished_;
     QString title_;
     QStringList log_;
     bool paused_ = false;
+    QImage pausedPicture_;
     bool stopping_ = false;
 };
 

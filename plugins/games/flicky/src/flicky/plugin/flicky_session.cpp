@@ -15,6 +15,7 @@
 #include <QCryptographicHash>
 #include <QDateTime>
 #include <QDir>
+#include <QDirIterator>
 #include <QFile>
 #include <QFileInfo>
 #include <QJsonArray>
@@ -147,6 +148,7 @@ std::unique_ptr<FlickySession> FlickySession::open(const sdk::ProjectFile& proje
         session->renderer_ = std::make_unique<FlickyLevelSceneRenderer>(
             session->sourceRoot_, session->graphics_.doc, session->semantics_.doc,
             session->sequences_.doc);
+        session->loadBuildRecord();
     } catch (const std::exception& e) {
         if (error) {
             *error = QStringLiteral("Cannot open the Flicky project: %1").arg(QString::fromUtf8(e.what()));
@@ -915,20 +917,24 @@ QVector<sdk::Diagnostic> FlickySession::diagnostics() const {
     return result;
 }
 
-QString FlickySession::playLabel(const QString& kind, const QString& document) const {
-    const int round = kind == QLatin1String("levels") ? roundFromId(document) : -1;
-    return QStringLiteral("Round ") + two((round >= 0 ? round : playRound_) + 1);
+QString FlickySession::selectedStart() const {
+    return QStringLiteral("Round ") + two(playRound_ + 1);
 }
 
 void FlickySession::setPlayRound(int round) {
     if (round >= 0 && round < objects::kRounds && round != playRound_) {
         playRound_ = round;
         emit playRoundChanged();
+        emit selectedStartChanged();
     }
+    setPaletteRound(round);
 }
 
-bool FlickySession::canPlay(const QString&, const QString&) const {
-    return true;
+void FlickySession::setPaletteRound(int round) {
+    if (round >= 0 && round < objects::kRounds && round != paletteRound_) {
+        paletteRound_ = round;
+        emit paletteRoundChanged();
+    }
 }
 
 // ---------------------------------------------------------------- tracked documents
@@ -1051,7 +1057,84 @@ QString failureText(const sdk::ProcessResult& result) {
 
 }  // namespace
 
-void FlickySession::runBuild(std::function<void(bool)> next) {
+QByteArray FlickySession::buildInputs(const QString& writer) const {
+    const QDir root(project_.directory());
+    QStringList files;
+    QDirIterator it(root.absolutePath(), QDir::Files | QDir::NoDotAndDotDot | QDir::Hidden,
+                    QDirIterator::Subdirectories);
+    while (it.hasNext()) {
+        const QString relative = root.relativeFilePath(it.next());
+        if (!relative.split(QLatin1Char('/')).contains(QLatin1String("build"))) {
+            files << relative;
+        }
+    }
+    files.sort();
+    QCryptographicHash hash(QCryptographicHash::Sha1);
+    const auto add = [&hash](const QString& name, const QFileInfo& info) {
+        hash.addData(name.toUtf8());
+        hash.addData(QByteArray::number(info.size()));
+        hash.addData(QByteArray::number(info.lastModified().toMSecsSinceEpoch()));
+    };
+    for (const QString& file : files) {
+        add(file, QFileInfo(root.filePath(file)));
+    }
+    add(writer, QFileInfo(writer));
+    return hash.result();
+}
+
+QString FlickySession::buildRecordPath() const {
+    return QDir(project_.directory()).filePath(QStringLiteral("build/studio-build.json"));
+}
+
+void FlickySession::loadBuildRecord() {
+    QFile file(buildRecordPath());
+    if (!file.open(QIODevice::ReadOnly)) {
+        return;
+    }
+    const QJsonObject record = QJsonDocument::fromJson(file.readAll()).object();
+    builtInputs_ = QByteArray::fromHex(record.value(QStringLiteral("inputs")).toString().toLatin1());
+    builtRom_ = record.value(QStringLiteral("rom")).toString();
+    const QJsonObject plans = record.value(QStringLiteral("plans")).toObject();
+    for (auto it = plans.constBegin(); it != plans.constEnd(); ++it) {
+        const QJsonObject plan = it.value().toObject();
+        sdk::ProcessSpec spec;
+        spec.program = plan.value(QStringLiteral("program")).toString();
+        for (const QJsonValue& argument : plan.value(QStringLiteral("arguments")).toArray()) {
+            spec.arguments << argument.toString();
+        }
+        spec.workingDirectory = plan.value(QStringLiteral("working_directory")).toString();
+        const QJsonObject environment = plan.value(QStringLiteral("environment")).toObject();
+        for (auto variable = environment.constBegin(); variable != environment.constEnd(); ++variable) {
+            spec.environment.insert(variable.key(), variable.value().toString());
+        }
+        if (!spec.program.isEmpty()) {
+            plans_.insert(it.key(), spec);
+        }
+    }
+}
+
+void FlickySession::saveBuildRecord() const {
+    QJsonObject plans;
+    for (auto it = plans_.constBegin(); it != plans_.constEnd(); ++it) {
+        QJsonObject environment;
+        for (auto variable = it->environment.constBegin(); variable != it->environment.constEnd(); ++variable) {
+            environment.insert(variable.key(), variable.value());
+        }
+        plans.insert(it.key(), QJsonObject{{QStringLiteral("program"), it->program},
+                                           {QStringLiteral("arguments"), QJsonArray::fromStringList(it->arguments)},
+                                           {QStringLiteral("working_directory"), it->workingDirectory},
+                                           {QStringLiteral("environment"), environment}});
+    }
+    QFile file(buildRecordPath());
+    if (file.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
+        file.write(QJsonDocument(QJsonObject{{QStringLiteral("inputs"), QString::fromLatin1(builtInputs_.toHex())},
+                                             {QStringLiteral("rom"), builtRom_},
+                                             {QStringLiteral("plans"), plans}})
+                       .toJson());
+    }
+}
+
+void FlickySession::runBuild(std::function<void(bool)> next, bool force) {
     sdk::Host* h = host();
     if (!h || h->isBusy()) {
         next(false);
@@ -1072,6 +1155,12 @@ void FlickySession::runBuild(std::function<void(bool)> next) {
         next(false);
         return;
     }
+    const QByteArray inputs = buildInputs(writer);
+    if (!force && inputs == builtInputs_ && QFileInfo::exists(builtRom_)) {
+        report(sdk::Severity::Info, QStringLiteral("build"), QStringLiteral("The ROM is up to date."));
+        next(true);
+        return;
+    }
     QString error;
     sdk::ProcessSpec spec = h->kitCommand(
         {QStringLiteral("studio"), QStringLiteral("build"), project_.path(), QStringLiteral("--flicky-level-writer"),
@@ -1084,7 +1173,7 @@ void FlickySession::runBuild(std::function<void(bool)> next) {
     }
     spec.label = QStringLiteral("Build ROM");
     spec.environment.insert(QStringLiteral("RETROLARIUM_FLICKY_LEVEL_WRITER"), writer);
-    h->runProcess(spec, [this, next](const sdk::ProcessResult& result) {
+    h->runProcess(spec, [this, next, inputs](const sdk::ProcessResult& result) {
         if (!result.succeeded()) {
             if (!result.cancelled) {
                 report(sdk::Severity::Error, QStringLiteral("build"),
@@ -1101,6 +1190,10 @@ void FlickySession::runBuild(std::function<void(bool)> next) {
             next(false);
             return;
         }
+        builtInputs_ = inputs;
+        builtRom_ = QDir(project_.directory()).absoluteFilePath(artifact.value(QStringLiteral("path")).toString());
+        plans_.clear();
+        saveBuildRecord();
         lastBuild_ = QStringLiteral("%1 · %2")
                          .arg(QDateTime::currentDateTime().toString(QStringLiteral("HH:mm")),
                               artifact.value(QStringLiteral("path")).toString());
@@ -1115,16 +1208,21 @@ void FlickySession::runBuild(std::function<void(bool)> next) {
 }
 
 void FlickySession::build() {
-    runBuild([](bool) {});
+    // An explicit Build always runs the kit.
+    runBuild([](bool) {}, true);
 }
 
-void FlickySession::play(const QString& kind, const QString& document) {
-    const int chosen = kind == QLatin1String("levels") ? roundFromId(document) : -1;
-    if (chosen >= 0) {
-        setPlayRound(chosen);
-    }
-    const int round = playRound_;
-    runBuild([this, round](bool ok) {
+void FlickySession::play() {
+    launch(-1);
+}
+
+void FlickySession::playSelected() {
+    launch(playRound_);
+}
+
+void FlickySession::launch(int round) {
+    const bool fromRound = round >= 0;
+    runBuild([this, round, fromRound](bool ok) {
         sdk::Host* h = host();
         if (!ok || !h) {
             return;
@@ -1135,17 +1233,28 @@ void FlickySession::play(const QString& kind, const QString& document) {
                    QStringLiteral("MAME was not found. Set RETROLARIUM_MAME to consoles.exe."));
             return;
         }
+        const QString key = (fromRound ? QStringLiteral("round:%1").arg(round) : QStringLiteral("power-on")) +
+                            QLatin1Char('|') + mame;
+        const auto planned = plans_.constFind(key);
+        if (planned != plans_.constEnd()) {
+            launchPlanned(*planned, round);
+            return;
+        }
         QString error;
-        sdk::ProcessSpec plan = h->kitCommand(
-            {QStringLiteral("studio"), QStringLiteral("flicky-round-playtest-plan"), project_.path(),
-             QStringLiteral("--mame"), mame, QStringLiteral("--round"), QString::number(round + 1)},
-            project_.directory(), &error);
+        const QStringList arguments =
+            fromRound ? QStringList{QStringLiteral("studio"), QStringLiteral("flicky-round-playtest-plan"),
+                                    project_.path(), QStringLiteral("--mame"), mame, QStringLiteral("--round"),
+                                    QString::number(round + 1)}
+                      : QStringList{QStringLiteral("studio"), QStringLiteral("launch-plan"), project_.path(),
+                                    QStringLiteral("--mame"), mame};
+        sdk::ProcessSpec plan = h->kitCommand(arguments, project_.directory(), &error);
         if (plan.program.isEmpty()) {
             report(sdk::Severity::Error, QStringLiteral("playtest"), error);
             return;
         }
-        plan.label = QStringLiteral("Plan playtest of Round %1").arg(two(round + 1));
-        h->runProcess(plan, [this, round](const sdk::ProcessResult& result) {
+        plan.label = fromRound ? QStringLiteral("Plan playtest of Round %1").arg(two(round + 1))
+                               : QStringLiteral("Plan playtest from power-on");
+        h->runProcess(plan, [this, round, key](const sdk::ProcessResult& result) {
             sdk::Host* host = this->host();
             if (!host) return;
             if (!result.succeeded()) {
@@ -1171,20 +1280,37 @@ void FlickySession::play(const QString& kind, const QString& document) {
                        QStringLiteral("The kit returned no emulator command."));
                 return;
             }
-            // The kit's playtest script writes one status line here once the
-            // round is on screen (or could not be reached).
-            game.readyFile = QDir(project_.directory()).filePath(QStringLiteral("build/playtest-status.txt"));
-            game.environment.insert(QStringLiteral("FLICKY_PLAYTEST_RESULT"), game.readyFile);
-            host->launchEmulator(game, QStringLiteral("Flicky · Round %1").arg(two(round + 1)),
-                                 [this](const sdk::ProcessResult& run) {
-                                     if (run.crashed || (!run.started && !run.error.isEmpty())) {
-                                         report(sdk::Severity::Error, QStringLiteral("playtest"),
-                                                run.error.isEmpty() ? QStringLiteral("The emulator crashed.")
-                                                                    : run.error);
-                                     }
-                                 });
+            plans_.insert(key, game);
+            saveBuildRecord();
+            launchPlanned(game, round);
         });
     });
+}
+
+void FlickySession::launchPlanned(const sdk::ProcessSpec& planned, int round) {
+    sdk::Host* host = this->host();
+    if (!host) {
+        return;
+    }
+    sdk::ProcessSpec game = planned;
+    const bool fromRound = round >= 0;
+    if (fromRound) {
+        // The kit's playtest script writes one status line here once
+        // the round is on screen (or could not be reached).
+        game.readyFile =
+            QDir(project_.directory()).filePath(QStringLiteral("build/playtest-status.txt"));
+        game.environment.insert(QStringLiteral("FLICKY_PLAYTEST_RESULT"), game.readyFile);
+    }
+    const QString title = fromRound ? QStringLiteral("Flicky · Round %1").arg(two(round + 1))
+                                    : QStringLiteral("Flicky · power-on");
+    host->launchEmulator(game, title,
+                         [this](const sdk::ProcessResult& run) {
+                             if (run.crashed || (!run.started && !run.error.isEmpty())) {
+                                 report(sdk::Severity::Error, QStringLiteral("playtest"),
+                                        run.error.isEmpty() ? QStringLiteral("The emulator crashed.")
+                                                            : run.error);
+                             }
+                         });
 }
 
 }  // namespace rl::flicky

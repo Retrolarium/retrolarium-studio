@@ -93,6 +93,61 @@ private:
     int angle_ = 0;
 };
 
+// Lies over the emulator's picture: black while the game starts, so the
+// boot and the steering to the start point stay unseen, and the frozen frame
+// in black and white while it is paused (a paused emulator cannot draw).
+// Native for the same reason as BusyCard.
+class ScreenCover final : public QWidget {
+public:
+    explicit ScreenCover(QWidget* parent) : QWidget(parent) {
+        setAttribute(Qt::WA_NativeWindow);
+        setAttribute(Qt::WA_OpaquePaintEvent);
+        setAttribute(Qt::WA_TransparentForMouseEvents);
+        hide();
+    }
+
+    bool showsPause() const { return isVisible() && paused_; }
+
+    void showBlack() {
+        paused_ = false;
+        picture_ = QImage();
+        show();
+        raise();
+        update();
+    }
+
+    void showPaused(const QImage& picture) {
+        paused_ = true;
+        picture_ = picture.convertToFormat(QImage::Format_Grayscale8);
+        show();
+        raise();
+        update();
+    }
+
+protected:
+    void paintEvent(QPaintEvent*) override {
+        QPainter painter(this);
+        painter.fillRect(rect(), Qt::black);
+        if (!paused_) {
+            return;
+        }
+        if (!picture_.isNull()) {
+            painter.setRenderHint(QPainter::SmoothPixmapTransform, true);
+            painter.drawImage(rect(), picture_);
+        }
+        painter.setFont(theme::font(theme::TextRole::Caps, 11.0));
+        const QString tag = QStringLiteral("PAUSED");
+        const QRect box(10, 10, painter.fontMetrics().horizontalAdvance(tag) + 14, 20);
+        painter.fillRect(box, theme::canvas::kTagFill);
+        painter.setPen(theme::canvas::kTagText);
+        painter.drawText(box, Qt::AlignCenter, tag);
+    }
+
+private:
+    QImage picture_;
+    bool paused_ = false;
+};
+
 }  // namespace
 
 // The canvas ground with the emulator surface fitted at the screen aspect.
@@ -100,7 +155,7 @@ class EmulatorStage final : public QWidget {
 public:
     EmulatorStage(sdk::EmulatorModel* model, runtime::EmulatorRunner* runner, QWidget* parent)
         : QWidget(parent), model_(model), runner_(runner), surface_(new runtime::EmulatorSurface(this)),
-          busy_(new BusyCard(this)) {
+          cover_(new ScreenCover(this)), busy_(new BusyCard(this)) {
         setMinimumHeight(240);
         surface_->hide();
         runner_->setSurface(surface_);
@@ -109,6 +164,16 @@ public:
     void refresh() {
         surface_->setVisible(runner_->isRunning());
         layoutSurface();
+        if (runner_->isPaused()) {
+            if (!cover_->showsPause()) {
+                cover_->showPaused(runner_->picture());  // the frame taken as it froze
+            }
+        } else if (runner_->phase() == runtime::EmulatorRunner::Phase::Starting && runner_->hidesStart()) {
+            cover_->showBlack();
+        } else {
+            cover_->hide();
+        }
+        busy_->raise();
         update();
     }
 
@@ -120,6 +185,7 @@ public:
             busy_->showBusy(title, detail);
             layoutSurface();
         }
+        update();
     }
 
 protected:
@@ -136,11 +202,15 @@ protected:
         }
         paint::hatch(painter, screen, QColor(255, 255, 255, 9), 20.0, 10.0);
         paint::hairlineRect(painter, screen, QColor(255, 255, 255, 38));
+        if (busy_->isVisible()) {
+            return;  // the card says what is happening
+        }
         painter.setFont(theme::font(theme::TextRole::Mono, 11.5));
         painter.setPen(QColor(255, 255, 255, 140));
         const QSize native = model_->screenSize();
         painter.drawText(screen, Qt::AlignCenter,
-                         QStringLiteral("Press Play to build and run %1\n%2 · %3 × %4 · aspect-fit")
+                         QStringLiteral("Play from selected runs %1 · Play starts from power-on\n"
+                                        "%2 · %3 × %4 · aspect-fit")
                              .arg(model_->startLabel(), model_->coreLabel())
                              .arg(native.width())
                              .arg(native.height()));
@@ -158,6 +228,7 @@ private:
     void layoutSurface() {
         const QRect screen = screenRect();
         surface_->setGeometry(screen);
+        cover_->setGeometry(screen);
         busy_->move(screen.center() - QPoint(busy_->width() / 2, busy_->height() / 2));
         busy_->raise();
     }
@@ -165,6 +236,7 @@ private:
     sdk::EmulatorModel* model_;
     runtime::EmulatorRunner* runner_;
     runtime::EmulatorSurface* surface_;
+    ScreenCover* cover_;
     BusyCard* busy_;
 };
 
@@ -219,7 +291,9 @@ void EmulatorView::updateState() {
     using Phase = runtime::EmulatorRunner::Phase;
     switch (runner_->phase()) {
     case Phase::Starting:
-        stage_->setBusy(QStringLiteral("Starting the emulator…"), runner_->title());
+        stage_->setBusy(runner_->isReloading() ? QStringLiteral("Reloading the game…")
+                                               : QStringLiteral("Starting the emulator…"),
+                        runner_->title());
         break;
     case Phase::Stopping:
         stage_->setBusy(QStringLiteral("Stopping…"), runner_->title());
@@ -250,7 +324,7 @@ QWidget* EmulatorView::createToolbar(QWidget* parent) {
         return b;
     };
     // One label in every state, so the buttons after it never move.
-    QPushButton* run = button(QStringLiteral("Build and run"), !settling);
+    QPushButton* run = button(QStringLiteral("Play from selected"), !settling);
     if (running) {
         run->setToolTip(QStringLiteral("Rebuild and restart the game"));
     }

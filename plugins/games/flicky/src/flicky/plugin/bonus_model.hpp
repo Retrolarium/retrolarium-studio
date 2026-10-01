@@ -25,6 +25,7 @@ public:
     QVector<sdk::ViewOption> viewOptions() const override;
     void setViewOption(const QString& key, const QString& value) override;
     QString statusText() const override;
+    QString startPoint() const override;
 
     QSize gridSize() const override;
     QSize cellSize() const override { return {8, 8}; }

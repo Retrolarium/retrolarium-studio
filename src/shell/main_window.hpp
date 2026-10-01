@@ -101,6 +101,8 @@ private:
     void rebuildRecentMenu();
     void openGallery();
     void updateActions();
+    void togglePlaytestPause();
+    void showPlaytest();
     QString emulatorKind() const;
     void releaseEditor();
 
@@ -133,7 +135,10 @@ private:
     QToolButton* saveButton_ = nullptr;
     QToolButton* revertButton_ = nullptr;
     QPushButton* buildButton_ = nullptr;
-    ui::PrimaryButton* playButton_ = nullptr;
+    QPushButton* playButton_ = nullptr;
+    ui::PrimaryButton* playSelectedButton_ = nullptr;
+    QToolButton* pauseButton_ = nullptr;
+    QToolButton* stopButton_ = nullptr;
 
     // Body.
     KindRail* rail_ = nullptr;
@@ -169,7 +174,10 @@ private:
     QAction* closeAction_ = nullptr;
     QAction* buildAction_ = nullptr;
     QAction* playAction_ = nullptr;
+    QAction* playSelectedAction_ = nullptr;
     QAction* cancelAction_ = nullptr;
+    QAction* pauseGameAction_ = nullptr;
+    QAction* stopGameAction_ = nullptr;
     QMenu* recentMenu_ = nullptr;
     QMenu* projectMenu_ = nullptr;
 };

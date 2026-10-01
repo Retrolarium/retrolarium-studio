@@ -40,6 +40,11 @@ public:
     // Short context for the status bar ("Flicky / start at 9, 23").
     virtual QString statusText() const { return {}; }
 
+    // The start point this document sets for "Play from selected" ("Round
+    // 07", "1-1 · column 40"), shown next to the editor tools; empty when it
+    // sets none. Emit toolsChanged() when it moves.
+    virtual QString startPoint() const { return {}; }
+
     // The inspector library item picked for placing ("place" tool, drops).
     virtual QString currentLibraryItem() const { return {}; }
     virtual void setCurrentLibraryItem(const QString& id);

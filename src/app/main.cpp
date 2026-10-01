@@ -7,6 +7,8 @@
 #include <QApplication>
 #include <QCommandLineParser>
 #include <QFile>
+#include <QScreen>
+#include <QStyle>
 #include <QTimer>
 
 #include <memory>
@@ -50,7 +52,8 @@ int main(int argc, char* argv[]) {
         QStringLiteral("screenshot"),
         QStringLiteral("Render the window off screen to a PNG and exit."), QStringLiteral("path"));
     const QCommandLineOption sizeOption(QStringLiteral("size"),
-                                        QStringLiteral("Window size, e.g. 1600x1000."),
+                                        QStringLiteral("Window size, e.g. 1600x1000; without it the "
+                                                       "window opens maximized."),
                                         QStringLiteral("WxH"), QStringLiteral("1600x1000"));
     const QCommandLineOption fontReportOption(
         QStringLiteral("font-report"), QStringLiteral("Write registered font families to a file."),
@@ -98,7 +101,16 @@ int main(int argc, char* argv[]) {
         owner = std::move(studio);
     }
     QWidget& window = *owner;
-    window.resize(parseSize(parser.value(sizeOption), QSize(1600, 1000)));
+    // The studio fills the screen. Restoring it gives a window centred on the
+    // screen; --size (screenshots, tests) asks for an exact size instead.
+    const bool exactSize = parser.isSet(sizeOption) || parser.isSet(screenshotOption);
+    if (exactSize) {
+        window.resize(parseSize(parser.value(sizeOption), QSize(1600, 1000)));
+    } else if (const QScreen* screen = QGuiApplication::primaryScreen()) {
+        const QRect room = screen->availableGeometry();
+        const QSize size = QSize(1600, 1000).boundedTo(room.size() * 9 / 10);
+        window.setGeometry(QStyle::alignedRect(Qt::LeftToRight, Qt::AlignCenter, size, room));
+    }
 
     if (parser.isSet(screenshotOption)) {
         const QString path = parser.value(screenshotOption);
@@ -117,6 +129,10 @@ int main(int argc, char* argv[]) {
         return app.exec();
     }
 
-    window.show();
+    if (exactSize) {
+        window.show();
+    } else {
+        window.showMaximized();
+    }
     return app.exec();
 }

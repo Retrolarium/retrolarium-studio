@@ -19,16 +19,6 @@ bool Session::revert(const QString&, const QString&, QString* error) {
     return false;
 }
 
-QString Session::playLabel(const QString&, const QString&) const {
-    return {};
-}
-
-bool Session::canPlay(const QString&, const QString&) const {
-    return false;
-}
-
-void Session::play(const QString&, const QString&) {}
-
 bool Session::isModified() const {
     return !undoStack_->isClean();
 }

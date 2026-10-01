@@ -94,7 +94,12 @@ writer (`retrolarium-flicky-level-writer`) and the scene renderer.
 | Playtest | Emulator | save, build, MAME embedded in the view at the chosen round; pause, stop, screenshot; a card shows build, start and stop progress |
 
 Build (`Ctrl+B`) saves and runs `rltool studio build` with the plugin's level
-writer; Play (`F5`) builds and opens Playtest at the current round. MAME is
+writer. Play from selected (`F5`) builds and opens Playtest at the selected
+start point: an editor sets it (`EditorModel::startPoint()`, shown as the
+"Start point" chip; for Flicky, the round opened in Levels) and the session
+keeps it while other documents are open. Play (`Ctrl+F5`) runs the game from
+power-on (`rltool studio launch-plan`). Pause (`Pause`) and Stop
+(`Shift+F5`) sit next to them and work only while the game runs. MAME is
 `RETROLARIUM_MAME`, else `mame/consoles.exe` next to the studio, else the
 nearest `mame_testing/mame/consoles.exe` up the tree; the kit is
 `RETROLARIUM_KIT`, else the nearest `retrolarium_kit/rltool.py`, else `rltool`
@@ -105,6 +110,37 @@ sees its window as focused; the runner passes `-background_input`, without
 which game pads are ignored. The kit's playtest script writes a status file
 when the round is on screen (`FLICKY_PLAYTEST_RESULT`), which ends the
 "Starting" card.
+
+Starting fast:
+
+- MAME runs from a temporary folder of the runner: a copy of the cartridge
+  (MAME locks the file it runs, so the build can replace the original while
+  the game plays) and a control script that MAME runs as its autoboot
+  script, with the game's own `-autoboot_script` inside it unchanged.
+- When a launch names a ready file (`ProcessSpec::readyFile`), the control
+  script runs MAME unthrottled and muted until the file appears, and the
+  Playtest view covers the picture, so the boot and the steering to the start
+  point pass unseen in a fraction of a second.
+- Hot reload: Play while the same game runs (same program, working
+  directory and arguments apart from the cartridge and the autoboot script)
+  keeps the process. The runner stages a copy of the new build, rewrites the
+  control script with the launch's environment and ready file, and leaves a
+  command the script picks up within a few frames; it mounts the copy
+  (`image:load`), which hard-resets the machine into the new build. MAME
+  reads the autoboot script again on that reset. Frame callbacks survive a
+  hard reset in MAME (notifiers and the legacy `emu.register_frame_done`
+  list), so the control script routes the game script's callbacks through
+  subscriptions it drops on the next run.
+- Flicky skips the kit when nothing changed. A fingerprint of the build
+  inputs (size and time of every project file outside `build/` and the level
+  writer) and the emulator commands planned for that build are kept in
+  `build/studio-build.json`, also across sessions. An unchanged project plays
+  in about a second; an explicit Build always runs the kit.
+
+Pause suspends MAME. The last frame, taken from the compositor
+(`PrintWindow` with `PW_RENDERFULLCONTENT`; a suspended process hands it
+nothing), is shown in black and white until Resume. Screenshots use the same
+capture.
 
 Flicky's font draws lowercase ASCII as kana; the Text inspector says so when
 a string has lowercase letters.

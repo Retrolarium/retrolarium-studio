@@ -19,6 +19,7 @@
 #include "widgets/budget_bar.hpp"
 #include "widgets/label.hpp"
 #include "widgets/primary_button.hpp"
+#include "widgets/view_chip.hpp"
 
 #include <QAction>
 #include <QActionGroup>
@@ -266,18 +267,34 @@ void MainWindow::buildMenus() {
     connect(buildAction_, &QAction::triggered, this, [this] {
         if (session_ && session_->canBuild() && !isBusy()) session_->build();
     });
+    playSelectedAction_ = build->addAction(QStringLiteral("Play from selected"));
+    playSelectedAction_->setShortcut(QKeySequence(QStringLiteral("F5")));
+    connect(playSelectedAction_, &QAction::triggered, this, [this] {
+        if (session_ && session_->canPlay() && !session_->selectedStart().isEmpty() && !isBusy()) {
+            showPlaytest();
+            session_->playSelected();
+        }
+    });
     playAction_ = build->addAction(QStringLiteral("Play"));
-    playAction_->setShortcut(QKeySequence(QStringLiteral("F5")));
+    playAction_->setShortcut(QKeySequence(QStringLiteral("Ctrl+F5")));
     connect(playAction_, &QAction::triggered, this, [this] {
-        if (session_ && session_->canPlay(kind_, document_) && !isBusy()) session_->play(kind_, document_);
+        if (session_ && session_->canPlay() && !isBusy()) {
+            showPlaytest();
+            session_->play();
+        }
     });
     cancelAction_ = build->addAction(QStringLiteral("Cancel"));
     cancelAction_->setShortcut(QKeySequence(QStringLiteral("Ctrl+Break")));
     connect(cancelAction_, &QAction::triggered, this, &MainWindow::cancel);
     build->addSeparator();
-    QAction* stopGame = build->addAction(QStringLiteral("Stop playtest"));
-    stopGame->setShortcut(QKeySequence(QStringLiteral("Shift+F5")));
-    connect(stopGame, &QAction::triggered, this, [this] { emulator_->stop(); });
+    pauseGameAction_ = build->addAction(QStringLiteral("Pause playtest"));
+    pauseGameAction_->setShortcut(QKeySequence(Qt::Key_Pause));
+    connect(pauseGameAction_, &QAction::triggered, this, &MainWindow::togglePlaytestPause);
+    stopGameAction_ = build->addAction(QStringLiteral("Stop playtest"));
+    stopGameAction_->setShortcut(QKeySequence(QStringLiteral("Shift+F5")));
+    connect(stopGameAction_, &QAction::triggered, this, [this] { emulator_->stop(); });
+    pauseGameAction_->setEnabled(false);
+    stopGameAction_->setEnabled(false);
 
     QMenu* help = bar->addMenu(QStringLiteral("Help"));
     help->setFont(menuFont);
@@ -381,10 +398,28 @@ QWidget* MainWindow::buildToolbar() {
     });
     actions->addWidget(buildButton_);
     actions->addSpacing(4);
-    playButton_ = new ui::PrimaryButton(QStringLiteral("Play"), QStringLiteral("play"), bar);
-    playButton_->setToolTip(QStringLiteral("Save, build and play (F5)"));
-    connect(playButton_, &QAbstractButton::clicked, playAction_, &QAction::trigger);
+    playButton_ = new QPushButton(QStringLiteral("Play"), bar);
+    playButton_->setProperty("size", QStringLiteral("large"));
+    playButton_->setFont(theme::font(theme::TextRole::Body, 12.5));
+    playButton_->setIcon(theme::icon(QStringLiteral("play")));
+    playButton_->setIconSize(QSize(11, 11));
+    playButton_->setToolTip(QStringLiteral("Save, build and play from power-on (Ctrl+F5)"));
+    connect(playButton_, &QPushButton::clicked, playAction_, &QAction::trigger);
     actions->addWidget(playButton_);
+    actions->addSpacing(4);
+    playSelectedButton_ = new ui::PrimaryButton(QStringLiteral("Play from selected"), QStringLiteral("play"), bar);
+    connect(playSelectedButton_, &QAbstractButton::clicked, playSelectedAction_, &QAction::trigger);
+    actions->addWidget(playSelectedButton_);
+    // The running game's controls; live only while the emulator runs.
+    actions->addSpacing(2);
+    pauseButton_ = toolbarButton(QStringLiteral("pause"), QStringLiteral("Pause the playtest (Pause)"), bar);
+    stopButton_ = toolbarButton(QStringLiteral("stop"), QStringLiteral("Stop the playtest (Shift+F5)"), bar);
+    connect(pauseButton_, &QToolButton::clicked, this, &MainWindow::togglePlaytestPause);
+    connect(stopButton_, &QToolButton::clicked, stopGameAction_, &QAction::trigger);
+    pauseButton_->setEnabled(false);
+    stopButton_->setEnabled(false);
+    actions->addWidget(pauseButton_);
+    actions->addWidget(stopButton_);
     layout->addLayout(actions);
     return bar;
 }
@@ -602,6 +637,7 @@ bool MainWindow::openProjectFile(const QString& path) {
         updateDirtyState();
     });
     connect(session_.get(), &sdk::Session::diagnosticsChanged, this, &MainWindow::refreshDiagnostics);
+    connect(session_.get(), &sdk::Session::selectedStartChanged, this, &MainWindow::updateActions);
 
     updateProjectChrome();
     const QVector<sdk::Kind> kinds = session_->kinds();
@@ -830,7 +866,18 @@ void MainWindow::updateToolbarRow() {
         toolbarContent_ = nullptr;
     }
     if (editor_) {
-        toolbarContent_ = editor_->createToolbar(toolbarRow_);
+        toolbarContent_ = new QWidget(toolbarRow_);
+        auto* row = new QHBoxLayout(toolbarContent_);
+        row->setContentsMargins(0, 0, 0, 0);
+        row->setSpacing(12);
+        row->addWidget(editor_->createToolbar(toolbarContent_), 1);
+        // Where "Play from selected" starts, when this document sets it.
+        const QString start = model_ ? model_->startPoint() : QString();
+        if (!start.isEmpty()) {
+            auto* chip = new ui::ViewChip(QStringLiteral("Start point"), start, toolbarContent_);
+            chip->setToolTip(QStringLiteral("Play from selected (F5) starts here"));
+            row->addWidget(chip);
+        }
         toolbarRowLayout_->addWidget(toolbarContent_);
     }
     toolbarRow_->setVisible(editor_ != nullptr);
@@ -899,9 +946,7 @@ void MainWindow::updateBreadcrumb() {
         budgetText_->hide();
         budgetBar_->hide();
     }
-    const QString play = session_->playLabel(kind_, document_);
-    playButton_->setText(play.isEmpty() ? QStringLiteral("Play") : QStringLiteral("Play from ") + play);
-    playButton_->updateGeometry();
+    updateActions();
 }
 
 void MainWindow::updateDirtyState() {
@@ -1037,6 +1082,15 @@ QString MainWindow::emulatorKind() const {
     return {};
 }
 
+// Play opens the Playtest view at once, so the build that comes first shows
+// there too.
+void MainWindow::showPlaytest() {
+    const QString kind = emulatorKind();
+    if (!kind.isEmpty() && kind_ != kind) {
+        selectKind(kind);
+    }
+}
+
 void MainWindow::launchEmulator(const sdk::ProcessSpec& spec, const QString& title,
                                 std::function<void(const sdk::ProcessResult&)> finished) {
     const QString kind = emulatorKind();
@@ -1049,9 +1103,7 @@ void MainWindow::launchEmulator(const sdk::ProcessSpec& spec, const QString& tit
         return;
     }
     // The Playtest view owns the surface the emulator draws into.
-    if (kind_ != kind) {
-        selectKind(kind);
-    }
+    showPlaytest();
     log(QStringLiteral("▸ %1").arg(title));
     log(QStringLiteral("  %1").arg(runtime::displayCommand(spec)));
     emulator_->start(spec, title, std::move(finished));
@@ -1069,13 +1121,42 @@ void MainWindow::updateActions() {
     const bool open = session_ != nullptr;
     const bool busy = isBusy();
     const bool canBuild = open && session_->canBuild();
-    const bool canPlay = open && session_->canPlay(kind_, document_);
+    const bool canPlay = open && session_->canPlay();
+    const QString start = canPlay ? session_->selectedStart() : QString();
     buildAction_->setEnabled(canBuild && !busy);
     playAction_->setEnabled(canPlay && !busy);
+    playSelectedAction_->setEnabled(!start.isEmpty() && !busy);
+    playSelectedAction_->setText(start.isEmpty() ? QStringLiteral("Play from selected")
+                                                 : QStringLiteral("Play from %1").arg(start));
     cancelAction_->setEnabled(busy);
     buildButton_->setEnabled(canBuild || busy);
     buildButton_->setText(busy ? QStringLiteral("Cancel") : QStringLiteral("Build"));
     playButton_->setEnabled(canPlay && !busy);
+    playSelectedButton_->setEnabled(!start.isEmpty() && !busy);
+    playSelectedButton_->setToolTip(start.isEmpty()
+                                        ? QStringLiteral("Pick a start point in an editor (F5)")
+                                        : QStringLiteral("Save, build and play from %1 (F5)").arg(start));
+
+    using Phase = runtime::EmulatorRunner::Phase;
+    const Phase phase = emulator_->phase();
+    const bool running = phase == Phase::Running;
+    const bool live = running || phase == Phase::Starting;
+    const bool paused = emulator_->isPaused();
+    pauseGameAction_->setEnabled(running);
+    pauseGameAction_->setText(paused ? QStringLiteral("Resume playtest") : QStringLiteral("Pause playtest"));
+    pauseButton_->setEnabled(running);
+    pauseButton_->setIcon(theme::icon(paused ? QStringLiteral("play") : QStringLiteral("pause")));
+    pauseButton_->setToolTip(paused ? QStringLiteral("Resume the playtest (Pause)")
+                                    : QStringLiteral("Pause the playtest (Pause)"));
+    stopGameAction_->setEnabled(live);
+    stopButton_->setEnabled(live);
+}
+
+void MainWindow::togglePlaytestPause() {
+    if (emulator_->phase() == runtime::EmulatorRunner::Phase::Running && !emulator_->togglePause()) {
+        report(message(sdk::Severity::Warning, QStringLiteral("playtest"),
+                       QStringLiteral("The emulator could not be paused."), QString()));
+    }
 }
 
 }  // namespace rl::shell

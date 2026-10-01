@@ -27,7 +27,7 @@ QString PlaytestModel::startLabel() const {
 }
 
 void PlaytestModel::play() {
-    session_->play(QStringLiteral("playtest"), QStringLiteral("playtest"));
+    session_->playSelected();
 }
 
 QVector<sdk::ViewOption> PlaytestModel::viewOptions() const {
@@ -66,9 +66,9 @@ sdk::Inspection PlaytestModel::inspect() const {
     build.value = session_->lastBuild().isEmpty() ? QStringLiteral("not built yet") : session_->lastBuild();
     inspection.fields = {core, start, build};
     const QString mame = session_->host() ? session_->host()->emulatorPath(QStringLiteral("mame")) : QString();
-    inspection.note = QStringLiteral("Build and run saves the project, builds the ROM with the kit and starts "
-                                     "the round in MAME inside this view. Click the picture to give the game "
-                                     "the keyboard.");
+    inspection.note = QStringLiteral("Play from selected saves the project, builds the ROM with the kit and "
+                                     "starts the selected round in MAME inside this view; Play starts the "
+                                     "game from power-on. Opening a round in Levels selects it.");
     inspection.engineTag = QStringLiteral("flicky-round-playtest");
     inspection.engine = {{QStringLiteral("Output"), QStringLiteral("build/flicky-edited.bin")},
                          {QStringLiteral("Script"), QStringLiteral("flicky_mame_round_playtest.lua")},

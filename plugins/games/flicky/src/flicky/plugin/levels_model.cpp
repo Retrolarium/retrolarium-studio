@@ -650,6 +650,10 @@ bool LevelsModel::setField(const QString& key, const QVariant& value, QString* e
     return TileMapModel::setField(key, value, error);
 }
 
+QString LevelsModel::startPoint() const {
+    return QStringLiteral("Round ") + two(round_ + 1);
+}
+
 QString LevelsModel::statusText() const {
     if (isReadOnly()) {
         return QStringLiteral("%1 · bonus round (read only)").arg(title());

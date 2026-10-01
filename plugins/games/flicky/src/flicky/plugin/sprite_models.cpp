@@ -103,7 +103,7 @@ QJsonObject MappingModel::piece(int index) const {
 
 QImage MappingModel::render() const {
     try {
-        return session_->renderer().renderMappingPreview(id_, session_->playRound() + 1);
+        return session_->renderer().renderMappingPreview(id_, session_->paletteRound() + 1);
     } catch (const std::exception& e) {
         return failure(QString::fromUtf8(e.what()));
     }
@@ -201,14 +201,14 @@ QVector<sdk::ViewOption> MappingModel::viewOptions() const {
     sdk::ViewOption palette;
     palette.key = QStringLiteral("palette");
     palette.label = QStringLiteral("Palette");
-    palette.value = roundLabel(session_->playRound());
+    palette.value = roundLabel(session_->paletteRound());
     palette.choices = roundChoices();
     return {palette};
 }
 
 void MappingModel::setViewOption(const QString& key, const QString& value) {
     if (key == QLatin1String("palette")) {
-        session_->setPlayRound(value.section(QLatin1Char(' '), 1).toInt() - 1);
+        session_->setPaletteRound(value.section(QLatin1Char(' '), 1).toInt() - 1);
         emit contentChanged();
         emit toolsChanged();
     }
@@ -375,9 +375,9 @@ QImage AnimationModel::render() const {
     const QString frame = a.value(QStringLiteral("frames")).toArray().at(frame_).toString();
     try {
         if (a.value(QStringLiteral("kind")).toString() == QLatin1String("tilemap")) {
-            return session_->renderer().renderTilemapFramePreview(frame, session_->playRound() + 1);
+            return session_->renderer().renderTilemapFramePreview(frame, session_->paletteRound() + 1);
         }
-        return session_->renderer().renderMappingPreview(frame, session_->playRound() + 1);
+        return session_->renderer().renderMappingPreview(frame, session_->paletteRound() + 1);
     } catch (const std::exception& e) {
         return failure(QString::fromUtf8(e.what()));
     }
@@ -406,14 +406,14 @@ QVector<sdk::ViewOption> AnimationModel::viewOptions() const {
     sdk::ViewOption palette;
     palette.key = QStringLiteral("palette");
     palette.label = QStringLiteral("Palette");
-    palette.value = roundLabel(session_->playRound());
+    palette.value = roundLabel(session_->paletteRound());
     palette.choices = roundChoices();
     return {palette};
 }
 
 void AnimationModel::setViewOption(const QString& key, const QString& value) {
     if (key == QLatin1String("palette")) {
-        session_->setPlayRound(value.section(QLatin1Char(' '), 1).toInt() - 1);
+        session_->setPaletteRound(value.section(QLatin1Char(' '), 1).toInt() - 1);
         emit contentChanged();
         emit toolsChanged();
     }
