@@ -8,6 +8,11 @@ namespace rl::sdk {
 class EditorModel;
 }
 
+namespace rl::runtime {
+class EmulatorRunner;
+class ProcessRunner;
+}
+
 namespace rl::editors {
 
 // Base of the universal editors. The shell hosts the view in the centre and
@@ -33,8 +38,14 @@ private:
     sdk::EditorModel* model_;
 };
 
-// The view for a model, or an empty-state view when no editor exists for its
-// type yet.
-std::unique_ptr<EditorView> createEditorView(sdk::EditorModel* model, QWidget* parent);
+// Studio services some editors need beyond their model.
+struct EditorServices {
+    runtime::EmulatorRunner* emulator = nullptr;
+    runtime::ProcessRunner* processes = nullptr;
+};
+
+// The universal editor for a model, or nullptr when none exists for its type.
+std::unique_ptr<EditorView> createEditorView(sdk::EditorModel* model, const EditorServices& services,
+                                             QWidget* parent);
 
 }  // namespace rl::editors

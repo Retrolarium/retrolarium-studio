@@ -2,6 +2,8 @@
 
 #include "editors/editor_view.hpp"
 
+#include <QString>
+
 class QVBoxLayout;
 class QGridLayout;
 
@@ -27,8 +29,10 @@ private:
 
     sdk::PaletteModel* palette_;
     QWidget* content_;
+    QVBoxLayout* top_;
     QVBoxLayout* left_;
     QVBoxLayout* right_;
+    QString sample_;            // label of the sample shown large
     bool pending_ = false;
 };
 

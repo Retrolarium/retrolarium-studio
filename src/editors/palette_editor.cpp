@@ -5,6 +5,7 @@
 #include "theme/theme.hpp"
 #include "theme/typography.hpp"
 #include "widgets/label.hpp"
+#include "widgets/segmented_control.hpp"
 #include "widgets/view_chip.hpp"
 
 #include <QGridLayout>
@@ -69,62 +70,36 @@ private:
     bool selected_;
 };
 
-// A sample card: row label, rendered pixels, caption.
-class SampleCard final : public QWidget {
+// The chosen sample, drawn as large as the column allows: at an integer scale
+// when one fits, so pixels stay square, and never cropped.
+class PreviewPane final : public QWidget {
 public:
-    SampleCard(const sdk::PaletteSample& sample, bool selected, QWidget* parent)
-        : QWidget(parent), sample_(sample), selected_(selected) {
-        setFixedSize(106, 128);
-        setCursor(Qt::PointingHandCursor);
-        setAttribute(Qt::WA_Hover);
+    PreviewPane(const QImage& image, QWidget* parent) : QWidget(parent), image_(image) {
+        setMinimumSize(280, 250);
+        setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     }
-
-    std::function<void()> onClick;
 
 protected:
-    void enterEvent(QEvent*) override {
-        hovered_ = true;
-        update();
-    }
-    void leaveEvent(QEvent*) override {
-        hovered_ = false;
-        update();
-    }
-    void mousePressEvent(QMouseEvent* event) override {
-        if (event->button() == Qt::LeftButton && onClick) {
-            onClick();
-        }
-    }
     void paintEvent(QPaintEvent*) override {
         const theme::Tokens& t = theme::current();
         QPainter painter(this);
-        if (selected_) {
-            painter.fillRect(rect(), t.accentSoft);
+        painter.fillRect(rect(), t.canvas);
+        if (image_.isNull()) {
+            return;
         }
-        paint::hairlineRect(painter, rect(), selected_ || hovered_ ? t.accent : t.line);
-        painter.setFont(theme::font(theme::TextRole::Mono, 10.5));
-        painter.setPen(selected_ ? t.accentInk : t.muted);
-        painter.drawText(QRect(8, 6, width() - 16, 14), Qt::AlignVCenter, sample_.label);
-        const QRect box(8, 24, 88, 77);
-        painter.fillRect(box, t.canvas);
-        if (!sample_.image.isNull()) {
-            const QSize fitted = sample_.image.size().scaled(box.size(), Qt::KeepAspectRatio);
-            const QRect target(box.left() + (box.width() - fitted.width()) / 2,
-                               box.top() + (box.height() - fitted.height()) / 2, fitted.width(),
-                               fitted.height());
-            painter.setRenderHint(QPainter::SmoothPixmapTransform, true);
-            painter.drawImage(target, sample_.image);
-        }
-        painter.setFont(theme::font(theme::TextRole::Body, 12.0));
-        painter.setPen(t.text);
-        painter.drawText(QRect(8, 105, width() - 16, 18), Qt::AlignVCenter,
-                         painter.fontMetrics().elidedText(sample_.caption, Qt::ElideRight, width() - 16));
+        const QRect room = rect().adjusted(16, 16, -16, -16);
+        // Whole steps from 2x up keep pixels square; below that, use the room.
+        const int scale = std::min(room.width() / image_.width(), room.height() / image_.height());
+        const QSize size = scale >= 2 ? image_.size() * scale : image_.size().scaled(room.size(), Qt::KeepAspectRatio);
+        const QRect target(room.left() + (room.width() - size.width()) / 2,
+                           room.top() + (room.height() - size.height()) / 2, size.width(), size.height());
+        painter.setRenderHint(QPainter::SmoothPixmapTransform, size.width() < image_.width());
+        painter.drawImage(target, image_);
+        paint::cornerMarks(painter, target, 13, 7, theme::canvas::kMark, paint::kDiagonal);
     }
 
 private:
-    sdk::PaletteSample sample_;
-    bool selected_;
-    bool hovered_ = false;
+    QImage image_;
 };
 
 // One clickable step of a channel picker.
@@ -181,9 +156,17 @@ PaletteEditor::PaletteEditor(sdk::PaletteModel* model, QWidget* parent)
     scroll->setFrameShape(QFrame::NoFrame);
     scroll->setWidgetResizable(true);
     content_ = new QWidget(scroll);
-    auto* columns = new QHBoxLayout(content_);
-    columns->setContentsMargins(24, 24, 24, 24);
+    // Swatches across the top; the picker and the preview share the rest.
+    auto* page = new QVBoxLayout(content_);
+    page->setContentsMargins(24, 24, 24, 24);
+    page->setSpacing(28);
+    auto* topBox = new QWidget(content_);
+    top_ = new QVBoxLayout(topBox);
+    top_->setContentsMargins(0, 0, 0, 0);
+    page->addWidget(topBox);
+    auto* columns = new QHBoxLayout;
     columns->setSpacing(40);
+    page->addLayout(columns, 1);
     auto* leftBox = new QWidget(content_);
     left_ = new QVBoxLayout(leftBox);
     left_->setContentsMargins(0, 0, 0, 0);
@@ -193,8 +176,7 @@ PaletteEditor::PaletteEditor(sdk::PaletteModel* model, QWidget* parent)
     right_->setContentsMargins(0, 0, 0, 0);
     right_->setSpacing(8);
     columns->addWidget(leftBox, 0, Qt::AlignTop);
-    columns->addWidget(rightBox, 0, Qt::AlignTop);
-    columns->addStretch(1);
+    columns->addWidget(rightBox, 1);
     scroll->setWidget(content_);
     outer->addWidget(scroll);
 
@@ -228,6 +210,7 @@ static void clearLayout(QLayout* layout) {
 }
 
 void PaletteEditor::rebuild() {
+    clearLayout(top_);
     clearLayout(left_);
     clearLayout(right_);
     QWidget* leftParent = left_->parentWidget();
@@ -241,7 +224,7 @@ void PaletteEditor::rebuild() {
     // Swatch rows.
     const QVector<sdk::PaletteRow> rows = palette_->rows();
     const QPoint current = palette_->currentEntry();
-    auto* rowsBox = new QWidget(leftParent);
+    auto* rowsBox = new QWidget(top_->parentWidget());
     auto* rowsLayout = new QVBoxLayout(rowsBox);
     rowsLayout->setContentsMargins(0, 0, 0, 0);
     rowsLayout->setSpacing(2);
@@ -271,7 +254,7 @@ void PaletteEditor::rebuild() {
         lineLayout->addStretch(1);
         rowsLayout->addWidget(line);
     }
-    left_->addWidget(rowsBox);
+    top_->addWidget(rowsBox);
 
     // Picker.
     auto* picker = new QWidget(leftParent);
@@ -333,28 +316,51 @@ void PaletteEditor::rebuild() {
     left_->addWidget(picker);
     left_->addStretch(1);
 
-    // Where it's used.
+    // Where it's used: one sample at a time, large, redrawn on every edit.
     const QVector<sdk::PaletteSample> samples = palette_->samples();
     if (!samples.isEmpty()) {
         QWidget* rightParent = right_->parentWidget();
-        right_->addWidget(sectionTitle(QStringLiteral("Where it's used"),
-                                       rows.size() > 1 ? QStringLiteral("one sample per palette row")
-                                                       : QStringLiteral("drawn with this palette"),
-                                       rightParent));
-        auto* grid = new QGridLayout;
-        grid->setSpacing(8);
-        const int columns = samples.size() > 4 ? 4 : 2;
-        for (int i = 0; i < samples.size(); ++i) {
-            const sdk::PaletteSample& sample = samples.at(i);
-            auto* card = new SampleCard(sample, sample.row == current.y() && rows.size() > 1, rightParent);
-            const int row = sample.row;
-            card->onClick = [model, row] {
-                if (model) model->setCurrentEntry(QPoint(0, row));
-            };
-            grid->addWidget(card, i / columns, i % columns);
+        int shown = -1;
+        for (int i = 0; i < samples.size() && shown < 0; ++i) {
+            if (samples.at(i).label == sample_) shown = i;
         }
-        right_->addLayout(grid);
-        right_->addStretch(1);
+        // With several palette rows the sample follows the selected row.
+        if (rows.size() > 1 && (shown < 0 || samples.at(shown).row != current.y())) {
+            shown = -1;
+            for (int i = 0; i < samples.size() && shown < 0; ++i) {
+                if (samples.at(i).row == current.y()) shown = i;
+            }
+        }
+        shown = std::max(shown, 0);
+        sample_ = samples.at(shown).label;
+
+        right_->addWidget(sectionTitle(QStringLiteral("Where it's used"),
+                                       rows.size() > 1 ? QStringLiteral("follows the selected row")
+                                                       : QStringLiteral("drawn with this palette, live"),
+                                       rightParent));
+        if (samples.size() > 1) {
+            auto* tabs = new ui::SegmentedControl(rightParent);
+            for (const sdk::PaletteSample& sample : samples) {
+                tabs->addSegment(sample.label, sample.label);
+            }
+            tabs->setCurrentIndex(shown);
+            connect(tabs, &ui::SegmentedControl::currentChanged, this,
+                    [this, model, samples, rows](int index, const QString& label) {
+                        sample_ = label;
+                        if (model && rows.size() > 1) {
+                            model->setCurrentEntry(QPoint(0, samples.at(index).row));
+                        }
+                        scheduleRebuild();
+                    });
+            auto* tabsRow = new QHBoxLayout;
+            tabsRow->addWidget(tabs);
+            tabsRow->addStretch(1);
+            right_->addLayout(tabsRow);
+        }
+        right_->addWidget(new PreviewPane(samples.at(shown).image, rightParent), 1);
+        auto* caption = new ui::Label(samples.at(shown).caption, ui::Label::Role::Small, rightParent);
+        caption->setTone(QStringLiteral("muted"));
+        right_->addWidget(caption);
     }
 }
 

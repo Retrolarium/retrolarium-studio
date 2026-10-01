@@ -37,10 +37,12 @@ int main(int argc, char* argv[]) {
     QApplication app(argc, argv);
     QApplication::setApplicationName(QStringLiteral("Retrolarium Studio"));
     QApplication::setOrganizationName(QStringLiteral("Retrolarium"));
+    QApplication::setApplicationVersion(QStringLiteral(RETROLARIUM_STUDIO_VERSION));
 
     QCommandLineParser parser;
     parser.setApplicationDescription(QStringLiteral("Retrolarium Studio"));
     parser.addHelpOption();
+    parser.addVersionOption();
     const QCommandLineOption themeOption(QStringLiteral("theme"),
                                          QStringLiteral("Color theme: dark or light."),
                                          QStringLiteral("mode"), QStringLiteral("dark"));
