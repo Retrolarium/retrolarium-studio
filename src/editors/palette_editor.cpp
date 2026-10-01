@@ -371,9 +371,10 @@ QWidget* PaletteEditor::createToolbar(QWidget* parent) {
     layout->setSpacing(8);
     const QVector<sdk::ViewOption> options = palette_->viewOptions();
     if (options.isEmpty()) {
-        layout->addWidget(new ui::Label(palette_->isReadOnly()
-                                            ? QStringLiteral("Read only")
-                                            : QStringLiteral("Pick a swatch, then a level on each channel."),
+        const QString hint = palette_->picker() == sdk::PaletteModel::Picker::Gamut
+                                 ? QStringLiteral("Pick a swatch, then a colour of the palette below.")
+                                 : QStringLiteral("Pick a swatch, then a level on each channel.");
+        layout->addWidget(new ui::Label(palette_->isReadOnly() ? QStringLiteral("Read only") : hint,
                                         ui::Label::Role::Small, bar));
     } else {
         layout->addWidget(new ui::Label(QStringLiteral("View"), ui::Label::Role::Caps, bar));

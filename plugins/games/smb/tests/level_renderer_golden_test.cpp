@@ -1,4 +1,4 @@
-#include <retrolarium/smb_level_renderer.hpp>
+#include "smb/render/level_renderer.hpp"
 
 #include <QCoreApplication>
 #include <QCryptographicHash>
@@ -30,10 +30,10 @@ QVector<int> parseHeader(const QJsonArray &raw, const QString &name)
     return result;
 }
 
-QVector<retrolarium::SmbAreaObject> parseObjects(
+QVector<rl::smb::SmbAreaObject> parseObjects(
     const QJsonArray &raw, const QString &name)
 {
-    QVector<retrolarium::SmbAreaObject> result;
+    QVector<rl::smb::SmbAreaObject> result;
     result.reserve(raw.size());
     for (int index = 0; index < raw.size(); ++index) {
         const auto item = raw[index].toArray();
@@ -45,10 +45,10 @@ QVector<retrolarium::SmbAreaObject> parseObjects(
     return result;
 }
 
-QVector<retrolarium::SmbEnemyRecord> parseEnemies(
+QVector<rl::smb::SmbEnemyRecord> parseEnemies(
     const QJsonArray &raw, const QString &name)
 {
-    QVector<retrolarium::SmbEnemyRecord> result;
+    QVector<rl::smb::SmbEnemyRecord> result;
     result.reserve(raw.size());
     for (int index = 0; index < raw.size(); ++index) {
         const auto item = raw[index].toArray();
@@ -61,7 +61,7 @@ QVector<retrolarium::SmbEnemyRecord> parseEnemies(
     return result;
 }
 
-QByteArray sceneDigest(const retrolarium::SmbLevelScene &scene, const QString &name)
+QByteArray sceneDigest(const rl::smb::SmbLevelScene &scene, const QString &name)
 {
     if (scene.metatiles.size() != scene.width) {
         throw std::runtime_error((name + QStringLiteral(" column count differs"))
@@ -107,7 +107,7 @@ int main(int argc, char *argv[])
 {
     QCoreApplication application(argc, argv);
     try {
-        const auto annRendering = retrolarium::SmbLevelRendering::fromId(
+        const auto annRendering = rl::smb::SmbLevelRendering::fromId(
             QStringLiteral("ann"));
         if (annRendering.terrainMetatiles[1] != 0x6a
             || annRendering.residualFlagMetatile != 0x6e
@@ -116,7 +116,7 @@ int main(int argc, char *argv[])
             || annRendering.smallObjects[2][0][0] != 0x5e) {
             throw std::runtime_error("ANN renderer profile differs");
         }
-        const auto smb2Rendering = retrolarium::SmbLevelRendering::fromId(
+        const auto smb2Rendering = rl::smb::SmbLevelRendering::fromId(
             QStringLiteral("smb2"));
         if (smb2Rendering.terrainMetatiles != QVector<int> {0x6a,0x6b,0x50,0x63}
             || !smb2Rendering.secondaryLedgeSupportMetatiles.isEmpty()
@@ -127,17 +127,17 @@ int main(int argc, char *argv[])
         }
         bool rejectedUnknownRendering = false;
         try {
-            static_cast<void>(retrolarium::SmbLevelRendering::fromId(
+            static_cast<void>(rl::smb::SmbLevelRendering::fromId(
                 QStringLiteral("unknown")));
-        } catch (const retrolarium::NesResourceDocumentError &) {
+        } catch (const rl::smb::SmbError &) {
             rejectedUnknownRendering = true;
         }
         if (!rejectedUnknownRendering) {
             throw std::runtime_error("Unknown SMB renderer profile was accepted");
         }
-        const auto unsupportedLedge = retrolarium::renderSmbLevelScene(
+        const auto unsupportedLedge = rl::smb::renderSmbLevelScene(
             QStringLiteral("ground_1"), QVector<int> {0,0,0,1,0,0},
-            QVector<retrolarium::SmbAreaObject> {{0,4,false,0x12}}, {}, 0,
+            QVector<rl::smb::SmbAreaObject> {{0,4,false,0x12}}, {}, 0,
             smb2Rendering);
         if (unsupportedLedge.metatiles[0][4] != 0x8a
             || unsupportedLedge.metatiles[1][4] != 0x8b
@@ -146,9 +146,12 @@ int main(int argc, char *argv[])
             throw std::runtime_error("SMB2 supportless ledge rendering differs");
         }
 
-        QFile source(QStringLiteral(":/fixtures/smb1_ju_level_scenes.json"));
+        if (argc < 2) {
+            throw std::runtime_error("usage: smb_level_renderer_golden_test <smb1_ju_level_scenes.json>");
+        }
+        QFile source(QString::fromLocal8Bit(argv[1]));
         if (!source.open(QIODevice::ReadOnly)) {
-            throw std::runtime_error("cannot open embedded SMB JU golden corpus");
+            throw std::runtime_error("cannot open the SMB JU golden corpus");
         }
         QJsonParseError parseError;
         const auto document = QJsonDocument::fromJson(source.readAll(), &parseError);
@@ -175,7 +178,7 @@ int main(int argc, char *argv[])
                 throw std::runtime_error((name + QStringLiteral(" is duplicated or unknown"))
                     .toStdString());
             }
-            const auto scene = retrolarium::renderSmbLevelScene(name,
+            const auto scene = rl::smb::renderSmbLevelScene(name,
                 parseHeader(area[QStringLiteral("header")].toArray(), name),
                 parseObjects(area[QStringLiteral("objects")].toArray(), name),
                 parseEnemies(area[QStringLiteral("enemies")].toArray(), name),

@@ -1,11 +1,15 @@
 #pragma once
 
-#include <retrolarium/nes_resource_document.hpp>
+#include "smb/data/level_records.hpp"
 
 #include <QString>
+#include <QStringList>
 #include <QVector>
 
-namespace retrolarium {
+// Ported from the original Retrolarium app; the golden test pins its
+// output to the kit's renderer for all SMB1 JU areas.
+
+namespace rl::smb {
 
 struct SmbPositionedEnemy final {
     SmbEnemyRecord record;
@@ -64,4 +68,4 @@ struct SmbLevelScene final {
     const QVector<SmbEnemyRecord> &enemies, int world,
     const SmbLevelRendering &rendering);
 
-} // namespace retrolarium
+}  // namespace rl::smb

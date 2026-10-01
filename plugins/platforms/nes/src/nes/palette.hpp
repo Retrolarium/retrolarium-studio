@@ -1,13 +1,15 @@
 #pragma once
 
-#include <QColor>
-#include <QString>
-
 #include <algorithm>
+#include <cstdint>
+#include <string_view>
 
-inline QColor nesMasterColor(int index)
-{
-    static const quint32 colors[64] = {
+namespace rl::nes {
+
+// The 64 colours the PPU can show, as 0xRRGGBB. "nes" is the usual 2C02 look;
+// "rp2c04_0004" is the scrambled VS System palette some VS boards use.
+inline std::uint32_t masterColor(int index, std::string_view model = "nes") {
+    static constexpr std::uint32_t kNes[64] = {
         0x626262, 0x001fb2, 0x2404c8, 0x5200b2, 0x730076, 0x800024, 0x730b00, 0x522800,
         0x244400, 0x005700, 0x005c00, 0x005324, 0x003c76, 0x000000, 0x000000, 0x000000,
         0xababab, 0x0d57ff, 0x4b30ff, 0x8a13ff, 0xbc08d6, 0xd21269, 0xc72e00, 0x9d5400,
@@ -17,15 +19,7 @@ inline QColor nesMasterColor(int index)
         0xffffff, 0xb6e1ff, 0xced1ff, 0xe9c3ff, 0xffbcff, 0xffbdf4, 0xffc6c3, 0xffd59a,
         0xe9e681, 0xcef481, 0xb6fb9a, 0xa9fac3, 0xa9f0f4, 0xb8b8b8, 0x000000, 0x000000,
     };
-    return QColor::fromRgb(colors[std::clamp(index, 0, 63)]);
-}
-
-inline QColor nesMasterColor(int index, const QString &model)
-{
-    if (model != QStringLiteral("rp2c04_0004")) {
-        return nesMasterColor(index);
-    }
-    static const quint32 colors[64] = {
+    static constexpr std::uint32_t kVs0004[64] = {
         0x8a7100, 0x000000, 0x00828a, 0xf3be3c, 0x000000, 0x000000, 0x24188e, 0xcb4d0c,
         0xbebebe, 0x000000, 0x4ddf49, 0x000000, 0xffbeb2, 0xffdbaa, 0x00aa00, 0x000000,
         0xff75b6, 0x000000, 0x2038ef, 0x000000, 0x000000, 0x000000, 0x000000, 0xff7561,
@@ -35,5 +29,13 @@ inline QColor nesMasterColor(int index, const QString &model)
         0x000000, 0x000000, 0x412c00, 0xdb2800, 0x000000, 0x000000, 0xffffff, 0x9efff3,
         0x000000, 0xff9a38, 0x000000, 0xaae7ff, 0x82d310, 0x000000, 0xffffff, 0x004500,
     };
-    return QColor::fromRgb(colors[std::clamp(index, 0, 63)]);
+    const int clamped = std::clamp(index, 0, 63);
+    return model == "rp2c04_0004" ? kVs0004[clamped] : kNes[clamped];
 }
+
+// Index into a PPU palette packet: background palette p uses entries 4p..4p+3,
+// sprite palette p entries 16+4p..16+4p+3. Entry 0 of each shows the backdrop.
+constexpr int backgroundEntry(int palette, int pixel) { return palette * 4 + pixel; }
+constexpr int spriteEntry(int palette, int pixel) { return 16 + palette * 4 + pixel; }
+
+}  // namespace rl::nes

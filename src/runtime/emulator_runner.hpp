@@ -99,6 +99,7 @@ private:
     void watchStartup();
     void setPhase(Phase phase);
     void writeKeys();
+    void acknowledgeWarnings(const sdk::ProcessSpec& spec);
     bool writeControl(const sdk::ProcessSpec& spec, const QString& gameScript, QString* error);
     QString stageCart(const QString& source, QString* error);
     bool reload(const sdk::ProcessSpec& spec, const QString& cartSource, const QString& gameScript,

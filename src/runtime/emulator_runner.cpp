@@ -1,5 +1,7 @@
 #include "runtime/emulator_runner.hpp"
 
+#include "runtime/mame_config.hpp"
+
 #include <QDateTime>
 #include <QDir>
 #include <QFile>
@@ -569,6 +571,8 @@ void EmulatorRunner::start(const sdk::ProcessSpec& spec, const QString& title,
         }
     }
 
+    acknowledgeWarnings(spec);
+
     process_ = new QProcess(this);
     process_->setProgram(spec.program);
     process_->setArguments(arguments);
@@ -692,6 +696,36 @@ bool EmulatorRunner::reload(const sdk::ProcessSpec& spec, const QString& cartSou
     startupTimer_->start();
     emit stateChanged();
     return true;
+}
+
+void EmulatorRunner::acknowledgeWarnings(const sdk::ProcessSpec& spec) {
+    // MAME's "known problems" screen waits for a key; an embedded MAME never
+    // gets one. Mark it as seen in the system's configuration instead.
+    const QString system = spec.arguments.value(0);
+    if (system.isEmpty() || system.startsWith(QLatin1Char('-'))) {
+        return;
+    }
+    QString error;
+    const QVector<mame::Feature> features = mame::warnedFeatures(spec.program, system, &error);
+    if (features.isEmpty()) {
+        if (!error.isEmpty()) {
+            append(QStringLiteral("MAME warning check: %1").arg(error));
+        }
+        return;
+    }
+    const int option = spec.arguments.indexOf(QStringLiteral("-cfg_directory"));
+    const QString configDirectory = QDir(spec.workingDirectory)
+                                        .filePath(option >= 0 ? spec.arguments.value(option + 1) : QStringLiteral("cfg"));
+    QStringList names;
+    for (const mame::Feature& feature : features) {
+        names << QStringLiteral("%1 %2").arg(feature.status, feature.type);
+    }
+    if (mame::acknowledgeWarnings(configDirectory, system, features, &error)) {
+        append(QStringLiteral("MAME's known-problems screen for %1 (%2) is marked as seen; emulation is unchanged.")
+                   .arg(system, names.join(QStringLiteral(", "))));
+    } else {
+        append(QStringLiteral("MAME warning setup: %1").arg(error));
+    }
 }
 
 void EmulatorRunner::stop() {

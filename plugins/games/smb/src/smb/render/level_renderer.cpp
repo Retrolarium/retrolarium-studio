@@ -1,9 +1,9 @@
-#include <retrolarium/smb_level_renderer.hpp>
+#include "smb/render/level_renderer.hpp"
 
 #include <algorithm>
 #include <array>
 
-namespace retrolarium {
+namespace rl::smb {
 namespace {
 
 constexpr std::array<int, 3> backgroundOffsets {0x00, 0x30, 0x60};
@@ -298,11 +298,11 @@ void validateRendering(const SmbLevelRendering &rendering)
         && rendering.flagpoleMetatiles.size() >= 3
         && rendering.smallObjects.size() >= 12;
     if (!fixedTablesValid) {
-        throw NesResourceDocumentError("invalid SMB level rendering tables");
+        throw SmbError("invalid SMB level rendering tables");
     }
     for (const auto &variants : rendering.smallObjects) {
         if (variants.size() < 2 || variants[0].isEmpty() || variants[1].isEmpty()) {
-            throw NesResourceDocumentError("invalid SMB small-object rendering table");
+            throw SmbError("invalid SMB small-object rendering table");
         }
     }
 }
@@ -388,7 +388,7 @@ SmbLevelRendering SmbLevelRendering::fromId(const QString &id)
     if (id == QStringLiteral("smb1")) return smb1();
     if (id == QStringLiteral("ann")) return ann();
     if (id == QStringLiteral("smb2")) return smb2();
-    throw NesResourceDocumentError(
+    throw SmbError(
         (QStringLiteral("unsupported SMB level rendering profile: ") + id)
             .toStdString());
 }
@@ -406,14 +406,14 @@ SmbLevelScene renderSmbLevelScene(const QString &name, const QVector<int> &heade
     int world, const SmbLevelRendering &rendering)
 {
     if (header.size() != 6 || world < 0 || world > 7) {
-        throw NesResourceDocumentError("invalid SMB level renderer input");
+        throw SmbError("invalid SMB level renderer input");
     }
     validateRendering(rendering);
     const QString prefix = name.section(QLatin1Char('_'), 0, -2);
     const QStringList types {QStringLiteral("water"), QStringLiteral("ground"),
         QStringLiteral("underground"), QStringLiteral("castle")};
     const int areaType = types.indexOf(prefix);
-    if (areaType < 0) throw NesResourceDocumentError("unsupported SMB area name");
+    if (areaType < 0) throw SmbError("unsupported SMB area name");
     const auto positioned = positionObjects(objects);
     const auto positionedEnemies = positionEnemies(enemies);
     int maximum = 32;
@@ -441,4 +441,4 @@ SmbLevelScene renderSmbLevelScene(const QString &name, const QVector<int> &heade
     return {grid, positionedEnemies, positioned, width};
 }
 
-} // namespace retrolarium
+}  // namespace rl::smb

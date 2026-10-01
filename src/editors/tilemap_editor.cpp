@@ -473,6 +473,11 @@ void TileMapEditor::fitZoom() {
     const int mapHeight = std::max(1, grid.height() * cell.height());
     const QSize room = scroll_->viewport()->size() - QSize(kPadSide * 2, kPadTop + kPadBottom);
     int zoom = std::min(room.width() / mapWidth, room.height() / mapHeight);
+    // A scrolling level (pages) wider than the view fits its height and
+    // scrolls sideways instead of shrinking to a strip.
+    if (map_->pageColumns() > 0 && room.width() < mapWidth) {
+        zoom = room.height() / mapHeight;
+    }
     zoom = std::clamp(zoom, kMinZoom, 4);
     setZoom(zoom);
     emit toolbarChanged();

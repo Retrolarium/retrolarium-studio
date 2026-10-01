@@ -46,9 +46,10 @@ cmake -S /src/retrolarium_studio -B /out/.cmake-build \
     -DCMAKE_BUILD_TYPE=$STUDIO_CONFIGURATION \
     -DCMAKE_TOOLCHAIN_FILE=/kit-cmake/qt5/toolchain-win-amd64.cmake \
     -DCMAKE_PREFIX_PATH=/usr/local/Qt-5.15
-cmake --build /out/.cmake-build --target retrolarium-studio retrolarium-flicky-level-writer --parallel $STUDIO_BUILD_JOBS -- -k
+cmake --build /out/.cmake-build --target retrolarium-studio retrolarium-flicky-level-writer smb_level_renderer_golden_test --parallel $STUDIO_BUILD_JOBS -- -k
 cp /out/.cmake-build/retrolarium-studio.exe /out/
 cp /out/.cmake-build/plugins/retrolarium-flicky-level-writer.exe /out/
+cp /out/.cmake-build/plugins/smb_level_renderer_golden_test.exe /out/
 x86_64-w64-mingw32-objdump -p /out/retrolarium-studio.exe | grep 'DLL Name' | sort -u
 '@
 
