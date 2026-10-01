@@ -1,9 +1,9 @@
 #pragma once
 
-#include <retrolarium/flicky_graphics_document.hpp>
-#include <retrolarium/flicky_level_document.hpp>
-#include <retrolarium/flicky_semantics_document.hpp>
-#include <retrolarium/flicky_sequences_document.hpp>
+#include "flicky/data/graphics_document.hpp"
+#include "flicky/data/level_document.hpp"
+#include "flicky/data/semantics_document.hpp"
+#include "flicky/data/sequences_document.hpp"
 
 #include <QHash>
 #include <QImage>
@@ -12,6 +12,8 @@
 #include <array>
 #include <memory>
 #include <stdexcept>
+
+namespace rl::flicky {
 
 class FlickyLevelSceneError : public std::runtime_error {
 public:
@@ -26,14 +28,14 @@ public:
     enum class Layer { Objects, Layout, Background };
     FlickyLevelSceneRenderer(
         QString sourceRoot,
-        std::shared_ptr<retrolarium::FlickyGraphicsDocument> graphics,
-        std::shared_ptr<retrolarium::FlickySemanticsDocument> semantics,
-        std::shared_ptr<retrolarium::FlickySequencesDocument> sequences);
+        std::shared_ptr<FlickyGraphicsDocument> graphics,
+        std::shared_ptr<FlickySemanticsDocument> semantics,
+        std::shared_ptr<FlickySequencesDocument> sequences);
 
     [[nodiscard]] QImage render(
-        const retrolarium::FlickyLevelDocument &levels, int round) const;
+        const FlickyLevelDocument &levels, int round) const;
     [[nodiscard]] QImage renderLayer(
-        const retrolarium::FlickyLevelDocument &levels, int round,
+        const FlickyLevelDocument &levels, int round,
         Layer layer) const;
     [[nodiscard]] QImage renderPlacementPreview(
         const QString &field, int round) const;
@@ -42,7 +44,7 @@ public:
     // Chick motion. Late-phase timing, live score/lives and joypad input remain
     // outside the pixel-exact guarantee.
     [[nodiscard]] QImage renderBonusPhase(
-        const retrolarium::FlickyLevelDocument &levels,
+        const FlickyLevelDocument &levels,
         int round, int framesAfterReady) const;
     // Isolated, pixel-accurate sprite preview using the same tiles and CRAM
     // path as the level scene. Round is one-based for the editor control.
@@ -52,12 +54,13 @@ public:
     // sprite mappings. Render them through the same 4bpp/CRAM VDP path.
     [[nodiscard]] QImage renderTilemapFramePreview(
         const QString &frameId, int round) const;
+    // The 64 CRAM words the game loads for a one-based round.
+    [[nodiscard]] std::array<int, 64> paletteForRound(int round) const;
 
 private:
     using Plane = std::array<int, 32 * 28>;
     [[nodiscard]] const QVector<int> &table(const QString &id) const;
-    [[nodiscard]] std::array<int, 64> paletteForRound(int round) const;
-    [[nodiscard]] retrolarium::FlickyTile tile(int index) const;
+    [[nodiscard]] megadrive::Tile tile(int index) const;
     void drawTile(QImage &frame, const std::array<int, 64> &palette,
                   int x, int y, int word, bool transparent,
                   bool wrapX = true) const;
@@ -75,15 +78,17 @@ private:
                                int roundNumber) const;
     static void writeTilemap(Plane &plane, int x, int y,
                              const QVector<int> &words, int width, int height);
-    [[nodiscard]] int groundWord(const retrolarium::FlickyCollisionGrid &grid,
+    [[nodiscard]] int groundWord(const FlickyCollisionGrid &grid,
                                  int x, int y, int theme) const;
     static QRgb mdColour(int word);
 
     QString sourceRoot_;
     QHash<QString, QVector<int>> tables_;
-    mutable QHash<int, retrolarium::FlickyTile> tileCache_;
+    mutable QHash<int, megadrive::Tile> tileCache_;
     std::array<int, 64> sharedPalette_ {};
-    std::shared_ptr<retrolarium::FlickyGraphicsDocument> graphics_;
-    std::shared_ptr<retrolarium::FlickySemanticsDocument> semantics_;
-    std::shared_ptr<retrolarium::FlickySequencesDocument> sequences_;
+    std::shared_ptr<FlickyGraphicsDocument> graphics_;
+    std::shared_ptr<FlickySemanticsDocument> semantics_;
+    std::shared_ptr<FlickySequencesDocument> sequences_;
 };
+
+} // namespace rl::flicky

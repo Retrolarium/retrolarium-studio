@@ -1,4 +1,6 @@
+#include "builtin_plugins.hpp"
 #include "gallery/theme_gallery.hpp"
+#include "shell/main_window.hpp"
 #include "theme/theme.hpp"
 #include "theme/typography.hpp"
 
@@ -6,6 +8,8 @@
 #include <QCommandLineParser>
 #include <QFile>
 #include <QTimer>
+
+#include <memory>
 
 namespace {
 
@@ -53,8 +57,17 @@ int main(int argc, char* argv[]) {
         QStringLiteral("switch-theme"),
         QStringLiteral("With --screenshot: switch to this theme after the window is shown."),
         QStringLiteral("mode"));
-    parser.addOptions({themeOption, screenshotOption, sizeOption, fontReportOption, switchOption});
+    const QCommandLineOption galleryOption(QStringLiteral("gallery"),
+                                           QStringLiteral("Show the theme gallery instead of the studio."));
+    const QCommandLineOption documentOption(
+        QStringLiteral("document"), QStringLiteral("Open kind/document after the project, e.g. levels/round-07."),
+        QStringLiteral("kind/document"));
+    parser.addOptions({themeOption, screenshotOption, sizeOption, fontReportOption, switchOption,
+                       galleryOption, documentOption});
+    parser.addPositionalArgument(QStringLiteral("project"), QStringLiteral("Project file (.rlj) to open."));
     parser.process(app);
+
+    rl::plugins::registerBuiltinPlugins();
 
     rl::theme::Theme::instance().install(
         app, rl::theme::modeFromName(parser.value(themeOption), rl::theme::Mode::Dark));
@@ -67,7 +80,22 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    rl::gallery::ThemeGallery window;
+    std::unique_ptr<QWidget> owner;
+    if (parser.isSet(galleryOption)) {
+        owner = std::make_unique<rl::gallery::ThemeGallery>();
+    } else {
+        auto studio = std::make_unique<rl::shell::MainWindow>();
+        if (!parser.positionalArguments().isEmpty()) {
+            studio->openProjectFile(parser.positionalArguments().first());
+            const QString document = parser.value(documentOption);
+            if (!document.isEmpty()) {
+                studio->showDocument(document.section(QLatin1Char('/'), 0, 0),
+                                     document.section(QLatin1Char('/'), 1));
+            }
+        }
+        owner = std::move(studio);
+    }
+    QWidget& window = *owner;
     window.resize(parseSize(parser.value(sizeOption), QSize(1600, 1000)));
 
     if (parser.isSet(screenshotOption)) {

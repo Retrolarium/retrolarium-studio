@@ -1,4 +1,6 @@
-#include "flicky_level_scene_renderer.hpp"
+#include "flicky/render/scene_renderer.hpp"
+
+#include "megadrive/vdp.hpp"
 
 #include <QDir>
 #include <QFile>
@@ -9,6 +11,8 @@
 #include <algorithm>
 #include <cstdint>
 #include <utility>
+
+namespace rl::flicky {
 
 namespace {
 
@@ -60,7 +64,7 @@ struct BonusPlacement {
 };
 
 BonusPlacement bonusPlacement(
-    const retrolarium::FlickyLevelDocument &levels, const QString &id,
+    const FlickyLevelDocument &levels, const QString &id,
     BonusPlacement legacy)
 {
     if (!levels.hasBonusPlacements()) return legacy;
@@ -71,7 +75,7 @@ BonusPlacement bonusPlacement(
 }
 
 QJsonObject bonusMotionForRound(
-    const retrolarium::FlickySequencesDocument &sequences,
+    const FlickySequencesDocument &sequences,
     const QString &kind, int round)
 {
     QJsonObject selected;
@@ -99,7 +103,7 @@ QVector<int> bonusWords(const QJsonObject &record)
 }
 
 QVector<QString> bonusAnimationFrames(
-    const retrolarium::FlickySequencesDocument &sequences, const QString &id,
+    const FlickySequencesDocument &sequences, const QString &id,
     int &delay)
 {
     const auto record = sequences.animation(id);
@@ -118,8 +122,8 @@ int signedByte(int value)
 }
 
 BonusChickScene bonusChicksAtPhase(
-    const retrolarium::FlickyLevelDocument &levels,
-    const retrolarium::FlickySequencesDocument &sequences, int round,
+    const FlickyLevelDocument &levels,
+    const FlickySequencesDocument &sequences, int round,
     int displayPhase)
 {
     if (displayPhase < 11) return {};
@@ -456,9 +460,9 @@ bool flag(const QJsonObject &object, const char *key)
 
 FlickyLevelSceneRenderer::FlickyLevelSceneRenderer(
     QString sourceRoot,
-    std::shared_ptr<retrolarium::FlickyGraphicsDocument> graphics,
-    std::shared_ptr<retrolarium::FlickySemanticsDocument> semantics,
-    std::shared_ptr<retrolarium::FlickySequencesDocument> sequences)
+    std::shared_ptr<FlickyGraphicsDocument> graphics,
+    std::shared_ptr<FlickySemanticsDocument> semantics,
+    std::shared_ptr<FlickySequencesDocument> sequences)
     : sourceRoot_(std::move(sourceRoot)),
       graphics_(std::move(graphics)), semantics_(std::move(semantics)),
       sequences_(std::move(sequences))
@@ -529,7 +533,7 @@ std::array<int, 64> FlickyLevelSceneRenderer::paletteForRound(int round) const
     return palette;
 }
 
-retrolarium::FlickyTile FlickyLevelSceneRenderer::tile(int index) const
+megadrive::Tile FlickyLevelSceneRenderer::tile(int index) const
 {
     const auto cached = tileCache_.constFind(index);
     if (cached != tileCache_.constEnd()) return cached.value();
@@ -546,16 +550,14 @@ retrolarium::FlickyTile FlickyLevelSceneRenderer::tile(int index) const
             return pixels;
         }
     }
-    retrolarium::FlickyTile empty {};
+    megadrive::Tile empty {};
     tileCache_.insert(index, empty);
     return empty;
 }
 
 QRgb FlickyLevelSceneRenderer::mdColour(int word)
 {
-    return qRgb(((word >> 1) & 7) * 0x24,
-                ((word >> 5) & 7) * 0x24,
-                ((word >> 9) & 7) * 0x24);
+    return megadrive::cramToArgb(word);
 }
 
 void FlickyLevelSceneRenderer::drawTile(
@@ -612,7 +614,7 @@ void FlickyLevelSceneRenderer::writeTilemap(
 }
 
 int FlickyLevelSceneRenderer::groundWord(
-    const retrolarium::FlickyCollisionGrid &grid,
+    const FlickyCollisionGrid &grid,
     int x, int y, int theme) const
 {
     const int position = y * mapWidth + x;
@@ -729,7 +731,7 @@ void FlickyLevelSceneRenderer::drawBonusPriorityText(
 }
 
 QImage FlickyLevelSceneRenderer::renderBonusPhase(
-    const retrolarium::FlickyLevelDocument &levels,
+    const FlickyLevelDocument &levels,
     int round, int framesAfterReady) const
 {
     if ((round + 1) % 4 != 3 || framesAfterReady < 1 || framesAfterReady > 600)
@@ -870,7 +872,7 @@ QImage FlickyLevelSceneRenderer::renderTilemapFramePreview(
 }
 
 QImage FlickyLevelSceneRenderer::render(
-    const retrolarium::FlickyLevelDocument &levels, int round) const
+    const FlickyLevelDocument &levels, int round) const
 {
     return renderLayer(levels, round, Layer::Objects);
 }
@@ -934,7 +936,7 @@ QImage FlickyLevelSceneRenderer::renderPlacementPreview(
 }
 
 QImage FlickyLevelSceneRenderer::renderLayer(
-    const retrolarium::FlickyLevelDocument &levels, int round,
+    const FlickyLevelDocument &levels, int round,
     Layer layer) const
 {
     tileCache_.clear();
@@ -1047,3 +1049,5 @@ QImage FlickyLevelSceneRenderer::renderLayer(
             point.x() * 8 + 7, point.y() * 8 + 16);
     return frame;
 }
+
+} // namespace rl::flicky

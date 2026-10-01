@@ -1,5 +1,5 @@
-#include <retrolarium/flicky_level_document.hpp>
-#include <retrolarium/flicky_level_source_writer.hpp>
+#include "flicky/data/level_document.hpp"
+#include "flicky/data/level_source_writer.hpp"
 
 #include <QCoreApplication>
 #include <QStringList>
@@ -16,8 +16,8 @@ int main(int argc, char **argv)
         return 2;
     }
     try {
-        const auto document = retrolarium::FlickyLevelDocument::load(arguments[1]);
-        retrolarium::writeFlickyLevelSources(document, arguments[2]);
+        const auto document = rl::flicky::FlickyLevelDocument::load(arguments[1]);
+        rl::flicky::writeFlickyLevelSources(document, arguments[2]);
     } catch (const std::exception &error) {
         std::fprintf(stderr, "%s\n", error.what());
         return 1;
