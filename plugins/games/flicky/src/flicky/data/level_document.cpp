@@ -1,4 +1,4 @@
-#include <retrolarium/flicky_level_document.hpp>
+#include "flicky/data/level_document.hpp"
 
 #include <QFile>
 #include <QJsonArray>
@@ -9,7 +9,7 @@
 #include <algorithm>
 #include <cstddef>
 
-namespace retrolarium {
+namespace rl::flicky {
 namespace {
 
 [[noreturn]] void fail(const QString &message)
@@ -764,4 +764,4 @@ const FlickyCollisionGrid &FlickyLevelDocument::baselineGrid(int layout) const
     return baselines_[static_cast<std::size_t>(layout)];
 }
 
-} // namespace retrolarium
+} // namespace rl::flicky

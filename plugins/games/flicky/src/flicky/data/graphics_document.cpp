@@ -1,4 +1,4 @@
-#include <retrolarium/flicky_graphics_document.hpp>
+#include "flicky/data/graphics_document.hpp"
 
 #include <QFile>
 #include <QJsonArray>
@@ -7,7 +7,7 @@
 
 #include <array>
 
-namespace retrolarium {
+namespace rl::flicky {
 namespace {
 
 struct AssetSpec final {
@@ -46,9 +46,9 @@ int pixelValue(const QJsonValue &value, int maximum)
     return result;
 }
 
-FlickyTile parseTile(const QJsonValue &value, int maximum)
+megadrive::Tile parseTile(const QJsonValue &value, int maximum)
 {
-    FlickyTile tile {};
+    megadrive::Tile tile {};
     const auto rows = value.toArray();
     if (rows.size() != 8) fail(QStringLiteral("Flicky tile must have eight rows"));
     for (int y = 0; y < 8; ++y) {
@@ -62,7 +62,7 @@ FlickyTile parseTile(const QJsonValue &value, int maximum)
     return tile;
 }
 
-QJsonArray tileToJson(const FlickyTile &tile)
+QJsonArray tileToJson(const megadrive::Tile &tile)
 {
     QJsonArray rows;
     for (int y = 0; y < 8; ++y) {
@@ -225,7 +225,7 @@ bool FlickyGraphicsDocument::isFont(const QString &assetId) const
     return assetIndex(assetId) >= 6;
 }
 
-FlickyTile FlickyGraphicsDocument::tileAt(int asset, int tileIndex) const
+megadrive::Tile FlickyGraphicsDocument::tileAt(int asset, int tileIndex) const
 {
     requireTileIndex(asset, tileIndex);
     const auto tiles = assetArray(root_).at(asset).toObject()
@@ -233,13 +233,13 @@ FlickyTile FlickyGraphicsDocument::tileAt(int asset, int tileIndex) const
     return parseTile(tiles.at(tileIndex), asset < 6 ? 15 : 1);
 }
 
-FlickyTile FlickyGraphicsDocument::tile(const QString &assetId,
+megadrive::Tile FlickyGraphicsDocument::tile(const QString &assetId,
                                         int tileIndex) const
 {
     return tileAt(assetIndex(assetId), tileIndex);
 }
 
-FlickyTile FlickyGraphicsDocument::baselineTile(const QString &assetId,
+megadrive::Tile FlickyGraphicsDocument::baselineTile(const QString &assetId,
                                                  int tileIndex) const
 {
     const int asset = assetIndex(assetId);
@@ -259,7 +259,7 @@ int FlickyGraphicsDocument::pixel(const QString &assetId, int tileIndex,
 }
 
 void FlickyGraphicsDocument::replaceTile(int asset, int tileIndex,
-                                         const FlickyTile &tile)
+                                         const megadrive::Tile &tile)
 {
     auto assets = assetArray(root_);
     auto record = assets.at(asset).toObject();
@@ -357,4 +357,4 @@ void FlickyGraphicsDocument::setSegaTilemapWord(int cell, int word)
     root_.insert(QStringLiteral("assets"), assets);
 }
 
-} // namespace retrolarium
+} // namespace rl::flicky

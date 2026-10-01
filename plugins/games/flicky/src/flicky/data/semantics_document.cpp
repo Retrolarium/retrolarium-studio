@@ -1,4 +1,4 @@
-#include <retrolarium/flicky_semantics_document.hpp>
+#include "flicky/data/semantics_document.hpp"
 
 #include <QFile>
 #include <QJsonArray>
@@ -6,7 +6,7 @@
 #include <QSaveFile>
 #include <QSet>
 
-namespace retrolarium {
+namespace rl::flicky {
 namespace {
 
 [[noreturn]] void fail(const QString &message)
@@ -247,4 +247,4 @@ void FlickySemanticsDocument::restorePalette(const QString &id)
         setColour(id, index, baseline[index]);
 }
 
-} // namespace retrolarium
+} // namespace rl::flicky

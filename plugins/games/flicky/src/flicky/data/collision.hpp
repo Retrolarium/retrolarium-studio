@@ -5,7 +5,7 @@
 #include <stdexcept>
 #include <vector>
 
-namespace retrolarium {
+namespace rl::flicky {
 
 class FlickyCollisionError : public std::runtime_error {
 public:
@@ -23,4 +23,4 @@ using FlickyCollisionGrid = std::array<std::uint8_t, flickyMapSize>;
 [[nodiscard]] std::vector<std::uint8_t> encodeFlickyCollision(
     const FlickyCollisionGrid &grid);
 
-} // namespace retrolarium
+} // namespace rl::flicky

@@ -1,4 +1,4 @@
-#include <retrolarium/flicky_sequences_document.hpp>
+#include "flicky/data/sequences_document.hpp"
 
 #include <QFile>
 #include <QJsonArray>
@@ -8,7 +8,7 @@
 
 #include <array>
 
-namespace retrolarium {
+namespace rl::flicky {
 namespace {
 
 [[noreturn]] void fail(const QString &message)
@@ -432,4 +432,4 @@ void FlickySequencesDocument::restoreBonusMotion(const QString &id)
     replaceBonusMotion(id, baselineBonusMotion(id));
 }
 
-} // namespace retrolarium
+} // namespace rl::flicky

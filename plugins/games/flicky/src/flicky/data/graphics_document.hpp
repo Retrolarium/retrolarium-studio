@@ -1,6 +1,6 @@
 #pragma once
 
-#include <retrolarium/flicky_tiles.hpp>
+#include "megadrive/tiles.hpp"
 
 #include <QJsonObject>
 #include <QString>
@@ -9,7 +9,7 @@
 #include <array>
 #include <stdexcept>
 
-namespace retrolarium {
+namespace rl::flicky {
 
 class FlickyGraphicsDocumentError : public std::runtime_error {
 public:
@@ -40,8 +40,8 @@ public:
     [[nodiscard]] QStringList tileAssetIds() const;
     [[nodiscard]] int tileCount(const QString &assetId) const;
     [[nodiscard]] bool isFont(const QString &assetId) const;
-    [[nodiscard]] FlickyTile tile(const QString &assetId, int tileIndex) const;
-    [[nodiscard]] FlickyTile baselineTile(
+    [[nodiscard]] megadrive::Tile tile(const QString &assetId, int tileIndex) const;
+    [[nodiscard]] megadrive::Tile baselineTile(
         const QString &assetId, int tileIndex) const;
     [[nodiscard]] int pixel(const QString &assetId, int tileIndex,
                             int x, int y) const;
@@ -58,11 +58,11 @@ public:
 private:
     static int assetIndex(const QString &assetId);
     static void requireTileIndex(int asset, int tileIndex);
-    [[nodiscard]] FlickyTile tileAt(int asset, int tileIndex) const;
-    void replaceTile(int asset, int tileIndex, const FlickyTile &tile);
+    [[nodiscard]] megadrive::Tile tileAt(int asset, int tileIndex) const;
+    void replaceTile(int asset, int tileIndex, const megadrive::Tile &tile);
 
     QJsonObject root_;
     QJsonObject baseline_;
 };
 
-} // namespace retrolarium
+} // namespace rl::flicky

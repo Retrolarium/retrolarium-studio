@@ -23,22 +23,66 @@ src/
   frame/     studio window: own title bar on the native Windows frame
   theme/     design tokens, fonts, style sheet, QProxyStyle, icons, painting helpers
   widgets/   reusable themed widgets (buttons, segments, chips, fields, lists, tabs)
+  sdk/       plugin contracts: project file, plugin, session, editor models
+  editors/   universal editors working only through sdk models (TileMap, Tile,
+             Palette, Table so far)
+  shell/     main window: toolbar, kind rail, document list, editor host,
+             inspector, bottom panel, status bar
   gallery/   theme gallery: every component on one page, the visual test bench
-  app/       entry point
+  app/       entry point; the only code that names concrete plugins
+plugins/
+  megadrive/ Mega Drive platform: VDP patterns, CRAM colors, tile words,
+             Enigma (over ../retrolarium_core); Qt-free
+  flicky/    Flicky (UE): data/ documents and codecs, render/ scene renderer,
+             plugin/ session and editor models, tools/ level writer
+  builtin_plugins.cpp   registers the linked plugins
 resources/   bundled fonts (OFL) and the Qt resource file
 tools/       Docker build and run scripts
 ```
 
-Planned next, in this order:
+The CMake targets enforce the layering: plugins link `studio_sdk` only, the
+shell never links a plugin, and only the app links both.
 
-```text
-src/shell/     main window: global toolbar, kind rail, document list,
-               editor host, inspector, bottom panel, status bar
-src/sdk/       plugin-facing contracts: profile, data kinds, documents,
-               inspector schema, tools, diagnostics (game-agnostic)
-src/editors/   the universal editors, first with stub documents
-plugins/       platform and game code: nes/, megadrive/, smb1/, flicky/, stub/
-```
+| Library | May use |
+|---|---|
+| `studio_ui` (theme, widgets, frame) | Qt |
+| `studio_sdk` | Qt Core/Gui (+ QUndoStack from Widgets) |
+| `studio_editors` | ui, sdk |
+| `studio_shell` | ui, sdk, editors, gallery |
+| `platform_megadrive` | nothing |
+| `flicky_data` | megadrive, Qt Core/Gui |
+| `flicky_plugin` | flicky_data, sdk |
+
+## How a plugin plugs in
+
+1. The shell reads the `.rlj` with `sdk::ProjectFile` and asks
+   `sdk::PluginRegistry` for a plugin whose `canOpen()` accepts it.
+2. `Plugin::open()` returns an `sdk::Session`: profile, rail kinds, document
+   lists, and one project-wide `QUndoStack`.
+3. For a picked document the session returns an `sdk::EditorModel` subclass
+   (`TileMapModel`, …). The matching universal editor draws it; the inspector
+   is generated from `EditorModel::inspect()`.
+4. Every edit is a command on the session's undo stack; saving and dirty marks
+   are the session's job.
+
+## Flicky status
+
+Ported: all five workspace documents, the collision codec, the level source
+writer (`retrolarium-flicky-level-writer`) and the scene renderer.
+
+| Kind | Editor | State |
+|---|---|---|
+| Levels | TileMap | Objects / Layout / Background layers; place, drag, remove, retype objects; paint collision |
+| Tiles | Tile | 8 banks (4bpp and fonts): pencil, fill, pick, preview palette from the round CRAM or any palette |
+| Tiles › sega_tilemap | TileMap | 12×4 name table, words edited in the inspector, live Enigma size against the 10-byte slot |
+| Tiles › sega_palette | Palette | 10 compact CRAM entries, slot and 3-bit RGB |
+| Palettes | Palette | 28 CRAM palettes, 3-bit RGB picker, rounds drawn with each palette |
+| Text | Table | 52 fixed-slot strings with length bars, validation and a game-style preview |
+| Sprites, Sound, Playtest | — | documents listed; editors next |
+
+Every edit is one step on the project undo stack; Save writes only the
+changed documents; Revert returns a document to its state when it was opened
+(levels: when the project was created).
 
 ## Theme rules
 
@@ -72,7 +116,23 @@ powershell -ExecutionPolicy Bypass -File tools\build-win.ps1
 powershell -ExecutionPolicy Bypass -File tools\run-win.ps1 -Theme dark
 ```
 
-The gallery can render itself off screen, which is how the look is checked
+Open a project directly, optionally at a document:
+
+```powershell
+build\win-amd64\retrolarium-studio.exe path\to\flicky-ue.rlj --document levels/round-01
+```
+
+A Flicky test project is created with the kit (it only reads the source
+checkout and ROM):
+
+```powershell
+python ..\retrolarium_kit\rltool.py studio flicky-create "<rom>" --source-root <flicky_src> --project-root build\testdata\flicky
+```
+
+Keep project paths short: the source snapshot is deep and Windows path
+limits apply.
+
+The studio and the gallery (`--gallery`) can render themselves off screen, which is how the look is checked
 without opening a window:
 
 ```powershell

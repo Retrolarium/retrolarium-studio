@@ -6,7 +6,7 @@
 
 #include <stdexcept>
 
-namespace retrolarium {
+namespace rl::flicky {
 
 class FlickySequencesDocumentError : public std::runtime_error {
 public:
@@ -62,4 +62,4 @@ private:
     QJsonObject baseline_;
 };
 
-} // namespace retrolarium
+} // namespace rl::flicky

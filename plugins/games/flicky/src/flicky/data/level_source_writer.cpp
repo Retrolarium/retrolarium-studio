@@ -1,6 +1,6 @@
-#include <retrolarium/flicky_level_source_writer.hpp>
+#include "flicky/data/level_source_writer.hpp"
 
-#include <retrolarium/flicky_level_document.hpp>
+#include "flicky/data/level_document.hpp"
 
 #include <QFile>
 #include <QJsonArray>
@@ -14,7 +14,7 @@
 #include <string>
 #include <vector>
 
-namespace retrolarium {
+namespace rl::flicky {
 namespace {
 
 QString hexByte(std::uint8_t value)
@@ -229,4 +229,4 @@ void writeFlickyLevelSources(const FlickyLevelDocument &document,
     if (document.hasBonusPlacements()) writeStagedFile(bonusPath, bonus);
 }
 
-} // namespace retrolarium
+} // namespace rl::flicky

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <retrolarium/flicky_collision.hpp>
+#include "flicky/data/collision.hpp"
 
 #include <QJsonObject>
 #include <QHash>
@@ -14,7 +14,7 @@
 #include <stdexcept>
 #include <vector>
 
-namespace retrolarium {
+namespace rl::flicky {
 
 class FlickyLevelDocumentError : public std::runtime_error {
 public:
@@ -79,4 +79,4 @@ private:
     std::array<std::vector<std::uint8_t>, 36> baselineStreams_ {};
 };
 
-} // namespace retrolarium
+} // namespace rl::flicky

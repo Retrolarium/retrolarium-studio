@@ -1,8 +1,8 @@
-#include <retrolarium/flicky_collision.hpp>
+#include "flicky/data/collision.hpp"
 
 #include <algorithm>
 
-namespace retrolarium {
+namespace rl::flicky {
 namespace {
 
 constexpr int streamStart = 0x40;
@@ -99,4 +99,4 @@ std::vector<std::uint8_t> encodeFlickyCollision(
     return output;
 }
 
-} // namespace retrolarium
+} // namespace rl::flicky

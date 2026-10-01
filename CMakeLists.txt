@@ -29,7 +29,16 @@ function(studio_enable_warnings target)
     endif()
 endfunction()
 
-# Theme and reusable widgets. Knows nothing about games or editors.
+# Module layering. Each library may only link the ones above it:
+#
+#   studio_ui       theme, widgets, window frame       (no studio knowledge)
+#   studio_sdk      plugin contracts                   (no UI, no games)
+#   studio_editors  universal editors                  ui + sdk
+#   studio_gallery  theme test bench                   ui
+#   studio_shell    main window                        ui + sdk + editors + gallery
+#   plugins/*       platform and game code             sdk only
+#   app             entry point, names the plugins     everything
+
 add_library(studio_ui STATIC
     src/frame/studio_window.cpp
     src/frame/studio_window.hpp
@@ -59,6 +68,8 @@ add_library(studio_ui STATIC
     src/widgets/collapsible_section.hpp
     src/widgets/document_list.cpp
     src/widgets/document_list.hpp
+    src/widgets/label.cpp
+    src/widgets/label.hpp
     src/widgets/panel_tabs.cpp
     src/widgets/panel_tabs.hpp
     src/widgets/primary_button.cpp
@@ -67,8 +78,6 @@ add_library(studio_ui STATIC
     src/widgets/property_grid.hpp
     src/widgets/rail_button.cpp
     src/widgets/rail_button.hpp
-    src/widgets/label.cpp
-    src/widgets/label.hpp
     src/widgets/segmented_control.cpp
     src/widgets/segmented_control.hpp
     src/widgets/view_chip.cpp
@@ -79,10 +88,68 @@ target_include_directories(studio_ui PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(studio_ui PUBLIC Qt5::Core Qt5::Gui Qt5::Widgets Qt5::Svg)
 studio_enable_warnings(studio_ui)
 
-add_executable(retrolarium-studio WIN32
-    src/app/main.cpp
+add_library(studio_sdk STATIC
+    src/sdk/editor_model.cpp
+    src/sdk/editor_model.hpp
+    src/sdk/plugin.cpp
+    src/sdk/plugin.hpp
+    src/sdk/project_file.cpp
+    src/sdk/project_file.hpp
+    src/sdk/session.cpp
+    src/sdk/session.hpp
+    src/sdk/types.hpp
+)
+# QUndoStack lives in QtWidgets in Qt 5; the SDK uses no widgets otherwise.
+target_include_directories(studio_sdk PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(studio_sdk PUBLIC Qt5::Core Qt5::Gui Qt5::Widgets)
+studio_enable_warnings(studio_sdk)
+
+add_library(studio_editors STATIC
+    src/editors/editor_view.cpp
+    src/editors/editor_view.hpp
+    src/editors/mime.hpp
+    src/editors/palette_editor.cpp
+    src/editors/palette_editor.hpp
+    src/editors/table_editor.cpp
+    src/editors/table_editor.hpp
+    src/editors/tile_editor.cpp
+    src/editors/tile_editor.hpp
+    src/editors/tilemap_editor.cpp
+    src/editors/tilemap_editor.hpp
+)
+target_link_libraries(studio_editors PUBLIC studio_ui studio_sdk)
+studio_enable_warnings(studio_editors)
+
+add_library(studio_gallery STATIC
     src/gallery/theme_gallery.cpp
     src/gallery/theme_gallery.hpp
 )
-target_link_libraries(retrolarium-studio PRIVATE studio_ui)
+target_link_libraries(studio_gallery PUBLIC studio_ui)
+studio_enable_warnings(studio_gallery)
+
+add_library(studio_shell STATIC
+    src/shell/bottom_panel.cpp
+    src/shell/bottom_panel.hpp
+    src/shell/inspector_panel.cpp
+    src/shell/inspector_panel.hpp
+    src/shell/main_window.cpp
+    src/shell/main_window.hpp
+    src/shell/side_panels.cpp
+    src/shell/side_panels.hpp
+)
+target_link_libraries(studio_shell PUBLIC studio_editors studio_gallery studio_sdk studio_ui)
+studio_enable_warnings(studio_shell)
+
+# The shared, Qt-free core (codecs with golden tests, also shipped with the
+# kit as rlcore). Platform plugins wrap what they need from it.
+set(RETROLARIUM_CORE_BUILD_CLI OFF CACHE BOOL "" FORCE)
+set(RETROLARIUM_CORE_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../retrolarium_core retrolarium_core)
+
+add_subdirectory(plugins)
+
+add_executable(retrolarium-studio WIN32
+    src/app/main.cpp
+)
+target_link_libraries(retrolarium-studio PRIVATE studio_shell studio_builtin_plugins)
 studio_enable_warnings(retrolarium-studio)

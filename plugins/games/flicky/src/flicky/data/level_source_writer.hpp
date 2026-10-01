@@ -2,7 +2,7 @@
 
 #include <QString>
 
-namespace retrolarium {
+namespace rl::flicky {
 
 class FlickyLevelDocument;
 
@@ -10,4 +10,4 @@ class FlickyLevelDocument;
 void writeFlickyLevelSources(const FlickyLevelDocument &document,
                              const QString &stagedSource);
 
-} // namespace retrolarium
+} // namespace rl::flicky

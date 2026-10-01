@@ -1,4 +1,4 @@
-#include <retrolarium/flicky_sound_document.hpp>
+#include "flicky/data/sound_document.hpp"
 
 #include <QFile>
 #include <QRegularExpression>
@@ -7,7 +7,7 @@
 
 #include <algorithm>
 
-namespace retrolarium {
+namespace rl::flicky {
 namespace {
 
 [[noreturn]] void fail(const QString &message)
@@ -620,4 +620,4 @@ void FlickySoundDocument::restoreBlock(const QString &id)
     replaceBlock(id, baselineBlockText(id));
 }
 
-} // namespace retrolarium
+} // namespace rl::flicky

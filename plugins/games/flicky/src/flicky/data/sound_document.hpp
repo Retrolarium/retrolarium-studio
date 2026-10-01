@@ -8,7 +8,7 @@
 #include <array>
 #include <stdexcept>
 
-namespace retrolarium {
+namespace rl::flicky {
 
 class FlickySoundDocumentError : public std::runtime_error {
 public:
@@ -134,4 +134,4 @@ private:
     Parsed baselineParsed_;
 };
 
-} // namespace retrolarium
+} // namespace rl::flicky
