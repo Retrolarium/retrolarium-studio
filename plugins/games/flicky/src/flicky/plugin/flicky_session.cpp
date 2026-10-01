@@ -10,6 +10,7 @@
 #include "flicky/plugin/playtest_model.hpp"
 #include "flicky/plugin/sound_models.hpp"
 #include "flicky/plugin/sprite_models.hpp"
+#include "sdk/snapshot_command.hpp"
 #include "sdk/plugin.hpp"
 
 #include <QCryptographicHash>
@@ -30,30 +31,7 @@ namespace {
 // One edit: swaps between two whole-document states. Documents keep their
 // JSON implicitly shared, so a snapshot costs little until it is changed, and
 // every edit, including multi-field ones, is exactly reversible.
-template <class T>
-class SnapshotCommand final : public QUndoCommand {
-public:
-    using Apply = std::function<void(const T&, quint64)>;
-
-    SnapshotCommand(Apply apply, T before, quint64 beforeRevision, T after, quint64 afterRevision,
-                    const QString& text)
-        : QUndoCommand(text),
-          apply_(std::move(apply)),
-          before_(std::move(before)),
-          after_(std::move(after)),
-          beforeRevision_(beforeRevision),
-          afterRevision_(afterRevision) {}
-
-    void redo() override { apply_(after_, afterRevision_); }
-    void undo() override { apply_(before_, beforeRevision_); }
-
-private:
-    Apply apply_;
-    T before_;
-    T after_;
-    quint64 beforeRevision_;
-    quint64 afterRevision_;
-};
+using sdk::SnapshotCommand;
 
 QString tabDocument(const sdk::ProjectFile& project, const QString& kind) {
     for (const QVariant& value : project.list(QStringLiteral("workspace.tabs"))) {

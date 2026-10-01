@@ -102,6 +102,7 @@ add_library(studio_sdk STATIC
     src/sdk/project_file.hpp
     src/sdk/session.cpp
     src/sdk/session.hpp
+    src/sdk/snapshot_command.hpp
     src/sdk/types.hpp
 )
 # QUndoStack lives in QtWidgets in Qt 5; the SDK uses no widgets otherwise.
@@ -114,6 +115,8 @@ add_library(studio_runtime STATIC
     src/runtime/audio_player.hpp
     src/runtime/emulator_runner.cpp
     src/runtime/emulator_runner.hpp
+    src/runtime/mame_config.cpp
+    src/runtime/mame_config.hpp
     src/runtime/process_runner.cpp
     src/runtime/process_runner.hpp
     src/runtime/tool_locator.cpp

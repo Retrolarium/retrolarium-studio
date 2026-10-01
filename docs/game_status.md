@@ -37,6 +37,10 @@ plugins/
              Enigma (over ../retrolarium_core); Qt-free
   flicky/    Flicky (UE): data/ documents and codecs, render/ scene renderer,
              plugin/ session and editor models, tools/ level writer
+  nes/       NES platform: master palette, palette packet layout; header-only
+  smb/       Super Mario Bros.: data/ resource bundle and area catalog,
+             render/ level renderer and painter, plugin/ session and models,
+             tests/ the renderer's golden test
   builtin_plugins.cpp   registers the linked plugins
 resources/   bundled fonts (OFL) and the Qt resource file
 tools/       Docker build and run scripts
@@ -154,6 +158,29 @@ a string has lowercase letters.
 Every edit is one step on the project undo stack; Save writes only the
 changed documents; Revert returns a document to its state when it was opened
 (levels: when the project was created).
+
+## Super Mario Bros. status
+
+Projects come from `rltool studio preset <rom>`; every editor reads and
+writes `documents/resources.json`, the NES resource bundle. The level
+renderer is the original app's, pinned to the kit's output for all 34 SMB1
+JU areas by `smb_level_renderer_golden_test` (run it with
+`plugins/smb/tests/smb1_ju_level_scenes.json`).
+
+| Kind | Editor | State |
+|---|---|---|
+| Levels | TileMap | areas drawn as the game does (metatiles in the area palette, enemies, Hero), day or night, pages of 16 columns; select objects and enemies; drag Hero to the start point |
+| Tiles | Tile | sprite and background pattern tables, 2bpp, preview palette from the area packets or the player palettes |
+| Palettes | Palette | area packets (eight palettes of four) and the player table; the 64-colour NES picker |
+| Playtest | Emulator | Play from selected starts at Hero's cell (`smb-point-playtest-plan`), Play from power-on |
+
+Editing area objects and enemies, the world routes, player frames, music,
+text and screens come next.
+
+MAME shows a "known problems" screen for the NES driver that waits for a key,
+which never reaches an embedded MAME. Before a launch the runner marks it as
+seen in `cfg/<system>.cfg` (`ui_warnings`, with the features `-listxml`
+reports), so MAME's `skip_warnings` setting skips it.
 
 ## Theme rules
 
