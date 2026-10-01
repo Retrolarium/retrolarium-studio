@@ -3,7 +3,9 @@
 #include <QDateTime>
 #include <QDir>
 #include <QFile>
+#include <QApplication>
 #include <QFileInfo>
+#include <QKeyEvent>
 #include <QGuiApplication>
 #include <QMouseEvent>
 #include <QPainter>
@@ -13,6 +15,7 @@
 #include <QScreen>
 #include <QTemporaryDir>
 #include <QTimer>
+#include <QWindow>
 
 #ifdef Q_OS_WIN
 #include <windows.h>
@@ -37,10 +40,15 @@ constexpr int kStopGraceMs = 2000;      // then the process is killed
 //   a fraction of a second (the Playtest view covers the picture meanwhile);
 // - watches the command file: a line naming a cartridge copy mounts it, which
 //   hard-resets the machine into the new build;
+// - presses the game's inputs for the keys the studio forwards (MAME cannot
+//   read the keyboard of a window it does not own): each frame it reads the
+//   keys file and sets every I/O port field whose MAME input assignment
+//   names one of those keys;
 // - runs the game's own script unchanged.
 const char* kControlScript = R"LUA(-- Written by Retrolarium Studio for the running playtest.
 local cart = [==[@CART@]==]
 local command_file = [==[@COMMAND@]==]
+local keys_file = [==[@KEYS@]==]
 local ready_file = [==[@READY@]==]
 local game_script = [==[@SCRIPT@]==]
 local environment = {
@@ -105,6 +113,40 @@ local function take_command()
     if fallback ~= nil then fallback:load(next_cart) end
 end
 
+-- Fields by the keyboard keys MAME's input settings give them.
+local fields_by_key = {}
+for _, port in pairs(machine.ioport.ports) do
+    for _, field in pairs(port.fields) do
+        local tokens = machine.input:seq_to_tokens(field:input_seq("standard")) or ""
+        for token in string.gmatch(tokens, "KEYCODE_[%w_]+") do
+            fields_by_key[token] = fields_by_key[token] or {}
+            table.insert(fields_by_key[token], field)
+        end
+    end
+end
+local held, keys_text = {}, ""
+local function apply_keys()
+    local file = io.open(keys_file, "r")
+    local text = ""
+    if file ~= nil then
+        text = file:read("a") or ""
+        file:close()
+    end
+    if text == keys_text then return end
+    keys_text = text
+    local wanted = {}
+    for token in string.gmatch(text, "KEYCODE_[%w_]+") do
+        for _, field in ipairs(fields_by_key[token] or {}) do wanted[field] = true end
+    end
+    for field in pairs(held) do
+        if not wanted[field] then field:clear_value() end
+    end
+    for field in pairs(wanted) do
+        if not held[field] then field:set_value(1) end
+    end
+    held = wanted
+end
+
 local fast = ready_file ~= ""
 local was_throttled, was_frameskip, was_muted = video.throttled, video.frameskip, sound.ui_mute
 local hidden, frames, unmute_at = fast, 0, nil
@@ -116,6 +158,7 @@ end
 
 on_frame(function()
     frames = frames + 1
+    apply_keys()
     if frames % 6 == 0 then take_command() end
     if hidden then
         -- A script that never reports would keep the game fast: give up after
@@ -135,6 +178,70 @@ end)
 
 if game_script ~= "" then dofile(game_script) end
 )LUA";
+
+// MAME's name for the key of a key event; empty for keys it has no name for.
+// Modifiers come from the scan code, so left and right stay apart (Qt
+// reports the extended-key flag in bit 8 of the native scan code).
+QString mameKey(const QKeyEvent* event) {
+    switch (event->nativeScanCode()) {
+    case 0x2a: return QStringLiteral("KEYCODE_LSHIFT");
+    case 0x36: return QStringLiteral("KEYCODE_RSHIFT");
+    case 0x1d: return QStringLiteral("KEYCODE_LCONTROL");
+    case 0x11d: return QStringLiteral("KEYCODE_RCONTROL");
+    case 0x38: return QStringLiteral("KEYCODE_LALT");
+    case 0x138: return QStringLiteral("KEYCODE_RALT");
+    default: break;
+    }
+    const int key = event->key();
+    const bool keypad = event->modifiers() & Qt::KeypadModifier;
+    if (key >= Qt::Key_A && key <= Qt::Key_Z) {
+        return QStringLiteral("KEYCODE_") + QChar(key);
+    }
+    if (key >= Qt::Key_0 && key <= Qt::Key_9) {
+        return QStringLiteral("KEYCODE_%1%2").arg(QChar(key)).arg(keypad ? QStringLiteral("_PAD") : QString());
+    }
+    if (key >= Qt::Key_F1 && key <= Qt::Key_F12) {
+        return QStringLiteral("KEYCODE_F%1").arg(key - Qt::Key_F1 + 1);
+    }
+    switch (key) {
+    case Qt::Key_Up: return QStringLiteral("KEYCODE_UP");
+    case Qt::Key_Down: return QStringLiteral("KEYCODE_DOWN");
+    case Qt::Key_Left: return QStringLiteral("KEYCODE_LEFT");
+    case Qt::Key_Right: return QStringLiteral("KEYCODE_RIGHT");
+    case Qt::Key_Return: return QStringLiteral("KEYCODE_ENTER");
+    case Qt::Key_Enter: return QStringLiteral("KEYCODE_ENTER_PAD");
+    case Qt::Key_Space: return QStringLiteral("KEYCODE_SPACE");
+    case Qt::Key_Tab: return QStringLiteral("KEYCODE_TAB");
+    case Qt::Key_Backspace: return QStringLiteral("KEYCODE_BACKSPACE");
+    case Qt::Key_Escape: return QStringLiteral("KEYCODE_ESC");
+    case Qt::Key_Insert: return QStringLiteral("KEYCODE_INSERT");
+    case Qt::Key_Delete: return QStringLiteral("KEYCODE_DEL");
+    case Qt::Key_Home: return QStringLiteral("KEYCODE_HOME");
+    case Qt::Key_End: return QStringLiteral("KEYCODE_END");
+    case Qt::Key_PageUp: return QStringLiteral("KEYCODE_PGUP");
+    case Qt::Key_PageDown: return QStringLiteral("KEYCODE_PGDN");
+    case Qt::Key_Minus: return keypad ? QStringLiteral("KEYCODE_MINUS_PAD") : QStringLiteral("KEYCODE_MINUS");
+    case Qt::Key_Plus: return keypad ? QStringLiteral("KEYCODE_PLUS_PAD") : QString();
+    case Qt::Key_Asterisk: return keypad ? QStringLiteral("KEYCODE_ASTERISK") : QString();
+    case Qt::Key_Slash: return keypad ? QStringLiteral("KEYCODE_SLASH_PAD") : QStringLiteral("KEYCODE_SLASH");
+    case Qt::Key_Equal: return QStringLiteral("KEYCODE_EQUALS");
+    case Qt::Key_BracketLeft: return QStringLiteral("KEYCODE_OPENBRACE");
+    case Qt::Key_BracketRight: return QStringLiteral("KEYCODE_CLOSEBRACE");
+    case Qt::Key_Semicolon: return QStringLiteral("KEYCODE_COLON");
+    case Qt::Key_Apostrophe: return QStringLiteral("KEYCODE_QUOTE");
+    case Qt::Key_Backslash: return QStringLiteral("KEYCODE_BACKSLASH");
+    case Qt::Key_Comma: return QStringLiteral("KEYCODE_COMMA");
+    case Qt::Key_Period: return keypad ? QStringLiteral("KEYCODE_DEL_PAD") : QStringLiteral("KEYCODE_STOP");
+    case Qt::Key_QuoteLeft: return QStringLiteral("KEYCODE_TILDE");
+    default: return {};
+    }
+}
+
+// Keys the studio keeps while the game has the keyboard: playtest controls.
+bool isStudioKey(const QKeyEvent* event) {
+    const int key = event->key();
+    return (key >= Qt::Key_F1 && key <= Qt::Key_F35) || key == Qt::Key_Pause;
+}
 
 QString luaPath(const QString& path) {
     return path.isEmpty() ? QString() : QDir::toNativeSeparators(QFileInfo(path).absoluteFilePath());
@@ -174,6 +281,51 @@ EmulatorSurface::EmulatorSurface(QWidget* parent) : QWidget(parent) {
     setAttribute(Qt::WA_NativeWindow);
     setAttribute(Qt::WA_OpaquePaintEvent);
     setFocusPolicy(Qt::StrongFocus);
+    // Tells the frame not to open the window menu on Alt or Alt+Space, which
+    // are game buttons here.
+    setProperty("rlOwnsKeyboard", true);
+}
+
+void EmulatorSurface::focusInEvent(QFocusEvent* event) {
+    QWidget::focusInEvent(event);
+    // Ahead of every other filter, so menus and shortcuts never see the keys.
+    qApp->installEventFilter(this);
+    emit focusChanged(true);
+}
+
+void EmulatorSurface::focusOutEvent(QFocusEvent* event) {
+    QWidget::focusOutEvent(event);
+    qApp->removeEventFilter(this);
+    emit focusChanged(false);
+}
+
+bool EmulatorSurface::eventFilter(QObject* watched, QEvent* event) {
+    if (watched != this && watched != windowHandle()) {
+        return false;
+    }
+    const QEvent::Type type = event->type();
+    if (type != QEvent::ShortcutOverride && type != QEvent::KeyPress && type != QEvent::KeyRelease) {
+        return false;
+    }
+    auto* key = static_cast<QKeyEvent*>(event);
+    if (isStudioKey(key)) {
+        return false;
+    }
+    if (type == QEvent::ShortcutOverride) {
+        event->accept();  // no studio shortcut fires on a game key
+        return true;
+    }
+    if (!key->isAutoRepeat()) {
+        const QString name = mameKey(key);
+        if (!name.isEmpty()) {
+            emit keyChanged(name, type == QEvent::KeyPress);
+        }
+    }
+    return true;
+}
+
+bool EmulatorSurface::focusNextPrevChild(bool) {
+    return false;  // Tab is a key for the game
 }
 
 void EmulatorSurface::mousePressEvent(QMouseEvent* event) {
@@ -236,7 +388,57 @@ void EmulatorRunner::setSurface(EmulatorSurface* surface) {
     surface_ = surface;
     if (surface_) {
         connect(surface_, &EmulatorSurface::clicked, this, [this] { focusEmulator(); });
+        connect(surface_, &EmulatorSurface::keyChanged, this, &EmulatorRunner::setKey);
+        connect(surface_, &EmulatorSurface::focusChanged, this, [this](bool focused) {
+            if (!focused) {
+                releaseKeys();
+            }
+        });
     }
+}
+
+void EmulatorRunner::setKey(const QString& key, bool pressed) {
+    const bool changed = pressed ? !keys_.contains(key) : keys_.contains(key);
+    if (!changed) {
+        return;
+    }
+    if (pressed) {
+        keys_.insert(key);
+    } else {
+        keys_.remove(key);
+    }
+    writeKeys();
+}
+
+void EmulatorRunner::releaseKeys() {
+    if (!keys_.isEmpty()) {
+        keys_.clear();
+        writeKeys();
+    }
+}
+
+void EmulatorRunner::writeKeys() {
+    if (!stage_ || !stage_->isValid()) {
+        return;
+    }
+    const QString path = stage_->filePath(QStringLiteral("keys.txt"));
+    QFile file(path + QStringLiteral(".tmp"));
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
+        return;
+    }
+    QStringList keys = keys_.values();
+    keys.sort();
+    file.write(keys.join(QLatin1Char(' ')).toUtf8());
+    file.close();
+    // MoveFileEx replaces the file in one step; the script reads it each frame.
+#ifdef Q_OS_WIN
+    MoveFileExW(reinterpret_cast<const wchar_t*>(QDir::toNativeSeparators(file.fileName()).utf16()),
+                reinterpret_cast<const wchar_t*>(QDir::toNativeSeparators(path).utf16()),
+                MOVEFILE_REPLACE_EXISTING);
+#else
+    QFile::remove(path);
+    QFile::rename(file.fileName(), path);
+#endif
 }
 
 void EmulatorRunner::append(const QString& line) {
@@ -249,7 +451,8 @@ void EmulatorRunner::append(const QString& line) {
 
 bool EmulatorRunner::writeControl(const sdk::ProcessSpec& spec, const QString& gameScript, QString* error) {
     const QString command = luaPath(stage_->filePath(QStringLiteral("command.txt")));
-    QStringList values{luaPath(cart_), command, luaPath(spec.readyFile), luaPath(gameScript)};
+    const QString keys = luaPath(stage_->filePath(QStringLiteral("keys.txt")));
+    QStringList values{luaPath(cart_), command, luaPath(spec.readyFile), luaPath(gameScript), keys};
     QString environment;
     for (auto it = spec.environment.constBegin(); it != spec.environment.constEnd(); ++it) {
         static const QRegularExpression name(QStringLiteral("^[A-Za-z_][A-Za-z0-9_]*$"));
@@ -273,6 +476,7 @@ bool EmulatorRunner::writeControl(const sdk::ProcessSpec& spec, const QString& g
     QString text = QString::fromUtf8(kControlScript);
     text.replace(QLatin1String("@CART@"), values.at(0))
         .replace(QLatin1String("@COMMAND@"), values.at(1))
+        .replace(QLatin1String("@KEYS@"), values.at(4))
         .replace(QLatin1String("@READY@"), values.at(2))
         .replace(QLatin1String("@SCRIPT@"), values.at(3))
         .replace(QLatin1String("@ENVIRONMENT@"), environment);
@@ -400,6 +604,7 @@ void EmulatorRunner::start(const sdk::ProcessSpec& spec, const QString& title,
                 // MAME has let go of the cartridge copies.
                 stage_.reset();
                 cart_.clear();
+                keys_.clear();
                 auto finished = std::move(finished_);
                 finished_ = {};
                 emit stateChanged();
@@ -460,6 +665,7 @@ bool EmulatorRunner::reload(const sdk::ProcessSpec& spec, const QString& cartSou
     if (paused_) {
         togglePause();
     }
+    releaseKeys();
     title_ = title;
     readyFile_ = spec.readyFile;
     fastStart_ = !readyFile_.isEmpty();

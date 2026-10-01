@@ -161,9 +161,17 @@ public:
         runner_->setSurface(surface_);
     }
 
+    runtime::EmulatorSurface* surface() const { return surface_; }
+
     void refresh() {
         surface_->setVisible(runner_->isRunning());
         layoutSurface();
+        // The keyboard goes to the game as soon as it is up.
+        const auto phase = runner_->phase();
+        if (phase == runtime::EmulatorRunner::Phase::Running && lastPhase_ != phase && isVisible()) {
+            surface_->setFocus(Qt::OtherFocusReason);
+        }
+        lastPhase_ = phase;
         if (runner_->isPaused()) {
             if (!cover_->showsPause()) {
                 cover_->showPaused(runner_->picture());  // the frame taken as it froze
@@ -237,6 +245,7 @@ private:
     runtime::EmulatorRunner* runner_;
     runtime::EmulatorSurface* surface_;
     ScreenCover* cover_;
+    runtime::EmulatorRunner::Phase lastPhase_ = runtime::EmulatorRunner::Phase::Idle;
     BusyCard* busy_;
 };
 
@@ -276,6 +285,7 @@ EmulatorView::EmulatorView(sdk::EmulatorModel* model, runtime::EmulatorRunner* r
             busyStep_ = QStringLiteral("Working");
         }
     }
+    connect(stage_->surface(), &runtime::EmulatorSurface::focusChanged, this, &EditorView::toolbarChanged);
     connect(emulator_, &sdk::EditorModel::contentChanged, stage_, qOverload<>(&QWidget::update));
     connect(emulator_, &sdk::EditorModel::toolsChanged, this, &EditorView::toolbarChanged);
     updateState();
@@ -321,6 +331,7 @@ QWidget* EmulatorView::createToolbar(QWidget* parent) {
         auto* b = new QPushButton(text, bar);
         b->setFont(theme::font(theme::TextRole::Body, 12.0));
         b->setEnabled(enabled);
+        b->setFocusPolicy(Qt::NoFocus);  // a click keeps the keyboard with the game
         return b;
     };
     // One label in every state, so the buttons after it never move.
@@ -372,8 +383,9 @@ QWidget* EmulatorView::createToolbar(QWidget* parent) {
     } else if (phase == Phase::Stopping) {
         status = QStringLiteral("Stopping…");
     } else if (running) {
-        status = runner_->isPaused() ? QStringLiteral("Paused")
-                                     : QStringLiteral("Running · game pad live");
+        status = runner_->isPaused()                 ? QStringLiteral("Paused")
+                 : stage_->surface()->hasFocus() ? QStringLiteral("Running · keyboard and game pad go to the game")
+                                                 : QStringLiteral("Running · click the picture for the keyboard");
     }
     auto* state = new ui::Label(status, ui::Label::Role::Small, bar);
     layout->addWidget(state);

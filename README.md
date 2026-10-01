@@ -107,7 +107,13 @@ on `PATH`.
 
 MAME draws straight into the Playtest surface (`-attach_window`), so it never
 sees its window as focused; the runner passes `-background_input`, without
-which game pads are ignored. The kit's playtest script writes a status file
+which game pads are ignored. Its keyboard providers cannot read the keyboard of a
+window another process owns, so the surface takes the keys itself while it
+has focus (it gets it when the game is up, or on a click) and the runner
+writes them, by MAME's names, to a keys file the control script reads each
+frame; the script presses every I/O port field whose MAME input assignment
+names one of them. Studio shortcuts and menus do not see game keys (Alt and
+Alt+Space do not open menus); function keys and Pause stay with the studio. The kit's playtest script writes a status file
 when the round is on screen (`FLICKY_PLAYTEST_RESULT`), which ends the
 "Starting" card.
 

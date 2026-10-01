@@ -5,6 +5,7 @@
 #include <QImage>
 #include <QObject>
 #include <QPointer>
+#include <QSet>
 #include <QWidget>
 
 #include <functional>
@@ -16,19 +17,29 @@ class QTimer;
 
 namespace rl::runtime {
 
-// The native child window MAME draws into (-attach_window).
+// The native child window MAME draws into (-attach_window). MAME cannot read
+// the keyboard of a window it does not own, so while the surface has focus it
+// takes the keys itself and reports them by MAME's names; studio shortcuts
+// and menus do not see them. Function keys and Pause stay with the studio.
 class EmulatorSurface final : public QWidget {
     Q_OBJECT
 
 public:
     explicit EmulatorSurface(QWidget* parent = nullptr);
 
+    bool eventFilter(QObject* watched, QEvent* event) override;
+
 signals:
     void clicked();
+    void keyChanged(const QString& key, bool pressed);  // "KEYCODE_LEFT"
+    void focusChanged(bool focused);
 
 protected:
     void mousePressEvent(QMouseEvent* event) override;
     void paintEvent(QPaintEvent* event) override;
+    void focusInEvent(QFocusEvent* event) override;
+    void focusOutEvent(QFocusEvent* event) override;
+    bool focusNextPrevChild(bool next) override;
 };
 
 // One emulator process at a time, rendering into a surface the Playtest view
@@ -69,6 +80,9 @@ public:
     void stopNow();
     bool togglePause();
     void focusEmulator();
+    // Forwarded keyboard: the keys held for the game, by MAME's names.
+    void setKey(const QString& key, bool pressed);
+    void releaseKeys();
     // The picture as it is on screen, or null when nothing runs.
     QImage picture() const;
     // Saves the emulator picture as PNG; returns the path or empty.
@@ -84,6 +98,7 @@ private:
     QPointer<EmulatorSurface> surface_;
     void watchStartup();
     void setPhase(Phase phase);
+    void writeKeys();
     bool writeControl(const sdk::ProcessSpec& spec, const QString& gameScript, QString* error);
     QString stageCart(const QString& source, QString* error);
     bool reload(const sdk::ProcessSpec& spec, const QString& cartSource, const QString& gameScript,
@@ -101,6 +116,7 @@ private:
     std::unique_ptr<QTemporaryDir> stage_;
     QString cart_;                  // the copy MAME has mounted
     int cartSerial_ = 0;
+    QSet<QString> keys_;
     QStringList signature_;         // what a launch must match to reload
     std::function<void(const sdk::ProcessResult&)> finished_;
     QString title_;

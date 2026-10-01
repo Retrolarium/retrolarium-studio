@@ -2,6 +2,8 @@
 
 #include "frame/title_bar.hpp"
 
+#include <QApplication>
+#include <QVariant>
 #include <QWidget>
 
 #ifdef Q_OS_WIN
@@ -214,6 +216,17 @@ bool NativeFrame::handle(const QByteArray& eventType, void* message, long* resul
             showSystemMenu(hwnd, GET_X_LPARAM(msg->lParam), GET_Y_LPARAM(msg->lParam));
             *result = 0;
             return true;
+        }
+        break;
+    case WM_SYSCOMMAND:
+        // Alt and Alt+Space open the window menu, unless a widget that owns
+        // the keyboard (a running game) has the focus.
+        if ((msg->wParam & 0xfff0) == SC_KEYMENU) {
+            const QWidget* focus = QApplication::focusWidget();
+            if (focus && focus->property("rlOwnsKeyboard").toBool()) {
+                *result = 0;
+                return true;
+            }
         }
         break;
     default:
