@@ -33,13 +33,18 @@ endfunction()
 #
 #   studio_ui       theme, widgets, window frame       (no studio knowledge)
 #   studio_sdk      plugin contracts                   (no UI, no games)
-#   studio_editors  universal editors                  ui + sdk
+#   studio_runtime  processes, tool lookup, emulator    sdk
+#   studio_editors  universal editors                  ui + sdk + runtime
 #   studio_gallery  theme test bench                   ui
 #   studio_shell    main window                        ui + sdk + editors + gallery
 #   plugins/*       platform and game code             sdk only
 #   app             entry point, names the plugins     everything
 
 add_library(studio_ui STATIC
+    src/frame/native_frame.cpp
+    src/frame/native_frame.hpp
+    src/frame/studio_dialog.cpp
+    src/frame/studio_dialog.hpp
     src/frame/studio_window.cpp
     src/frame/studio_window.hpp
     src/frame/title_bar.cpp
@@ -104,12 +109,34 @@ target_include_directories(studio_sdk PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(studio_sdk PUBLIC Qt5::Core Qt5::Gui Qt5::Widgets)
 studio_enable_warnings(studio_sdk)
 
+add_library(studio_runtime STATIC
+    src/runtime/audio_player.cpp
+    src/runtime/audio_player.hpp
+    src/runtime/emulator_runner.cpp
+    src/runtime/emulator_runner.hpp
+    src/runtime/process_runner.cpp
+    src/runtime/process_runner.hpp
+    src/runtime/tool_locator.cpp
+    src/runtime/tool_locator.hpp
+)
+target_link_libraries(studio_runtime PUBLIC studio_sdk Qt5::Core Qt5::Gui Qt5::Widgets)
+if(WIN32)
+    target_link_libraries(studio_runtime PRIVATE winmm)
+endif()
+studio_enable_warnings(studio_runtime)
+
 add_library(studio_editors STATIC
+    src/editors/composition_editor.cpp
+    src/editors/composition_editor.hpp
     src/editors/editor_view.cpp
     src/editors/editor_view.hpp
+    src/editors/emulator_view.cpp
+    src/editors/emulator_view.hpp
     src/editors/mime.hpp
     src/editors/palette_editor.cpp
     src/editors/palette_editor.hpp
+    src/editors/sequencer_editor.cpp
+    src/editors/sequencer_editor.hpp
     src/editors/table_editor.cpp
     src/editors/table_editor.hpp
     src/editors/tile_editor.cpp
@@ -117,7 +144,7 @@ add_library(studio_editors STATIC
     src/editors/tilemap_editor.cpp
     src/editors/tilemap_editor.hpp
 )
-target_link_libraries(studio_editors PUBLIC studio_ui studio_sdk)
+target_link_libraries(studio_editors PUBLIC studio_ui studio_sdk studio_runtime)
 studio_enable_warnings(studio_editors)
 
 add_library(studio_gallery STATIC
@@ -137,7 +164,7 @@ add_library(studio_shell STATIC
     src/shell/side_panels.cpp
     src/shell/side_panels.hpp
 )
-target_link_libraries(studio_shell PUBLIC studio_editors studio_gallery studio_sdk studio_ui)
+target_link_libraries(studio_shell PUBLIC studio_editors studio_gallery studio_runtime studio_sdk studio_ui)
 studio_enable_warnings(studio_shell)
 
 # The shared, Qt-free core (codecs with golden tests, also shipped with the
@@ -151,5 +178,12 @@ add_subdirectory(plugins)
 add_executable(retrolarium-studio WIN32
     src/app/main.cpp
 )
+# The one place the version is set: project(VERSION) above.
+target_compile_definitions(retrolarium-studio PRIVATE RETROLARIUM_STUDIO_VERSION="${PROJECT_VERSION}")
+if(WIN32)
+    enable_language(RC)
+    configure_file(resources/version.rc.in ${CMAKE_CURRENT_BINARY_DIR}/version.rc @ONLY)
+    target_sources(retrolarium-studio PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/version.rc)
+endif()
 target_link_libraries(retrolarium-studio PRIVATE studio_shell studio_builtin_plugins)
 studio_enable_warnings(retrolarium-studio)

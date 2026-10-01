@@ -20,12 +20,14 @@ codecs, renderers, build and playtest steps) lives in `plugins/`.
 
 ```text
 src/
-  frame/     studio window: own title bar on the native Windows frame
+  frame/     studio window and dialogs: own title bar on the native Windows frame
   theme/     design tokens, fonts, style sheet, QProxyStyle, icons, painting helpers
   widgets/   reusable themed widgets (buttons, segments, chips, fields, lists, tabs)
   sdk/       plugin contracts: project file, plugin, session, editor models
+  runtime/   host services: one kit/tool process at a time, kit and MAME lookup,
+             MAME embedded into a widget, WAV playback
   editors/   universal editors working only through sdk models (TileMap, Tile,
-             Palette, Table so far)
+             Palette, Table, Composition, Sequencer, Emulator)
   shell/     main window: toolbar, kind rail, document list, editor host,
              inspector, bottom panel, status bar
   gallery/   theme gallery: every component on one page, the visual test bench
@@ -47,7 +49,8 @@ shell never links a plugin, and only the app links both.
 |---|---|
 | `studio_ui` (theme, widgets, frame) | Qt |
 | `studio_sdk` | Qt Core/Gui (+ QUndoStack from Widgets) |
-| `studio_editors` | ui, sdk |
+| `studio_runtime` | sdk, Qt Core/Gui/Widgets, Win32 |
+| `studio_editors` | ui, sdk, runtime |
 | `studio_shell` | ui, sdk, editors, gallery |
 | `platform_megadrive` | nothing |
 | `flicky_data` | megadrive, Qt Core/Gui |
@@ -64,6 +67,10 @@ shell never links a plugin, and only the app links both.
    is generated from `EditorModel::inspect()`.
 4. Every edit is a command on the session's undo stack; saving and dirty marks
    are the session's job.
+5. Build, Play and previews go through `sdk::Host` (`runProcess`,
+   `launchEmulator`, `playAudio`, `locateKit`, …). A plugin describes a
+   process as an `sdk::ProcessSpec`; the shell runs it, streams stderr to
+   Build output and hands stdout back (the kit answers in JSON).
 
 ## Flicky status
 
@@ -77,8 +84,30 @@ writer (`retrolarium-flicky-level-writer`) and the scene renderer.
 | Tiles › sega_tilemap | TileMap | 12×4 name table, words edited in the inspector, live Enigma size against the 10-byte slot |
 | Tiles › sega_palette | Palette | 10 compact CRAM entries, slot and 3-bit RGB |
 | Palettes | Palette | 28 CRAM palettes, 3-bit RGB picker, rounds drawn with each palette |
+| Levels › bonus rounds | TileMap | the scene simulated at a chosen frame; drag the seesaws, tigers and chick spawns (shared by all 12 bonus rounds) |
 | Text | Table | 52 fixed-slot strings with length bars, validation and a game-style preview |
-| Sprites, Sound, Playtest | — | documents listed; editors next |
+| Sprites › mappings | Composition | cropped to the sprite and zoomed to fit; pieces drawn with a round's palette; drag a piece, the mirrored `flipped_x` follows |
+| Sprites › animations | Composition | frame strip at the game's delay, play, reorder frames, delay in the inspector |
+| Sprites › bonus motion | Table | raw motion words with their meaning |
+| Sound › music & SFX | Sequencer | tracks as channels, drag pitch, Shift-drag length, mute, Listen (kit YMFM render, unsaved edits included) |
+| Sound › FM voices, envelopes | Table | operator rows per voice; the 63 priority and envelope bytes |
+| Playtest | Emulator | save, build, MAME embedded in the view at the chosen round; pause, stop, screenshot; a card shows build, start and stop progress |
+
+Build (`Ctrl+B`) saves and runs `rltool studio build` with the plugin's level
+writer; Play (`F5`) builds and opens Playtest at the current round. MAME is
+`RETROLARIUM_MAME`, else `mame/consoles.exe` next to the studio, else the
+nearest `mame_testing/mame/consoles.exe` up the tree; the kit is
+`RETROLARIUM_KIT`, else the nearest `retrolarium_kit/rltool.py`, else `rltool`
+on `PATH`.
+
+MAME draws straight into the Playtest surface (`-attach_window`), so it never
+sees its window as focused; the runner passes `-background_input`, without
+which game pads are ignored. The kit's playtest script writes a status file
+when the round is on screen (`FLICKY_PLAYTEST_RESULT`), which ends the
+"Starting" card.
+
+Flicky's font draws lowercase ASCII as kana; the Text inspector says so when
+a string has lowercase letters.
 
 Every edit is one step on the project undo stack; Save writes only the
 changed documents; Revert returns a document to its state when it was opened
@@ -99,6 +128,8 @@ changed documents; Revert returns a document to its state when it was opened
 - Icons are Lucide-style paths rendered by `theme::icon(name, tone)`; their
   color follows the theme and the button state. Plugins can add glyphs with
   `theme::registerIcon`.
+- Dialogs derive from `frame::StudioDialog` (messages: `frame::MessageDialog`),
+  never `QMessageBox`, so they carry the same title bar.
 - Top-level windows derive from `frame::StudioWindow`. Its title bar holds the
   app mark, the menus, a centred title and the window buttons. On Windows the
   native frame stays (Aero Snap, shadow, resize borders, maximize animation,

@@ -52,6 +52,10 @@ public:
     bool revert(const QString& kind, const QString& document, QString* error) override;
     QVector<sdk::Diagnostic> diagnostics() const override;
     QString playLabel(const QString& kind, const QString& document) const override;
+    bool canBuild() const override { return true; }
+    void build() override;
+    bool canPlay(const QString& kind, const QString& document) const override;
+    void play(const QString& kind, const QString& document) override;
 
     const FlickyLevelSceneRenderer& renderer() const { return *renderer_; }
 
@@ -82,6 +86,35 @@ public:
                        const std::function<void(FlickySemanticsDocument&)>& edit, QString* error);
 
     const FlickySequencesDocument& sequences() const { return *sequences_.doc; }
+    const FlickySequencesDocument& savedSequences() const { return sequences_.saved; }
+    FlickySequencesDocument& sequencesLive() { return *sequences_.doc; }
+    quint64 sequencesRevision() const { return sequences_.revision; }
+    void touchSequences();
+    void commitSequences(const FlickySequencesDocument& before, quint64 beforeRevision,
+                         const QString& text);
+    bool editSequences(const QString& text,
+                       const std::function<void(FlickySequencesDocument&)>& edit, QString* error);
+
+    const FlickySoundDocument& sound() const { return *sound_.doc; }
+    const FlickySoundDocument& savedSound() const { return sound_.saved; }
+    FlickySoundDocument& soundLive() { return *sound_.doc; }
+    quint64 soundRevision() const { return sound_.revision; }
+    bool isSoundDirty() const { return sound_.isDirty(); }
+    void touchSound();
+    void commitSound(const FlickySoundDocument& before, quint64 beforeRevision, const QString& text);
+    bool editSound(const QString& text, const std::function<void(FlickySoundDocument&)>& edit,
+                   QString* error);
+
+    // Round (0-based) the Play action and the Playtest view start from.
+    int playRound() const { return playRound_; }
+    void setPlayRound(int round);
+    QString lastBuild() const { return lastBuild_; }
+    QString projectDirectory() const { return project_.directory(); }
+    QString projectPath() const { return project_.path(); }
+    bool bonusPlacementsDirty() const;
+    int bonusPhase() const { return bonusPhase_; }
+    void setBonusPhase(int phase) { bonusPhase_ = phase; }
+    QSet<int>& mutedChannels(const QString& header) { return muted_[header]; }
 
     QImage placementPreview(const QString& field, int round) const;
     // Settled scene of a 0-based round, for palette samples.
@@ -110,6 +143,9 @@ signals:
     void levelsChanged();
     void graphicsChanged();
     void semanticsChanged();
+    void sequencesChanged();
+    void soundChanged();
+    void playRoundChanged();
 
 private:
     FlickySession() = default;
@@ -118,6 +154,11 @@ private:
     void setSemantics(const FlickySemanticsDocument& doc, quint64 revision);
     void notifyGraphics();
     void notifySemantics();
+    void notifySequences();
+    void notifySound();
+    // Saves if needed, then builds; `next(ok)` continues the operation.
+    void runBuild(std::function<void(bool)> next);
+    void report(sdk::Severity severity, const QString& source, const QString& message);
     QVector<int> layoutsOfRound(int round) const;
     const QSet<int>& dirtyTiles(const QString& asset) const;
 
@@ -129,7 +170,7 @@ private:
     Tracked<FlickyGraphicsDocument> graphics_;
     Tracked<FlickySemanticsDocument> semantics_;
     Tracked<FlickySequencesDocument> sequences_;
-    std::unique_ptr<FlickySoundDocument> sound_;
+    Tracked<FlickySoundDocument> sound_;
     std::unique_ptr<FlickyLevelSceneRenderer> renderer_;
 
     // Library previews and round samples depend on art and palettes, not on
@@ -141,6 +182,10 @@ private:
     QString levelLayer_ = QStringLiteral("objects");
     bool collisionOverlay_ = false;
     QHash<QString, QString> previewPalettes_;
+    QHash<QString, QSet<int>> muted_;
+    int playRound_ = 0;
+    int bonusPhase_ = 60;
+    QString lastBuild_;
 };
 
 }  // namespace rl::flicky

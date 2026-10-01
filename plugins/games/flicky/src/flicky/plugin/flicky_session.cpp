@@ -6,8 +6,19 @@
 #include "flicky/plugin/semantics_models.hpp"
 #include "megadrive/vdp.hpp"
 
+#include "flicky/plugin/bonus_model.hpp"
+#include "flicky/plugin/playtest_model.hpp"
+#include "flicky/plugin/sound_models.hpp"
+#include "flicky/plugin/sprite_models.hpp"
+#include "sdk/plugin.hpp"
+
+#include <QCryptographicHash>
+#include <QDateTime>
 #include <QDir>
+#include <QFile>
 #include <QFileInfo>
+#include <QJsonArray>
+#include <QJsonDocument>
 #include <QUndoCommand>
 #include <QUndoStack>
 
@@ -132,8 +143,7 @@ std::unique_ptr<FlickySession> FlickySession::open(const sdk::ProjectFile& proje
         loadTracked(session->graphics_, require(QStringLiteral("flicky.graphics")));
         loadTracked(session->semantics_, require(QStringLiteral("flicky.semantics")));
         loadTracked(session->sequences_, require(QStringLiteral("flicky.animations")));
-        session->sound_ =
-            std::make_unique<FlickySoundDocument>(FlickySoundDocument::load(require(QStringLiteral("flicky.sound"))));
+        loadTracked(session->sound_, require(QStringLiteral("flicky.sound")));
         session->renderer_ = std::make_unique<FlickyLevelSceneRenderer>(
             session->sourceRoot_, session->graphics_.doc, session->semantics_.doc,
             session->sequences_.doc);
@@ -246,13 +256,29 @@ QVector<sdk::DocumentGroup> FlickySession::documents(const QString& kind) const 
     } else if (kind == QLatin1String("sprites")) {
         sdk::DocumentGroup mappings = group(QStringLiteral("Mappings"));
         for (const QString& id : sequences().mappingIds()) {
-            mappings.documents.append(entry(QStringLiteral("mapping:") + id, id, QString()));
+            const QJsonObject mapping = sequences().mapping(id);
+            mappings.documents.append(entry(QStringLiteral("mapping:") + id, id,
+                                            QString::number(mapping.value(QStringLiteral("pieces")).toArray().size()),
+                                            mapping != sequences_.saved.mapping(id)));
         }
         sdk::DocumentGroup animations = group(QStringLiteral("Animations"));
         for (const QString& id : sequences().animationIds()) {
-            animations.documents.append(entry(QStringLiteral("animation:") + id, id, QString()));
+            const QJsonObject animation = sequences().animation(id);
+            animations.documents.append(entry(QStringLiteral("animation:") + id, id,
+                                              QStringLiteral("%1 fr").arg(animation.value(QStringLiteral("frames")).toArray().size()),
+                                              animation != sequences_.saved.animation(id)));
+        }
+        sdk::DocumentGroup motion = group(QStringLiteral("Bonus motion"));
+        for (const QString& id : sequences().bonusMotionIds()) {
+            const QJsonObject record = sequences().bonusMotion(id);
+            motion.documents.append(entry(QStringLiteral("motion:") + id, id,
+                                          record.value(QStringLiteral("kind")).toString(),
+                                          record != sequences_.saved.bonusMotion(id)));
         }
         groups << mappings << animations;
+        if (!motion.documents.isEmpty()) {
+            groups << motion;
+        }
     } else if (kind == QLatin1String("text")) {
         groups.append(group(QStringLiteral("All game text"),
                             {entry(QStringLiteral("game-text"), QStringLiteral("Game text"),
@@ -260,17 +286,28 @@ QVector<sdk::DocumentGroup> FlickySession::documents(const QString& kind) const 
                                    !sameText(semantics(), semantics_.saved))}));
     } else if (kind == QLatin1String("sound")) {
         sdk::DocumentGroup songs = group(QStringLiteral("Music & SFX"));
-        for (const QString& id : sound_->headerIds()) {
-            songs.documents.append(entry(QStringLiteral("header:") + id, id, sound_->header(id).kind));
+        for (const QString& id : sound().headerIds()) {
+            bool dirty = false;
+            for (const FlickySoundTrack& track : sound().header(id).tracks) {
+                dirty = dirty || sound().blockText(track.sequence) != sound_.saved.blockText(track.sequence);
+            }
+            dirty = dirty || sound().blockText(id) != sound_.saved.blockText(id);
+            songs.documents.append(entry(QStringLiteral("header:") + id, id, sound().header(id).kind, dirty));
         }
         sdk::DocumentGroup voices = group(QStringLiteral("FM voices"));
-        for (const QString& id : sound_->voiceBankIds()) {
-            voices.documents.append(entry(QStringLiteral("voice:") + id, id, QString()));
+        for (const QString& id : sound().voiceBankIds()) {
+            voices.documents.append(entry(QStringLiteral("voice:") + id, id,
+                                          QStringLiteral("%1 voices").arg(sound().voiceCount(id)),
+                                          sound().blockText(id) != sound_.saved.blockText(id)));
         }
-        groups << songs << voices;
+        sdk::DocumentGroup data = group(QStringLiteral("Sound data"));
+        data.documents.append(entry(QStringLiteral("envelopes"), QStringLiteral("Priority & envelopes"),
+                                    QStringLiteral("%1 bytes").arg(sound().priorityEnvelopeBytes().size()),
+                                    sound().priorityEnvelopeBytes() != sound_.saved.priorityEnvelopeBytes()));
+        groups << songs << voices << data;
     } else if (kind == QLatin1String("playtest")) {
         groups.append(group(QString(), {entry(QStringLiteral("playtest"), QStringLiteral("Build and run"),
-                                              QString())}));
+                                              lastBuild_.isEmpty() ? QString() : QStringLiteral("built"))}));
     }
     return groups;
 }
@@ -280,6 +317,10 @@ std::unique_ptr<sdk::EditorModel> FlickySession::openEditor(const QString& kind,
     if (kind == QLatin1String("levels")) {
         const int round = roundFromId(document);
         if (round >= 0) {
+            setPlayRound(round);
+            if (objects::isBonusRound(round) && levels_.hasBonusPlacements()) {
+                return std::make_unique<BonusRoundModel>(this, round);
+            }
             return std::make_unique<LevelsModel>(this, round);
         }
     } else if (kind == QLatin1String("tiles")) {
@@ -298,6 +339,32 @@ std::unique_ptr<sdk::EditorModel> FlickySession::openEditor(const QString& kind,
         }
     } else if (kind == QLatin1String("text")) {
         return std::make_unique<TextModel>(this);
+    } else if (kind == QLatin1String("sprites")) {
+        // Ids come from the document lists; anything else is refused here so
+        // models never see an unknown record.
+        const QString id = document.section(QLatin1Char(':'), 1);
+        if (document.startsWith(QLatin1String("mapping:")) && sequences().mappingIds().contains(id)) {
+            return std::make_unique<MappingModel>(this, id);
+        }
+        if (document.startsWith(QLatin1String("animation:")) && sequences().animationIds().contains(id)) {
+            return std::make_unique<AnimationModel>(this, id);
+        }
+        if (document.startsWith(QLatin1String("motion:")) && sequences().bonusMotionIds().contains(id)) {
+            return std::make_unique<BonusMotionModel>(this, id);
+        }
+    } else if (kind == QLatin1String("sound")) {
+        const QString id = document.section(QLatin1Char(':'), 1);
+        if (document.startsWith(QLatin1String("header:")) && sound().headerIds().contains(id)) {
+            return std::make_unique<SoundHeaderModel>(this, id);
+        }
+        if (document.startsWith(QLatin1String("voice:")) && sound().voiceBankIds().contains(id)) {
+            return std::make_unique<FmVoiceModel>(this, id);
+        }
+        if (document == QLatin1String("envelopes")) {
+            return std::make_unique<EnvelopeModel>(this);
+        }
+    } else if (kind == QLatin1String("playtest")) {
+        return std::make_unique<PlaytestModel>(this);
     }
     return nullptr;
 }
@@ -319,9 +386,22 @@ bool FlickySession::isLayoutDirty(int layout) const {
     return levels_.grid(layout) != savedLevels_.grid(layout) || !sameObjects(levels_, savedLevels_, layout);
 }
 
+bool FlickySession::bonusPlacementsDirty() const {
+    if (!levels_.hasBonusPlacements()) {
+        return false;
+    }
+    for (const char* id : {"seesaw", "tiger", "chick_spawn"}) {
+        if (levels_.bonusPlacement(QString::fromLatin1(id)) !=
+            savedLevels_.bonusPlacement(QString::fromLatin1(id))) {
+            return true;
+        }
+    }
+    return false;
+}
+
 bool FlickySession::isRoundDirty(int round) const {
     if (objects::isBonusRound(round)) {
-        return false;
+        return bonusPlacementsDirty();
     }
     for (int layout : layoutsOfRound(round)) {
         if (isLayoutDirty(layout)) {
@@ -333,6 +413,16 @@ bool FlickySession::isRoundDirty(int round) const {
 
 bool FlickySession::roundDiffersFromBaseline(int round) const {
     if (objects::isBonusRound(round)) {
+        if (!levels_.hasBonusPlacements()) {
+            return false;
+        }
+        for (const char* id : {"seesaw", "tiger", "chick_spawn"}) {
+            const QJsonObject p = levels_.bonusPlacement(QString::fromLatin1(id));
+            if (p.value(QStringLiteral("x")) != p.value(QStringLiteral("baseline_x")) ||
+                p.value(QStringLiteral("y")) != p.value(QStringLiteral("baseline_y"))) {
+                return true;
+            }
+        }
         return false;
     }
     const int collision = levels_.layoutForRound(round);
@@ -592,7 +682,7 @@ bool FlickySession::save(QString* error) {
         }
         return false;
     };
-    bool levelsDirty = false;
+    bool levelsDirty = bonusPlacementsDirty();
     for (int layout = 0; layout < objects::kLayouts && !levelsDirty; ++layout) {
         levelsDirty = isLayoutDirty(layout);
     }
@@ -617,11 +707,29 @@ bool FlickySession::save(QString* error) {
     } catch (const std::exception& e) {
         return failed(semantics_.path, e);
     }
+    try {
+        if (sequences_.isDirty()) {
+            sequences_.doc->save(sequences_.path);
+        }
+    } catch (const std::exception& e) {
+        return failed(sequences_.path, e);
+    }
+    try {
+        if (sound_.isDirty()) {
+            sound_.doc->save(sound_.path);
+        }
+    } catch (const std::exception& e) {
+        return failed(sound_.path, e);
+    }
     savedLevels_ = levels_;
     graphics_.saved = *graphics_.doc;
     graphics_.savedRevision = graphics_.revision;
     semantics_.saved = *semantics_.doc;
     semantics_.savedRevision = semantics_.revision;
+    sequences_.saved = *sequences_.doc;
+    sequences_.savedRevision = sequences_.revision;
+    sound_.saved = *sound_.doc;
+    sound_.savedRevision = sound_.revision;
     dirtyTilesRevision_ = ~quint64(0);
     undoStack()->setClean();
     for (const sdk::Kind& k : kinds()) {
@@ -666,6 +774,28 @@ bool FlickySession::canRevert(const QString& kind, const QString& document) cons
             if (semantics().textValue(id) != semantics().baselineTextValue(id)) return true;
         }
     }
+    if (kind == QLatin1String("sprites")) {
+        const QString id = document.section(QLatin1Char(':'), 1);
+        if (document.startsWith(QLatin1String("mapping:"))) return sequences().mapping(id) != sequences().baselineMapping(id);
+        if (document.startsWith(QLatin1String("animation:"))) return sequences().animation(id) != sequences().baselineAnimation(id);
+        if (document.startsWith(QLatin1String("motion:"))) return sequences().bonusMotion(id) != sequences().baselineBonusMotion(id);
+    }
+    if (kind == QLatin1String("sound")) {
+        if (document.startsWith(QLatin1String("header:"))) {
+            const QString id = document.mid(7);
+            for (const FlickySoundTrack& track : sound().header(id).tracks) {
+                if (sound().blockText(track.sequence) != sound().baselineBlockText(track.sequence)) return true;
+            }
+            return sound().blockText(id) != sound().baselineBlockText(id);
+        }
+        if (document.startsWith(QLatin1String("voice:"))) {
+            return sound().blockText(document.mid(6)) != sound().baselineBlockText(document.mid(6));
+        }
+        if (document == QLatin1String("envelopes")) {
+            return sound().blockText(QStringLiteral("zPriorityAndEnvelopeData")) !=
+                   sound().baselineBlockText(QStringLiteral("zPriorityAndEnvelopeData"));
+        }
+    }
     return false;
 }
 
@@ -674,6 +804,15 @@ bool FlickySession::revert(const QString& kind, const QString& document, QString
         const int round = roundFromId(document);
         if (round < 0) {
             return Session::revert(kind, document, error);
+        }
+        if (objects::isBonusRound(round)) {
+            return editLevels(QStringLiteral("Revert bonus placements"),
+                              [](FlickyLevelDocument& levels) {
+                                  for (const char* id : {"seesaw", "tiger", "chick_spawn"}) {
+                                      levels.restoreBonusPlacement(QString::fromLatin1(id));
+                                  }
+                              },
+                              error);
         }
         return editLevels(
             QStringLiteral("Revert Round %1").arg(two(round + 1)),
@@ -710,6 +849,33 @@ bool FlickySession::revert(const QString& kind, const QString& document, QString
         return editSemantics(QStringLiteral("Revert %1").arg(document),
                              [document](FlickySemanticsDocument& s) { s.restorePalette(document); },
                              error);
+    }
+    if (kind == QLatin1String("sprites")) {
+        const QString id = document.section(QLatin1Char(':'), 1);
+        return editSequences(QStringLiteral("Revert %1").arg(id),
+                             [document, id](FlickySequencesDocument& q) {
+                                 if (document.startsWith(QLatin1String("mapping:"))) q.restoreMapping(id);
+                                 else if (document.startsWith(QLatin1String("animation:"))) q.restoreAnimation(id);
+                                 else q.restoreBonusMotion(id);
+                             },
+                             error);
+    }
+    if (kind == QLatin1String("sound")) {
+        return editSound(QStringLiteral("Revert %1").arg(document),
+                         [document](FlickySoundDocument& d) {
+                             if (document.startsWith(QLatin1String("header:"))) {
+                                 const QString id = document.mid(7);
+                                 for (const FlickySoundTrack& track : d.header(id).tracks) {
+                                     d.restoreBlock(track.sequence);
+                                 }
+                                 d.restoreBlock(id);
+                             } else if (document.startsWith(QLatin1String("voice:"))) {
+                                 d.restoreBlock(document.mid(6));
+                             } else {
+                                 d.restoreBlock(QStringLiteral("zPriorityAndEnvelopeData"));
+                             }
+                         },
+                         error);
     }
     if (kind == QLatin1String("text")) {
         return editSemantics(QStringLiteral("Revert game text"),
@@ -751,7 +917,274 @@ QVector<sdk::Diagnostic> FlickySession::diagnostics() const {
 
 QString FlickySession::playLabel(const QString& kind, const QString& document) const {
     const int round = kind == QLatin1String("levels") ? roundFromId(document) : -1;
-    return round >= 0 ? QStringLiteral("Round ") + two(round + 1) : QString();
+    return QStringLiteral("Round ") + two((round >= 0 ? round : playRound_) + 1);
+}
+
+void FlickySession::setPlayRound(int round) {
+    if (round >= 0 && round < objects::kRounds && round != playRound_) {
+        playRound_ = round;
+        emit playRoundChanged();
+    }
+}
+
+bool FlickySession::canPlay(const QString&, const QString&) const {
+    return true;
+}
+
+// ---------------------------------------------------------------- tracked documents
+
+void FlickySession::notifySequences() {
+    previews_.clear();
+    emit sequencesChanged();
+    emit contentChanged();
+    emit documentsChanged(QStringLiteral("sprites"));
+    emit documentsChanged(QStringLiteral("levels"));
+}
+
+void FlickySession::touchSequences() {
+    sequences_.revision = sequences_.nextRevision++;
+    notifySequences();
+}
+
+void FlickySession::commitSequences(const FlickySequencesDocument& before, quint64 beforeRevision,
+                                    const QString& text) {
+    undoStack()->push(new SnapshotCommand<FlickySequencesDocument>(
+        [this](const FlickySequencesDocument& doc, quint64 revision) {
+            *sequences_.doc = doc;
+            sequences_.revision = revision;
+            notifySequences();
+        },
+        before, beforeRevision, *sequences_.doc, sequences_.revision, text));
+}
+
+bool FlickySession::editSequences(const QString& text,
+                                  const std::function<void(FlickySequencesDocument&)>& edit,
+                                  QString* error) {
+    FlickySequencesDocument next = *sequences_.doc;
+    try {
+        edit(next);
+    } catch (const std::exception& e) {
+        if (error) *error = QString::fromUtf8(e.what());
+        return false;
+    }
+    const quint64 revision = sequences_.nextRevision++;
+    undoStack()->push(new SnapshotCommand<FlickySequencesDocument>(
+        [this](const FlickySequencesDocument& doc, quint64 rev) {
+            *sequences_.doc = doc;
+            sequences_.revision = rev;
+            notifySequences();
+        },
+        *sequences_.doc, sequences_.revision, next, revision, text));
+    return true;
+}
+
+void FlickySession::notifySound() {
+    emit soundChanged();
+    emit contentChanged();
+    emit documentsChanged(QStringLiteral("sound"));
+}
+
+void FlickySession::touchSound() {
+    sound_.revision = sound_.nextRevision++;
+    notifySound();
+}
+
+void FlickySession::commitSound(const FlickySoundDocument& before, quint64 beforeRevision, const QString& text) {
+    undoStack()->push(new SnapshotCommand<FlickySoundDocument>(
+        [this](const FlickySoundDocument& doc, quint64 revision) {
+            *sound_.doc = doc;
+            sound_.revision = revision;
+            notifySound();
+        },
+        before, beforeRevision, *sound_.doc, sound_.revision, text));
+}
+
+bool FlickySession::editSound(const QString& text, const std::function<void(FlickySoundDocument&)>& edit,
+                              QString* error) {
+    FlickySoundDocument next = *sound_.doc;
+    try {
+        edit(next);
+    } catch (const std::exception& e) {
+        if (error) *error = QString::fromUtf8(e.what());
+        return false;
+    }
+    const quint64 revision = sound_.nextRevision++;
+    undoStack()->push(new SnapshotCommand<FlickySoundDocument>(
+        [this](const FlickySoundDocument& doc, quint64 rev) {
+            *sound_.doc = doc;
+            sound_.revision = rev;
+            notifySound();
+        },
+        *sound_.doc, sound_.revision, next, revision, text));
+    return true;
+}
+
+// ---------------------------------------------------------------- build and play
+
+void FlickySession::report(sdk::Severity severity, const QString& source, const QString& message) {
+    if (!host()) {
+        return;
+    }
+    sdk::Diagnostic d;
+    d.severity = severity;
+    d.source = source;
+    d.message = message;
+    d.location = QFileInfo(project_.path()).fileName();
+    host()->report(d);
+}
+
+namespace {
+
+// The last line of stderr usually says why a kit command failed.
+QString failureText(const sdk::ProcessResult& result) {
+    if (!result.started) {
+        return result.error;
+    }
+    const QStringList lines = QString::fromUtf8(result.standardError).split(QLatin1Char('\n'), Qt::SkipEmptyParts);
+    for (int i = lines.size() - 1; i >= 0; --i) {
+        if (!lines.at(i).trimmed().isEmpty()) {
+            return lines.at(i).trimmed();
+        }
+    }
+    return QStringLiteral("exit code %1").arg(result.exitCode);
+}
+
+}  // namespace
+
+void FlickySession::runBuild(std::function<void(bool)> next) {
+    sdk::Host* h = host();
+    if (!h || h->isBusy()) {
+        next(false);
+        return;
+    }
+    if (isModified()) {
+        QString error;
+        if (!save(&error)) {
+            report(sdk::Severity::Error, QStringLiteral("save"), error);
+            next(false);
+            return;
+        }
+    }
+    const QString writer = h->toolPath(QStringLiteral("retrolarium-flicky-level-writer"));
+    if (writer.isEmpty()) {
+        report(sdk::Severity::Error, QStringLiteral("build"),
+               QStringLiteral("retrolarium-flicky-level-writer is missing next to the studio."));
+        next(false);
+        return;
+    }
+    QString error;
+    sdk::ProcessSpec spec = h->kitCommand(
+        {QStringLiteral("studio"), QStringLiteral("build"), project_.path(), QStringLiteral("--flicky-level-writer"),
+         writer},
+        project_.directory(), &error);
+    if (spec.program.isEmpty()) {
+        report(sdk::Severity::Error, QStringLiteral("build"), error);
+        next(false);
+        return;
+    }
+    spec.label = QStringLiteral("Build ROM");
+    spec.environment.insert(QStringLiteral("RETROLARIUM_FLICKY_LEVEL_WRITER"), writer);
+    h->runProcess(spec, [this, next](const sdk::ProcessResult& result) {
+        if (!result.succeeded()) {
+            if (!result.cancelled) {
+                report(sdk::Severity::Error, QStringLiteral("build"),
+                       QStringLiteral("Build failed: %1").arg(failureText(result)));
+            }
+            next(false);
+            return;
+        }
+        const QJsonObject json = QJsonDocument::fromJson(result.standardOutput).object();
+        const QJsonObject artifact = json.value(QStringLiteral("artifact")).toObject();
+        if (json.value(QStringLiteral("status")).toString() != QLatin1String("built")) {
+            report(sdk::Severity::Error, QStringLiteral("build"),
+                   QStringLiteral("The kit did not report a built ROM."));
+            next(false);
+            return;
+        }
+        lastBuild_ = QStringLiteral("%1 · %2")
+                         .arg(QDateTime::currentDateTime().toString(QStringLiteral("HH:mm")),
+                              artifact.value(QStringLiteral("path")).toString());
+        report(sdk::Severity::Info, QStringLiteral("build"),
+               QStringLiteral("Built %1 (%2 bytes, sha256 %3…).")
+                   .arg(artifact.value(QStringLiteral("path")).toString())
+                   .arg(artifact.value(QStringLiteral("size")).toInt())
+                   .arg(artifact.value(QStringLiteral("sha256")).toString().left(12)));
+        emit documentsChanged(QStringLiteral("playtest"));
+        next(true);
+    });
+}
+
+void FlickySession::build() {
+    runBuild([](bool) {});
+}
+
+void FlickySession::play(const QString& kind, const QString& document) {
+    const int chosen = kind == QLatin1String("levels") ? roundFromId(document) : -1;
+    if (chosen >= 0) {
+        setPlayRound(chosen);
+    }
+    const int round = playRound_;
+    runBuild([this, round](bool ok) {
+        sdk::Host* h = host();
+        if (!ok || !h) {
+            return;
+        }
+        const QString mame = h->emulatorPath(QStringLiteral("mame"));
+        if (mame.isEmpty()) {
+            report(sdk::Severity::Error, QStringLiteral("playtest"),
+                   QStringLiteral("MAME was not found. Set RETROLARIUM_MAME to consoles.exe."));
+            return;
+        }
+        QString error;
+        sdk::ProcessSpec plan = h->kitCommand(
+            {QStringLiteral("studio"), QStringLiteral("flicky-round-playtest-plan"), project_.path(),
+             QStringLiteral("--mame"), mame, QStringLiteral("--round"), QString::number(round + 1)},
+            project_.directory(), &error);
+        if (plan.program.isEmpty()) {
+            report(sdk::Severity::Error, QStringLiteral("playtest"), error);
+            return;
+        }
+        plan.label = QStringLiteral("Plan playtest of Round %1").arg(two(round + 1));
+        h->runProcess(plan, [this, round](const sdk::ProcessResult& result) {
+            sdk::Host* host = this->host();
+            if (!host) return;
+            if (!result.succeeded()) {
+                if (!result.cancelled) {
+                    report(sdk::Severity::Error, QStringLiteral("playtest"),
+                           QStringLiteral("Playtest plan failed: %1").arg(failureText(result)));
+                }
+                return;
+            }
+            const QJsonObject json = QJsonDocument::fromJson(result.standardOutput).object();
+            sdk::ProcessSpec game;
+            game.program = json.value(QStringLiteral("program")).toString();
+            for (const QJsonValue& argument : json.value(QStringLiteral("arguments")).toArray()) {
+                game.arguments << argument.toString();
+            }
+            game.workingDirectory = json.value(QStringLiteral("working_directory")).toString();
+            const QJsonObject environment = json.value(QStringLiteral("environment")).toObject();
+            for (auto it = environment.constBegin(); it != environment.constEnd(); ++it) {
+                game.environment.insert(it.key(), it.value().toString());
+            }
+            if (game.program.isEmpty()) {
+                report(sdk::Severity::Error, QStringLiteral("playtest"),
+                       QStringLiteral("The kit returned no emulator command."));
+                return;
+            }
+            // The kit's playtest script writes one status line here once the
+            // round is on screen (or could not be reached).
+            game.readyFile = QDir(project_.directory()).filePath(QStringLiteral("build/playtest-status.txt"));
+            game.environment.insert(QStringLiteral("FLICKY_PLAYTEST_RESULT"), game.readyFile);
+            host->launchEmulator(game, QStringLiteral("Flicky · Round %1").arg(two(round + 1)),
+                                 [this](const sdk::ProcessResult& run) {
+                                     if (run.crashed || (!run.started && !run.error.isEmpty())) {
+                                         report(sdk::Severity::Error, QStringLiteral("playtest"),
+                                                run.error.isEmpty() ? QStringLiteral("The emulator crashed.")
+                                                                    : run.error);
+                                     }
+                                 });
+        });
+    });
 }
 
 }  // namespace rl::flicky

@@ -39,6 +39,8 @@ studio_enable_warnings(flicky_data)
 
 # Flicky plugin: profile, document lists and editor models over flicky_data.
 add_library(flicky_plugin STATIC
+    flicky/src/flicky/plugin/bonus_model.cpp
+    flicky/src/flicky/plugin/bonus_model.hpp
     flicky/src/flicky/plugin/flicky_plugin.cpp
     flicky/src/flicky/plugin/flicky_plugin.hpp
     flicky/src/flicky/plugin/flicky_session.cpp
@@ -49,8 +51,14 @@ add_library(flicky_plugin STATIC
     flicky/src/flicky/plugin/levels_model.hpp
     flicky/src/flicky/plugin/objects.cpp
     flicky/src/flicky/plugin/objects.hpp
+    flicky/src/flicky/plugin/playtest_model.cpp
+    flicky/src/flicky/plugin/playtest_model.hpp
     flicky/src/flicky/plugin/semantics_models.cpp
     flicky/src/flicky/plugin/semantics_models.hpp
+    flicky/src/flicky/plugin/sound_models.cpp
+    flicky/src/flicky/plugin/sound_models.hpp
+    flicky/src/flicky/plugin/sprite_models.cpp
+    flicky/src/flicky/plugin/sprite_models.hpp
 )
 target_link_libraries(flicky_plugin PUBLIC flicky_data studio_sdk)
 studio_enable_warnings(flicky_plugin)

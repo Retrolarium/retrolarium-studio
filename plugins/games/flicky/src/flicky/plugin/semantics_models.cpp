@@ -312,6 +312,11 @@ sdk::Inspection TextModel::inspect() const {
     inspection.preview = value;
     inspection.note = QStringLiteral("Each string has a fixed slot in the ROM. Printable ASCII only; "
                                      "quotes and backslashes are not allowed.");
+    // The game's font has kana where ASCII has lowercase letters.
+    const auto lowercase = [](QChar c) { return c >= QLatin1Char('a') && c <= QLatin1Char('z'); };
+    if (std::any_of(value.begin(), value.end(), lowercase)) {
+        inspection.note += QStringLiteral(" Lowercase letters draw as kana in Flicky's font.");
+    }
     inspection.engineTag = QStringLiteral("flicky.semantics.v1");
     inspection.engine = {{QStringLiteral("Id"), id},
                          {QStringLiteral("Capacity"), QStringLiteral("%1 bytes").arg(capacity)},
