@@ -1,0 +1,131 @@
+#pragma once
+
+#include <QColor>
+#include <QImage>
+#include <QString>
+#include <QStringList>
+#include <QVariant>
+#include <QVector>
+
+// Plain data exchanged between the studio and game plugins. Nothing here knows
+// about a particular platform or game.
+namespace rl::sdk {
+
+// The universal editors of the studio. A data kind names the one that edits it.
+enum class EditorType { None, TileMap, Tile, Palette, Composition, Table, Sequencer, Emulator };
+
+// Class-style name shown in the editor badge ("TileMapEditor").
+QString editorName(EditorType type);
+
+// Identity of an open project, shown in the global toolbar and status bar.
+struct Profile {
+    QString name;       // "Flicky"
+    QString badge;      // platform badge: "MD", "NES"
+    QString platform;   // "Mega Drive"
+    QString revision;   // "UE"
+    QString cpu;        // "68000"
+    QString chip;       // sound chip: "YM2612 + PSG"
+    QString codec;      // codec tag shown with engine data
+};
+
+// One entry of the kind rail.
+struct Kind {
+    QString id;         // "levels"
+    QString label;      // "Levels"
+    QString icon;       // theme icon name
+    EditorType editor = EditorType::None;
+};
+
+struct DocumentEntry {
+    QString id;
+    QString label;
+    QString meta;       // faint note on the right: "bonus", "48 tiles"
+    bool dirty = false;
+};
+
+struct DocumentGroup {
+    QString title;
+    QVector<DocumentEntry> documents;
+};
+
+enum class Severity { Info, Warning, Error };
+
+struct Diagnostic {
+    Severity severity = Severity::Info;
+    QString source;     // "levels/round07"
+    QString message;
+    QString location;   // "Round 07 · 30,10"
+    QString kind;       // where a click navigates, optional
+    QString document;
+};
+
+// Byte or length budget of the open document ("layout 1120 / 1120 B").
+struct Budget {
+    QString text;
+    qint64 used = 0;
+    qint64 capacity = 0;
+    bool isValid() const { return capacity > 0 || !text.isEmpty(); }
+};
+
+// One field of the inspector, generated from the selection's record.
+struct Field {
+    enum class Type { Text, Integer, Choice, ReadOnly };
+
+    QString key;
+    QString label;
+    Type type = Type::ReadOnly;
+    QVariant value;
+    QString hint;           // unit or range at the right edge
+    QStringList choices;    // Choice
+    int minimum = 0;        // Integer
+    int maximum = 0;
+    bool monospace = false;
+};
+
+struct LibraryItem {
+    QString id;
+    QString label;
+    QString hint;
+    QImage icon;            // optional preview, drawn scaled in the library
+};
+
+struct Library {
+    QString hint;           // "drag onto the map"
+    QVector<LibraryItem> items;
+};
+
+struct EngineRow {
+    QString key;
+    QString value;
+};
+
+// What the inspector shows for the current selection.
+struct Inspection {
+    QString kicker;         // "ROUND OBJECT"
+    QString title;          // "Flicky / start"
+    QVector<Field> fields;
+    QString note;
+    Library library;
+    QVector<EngineRow> engine;
+    QString engineTag;      // codec tag in the Engine data header
+    QString preview;        // text as the game shows it, on a black box
+};
+
+// A view setting shown as a chip ("Collision On"). View options never change
+// document data.
+struct ViewOption {
+    QString key;
+    QString label;
+    QString value;
+    QStringList choices;    // drop-down choices; empty with toggle = on/off
+    bool toggle = false;
+};
+
+// An editor tool shown in the tool segment.
+struct Tool {
+    QString id;             // "select", "paint", "erase", "place"
+    QString label;
+    QString icon;
+};
+
+}  // namespace rl::sdk
