@@ -1,0 +1,908 @@
+#include "shell/main_window.hpp"
+
+#include "editors/editor_view.hpp"
+#include "frame/title_bar.hpp"
+#include "gallery/theme_gallery.hpp"
+#include "sdk/editor_model.hpp"
+#include "shell/bottom_panel.hpp"
+#include "shell/inspector_panel.hpp"
+#include "shell/side_panels.hpp"
+#include "theme/icons.hpp"
+#include "theme/theme.hpp"
+#include "theme/typography.hpp"
+#include "widgets/badge.hpp"
+#include "widgets/budget_bar.hpp"
+#include "widgets/label.hpp"
+#include "widgets/primary_button.hpp"
+
+#include <QAction>
+#include <QActionGroup>
+#include <QCloseEvent>
+#include <QFileDialog>
+#include <QFileInfo>
+#include <QHBoxLayout>
+#include <QMenu>
+#include <QMenuBar>
+#include <QMessageBox>
+#include <QPainter>
+#include <QPushButton>
+#include <QSettings>
+#include <QStackedWidget>
+#include <QToolButton>
+#include <QUndoStack>
+#include <QVBoxLayout>
+
+namespace rl::shell {
+
+namespace {
+
+constexpr int kMaxRecent = 8;
+const char* kRecentKey = "recentProjects";
+
+QFrame* surface(const char* name, QWidget* parent) {
+    auto* frame = new QFrame(parent);
+    frame->setProperty("surface", QString::fromLatin1(name));
+    frame->setFrameShape(QFrame::NoFrame);
+    return frame;
+}
+
+QToolButton* toolbarButton(const QString& icon, const QString& tip, QWidget* parent) {
+    auto* button = new QToolButton(parent);
+    button->setIcon(theme::icon(icon));
+    button->setIconSize(QSize(17, 17));
+    button->setFixedSize(30, 30);
+    button->setAutoRaise(true);
+    button->setToolTip(tip);
+    button->setCursor(Qt::PointingHandCursor);
+    return button;
+}
+
+sdk::Diagnostic message(sdk::Severity severity, const QString& source, const QString& text,
+                        const QString& location) {
+    sdk::Diagnostic d;
+    d.severity = severity;
+    d.source = source;
+    d.message = text;
+    d.location = location;
+    return d;
+}
+
+// A filled 6px accent square, the "unsaved" mark of the toolbar.
+class DirtyMark final : public QWidget {
+public:
+    explicit DirtyMark(QWidget* parent) : QWidget(parent) { setFixedSize(6, 6); }
+
+protected:
+    void paintEvent(QPaintEvent*) override {
+        QPainter painter(this);
+        painter.fillRect(rect(), theme::current().accent);
+    }
+};
+
+}  // namespace
+
+MainWindow::MainWindow(QWidget* parent) : StudioWindow(parent) {
+    setWindowTitle(QStringLiteral("Retrolarium"));
+    titleBar()->setTitle(QStringLiteral("Retrolarium Studio"));
+    setMinimumSize(1280, 780);
+    buildMenus();
+
+    auto* root = surface("chrome", this);
+    auto* layout = new QVBoxLayout(root);
+    layout->setContentsMargins(0, 0, 0, 0);
+    layout->setSpacing(0);
+    layout->addWidget(buildToolbar());
+    layout->addWidget(new ui::Divider(Qt::Horizontal, ui::Divider::Strength::Line, root));
+
+    auto* body = new QWidget(root);
+    auto* bodyLayout = new QHBoxLayout(body);
+    bodyLayout->setContentsMargins(0, 0, 0, 0);
+    bodyLayout->setSpacing(0);
+    rail_ = new KindRail(body);
+    documents_ = new DocumentPanel(body);
+    inspector_ = new InspectorPanel(body);
+    inspector_->setFixedWidth(300);
+    bodyLayout->addWidget(rail_);
+    bodyLayout->addWidget(new ui::Divider(Qt::Vertical, ui::Divider::Strength::Line, body));
+    bodyLayout->addWidget(documents_);
+    bodyLayout->addWidget(new ui::Divider(Qt::Vertical, ui::Divider::Strength::Line, body));
+    bodyLayout->addWidget(buildCenter(), 1);
+    bodyLayout->addWidget(new ui::Divider(Qt::Vertical, ui::Divider::Strength::Line, body));
+    bodyLayout->addWidget(inspector_);
+    layout->addWidget(body, 1);
+
+    bottom_ = new BottomPanel(root);
+    layout->addWidget(bottom_);
+    layout->addWidget(buildStatusBar());
+    setCentralWidget(root);
+
+    connect(rail_, &KindRail::kindChosen, this, &MainWindow::selectKind);
+    connect(documents_, &DocumentPanel::documentChosen, this, &MainWindow::selectDocument);
+    connect(inspector_, &InspectorPanel::fieldRejected, this,
+            [this](const QString& message) { updateStatus(message); });
+    connect(bottom_, &BottomPanel::summaryChanged, this, [this](const QString& summary) {
+        statusSummary_->setText(summary);
+    });
+    connect(bottom_, &BottomPanel::diagnosticActivated, this, [this](const sdk::Diagnostic& d) {
+        if (!session_ || d.kind.isEmpty()) {
+            return;
+        }
+        selectKind(d.kind);
+        if (!d.document.isEmpty()) {
+            documents_->selectDocument(d.document);
+            selectDocument(d.document);
+        }
+    });
+
+    closeProject();
+}
+
+MainWindow::~MainWindow() {
+    // Views hold raw pointers to the model, the model to the session.
+    editor_.reset();
+    model_.reset();
+    session_.reset();
+}
+
+// ---------------------------------------------------------------- building
+
+void MainWindow::buildMenus() {
+    QMenuBar* bar = menus();
+    const QFont menuFont = theme::font(theme::TextRole::Body, theme::size::kMenu);
+
+    QMenu* file = bar->addMenu(QStringLiteral("File"));
+    file->setFont(menuFont);
+    QAction* open = file->addAction(QStringLiteral("Open project…"));
+    open->setShortcut(QKeySequence::Open);
+    connect(open, &QAction::triggered, this, &MainWindow::chooseProject);
+    recentMenu_ = file->addMenu(QStringLiteral("Recent projects"));
+    recentMenu_->setFont(menuFont);
+    file->addSeparator();
+    saveAction_ = file->addAction(QStringLiteral("Save all"));
+    saveAction_->setShortcut(QKeySequence::Save);
+    connect(saveAction_, &QAction::triggered, this, &MainWindow::saveAll);
+    closeAction_ = file->addAction(QStringLiteral("Close project"));
+    connect(closeAction_, &QAction::triggered, this, [this] {
+        if (confirmDiscard()) {
+            closeProject();
+        }
+    });
+    file->addSeparator();
+    QAction* quit = file->addAction(QStringLiteral("Exit"));
+    quit->setShortcut(QKeySequence::Quit);
+    connect(quit, &QAction::triggered, this, &QWidget::close);
+
+    projectMenu_ = bar->addMenu(QStringLiteral("Project"));
+    projectMenu_->setFont(menuFont);
+    for (const auto& plugin : sdk::PluginRegistry::instance().plugins()) {
+        for (const sdk::ProjectAction& action : plugin->projectActions()) {
+            QAction* item = projectMenu_->addAction(action.text);
+            const auto run = action.run;
+            connect(item, &QAction::triggered, this, [this, run] { run(*this); });
+        }
+    }
+
+    QMenu* edit = bar->addMenu(QStringLiteral("Edit"));
+    edit->setFont(menuFont);
+    undoAction_ = edit->addAction(QStringLiteral("Undo"));
+    undoAction_->setShortcut(QKeySequence::Undo);
+    redoAction_ = edit->addAction(QStringLiteral("Redo"));
+    redoAction_->setShortcuts({QKeySequence::Redo, QKeySequence(QStringLiteral("Ctrl+Shift+Z"))});
+    connect(undoAction_, &QAction::triggered, this, [this] {
+        if (session_) session_->undoStack()->undo();
+    });
+    connect(redoAction_, &QAction::triggered, this, [this] {
+        if (session_) session_->undoStack()->redo();
+    });
+
+    QMenu* view = bar->addMenu(QStringLiteral("View"));
+    view->setFont(menuFont);
+    QAction* dark = view->addAction(QStringLiteral("Dark theme"));
+    QAction* light = view->addAction(QStringLiteral("Light theme"));
+    dark->setCheckable(true);
+    light->setCheckable(true);
+    auto* themes = new QActionGroup(view);
+    themes->addAction(dark);
+    themes->addAction(light);
+    (theme::Theme::instance().mode() == theme::Mode::Dark ? dark : light)->setChecked(true);
+    connect(dark, &QAction::triggered, this, [] { theme::Theme::instance().setMode(theme::Mode::Dark); });
+    connect(light, &QAction::triggered, this, [] { theme::Theme::instance().setMode(theme::Mode::Light); });
+    connect(&theme::Theme::instance(), &theme::Theme::changed, view, [dark, light](theme::Mode mode) {
+        (mode == theme::Mode::Dark ? dark : light)->setChecked(true);
+    });
+    QAction* toggleTheme = view->addAction(QStringLiteral("Toggle theme"));
+    toggleTheme->setShortcut(QKeySequence(QStringLiteral("Ctrl+Shift+L")));
+    connect(toggleTheme, &QAction::triggered, this, [] { theme::Theme::instance().toggle(); });
+    view->addSeparator();
+    QAction* panel = view->addAction(QStringLiteral("Messages panel"));
+    panel->setShortcut(QKeySequence(QStringLiteral("Ctrl+J")));
+    connect(panel, &QAction::triggered, this, [this] { bottom_->setExpanded(!bottom_->isExpanded()); });
+    view->addSeparator();
+    QAction* gallery = view->addAction(QStringLiteral("Theme gallery"));
+    connect(gallery, &QAction::triggered, this, &MainWindow::openGallery);
+
+    QMenu* build = bar->addMenu(QStringLiteral("Build"));
+    build->setFont(menuFont);
+    build->addAction(QStringLiteral("Build"))->setEnabled(false);
+    build->addAction(QStringLiteral("Play"))->setEnabled(false);
+
+    QMenu* help = bar->addMenu(QStringLiteral("Help"));
+    help->setFont(menuFont);
+    QAction* about = help->addAction(QStringLiteral("About Retrolarium Studio"));
+    connect(about, &QAction::triggered, this, [this] {
+        QMessageBox::about(this, QStringLiteral("Retrolarium Studio"),
+                           QStringLiteral("Retrolarium Studio\nA configurable editor for retro games."));
+    });
+    rebuildRecentMenu();
+}
+
+QWidget* MainWindow::buildToolbar() {
+    auto* bar = surface("chrome", this);
+    bar->setFixedHeight(46);
+    auto* layout = new QHBoxLayout(bar);
+    layout->setContentsMargins(12, 0, 12, 0);
+    layout->setSpacing(12);
+
+    projectButton_ = new QPushButton(bar);
+    projectButton_->setFixedHeight(32);
+    projectButton_->setCursor(Qt::PointingHandCursor);
+    projectButton_->setToolTip(QStringLiteral("Switch project"));
+    auto* projectLayout = new QHBoxLayout(projectButton_);
+    projectLayout->setContentsMargins(6, 0, 10, 0);
+    projectLayout->setSpacing(10);
+    platformBadge_ = new ui::Badge(QStringLiteral("—"), ui::Badge::Kind::Platform, projectButton_);
+    projectName_ = new ui::Label(QStringLiteral("No project"), ui::Label::Role::Project, projectButton_);
+    revisionBadge_ = new ui::Badge(QString(), ui::Badge::Kind::Tag, projectButton_);
+    auto* chevron = new QLabel(projectButton_);
+    auto setChevron = [chevron] {
+        chevron->setPixmap(theme::iconPixmap(QStringLiteral("chevron-down"), 10, theme::current().faint,
+                                             chevron->devicePixelRatioF()));
+    };
+    setChevron();
+    connect(&theme::Theme::instance(), &theme::Theme::changed, chevron, setChevron);
+    projectLayout->addWidget(platformBadge_);
+    projectLayout->addWidget(projectName_);
+    projectLayout->addWidget(revisionBadge_);
+    projectLayout->addWidget(chevron);
+    for (QWidget* child : projectButton_->findChildren<QWidget*>()) {
+        child->setAttribute(Qt::WA_TransparentForMouseEvents);
+    }
+    connect(projectButton_, &QPushButton::clicked, this, [this] {
+        QMenu menu(this);
+        menu.setFont(theme::font(theme::TextRole::Body, theme::size::kMenu));
+        QAction* open = menu.addAction(QStringLiteral("Open project…"));
+        connect(open, &QAction::triggered, this, &MainWindow::chooseProject);
+        const QStringList recent = QSettings().value(QString::fromLatin1(kRecentKey)).toStringList();
+        if (!recent.isEmpty()) {
+            menu.addSeparator();
+            for (const QString& path : recent) {
+                QAction* item = menu.addAction(QFileInfo(path).fileName());
+                item->setToolTip(path);
+                connect(item, &QAction::triggered, this, [this, path] { openProject(path); });
+            }
+        }
+        menu.exec(projectButton_->mapToGlobal(QPoint(0, projectButton_->height() + 2)));
+    });
+    layout->addWidget(projectButton_);
+
+    dirtyIndicator_ = new QWidget(bar);
+    auto* dirtyLayout = new QHBoxLayout(dirtyIndicator_);
+    dirtyLayout->setContentsMargins(0, 0, 0, 0);
+    dirtyLayout->setSpacing(6);
+    dirtyLayout->addWidget(new DirtyMark(dirtyIndicator_));
+    dirtyLabel_ = new ui::Label(QString(), ui::Label::Role::Small, dirtyIndicator_);
+    dirtyLayout->addWidget(dirtyLabel_);
+    layout->addWidget(dirtyIndicator_);
+    layout->addStretch(1);
+
+    auto* actions = new QHBoxLayout;
+    actions->setSpacing(2);
+    undoButton_ = toolbarButton(QStringLiteral("undo"), QStringLiteral("Undo (Ctrl+Z)"), bar);
+    redoButton_ = toolbarButton(QStringLiteral("redo"), QStringLiteral("Redo (Ctrl+Y)"), bar);
+    saveButton_ = toolbarButton(QStringLiteral("save"), QStringLiteral("Save all (Ctrl+S)"), bar);
+    revertButton_ = toolbarButton(QStringLiteral("revert"), QStringLiteral("Revert document to original"), bar);
+    connect(undoButton_, &QToolButton::clicked, undoAction_, &QAction::trigger);
+    connect(redoButton_, &QToolButton::clicked, redoAction_, &QAction::trigger);
+    connect(saveButton_, &QToolButton::clicked, this, &MainWindow::saveAll);
+    connect(revertButton_, &QToolButton::clicked, this, &MainWindow::revertDocument);
+    actions->addWidget(undoButton_);
+    actions->addWidget(redoButton_);
+    actions->addWidget(saveButton_);
+    actions->addWidget(revertButton_);
+    actions->addSpacing(6);
+    auto* separator = new ui::Divider(Qt::Vertical, ui::Divider::Strength::Line, bar);
+    separator->setFixedHeight(18);
+    actions->addWidget(separator, 0, Qt::AlignVCenter);
+    actions->addSpacing(6);
+    buildButton_ = new QPushButton(QStringLiteral("Build"), bar);
+    buildButton_->setProperty("size", QStringLiteral("large"));
+    buildButton_->setFont(theme::font(theme::TextRole::Body, 12.5));
+    buildButton_->setToolTip(QStringLiteral("Building from the studio is not ported yet"));
+    buildButton_->setEnabled(false);
+    actions->addWidget(buildButton_);
+    actions->addSpacing(4);
+    playButton_ = new ui::PrimaryButton(QStringLiteral("Play"), QStringLiteral("play"), bar);
+    playButton_->setToolTip(QStringLiteral("Playtesting from the studio is not ported yet"));
+    playButton_->setEnabled(false);
+    actions->addWidget(playButton_);
+    layout->addLayout(actions);
+    return bar;
+}
+
+QWidget* MainWindow::buildCenter() {
+    centerStack_ = new QStackedWidget(this);
+    welcome_ = buildWelcome();
+    centerStack_->addWidget(welcome_);
+
+    workspace_ = surface("bg", centerStack_);
+    auto* layout = new QVBoxLayout(workspace_);
+    layout->setContentsMargins(0, 0, 0, 0);
+    layout->setSpacing(0);
+
+    auto* crumb = new QWidget(workspace_);
+    crumb->setFixedHeight(34);
+    auto* crumbLayout = new QHBoxLayout(crumb);
+    crumbLayout->setContentsMargins(14, 0, 14, 0);
+    crumbLayout->setSpacing(10);
+    crumbKind_ = new ui::Label(QString(), ui::Label::Role::Body, crumb);
+    crumbKind_->setTone(QStringLiteral("muted"));
+    auto* slash = new ui::Label(QStringLiteral("/"), ui::Label::Role::Body, crumb);
+    slash->setTone(QStringLiteral("faint"));
+    crumbDocument_ = new ui::Label(QString(), ui::Label::Role::Body, crumb);
+    crumbDocument_->setFont(theme::font(theme::TextRole::BodyMedium, theme::size::kBody));
+    crumbEdited_ = new ui::Label(QStringLiteral("● edited"), ui::Label::Role::Meta, crumb);
+    crumbEdited_->setTone(QStringLiteral("accent"));
+    crumbEditor_ = new ui::Badge(QString(), ui::Badge::Kind::Code, crumb);
+    budgetText_ = new ui::Label(QString(), ui::Label::Role::Mono, crumb);
+    budgetText_->setFont(theme::font(theme::TextRole::Mono, 11.0));
+    budgetText_->setTone(QStringLiteral("muted"));
+    budgetBar_ = new ui::BudgetBar(crumb);
+    crumbLayout->addWidget(crumbKind_);
+    crumbLayout->addWidget(slash);
+    crumbLayout->addWidget(crumbDocument_);
+    crumbLayout->addWidget(crumbEdited_);
+    crumbLayout->addWidget(crumbEditor_);
+    crumbLayout->addStretch(1);
+    crumbLayout->addWidget(budgetText_);
+    crumbLayout->addWidget(budgetBar_, 0, Qt::AlignVCenter);
+    layout->addWidget(crumb);
+    layout->addWidget(new ui::Divider(Qt::Horizontal, ui::Divider::Strength::Line, workspace_));
+
+    toolbarRow_ = new QWidget(workspace_);
+    toolbarRow_->setFixedHeight(38);
+    toolbarRowLayout_ = new QHBoxLayout(toolbarRow_);
+    toolbarRowLayout_->setContentsMargins(14, 0, 14, 0);
+    toolbarRowLayout_->setSpacing(0);
+    layout->addWidget(toolbarRow_);
+    layout->addWidget(new ui::Divider(Qt::Horizontal, ui::Divider::Strength::Line, workspace_));
+
+    editorStack_ = new QStackedWidget(workspace_);
+    emptyEditor_ = surface("canvas", editorStack_);
+    auto* emptyLayout = new QVBoxLayout(emptyEditor_);
+    emptyLayout->setAlignment(Qt::AlignCenter);
+    emptyLayout->setSpacing(8);
+    emptyTitle_ = new ui::Label(QString(), ui::Label::Role::Title, emptyEditor_);
+    emptyTitle_->setAlignment(Qt::AlignCenter);
+    emptyNote_ = new ui::Label(QString(), ui::Label::Role::Small, emptyEditor_);
+    emptyNote_->setAlignment(Qt::AlignCenter);
+    emptyNote_->setWordWrap(true);
+    emptyNote_->setMaximumWidth(460);
+    emptyLayout->addWidget(emptyTitle_, 0, Qt::AlignHCenter);
+    emptyLayout->addWidget(emptyNote_, 0, Qt::AlignHCenter);
+    editorStack_->addWidget(emptyEditor_);
+    layout->addWidget(editorStack_, 1);
+
+    centerStack_->addWidget(workspace_);
+    return centerStack_;
+}
+
+QWidget* MainWindow::buildWelcome() {
+    auto* page = surface("bg", this);
+    auto* outer = new QVBoxLayout(page);
+    outer->setAlignment(Qt::AlignCenter);
+    auto* column = new QWidget(page);
+    column->setFixedWidth(420);
+    auto* layout = new QVBoxLayout(column);
+    layout->setContentsMargins(0, 0, 0, 0);
+    layout->setSpacing(10);
+    layout->addWidget(new ui::Label(QStringLiteral("Retrolarium Studio"), ui::Label::Role::Caps, column));
+    auto* title = new ui::Label(QStringLiteral("Open a project to start"), ui::Label::Role::Title, column);
+    layout->addWidget(title);
+    auto* note = new ui::Label(
+        QStringLiteral("Projects are .rlj files. Game support comes from plugins; the "
+                       "Project menu lists what each one can import."),
+        ui::Label::Role::Small, column);
+    note->setWordWrap(true);
+    layout->addWidget(note);
+    layout->addSpacing(8);
+    auto* buttons = new QHBoxLayout;
+    buttons->setSpacing(10);
+    auto* open = new ui::PrimaryButton(QStringLiteral("Open project…"), QStringLiteral("folder"), column);
+    connect(open, &QAbstractButton::clicked, this, &MainWindow::chooseProject);
+    buttons->addWidget(open);
+    for (const auto& plugin : sdk::PluginRegistry::instance().plugins()) {
+        for (const sdk::ProjectAction& action : plugin->projectActions()) {
+            auto* button = new QPushButton(action.text, column);
+            button->setProperty("size", QStringLiteral("large"));
+            button->setFont(theme::font(theme::TextRole::Body, 12.5));
+            const auto run = action.run;
+            connect(button, &QPushButton::clicked, this, [this, run] { run(*this); });
+            buttons->addWidget(button);
+        }
+    }
+    buttons->addStretch(1);
+    layout->addLayout(buttons);
+    outer->addWidget(column);
+    return page;
+}
+
+QWidget* MainWindow::buildStatusBar() {
+    auto* bar = surface("chrome", this);
+    bar->setFixedHeight(24);
+    auto* outer = new QVBoxLayout(bar);
+    outer->setContentsMargins(0, 0, 0, 0);
+    outer->setSpacing(0);
+    outer->addWidget(new ui::Divider(Qt::Horizontal, ui::Divider::Strength::Line, bar));
+    auto* row = new QHBoxLayout;
+    row->setContentsMargins(12, 0, 12, 0);
+    row->setSpacing(16);
+    statusLeft_ = new ui::Label(QString(), ui::Label::Role::Small, bar);
+    statusLeft_->setFont(theme::font(theme::TextRole::Body, theme::size::kStatus));
+    row->addWidget(statusLeft_, 1);
+    statusSummary_ = new QPushButton(bar);
+    statusSummary_->setProperty("variant", QStringLiteral("flat"));
+    statusSummary_->setFont(theme::font(theme::TextRole::Body, theme::size::kStatus));
+    statusSummary_->setCursor(Qt::PointingHandCursor);
+    statusSummary_->setStyleSheet(QStringLiteral("padding: 0 4px; min-height: 18px;"));
+    connect(statusSummary_, &QPushButton::clicked, this, [this] { bottom_->showMessages(); });
+    row->addWidget(statusSummary_);
+    statusRight_ = new ui::Label(QString(), ui::Label::Role::Mono, bar);
+    statusRight_->setFont(theme::font(theme::TextRole::Mono, 11.0));
+    statusRight_->setTone(QStringLiteral("muted"));
+    row->addWidget(statusRight_);
+    outer->addLayout(row, 1);
+    return bar;
+}
+
+// ---------------------------------------------------------------- projects
+
+QWidget* MainWindow::dialogParent() const {
+    return const_cast<MainWindow*>(this);
+}
+
+void MainWindow::openProject(const QString& path) {
+    if (confirmDiscard()) {
+        openProjectFile(path);
+    }
+}
+
+void MainWindow::report(const sdk::Diagnostic& diagnostic) {
+    hostMessages_.append(diagnostic);
+    refreshDiagnostics();
+    if (diagnostic.severity != sdk::Severity::Info) {
+        bottom_->showMessages();
+    }
+}
+
+void MainWindow::log(const QString& line) {
+    bottom_->appendLog(line);
+}
+
+void MainWindow::chooseProject() {
+    if (!confirmDiscard()) {
+        return;
+    }
+    const QString start = projectPath_.isEmpty() ? QString() : QFileInfo(projectPath_).absolutePath();
+    const QString path = QFileDialog::getOpenFileName(
+        this, QStringLiteral("Open project"), start,
+        QStringLiteral("Retrolarium projects (*.rlj);;All files (*)"));
+    if (!path.isEmpty()) {
+        openProjectFile(path);
+    }
+}
+
+bool MainWindow::openProjectFile(const QString& path) {
+    QString error;
+    const sdk::ProjectFile project = sdk::ProjectFile::load(path, &error);
+    if (!project.isValid()) {
+        report(message(sdk::Severity::Error, QStringLiteral("project"), error, QFileInfo(path).fileName()));
+        return false;
+    }
+    sdk::Plugin* plugin = sdk::PluginRegistry::instance().pluginFor(project);
+    if (!plugin) {
+        report(message(sdk::Severity::Error, QStringLiteral("project"),
+                QStringLiteral("No plugin opens profile '%1' (%2).")
+                    .arg(project.string(QStringLiteral("project.profile")),
+                         project.string(QStringLiteral("project.platform"))),
+                QFileInfo(path).fileName()));
+        return false;
+    }
+    std::unique_ptr<sdk::Session> session = plugin->open(project, &error);
+    if (!session) {
+        report(message(sdk::Severity::Error, plugin->id(), error, QFileInfo(path).fileName()));
+        return false;
+    }
+
+    closeProject();
+    session_ = std::move(session);
+    projectPath_ = project.path();
+    rememberRecent(projectPath_);
+
+    QUndoStack* undo = session_->undoStack();
+    connect(undo, &QUndoStack::indexChanged, this, [this] {
+        updateDirtyState();
+        updateStatus();
+    });
+    connect(undo, &QUndoStack::cleanChanged, this, [this] { updateDirtyState(); });
+    connect(session_.get(), &sdk::Session::documentsChanged, this, [this](const QString& kind) {
+        if (kind == kind_) {
+            documents_->updateGroups(session_->documents(kind_));
+        }
+        updateDirtyState();
+    });
+    connect(session_.get(), &sdk::Session::diagnosticsChanged, this, &MainWindow::refreshDiagnostics);
+
+    updateProjectChrome();
+    const QVector<sdk::Kind> kinds = session_->kinds();
+    rail_->setKinds(kinds);
+    centerStack_->setCurrentWidget(workspace_);
+    refreshDiagnostics();
+    if (!kinds.isEmpty()) {
+        selectKind(kinds.first().id);
+    }
+    updateDirtyState();
+    return true;
+}
+
+void MainWindow::closeProject() {
+    inspector_->showMessage(QString(), QString(), QString());
+    editor_.reset();
+    model_.reset();
+    session_.reset();
+    projectPath_.clear();
+    kind_.clear();
+    document_.clear();
+    lastDocument_.clear();
+    rail_->setKinds({});
+    documents_->setTitle(QString());
+    documents_->setGroups({});
+    centerStack_->setCurrentWidget(welcome_);
+    hostMessages_.clear();
+    refreshDiagnostics();
+    updateProjectChrome();
+    updateToolbarRow();
+    updateDirtyState();
+    updateStatus();
+}
+
+bool MainWindow::confirmDiscard() {
+    if (!session_ || !session_->isModified()) {
+        return true;
+    }
+    QMessageBox box(QMessageBox::Warning, QStringLiteral("Unsaved changes"),
+                    QStringLiteral("Save changes to %1 before closing it?").arg(session_->profile().name),
+                    QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel, this);
+    const int answer = box.exec();
+    if (answer == QMessageBox::Cancel) {
+        return false;
+    }
+    if (answer == QMessageBox::Save) {
+        QString error;
+        if (!session_->save(&error)) {
+            report(message(sdk::Severity::Error, QStringLiteral("save"), error, QString()));
+            return false;
+        }
+    }
+    return true;
+}
+
+void MainWindow::closeEvent(QCloseEvent* event) {
+    if (confirmDiscard()) {
+        event->accept();
+    } else {
+        event->ignore();
+    }
+}
+
+void MainWindow::rememberRecent(const QString& path) {
+    QSettings settings;
+    QStringList recent = settings.value(QString::fromLatin1(kRecentKey)).toStringList();
+    recent.removeAll(path);
+    recent.prepend(path);
+    while (recent.size() > kMaxRecent) {
+        recent.removeLast();
+    }
+    settings.setValue(QString::fromLatin1(kRecentKey), recent);
+    rebuildRecentMenu();
+}
+
+void MainWindow::rebuildRecentMenu() {
+    recentMenu_->clear();
+    const QStringList recent = QSettings().value(QString::fromLatin1(kRecentKey)).toStringList();
+    for (const QString& path : recent) {
+        QAction* item = recentMenu_->addAction(path);
+        connect(item, &QAction::triggered, this, [this, path] { openProject(path); });
+    }
+    recentMenu_->setEnabled(!recent.isEmpty());
+}
+
+void MainWindow::openGallery() {
+    auto* gallery = new gallery::ThemeGallery;
+    gallery->setAttribute(Qt::WA_DeleteOnClose);
+    gallery->resize(1500, 950);
+    gallery->show();
+}
+
+// ---------------------------------------------------------------- navigation
+
+void MainWindow::showDocument(const QString& kind, const QString& document) {
+    if (!session_) {
+        return;
+    }
+    selectKind(kind);
+    if (!document.isEmpty()) {
+        documents_->selectDocument(document);
+        selectDocument(document);
+    }
+}
+
+void MainWindow::selectKind(const QString& kind) {
+    if (!session_) {
+        return;
+    }
+    kind_ = kind;
+    rail_->setCurrentKind(kind);
+    QString label = kind;
+    for (const sdk::Kind& k : session_->kinds()) {
+        if (k.id == kind) {
+            label = k.label;
+        }
+    }
+    documents_->setTitle(label);
+    const QVector<sdk::DocumentGroup> groups = session_->documents(kind);
+    documents_->setGroups(groups);
+    QString document = lastDocument_.value(kind);
+    if (document.isEmpty()) {
+        for (const sdk::DocumentGroup& group : groups) {
+            if (!group.documents.isEmpty()) {
+                document = group.documents.first().id;
+                break;
+            }
+        }
+    }
+    documents_->selectDocument(document);
+    selectDocument(document);
+}
+
+void MainWindow::selectDocument(const QString& document) {
+    if (!session_) {
+        return;
+    }
+    document_ = document;
+    lastDocument_.insert(kind_, document);
+
+    inspector_->showMessage(QString(), QString(), QString());
+    editor_.reset();
+    model_ = document.isEmpty() ? nullptr : session_->openEditor(kind_, document);
+    installEditor();
+    updateBreadcrumb();
+    updateDirtyState();
+    updateStatus();
+}
+
+void MainWindow::installEditor() {
+    if (model_) {
+        editor_ = editors::createEditorView(model_.get(), editorStack_);
+    }
+    if (editor_) {
+        editorStack_->addWidget(editor_.get());
+        editorStack_->setCurrentWidget(editor_.get());
+        connect(editor_.get(), &editors::EditorView::toolbarChanged, this, &MainWindow::updateToolbarRow);
+        connect(editor_.get(), &editors::EditorView::actionFailed, this,
+                [this](const QString& message) { updateStatus(message); });
+        connect(model_.get(), &sdk::EditorModel::contentChanged, this, [this] {
+            updateBreadcrumb();
+            updateStatus();
+        });
+        connect(model_.get(), &sdk::EditorModel::selectionChanged, this, [this] { updateStatus(); });
+        inspector_->setModel(model_.get());
+    } else {
+        QString label = kind_;
+        sdk::EditorType type = sdk::EditorType::None;
+        for (const sdk::Kind& k : session_->kinds()) {
+            if (k.id == kind_) {
+                label = k.label;
+                type = k.editor;
+            }
+        }
+        emptyTitle_->setText(document_.isEmpty() ? QStringLiteral("Nothing to edit")
+                                                 : QStringLiteral("%1 is coming next").arg(label));
+        emptyNote_->setText(
+            document_.isEmpty()
+                ? QStringLiteral("This kind has no documents.")
+                : QStringLiteral("The %1 for this kind is not ported to the new studio yet. "
+                                 "Its documents are listed so the profile can be checked.")
+                      .arg(sdk::editorName(type)));
+        editorStack_->setCurrentWidget(emptyEditor_);
+        inspector_->showMessage(label.toUpper(), document_.isEmpty() ? label : document_,
+                                QStringLiteral("No inspector until the editor is ported."));
+    }
+    updateToolbarRow();
+}
+
+void MainWindow::updateToolbarRow() {
+    if (toolbarContent_) {
+        toolbarContent_->hide();
+        toolbarContent_->deleteLater();
+        toolbarContent_ = nullptr;
+    }
+    if (editor_) {
+        toolbarContent_ = editor_->createToolbar(toolbarRow_);
+        toolbarRowLayout_->addWidget(toolbarContent_);
+    }
+    toolbarRow_->setVisible(editor_ != nullptr);
+}
+
+// ---------------------------------------------------------------- state
+
+void MainWindow::updateProjectChrome() {
+    if (!session_) {
+        platformBadge_->setText(QStringLiteral("—"));
+        projectName_->setText(QStringLiteral("No project"));
+        revisionBadge_->hide();
+        setWindowTitle(QStringLiteral("Retrolarium"));
+        titleBar()->setTitle(QStringLiteral("Retrolarium Studio"));
+        projectButton_->setMinimumWidth(projectButton_->layout()->sizeHint().width());
+        closeAction_->setEnabled(false);
+        return;
+    }
+    const sdk::Profile profile = session_->profile();
+    platformBadge_->setText(profile.badge);
+    projectName_->setText(profile.name);
+    revisionBadge_->setText(profile.revision);
+    revisionBadge_->setVisible(!profile.revision.isEmpty());
+    projectButton_->setMinimumWidth(projectButton_->layout()->sizeHint().width());
+    const QString title = profile.revision.isEmpty()
+                              ? QStringLiteral("%1 [%2]").arg(profile.name, profile.platform)
+                              : QStringLiteral("%1 (%2) [%3]").arg(profile.name, profile.revision,
+                                                                   profile.platform);
+    setWindowTitle(title + QStringLiteral(" — Retrolarium"));
+    titleBar()->setTitle(title, QStringLiteral("Retrolarium"));
+    closeAction_->setEnabled(true);
+}
+
+void MainWindow::updateBreadcrumb() {
+    if (!session_) {
+        return;
+    }
+    QString kindLabel = kind_;
+    for (const sdk::Kind& k : session_->kinds()) {
+        if (k.id == kind_) {
+            kindLabel = k.label;
+        }
+    }
+    crumbKind_->setText(kindLabel);
+    QString documentLabel = document_;
+    bool dirty = false;
+    for (const sdk::DocumentGroup& group : session_->documents(kind_)) {
+        for (const sdk::DocumentEntry& entry : group.documents) {
+            if (entry.id == document_) {
+                documentLabel = entry.label;
+                dirty = entry.dirty;
+            }
+        }
+    }
+    crumbDocument_->setText(documentLabel);
+    crumbEdited_->setVisible(dirty);
+    crumbEditor_->setVisible(model_ != nullptr);
+    if (model_) {
+        crumbEditor_->setText(sdk::editorName(model_->type()));
+        const sdk::Budget budget = model_->budget();
+        budgetText_->setText(budget.text);
+        budgetText_->setVisible(budget.isValid());
+        budgetBar_->setVisible(budget.capacity > 0);
+        budgetBar_->setBudget(budget.used, budget.capacity);
+    } else {
+        budgetText_->hide();
+        budgetBar_->hide();
+    }
+    const QString play = session_->playLabel(kind_, document_);
+    playButton_->setText(play.isEmpty() ? QStringLiteral("Play") : QStringLiteral("Play from ") + play);
+    playButton_->updateGeometry();
+}
+
+void MainWindow::updateDirtyState() {
+    const bool open = session_ != nullptr;
+    QUndoStack* undo = open ? session_->undoStack() : nullptr;
+    undoAction_->setEnabled(undo && undo->canUndo());
+    redoAction_->setEnabled(undo && undo->canRedo());
+    undoButton_->setEnabled(undoAction_->isEnabled());
+    redoButton_->setEnabled(redoAction_->isEnabled());
+    undoButton_->setToolTip(undo && undo->canUndo()
+                                ? QStringLiteral("Undo %1 (Ctrl+Z)").arg(undo->undoText())
+                                : QStringLiteral("Undo (Ctrl+Z)"));
+    redoButton_->setToolTip(undo && undo->canRedo()
+                                ? QStringLiteral("Redo %1 (Ctrl+Y)").arg(undo->redoText())
+                                : QStringLiteral("Redo (Ctrl+Y)"));
+    const bool modified = open && session_->isModified();
+    saveAction_->setEnabled(modified);
+    saveButton_->setEnabled(modified);
+    revertButton_->setEnabled(open && session_->canRevert(kind_, document_));
+
+    int dirty = 0;
+    if (open) {
+        for (const sdk::Kind& kind : session_->kinds()) {
+            for (const sdk::DocumentGroup& group : session_->documents(kind.id)) {
+                for (const sdk::DocumentEntry& entry : group.documents) {
+                    dirty += entry.dirty;
+                }
+            }
+        }
+    }
+    if (modified && dirty == 0) {
+        dirty = 1;
+    }
+    dirtyIndicator_->setVisible(modified);
+    dirtyLabel_->setText(dirty == 1 ? QStringLiteral("1 unsaved document")
+                                    : QStringLiteral("%1 unsaved documents").arg(dirty));
+    updateBreadcrumb();
+}
+
+void MainWindow::updateStatus(const QString& transient) {
+    if (!session_) {
+        statusLeft_->setText(QStringLiteral("No project open"));
+        statusRight_->clear();
+        return;
+    }
+    QString left = transient;
+    if (left.isEmpty() && model_) {
+        left = model_->statusText();
+    }
+    statusLeft_->setText(left);
+    const sdk::Profile profile = session_->profile();
+    statusRight_->setText(QStringLiteral("%1 · %2 · undo %3")
+                              .arg(profile.platform, profile.cpu)
+                              .arg(session_->undoStack()->index()));
+}
+
+void MainWindow::refreshDiagnostics() {
+    QVector<sdk::Diagnostic> all = hostMessages_;
+    if (session_) {
+        all += session_->diagnostics();
+    }
+    bottom_->setDiagnostics(all);
+}
+
+void MainWindow::saveAll() {
+    if (!session_) {
+        return;
+    }
+    QString error;
+    if (session_->save(&error)) {
+        updateStatus(QStringLiteral("Saved"));
+    } else {
+        report(message(sdk::Severity::Error, QStringLiteral("save"), error, QString()));
+    }
+    updateDirtyState();
+    documents_->updateGroups(session_->documents(kind_));
+}
+
+void MainWindow::revertDocument() {
+    if (!session_ || !session_->canRevert(kind_, document_)) {
+        return;
+    }
+    const auto answer = QMessageBox::question(
+        this, QStringLiteral("Revert document"),
+        QStringLiteral("Return %1 to the state it had when the project was created? "
+                       "This can be undone.")
+            .arg(crumbDocument_->text()));
+    if (answer != QMessageBox::Yes) {
+        return;
+    }
+    QString error;
+    if (!session_->revert(kind_, document_, &error)) {
+        report(message(sdk::Severity::Error, QStringLiteral("revert"), error, crumbDocument_->text()));
+    }
+}
+
+}  // namespace rl::shell

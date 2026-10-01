@@ -30,7 +30,10 @@ if (-not (Test-Path -LiteralPath $toolchain -PathType Leaf)) {
 $outputRoot = Join-Path $projectRoot "build\win-amd64"
 New-Item -ItemType Directory -Force -Path $outputRoot | Out-Null
 
-$sourceMount = $projectRoot -replace "\\", "/"
+# The studio builds retrolarium_core from the sibling directory, so the
+# repository root is mounted and the studio is configured from inside it.
+$repositoryRoot = (Resolve-Path (Join-Path $projectRoot "..")).Path
+$sourceMount = $repositoryRoot -replace "\\", "/"
 $outputMount = $outputRoot -replace "\\", "/"
 $cmakeMount = (Join-Path $QtKit "cmake") -replace "\\", "/"
 
@@ -39,12 +42,13 @@ $cmakeMount = (Join-Path $QtKit "cmake") -replace "\\", "/"
 $buildScript = @'
 set -eu
 mkdir -p /out/.cmake-build
-cmake -S /src -B /out/.cmake-build \
+cmake -S /src/retrolarium_studio -B /out/.cmake-build \
     -DCMAKE_BUILD_TYPE=$STUDIO_CONFIGURATION \
     -DCMAKE_TOOLCHAIN_FILE=/kit-cmake/qt5/toolchain-win-amd64.cmake \
     -DCMAKE_PREFIX_PATH=/usr/local/Qt-5.15
-cmake --build /out/.cmake-build --target retrolarium-studio --parallel $STUDIO_BUILD_JOBS -- -k
+cmake --build /out/.cmake-build --target retrolarium-studio retrolarium-flicky-level-writer --parallel $STUDIO_BUILD_JOBS -- -k
 cp /out/.cmake-build/retrolarium-studio.exe /out/
+cp /out/.cmake-build/plugins/retrolarium-flicky-level-writer.exe /out/
 x86_64-w64-mingw32-objdump -p /out/retrolarium-studio.exe | grep 'DLL Name' | sort -u
 '@
 
