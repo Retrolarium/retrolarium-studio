@@ -5,6 +5,8 @@
 #include "smb/plugin/graphics_models.hpp"
 #include "smb/plugin/level_model.hpp"
 #include "smb/plugin/playtest_model.hpp"
+#include "smb/plugin/screen_model.hpp"
+#include "smb/plugin/text_model.hpp"
 
 #include <QDateTime>
 #include <QDir>
@@ -159,6 +161,8 @@ QVector<sdk::Kind> SmbSession::kinds() const {
     return {kind("levels", "Levels", "levels", sdk::EditorType::TileMap),
             kind("graphics", "Tiles", "tiles", sdk::EditorType::Tile),
             kind("palettes", "Palettes", "palettes", sdk::EditorType::Palette),
+            kind("screens", "Screens", "tileset", sdk::EditorType::TileMap),
+            kind("text", "Text", "text", sdk::EditorType::Table),
             kind("playtest", "Playtest", "playtest", sdk::EditorType::Emulator)};
 }
 
@@ -209,6 +213,35 @@ QVector<sdk::DocumentGroup> SmbSession::documents(const QString& kind) const {
                                       QStringLiteral("%1 colours").arg(document_.tableValues(art_.playerPalette).size()));
             groups << player;
         }
+    } else if (kind == QLatin1String("screens")) {
+        for (const QString& id : document_.resourceIds(QStringLiteral("nes.ppu-screen-packets.v1"))) {
+            const SmbScreenSet& set = screenSet(id);
+            sdk::DocumentGroup group;
+            group.title = id == QLatin1String("game-screen-packets") ? QStringLiteral("Game screens")
+                                                                     : displayName(QString(id).replace(QLatin1Char('-'), QLatin1Char('_')));
+            const SmbScreenSet saved = SmbScreenSet::fromJson(saved_.resource(id));
+            for (int s = 0; s < set.screens.size(); ++s) {
+                const SmbScreen& screen = set.screens.at(s);
+                sdk::DocumentEntry e = entry(id + QLatin1Char('/') + screen.key, screen.label,
+                                             QStringLiteral("%1 B").arg(screen.capacity));
+                e.dirty = s < saved.screens.size() && (saved.screens.at(s).tiles != screen.tiles ||
+                                                       saved.screens.at(s).attributes != screen.attributes);
+                group.documents << e;
+            }
+            if (!group.documents.isEmpty()) {
+                groups << group;
+            }
+        }
+    } else if (kind == QLatin1String("text")) {
+        sdk::DocumentGroup group;
+        group.title = QStringLiteral("Text");
+        sdk::DocumentEntry e = entry(QStringLiteral("all"), QStringLiteral("Game text"),
+                                     QStringLiteral("%1 strings").arg(textSlots().size()));
+        for (int i = 0; i < textSlots().size(); ++i) {
+            e.dirty = e.dirty || text(i) != slotText(saved_, textSlots().at(i));
+        }
+        group.documents << e;
+        groups << group;
     } else if (kind == QLatin1String("playtest")) {
         sdk::DocumentGroup group;
         group.title = QStringLiteral("Session");
@@ -238,6 +271,17 @@ std::unique_ptr<sdk::EditorModel> SmbSession::openEditor(const QString& kind, co
                 return std::make_unique<SmbPlayerPaletteModel>(this);
             }
         }
+        if (kind == QLatin1String("screens")) {
+            const QString id = document.section(QLatin1Char('/'), 0, 0);
+            const QString key = document.section(QLatin1Char('/'), 1);
+            if (document_.resourceIds(QStringLiteral("nes.ppu-screen-packets.v1")).contains(id) &&
+                screenSet(id).indexOf(key) >= 0) {
+                return std::make_unique<SmbScreenModel>(this, id, key);
+            }
+        }
+        if (kind == QLatin1String("text") && document == QLatin1String("all")) {
+            return std::make_unique<SmbTextModel>(this);
+        }
         if (kind == QLatin1String("playtest")) {
             return std::make_unique<SmbPlaytestModel>(this);
         }
@@ -255,7 +299,9 @@ void SmbSession::setDocument(const SmbResourceDocument& document, quint64 revisi
     painter_->clearCache();
     emit documentChanged();
     emit contentChanged();
-    emit documentsChanged(QStringLiteral("levels"));
+    for (const sdk::Kind& k : kinds()) {
+        emit documentsChanged(k.id);
+    }
     emit diagnosticsChanged();
 }
 
@@ -304,7 +350,9 @@ bool SmbSession::save(QString* error) {
     saved_ = document_;
     savedRevision_ = revision_;
     undoStack()->setClean();
-    emit documentsChanged(QStringLiteral("levels"));
+    for (const sdk::Kind& k : kinds()) {
+        emit documentsChanged(k.id);
+    }
     return true;
 }
 
@@ -341,6 +389,37 @@ void SmbSession::report(sdk::Severity severity, const QString& source, const QSt
     d.message = message;
     d.location = QFileInfo(project_.path()).fileName();
     host()->report(d);
+}
+
+// ---------------------------------------------------------------- screens and text
+
+const SmbScreenSet& SmbSession::screenSet(const QString& resource) const {
+    if (screenRevision_ != revision_) {
+        screenSets_.clear();
+        screenRevision_ = revision_;
+    }
+    auto found = screenSets_.find(resource);
+    if (found == screenSets_.end()) {
+        found = screenSets_.insert(resource, SmbScreenSet::fromJson(document_.resource(resource)));
+    }
+    return *found;
+}
+
+const QVector<SmbTextSlot>& SmbSession::textSlots() const {
+    if (textRevision_ != revision_) {
+        textSlots_ = smb::textSlots(document_);
+        texts_.clear();
+        for (const SmbTextSlot& slot : textSlots_) {
+            texts_ << slotText(document_, slot);
+        }
+        textRevision_ = revision_;
+    }
+    return textSlots_;
+}
+
+QString SmbSession::text(int slot) const {
+    textSlots();
+    return texts_.value(slot);
 }
 
 // ---------------------------------------------------------------- start point

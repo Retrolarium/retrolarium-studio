@@ -174,9 +174,11 @@ same file.
 | Levels | TileMap | areas drawn as the game does (metatiles in the area palette, enemies, Hero), day or night, pages of 16 columns; move, add (library) and delete objects and enemies, edit their kind, size and row and the area header, within the area's stream bytes; drag Hero to the start point |
 | Tiles | Tile | sprite and background pattern tables, 2bpp, preview palette from the area packets or the player palettes |
 | Palettes | Palette | area packets (eight palettes of four) and the player table; the 64-colour NES picker |
+| Screens | TileMap | the status bar, lives, time-up, game-over and warp-zone screens as the PPU display lists leave them; paint tiles from the library and 16x16 palettes into the cells the lists write (a repeated write changes its run); edit their text fields |
+| Text | Table | every fixed text: the fixed fields and the screens' text fields, in the game's font, within each slot |
 | Playtest | Emulator | Play from selected starts at Hero's cell (`smb-point-playtest-plan`), Play from power-on |
 
-The world routes, player frames, music, text and screens come next.
+The world routes, metatiles, player frames and music come next.
 
 MAME shows a "known problems" screen for the NES driver that waits for a key,
 which never reaches an embedded MAME. Before a launch the runner marks it as

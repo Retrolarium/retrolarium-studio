@@ -37,6 +37,11 @@ public:
     QImage enemy(int identifier, const QString& areaType) const;
     QRect enemyBounds(const SmbPositionedEnemy& enemy, const QString& areaType) const;
     QImage hero() const;
+    // A background pattern (0-255) in background palette 0-3 of a packet
+    // ("ground"); pixel 0 shows the backdrop colour (an NES colour index).
+    QImage backgroundTile(int tile, const QString& packet, int palette, int backdrop) const;
+    // An NES colour index in the project's palette model.
+    QRgb nesColor(int index) const { return color(index); }
     // Hero standing with his feet on the given 16px cell (column, row).
     QRect heroBounds(QPoint cell) const;
 

@@ -84,6 +84,8 @@ add_library(smb_data STATIC
     smb/src/smb/data/level_records.hpp
     smb/src/smb/data/resource_document.cpp
     smb/src/smb/data/resource_document.hpp
+    smb/src/smb/data/screens.cpp
+    smb/src/smb/data/screens.hpp
     smb/src/smb/render/level_image.cpp
     smb/src/smb/render/level_image.hpp
     smb/src/smb/render/level_renderer.cpp
@@ -101,10 +103,14 @@ add_library(smb_plugin STATIC
     smb/src/smb/plugin/level_model.hpp
     smb/src/smb/plugin/playtest_model.cpp
     smb/src/smb/plugin/playtest_model.hpp
+    smb/src/smb/plugin/screen_model.cpp
+    smb/src/smb/plugin/screen_model.hpp
     smb/src/smb/plugin/smb_plugin.cpp
     smb/src/smb/plugin/smb_plugin.hpp
     smb/src/smb/plugin/smb_session.cpp
     smb/src/smb/plugin/smb_session.hpp
+    smb/src/smb/plugin/text_model.cpp
+    smb/src/smb/plugin/text_model.hpp
 )
 target_link_libraries(smb_plugin PUBLIC smb_data studio_sdk)
 studio_enable_warnings(smb_plugin)
@@ -122,6 +128,13 @@ add_executable(smb_area_streams_test
     smb/tests/area_streams_test.cpp
 )
 target_link_libraries(smb_area_streams_test PRIVATE smb_data)
+
+# Screen packets and text against the SMB1 JU screens:
+#   smb_screens_test plugins/smb/tests/smb1_ju_screens.json
+add_executable(smb_screens_test
+    smb/tests/screens_test.cpp
+)
+target_link_libraries(smb_screens_test PRIVATE smb_data)
 
 # The one translation unit that names concrete plugins.
 add_library(studio_builtin_plugins STATIC

@@ -3,6 +3,7 @@
 #include "sdk/project_file.hpp"
 #include "sdk/session.hpp"
 #include "smb/data/resource_document.hpp"
+#include "smb/data/screens.hpp"
 #include "smb/render/level_image.hpp"
 
 #include <QHash>
@@ -58,6 +59,12 @@ public:
     QString playerPalette() const { return art_.playerPalette; }
     QString chr() const { return art_.chr; }
 
+    // Screen-packet resources, decoded once per revision.
+    const SmbScreenSet& screenSet(const QString& resource) const;
+    // Every piece of game text and its current value, once per revision.
+    const QVector<SmbTextSlot>& textSlots() const;
+    QString text(int slot) const;
+
     // One undo step: the edit runs on a copy that replaces the document.
     bool edit(const QString& text, const std::function<void(SmbResourceDocument&)>& change, QString* error);
     // Drags and strokes show their changes before they become one step:
@@ -110,6 +117,12 @@ private:
     SmbStart start_;
     QString lighting_ = QStringLiteral("Auto");
     QString lastBuild_;
+
+    mutable QHash<QString, SmbScreenSet> screenSets_;
+    mutable quint64 screenRevision_ = ~quint64(0);
+    mutable QVector<SmbTextSlot> textSlots_;
+    mutable QStringList texts_;
+    mutable quint64 textRevision_ = ~quint64(0);
 };
 
 }  // namespace rl::smb

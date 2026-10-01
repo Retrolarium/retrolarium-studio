@@ -158,6 +158,28 @@ QImage SmbLevelPainter::metatile(int value, const QString& areaType, bool night)
     return image;
 }
 
+QImage SmbLevelPainter::backgroundTile(int tile, const QString& packet, int palette, int backdrop) const {
+    const QString key = QStringLiteral("b%1|%2|%3|%4").arg(tile).arg(packet).arg(palette).arg(backdrop);
+    const auto found = cache_.constFind(key);
+    if (found != cache_.constEnd()) {
+        return *found;
+    }
+    QImage image(8, 8, QImage::Format_ARGB32);
+    const QVector<int> values = document_.packetValues(art_.palettes, packet);
+    const int start = nes::backgroundEntry(palette & 3, 0);
+    const int chrTile = 256 + (tile & 0xff);
+    const bool inTable = chrTile < document_.tileCount(art_.chr);
+    for (int y = 0; y < 8; ++y) {
+        auto* line = reinterpret_cast<QRgb*>(image.scanLine(y));
+        for (int x = 0; x < 8; ++x) {
+            const int pixel = inTable ? document_.pixel(art_.chr, chrTile, x, y) : 0;
+            line[x] = pixel == 0 || start + pixel >= values.size() ? color(backdrop) : color(values.at(start + pixel));
+        }
+    }
+    cache_.insert(key, image);
+    return image;
+}
+
 QImage SmbLevelPainter::enemy(int id, const QString& areaType) const {
     const QString key = QStringLiteral("e%1|%2").arg(id).arg(areaType);
     const auto found = cache_.constFind(key);
