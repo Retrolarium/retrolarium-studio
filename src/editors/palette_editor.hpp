@@ -29,7 +29,8 @@ private:
 
     sdk::PaletteModel* palette_;
     QWidget* content_;
-    QVBoxLayout* top_;
+    QVBoxLayout* top_;      // swatches across the page (few rows)
+    QVBoxLayout* side_;     // swatches above the picker (many rows)
     QVBoxLayout* left_;
     QVBoxLayout* right_;
     QString sample_;            // label of the sample shown large

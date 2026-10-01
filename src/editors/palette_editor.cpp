@@ -71,10 +71,13 @@ private:
 };
 
 // The chosen sample, drawn as large as the column allows: at an integer scale
-// when one fits, so pixels stay square, and never cropped.
+// when one fits, so pixels stay square. A scene with a minimum width is cut
+// from the right to the room at the largest scale its height allows; other
+// samples are never cropped.
 class PreviewPane final : public QWidget {
 public:
-    PreviewPane(const QImage& image, QWidget* parent) : QWidget(parent), image_(image) {
+    PreviewPane(const QImage& image, int minimumWidth, QWidget* parent)
+        : QWidget(parent), image_(image), minimumWidth_(minimumWidth) {
         setMinimumSize(280, 250);
         setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     }
@@ -88,18 +91,26 @@ protected:
             return;
         }
         const QRect room = rect().adjusted(16, 16, -16, -16);
+        QImage image = image_;
+        if (minimumWidth_ > 0 && minimumWidth_ < image.width()) {
+            const int scale = std::min({room.height() / image.height(), room.width() / minimumWidth_, 4});
+            if (scale >= 1) {
+                image = image.copy(0, 0, std::min(image.width(), room.width() / scale), image.height());
+            }
+        }
         // Whole steps from 2x up keep pixels square; below that, use the room.
-        const int scale = std::min(room.width() / image_.width(), room.height() / image_.height());
-        const QSize size = scale >= 2 ? image_.size() * scale : image_.size().scaled(room.size(), Qt::KeepAspectRatio);
+        const int scale = std::min(room.width() / image.width(), room.height() / image.height());
+        const QSize size = scale >= 2 ? image.size() * scale : image.size().scaled(room.size(), Qt::KeepAspectRatio);
         const QRect target(room.left() + (room.width() - size.width()) / 2,
                            room.top() + (room.height() - size.height()) / 2, size.width(), size.height());
-        painter.setRenderHint(QPainter::SmoothPixmapTransform, size.width() < image_.width());
-        painter.drawImage(target, image_);
+        painter.setRenderHint(QPainter::SmoothPixmapTransform, size.width() < image.width());
+        painter.drawImage(target, image);
         paint::cornerMarks(painter, target, 13, 7, theme::canvas::kMark, paint::kDiagonal);
     }
 
 private:
     QImage image_;
+    int minimumWidth_;
 };
 
 // One clickable step of a channel picker.
@@ -157,6 +168,8 @@ PaletteEditor::PaletteEditor(sdk::PaletteModel* model, QWidget* parent)
     scroll->setWidgetResizable(true);
     content_ = new QWidget(scroll);
     // Swatches across the top; the picker and the preview share the rest.
+    // A palette with many rows stacks its swatches above the picker instead,
+    // so the preview keeps the whole height of the right column.
     auto* page = new QVBoxLayout(content_);
     page->setContentsMargins(24, 24, 24, 24);
     page->setSpacing(28);
@@ -168,9 +181,19 @@ PaletteEditor::PaletteEditor(sdk::PaletteModel* model, QWidget* parent)
     columns->setSpacing(40);
     page->addLayout(columns, 1);
     auto* leftBox = new QWidget(content_);
-    left_ = new QVBoxLayout(leftBox);
+    auto* leftColumn = new QVBoxLayout(leftBox);
+    leftColumn->setContentsMargins(0, 0, 0, 0);
+    leftColumn->setSpacing(28);
+    auto* sideBox = new QWidget(leftBox);
+    side_ = new QVBoxLayout(sideBox);
+    side_->setContentsMargins(0, 0, 0, 0);
+    leftColumn->addWidget(sideBox);
+    auto* pickerBox = new QWidget(leftBox);
+    left_ = new QVBoxLayout(pickerBox);
     left_->setContentsMargins(0, 0, 0, 0);
     left_->setSpacing(28);
+    leftColumn->addWidget(pickerBox);
+    leftColumn->addStretch(1);
     auto* rightBox = new QWidget(content_);
     right_ = new QVBoxLayout(rightBox);
     right_->setContentsMargins(0, 0, 0, 0);
@@ -211,6 +234,7 @@ static void clearLayout(QLayout* layout) {
 
 void PaletteEditor::rebuild() {
     clearLayout(top_);
+    clearLayout(side_);
     clearLayout(left_);
     clearLayout(right_);
     QWidget* leftParent = left_->parentWidget();
@@ -224,7 +248,11 @@ void PaletteEditor::rebuild() {
     // Swatch rows.
     const QVector<sdk::PaletteRow> rows = palette_->rows();
     const QPoint current = palette_->currentEntry();
-    auto* rowsBox = new QWidget(top_->parentWidget());
+    const bool stacked = rows.size() > 4;
+    QVBoxLayout* swatches = stacked ? side_ : top_;
+    top_->parentWidget()->setVisible(!stacked);
+    side_->parentWidget()->setVisible(stacked);
+    auto* rowsBox = new QWidget(swatches->parentWidget());
     auto* rowsLayout = new QVBoxLayout(rowsBox);
     rowsLayout->setContentsMargins(0, 0, 0, 0);
     rowsLayout->setSpacing(2);
@@ -254,7 +282,7 @@ void PaletteEditor::rebuild() {
         lineLayout->addStretch(1);
         rowsLayout->addWidget(line);
     }
-    top_->addWidget(rowsBox);
+    swatches->addWidget(rowsBox);
 
     // Picker.
     auto* picker = new QWidget(leftParent);
@@ -314,7 +342,6 @@ void PaletteEditor::rebuild() {
         }
     }
     left_->addWidget(picker);
-    left_->addStretch(1);
 
     // Where it's used: one sample at a time, large, redrawn on every edit.
     const QVector<sdk::PaletteSample> samples = palette_->samples();
@@ -357,7 +384,7 @@ void PaletteEditor::rebuild() {
             tabsRow->addStretch(1);
             right_->addLayout(tabsRow);
         }
-        right_->addWidget(new PreviewPane(samples.at(shown).image, rightParent), 1);
+        right_->addWidget(new PreviewPane(samples.at(shown).image, samples.at(shown).minimumWidth, rightParent), 1);
         auto* caption = new ui::Label(samples.at(shown).caption, ui::Label::Role::Small, rightParent);
         caption->setTone(QStringLiteral("muted"));
         right_->addWidget(caption);

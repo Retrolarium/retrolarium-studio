@@ -20,7 +20,8 @@ struct SmbStart {
     QString area;
     QPoint cell;
     int world = 1;
-    int course = 1;
+    int course = 1;     // route step, from 1, as the kit takes it
+    int level = 1;      // the level number the game shows
 };
 
 // An open Super Mario Bros. project (`rltool studio preset`): one NES
@@ -73,6 +74,10 @@ public:
     SmbStart start() const { return start_; }
     // The first world route step that plays an area, or {0, 0}.
     QPair<int, int> courseOf(const QString& area) const;
+    // The same as the game numbers it, {world, level}: the pipe intro of an
+    // x-2 level (an auto-walk entrance) shares the number of the level it
+    // leads to.
+    QPair<int, int> levelOf(const QString& area) const;
 
     // Background palette packet for an area type, and its night state.
     bool night(const QString& area) const;

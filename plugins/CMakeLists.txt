@@ -77,6 +77,8 @@ target_include_directories(platform_nes INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/ne
 # Super Mario Bros. data: the NES resource bundle, the area catalog and the
 # level renderer (ported from the original app, pinned by the golden test).
 add_library(smb_data STATIC
+    smb/src/smb/data/area_streams.cpp
+    smb/src/smb/data/area_streams.hpp
     smb/src/smb/data/catalog.cpp
     smb/src/smb/data/catalog.hpp
     smb/src/smb/data/level_records.hpp
@@ -113,6 +115,13 @@ add_executable(smb_level_renderer_golden_test
     smb/tests/level_renderer_golden_test.cpp
 )
 target_link_libraries(smb_level_renderer_golden_test PRIVATE smb_data)
+
+# Record insertion and removal against every SMB1 JU area:
+#   smb_area_streams_test plugins/smb/tests/smb1_ju_level_scenes.json
+add_executable(smb_area_streams_test
+    smb/tests/area_streams_test.cpp
+)
+target_link_libraries(smb_area_streams_test PRIVATE smb_data)
 
 # The one translation unit that names concrete plugins.
 add_library(studio_builtin_plugins STATIC

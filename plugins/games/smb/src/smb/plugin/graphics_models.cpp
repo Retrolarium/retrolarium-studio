@@ -312,7 +312,7 @@ QVector<sdk::PaletteSample> SmbPacketModel::samples() const {
         if (areaTypeOf(area) != packet_) {
             continue;
         }
-        const QPair<int, int> course = session_->courseOf(area);
+        const QPair<int, int> course = session_->levelOf(area);
         const bool better = chosen.isEmpty() ||
                             (course.first > 0 && !session_->night(area) && course < earliest);
         if (better) {
@@ -325,10 +325,11 @@ QVector<sdk::PaletteSample> SmbPacketModel::samples() const {
     if (!chosen.isEmpty()) {
         sdk::PaletteSample sample;
         sample.label = chosen;
-        const QPair<int, int> course = session_->courseOf(chosen);
-        sample.caption = course.first > 0 ? QStringLiteral("World %1-%2, first screen").arg(course.first).arg(course.second)
-                                          : QStringLiteral("%1, first screen").arg(titled(chosen));
-        sample.image = session_->areaPreview(chosen, 16);
+        const QPair<int, int> course = session_->levelOf(chosen);
+        sample.caption = course.first > 0 ? QStringLiteral("World %1-%2, start of the level").arg(course.first).arg(course.second)
+                                          : QStringLiteral("%1, start of the level").arg(titled(chosen));
+        sample.image = session_->areaPreview(chosen, 32);
+        sample.minimumWidth = 8 * SmbLevelPainter::kCell;
         result << sample;
     }
     return result;

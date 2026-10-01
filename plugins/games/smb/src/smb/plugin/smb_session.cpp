@@ -175,7 +175,7 @@ QVector<sdk::DocumentGroup> SmbSession::documents(const QString& kind) const {
                 if (areaTypeOf(area) != type) {
                     continue;
                 }
-                const QPair<int, int> course = courseOf(area);
+                const QPair<int, int> course = levelOf(area);
                 sdk::DocumentEntry e = entry(area, areaLabel(area),
                                              course.first > 0 ? QStringLiteral("%1-%2").arg(course.first).arg(course.second)
                                                               : QString());
@@ -362,6 +362,24 @@ QPair<int, int> SmbSession::courseOf(const QString& area) const {
     return {0, 0};
 }
 
+QPair<int, int> SmbSession::levelOf(const QString& area) const {
+    const QPair<int, int> course = courseOf(area);
+    if (course.first <= 0) {
+        return course;
+    }
+    const QStringList types = document_.areaTypes(levels_);
+    const QVector<SmbRoute> routes = document_.routes(world_, course.first);
+    int level = 1;
+    for (int c = 0; c + 1 < course.second && c < routes.size(); ++c) {
+        const QString name = QStringLiteral("%1_%2").arg(types.value(routes.at(c).areaType)).arg(routes.at(c).areaIndex + 1);
+        const int entrance = document_.area(levels_, name).header.value(1);
+        if (entrance != 6 && entrance != 7) {
+            ++level;
+        }
+    }
+    return {course.first, level};
+}
+
 QPoint SmbSession::heroCell(const QString& area) const {
     const auto found = hero_.constFind(area);
     return found != hero_.constEnd() ? *found : entranceCell(document_.area(levels_, area).header);
@@ -383,6 +401,7 @@ void SmbSession::selectStart(const QString& area) {
     // An area no route plays still starts: the kit loads it directly.
     start_.world = course.first > 0 ? course.first : 1;
     start_.course = course.first > 0 ? course.second : 1;
+    start_.level = course.first > 0 ? levelOf(area).second : 1;
     emit startChanged();
     emit selectedStartChanged();
 }

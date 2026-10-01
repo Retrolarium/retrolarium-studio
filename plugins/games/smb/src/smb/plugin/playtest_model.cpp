@@ -27,7 +27,7 @@ sdk::Inspection SmbPlaytestModel::inspect() const {
     sdk::Field course;
     course.key = QStringLiteral("course");
     course.label = QStringLiteral("Plays as");
-    course.value = QStringLiteral("World %1-%2").arg(start.world).arg(start.course);
+    course.value = QStringLiteral("World %1-%2").arg(start.world).arg(start.level);
     sdk::Field cell;
     cell.key = QStringLiteral("cell");
     cell.label = QStringLiteral("Hero at");

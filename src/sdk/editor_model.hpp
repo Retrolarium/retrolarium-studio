@@ -174,6 +174,9 @@ struct PaletteSample {
     QString label;      // small mono tag above the image: "Line 1"
     QString caption;    // what the image shows: "Round 05"
     QImage image;
+    // A scrolling scene may be cut from the right down to this many pixels
+    // to show it at a larger scale; 0 shows the whole image.
+    int minimumWidth = 0;
 };
 
 // Palettes: rows of swatches and a picker for the selected entry, either a

@@ -165,17 +165,18 @@ Projects come from `rltool studio preset <rom>`; every editor reads and
 writes `documents/resources.json`, the NES resource bundle. The level
 renderer is the original app's, pinned to the kit's output for all 34 SMB1
 JU areas by `smb_level_renderer_golden_test` (run it with
-`plugins/smb/tests/smb1_ju_level_scenes.json`).
+`plugins/smb/tests/smb1_ju_level_scenes.json`). `smb_area_streams_test` checks
+the stream edits (remove and reinsert every record of every area) against the
+same file.
 
 | Kind | Editor | State |
 |---|---|---|
-| Levels | TileMap | areas drawn as the game does (metatiles in the area palette, enemies, Hero), day or night, pages of 16 columns; select objects and enemies; drag Hero to the start point |
+| Levels | TileMap | areas drawn as the game does (metatiles in the area palette, enemies, Hero), day or night, pages of 16 columns; move, add (library) and delete objects and enemies, edit their kind, size and row and the area header, within the area's stream bytes; drag Hero to the start point |
 | Tiles | Tile | sprite and background pattern tables, 2bpp, preview palette from the area packets or the player palettes |
 | Palettes | Palette | area packets (eight palettes of four) and the player table; the 64-colour NES picker |
 | Playtest | Emulator | Play from selected starts at Hero's cell (`smb-point-playtest-plan`), Play from power-on |
 
-Editing area objects and enemies, the world routes, player frames, music,
-text and screens come next.
+The world routes, player frames, music, text and screens come next.
 
 MAME shows a "known problems" screen for the NES driver that waits for a key,
 which never reaches an embedded MAME. Before a launch the runner marks it as
