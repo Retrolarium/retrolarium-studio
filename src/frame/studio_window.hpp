@@ -1,5 +1,7 @@
 #pragma once
 
+#include "frame/native_frame.hpp"
+
 #include <QMainWindow>
 
 class QMenuBar;
@@ -9,14 +11,8 @@ namespace rl::frame {
 class TitleBar;
 
 // A top-level window with the studio title bar in place of the system
-// caption.
-//
-// On Windows the native frame is kept (snapping, shadow, resize borders,
-// maximize animation, Windows 11 snap layouts): only the caption is removed in
-// WM_NCCALCSIZE, and WM_NCHITTEST maps the title bar back to caption, resize
-// and maximize-button hits. Qt 5.15 reads the frame margins back from the
-// WM_NCCALCSIZE result, so its geometry stays consistent. Elsewhere the
-// platform decorations stay and the title bar only carries the menus.
+// caption (see NativeFrame). Where the platform keeps its decorations the
+// title bar only carries the menus.
 class StudioWindow : public QMainWindow {
     Q_OBJECT
 
@@ -36,10 +32,8 @@ protected:
     void showEvent(QShowEvent* event) override;
 
 private:
-    void toggleMaximized();
-    void applyNativeFrame();
-
     TitleBar* titleBar_;
+    NativeFrame frame_;
     bool customFrame_ = false;
 };
 

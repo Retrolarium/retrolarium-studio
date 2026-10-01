@@ -31,6 +31,9 @@ public:
     void setWindowButtonsVisible(bool visible);
     bool windowButtonsVisible() const { return buttonsVisible_; }
 
+    // Dialog bars: no menus, the title next to the mark, only Close.
+    void setDialogStyle();
+
     // Hit testing in title bar coordinates.
     Button buttonAt(const QPoint& pos) const;
     bool isDragArea(const QPoint& pos) const;
@@ -71,6 +74,7 @@ private:
     QString primary_;
     QString secondary_;
     bool buttonsVisible_ = true;
+    bool dialog_ = false;
     Button hovered_ = Button::None;
     Button pressed_ = Button::None;
 };

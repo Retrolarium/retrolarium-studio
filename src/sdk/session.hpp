@@ -13,6 +13,8 @@ class QUndoStack;
 
 namespace rl::sdk {
 
+class Host;
+
 // An open project. The plugin owns the documents; the studio asks it for the
 // kind rail, document lists and editor models, and routes every edit through
 // the one project-wide undo stack.
@@ -44,6 +46,16 @@ public:
     // when playtesting is not available.
     virtual QString playLabel(const QString& kind, const QString& document) const;
 
+    // Build and play are long operations the plugin runs through host().
+    virtual bool canBuild() const { return false; }
+    virtual void build() {}
+    virtual bool canPlay(const QString& kind, const QString& document) const;
+    virtual void play(const QString& kind, const QString& document);
+
+    // Set by the studio right after the session opens.
+    void attachHost(Host* host) { host_ = host; }
+    Host* host() const { return host_; }
+
     QUndoStack* undoStack() const { return undoStack_; }
     bool isModified() const;
 
@@ -56,6 +68,7 @@ signals:
 
 private:
     QUndoStack* undoStack_;
+    Host* host_ = nullptr;
 };
 
 }  // namespace rl::sdk

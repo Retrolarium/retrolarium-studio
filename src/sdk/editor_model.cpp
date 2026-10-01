@@ -117,4 +117,41 @@ bool TableModel::setCell(int, int, const QString&, QString* error) {
     return false;
 }
 
+QRect CompositionModel::focusRect() const {
+    return QRect(QPoint(0, 0), canvasSize());
+}
+void CompositionModel::selectPiece(const QString&) {}
+void CompositionModel::beginDrag(const QString&) {}
+bool CompositionModel::dragPiece(const QString&, QPoint) {
+    return false;
+}
+void CompositionModel::endDrag() {}
+void CompositionModel::setCurrentFrame(int) {}
+int CompositionModel::frameDurationMs(int) const {
+    return 100;
+}
+bool CompositionModel::moveFrame(int, int, QString* error) {
+    if (error) {
+        *error = QStringLiteral("Frames cannot be reordered here.");
+    }
+    return false;
+}
+
+void SequencerModel::setChannelMuted(int, bool) {}
+QString SequencerModel::pitchName(int pitch) const {
+    static const char* names[] = {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"};
+    if (pitch < 0) {
+        return QStringLiteral("Rest");
+    }
+    return QStringLiteral("%1%2").arg(QString::fromLatin1(names[pitch % 12])).arg(pitch / 12);
+}
+void SequencerModel::selectNote(const QString&) {}
+void SequencerModel::beginEdit(const QString&) {}
+bool SequencerModel::editNote(const QString&, int, int) {
+    return false;
+}
+void SequencerModel::endEdit() {}
+void SequencerModel::preview() {}
+void SequencerModel::stopPreview() {}
+
 }  // namespace rl::sdk

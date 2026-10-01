@@ -20,6 +20,12 @@ namespace rl::editors {
 class EditorView;
 }
 
+namespace rl::runtime {
+class AudioPlayer;
+class EmulatorRunner;
+class ProcessRunner;
+}
+
 namespace rl::ui {
 class Badge;
 class BudgetBar;
@@ -54,6 +60,18 @@ public:
     void openProject(const QString& path) override;
     void report(const sdk::Diagnostic& diagnostic) override;
     void log(const QString& line) override;
+    void runProcess(const sdk::ProcessSpec& spec,
+                    std::function<void(const sdk::ProcessResult&)> done) override;
+    bool isBusy() const override;
+    void cancel() override;
+    sdk::ProcessSpec kitCommand(const QStringList& arguments, const QString& workingDirectory,
+                                QString* error) const override;
+    QString toolPath(const QString& name) const override;
+    QString emulatorPath(const QString& id) const override;
+    void launchEmulator(const sdk::ProcessSpec& spec, const QString& title,
+                        std::function<void(const sdk::ProcessResult&)> finished) override;
+    void playAudio(const QString& wavPath) override;
+    void stopAudio() override;
 
 protected:
     void closeEvent(QCloseEvent* event) override;
@@ -82,10 +100,21 @@ private:
     void rememberRecent(const QString& path);
     void rebuildRecentMenu();
     void openGallery();
+    void updateActions();
+    QString emulatorKind() const;
+    void releaseEditor();
 
     std::unique_ptr<sdk::Session> session_;
     std::unique_ptr<sdk::EditorModel> model_;
     std::unique_ptr<editors::EditorView> editor_;
+    // The Playtest editor stays alive while other kinds are shown, so a
+    // running game keeps its window.
+    std::unique_ptr<sdk::EditorModel> parkedModel_;
+    std::unique_ptr<editors::EditorView> parkedEditor_;
+    QString parkedDocument_;
+    runtime::ProcessRunner* processes_ = nullptr;
+    runtime::EmulatorRunner* emulator_ = nullptr;
+    runtime::AudioPlayer* audio_ = nullptr;
     QString projectPath_;
     QString kind_;
     QString document_;
@@ -138,6 +167,9 @@ private:
     QAction* redoAction_ = nullptr;
     QAction* saveAction_ = nullptr;
     QAction* closeAction_ = nullptr;
+    QAction* buildAction_ = nullptr;
+    QAction* playAction_ = nullptr;
+    QAction* cancelAction_ = nullptr;
     QMenu* recentMenu_ = nullptr;
     QMenu* projectMenu_ = nullptr;
 };

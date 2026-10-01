@@ -237,4 +237,121 @@ public:
     virtual bool setCell(int row, int column, const QString& value, QString* error);
 };
 
+// A piece of a composition (sprite piece, metatile quadrant), in pixels of
+// render().
+struct CompositionPiece {
+    QString id;
+    QString label;
+    QRect pixels;
+    bool movable = true;
+};
+
+// One frame of an animated composition.
+struct CompositionFrame {
+    QString id;
+    QString label;
+    QString detail;         // "8 ticks"
+};
+
+// Pieces arranged on a canvas (sprite mappings, metatiles), optionally with a
+// strip of frames to step through and play.
+class CompositionModel : public EditorModel {
+    Q_OBJECT
+
+public:
+    using EditorModel::EditorModel;
+
+    EditorType type() const override { return EditorType::Composition; }
+
+    virtual QSize canvasSize() const = 0;
+    virtual QImage render() const = 0;
+    virtual QPoint origin() const { return {-1, -1}; }  // drawn as a crosshair
+    virtual int defaultZoom() const { return 2; }
+    // The part of the canvas worth showing, in canvas pixels: the editor
+    // crops to it and zooms it to fit. Defaults to the whole canvas.
+    virtual QRect focusRect() const;
+
+    virtual QVector<CompositionPiece> pieces() const { return {}; }
+    virtual QString selectedPiece() const { return {}; }
+    virtual void selectPiece(const QString& id);
+    // One drag is one undo step; offsets are in pixels from the drag start.
+    virtual void beginDrag(const QString& id);
+    virtual bool dragPiece(const QString& id, QPoint offset);
+    virtual void endDrag();
+
+    virtual QVector<CompositionFrame> frames() const { return {}; }
+    virtual int currentFrame() const { return -1; }
+    virtual void setCurrentFrame(int frame);
+    virtual int frameDurationMs(int frame) const;
+    virtual bool moveFrame(int from, int to, QString* error);
+};
+
+struct SequencerChannel {
+    QString id;
+    QString label;          // "FM 1"
+    QString detail;         // sequence or voice name
+    QColor color;
+    bool muted = false;
+};
+
+struct SequencerNote {
+    QString id;
+    int start = 0;          // ticks
+    int length = 1;         // ticks
+    int pitch = -1;         // -1: rest
+    bool lengthEditable = false;
+    bool pitchEditable = true;
+};
+
+// Notes on channels over time: music and sound effects. Channels come from the
+// sound chip; pitches are semitones in the model's range.
+class SequencerModel : public EditorModel {
+    Q_OBJECT
+
+public:
+    using EditorModel::EditorModel;
+
+    EditorType type() const override { return EditorType::Sequencer; }
+
+    virtual QString chipLabel() const = 0;
+    virtual QVector<SequencerChannel> channels() const = 0;
+    virtual int currentChannel() const = 0;
+    virtual void setCurrentChannel(int channel) = 0;
+    virtual void setChannelMuted(int channel, bool muted);
+
+    virtual QVector<SequencerNote> notes(int channel) const = 0;
+    virtual int pitchMinimum() const { return 0; }
+    virtual int pitchMaximum() const { return 95; }
+    virtual QString pitchName(int pitch) const;
+    virtual int ticksPerBar() const { return 16; }
+
+    virtual QString selectedNote() const { return {}; }
+    virtual void selectNote(const QString& id);
+    // One drag is one undo step: begin, change pitch/length any number of
+    // times, end.
+    virtual void beginEdit(const QString& id);
+    virtual bool editNote(const QString& id, int pitch, int length);
+    virtual void endEdit();
+
+    // Listening.
+    virtual bool canPreview() const { return false; }
+    virtual void preview();
+    virtual void stopPreview();
+};
+
+// A running build of the project in an emulator.
+class EmulatorModel : public EditorModel {
+    Q_OBJECT
+
+public:
+    using EditorModel::EditorModel;
+
+    EditorType type() const override { return EditorType::Emulator; }
+
+    virtual QSize screenSize() const = 0;   // native resolution, for the aspect
+    virtual QString coreLabel() const = 0;  // "MAME · genesis"
+    virtual QString startLabel() const = 0; // "Round 07"
+    virtual void play() = 0;
+};
+
 }  // namespace rl::sdk

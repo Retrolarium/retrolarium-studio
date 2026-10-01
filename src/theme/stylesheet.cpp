@@ -82,6 +82,8 @@ QToolButton[variant="segment"] { color: @muted; padding: 0 10px; }
 QToolButton[variant="segment"]:hover { background: transparent; color: @text; }
 QToolButton[variant="segment"]:checked { background: @accentSoft; color: @accentInk; }
 QToolButton[variant="segmentIcon"] { padding: 0; }
+QToolButton[variant="outlined"] { border: 1px solid @lineStrong; }
+QToolButton[variant="outlined"]:hover { background: @hover; }
 QToolButton[variant="segmentIcon"]:hover { background: transparent; }
 QToolButton[variant="segmentIcon"]:checked { background: @accentSoft; }
 

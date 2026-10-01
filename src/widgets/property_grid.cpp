@@ -4,6 +4,8 @@
 #include "theme/typography.hpp"
 #include "widgets/label.hpp"
 
+#include <QAbstractItemView>
+#include <QComboBox>
 #include <QFontMetrics>
 #include <QGridLayout>
 #include <QPainter>
@@ -97,7 +99,13 @@ QComboBox* PropertyGrid::addChoice(const QString& key, const QStringList& choice
     auto* combo = new QComboBox;
     combo->setFont(theme::font(theme::TextRole::Body, theme::size::kRow));
     combo->setFixedHeight(kFieldHeight);
+    // Long choice lists (every sprite mapping) must not widen the inspector;
+    // the popup still shows the full names.
+    combo->setSizeAdjustPolicy(QComboBox::AdjustToMinimumContentsLengthWithIcon);
+    combo->setMinimumContentsLength(8);
+    combo->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     combo->addItems(choices);
+    combo->view()->setMinimumWidth(combo->view()->sizeHintForColumn(0) + 24);
     combo->setCurrentIndex(current);
     addRow(key, combo);
     return combo;

@@ -2,6 +2,7 @@
 
 #include <QColor>
 #include <QImage>
+#include <QMap>
 #include <QString>
 #include <QStringList>
 #include <QVariant>
@@ -119,6 +120,32 @@ struct ViewOption {
     QString value;
     QStringList choices;    // drop-down choices; empty with toggle = on/off
     bool toggle = false;
+};
+
+// A program the host runs for a plugin (kit commands, emulators, renderers).
+struct ProcessSpec {
+    QString label;              // shown in Build output: "Build ROM"
+    QString program;
+    QStringList arguments;
+    QString workingDirectory;
+    QMap<QString, QString> environment;   // added to the studio's environment
+    // Emulators: a file the emulator writes once the game is up (console
+    // output arrives buffered, too late to tell). Until it appears the
+    // Playtest view shows that the emulator is starting. Empty: up shortly
+    // after the process starts.
+    QString readyFile;
+};
+
+struct ProcessResult {
+    bool started = false;
+    bool crashed = false;
+    bool cancelled = false;
+    int exitCode = -1;
+    QByteArray standardOutput;
+    QByteArray standardError;
+    QString error;              // why it did not start or finish
+
+    bool succeeded() const { return started && !crashed && !cancelled && exitCode == 0; }
 };
 
 // An editor tool shown in the tool segment.

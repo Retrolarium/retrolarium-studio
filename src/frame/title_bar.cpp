@@ -107,12 +107,22 @@ void TitleBar::setWindowButtonsVisible(bool visible) {
     update();
 }
 
+void TitleBar::setDialogStyle() {
+    dialog_ = true;
+    menuBar_->hide();
+    layout_->setContentsMargins(kPaddingLeft, 0, buttonsWidth(), 0);
+    update();
+}
+
 int TitleBar::buttonsWidth() const {
-    return buttonsVisible_ ? kButtonWidth * 3 : kPaddingLeft;
+    if (!buttonsVisible_) {
+        return kPaddingLeft;
+    }
+    return dialog_ ? kButtonWidth : kButtonWidth * 3;
 }
 
 QRect TitleBar::buttonRect(Button button) const {
-    if (!buttonsVisible_) {
+    if (!buttonsVisible_ || (dialog_ && button != Button::Close)) {
         return QRect();
     }
     const int right = width();
@@ -310,7 +320,7 @@ void TitleBar::paintEvent(QPaintEvent*) {
         const QFont secondaryFont = theme::font(theme::TextRole::Body, 13.0);
         const QFontMetrics pm(primaryFont);
         const QFontMetrics sm(secondaryFont);
-        const int left = menuBar_->geometry().right() + kTitleGap;
+        const int left = dialog_ ? mark_->geometry().right() + 12 : menuBar_->geometry().right() + kTitleGap;
         const int right = (trailing_->isVisible() && trailing_->width() > 6
                                ? trailing_->geometry().left()
                                : width() - buttonsWidth()) -
@@ -325,7 +335,7 @@ void TitleBar::paintEvent(QPaintEvent*) {
                 first = pm.elidedText(primary_, Qt::ElideRight, available);
                 total = pm.horizontalAdvance(first);
             }
-            int x = (width() - total) / 2;
+            int x = dialog_ ? left : (width() - total) / 2;
             x = std::max(left, std::min(x, right - total));
             const QRect band(0, 0, width(), height() - 1);
             painter.setFont(primaryFont);
@@ -344,7 +354,9 @@ void TitleBar::paintEvent(QPaintEvent*) {
 
     if (buttonsVisible_) {
         for (Button button : {Button::Minimize, Button::Maximize, Button::Close}) {
-            paintButton(painter, button);
+            if (!buttonRect(button).isEmpty()) {
+                paintButton(painter, button);
+            }
         }
     }
 }

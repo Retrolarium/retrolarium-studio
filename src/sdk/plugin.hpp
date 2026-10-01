@@ -27,6 +27,30 @@ public:
     virtual void report(const Diagnostic& diagnostic) = 0;
     // Appends a line to the Build output panel.
     virtual void log(const QString& line) = 0;
+
+    // Runs a program asynchronously; output streams to Build output. Only
+    // one program runs at a time; `done` is called exactly once.
+    virtual void runProcess(const ProcessSpec& spec, std::function<void(const ProcessResult&)> done) = 0;
+    virtual bool isBusy() const = 0;
+    virtual void cancel() = 0;
+
+    // A Retrolarium Kit invocation (rltool or python rltool.py) with `arguments`.
+    // `error` explains why when the kit cannot be found.
+    virtual ProcessSpec kitCommand(const QStringList& arguments, const QString& workingDirectory,
+                                   QString* error) const = 0;
+    // A helper executable shipped next to the studio, e.g. a level writer.
+    virtual QString toolPath(const QString& name) const = 0;
+    // An emulator executable by id ("mame"); empty when not found.
+    virtual QString emulatorPath(const QString& id) const = 0;
+
+    // Starts an emulator embedded in the Playtest view. `finished` runs when
+    // it exits. The host adds its own window-embedding arguments.
+    virtual void launchEmulator(const ProcessSpec& spec, const QString& title,
+                                std::function<void(const ProcessResult&)> finished) = 0;
+
+    // Plays a WAV file (sound previews); a new call replaces the last one.
+    virtual void playAudio(const QString& wavPath) = 0;
+    virtual void stopAudio() = 0;
 };
 
 // A plugin command in the Project menu, e.g. "Import Flicky (UE) from ROM…".
