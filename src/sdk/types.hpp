@@ -91,8 +91,14 @@ struct LibraryItem {
     QImage icon;            // optional preview, drawn scaled in the library
 };
 
+// Items to place or paint with. A model returns it from
+// EditorModel::sheet() to show it beside the canvas, or in
+// Inspection::library to show it in the inspector; both behave the same.
 struct Library {
     QString hint;           // "drag onto the map"
+    // A sheet of square tiles without labels (pattern tables), sixteen to a
+    // row, instead of labelled entries.
+    bool grid = false;
     QVector<LibraryItem> items;
 };
 
@@ -139,6 +145,10 @@ struct ProcessSpec {
     // `memory` the main CPU's program space ("memory:read_u8(0x0770) == 1");
     // true for a few frames in a row means the game is up.
     QString readyWhen;
+    // Emulators: the colours the plugin's editors draw with, as 0xRRGGBB for
+    // the first entries of the machine's palette device (NES: its 64
+    // colours), so the game can be shown in the studio's colours.
+    QVector<QRgb> palette;
 };
 
 struct ProcessResult {

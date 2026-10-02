@@ -86,6 +86,12 @@ struct SmbScreen {
     int paletteOf(int tile) const;
     int attributeIndexOf(int tile) const;
     int attributeShiftOf(int tile) const;
+    // The tile the name table holds where nothing writes (the most common
+    // unwritten tile; $24, blank, when every cell is written).
+    int fillTile() const;
+    // The name-table cells a command writes, in order; empty for a write to
+    // the attribute table.
+    QVector<int> cellsOf(int command) const;
 };
 
 // A whole screen-packet resource.
@@ -107,6 +113,10 @@ public:
     void setAttribute(int screen, int index, int value);
     // Sets the palette of the 16x16 block a tile is in.
     void setPalette(int screen, int tile, int palette);
+    // Moves a name-table write to start at another cell, across or down;
+    // the display list keeps its size. Cells it leaves show the fill tile.
+    // Throws SmbError when the write would leave the screen or wrap a row.
+    void moveCommand(int screen, int command, int cell, bool vertical);
 
     QString text(const SmbScreenTextField& field) const;
     void setText(const SmbScreenTextField& field, const QString& text);   // throws SmbError

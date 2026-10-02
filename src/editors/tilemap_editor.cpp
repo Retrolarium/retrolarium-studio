@@ -1,5 +1,6 @@
 #include "editors/tilemap_editor.hpp"
 
+#include "editors/library_sheet.hpp"
 #include "editors/mime.hpp"
 #include "sdk/editor_model.hpp"
 #include "theme/paint.hpp"
@@ -18,6 +19,8 @@
 #include <QScrollArea>
 #include <QScrollBar>
 #include <QShowEvent>
+#include <QSplitter>
+#include <QTimer>
 #include <QWheelEvent>
 
 #include <algorithm>
@@ -172,6 +175,13 @@ void MapCanvas::mousePressEvent(QMouseEvent* event) {
         }
         // Right button paints the first brush, which is "empty" by convention.
         const QVector<sdk::CellBrush> brushes = model_->brushes();
+        if (event->button() == Qt::RightButton && model_->rightClickPicks()) {
+            const int value = model_->cellValue(cell);
+            if (value >= 0) {
+                model_->setCurrentBrush(value);
+            }
+            return;
+        }
         if (!model_->isCellEditable(cell)) {
             emit actionFailed(model_->lockReason(cell));
         }
@@ -425,7 +435,15 @@ TileMapEditor::TileMapEditor(sdk::TileMapModel* model, QWidget* parent)
     scroll_->setWidgetResizable(true);
     scroll_->setWidget(canvas_);
     scroll_->setProperty("surface", QStringLiteral("canvas"));
-    layout->addWidget(scroll_);
+    // The model's pattern sheet, if it has one, beside the map.
+    auto* split = new QSplitter(Qt::Horizontal, this);
+    split->setChildrenCollapsible(false);
+    split->addWidget(scroll_);
+    auto* sheet = new SheetPane(model, split);
+    split->addWidget(sheet);
+    split->setStretchFactor(0, 1);
+    split->setStretchFactor(1, 0);
+    layout->addWidget(split);
 
     const QVector<sdk::Tool> tools = map_->tools();
     tool_ = tools.isEmpty() ? QStringLiteral("select") : tools.first().id;
@@ -472,7 +490,8 @@ void TileMapEditor::showEvent(QShowEvent* event) {
     EditorView::showEvent(event);
     if (!fitted_) {
         fitted_ = true;
-        fitZoom();
+        // After the splitter has laid out the canvas and any sheet beside it.
+        QTimer::singleShot(0, this, &TileMapEditor::fitZoom);
     }
 }
 

@@ -41,6 +41,13 @@ void TileMapModel::setCurrentBrush(int) {}
 int TileMapModel::cellValue(QPoint) const {
     return 0;
 }
+bool CompositionModel::dropItem(const QString&, const QString&, QString* error) {
+    if (error) {
+        *error = QStringLiteral("Nothing can be dropped here.");
+    }
+    return false;
+}
+
 QString TileMapModel::lockReason(QPoint) const {
     return QStringLiteral("This cell cannot be painted.");
 }

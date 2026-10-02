@@ -34,6 +34,7 @@ public:
     QString statusText() const override;
     QString currentLibraryItem() const override;
     void setCurrentLibraryItem(const QString& id) override;
+    sdk::Library sheet() const override;
 
     QSize canvasSize() const override { return {16, 32}; }
     QImage render() const override;
@@ -47,8 +48,11 @@ public:
     int currentFrame() const override { return frame_; }
     void setCurrentFrame(int frame) override;
     int frameDurationMs(int frame) const override;
+    bool moveFrame(int from, int to, QString* error) override;
+    bool dropItem(const QString& libraryItem, const QString& piece, QString* error) override;
 
 private:
+    sdk::Library library() const;
     QVector<int> tiles(int frame) const;
     int global() const;     // the current frame's index in the table
     QVector<int> frameList() const;

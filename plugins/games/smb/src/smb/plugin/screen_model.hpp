@@ -29,6 +29,7 @@ public:
     void setViewOption(const QString& key, const QString& value) override;
     QString statusText() const override;
     QString currentLibraryItem() const override;
+    sdk::Library sheet() const override;
     void setCurrentLibraryItem(const QString& id) override;
 
     QSize gridSize() const override;
@@ -46,6 +47,8 @@ public:
     int cellValue(QPoint cell) const override;
     bool isCellEditable(QPoint cell) const override;
     QString lockReason(QPoint cell) const override;
+    bool rightClickPicks() const override { return true; }
+    bool placeObject(const QString& libraryItem, QPoint cell, QString* error) override;
     void beginStroke() override;
     bool paintCell(QPoint cell, int value) override;
     void endStroke() override;
@@ -53,6 +56,9 @@ public:
     QVector<sdk::MapObject> objects() const override;
     QString selectedObject() const override;
     void selectObject(const QString& id) override;
+    void beginDrag(const QString& id) override;
+    bool dragObject(const QString& id, QPoint topLeftCell) override;
+    void endDrag() override;
 
 private:
     const SmbScreenSet& set() const;
@@ -62,6 +68,10 @@ private:
     // Applies a change to the screen set as one undo step.
     bool editSet(const QString& text, const std::function<void(SmbScreenSet&)>& change, QString* error);
     sdk::Library library() const;
+    sdk::Inspection inspectWrites() const;
+    // Writes the stroke or drag copy into the document as one step.
+    void commitCopy(const QString& text);
+    QString writeLabel(int command) const;
 
     SmbSession* session_;
     QString resource_;
@@ -70,11 +80,13 @@ private:
     QString packet_;
     bool showWritten_ = true;
     int cell_ = -1;             // selected cell, -1: none
+    int write_ = -1;            // selected write (Writes layer), -1: none
+    bool dragging_ = false;
     int tile_ = 0x24;           // tile the paint tool lays
     int palette_ = 0;           // palette the palette layer paints
 
-    std::optional<SmbResourceDocument> before_;
-    quint64 beforeRevision_ = 0;
+    // A stroke paints into a copy of the screen set, shown instead of the
+    // document's, and writes the document once when it ends.
     std::optional<SmbScreenSet> stroke_;
     bool strokeChanged_ = false;
 

@@ -3,6 +3,9 @@
 #include "sdk/editor_model.hpp"
 #include "smb/data/resource_document.hpp"
 
+#include <QHash>
+
+#include <array>
 #include <optional>
 
 namespace rl::smb {
@@ -26,6 +29,7 @@ public:
     void setViewOption(const QString& key, const QString& value) override;
     QString statusText() const override;
     QString currentLibraryItem() const override;
+    sdk::Library sheet() const override;
     void setCurrentLibraryItem(const QString& id) override;
 
     QSize gridSize() const override;
@@ -38,6 +42,8 @@ public:
     void setCurrentBrush(int value) override;
     int cellValue(QPoint cell) const override;
     bool isCellEditable(QPoint cell) const override;
+    bool rightClickPicks() const override { return true; }
+    bool placeObject(const QString& libraryItem, QPoint cell, QString* error) override;
     void beginStroke() override;
     bool paintCell(QPoint cell, int value) override;
     void endStroke() override;
@@ -62,10 +68,10 @@ private:
     int selected_ = -1;     // block index within the group
     int tile_ = 0x24;
 
-    std::optional<SmbResourceDocument> before_;
-    quint64 beforeRevision_ = 0;
-    std::optional<SmbResourceDocument> stroke_;
-    bool strokeChanged_ = false;
+    // A stroke paints into these, drawn over the document, and writes the
+    // document once when it ends: rewriting the 2 MB bundle per cell stalls.
+    bool stroking_ = false;
+    QHash<int, std::array<int, 4>> pending_;    // block index: its four patterns
 
     mutable QVector<sdk::LibraryItem> library_;
     mutable QString libraryKey_;

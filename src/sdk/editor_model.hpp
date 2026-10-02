@@ -47,6 +47,15 @@ public:
 
     // The inspector library item picked for placing ("place" tool, drops).
     virtual QString currentLibraryItem() const { return {}; }
+    // A library shown in the work area beside the canvas, large enough to
+    // pick from (pattern tables): click sets the current library item, the
+    // right button on the canvas can pick from it, dragging drops onto the
+    // canvas. Empty: none.
+    //
+    // A library goes in one of two places, chosen by where the model returns
+    // it and nothing else: here, beside the canvas, or in Inspection::library,
+    // the right column. Library::grid draws it as a tile sheet in either.
+    virtual Library sheet() const { return {}; }
     virtual void setCurrentLibraryItem(const QString& id);
 
 signals:
@@ -116,6 +125,9 @@ public:
     virtual bool isCellEditable(QPoint cell) const;
     // Why a cell cannot be painted, shown when a stroke starts on one.
     virtual QString lockReason(QPoint cell) const;
+    // With the paint tool the right button takes the cell's value as the
+    // brush (tile sheets) instead of painting the first brush (erasing).
+    virtual bool rightClickPicks() const { return false; }
     // One stroke is one undo step: begin, paint any number of cells, end.
     virtual void beginStroke();
     virtual bool paintCell(QPoint cell, int value);
@@ -299,6 +311,9 @@ public:
     virtual void setCurrentFrame(int frame);
     virtual int frameDurationMs(int frame) const;
     virtual bool moveFrame(int from, int to, QString* error);
+
+    // A library item dropped on a piece (a pattern onto a sprite cell).
+    virtual bool dropItem(const QString& libraryItem, const QString& piece, QString* error);
 };
 
 struct SequencerChannel {

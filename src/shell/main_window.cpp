@@ -3,12 +3,12 @@
 #include "editors/editor_view.hpp"
 #include "frame/studio_dialog.hpp"
 #include "frame/title_bar.hpp"
-#include "gallery/theme_gallery.hpp"
 #include "runtime/audio_player.hpp"
 #include "runtime/emulator_runner.hpp"
 #include "runtime/process_runner.hpp"
 #include "runtime/tool_locator.hpp"
 #include "sdk/editor_model.hpp"
+#include "shell/about_dialog.hpp"
 #include "shell/bottom_panel.hpp"
 #include "shell/inspector_panel.hpp"
 #include "shell/side_panels.hpp"
@@ -214,16 +214,6 @@ void MainWindow::buildMenus() {
     quit->setShortcut(QKeySequence::Quit);
     connect(quit, &QAction::triggered, this, &QWidget::close);
 
-    projectMenu_ = bar->addMenu(QStringLiteral("Project"));
-    projectMenu_->setFont(menuFont);
-    for (const auto& plugin : sdk::PluginRegistry::instance().plugins()) {
-        for (const sdk::ProjectAction& action : plugin->projectActions()) {
-            QAction* item = projectMenu_->addAction(action.text);
-            const auto run = action.run;
-            connect(item, &QAction::triggered, this, [this, run] { run(*this); });
-        }
-    }
-
     QMenu* edit = bar->addMenu(QStringLiteral("Edit"));
     edit->setFont(menuFont);
     undoAction_ = edit->addAction(QStringLiteral("Undo"));
@@ -259,24 +249,14 @@ void MainWindow::buildMenus() {
     QAction* panel = view->addAction(QStringLiteral("Messages panel"));
     panel->setShortcut(QKeySequence(QStringLiteral("Ctrl+J")));
     connect(panel, &QAction::triggered, this, [this] { bottom_->setExpanded(!bottom_->isExpanded()); });
-    view->addSeparator();
-    QAction* gallery = view->addAction(QStringLiteral("Theme gallery"));
-    connect(gallery, &QAction::triggered, this, &MainWindow::openGallery);
 
-    QMenu* build = bar->addMenu(QStringLiteral("Build"));
+    // The toolbar's buttons, in the same order.
+    QMenu* build = bar->addMenu(QStringLiteral("Run"));
     build->setFont(menuFont);
     buildAction_ = build->addAction(QStringLiteral("Build"));
     buildAction_->setShortcut(QKeySequence(QStringLiteral("Ctrl+B")));
     connect(buildAction_, &QAction::triggered, this, [this] {
         if (session_ && session_->canBuild() && !isBusy()) session_->build();
-    });
-    playSelectedAction_ = build->addAction(QStringLiteral("Play from selected"));
-    playSelectedAction_->setShortcut(QKeySequence(QStringLiteral("F5")));
-    connect(playSelectedAction_, &QAction::triggered, this, [this] {
-        if (session_ && session_->canPlay() && !session_->selectedStart().isEmpty() && !isBusy()) {
-            showPlaytest();
-            session_->playSelected();
-        }
     });
     playAction_ = build->addAction(QStringLiteral("Play"));
     playAction_->setShortcut(QKeySequence(QStringLiteral("Ctrl+F5")));
@@ -286,14 +266,19 @@ void MainWindow::buildMenus() {
             session_->play();
         }
     });
-    cancelAction_ = build->addAction(QStringLiteral("Cancel"));
-    cancelAction_->setShortcut(QKeySequence(QStringLiteral("Ctrl+Break")));
-    connect(cancelAction_, &QAction::triggered, this, &MainWindow::cancel);
+    playSelectedAction_ = build->addAction(QStringLiteral("Play from selected"));
+    playSelectedAction_->setShortcut(QKeySequence(QStringLiteral("F5")));
+    connect(playSelectedAction_, &QAction::triggered, this, [this] {
+        if (session_ && session_->canPlay() && !session_->selectedStart().isEmpty() && !isBusy()) {
+            showPlaytest();
+            session_->playSelected();
+        }
+    });
     build->addSeparator();
-    pauseGameAction_ = build->addAction(QStringLiteral("Pause playtest"));
+    pauseGameAction_ = build->addAction(QStringLiteral("Pause"));
     pauseGameAction_->setShortcut(QKeySequence(Qt::Key_Pause));
     connect(pauseGameAction_, &QAction::triggered, this, &MainWindow::togglePlaytestPause);
-    stopGameAction_ = build->addAction(QStringLiteral("Stop playtest"));
+    stopGameAction_ = build->addAction(QStringLiteral("Stop"));
     stopGameAction_->setShortcut(QKeySequence(QStringLiteral("Shift+F5")));
     connect(stopGameAction_, &QAction::triggered, this, [this] { emulator_->stop(); });
     pauseGameAction_->setEnabled(false);
@@ -303,9 +288,8 @@ void MainWindow::buildMenus() {
     help->setFont(menuFont);
     QAction* about = help->addAction(QStringLiteral("About Retrolarium Studio"));
     connect(about, &QAction::triggered, this, [this] {
-        frame::MessageDialog::inform(this, QStringLiteral("About"), QStringLiteral("Retrolarium Studio"),
-                                     QStringLiteral("Version %1\nA configurable editor for retro games.")
-                                         .arg(QCoreApplication::applicationVersion()));
+        AboutDialog dialog(this);
+        dialog.exec();
     });
     rebuildRecentMenu();
 }
@@ -738,13 +722,6 @@ void MainWindow::rebuildRecentMenu() {
     recentMenu_->setEnabled(!recent.isEmpty());
 }
 
-void MainWindow::openGallery() {
-    auto* gallery = new gallery::ThemeGallery;
-    gallery->setAttribute(Qt::WA_DeleteOnClose);
-    gallery->resize(1500, 950);
-    gallery->show();
-}
-
 // ---------------------------------------------------------------- navigation
 
 void MainWindow::showDocument(const QString& kind, const QString& document) {
@@ -1135,7 +1112,6 @@ void MainWindow::updateActions() {
     playSelectedAction_->setEnabled(!start.isEmpty() && !busy);
     playSelectedAction_->setText(start.isEmpty() ? QStringLiteral("Play from selected")
                                                  : QStringLiteral("Play from %1").arg(start));
-    cancelAction_->setEnabled(busy);
     buildButton_->setEnabled(canBuild || busy);
     buildButton_->setText(busy ? QStringLiteral("Cancel") : QStringLiteral("Build"));
     playButton_->setEnabled(canPlay && !busy);
@@ -1150,7 +1126,7 @@ void MainWindow::updateActions() {
     const bool live = running || phase == Phase::Starting;
     const bool paused = emulator_->isPaused();
     pauseGameAction_->setEnabled(running);
-    pauseGameAction_->setText(paused ? QStringLiteral("Resume playtest") : QStringLiteral("Pause playtest"));
+    pauseGameAction_->setText(paused ? QStringLiteral("Resume") : QStringLiteral("Pause"));
     pauseButton_->setEnabled(running);
     pauseButton_->setIcon(theme::icon(paused ? QStringLiteral("play") : QStringLiteral("pause")));
     pauseButton_->setToolTip(paused ? QStringLiteral("Resume the playtest (Pause)")

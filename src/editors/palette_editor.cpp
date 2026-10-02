@@ -78,8 +78,28 @@ class PreviewPane final : public QWidget {
 public:
     PreviewPane(const QImage& image, int minimumWidth, QWidget* parent)
         : QWidget(parent), image_(image), minimumWidth_(minimumWidth) {
-        setMinimumSize(280, 250);
-        setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+        // A scene takes the column's height; a sprite sample is only as tall
+        // as it shows, from the top, with no empty band above it.
+        if (minimumWidth_ > 0 || image_.isNull()) {
+            setMinimumSize(280, 250);
+            setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+        } else {
+            setMinimumWidth(280);
+            QSizePolicy policy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+            policy.setHeightForWidth(true);
+            setSizePolicy(policy);
+        }
+    }
+
+    bool hasHeightForWidth() const override { return minimumWidth_ == 0 && !image_.isNull(); }
+    int heightForWidth(int width) const override {
+        if (image_.isNull()) return 250;
+        const int room = std::max(1, width - 32);
+        const int scale = std::clamp(room / image_.width(), 1, kMaxSpriteScale);
+        return image_.height() * scale + 32;
+    }
+    QSize sizeHint() const override {
+        return hasHeightForWidth() ? QSize(280, heightForWidth(280)) : QSize(280, 250);
     }
 
 protected:
@@ -99,16 +119,21 @@ protected:
             }
         }
         // Whole steps from 2x up keep pixels square; below that, use the room.
-        const int scale = std::min(room.width() / image.width(), room.height() / image.height());
+        int scale = std::min(room.width() / image.width(), room.height() / image.height());
+        if (hasHeightForWidth()) {
+            scale = std::min(scale, kMaxSpriteScale);
+        }
         const QSize size = scale >= 2 ? image.size() * scale : image.size().scaled(room.size(), Qt::KeepAspectRatio);
-        const QRect target(room.left() + (room.width() - size.width()) / 2,
-                           room.top() + (room.height() - size.height()) / 2, size.width(), size.height());
+        const int top = hasHeightForWidth() ? room.top() : room.top() + (room.height() - size.height()) / 2;
+        const QRect target(room.left() + (room.width() - size.width()) / 2, top, size.width(), size.height());
         painter.setRenderHint(QPainter::SmoothPixmapTransform, size.width() < image.width());
         painter.drawImage(target, image);
         paint::cornerMarks(painter, target, 13, 7, theme::canvas::kMark, paint::kDiagonal);
     }
 
 private:
+    static constexpr int kMaxSpriteScale = 8;
+
     QImage image_;
     int minimumWidth_;
 };
@@ -384,10 +409,15 @@ void PaletteEditor::rebuild() {
             tabsRow->addStretch(1);
             right_->addLayout(tabsRow);
         }
-        right_->addWidget(new PreviewPane(samples.at(shown).image, samples.at(shown).minimumWidth, rightParent), 1);
+        auto* pane = new PreviewPane(samples.at(shown).image, samples.at(shown).minimumWidth, rightParent);
+        const bool sprite = pane->hasHeightForWidth();
+        right_->addWidget(pane, sprite ? 0 : 1);
         auto* caption = new ui::Label(samples.at(shown).caption, ui::Label::Role::Small, rightParent);
         caption->setTone(QStringLiteral("muted"));
         right_->addWidget(caption);
+        if (sprite) {
+            right_->addStretch(1);
+        }
     }
 }
 

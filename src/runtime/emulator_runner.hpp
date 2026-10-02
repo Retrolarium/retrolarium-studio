@@ -83,6 +83,13 @@ public:
     // Forwarded keyboard: the keys held for the game, by MAME's names.
     void setKey(const QString& key, bool pressed);
     void releaseKeys();
+    // How the picture is shown, applied live: square pixels instead of the
+    // machine's 4:3 screen, and the studio's colours instead of the
+    // emulator's when the launch gave a palette.
+    void setPicture(bool squarePixels, bool studioColours);
+    bool squarePixels() const { return squarePixels_; }
+    bool studioColours() const { return studioColours_; }
+    bool hasStudioPalette() const { return hasPalette_; }
     // The picture as it is on screen, or null when nothing runs.
     QImage picture() const;
     // Saves the emulator picture as PNG; returns the path or empty.
@@ -99,6 +106,7 @@ private:
     void watchStartup();
     void setPhase(Phase phase);
     void writeKeys();
+    void writePicture();
     void acknowledgeWarnings(const sdk::ProcessSpec& spec);
     bool writeControl(const sdk::ProcessSpec& spec, const QString& gameScript, QString* error);
     QString stageCart(const QString& source, QString* error);
@@ -123,6 +131,9 @@ private:
     QString title_;
     QStringList log_;
     bool paused_ = false;
+    bool squarePixels_ = true;
+    bool studioColours_ = true;
+    bool hasPalette_ = false;
     QImage pausedPicture_;
     bool stopping_ = false;
 };

@@ -359,6 +359,14 @@ QVector<sdk::PaletteSample> SmbPacketModel::samples() const {
         const QPair<int, int> course = session_->levelOf(chosen);
         sample.caption = course.first > 0 ? QStringLiteral("World %1-%2, %3").arg(course.first).arg(course.second).arg(where)
                                           : QStringLiteral("%1, %2").arg(titled(chosen), where);
+        if (packet_ == QLatin1String("boss")) {
+            // Only Boss wears it: show him alone, like the player previews.
+            constexpr int kBoss = 0x2d;
+            sample.image = session_->painter().enemy(kBoss, session_->paletteKey(chosen));
+            sample.caption = QStringLiteral("Boss, as in World %1-%2").arg(course.first).arg(course.second);
+            result << sample;
+            return result;
+        }
         sample.image = session_->areaPreview(chosen, 32, first);
         sample.minimumWidth = width * SmbLevelPainter::kCell;
         result << sample;
@@ -478,12 +486,13 @@ QVector<sdk::PaletteSample> SmbPlayerPaletteModel::samples() const {
     if (rows <= 0 || session_->playerFrames().isEmpty()) {
         return {};
     }
+    // Small Hero fills the bottom half of his 16x32 frame.
     constexpr int kStand = 23;
-    QImage image(rows * 24 - 8, 32, QImage::Format_ARGB32);
+    QImage image(rows * 24 - 8, 16, QImage::Format_ARGB32);
     image.fill(Qt::transparent);
     QPainter painter(&image);
     for (int row = 0; row < rows; ++row) {
-        painter.drawImage(row * 24, 0, SmbPlayerFramesModel::frameImage(session_, kStand, row));
+        painter.drawImage(row * 24, 0, SmbPlayerFramesModel::frameImage(session_, kStand, row).copy(0, 16, 16, 16));
     }
     painter.end();
     sdk::PaletteSample sample;

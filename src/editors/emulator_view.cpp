@@ -14,6 +14,7 @@
 #include <QPlainTextEdit>
 #include <QPushButton>
 #include <QScrollBar>
+#include <QSettings>
 #include <QStandardPaths>
 #include <QTimer>
 #include <QVBoxLayout>
@@ -373,6 +374,26 @@ QWidget* EmulatorView::createToolbar(QWidget* parent) {
                 [this, key](const QString& value) { emulator_->setViewOption(key, value); });
         layout->addWidget(chip);
     }
+    // How the picture shows, for every game: square pixels or the 4:3 TV
+    // the machine assumes, and the studio's colours when the plugin gave
+    // them. Remembered across runs.
+    auto* pixels = new ui::ViewChip(QStringLiteral("Pixels"),
+                                    runner_->squarePixels() ? QStringLiteral("Square") : QStringLiteral("TV 4:3"), bar);
+    pixels->setChoices({QStringLiteral("Square"), QStringLiteral("TV 4:3")});
+    connect(pixels, &ui::ViewChip::valueChosen, this, [this](const QString& value) {
+        runner_->setPicture(value == QLatin1String("Square"), runner_->studioColours());
+        QSettings().setValue(QStringLiteral("playtest/squarePixels"), runner_->squarePixels());
+    });
+    layout->addWidget(pixels);
+    auto* colours = new ui::ViewChip(QStringLiteral("Colours"),
+                                     runner_->studioColours() ? QStringLiteral("Studio") : QStringLiteral("Emulator"), bar);
+    colours->setChoices({QStringLiteral("Studio"), QStringLiteral("Emulator")});
+    connect(colours, &ui::ViewChip::valueChosen, this, [this](const QString& value) {
+        runner_->setPicture(runner_->squarePixels(), value == QLatin1String("Studio"));
+        QSettings().setValue(QStringLiteral("playtest/studioColours"), runner_->studioColours());
+    });
+    colours->setToolTip(QStringLiteral("The colours the editors draw with, or the emulator's own"));
+    layout->addWidget(colours);
     layout->addWidget(new ui::ViewChip(QStringLiteral("Core"), emulator_->coreLabel(), bar));
     layout->addStretch(1);
     QString status = QStringLiteral("Idle");
@@ -384,7 +405,7 @@ QWidget* EmulatorView::createToolbar(QWidget* parent) {
         status = QStringLiteral("Stopping…");
     } else if (running) {
         status = runner_->isPaused()                 ? QStringLiteral("Paused")
-                 : stage_->surface()->hasFocus() ? QStringLiteral("Running · keyboard and game pad go to the game")
+                 : stage_->surface()->hasFocus() ? QStringLiteral("Running · arrows, Z X, Enter, right Shift or a game pad")
                                                  : QStringLiteral("Running · click the picture for the keyboard");
     }
     auto* state = new ui::Label(status, ui::Label::Role::Small, bar);

@@ -100,7 +100,6 @@ private:
     void chooseProject();
     void rememberRecent(const QString& path);
     void rebuildRecentMenu();
-    void openGallery();
     void updateActions();
     void togglePlaytestPause();
     void showPlaytest();
@@ -177,11 +176,9 @@ private:
     QAction* buildAction_ = nullptr;
     QAction* playAction_ = nullptr;
     QAction* playSelectedAction_ = nullptr;
-    QAction* cancelAction_ = nullptr;
     QAction* pauseGameAction_ = nullptr;
     QAction* stopGameAction_ = nullptr;
     QMenu* recentMenu_ = nullptr;
-    QMenu* projectMenu_ = nullptr;
 };
 
 }  // namespace rl::shell

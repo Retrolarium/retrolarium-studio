@@ -134,6 +134,12 @@ Starting fast:
   ready condition (`ProcessSpec::readyWhen`, a Lua expression with `memory`
   the main CPU's program space); the control script checks it each frame and
   writes the ready file itself after three frames in a row.
+- The control script reads `picture.txt` while the game runs: Pixels
+  Square scales the 4:3 TV screen MAME assumes back to square pixels
+  (render container `xscale`/`yscale`), Colours Studio writes the palette a
+  launch gives (`ProcessSpec::palette`, NES: the editors' 64 colours) into
+  the machine's palette device. Keys the window keeps (Alt, Ctrl) get
+  aliases: Z and X press buttons 1 and 2, Enter start, right Shift select.
 - Hot reload: Play while the same game runs (same program, working
   directory and arguments apart from the cartridge and the autoboot script)
   keeps the process. The runner stages a copy of the new build, rewrites the
@@ -180,7 +186,7 @@ same file.
 | Metatiles | TileMap | the 16x16 background blocks of each palette group, four patterns each; paint quadrants from the pattern library, take a pattern with the pick tool, type numbers, or copy a whole block |
 | Palettes | Palette | area packets (eight palettes of four), the packets the game writes over them (snow skies, mushroom platforms, Boss) previewed where they show, and the player table with Hero, Brother and fire previews; the 64-colour NES picker |
 | Animations | Composition | Hero's animations (big and small walk, swim, climb, ...), each its frames of 2x4 sprite patterns in the Hero, Brother or fire colours, with the cells the engine flips drawn flipped; set a cell's pattern from the library; World > Player actions picks the frame each action shows |
-| Screens | TileMap | the status bar, lives, time-up, game-over and warp-zone screens as the PPU display lists leave them; paint tiles from the library and 16x16 palettes into the cells the lists write (a repeated write changes its run); edit their text fields |
+| Screens | TileMap | the status bar, lives, time-up, game-over and warp-zone screens as the PPU display lists leave them; paint tiles from the pattern sheet and 16x16 palettes into the cells the lists write (a repeated write changes its run); on the Writes layer drag a whole write elsewhere or turn it to run down, byte for byte the same list; edit their text fields |
 | Text | Table | every fixed text: the fixed fields and the screens' text fields, in the game's font, within each slot |
 | Sound | Sequencer | every music header (area music, ground theme parts, events) on the piano roll: square 2, square 1, triangle, noise; drag notes to change pitch, square 1 and drum lengths in place, run lengths and beats in the inspector, which names every song sharing a byte; Play renders the song with the kit (`audio render-smb-wav`) |
 | Playtest | Emulator | Play from selected starts at Hero's cell (`smb-point-playtest-plan`), Play from power-on |
@@ -195,6 +201,19 @@ MAME shows a "known problems" screen for the NES driver that waits for a key,
 which never reaches an embedded MAME. Before a launch the runner marks it as
 seen in `cfg/<system>.cfg` (`ui_warnings`, with the features `-listxml`
 reports), so MAME's `skip_warnings` setting skips it.
+
+## Libraries and pattern sheets
+
+A model offers things to place or paint with as an `sdk::Library`. Where it
+shows is the model's choice, and switching is one line: return it from
+`EditorModel::sheet()` to put it in the work area beside the canvas (sized to
+pick from), or set it as `Inspection::library` to put it in the inspector's
+right column. `Library::grid` draws either as a tile sheet sixteen to a row
+instead of labelled entries. Both places pick on click and drag onto the
+canvas; a map model can also let the right button pick
+(`TileMapModel::rightClickPicks`). SMB puts its pattern tables beside the
+canvas (Metatiles, Screens, Animations) and its level objects in the
+inspector.
 
 ## Theme rules
 

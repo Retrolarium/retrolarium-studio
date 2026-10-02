@@ -1,5 +1,6 @@
 #include "shell/inspector_panel.hpp"
 
+#include "editors/library_sheet.hpp"
 #include "editors/mime.hpp"
 #include "sdk/editor_model.hpp"
 #include "theme/paint.hpp"
@@ -345,11 +346,22 @@ void InspectorPanel::rebuild() {
             header->addWidget(new ui::Label(inspection.library.hint, ui::Label::Role::Meta, libBox));
         }
         lib->addLayout(header);
+        if (inspection.library.grid) {
+            auto* sheet = new editors::LibrarySheet(libBox);
+            sheet->setItems(inspection.library.items, model_->currentLibraryItem());
+            QPointer<sdk::EditorModel> model = model_;
+            sheet->onPick = [model](const QString& id) {
+                if (model) {
+                    model->setCurrentLibraryItem(id);
+                }
+            };
+            lib->addWidget(sheet);
+        }
         auto* items = new QGridLayout;
         items->setSpacing(6);
         const QString current = model_->currentLibraryItem();
         int index = 0;
-        for (const sdk::LibraryItem& item : inspection.library.items) {
+        for (const sdk::LibraryItem& item : inspection.library.grid ? QVector<sdk::LibraryItem>{} : inspection.library.items) {
             auto* tile = new LibraryTile(item, item.id == current, libBox);
             QPointer<sdk::EditorModel> model = model_;
             tile->onPick = [model](const QString& id) {

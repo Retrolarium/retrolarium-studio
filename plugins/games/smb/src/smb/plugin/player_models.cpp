@@ -317,8 +317,9 @@ sdk::Inspection SmbPlayerFramesModel::inspect() const {
         patterns.monospace = true;
         inspection.fields = {frame, actions, patterns};
         inspection.note = QStringLiteral("Each frame is eight 8x8 sprite patterns, two across and four down; "
-                                         "%1 leaves a cell empty. Select a cell to change its pattern. Cells "
-                                         "marked ↔ are drawn flipped by the engine.")
+                                         "%1 leaves a cell empty. Drag a pattern from the sheet onto a cell, or "
+                                         "select a cell and click one. Cells marked ↔ are drawn flipped by the "
+                                         "engine; SMB stores no flips of its own.")
                               .arg(hex(blank));
         return inspection;
     }
@@ -341,7 +342,7 @@ sdk::Inspection SmbPlayerFramesModel::inspect() const {
     empty.choices = QStringList{QStringLiteral("No"), QStringLiteral("Yes")};
     empty.value = t.at(piece_) == blank ? QStringLiteral("Yes") : QStringLiteral("No");
     inspection.fields = {tile, empty};
-    inspection.note = QStringLiteral("Click a pattern in the library to put it here, or type its number. Patterns "
+    inspection.note = QStringLiteral("Click a pattern in the Patterns sheet to put it here, or type its number. Patterns "
                                      "are shared: other frames that use one change with it in Tiles.");
     if (mirrored(frameIndex, piece_)) {
         sdk::Field flip;
@@ -352,13 +353,27 @@ sdk::Inspection SmbPlayerFramesModel::inspect() const {
         inspection.note += QStringLiteral(" The engine flips this cell, so it usually holds the same pattern as "
                                           "the cell to its left.");
     }
-    // Sprite patterns in the chosen player colours.
+    return inspection;
+}
+
+sdk::Library SmbPlayerFramesModel::sheet() const {
+    return library();
+}
+
+sdk::Library SmbPlayerFramesModel::library() const {
+    // The sprite pattern table in the chosen player colours, as a sheet.
+    sdk::Library library;
+    library.grid = true;
+    library.hint = piece_ >= 0 ? QStringLiteral("click: into the cell · or drag onto a cell")
+                               : QStringLiteral("drag onto a cell");
     const QVector<QRgb> pens = colors();
     const int base = session_->document().playerTileBase(session_->playerFrames());
+    const int blank = session_->document().playerBlankTile(session_->playerFrames());
     for (int p = 0; p < 256; ++p) {
         sdk::LibraryItem item;
         item.id = QStringLiteral("tile:%1").arg(p);
         item.label = hex(p);
+        item.hint = p == blank ? QStringLiteral("empty cell") : QString();
         QImage icon(8, 8, QImage::Format_ARGB32);
         icon.fill(Qt::transparent);
         for (int y = 0; y < 8; ++y) {
@@ -370,10 +385,49 @@ sdk::Inspection SmbPlayerFramesModel::inspect() const {
             }
         }
         item.icon = icon;
-        inspection.library.items << item;
+        library.items << item;
     }
-    inspection.library.hint = QStringLiteral("click to put into the cell");
-    return inspection;
+    return library;
+}
+
+bool SmbPlayerFramesModel::moveFrame(int from, int to, QString* error) {
+    // Frames of an animation play in table order; moving one swaps its
+    // patterns with its neighbour's, so the actions keep their offsets.
+    const QVector<int> list = frameList();
+    if (from < 0 || from >= list.size() || to < 0 || to >= list.size() || from == to) {
+        if (error && list.size() <= 1) {
+            *error = QStringLiteral("%1 has a single frame.").arg(title());
+        }
+        return false;
+    }
+    const QString id = session_->playerFrames();
+    const int a = list.at(from);
+    const int b = list.at(to);
+    const bool ok = session_->edit(QStringLiteral("Move a frame of %1").arg(title()),
+                                   [id, a, b](SmbResourceDocument& d) {
+                                       QJsonObject r = d.resource(id);
+                                       QJsonArray frames = r.value(QStringLiteral("frames")).toArray();
+                                       const QJsonValue first = frames.at(a);
+                                       frames.replace(a, frames.at(b));
+                                       frames.replace(b, first);
+                                       r.insert(QStringLiteral("frames"), frames);
+                                       d.setResource(id, r);
+                                   },
+                                   error);
+    if (ok) {
+        frame_ = to;
+        emit contentChanged();
+        emit selectionChanged();
+    }
+    return ok;
+}
+
+bool SmbPlayerFramesModel::dropItem(const QString& libraryItem, const QString& piece, QString* error) {
+    if (!libraryItem.startsWith(QLatin1String("tile:")) || !piece.startsWith(QLatin1String("tile:"))) {
+        return CompositionModel::dropItem(libraryItem, piece, error);
+    }
+    selectPiece(piece);
+    return setTile(piece.mid(5).toInt(), libraryItem.mid(5).toInt(), error);
 }
 
 QString SmbPlayerFramesModel::statusText() const {

@@ -136,6 +136,8 @@ add_library(studio_editors STATIC
     src/editors/composition_editor.hpp
     src/editors/editor_view.cpp
     src/editors/editor_view.hpp
+    src/editors/library_sheet.cpp
+    src/editors/library_sheet.hpp
     src/editors/emulator_view.cpp
     src/editors/emulator_view.hpp
     src/editors/mime.hpp
@@ -161,6 +163,8 @@ target_link_libraries(studio_gallery PUBLIC studio_ui)
 studio_enable_warnings(studio_gallery)
 
 add_library(studio_shell STATIC
+    src/shell/about_dialog.cpp
+    src/shell/about_dialog.hpp
     src/shell/bottom_panel.cpp
     src/shell/bottom_panel.hpp
     src/shell/inspector_panel.cpp

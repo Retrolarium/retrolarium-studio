@@ -47,6 +47,10 @@ QSize SmbMetatileModel::gridSize() const {
 }
 
 int SmbMetatileModel::tileOf(const SmbResourceDocument& document, int index, int quadrant) const {
+    const auto found = pending_.constFind(index);
+    if (found != pending_.constEnd()) {
+        return found->at(quadrant);
+    }
     const int base = document.resource(session_->metatiles()).value(QStringLiteral("tile_base")).toInt();
     return document.metatileTiles(session_->metatiles(), encoded(index)).at(quadrant) - base;
 }
@@ -63,7 +67,7 @@ QPair<int, int> SmbMetatileModel::blockAt(QPoint cell) const {
 
 QVector<sdk::Tool> SmbMetatileModel::tools() const {
     return {{QStringLiteral("select"), QStringLiteral("Select a block"), QStringLiteral("select")},
-            {QStringLiteral("paint"), QStringLiteral("Paint the library pattern into a quadrant (right button: blank)"),
+            {QStringLiteral("paint"), QStringLiteral("Paint the sheet's pattern into quadrants (right button takes one)"),
              QStringLiteral("paint")},
             {QStringLiteral("pick"), QStringLiteral("Take a quadrant's pattern as the brush"), QStringLiteral("pick")}};
 }
@@ -98,9 +102,19 @@ QImage SmbMetatileModel::render() const {
     QImage image(grid.width() * 8, grid.height() * 8, QImage::Format_ARGB32);
     image.fill(QColor(0, 0, 0, 0));
     QPainter painter(&image);
+    const int backdrop = session_->document().dayBackground(session_->palettes());
     for (int i = 0; i < count(); ++i) {
-        painter.drawImage(QPoint((i % kPerRow) * 16, (i / kPerRow) * 16),
-                          session_->painter().metatile(encoded(i), packet_, false));
+        const QPoint at((i % kPerRow) * 16, (i / kPerRow) * 16);
+        const auto found = pending_.constFind(i);
+        if (found == pending_.constEnd()) {
+            painter.drawImage(at, session_->painter().metatile(encoded(i), packet_, false));
+            continue;
+        }
+        // A block the stroke is painting: its patterns as they will be.
+        for (int q = 0; q < 4; ++q) {
+            painter.drawImage(at + QPoint((q % 2) * 8, (q / 2) * 8),
+                              session_->painter().backgroundTile(found->at(q), packet_, group_, backdrop));
+        }
     }
     return image;
 }
@@ -138,39 +152,71 @@ int SmbMetatileModel::cellValue(QPoint cell) const {
     return at.first < 0 ? -1 : tileOf(session_->document(), at.first, at.second);
 }
 
+bool SmbMetatileModel::placeObject(const QString& libraryItem, QPoint cell, QString* error) {
+    const QPair<int, int> at = blockAt(cell);
+    if (!libraryItem.startsWith(QLatin1String("tile:")) || at.first < 0) {
+        if (error) *error = QStringLiteral("Drop a pattern onto a quadrant of a block.");
+        return false;
+    }
+    const int tile = libraryItem.mid(5).toInt();
+    setCurrentLibraryItem(libraryItem);
+    const QString metatiles = session_->metatiles();
+    const int block = encoded(at.first);
+    const int quadrant = at.second;
+    selectObject(QStringLiteral("block:%1").arg(at.first));
+    return session_->edit(QStringLiteral("Set a pattern of block %1").arg(hex(block)),
+                          [metatiles, block, quadrant, tile](SmbResourceDocument& d) {
+                              d.setMetatileTile(metatiles, block, quadrant, tile);
+                          },
+                          error);
+}
+
 bool SmbMetatileModel::isCellEditable(QPoint cell) const {
     return blockAt(cell).first >= 0;
 }
 
 void SmbMetatileModel::beginStroke() {
-    before_ = session_->document();
-    beforeRevision_ = session_->revision();
-    stroke_ = session_->document();
-    strokeChanged_ = false;
+    stroking_ = true;
+    pending_.clear();
 }
 
 bool SmbMetatileModel::paintCell(QPoint cell, int value) {
     const QPair<int, int> at = blockAt(cell);
-    if (!stroke_ || at.first < 0 || tileOf(*stroke_, at.first, at.second) == value) {
+    if (!stroking_ || at.first < 0 || value < 0 || value > 255 ||
+        tileOf(session_->document(), at.first, at.second) == value) {
         return false;
     }
-    try {
-        stroke_->setMetatileTile(session_->metatiles(), encoded(at.first), at.second, value);
-    } catch (const SmbError&) {
-        return false;
+    auto found = pending_.find(at.first);
+    if (found == pending_.end()) {
+        std::array<int, 4> tiles{};
+        for (int q = 0; q < 4; ++q) tiles[q] = tileOf(session_->document(), at.first, q);
+        found = pending_.insert(at.first, tiles);
     }
-    session_->setLive(*stroke_);
-    strokeChanged_ = true;
+    (*found)[at.second] = value;
+    emit contentChanged();
     return true;
 }
 
 void SmbMetatileModel::endStroke() {
-    if (before_ && strokeChanged_) {
-        session_->commit(*before_, beforeRevision_, QStringLiteral("Paint %1").arg(title()));
+    stroking_ = false;
+    if (pending_.isEmpty()) {
+        return;
     }
-    before_.reset();
-    stroke_.reset();
-    strokeChanged_ = false;
+    const QHash<int, std::array<int, 4>> pending = pending_;
+    const QString metatiles = session_->metatiles();
+    const int group = group_;
+    // Cleared first: the edit redraws from the document.
+    pending_.clear();
+    QString error;
+    session_->edit(QStringLiteral("Paint %1").arg(title()),
+                   [pending, metatiles, group](SmbResourceDocument& d) {
+                       for (auto it = pending.constBegin(); it != pending.constEnd(); ++it) {
+                           for (int q = 0; q < 4; ++q) {
+                               d.setMetatileTile(metatiles, (group << 6) | it.key(), q, it.value()[q]);
+                           }
+                       }
+                   },
+                   &error);
 }
 
 // ---------------------------------------------------------------- objects
@@ -235,6 +281,10 @@ bool SmbMetatileModel::setField(const QString& key, const QVariant& value, QStri
                           error);
 }
 
+sdk::Library SmbMetatileModel::sheet() const {
+    return library();
+}
+
 sdk::Library SmbMetatileModel::library() const {
     const int backdrop = session_->document().dayBackground(session_->palettes());
     const QString key = QStringLiteral("%1|%2").arg(session_->revision()).arg(packet_);
@@ -250,14 +300,14 @@ sdk::Library SmbMetatileModel::library() const {
         libraryKey_ = key;
     }
     sdk::Library result;
-    result.hint = QStringLiteral("pick a pattern, then paint");
+    result.grid = true;
+    result.hint = QStringLiteral("click: brush · drag onto a quadrant");
     result.items = library_;
     return result;
 }
 
 sdk::Inspection SmbMetatileModel::inspect() const {
     sdk::Inspection inspection;
-    inspection.library = library();
     inspection.engineTag = QStringLiteral("nes.metatile-2x2.v1");
     if (selected_ < 0 || selected_ >= count()) {
         inspection.kicker = QStringLiteral("Metatiles");
@@ -270,7 +320,7 @@ sdk::Inspection SmbMetatileModel::inspect() const {
         inspection.fields = {blocks};
         inspection.note = QStringLiteral("Levels are built from these 16x16 blocks; the group picks background "
                                          "palette %1. Changing a block changes it everywhere the game draws it. "
-                                         "Pick a pattern in the library and paint quadrants, or select a block.")
+                                         "Pick a pattern in the Patterns sheet and paint quadrants, or select a block.")
                               .arg(group_);
         return inspection;
     }
@@ -307,8 +357,8 @@ sdk::Inspection SmbMetatileModel::inspect() const {
     }
     copy.value = QStringLiteral("—");
     inspection.fields << copy;
-    inspection.note = QStringLiteral("Four background patterns in palette %1. Paint quadrants with the library "
-                                     "pattern, take one from any block with the pick tool, or copy a whole block. "
+    inspection.note = QStringLiteral("Four background patterns in palette %1. Paint quadrants with a pattern from "
+                                     "the Patterns sheet, take one from any block with the pick tool, or copy a whole block. "
                                      "Every level that places block %2 changes with it.")
                           .arg(group_)
                           .arg(hex(encoded(selected_)));

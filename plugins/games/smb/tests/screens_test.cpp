@@ -112,6 +112,25 @@ int main(int argc, char** argv) {
             expect(lives.screens.at(s).tiles.at(tile) == 0x26, QStringLiteral("a repeated run was split"));
         }
 
+        // Moving a write and back leaves the resource as it was; a write
+        // cannot leave the screen.
+        {
+            const QJsonObject json = document.resource(QStringLiteral("warp-zone-screen"));
+            SmbScreenSet warp = SmbScreenSet::fromJson(json);
+            int c = 0;
+            while (warp.screens.at(0).cellsOf(c).isEmpty()) ++c;
+            const int home = warp.screens.at(0).commands.at(c).address - warp.screens.at(0).base;
+            const QVector<int> before = warp.screens.at(0).tiles;
+            warp.moveCommand(0, c, home + 32, false);
+            expect(warp.screens.at(0).tiles != before, QStringLiteral("moving a write changed nothing"));
+            expect(warp.screens.at(0).tiles.at(home + 32) == before.at(home),
+                   QStringLiteral("the write's first tile did not move with it"));
+            warp.moveCommand(0, c, home, false);
+            expect(warp.toJson(json) == json, QStringLiteral("moving a write and back changed the resource"));
+            expectThrow([&] { warp.moveCommand(0, c, 31, false); },
+                        QStringLiteral("a write was moved past the end of a row"));
+        }
+
         std::cout << checks << " screen cells rewritten; " << slotList.size() << " text slots checked\n";
     } catch (const std::exception& e) {
         std::cerr << "FAIL: " << e.what() << "\n";

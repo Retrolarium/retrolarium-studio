@@ -2,6 +2,7 @@
 
 #include "smb/data/resource_document.hpp"
 
+#include <QHash>
 #include <QJsonValue>
 
 #include <algorithm>
@@ -191,6 +192,34 @@ int SmbScreen::paletteOf(int tile) const {
     return index < attributes.size() ? (attributes.at(index) >> attributeShiftOf(tile)) & 3 : 0;
 }
 
+int SmbScreen::fillTile() const {
+    QHash<int, int> counts;
+    for (int tile = 0; tile < tiles.size(); ++tile) {
+        if (tileWriter(tile).x() < 0) ++counts[tiles.at(tile)];
+    }
+    int best = 0x24;
+    int bestCount = 0;
+    for (auto it = counts.constBegin(); it != counts.constEnd(); ++it) {
+        if (it.value() > bestCount) {
+            best = it.key();
+            bestCount = it.value();
+        }
+    }
+    return best;
+}
+
+QVector<int> SmbScreen::cellsOf(int c) const {
+    QVector<int> cells;
+    if (c < 0 || c >= commands.size()) return cells;
+    const SmbScreenCommand& command = commands.at(c);
+    for (int i = 0; i < command.length; ++i) {
+        const int cell = command.target(i) - base;
+        if (cell < 0 || cell >= width * height) return {};
+        cells << cell;
+    }
+    return cells;
+}
+
 // ---------------------------------------------------------------- set
 
 SmbScreenSet SmbScreenSet::fromJson(const QJsonObject& resource) {
@@ -332,6 +361,29 @@ void SmbScreenSet::setPalette(int s, int tile, int palette) {
     const int shift = screen.attributeShiftOf(tile);
     const int current = screen.attributes.value(index);
     setAttribute(s, index, (current & ~(3 << shift)) | ((palette & 3) << shift));
+}
+
+void SmbScreenSet::moveCommand(int s, int c, int cell, bool vertical) {
+    if (s < 0 || s >= screens.size()) fail(QStringLiteral("No such screen."));
+    SmbScreen& screen = screens[s];
+    if (c < 0 || c >= screen.commands.size() || screen.cellsOf(c).isEmpty()) {
+        fail(QStringLiteral("Only writes to the name table can move."));
+    }
+    const SmbScreenCommand& command = screen.commands.at(c);
+    const int x = cell % screen.width;
+    const int y = cell / screen.width;
+    if (cell < 0 || y >= screen.height ||
+        (vertical ? y + command.length > screen.height : x + command.length > screen.width)) {
+        fail(QStringLiteral("The write would run off the screen; it keeps its %1 cells %2.")
+                 .arg(command.length)
+                 .arg(vertical ? QStringLiteral("down") : QStringLiteral("across")));
+    }
+    const int fill = screen.fillTile();
+    screen.commands[c].address = screen.base + cell;
+    screen.commands[c].vertical = vertical;
+    // The name table again from the fill, as the kit projects it.
+    for (int& tile : screen.tiles) tile = fill;
+    project(screen);
 }
 
 QString SmbScreenSet::text(const SmbScreenTextField& field) const {

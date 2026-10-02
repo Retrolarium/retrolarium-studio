@@ -1,5 +1,6 @@
 #include "smb/plugin/smb_session.hpp"
 
+#include "nes/palette.hpp"
 #include "sdk/plugin.hpp"
 #include "sdk/snapshot_command.hpp"
 #include "smb/plugin/graphics_models.hpp"
@@ -847,6 +848,11 @@ void SmbSession::launch(bool fromStart) {
                 // it plays the area with Hero placed on the start page
                 // (operating mode 1, task 3, player engine running), so the
                 // boot and the steering can run hidden and fast.
+                // The game in the colours the editors draw with.
+                const std::string model = document_.paletteModel(art_.palettes).toStdString();
+                for (int i = 0; i < 64; ++i) {
+                    game.palette << nes::masterColor(i, model);
+                }
                 const QString page = game.environment.value(QStringLiteral("SMB1_PLAYTEST_PAGE"));
                 if (!fromStart && !page.isEmpty()) {
                     game.readyWhen = QStringLiteral("memory:read_u8(0x0770) == 1 and memory:read_u8(0x0772) == 3 and "

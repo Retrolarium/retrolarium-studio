@@ -2,19 +2,20 @@
 
 #include "runtime/mame_config.hpp"
 
+#include <QApplication>
 #include <QDateTime>
 #include <QDir>
 #include <QFile>
-#include <QApplication>
 #include <QFileInfo>
-#include <QKeyEvent>
 #include <QGuiApplication>
+#include <QKeyEvent>
 #include <QMouseEvent>
 #include <QPainter>
 #include <QProcess>
 #include <QProcessEnvironment>
 #include <QRegularExpression>
 #include <QScreen>
+#include <QSettings>
 #include <QTemporaryDir>
 #include <QTimer>
 #include <QWindow>
@@ -51,6 +52,8 @@ const char* kControlScript = R"LUA(-- Written by Retrolarium Studio for the runn
 local cart = [==[@CART@]==]
 local command_file = [==[@COMMAND@]==]
 local keys_file = [==[@KEYS@]==]
+local picture_file = [==[@PICTURE@]==]
+local studio_palette = {@PALETTE@}
 local ready_file = [==[@READY@]==]
 local ready_when = [==[@READYWHEN@]==]
 local game_script = [==[@SCRIPT@]==]
@@ -127,6 +130,10 @@ for _, port in pairs(machine.ioport.ports) do
         end
     end
 end
+local key_aliases = {
+    KEYCODE_Z = "KEYCODE_LCONTROL", KEYCODE_X = "KEYCODE_LALT",
+    KEYCODE_ENTER = "KEYCODE_1", KEYCODE_RSHIFT = "KEYCODE_5",
+}
 local held, keys_text = {}, ""
 local function apply_keys()
     local file = io.open(keys_file, "r")
@@ -140,6 +147,12 @@ local function apply_keys()
     local wanted = {}
     for token in string.gmatch(text, "KEYCODE_[%w_]+") do
         for _, field in ipairs(fields_by_key[token] or {}) do wanted[field] = true end
+        -- Keys the studio adds, since Alt and Ctrl belong to the window:
+        -- Z and X are buttons 1 and 2, Enter is start, right Shift select.
+        local alias = key_aliases[token]
+        if alias ~= nil then
+            for _, field in ipairs(fields_by_key[alias] or {}) do wanted[field] = true end
+        end
     end
     for field in pairs(held) do
         if not wanted[field] then field:clear_value() end
@@ -167,6 +180,51 @@ if ready_when ~= "" then
     end
 end
 
+-- The picture file: "square" shows square pixels instead of the machine's
+-- 4:3 screen, "studio" the studio's colours instead of the emulator's.
+local picture_text, palette_device, original_pens = nil, nil, nil
+local function apply_picture()
+    local file = io.open(picture_file, "r")
+    local text = ""
+    if file ~= nil then
+        text = file:read("a") or ""
+        file:close()
+    end
+    if text == picture_text then return end
+    picture_text = text
+    local square = string.find(text, "square", 1, true) ~= nil
+    local studio = string.find(text, "studio", 1, true) ~= nil
+    for _, screen in pairs(machine.screens) do
+        local settings = screen.container.user_settings
+        settings.xscale, settings.yscale = 1.0, 1.0
+        if square and screen.width > 0 and screen.height > 0 then
+            local ratio = (screen.width / screen.height) / (4 / 3)
+            if ratio < 1 then settings.xscale = ratio else settings.yscale = 1 / ratio end
+        end
+        screen.container.user_settings = settings
+    end
+    if #studio_palette > 0 then
+        if palette_device == nil then
+            for _, device in pairs(machine.palettes) do
+                if device.entries >= #studio_palette then
+                    palette_device = device
+                    break
+                end
+            end
+        end
+        if palette_device ~= nil then
+            if original_pens == nil then
+                original_pens = {}
+                for i = 0, #studio_palette - 1 do original_pens[i] = palette_device:pen_color(i) end
+            end
+            for i = 0, #studio_palette - 1 do
+                local color = studio and studio_palette[i + 1] or original_pens[i]
+                palette_device:set_pen_color(i, (color >> 16) & 255, (color >> 8) & 255, color & 255)
+            end
+        end
+    end
+end
+
 local fast = ready_file ~= ""
 local was_throttled, was_frameskip, was_muted = video.throttled, video.frameskip, sound.ui_mute
 local hidden, frames, unmute_at = fast, 0, nil
@@ -180,6 +238,7 @@ on_frame(function()
     frames = frames + 1
     apply_keys()
     if frames % 6 == 0 then take_command() end
+    if frames == 1 or frames % 15 == 0 then apply_picture() end
     if hidden and ready_check ~= nil then
         ready_frames = ready_check() and ready_frames + 1 or 0
         if ready_frames == 3 then
@@ -373,6 +432,9 @@ void EmulatorSurface::paintEvent(QPaintEvent*) {
 }
 
 EmulatorRunner::EmulatorRunner(QObject* parent) : QObject(parent), startupTimer_(new QTimer(this)) {
+    const QSettings settings;
+    squarePixels_ = settings.value(QStringLiteral("playtest/squarePixels"), true).toBool();
+    studioColours_ = settings.value(QStringLiteral("playtest/studioColours"), true).toBool();
     startupTimer_->setInterval(kStartupPollMs);
     connect(startupTimer_, &QTimer::timeout, this, &EmulatorRunner::watchStartup);
 }
@@ -451,6 +513,25 @@ void EmulatorRunner::releaseKeys() {
     }
 }
 
+void EmulatorRunner::setPicture(bool squarePixels, bool studioColours) {
+    squarePixels_ = squarePixels;
+    studioColours_ = studioColours;
+    writePicture();
+}
+
+void EmulatorRunner::writePicture() {
+    if (!stage_ || !stage_->isValid()) {
+        return;
+    }
+    QFile file(stage_->filePath(QStringLiteral("picture.txt")));
+    if (file.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
+        QStringList words;
+        words << (squarePixels_ ? QStringLiteral("square") : QStringLiteral("tv"));
+        words << (studioColours_ ? QStringLiteral("studio") : QStringLiteral("emulator"));
+        file.write(words.join(QLatin1Char(' ')).toUtf8());
+    }
+}
+
 void EmulatorRunner::writeKeys() {
     if (!stage_ || !stage_->isValid()) {
         return;
@@ -486,6 +567,13 @@ void EmulatorRunner::append(const QString& line) {
 bool EmulatorRunner::writeControl(const sdk::ProcessSpec& spec, const QString& gameScript, QString* error) {
     const QString command = luaPath(stage_->filePath(QStringLiteral("command.txt")));
     const QString keys = luaPath(stage_->filePath(QStringLiteral("keys.txt")));
+    const QString picture = luaPath(stage_->filePath(QStringLiteral("picture.txt")));
+    QStringList pens;
+    for (QRgb color : spec.palette) {
+        pens << QStringLiteral("0x%1").arg(color & 0xffffff, 6, 16, QLatin1Char('0'));
+    }
+    hasPalette_ = !spec.palette.isEmpty();
+    writePicture();
     QStringList values{luaPath(cart_), command, luaPath(spec.readyFile), luaPath(gameScript), keys, spec.readyWhen};
     QString environment;
     for (auto it = spec.environment.constBegin(); it != spec.environment.constEnd(); ++it) {
@@ -511,6 +599,8 @@ bool EmulatorRunner::writeControl(const sdk::ProcessSpec& spec, const QString& g
     text.replace(QLatin1String("@CART@"), values.at(0))
         .replace(QLatin1String("@COMMAND@"), values.at(1))
         .replace(QLatin1String("@KEYS@"), values.at(4))
+        .replace(QLatin1String("@PICTURE@"), picture)
+        .replace(QLatin1String("@PALETTE@"), pens.join(QLatin1Char(',')))
         .replace(QLatin1String("@READYWHEN@"), values.at(5))
         .replace(QLatin1String("@READY@"), values.at(2))
         .replace(QLatin1String("@SCRIPT@"), values.at(3))

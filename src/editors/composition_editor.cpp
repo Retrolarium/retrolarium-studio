@@ -1,5 +1,8 @@
 #include "editors/composition_editor.hpp"
 
+#include "editors/library_sheet.hpp"
+#include "editors/mime.hpp"
+
 #include "sdk/editor_model.hpp"
 #include "theme/icons.hpp"
 #include "theme/paint.hpp"
@@ -8,13 +11,16 @@
 #include "widgets/label.hpp"
 #include "widgets/view_chip.hpp"
 
+#include <QDragEnterEvent>
 #include <QHBoxLayout>
 #include <QKeyEvent>
+#include <QMimeData>
 #include <QMouseEvent>
 #include <QPainter>
 #include <QPointer>
 #include <QPushButton>
 #include <QScrollArea>
+#include <QSplitter>
 #include <QTimer>
 #include <QToolButton>
 #include <QVBoxLayout>
@@ -88,6 +94,7 @@ CompositionCanvas::CompositionCanvas(sdk::CompositionModel* model, QWidget* pare
     zoom_ = kMinZoom;
     setFocusPolicy(Qt::ClickFocus);
     setMouseTracking(true);
+    setAcceptDrops(true);
     connect(model_, &sdk::EditorModel::contentChanged, this, &CompositionCanvas::refresh);
     connect(model_, &sdk::EditorModel::selectionChanged, this, qOverload<>(&QWidget::update));
     connect(model_, &sdk::EditorModel::toolsChanged, this, &CompositionCanvas::refresh);
@@ -228,6 +235,32 @@ void CompositionCanvas::paintEvent(QPaintEvent*) {
     }
 }
 
+void CompositionCanvas::dragEnterEvent(QDragEnterEvent* event) {
+    if (event->mimeData()->hasFormat(kLibraryItemMime) && !model_->isReadOnly()) {
+        event->acceptProposedAction();
+    }
+}
+
+void CompositionCanvas::dragMoveEvent(QDragMoveEvent* event) {
+    const QString hit = pieceAt(event->pos());
+    if (!hit.isEmpty()) {
+        model_->selectPiece(hit);
+        event->acceptProposedAction();
+    } else {
+        event->ignore();
+    }
+}
+
+void CompositionCanvas::dropEvent(QDropEvent* event) {
+    const QString hit = pieceAt(event->pos());
+    const QString item = QString::fromUtf8(event->mimeData()->data(kLibraryItemMime));
+    QString error;
+    if (!hit.isEmpty() && !model_->dropItem(item, hit, &error) && !error.isEmpty()) {
+        emit actionFailed(error);
+    }
+    event->acceptProposedAction();
+}
+
 void CompositionCanvas::mousePressEvent(QMouseEvent* event) {
     setFocus();
     if (event->button() != Qt::LeftButton) {
@@ -312,7 +345,14 @@ CompositionEditor::CompositionEditor(sdk::CompositionModel* model, QWidget* pare
     scroll->setProperty("surface", QStringLiteral("canvas"));
     canvas_ = new CompositionCanvas(model, scroll);
     scroll->setWidget(canvas_);
-    layout->addWidget(scroll, 1);
+    // The model's pattern sheet, if it has one, beside the canvas.
+    auto* split = new QSplitter(Qt::Horizontal, this);
+    split->setChildrenCollapsible(false);
+    split->addWidget(scroll);
+    split->addWidget(new SheetPane(model, split));
+    split->setStretchFactor(0, 1);
+    split->setStretchFactor(1, 0);
+    layout->addWidget(split, 1);
 
     strip_ = new QWidget(this);
     auto* stripOuter = new QVBoxLayout(strip_);
@@ -338,6 +378,7 @@ CompositionEditor::CompositionEditor(sdk::CompositionModel* model, QWidget* pare
         canvas_->setZoom(canvas_->zoom() + delta);
     });
     connect(canvas_, &CompositionCanvas::zoomChanged, this, &EditorView::toolbarChanged);
+    connect(canvas_, &CompositionCanvas::actionFailed, this, &EditorView::actionFailed);
     connect(composition_, &sdk::EditorModel::contentChanged, this, &CompositionEditor::rebuildFrames);
     connect(composition_, &sdk::EditorModel::selectionChanged, this, &CompositionEditor::rebuildFrames);
     connect(composition_, &sdk::EditorModel::toolsChanged, this, &EditorView::toolbarChanged);
@@ -471,10 +512,16 @@ QWidget* CompositionEditor::createToolbar(QWidget* parent) {
     });
     layout->addWidget(zoom);
     layout->addStretch(1);
-    layout->addWidget(new ui::Label(
-        composition_->pieces().isEmpty() ? QString()
-                                         : QStringLiteral("Drag pieces, or nudge them with the arrow keys"),
-        ui::Label::Role::Small, bar));
+    const QVector<sdk::CompositionPiece> pieces = composition_->pieces();
+    const bool movable = std::any_of(pieces.begin(), pieces.end(), [](const sdk::CompositionPiece& p) { return p.movable; });
+    QString hint;
+    if (movable) {
+        hint = QStringLiteral("Drag pieces, or nudge them with the arrow keys");
+    } else if (!pieces.isEmpty()) {
+        hint = composition_->sheet().items.isEmpty() ? QStringLiteral("Select a piece to edit it")
+                                                     : QStringLiteral("Select a piece, or drop a pattern on it");
+    }
+    layout->addWidget(new ui::Label(hint, ui::Label::Role::Small, bar));
     return bar;
 }
 
