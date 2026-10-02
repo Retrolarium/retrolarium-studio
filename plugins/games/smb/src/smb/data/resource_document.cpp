@@ -259,6 +259,74 @@ QVector<SmbRoute> SmbResourceDocument::routes(const QString& world, int number) 
     return result;
 }
 
+void SmbResourceDocument::setRoute(const QString& world, int number, int step, const SmbRoute& route) {
+    if (route.areaType < 0 || route.areaType > 3 || route.areaIndex < 0 || route.areaIndex > 31) {
+        fail(QStringLiteral("A route names an area type 0-3 and an area 0-31."));
+    }
+    QJsonObject resource = this->resource(world);
+    QJsonArray worlds = resource.value(QStringLiteral("worlds")).toArray();
+    for (int w = 0; w < worlds.size(); ++w) {
+        QJsonObject entry = worlds.at(w).toObject();
+        if (entry.value(QStringLiteral("world")).toInt() != number) {
+            continue;
+        }
+        QJsonArray areas = entry.value(QStringLiteral("areas")).toArray();
+        if (step < 0 || step >= areas.size()) {
+            fail(QStringLiteral("World %1 has %2 route steps.").arg(number).arg(areas.size()));
+        }
+        QJsonObject s;
+        s.insert(QStringLiteral("area_type"), route.areaType);
+        s.insert(QStringLiteral("area_index"), route.areaIndex);
+        s.insert(QStringLiteral("alternate_bit"), route.alternate);
+        areas.replace(step, s);
+        entry.insert(QStringLiteral("areas"), areas);
+        worlds.replace(w, entry);
+        resource.insert(QStringLiteral("worlds"), worlds);
+        setResource(world, resource);
+        return;
+    }
+    fail(QStringLiteral("There is no world %1.").arg(number));
+}
+
+QVector<SmbPhysicsTable> SmbResourceDocument::physicsTables(const QString& world) const {
+    QVector<SmbPhysicsTable> result;
+    for (const QJsonValue& value : resource(world).value(QStringLiteral("physics_tables")).toArray()) {
+        const QJsonObject t = value.toObject();
+        SmbPhysicsTable table;
+        table.name = t.value(QStringLiteral("name")).toString();
+        table.isSigned = t.value(QStringLiteral("signed")).toBool();
+        for (const QJsonValue& v : t.value(QStringLiteral("values")).toArray()) {
+            table.values << v.toInt();
+        }
+        result << table;
+    }
+    return result;
+}
+
+void SmbResourceDocument::setPhysicsValue(const QString& world, int table, int index, int value) {
+    QJsonObject resource = this->resource(world);
+    QJsonArray tables = resource.value(QStringLiteral("physics_tables")).toArray();
+    if (table < 0 || table >= tables.size()) {
+        fail(QStringLiteral("There is no physics table %1.").arg(table));
+    }
+    QJsonObject t = tables.at(table).toObject();
+    QJsonArray values = t.value(QStringLiteral("values")).toArray();
+    if (index < 0 || index >= values.size()) {
+        fail(QStringLiteral("%1 has %2 entries.").arg(t.value(QStringLiteral("name")).toString()).arg(values.size()));
+    }
+    const bool isSigned = t.value(QStringLiteral("signed")).toBool();
+    const int minimum = isSigned ? -128 : 0;
+    const int maximum = isSigned ? 127 : 255;
+    if (value < minimum || value > maximum) {
+        fail(QStringLiteral("This table holds %1 to %2.").arg(minimum).arg(maximum));
+    }
+    values.replace(index, value);
+    t.insert(QStringLiteral("values"), values);
+    tables.replace(table, t);
+    resource.insert(QStringLiteral("physics_tables"), tables);
+    setResource(world, resource);
+}
+
 // ---------------------------------------------------------------- graphics
 
 void SmbResourceDocument::decodeTiles(const QString& chr) const {
@@ -341,6 +409,48 @@ std::array<int, 4> SmbResourceDocument::metatileTiles(const QString& metatiles, 
     }
     // Stored top left, bottom left, top right, bottom right.
     return {tileBase + stored[0], tileBase + stored[2], tileBase + stored[1], tileBase + stored[3]};
+}
+
+QStringList SmbResourceDocument::metatileGroups(const QString& metatiles) const {
+    QStringList names;
+    for (const QJsonValue& value : resource(metatiles).value(QStringLiteral("group_names")).toArray()) {
+        names << value.toString();
+    }
+    return names;
+}
+
+QVector<int> SmbResourceDocument::metatileGroupSizes(const QString& metatiles) const {
+    QVector<int> sizes;
+    for (const QJsonValue& value : resource(metatiles).value(QStringLiteral("group_sizes")).toArray()) {
+        sizes << value.toInt();
+    }
+    return sizes;
+}
+
+void SmbResourceDocument::setMetatileTile(const QString& metatiles, int encoded, int quadrant, int tile) {
+    if (tile < 0 || tile > 255 || quadrant < 0 || quadrant > 3) {
+        fail(QStringLiteral("A metatile quadrant holds a pattern 0-255."));
+    }
+    QJsonObject r = resource(metatiles);
+    const QVector<int> sizes = metatileGroupSizes(metatiles);
+    const int group = (encoded >> 6) & 3;
+    const int within = encoded & 0x3f;
+    if (group >= sizes.size() || within >= sizes.at(group)) {
+        fail(QStringLiteral("There is no metatile $%1.").arg(encoded, 2, 16, QLatin1Char('0')));
+    }
+    int index = within;
+    for (int g = 0; g < group; ++g) {
+        index += sizes.at(g);
+    }
+    QJsonArray records = r.value(QStringLiteral("records")).toArray();
+    QJsonArray record = records.at(index).toArray();
+    // Row-major quadrants to the stored order: top left, bottom left, top
+    // right, bottom right.
+    static constexpr int kStored[4] = {0, 2, 1, 3};
+    record.replace(kStored[quadrant], tile);
+    records.replace(index, record);
+    r.insert(QStringLiteral("records"), records);
+    setResource(metatiles, r);
 }
 
 // ---------------------------------------------------------------- palettes

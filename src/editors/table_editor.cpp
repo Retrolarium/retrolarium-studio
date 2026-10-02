@@ -208,6 +208,7 @@ TableEditor::TableEditor(sdk::TableModel* model, QWidget* parent)
                                                    adapter_->columnCount() - 1));
         syncing_ = false;
     });
+    connect(table_, &sdk::EditorModel::toolsChanged, this, &EditorView::toolbarChanged);
     connect(table_, &sdk::EditorModel::selectionChanged, this, [this] {
         const int row = table_->currentRow();
         if (row >= 0 && row != view_->currentIndex().row()) {

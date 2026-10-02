@@ -35,6 +35,14 @@ struct SmbArea {
     bool enemiesFit() const;
 };
 
+// One of the player physics tables of the world resource: bytes indexed by
+// the game's state (jump speed class, swimming, climbing).
+struct SmbPhysicsTable {
+    QString name;               // "jump_gravity"
+    bool isSigned = false;
+    QVector<int> values;
+};
+
 // One route step of a world: the area the course plays.
 struct SmbRoute {
     int areaType = 0;           // index into area types: water, ground, underground, castle
@@ -69,6 +77,11 @@ public:
     // World routes: worlds are 1-based.
     int worldCount(const QString& world) const;
     QVector<SmbRoute> routes(const QString& world, int number) const;
+    // Replaces one step; the number of steps per world is fixed. Throws
+    // SmbError for a step that does not exist or an out-of-range target.
+    void setRoute(const QString& world, int number, int step, const SmbRoute& route);
+    QVector<SmbPhysicsTable> physicsTables(const QString& world) const;
+    void setPhysicsValue(const QString& world, int table, int index, int value);  // throws SmbError
 
     // Pattern tiles (2bpp, pixel values 0-3): 0-255 sprites, 256-511 background.
     int tileCount(const QString& chr) const;
@@ -80,6 +93,12 @@ public:
     // bottom left, bottom right) and the palette of an encoded metatile.
     std::array<int, 4> metatileTiles(const QString& metatiles, int encoded) const;
     static int metatilePalette(int encoded) { return (encoded >> 6) & 3; }
+    // Groups (one per background palette) and their sizes.
+    QStringList metatileGroups(const QString& metatiles) const;
+    QVector<int> metatileGroupSizes(const QString& metatiles) const;
+    // Sets one quadrant (0-3 row-major) of an encoded metatile to a
+    // background pattern 0-255. Throws SmbError.
+    void setMetatileTile(const QString& metatiles, int encoded, int quadrant, int tile);
 
     // PPU palettes.
     QStringList packetNames(const QString& palettes) const;

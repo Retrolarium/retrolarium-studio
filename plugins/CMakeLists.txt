@@ -101,6 +101,10 @@ add_library(smb_plugin STATIC
     smb/src/smb/plugin/graphics_models.hpp
     smb/src/smb/plugin/level_model.cpp
     smb/src/smb/plugin/level_model.hpp
+    smb/src/smb/plugin/metatile_model.cpp
+    smb/src/smb/plugin/metatile_model.hpp
+    smb/src/smb/plugin/player_models.cpp
+    smb/src/smb/plugin/player_models.hpp
     smb/src/smb/plugin/playtest_model.cpp
     smb/src/smb/plugin/playtest_model.hpp
     smb/src/smb/plugin/screen_model.cpp
@@ -111,6 +115,8 @@ add_library(smb_plugin STATIC
     smb/src/smb/plugin/smb_session.hpp
     smb/src/smb/plugin/text_model.cpp
     smb/src/smb/plugin/text_model.hpp
+    smb/src/smb/plugin/world_models.cpp
+    smb/src/smb/plugin/world_models.hpp
 )
 target_link_libraries(smb_plugin PUBLIC smb_data studio_sdk)
 studio_enable_warnings(smb_plugin)

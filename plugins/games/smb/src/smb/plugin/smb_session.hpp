@@ -58,6 +58,8 @@ public:
     QString palettes() const { return art_.palettes; }
     QString playerPalette() const { return art_.playerPalette; }
     QString chr() const { return art_.chr; }
+    QString metatiles() const { return art_.metatiles; }
+    QString playerFrames() const { return art_.playerFrames; }
 
     // Screen-packet resources, decoded once per revision.
     const SmbScreenSet& screenSet(const QString& resource) const;

@@ -4,9 +4,12 @@
 #include "sdk/snapshot_command.hpp"
 #include "smb/plugin/graphics_models.hpp"
 #include "smb/plugin/level_model.hpp"
+#include "smb/plugin/metatile_model.hpp"
+#include "smb/plugin/player_models.hpp"
 #include "smb/plugin/playtest_model.hpp"
 #include "smb/plugin/screen_model.hpp"
 #include "smb/plugin/text_model.hpp"
+#include "smb/plugin/world_models.hpp"
 
 #include <QDateTime>
 #include <QDir>
@@ -158,9 +161,21 @@ sdk::Profile SmbSession::profile() const {
 }
 
 QVector<sdk::Kind> SmbSession::kinds() const {
+    if (world_.isEmpty()) {
+        return {kind("levels", "Levels", "levels", sdk::EditorType::TileMap),
+                kind("graphics", "Tiles", "tiles", sdk::EditorType::Tile),
+                kind("metatiles", "Metatiles", "metatiles", sdk::EditorType::TileMap),
+                kind("palettes", "Palettes", "palettes", sdk::EditorType::Palette),
+                kind("screens", "Screens", "tileset", sdk::EditorType::TileMap),
+                kind("text", "Text", "text", sdk::EditorType::Table),
+                kind("playtest", "Playtest", "playtest", sdk::EditorType::Emulator)};
+    }
     return {kind("levels", "Levels", "levels", sdk::EditorType::TileMap),
+            kind("world", "World", "world", sdk::EditorType::Table),
             kind("graphics", "Tiles", "tiles", sdk::EditorType::Tile),
+            kind("metatiles", "Metatiles", "metatiles", sdk::EditorType::TileMap),
             kind("palettes", "Palettes", "palettes", sdk::EditorType::Palette),
+            kind("player", "Player", "sprites", sdk::EditorType::Composition),
             kind("screens", "Screens", "tileset", sdk::EditorType::TileMap),
             kind("text", "Text", "text", sdk::EditorType::Table),
             kind("playtest", "Playtest", "playtest", sdk::EditorType::Emulator)};
@@ -198,6 +213,23 @@ QVector<sdk::DocumentGroup> SmbSession::documents(const QString& kind) const {
         group.documents << entry(QStringLiteral("sprites"), QStringLiteral("Sprites"), QStringLiteral("256 tiles"))
                         << entry(QStringLiteral("background"), QStringLiteral("Background"), QStringLiteral("256 tiles"));
         groups << group;
+    } else if (kind == QLatin1String("metatiles")) {
+        sdk::DocumentGroup group;
+        group.title = QStringLiteral("Background blocks");
+        const QVector<int> sizes = document_.metatileGroupSizes(art_.metatiles);
+        const QJsonArray now = document_.resource(art_.metatiles).value(QStringLiteral("records")).toArray();
+        const QJsonArray saved = saved_.resource(art_.metatiles).value(QStringLiteral("records")).toArray();
+        int first = 0;
+        for (int g = 0; g < sizes.size(); ++g) {
+            sdk::DocumentEntry e = entry(QStringLiteral("group:%1").arg(g), QStringLiteral("Palette %1").arg(g),
+                                         QStringLiteral("%1 blocks").arg(sizes.at(g)));
+            for (int i = first; i < first + sizes.at(g) && i < now.size(); ++i) {
+                e.dirty = e.dirty || now.at(i) != saved.at(i);
+            }
+            first += sizes.at(g);
+            group.documents << e;
+        }
+        groups << group;
     } else if (kind == QLatin1String("palettes")) {
         sdk::DocumentGroup areas;
         areas.title = QStringLiteral("Area palettes");
@@ -213,6 +245,50 @@ QVector<sdk::DocumentGroup> SmbSession::documents(const QString& kind) const {
                                       QStringLiteral("%1 colours").arg(document_.tableValues(art_.playerPalette).size()));
             groups << player;
         }
+    } else if (kind == QLatin1String("world") && !world_.isEmpty()) {
+        sdk::DocumentGroup group;
+        group.title = QStringLiteral("World");
+        int steps = 0;
+        bool routesDirty = false;
+        for (int w = 1; w <= document_.worldCount(world_); ++w) {
+            const QVector<SmbRoute> now = document_.routes(world_, w);
+            const QVector<SmbRoute> saved = saved_.routes(world_, w);
+            steps += now.size();
+            for (int s = 0; s < now.size() && s < saved.size(); ++s) {
+                routesDirty = routesDirty || now.at(s).areaType != saved.at(s).areaType ||
+                              now.at(s).areaIndex != saved.at(s).areaIndex || now.at(s).alternate != saved.at(s).alternate;
+            }
+        }
+        sdk::DocumentEntry routes = entry(QStringLiteral("routes"), QStringLiteral("Routes"),
+                                          QStringLiteral("%1 worlds · %2 steps").arg(document_.worldCount(world_)).arg(steps));
+        routes.dirty = routesDirty;
+        sdk::DocumentEntry physics = entry(QStringLiteral("physics"), QStringLiteral("Player physics"),
+                                           QStringLiteral("%1 tables").arg(document_.physicsTables(world_).size()));
+        const QVector<SmbPhysicsTable> nowTables = document_.physicsTables(world_);
+        const QVector<SmbPhysicsTable> savedTables = saved_.physicsTables(world_);
+        for (int t = 0; t < nowTables.size() && t < savedTables.size(); ++t) {
+            physics.dirty = physics.dirty || nowTables.at(t).values != savedTables.at(t).values;
+        }
+        group.documents << routes << physics;
+        if (!art_.playerFrames.isEmpty()) {
+            sdk::DocumentEntry actions = entry(QStringLiteral("actions"), QStringLiteral("Player actions"),
+                                               QStringLiteral("frames per action"));
+            const QJsonObject now = document_.resource(art_.playerFrames);
+            const QJsonObject saved = saved_.resource(art_.playerFrames);
+            actions.dirty = now.value(QStringLiteral("frame_offsets")) != saved.value(QStringLiteral("frame_offsets")) ||
+                            now.value(QStringLiteral("swim_kick_tiles")) != saved.value(QStringLiteral("swim_kick_tiles"));
+            group.documents << actions;
+        }
+        groups << group;
+    } else if (kind == QLatin1String("player") && !art_.playerFrames.isEmpty()) {
+        sdk::DocumentGroup group;
+        group.title = QStringLiteral("Player");
+        sdk::DocumentEntry frames = entry(QStringLiteral("frames"), QStringLiteral("Hero frames"),
+                                          QStringLiteral("%1 frames").arg(document_.playerFrameCount(art_.playerFrames)));
+        frames.dirty = document_.resource(art_.playerFrames).value(QStringLiteral("frames")) !=
+                       saved_.resource(art_.playerFrames).value(QStringLiteral("frames"));
+        group.documents << frames;
+        groups << group;
     } else if (kind == QLatin1String("screens")) {
         for (const QString& id : document_.resourceIds(QStringLiteral("nes.ppu-screen-packets.v1"))) {
             const SmbScreenSet& set = screenSet(id);
@@ -262,6 +338,16 @@ std::unique_ptr<sdk::EditorModel> SmbSession::openEditor(const QString& kind, co
             (document == QLatin1String("sprites") || document == QLatin1String("background"))) {
             return std::make_unique<SmbTileModel>(this, document == QLatin1String("background"));
         }
+        if (kind == QLatin1String("player") && document == QLatin1String("frames") && !art_.playerFrames.isEmpty() &&
+            !art_.playerPalette.isEmpty()) {
+            return std::make_unique<SmbPlayerFramesModel>(this);
+        }
+        if (kind == QLatin1String("metatiles") && document.startsWith(QLatin1String("group:"))) {
+            const int group = document.mid(6).toInt();
+            if (group >= 0 && group < document_.metatileGroupSizes(art_.metatiles).size()) {
+                return std::make_unique<SmbMetatileModel>(this, group);
+            }
+        }
         if (kind == QLatin1String("palettes")) {
             if (document.startsWith(QLatin1String("packet:")) &&
                 document_.packetNames(art_.palettes).contains(document.mid(7))) {
@@ -269,6 +355,17 @@ std::unique_ptr<sdk::EditorModel> SmbSession::openEditor(const QString& kind, co
             }
             if (document == QLatin1String("player") && !art_.playerPalette.isEmpty()) {
                 return std::make_unique<SmbPlayerPaletteModel>(this);
+            }
+        }
+        if (kind == QLatin1String("world") && !world_.isEmpty()) {
+            if (document == QLatin1String("routes")) {
+                return std::make_unique<SmbRoutesModel>(this);
+            }
+            if (document == QLatin1String("physics")) {
+                return std::make_unique<SmbPhysicsModel>(this);
+            }
+            if (document == QLatin1String("actions") && !art_.playerFrames.isEmpty()) {
+                return std::make_unique<SmbPlayerActionsModel>(this);
             }
         }
         if (kind == QLatin1String("screens")) {
