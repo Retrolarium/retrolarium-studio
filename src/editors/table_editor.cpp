@@ -4,13 +4,17 @@
 #include "theme/theme.hpp"
 #include "theme/typography.hpp"
 #include "widgets/label.hpp"
+#include "widgets/pixel_icon.hpp"
 
+#include <QAbstractItemView>
+#include <QComboBox>
 #include <QHBoxLayout>
 #include <QHeaderView>
 #include <QItemSelectionModel>
 #include <QLineEdit>
 #include <QPainter>
 #include <QTableView>
+#include <QTimer>
 #include <QVBoxLayout>
 
 #include <algorithm>
@@ -20,6 +24,7 @@ namespace rl::editors {
 namespace {
 constexpr int kRowHeight = 32;
 constexpr int kPaddingX = 14;
+constexpr int kChoiceIcon = 20;
 
 QFont cellFont(const sdk::TableColumn& column) {
     if (column.monospace) {
@@ -143,6 +148,14 @@ void TableDelegate::paint(QPainter* painter, const QStyleOptionViewItem& option,
         painter->restore();
         return;
     }
+    // A pick-from-list cell shows a chevron, like the drop-down it opens.
+    if (column.editable && !model_->cellChoices(index.row(), index.column()).isEmpty()) {
+        painter->setPen(selected ? t.accentInk : t.muted);
+        painter->setFont(theme::font(theme::TextRole::Body, 11.0));
+        painter->drawText(QRect(content.right() - 12, r.top(), 12, r.height()), Qt::AlignCenter,
+                          QStringLiteral("▾"));
+        content.setRight(content.right() - 16);
+    }
     painter->setFont(cellFont(column));
     painter->setPen(selected ? t.accentInk : column.muted ? t.muted : t.text);
     const QString text = painter->fontMetrics().elidedText(index.data().toString(), Qt::ElideRight,
@@ -153,6 +166,32 @@ void TableDelegate::paint(QPainter* painter, const QStyleOptionViewItem& option,
 
 QWidget* TableDelegate::createEditor(QWidget* parent, const QStyleOptionViewItem&,
                                      const QModelIndex& index) const {
+    const QStringList choices = model_->cellChoices(index.row(), index.column());
+    if (!choices.isEmpty()) {
+        // A list, not typing: open it at once and commit on a pick.
+        auto* combo = new QComboBox(parent);
+        combo->setFont(theme::font(theme::TextRole::Body, 12.5));
+        combo->addItems(choices);
+        const QVector<QImage> icons = model_->cellChoiceIcons(index.row(), index.column());
+        bool anyIcon = false;
+        for (int i = 0; i < choices.size() && i < icons.size(); ++i) {
+            if (icons.at(i).isNull()) continue;
+            combo->setItemIcon(i, QIcon(QPixmap::fromImage(ui::pixelIcon(icons.at(i), kChoiceIcon))));
+            anyIcon = true;
+        }
+        if (anyIcon) {
+            combo->setIconSize(QSize(kChoiceIcon, kChoiceIcon));
+            combo->view()->setIconSize(QSize(kChoiceIcon, kChoiceIcon));
+        }
+        combo->setMaxVisibleItems(16);
+        auto* self = const_cast<TableDelegate*>(this);
+        connect(combo, QOverload<int>::of(&QComboBox::activated), self, [self, combo](int) {
+            emit self->commitData(combo);
+            emit self->closeEditor(combo);
+        });
+        QTimer::singleShot(0, combo, &QComboBox::showPopup);
+        return combo;
+    }
     auto* edit = new QLineEdit(parent);
     const QVector<sdk::TableColumn> columns = model_->columns();
     edit->setFont(cellFont(columns.value(index.column())));
@@ -161,6 +200,23 @@ QWidget* TableDelegate::createEditor(QWidget* parent, const QStyleOptionViewItem
         edit->setMaxLength(max);
     }
     return edit;
+}
+
+void TableDelegate::setEditorData(QWidget* editor, const QModelIndex& index) const {
+    if (auto* combo = qobject_cast<QComboBox*>(editor)) {
+        const int current = combo->findText(index.data(Qt::EditRole).toString());
+        combo->setCurrentIndex(std::max(0, current));
+        return;
+    }
+    QStyledItemDelegate::setEditorData(editor, index);
+}
+
+void TableDelegate::setModelData(QWidget* editor, QAbstractItemModel* model, const QModelIndex& index) const {
+    if (auto* combo = qobject_cast<QComboBox*>(editor)) {
+        model->setData(index, combo->currentText(), Qt::EditRole);
+        return;
+    }
+    QStyledItemDelegate::setModelData(editor, model, index);
 }
 
 void TableDelegate::updateEditorGeometry(QWidget* editor, const QStyleOptionViewItem& option,

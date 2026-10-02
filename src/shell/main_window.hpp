@@ -31,6 +31,7 @@ class Badge;
 class BudgetBar;
 class Label;
 class PrimaryButton;
+class Toast;
 }
 
 namespace rl::shell {
@@ -156,6 +157,7 @@ private:
     QHBoxLayout* toolbarRowLayout_ = nullptr;
     QWidget* toolbarContent_ = nullptr;
     QStackedWidget* editorStack_ = nullptr;
+    ui::Toast* toast_ = nullptr;
     QWidget* emptyEditor_ = nullptr;
     ui::Label* emptyTitle_ = nullptr;
     ui::Label* emptyNote_ = nullptr;

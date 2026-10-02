@@ -130,7 +130,10 @@ Starting fast:
 - When a launch names a ready file (`ProcessSpec::readyFile`), the control
   script runs MAME unthrottled and muted until the file appears, and the
   Playtest view covers the picture, so the boot and the steering to the start
-  point pass unseen in a fraction of a second.
+  point pass unseen in a fraction of a second. A launch can instead give a
+  ready condition (`ProcessSpec::readyWhen`, a Lua expression with `memory`
+  the main CPU's program space); the control script checks it each frame and
+  writes the ready file itself after three frames in a row.
 - Hot reload: Play while the same game runs (same program, working
   directory and arguments apart from the cartridge and the autoboot script)
   keeps the process. The runner stages a copy of the new build, rewrites the
@@ -171,17 +174,22 @@ same file.
 
 | Kind | Editor | State |
 |---|---|---|
-| Levels | TileMap | areas drawn as the game does (metatiles in the area palette, enemies, Hero), day or night, pages of 16 columns; move, add (library) and delete objects and enemies, edit their kind, size and row and the area header, within the area's stream bytes; drag Hero to the start point |
+| Levels | TileMap | areas drawn as the game does (metatiles in the area palette, enemies, Hero), day or night, pages of 16 columns; move, add (library) and delete objects and enemies, edit their kind (with previews), size and row and the area header, within the area's stream bytes (every SMB1 JU area is full: delete before adding); drag Hero, or drop the library's Test start, where Play from selected begins |
 | World | Table | the route of every world (the area each course step plays, numbered as the game shows levels; a selected step is the Play from selected start) and the nine player physics tables (gravity, jump speeds, top speeds, friction, climbing) |
 | Tiles | Tile | sprite and background pattern tables, 2bpp, preview palette from the area packets or the player palettes |
-| Metatiles | TileMap | the 16x16 background blocks of each palette group, four patterns each; paint quadrants from the pattern library or type their numbers |
-| Palettes | Palette | area packets (eight palettes of four) and the player table; the 64-colour NES picker |
-| Player | Composition | Hero's 26 frames of 2x4 sprite patterns in the Hero, Brother or fire colours; set a cell's pattern from the library; World > Player actions picks the frame each action shows and the swim-kick patterns |
+| Metatiles | TileMap | the 16x16 background blocks of each palette group, four patterns each; paint quadrants from the pattern library, take a pattern with the pick tool, type numbers, or copy a whole block |
+| Palettes | Palette | area packets (eight palettes of four), the packets the game writes over them (snow skies, mushroom platforms, Boss) previewed where they show, and the player table with Hero, Brother and fire previews; the 64-colour NES picker |
+| Animations | Composition | Hero's animations (big and small walk, swim, climb, ...), each its frames of 2x4 sprite patterns in the Hero, Brother or fire colours, with the cells the engine flips drawn flipped; set a cell's pattern from the library; World > Player actions picks the frame each action shows |
 | Screens | TileMap | the status bar, lives, time-up, game-over and warp-zone screens as the PPU display lists leave them; paint tiles from the library and 16x16 palettes into the cells the lists write (a repeated write changes its run); edit their text fields |
 | Text | Table | every fixed text: the fixed fields and the screens' text fields, in the game's font, within each slot |
+| Sound | Sequencer | every music header (area music, ground theme parts, events) on the piano roll: square 2, square 1, triangle, noise; drag notes to change pitch, square 1 and drum lengths in place, run lengths and beats in the inspector, which names every song sharing a byte; Play renders the song with the kit (`audio render-smb-wav`) |
 | Playtest | Emulator | Play from selected starts at Hero's cell (`smb-point-playtest-plan`), Play from power-on |
 
-Music comes next.
+Play from selected starts hidden and fast: the kit's point script reports
+nothing, so the plugin hands the runner a ready condition (`readyWhen`, a Lua
+expression over the main CPU's memory: the area running with Hero on the
+start page) and the control script writes the ready file itself. The
+swim/stomp envelope has no editor yet.
 
 MAME shows a "known problems" screen for the NES driver that waits for a key,
 which never reaches an embedded MAME. Before a launch the runner marks it as

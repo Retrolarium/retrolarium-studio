@@ -155,8 +155,9 @@ QVector<sdk::TableColumn> SmbRoutesModel::columns() const {
     sdk::TableColumn alternate;
     alternate.key = QStringLiteral("alternate");
     alternate.label = QStringLiteral("Alt bit");
-    alternate.width = 90;
+    alternate.width = 100;
     alternate.monospace = true;
+    alternate.editable = true;
     sdk::TableColumn byte;
     byte.key = QStringLiteral("byte");
     byte.label = QStringLiteral("Byte");
@@ -259,9 +260,39 @@ bool SmbRoutesModel::setAlternate(int row, bool alternate, QString* error) {
                           error);
 }
 
+QStringList SmbRoutesModel::cellChoices(int, int column) const {
+    if (column == 2) {
+        QStringList labels;
+        for (const QString& name : session_->document().areaNames(session_->levels())) {
+            labels << areaLabel(name);
+        }
+        return labels;
+    }
+    if (column == 3) {
+        return {QStringLiteral("—"), QStringLiteral("set")};
+    }
+    return {};
+}
+
+QVector<QImage> SmbRoutesModel::cellChoiceIcons(int, int column) const {
+    QVector<QImage> icons;
+    if (column != 2) {
+        return icons;
+    }
+    // The first screen of each area, small.
+    for (const QString& name : session_->document().areaNames(session_->levels())) {
+        const QImage preview = session_->areaPreview(name, 8);
+        icons << preview.copy(0, preview.height() - 128, 128, 128);
+    }
+    return icons;
+}
+
 bool SmbRoutesModel::setCell(int row, int column, const QString& value, QString* error) {
     if (column == 2) {
         return setArea(row, value, error);
+    }
+    if (column == 3) {
+        return setAlternate(row, value == QLatin1String("set"), error);
     }
     return TableModel::setCell(row, column, value, error);
 }

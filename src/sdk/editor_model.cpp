@@ -41,6 +41,10 @@ void TileMapModel::setCurrentBrush(int) {}
 int TileMapModel::cellValue(QPoint) const {
     return 0;
 }
+QString TileMapModel::lockReason(QPoint) const {
+    return QStringLiteral("This cell cannot be painted.");
+}
+
 bool TileMapModel::isCellEditable(QPoint) const {
     return false;
 }
@@ -110,6 +114,14 @@ int TableModel::maxLength(int, int) const {
 bool TableModel::isRowDirty(int) const {
     return false;
 }
+QStringList TableModel::cellChoices(int, int) const {
+    return {};
+}
+
+QVector<QImage> TableModel::cellChoiceIcons(int, int) const {
+    return {};
+}
+
 bool TableModel::setCell(int, int, const QString&, QString* error) {
     if (error) {
         *error = QStringLiteral("This cell cannot be edited.");

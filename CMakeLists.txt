@@ -81,6 +81,9 @@ add_library(studio_ui STATIC
     src/widgets/primary_button.hpp
     src/widgets/property_grid.cpp
     src/widgets/property_grid.hpp
+    src/widgets/pixel_icon.hpp
+    src/widgets/toast.cpp
+    src/widgets/toast.hpp
     src/widgets/rail_button.cpp
     src/widgets/rail_button.hpp
     src/widgets/segmented_control.cpp

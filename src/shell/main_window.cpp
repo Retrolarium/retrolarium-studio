@@ -18,6 +18,7 @@
 #include "widgets/badge.hpp"
 #include "widgets/budget_bar.hpp"
 #include "widgets/label.hpp"
+#include "widgets/toast.hpp"
 #include "widgets/primary_button.hpp"
 #include "widgets/view_chip.hpp"
 
@@ -127,8 +128,10 @@ MainWindow::MainWindow(QWidget* parent) : StudioWindow(parent) {
 
     connect(rail_, &KindRail::kindChosen, this, &MainWindow::selectKind);
     connect(documents_, &DocumentPanel::documentChosen, this, &MainWindow::selectDocument);
-    connect(inspector_, &InspectorPanel::fieldRejected, this,
-            [this](const QString& message) { updateStatus(message); });
+    connect(inspector_, &InspectorPanel::fieldRejected, this, [this](const QString& message) {
+        updateStatus(message);
+        if (toast_) toast_->showMessage(message);
+    });
     connect(bottom_, &BottomPanel::summaryChanged, this, [this](const QString& summary) {
         statusSummary_->setText(summary);
     });
@@ -485,6 +488,7 @@ QWidget* MainWindow::buildCenter() {
     emptyLayout->addWidget(emptyTitle_, 0, Qt::AlignHCenter);
     emptyLayout->addWidget(emptyNote_, 0, Qt::AlignHCenter);
     editorStack_->addWidget(emptyEditor_);
+    toast_ = new ui::Toast(editorStack_);
     layout->addWidget(editorStack_, 1);
 
     centerStack_->addWidget(workspace_);
@@ -828,7 +832,10 @@ void MainWindow::installEditor() {
         editorStack_->setCurrentWidget(editor_.get());
         connect(editor_.get(), &editors::EditorView::toolbarChanged, this, &MainWindow::updateToolbarRow);
         connect(editor_.get(), &editors::EditorView::actionFailed, this,
-                [this](const QString& message) { updateStatus(message); });
+                [this](const QString& message) {
+                    updateStatus(message);
+                    toast_->showMessage(message);
+                });
         connect(model_.get(), &sdk::EditorModel::contentChanged, this, [this] {
             updateBreadcrumb();
             updateStatus();

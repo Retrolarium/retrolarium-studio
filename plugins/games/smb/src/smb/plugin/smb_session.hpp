@@ -50,8 +50,12 @@ public:
 
     const SmbResourceDocument& document() const { return document_; }
     const SmbResourceDocument& saved() const { return saved_; }
-    // The first columns of an area as the game draws them, for samples.
-    QImage areaPreview(const QString& area, int columns) const;
+    // Columns of an area as the game draws them, for samples.
+    QImage areaPreview(const QString& area, int columns, int firstColumn = 0) const;
+    // The palettes an area shows: its type's packet and the packets the game
+    // writes over it (snow and castle skies, mushroom platforms, Boss), as
+    // a painter palette key: "ground+day_snow".
+    QString paletteKey(const QString& area) const;
     const SmbLevelPainter& painter() const { return *painter_; }
     QString levels() const { return levels_; }
     QString world() const { return world_; }
@@ -60,6 +64,8 @@ public:
     QString chr() const { return art_.chr; }
     QString metatiles() const { return art_.metatiles; }
     QString playerFrames() const { return art_.playerFrames; }
+    QString music() const { return music_; }
+    QString projectDirectory() const { return project_.directory(); }
 
     // Screen-packet resources, decoded once per revision.
     const SmbScreenSet& screenSet(const QString& resource) const;
@@ -113,6 +119,7 @@ private:
     quint64 nextRevision_ = 1;
     QString levels_;
     QString world_;
+    QString music_;
     SmbArt art_;
     std::unique_ptr<SmbLevelPainter> painter_;
     QHash<QString, QPoint> hero_;

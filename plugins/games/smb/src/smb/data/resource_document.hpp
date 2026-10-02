@@ -103,6 +103,10 @@ public:
     // PPU palettes.
     QStringList packetNames(const QString& palettes) const;
     QVector<int> packetValues(const QString& palettes, const QString& name) const;
+    int packetAddress(const QString& palettes, const QString& name) const;   // PPU address, $3F00 up
+    // The 32 colours the PPU holds for a palette key: "ground", or a base
+    // packet with the packets the game writes over it, "ground+day_snow".
+    QVector<int> paletteFor(const QString& palettes, const QString& key) const;
     void setPacketValue(const QString& palettes, const QString& name, int entry, int color);
     int dayBackground(const QString& palettes) const;
     int nightBackground(const QString& palettes) const;

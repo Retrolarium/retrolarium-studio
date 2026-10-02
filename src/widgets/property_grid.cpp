@@ -3,6 +3,7 @@
 #include "theme/theme.hpp"
 #include "theme/typography.hpp"
 #include "widgets/label.hpp"
+#include "widgets/pixel_icon.hpp"
 
 #include <QAbstractItemView>
 #include <QComboBox>
@@ -16,6 +17,7 @@ namespace {
 constexpr int kFieldHeight = 26;
 constexpr int kHintGap = 6;
 constexpr double kHintPx = 10.0;
+constexpr int kChoiceIcon = 20;
 
 QFont hintFont() {
     return theme::font(theme::TextRole::Body, kHintPx);
@@ -95,7 +97,8 @@ PropertyField* PropertyGrid::addField(const QString& key, const QString& value,
     return field;
 }
 
-QComboBox* PropertyGrid::addChoice(const QString& key, const QStringList& choices, int current) {
+QComboBox* PropertyGrid::addChoice(const QString& key, const QStringList& choices, int current,
+                                   const QVector<QImage>& icons) {
     auto* combo = new QComboBox;
     combo->setFont(theme::font(theme::TextRole::Body, theme::size::kRow));
     combo->setFixedHeight(kFieldHeight);
@@ -105,6 +108,17 @@ QComboBox* PropertyGrid::addChoice(const QString& key, const QStringList& choice
     combo->setMinimumContentsLength(8);
     combo->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     combo->addItems(choices);
+    // Pixel-art previews, scaled by whole steps so they stay crisp.
+    bool anyIcon = false;
+    for (int i = 0; i < choices.size() && i < icons.size(); ++i) {
+        if (icons.at(i).isNull()) continue;
+        combo->setItemIcon(i, QIcon(QPixmap::fromImage(pixelIcon(icons.at(i), kChoiceIcon))));
+        anyIcon = true;
+    }
+    if (anyIcon) {
+        combo->setIconSize(QSize(kChoiceIcon, kChoiceIcon));
+        combo->view()->setIconSize(QSize(kChoiceIcon, kChoiceIcon));
+    }
     combo->view()->setMinimumWidth(combo->view()->sizeHintForColumn(0) + 24);
     combo->setCurrentIndex(current);
     addRow(key, combo);

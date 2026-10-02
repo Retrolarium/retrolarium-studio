@@ -51,8 +51,66 @@ const QStringList& actionNames() {
 
 // ---------------------------------------------------------------- frames
 
-SmbPlayerFramesModel::SmbPlayerFramesModel(SmbSession* session) : CompositionModel(session), session_(session) {
+namespace {
+
+QString animationOf(const QString& frameName) {
+    const int underscore = frameName.lastIndexOf(QLatin1Char('_'));
+    bool numeric = false;
+    if (underscore > 0) {
+        frameName.mid(underscore + 1).toInt(&numeric);
+    }
+    return numeric ? frameName.left(underscore) : frameName;
+}
+
+}  // namespace
+
+QStringList SmbPlayerFramesModel::animations(const QStringList& frameNames) {
+    QStringList result;
+    for (const QString& name : frameNames) {
+        const QString key = animationOf(name);
+        if (!result.contains(key)) result << key;
+    }
+    return result;
+}
+
+QVector<int> SmbPlayerFramesModel::framesOf(const QStringList& frameNames, const QString& animation) {
+    QVector<int> result;
+    for (int i = 0; i < frameNames.size(); ++i) {
+        if (animationOf(frameNames.at(i)) == animation) result << i;
+    }
+    return result;
+}
+
+QString SmbPlayerFramesModel::animationLabel(const QString& animation) {
+    return frameLabel(animation);
+}
+
+bool SmbPlayerFramesModel::mirrored(int frame, int cell) {
+    // ChkForPlayerAttrib: graphics offsets $50 (big crouch), $B8 (small
+    // stand), $C0 (growing) and $C8 (big stand) flip the right sprite of the
+    // fourth row; while dying (small killed, $B0) the third row's too.
+    switch (frame) {
+    case 10: case 23: case 24: case 25: return cell == 7;
+    case 22: return cell == 5 || cell == 7;
+    default: return false;
+    }
+}
+
+SmbPlayerFramesModel::SmbPlayerFramesModel(SmbSession* session, const QString& animation)
+    : CompositionModel(session), session_(session), animation_(animation) {
     connect(session_, &SmbSession::documentChanged, this, &sdk::EditorModel::contentChanged);
+}
+
+QVector<int> SmbPlayerFramesModel::frameList() const {
+    return framesOf(frameNames(session_->document(), session_->playerFrames()), animation_);
+}
+
+int SmbPlayerFramesModel::global() const {
+    return frameList().value(frame_, 0);
+}
+
+QString SmbPlayerFramesModel::title() const {
+    return animationLabel(animation_);
 }
 
 QVector<int> SmbPlayerFramesModel::tiles(int frame) const {
@@ -68,21 +126,27 @@ QVector<QRgb> SmbPlayerFramesModel::colors() const {
     return result;
 }
 
-QImage SmbPlayerFramesModel::render() const {
+QImage SmbPlayerFramesModel::frameImage(const SmbSession* session, int frame, int palette) {
     QImage image(16, 32, QImage::Format_ARGB32);
     image.fill(Qt::transparent);
-    const QVector<int> t = tiles(frame_);
-    const int blank = session_->document().playerBlankTile(session_->playerFrames());
-    const int base = session_->document().playerTileBase(session_->playerFrames());
-    const QVector<QRgb> pens = colors();
+    const SmbResourceDocument& d = session->document();
+    const QVector<int> t = d.playerFrameTiles(session->playerFrames(), frame);
+    const int blank = d.playerBlankTile(session->playerFrames());
+    const int base = d.playerTileBase(session->playerFrames());
+    const QVector<int> values = d.tableValues(session->playerPalette());
+    QVector<QRgb> pens;
+    for (int i = 0; i < 4; ++i) {
+        pens << session->painter().nesColor(values.value(palette * 4 + i));
+    }
     for (int i = 0; i < t.size() && i < kTilesPerFrame; ++i) {
         if (t.at(i) == blank) {
             continue;
         }
         const QPoint at((i & 1) * 8, (i / 2) * 8);
+        const bool flip = mirrored(frame, i);
         for (int y = 0; y < 8; ++y) {
             for (int x = 0; x < 8; ++x) {
-                const int pixel = session_->document().pixel(session_->chr(), base + t.at(i), x, y);
+                const int pixel = d.pixel(session->chr(), base + t.at(i), flip ? 7 - x : x, y);
                 if (pixel != 0) {
                     image.setPixel(at.x() + x, at.y() + y, pens.value(pixel));
                 }
@@ -90,6 +154,10 @@ QImage SmbPlayerFramesModel::render() const {
         }
     }
     return image;
+}
+
+QImage SmbPlayerFramesModel::render() const {
+    return frameImage(session_, global(), palette_);
 }
 
 QVector<sdk::ViewOption> SmbPlayerFramesModel::viewOptions() const {
@@ -113,11 +181,11 @@ void SmbPlayerFramesModel::setViewOption(const QString& key, const QString& valu
 
 QVector<sdk::CompositionPiece> SmbPlayerFramesModel::pieces() const {
     QVector<sdk::CompositionPiece> result;
-    const QVector<int> t = tiles(frame_);
+    const QVector<int> t = tiles(global());
     for (int i = 0; i < t.size() && i < kTilesPerFrame; ++i) {
         sdk::CompositionPiece piece;
         piece.id = QStringLiteral("tile:%1").arg(i);
-        piece.label = hex(t.at(i));
+        piece.label = hex(t.at(i)) + (mirrored(global(), i) ? QStringLiteral(" ↔") : QString());
         piece.pixels = QRect((i & 1) * 8, (i / 2) * 8, 8, 8);
         piece.movable = false;
         result << piece;
@@ -140,11 +208,11 @@ void SmbPlayerFramesModel::selectPiece(const QString& id) {
 QVector<sdk::CompositionFrame> SmbPlayerFramesModel::frames() const {
     QVector<sdk::CompositionFrame> result;
     const QStringList names = frameNames(session_->document(), session_->playerFrames());
-    for (int i = 0; i < names.size(); ++i) {
+    for (int i : frameList()) {
         sdk::CompositionFrame frame;
         frame.id = names.at(i);
         frame.label = frameLabel(names.at(i));
-        frame.detail = QStringLiteral("frame %1").arg(i);
+        frame.detail = QStringLiteral("frame %1 · %2").arg(i).arg(hex(i * kTilesPerFrame));
         result << frame;
     }
     return result;
@@ -163,7 +231,7 @@ int SmbPlayerFramesModel::frameDurationMs(int) const {
 }
 
 QString SmbPlayerFramesModel::currentLibraryItem() const {
-    return piece_ >= 0 ? QStringLiteral("tile:%1").arg(tiles(frame_).value(piece_)) : QString();
+    return piece_ >= 0 ? QStringLiteral("tile:%1").arg(tiles(global()).value(piece_)) : QString();
 }
 
 void SmbPlayerFramesModel::setCurrentLibraryItem(const QString& id) {
@@ -172,7 +240,7 @@ void SmbPlayerFramesModel::setCurrentLibraryItem(const QString& id) {
         return;
     }
     const int tile = id.mid(5).toInt();
-    if (tile != tiles(frame_).value(piece_)) {
+    if (tile != tiles(global()).value(piece_)) {
         QString error;
         setTile(piece_, tile, &error);
     }
@@ -184,7 +252,7 @@ bool SmbPlayerFramesModel::setTile(int piece, int tile, QString* error) {
         return false;
     }
     const QString id = session_->playerFrames();
-    const int frame = frame_;
+    const int frame = global();
     const QStringList names = frameNames(session_->document(), id);
     return session_->edit(QStringLiteral("Set a pattern of %1").arg(frameLabel(names.value(frame))),
                           [id, frame, piece, tile](SmbResourceDocument& d) {
@@ -215,7 +283,8 @@ bool SmbPlayerFramesModel::setField(const QString& key, const QVariant& value, Q
 sdk::Inspection SmbPlayerFramesModel::inspect() const {
     sdk::Inspection inspection;
     const QStringList names = frameNames(session_->document(), session_->playerFrames());
-    const QVector<int> t = tiles(frame_);
+    const int frameIndex = global();
+    const QVector<int> t = tiles(frameIndex);
     const int blank = session_->document().playerBlankTile(session_->playerFrames());
     inspection.engineTag = QStringLiteral("smb.player-frames.v1");
 
@@ -224,16 +293,16 @@ sdk::Inspection SmbPlayerFramesModel::inspect() const {
     const QVector<int> offsets =
         intsOf(session_->document().resource(session_->playerFrames()).value(QStringLiteral("frame_offsets")));
     for (int a = 0; a < offsets.size(); ++a) {
-        if (offsets.at(a) / kTilesPerFrame == frame_) usedBy << actionNames().value(a);
+        if (offsets.at(a) / kTilesPerFrame == frameIndex) usedBy << actionNames().value(a);
     }
 
     if (piece_ < 0 || piece_ >= t.size()) {
         inspection.kicker = QStringLiteral("Player frame");
-        inspection.title = frameLabel(names.value(frame_));
+        inspection.title = frameLabel(names.value(frameIndex));
         sdk::Field frame;
         frame.key = QStringLiteral("frame");
         frame.label = QStringLiteral("Frame");
-        frame.value = QStringLiteral("%1 of %2").arg(frame_).arg(names.size());
+        frame.value = QStringLiteral("%1 of %2 · table %3").arg(frame_ + 1).arg(frameList().size()).arg(frameIndex);
         frame.monospace = true;
         sdk::Field actions;
         actions.key = QStringLiteral("actions");
@@ -248,14 +317,14 @@ sdk::Inspection SmbPlayerFramesModel::inspect() const {
         patterns.monospace = true;
         inspection.fields = {frame, actions, patterns};
         inspection.note = QStringLiteral("Each frame is eight 8x8 sprite patterns, two across and four down; "
-                                         "%1 leaves a cell empty. Select a cell to change its pattern. Walk, swim "
-                                         "and climb frames follow each other when the game animates them.")
+                                         "%1 leaves a cell empty. Select a cell to change its pattern. Cells "
+                                         "marked ↔ are drawn flipped by the engine.")
                               .arg(hex(blank));
         return inspection;
     }
 
     inspection.kicker = QStringLiteral("Frame pattern");
-    inspection.title = QStringLiteral("%1 · cell %2").arg(frameLabel(names.value(frame_))).arg(piece_ + 1);
+    inspection.title = QStringLiteral("%1 · cell %2").arg(frameLabel(names.value(frameIndex))).arg(piece_ + 1);
     sdk::Field tile;
     tile.key = QStringLiteral("tile");
     tile.label = QStringLiteral("Pattern");
@@ -274,6 +343,15 @@ sdk::Inspection SmbPlayerFramesModel::inspect() const {
     inspection.fields = {tile, empty};
     inspection.note = QStringLiteral("Click a pattern in the library to put it here, or type its number. Patterns "
                                      "are shared: other frames that use one change with it in Tiles.");
+    if (mirrored(frameIndex, piece_)) {
+        sdk::Field flip;
+        flip.key = QStringLiteral("flip");
+        flip.label = QStringLiteral("Drawn");
+        flip.value = QStringLiteral("mirrored by the engine");
+        inspection.fields << flip;
+        inspection.note += QStringLiteral(" The engine flips this cell, so it usually holds the same pattern as "
+                                          "the cell to its left.");
+    }
     // Sprite patterns in the chosen player colours.
     const QVector<QRgb> pens = colors();
     const int base = session_->document().playerTileBase(session_->playerFrames());
@@ -300,7 +378,7 @@ sdk::Inspection SmbPlayerFramesModel::inspect() const {
 
 QString SmbPlayerFramesModel::statusText() const {
     const QStringList names = frameNames(session_->document(), session_->playerFrames());
-    return QStringLiteral("%1 · frame %2").arg(frameLabel(names.value(frame_))).arg(frame_);
+    return QStringLiteral("%1 · frame %2").arg(frameLabel(names.value(global()))).arg(global());
 }
 
 // ---------------------------------------------------------------- actions
@@ -410,6 +488,28 @@ bool SmbPlayerActionsModel::setValue(int row, const QString& text, QString* erro
                               d.setResource(id, res);
                           },
                           error);
+}
+
+QStringList SmbPlayerActionsModel::cellChoices(int row, int column) const {
+    const int offsetCount =
+        intsOf(session_->document().resource(session_->playerFrames()).value(QStringLiteral("frame_offsets"))).size();
+    if (column != 1 || row >= offsetCount) {
+        return {};
+    }
+    QStringList labels;
+    for (const QString& name : frameNames(session_->document(), session_->playerFrames())) {
+        labels << frameLabel(name);
+    }
+    return labels;
+}
+
+QVector<QImage> SmbPlayerActionsModel::cellChoiceIcons(int row, int column) const {
+    QVector<QImage> icons;
+    const int count = cellChoices(row, column).size();
+    for (int f = 0; f < count; ++f) {
+        icons << SmbPlayerFramesModel::frameImage(session_, f, 0);
+    }
+    return icons;
 }
 
 bool SmbPlayerActionsModel::setCell(int row, int column, const QString& value, QString* error) {

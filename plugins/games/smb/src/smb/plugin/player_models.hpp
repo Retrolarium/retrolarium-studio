@@ -6,15 +6,27 @@ namespace rl::smb {
 
 class SmbSession;
 
-// Hero's 26 frames: each 2x4 sprite patterns. Select a pattern and type its
-// number, or click a pattern in the library to put it there.
+// One of Hero's animations (big walk, small swim, ...): its frames, each
+// 2x4 sprite patterns. Select a cell and pick its pattern in the library or
+// type its number. Cells the engine flips are drawn flipped.
 class SmbPlayerFramesModel final : public sdk::CompositionModel {
     Q_OBJECT
 
 public:
-    explicit SmbPlayerFramesModel(SmbSession* session);
+    SmbPlayerFramesModel(SmbSession* session, const QString& animation);
 
-    QString title() const override { return QStringLiteral("Player frames"); }
+    // Animations as the frame names group them: "big_walk" for big_walk_1-3.
+    static QStringList animations(const QStringList& frameNames);
+    static QVector<int> framesOf(const QStringList& frameNames, const QString& animation);
+    static QString animationLabel(const QString& animation);
+    // Whether the engine draws a cell of a frame mirrored (its attribute
+    // flips the right sprite of the bottom rows for some frames).
+    static bool mirrored(int frame, int cell);
+    // A frame of the table as the game draws it, in player palette 0-2
+    // (Hero, Brother, fire).
+    static QImage frameImage(const SmbSession* session, int frame, int palette);
+
+    QString title() const override;
     sdk::Inspection inspect() const override;
     bool setField(const QString& key, const QVariant& value, QString* error) override;
     QVector<sdk::ViewOption> viewOptions() const override;
@@ -38,11 +50,14 @@ public:
 
 private:
     QVector<int> tiles(int frame) const;
+    int global() const;     // the current frame's index in the table
+    QVector<int> frameList() const;
     bool setTile(int piece, int tile, QString* error);
     QVector<QRgb> colors() const;
 
     SmbSession* session_;
-    int frame_ = 0;
+    QString animation_;
+    int frame_ = 0;         // within the animation
     int piece_ = -1;
     int palette_ = 0;       // 0 Hero, 1 Brother, 2 fire
 };
@@ -67,6 +82,8 @@ public:
     int currentRow() const override { return row_; }
     void setCurrentRow(int row) override;
     bool setCell(int row, int column, const QString& value, QString* error) override;
+    QStringList cellChoices(int row, int column) const override;
+    QVector<QImage> cellChoiceIcons(int row, int column) const override;
 
 private:
     bool setValue(int row, const QString& text, QString* error);

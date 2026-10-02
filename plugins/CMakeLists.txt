@@ -82,6 +82,8 @@ add_library(smb_data STATIC
     smb/src/smb/data/catalog.cpp
     smb/src/smb/data/catalog.hpp
     smb/src/smb/data/level_records.hpp
+    smb/src/smb/data/music.cpp
+    smb/src/smb/data/music.hpp
     smb/src/smb/data/resource_document.cpp
     smb/src/smb/data/resource_document.hpp
     smb/src/smb/data/screens.cpp
@@ -103,6 +105,8 @@ add_library(smb_plugin STATIC
     smb/src/smb/plugin/level_model.hpp
     smb/src/smb/plugin/metatile_model.cpp
     smb/src/smb/plugin/metatile_model.hpp
+    smb/src/smb/plugin/music_model.cpp
+    smb/src/smb/plugin/music_model.hpp
     smb/src/smb/plugin/player_models.cpp
     smb/src/smb/plugin/player_models.hpp
     smb/src/smb/plugin/playtest_model.cpp
@@ -141,6 +145,13 @@ add_executable(smb_screens_test
     smb/tests/screens_test.cpp
 )
 target_link_libraries(smb_screens_test PRIVATE smb_data)
+
+# The music decoder against the kit's timelines for every SMB1 JU header:
+#   smb_music_test plugins/smb/tests/smb1_ju_music.json
+add_executable(smb_music_test
+    smb/tests/music_test.cpp
+)
+target_link_libraries(smb_music_test PRIVATE smb_data)
 
 # The one translation unit that names concrete plugins.
 add_library(studio_builtin_plugins STATIC

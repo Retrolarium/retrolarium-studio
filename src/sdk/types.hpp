@@ -78,6 +78,7 @@ struct Field {
     QVariant value;
     QString hint;           // unit or range at the right edge
     QStringList choices;    // Choice
+    QVector<QImage> choiceIcons;    // Choice: optional preview per choice
     int minimum = 0;        // Integer
     int maximum = 0;
     bool monospace = false;
@@ -134,6 +135,10 @@ struct ProcessSpec {
     // Playtest view shows that the emulator is starting. Empty: up shortly
     // after the process starts.
     QString readyFile;
+    // Or a Lua expression the studio checks each frame instead, with
+    // `memory` the main CPU's program space ("memory:read_u8(0x0770) == 1");
+    // true for a few frames in a row means the game is up.
+    QString readyWhen;
 };
 
 struct ProcessResult {

@@ -1,6 +1,8 @@
 #include "smb/plugin/graphics_models.hpp"
 
 #include "nes/palette.hpp"
+#include "smb/data/area_streams.hpp"
+#include "smb/plugin/player_models.hpp"
 #include "smb/plugin/smb_session.hpp"
 
 #include <QPainter>
@@ -302,6 +304,64 @@ bool SmbPacketModel::assignGamut(int index, QString* error) {
 QVector<sdk::PaletteSample> SmbPacketModel::samples() const {
     QVector<sdk::PaletteSample> result;
     if (!areaPackets().contains(packet_)) {
+        // A packet the game writes over an area's palette: the earliest
+        // course that gets it, where it shows.
+        QString chosen;
+        QPair<int, int> earliest(99, 99);
+        for (const QString& area : session_->document().areaNames(session_->levels())) {
+            if (!session_->paletteKey(area).split(QLatin1Char('+')).mid(1).contains(packet_)) {
+                continue;
+            }
+            const QPair<int, int> course = session_->levelOf(area);
+            const QPair<int, int> rank = course.first > 0 ? course : QPair<int, int>(98, 98);
+            if (chosen.isEmpty() || rank < earliest) {
+                chosen = area;
+                earliest = rank;
+            }
+        }
+        if (chosen.isEmpty()) {
+            return result;
+        }
+        int first = 0;
+        int width = 8;
+        QString where = QStringLiteral("start of the level");
+        if (session_->document().packetAddress(session_->palettes(), packet_) == 0x3f00) {
+            // It recolours background palette 0 (trees, bushes, mushroom
+            // tops): start just before the first block drawn in it.
+            const SmbArea a = session_->document().area(session_->levels(), chosen);
+            const SmbLevelScene scene = renderSmbLevelScene(
+                chosen, a.header, a.objects, a.enemies, std::max(0, session_->courseOf(chosen).first - 1),
+                SmbLevelRendering::fromId(session_->document().rendering(session_->levels())));
+            for (int column = 0; column < scene.metatiles.size() && first == 0; ++column) {
+                for (int value : scene.metatiles.at(column)) {
+                    if (value != 0 && SmbResourceDocument::metatilePalette(value) == 0) {
+                        first = std::max(0, column - 2);
+                        if (column > 2) where = QStringLiteral("column %1").arg(column);
+                        break;
+                    }
+                }
+            }
+        }
+        if (packet_ == QLatin1String("boss")) {
+            // Boss waits by the axe at the end of the castle.
+            const SmbArea a = session_->document().area(session_->levels(), chosen);
+            const QVector<int> pages = objectPages(a.objects);
+            for (int i = 0; i < a.objects.size(); ++i) {
+                if (a.objects.at(i).row == 13 && a.objects.at(i).control == 0x42) {
+                    first = std::max(0, pages.at(i) * 16 + a.objects.at(i).column - 15);
+                }
+            }
+            where = QStringLiteral("Boss's bridge");
+            width = 17;
+        }
+        sdk::PaletteSample sample;
+        sample.label = chosen;
+        const QPair<int, int> course = session_->levelOf(chosen);
+        sample.caption = course.first > 0 ? QStringLiteral("World %1-%2, %3").arg(course.first).arg(course.second).arg(where)
+                                          : QStringLiteral("%1, %2").arg(titled(chosen), where);
+        sample.image = session_->areaPreview(chosen, 32, first);
+        sample.minimumWidth = width * SmbLevelPainter::kCell;
+        result << sample;
         return result;
     }
     // The earliest course of this area type that plays by day, as it starts;
@@ -413,15 +473,23 @@ bool SmbPlayerPaletteModel::assignGamut(int index, QString* error) {
 }
 
 QVector<sdk::PaletteSample> SmbPlayerPaletteModel::samples() const {
-    // Hero standing, four times the size.
-    const QImage hero = session_->painter().hero();
-    if (hero.isNull()) {
+    // Small Hero standing in each row's colours, side by side.
+    const int rows = session_->document().tableValues(session_->playerPalette()).size() / 4;
+    if (rows <= 0 || session_->playerFrames().isEmpty()) {
         return {};
     }
+    constexpr int kStand = 23;
+    QImage image(rows * 24 - 8, 32, QImage::Format_ARGB32);
+    image.fill(Qt::transparent);
+    QPainter painter(&image);
+    for (int row = 0; row < rows; ++row) {
+        painter.drawImage(row * 24, 0, SmbPlayerFramesModel::frameImage(session_, kStand, row));
+    }
+    painter.end();
     sdk::PaletteSample sample;
-    sample.label = QStringLiteral("Hero");
-    sample.caption = QStringLiteral("Small Hero standing");
-    sample.image = hero;
+    sample.label = QStringLiteral("Hero · Brother · Fire");
+    sample.caption = QStringLiteral("Small Hero standing in each row's colours");
+    sample.image = image;
     return {sample};
 }
 

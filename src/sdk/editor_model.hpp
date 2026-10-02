@@ -100,7 +100,8 @@ public:
 
     // Tools for the current layer. Known ids: "select" (select and drag
     // objects), "place" (add the library item under the cursor), "remove"
-    // (delete objects), "paint" (paint the current brush into cells).
+    // (delete objects), "paint" (paint the current brush into cells), "pick"
+    // (take a cell's value as the current brush).
     virtual QVector<Tool> tools() const = 0;
 
     // The map at one pixel per pixel: gridSize() * cellSize().
@@ -113,6 +114,8 @@ public:
     virtual bool showsCellOverlay() const { return false; }
     virtual int cellValue(QPoint cell) const;
     virtual bool isCellEditable(QPoint cell) const;
+    // Why a cell cannot be painted, shown when a stroke starts on one.
+    virtual QString lockReason(QPoint cell) const;
     // One stroke is one undo step: begin, paint any number of cells, end.
     virtual void beginStroke();
     virtual bool paintCell(QPoint cell, int value);
@@ -243,6 +246,10 @@ public:
     virtual int currentRow() const = 0;
     virtual void setCurrentRow(int row) = 0;
     virtual bool setCell(int row, int column, const QString& value, QString* error);
+    // A cell edited by picking from a list (an enum, an area, a frame): the
+    // table shows a drop-down instead of a text field. Empty: free text.
+    virtual QStringList cellChoices(int row, int column) const;
+    virtual QVector<QImage> cellChoiceIcons(int row, int column) const;
 };
 
 // A piece of a composition (sprite piece, metatile quadrant), in pixels of

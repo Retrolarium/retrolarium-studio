@@ -64,7 +64,8 @@ QPair<int, int> SmbMetatileModel::blockAt(QPoint cell) const {
 QVector<sdk::Tool> SmbMetatileModel::tools() const {
     return {{QStringLiteral("select"), QStringLiteral("Select a block"), QStringLiteral("select")},
             {QStringLiteral("paint"), QStringLiteral("Paint the library pattern into a quadrant (right button: blank)"),
-             QStringLiteral("paint")}};
+             QStringLiteral("paint")},
+            {QStringLiteral("pick"), QStringLiteral("Take a quadrant's pattern as the brush"), QStringLiteral("pick")}};
 }
 
 QVector<sdk::ViewOption> SmbMetatileModel::viewOptions() const {
@@ -112,6 +113,7 @@ QVector<sdk::CellBrush> SmbMetatileModel::brushes() const {
 
 void SmbMetatileModel::setCurrentBrush(int value) {
     tile_ = std::clamp(value, 0, 255);
+    emit toolsChanged();
     emit selectionChanged();
 }
 
@@ -202,6 +204,23 @@ void SmbMetatileModel::selectObject(const QString& id) {
 // ---------------------------------------------------------------- inspector
 
 bool SmbMetatileModel::setField(const QString& key, const QVariant& value, QString* error) {
+    if (selected_ >= 0 && key == QLatin1String("copy")) {
+        // "$45" (any group): take all four patterns of that block.
+        bool ok = false;
+        const int source = value.toString().mid(1).toInt(&ok, 16);
+        if (!ok) {
+            return true;
+        }
+        const QString metatiles = session_->metatiles();
+        const int target = encoded(selected_);
+        const int base = session_->document().resource(metatiles).value(QStringLiteral("tile_base")).toInt();
+        const std::array<int, 4> from = session_->document().metatileTiles(metatiles, source);
+        return session_->edit(QStringLiteral("Copy block %1 into %2").arg(hex(source), hex(target)),
+                              [metatiles, target, from, base](SmbResourceDocument& d) {
+                                  for (int q = 0; q < 4; ++q) d.setMetatileTile(metatiles, target, q, from[q] - base);
+                              },
+                              error);
+    }
     if (selected_ < 0 || !key.startsWith(QLatin1Char('q'))) {
         return TileMapModel::setField(key, value, error);
     }
@@ -270,8 +289,27 @@ sdk::Inspection SmbMetatileModel::inspect() const {
         f.monospace = true;
         inspection.fields << f;
     }
-    inspection.note = QStringLiteral("Four background patterns in palette %1. Every level that places block %2 "
-                                     "changes with it.")
+    // Rebuild from another block: every block of every group, as it looks.
+    sdk::Field copy;
+    copy.key = QStringLiteral("copy");
+    copy.label = QStringLiteral("Copy from");
+    copy.type = sdk::Field::Type::Choice;
+    copy.choices << QStringLiteral("—");
+    copy.choiceIcons << QImage();
+    const QVector<int> sizes = session_->document().metatileGroupSizes(session_->metatiles());
+    for (int g = 0; g < sizes.size(); ++g) {
+        for (int i = 0; i < sizes.at(g); ++i) {
+            const int value = (g << 6) | i;
+            if (value == encoded(selected_)) continue;
+            copy.choices << hex(value);
+            copy.choiceIcons << session_->painter().metatile(value, packet_, false);
+        }
+    }
+    copy.value = QStringLiteral("—");
+    inspection.fields << copy;
+    inspection.note = QStringLiteral("Four background patterns in palette %1. Paint quadrants with the library "
+                                     "pattern, take one from any block with the pick tool, or copy a whole block. "
+                                     "Every level that places block %2 changes with it.")
                           .arg(group_)
                           .arg(hex(encoded(selected_)));
     inspection.engine = {{QStringLiteral("Encoded"), hex(encoded(selected_))},

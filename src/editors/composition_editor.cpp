@@ -44,6 +44,13 @@ public:
     }
     std::function<void()> onClick;
 
+    void setCurrent(bool current) {
+        if (current != current_) {
+            current_ = current;
+            update();
+        }
+    }
+
 protected:
     void mousePressEvent(QMouseEvent* event) override {
         if (event->button() == Qt::LeftButton && onClick) {
@@ -340,6 +347,23 @@ CompositionEditor::CompositionEditor(sdk::CompositionModel* model, QWidget* pare
 void CompositionEditor::rebuildFrames() {
     const QVector<sdk::CompositionFrame> frames = composition_->frames();
     strip_->setVisible(!frames.isEmpty());
+    QStringList signature;
+    for (const sdk::CompositionFrame& frame : frames) {
+        signature << frame.id + QLatin1Char('|') + frame.label + QLatin1Char('|') + frame.detail;
+    }
+    if (signature == stripSignature_ && play_ && cards_.size() == frames.size()) {
+        // Same frames: only the current card and the play icon change.
+        const int current = composition_->currentFrame();
+        for (int i = 0; i < cards_.size(); ++i) {
+            static_cast<FrameCard*>(cards_.at(i))->setCurrent(i == current);
+        }
+        play_->setIcon(theme::icon(playing_ ? QStringLiteral("pause") : QStringLiteral("play"), theme::IconTone::Text));
+        play_->setToolTip(playing_ ? QStringLiteral("Pause") : QStringLiteral("Play the animation"));
+        return;
+    }
+    stripSignature_ = signature;
+    play_ = nullptr;
+    cards_.clear();
     while (QLayoutItem* item = stripLayout_->takeAt(0)) {
         if (QWidget* widget = item->widget()) {
             widget->hide();
@@ -359,6 +383,7 @@ void CompositionEditor::rebuildFrames() {
     play->setProperty("variant", QStringLiteral("outlined"));
     connect(play, &QToolButton::clicked, this, [this] { setPlaying(!playing_); });
     stripLayout_->addWidget(play);
+    play_ = play;
     stripLayout_->addSpacing(4);
     const int current = composition_->currentFrame();
     QPointer<sdk::CompositionModel> model = composition_;
@@ -368,6 +393,7 @@ void CompositionEditor::rebuildFrames() {
             if (model) model->setCurrentFrame(i);
         };
         stripLayout_->addWidget(card);
+        cards_ << card;
     }
     stripLayout_->addStretch(1);
 }

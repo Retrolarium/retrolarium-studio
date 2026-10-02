@@ -52,6 +52,7 @@ local cart = [==[@CART@]==]
 local command_file = [==[@COMMAND@]==]
 local keys_file = [==[@KEYS@]==]
 local ready_file = [==[@READY@]==]
+local ready_when = [==[@READYWHEN@]==]
 local game_script = [==[@SCRIPT@]==]
 local environment = {
 @ENVIRONMENT@}
@@ -149,6 +150,23 @@ local function apply_keys()
     held = wanted
 end
 
+-- A ready condition the studio checks itself, for games whose script
+-- reports nothing: three frames in a row write the ready file.
+local ready_check, ready_frames = nil, 0
+if ready_when ~= "" then
+    local cpu = machine.devices[":maincpu"]
+    local memory = cpu ~= nil and cpu.spaces["program"] or nil
+    local chunk = load("local memory = ... return " .. ready_when)
+    if memory ~= nil and chunk ~= nil then
+        ready_check = function()
+            local ok, value = pcall(chunk, memory)
+            return ok and value
+        end
+    else
+        print("Retrolarium: the ready condition cannot run; waiting for the time limit.")
+    end
+end
+
 local fast = ready_file ~= ""
 local was_throttled, was_frameskip, was_muted = video.throttled, video.frameskip, sound.ui_mute
 local hidden, frames, unmute_at = fast, 0, nil
@@ -162,10 +180,24 @@ on_frame(function()
     frames = frames + 1
     apply_keys()
     if frames % 6 == 0 then take_command() end
+    if hidden and ready_check ~= nil then
+        ready_frames = ready_check() and ready_frames + 1 or 0
+        if ready_frames == 3 then
+            print(string.format("Retrolarium: ready after %d frames.", frames))
+            local file = io.open(ready_file, "w")
+            if file ~= nil then
+                file:write("ready")
+                file:close()
+            end
+        end
+    end
     if hidden then
         -- A script that never reports would keep the game fast: give up after
         -- a minute of game time.
         if exists(ready_file) or frames > 3600 then
+            if frames > 3600 and not exists(ready_file) then
+                print("Retrolarium: the game never reported ready; showing it anyway.")
+            end
             hidden = false
             video.throttled, video.frameskip = was_throttled, was_frameskip
             -- Sound made while unthrottled is still queued for the speakers;
@@ -454,7 +486,7 @@ void EmulatorRunner::append(const QString& line) {
 bool EmulatorRunner::writeControl(const sdk::ProcessSpec& spec, const QString& gameScript, QString* error) {
     const QString command = luaPath(stage_->filePath(QStringLiteral("command.txt")));
     const QString keys = luaPath(stage_->filePath(QStringLiteral("keys.txt")));
-    QStringList values{luaPath(cart_), command, luaPath(spec.readyFile), luaPath(gameScript), keys};
+    QStringList values{luaPath(cart_), command, luaPath(spec.readyFile), luaPath(gameScript), keys, spec.readyWhen};
     QString environment;
     for (auto it = spec.environment.constBegin(); it != spec.environment.constEnd(); ++it) {
         static const QRegularExpression name(QStringLiteral("^[A-Za-z_][A-Za-z0-9_]*$"));
@@ -479,6 +511,7 @@ bool EmulatorRunner::writeControl(const sdk::ProcessSpec& spec, const QString& g
     text.replace(QLatin1String("@CART@"), values.at(0))
         .replace(QLatin1String("@COMMAND@"), values.at(1))
         .replace(QLatin1String("@KEYS@"), values.at(4))
+        .replace(QLatin1String("@READYWHEN@"), values.at(5))
         .replace(QLatin1String("@READY@"), values.at(2))
         .replace(QLatin1String("@SCRIPT@"), values.at(3))
         .replace(QLatin1String("@ENVIRONMENT@"), environment);
@@ -497,8 +530,9 @@ QString EmulatorRunner::stageCart(const QString& source, QString* error) {
     return path;
 }
 
-void EmulatorRunner::start(const sdk::ProcessSpec& spec, const QString& title,
+void EmulatorRunner::start(const sdk::ProcessSpec& requested, const QString& title,
                            std::function<void(const sdk::ProcessResult&)> finished) {
+    sdk::ProcessSpec spec = requested;
     const Launch launch = parseLaunch(spec.arguments);
     const QStringList signature = QStringList{spec.program, spec.workingDirectory} + launch.arguments;
     if (process_ && phase_ != Phase::Stopping && stage_ && !cart_.isEmpty() && !launch.cart.isEmpty() &&
@@ -515,13 +549,8 @@ void EmulatorRunner::start(const sdk::ProcessSpec& spec, const QString& title,
         return;
     }
     title_ = title;
-    readyFile_ = spec.readyFile;
     fastStart_ = false;
     reloading_ = false;
-    if (!readyFile_.isEmpty()) {
-        // A file from the last run would end the wait at once.
-        QFile::remove(readyFile_);
-    }
     log_.clear();
     paused_ = false;
     stopping_ = false;
@@ -530,6 +559,14 @@ void EmulatorRunner::start(const sdk::ProcessSpec& spec, const QString& title,
     // MAME keeps the cartridge it runs locked; it gets a copy, so the build can
     // replace the original while the game runs.
     stage_ = std::make_unique<QTemporaryDir>(QDir::temp().filePath(QStringLiteral("retrolarium-playtest-XXXXXX")));
+    if (spec.readyFile.isEmpty() && !spec.readyWhen.isEmpty() && stage_->isValid()) {
+        spec.readyFile = stage_->filePath(QStringLiteral("ready.txt"));
+    }
+    readyFile_ = spec.readyFile;
+    if (!readyFile_.isEmpty()) {
+        // A file from the last run would end the wait at once.
+        QFile::remove(readyFile_);
+    }
     cart_.clear();
     signature_ = signature;
     QStringList arguments = launch.arguments;
@@ -647,8 +684,12 @@ void EmulatorRunner::start(const sdk::ProcessSpec& spec, const QString& title,
     emit stateChanged();
 }
 
-bool EmulatorRunner::reload(const sdk::ProcessSpec& spec, const QString& cartSource, const QString& gameScript,
+bool EmulatorRunner::reload(const sdk::ProcessSpec& requested, const QString& cartSource, const QString& gameScript,
                             const QString& title, std::function<void(const sdk::ProcessResult&)>& finished) {
+    sdk::ProcessSpec spec = requested;
+    if (spec.readyFile.isEmpty() && !spec.readyWhen.isEmpty()) {
+        spec.readyFile = stage_->filePath(QStringLiteral("ready.txt"));
+    }
     // The copies MAME no longer holds; the mounted one stays locked.
     for (const QString& name : QDir(stage_->path()).entryList({QStringLiteral("cart-*")}, QDir::Files)) {
         QFile::remove(stage_->filePath(name));

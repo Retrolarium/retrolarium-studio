@@ -85,7 +85,8 @@ QVector<sdk::Tool> SmbScreenModel::tools() const {
             {QStringLiteral("paint"),
              layer_ == QLatin1String("tiles") ? QStringLiteral("Paint the library tile (right button: blank)")
                                               : QStringLiteral("Paint a palette onto 16x16 blocks"),
-             QStringLiteral("paint")}};
+             QStringLiteral("paint")},
+            {QStringLiteral("pick"), QStringLiteral("Take a cell's tile or palette as the brush"), QStringLiteral("pick")}};
 }
 
 QVector<sdk::ViewOption> SmbScreenModel::viewOptions() const {
@@ -166,6 +167,7 @@ void SmbScreenModel::setCurrentBrush(int value) {
     } else {
         tile_ = std::clamp(value, 0, 255);
     }
+    emit toolsChanged();
     emit selectionChanged();
 }
 
@@ -204,6 +206,13 @@ bool SmbScreenModel::isCellEditable(QPoint cell) const {
         return s.attributeWriter(s.attributeIndexOf(tile)).x() >= 0;
     }
     return s.tileWriter(tile).x() >= 0;
+}
+
+QString SmbScreenModel::lockReason(QPoint) const {
+    return layer_ == QLatin1String("palettes")
+               ? QStringLiteral("The game never writes the palettes of this block, so they stay as they are.")
+               : QStringLiteral("The game never writes this cell (shaded): it keeps the blank fill. Paint the bright "
+                                "cells the screen draws.");
 }
 
 void SmbScreenModel::beginStroke() {

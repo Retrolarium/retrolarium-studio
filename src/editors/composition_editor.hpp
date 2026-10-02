@@ -4,9 +4,12 @@
 
 #include <QImage>
 #include <QPoint>
+#include <QStringList>
+#include <QVector>
 
 class QHBoxLayout;
 class QTimer;
+class QToolButton;
 class QScrollArea;
 
 namespace rl::sdk {
@@ -38,6 +41,11 @@ private:
     QHBoxLayout* stripLayout_;
     QTimer* timer_;
     bool playing_ = false;
+    // The strip as built: rebuilt only when the frames change, so a frame
+    // step while playing keeps the play button under the pointer.
+    QStringList stripSignature_;
+    QToolButton* play_ = nullptr;
+    QVector<QWidget*> cards_;
 };
 
 class CompositionCanvas final : public QWidget {

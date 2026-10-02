@@ -171,7 +171,7 @@ QVector<sdk::Tool> SmbLevelModel::tools() const {
 }
 
 QImage SmbLevelModel::render() const {
-    const QString type = areaTypeOf(area_);
+    const QString type = session_->paletteKey(area_);
     QImage image = session_->painter().render(scene(), type, session_->night(area_));
     const QImage hero = session_->painter().hero();
     if (!hero.isNull()) {
@@ -183,7 +183,7 @@ QImage SmbLevelModel::render() const {
 
 QVector<sdk::MapObject> SmbLevelModel::objects() const {
     QVector<sdk::MapObject> result;
-    const QString type = areaTypeOf(area_);
+    const QString type = session_->paletteKey(area_);
     for (const SmbPositionedObject& object : scene().objects) {
         if (isPageCommand(object.record)) {
             continue;
@@ -261,7 +261,9 @@ void SmbLevelModel::setCurrentLibraryItem(const QString& id) {
 bool SmbLevelModel::commitArea(const SmbArea& edited, const QString& text, QString* error) {
     if (!edited.areaFits()) {
         if (error) {
-            *error = QStringLiteral("The object stream would need %1 of the %2 bytes this area has.")
+            *error = QStringLiteral("%1 has no room: its objects would take %2 of the %3 bytes the ROM keeps "
+                                    "for them. Each area has a fixed space; delete or shorten an object first.")
+                         .arg(title())
                          .arg(edited.areaBytes())
                          .arg(edited.areaCapacity);
         }
@@ -269,7 +271,9 @@ bool SmbLevelModel::commitArea(const SmbArea& edited, const QString& text, QStri
     }
     if (!edited.enemiesFit()) {
         if (error) {
-            *error = QStringLiteral("The enemy stream would need %1 of the %2 bytes this area has.")
+            *error = QStringLiteral("%1 has no room: its enemies would take %2 of the %3 bytes the ROM keeps "
+                                    "for them. Each area has a fixed space; delete an enemy first.")
+                         .arg(title())
                          .arg(edited.enemyBytes())
                          .arg(edited.enemyCapacity);
         }
@@ -386,6 +390,15 @@ void SmbLevelModel::endDrag() {
 }
 
 bool SmbLevelModel::placeObject(const QString& libraryItem, QPoint cell, QString* error) {
+    if (libraryItem == QLatin1String("start")) {
+        // The test start marker: where Play from selected puts Hero. It is
+        // not level data and takes no bytes.
+        session_->setHeroCell(area_, QPoint(std::clamp(cell.x(), 0, std::max(0, scene().width - 1)),
+                                             std::clamp(cell.y(), 1, 12)));
+        session_->selectStart(area_);
+        selectObject(QStringLiteral("hero"));
+        return true;
+    }
     SmbArea next = area();
     const int page = std::clamp(cell.x() / 16, 0, kLastPage);
     const int column = cell.x() % 16;
@@ -502,7 +515,7 @@ sdk::Library SmbLevelModel::library() const {
     if (libraryRevision_ != session_->revision()) {
         library_.clear();
         const SmbArea a = area();
-        const QString type = areaTypeOf(area_);
+        const QString type = session_->paletteKey(area_);
         const bool night = session_->night(area_);
         const SmbLevelRendering rendering = SmbLevelRendering::fromId(session_->document().rendering(session_->levels()));
         // Each object alone on a bare area, against the bare area itself.
@@ -512,6 +525,12 @@ sdk::Library SmbLevelModel::library() const {
             blank = session_->painter().render(renderSmbLevelScene(area_, header, {}, {}, 0, rendering), type, night);
         } catch (const std::exception&) {
         }
+        sdk::LibraryItem start;
+        start.id = QStringLiteral("start");
+        start.label = QStringLiteral("Test start");
+        start.hint = QStringLiteral("drop where Play from selected (F5) puts Hero; not level data");
+        start.icon = session_->painter().hero();
+        library_ << start;
         const QVector<SmbObjectKind>& objects = objectCatalog();
         for (int i = 0; i < objects.size(); ++i) {
             const SmbObjectKind& kind = objects.at(i);
@@ -540,9 +559,20 @@ sdk::Library SmbLevelModel::library() const {
         libraryRevision_ = session_->revision();
     }
     sdk::Library library;
-    library.hint = QStringLiteral("drag onto the level, or pick and use the Add tool");
+    const SmbArea a = area();
+    library.hint = a.areaBytes() >= a.areaCapacity + (a.areaImplicitTerminator ? 1 : 0)
+                       ? QStringLiteral("area full: delete something to add")
+                       : QStringLiteral("drag onto the level, or pick and use the Add tool");
     library.items = library_;
     return library;
+}
+
+QImage SmbLevelModel::libraryIcon(const QString& id) const {
+    library();
+    for (const sdk::LibraryItem& item : library_) {
+        if (item.id == id) return item.icon;
+    }
+    return {};
 }
 
 QString SmbLevelModel::startPoint() const {
@@ -607,10 +637,15 @@ sdk::Inspection SmbLevelModel::inspect() const {
         const int cls = objectClass(record);
         if (cls >= 0) {
             QStringList kinds;
-            for (const SmbObjectKind& kind : objectCatalog()) {
-                if (kind.row == cls) kinds << kind.name;
+            QVector<QImage> icons;
+            for (int i = 0; i < objectCatalog().size(); ++i) {
+                if (objectCatalog().at(i).row != cls) continue;
+                kinds << objectCatalog().at(i).name;
+                icons << libraryIcon(QStringLiteral("add-object:%1").arg(i));
             }
-            inspection.fields << choice(QStringLiteral("kind"), QStringLiteral("Kind"), inspection.title, kinds);
+            sdk::Field kind = choice(QStringLiteral("kind"), QStringLiteral("Kind"), inspection.title, kinds);
+            kind.choiceIcons = icons;
+            inspection.fields << kind;
         }
         if (hasLength(record)) {
             inspection.fields << integer(QStringLiteral("length"), QStringLiteral("Size"), (record.control & 15) + 1,
@@ -636,9 +671,18 @@ sdk::Inspection SmbLevelModel::inspect() const {
         inspection.kicker = QStringLiteral("Enemy");
         inspection.title = enemyName(record.objectOrPage);
         QStringList kinds;
-        for (const SmbEnemyKind& kind : enemyCatalog()) kinds << kind.name;
-        if (!kinds.contains(inspection.title)) kinds.prepend(inspection.title);
-        inspection.fields = {choice(QStringLiteral("kind"), QStringLiteral("Kind"), inspection.title, kinds),
+        QVector<QImage> icons;
+        for (const SmbEnemyKind& kind : enemyCatalog()) {
+            kinds << kind.name;
+            icons << libraryIcon(QStringLiteral("add-enemy:%1").arg(kind.id));
+        }
+        if (!kinds.contains(inspection.title)) {
+            kinds.prepend(inspection.title);
+            icons.prepend(QImage());
+        }
+        sdk::Field kind = choice(QStringLiteral("kind"), QStringLiteral("Kind"), inspection.title, kinds);
+        kind.choiceIcons = icons;
+        inspection.fields = {kind,
                              choice(QStringLiteral("hard"), QStringLiteral("Hard mode only"),
                                     yesNo().at(record.hardMode ? 1 : 0), yesNo()),
                              integer(QStringLiteral("row"), QStringLiteral("Row"), record.row, 0, 13),

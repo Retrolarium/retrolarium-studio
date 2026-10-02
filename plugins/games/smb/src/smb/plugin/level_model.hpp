@@ -58,6 +58,7 @@ private:
     // record's new index comes back in *index.
     std::optional<SmbArea> moved(const SmbArea& area, const QString& id, int column, int row, int* index) const;
     sdk::Library library() const;
+    QImage libraryIcon(const QString& id) const;
     // The selected record as it stands; empty for Hero or no selection.
     QVariantList selectedRecord() const;
     // Undo, redo and other editors renumber records: drop a selection whose

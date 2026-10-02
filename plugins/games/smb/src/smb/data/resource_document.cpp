@@ -477,6 +477,32 @@ QVector<int> SmbResourceDocument::packetValues(const QString& palettes, const QS
     return values;
 }
 
+int SmbResourceDocument::packetAddress(const QString& palettes, const QString& name) const {
+    for (const QJsonValue& value : resource(palettes).value(QStringLiteral("packets")).toArray()) {
+        const QJsonObject packet = value.toObject();
+        if (packet.value(QStringLiteral("name")).toString() == name) {
+            return packet.value(QStringLiteral("address")).toInt(0x3f00);
+        }
+    }
+    return 0x3f00;
+}
+
+QVector<int> SmbResourceDocument::paletteFor(const QString& palettes, const QString& key) const {
+    const QStringList parts = key.split(QLatin1Char('+'));
+    QVector<int> values = packetValues(palettes, parts.first());
+    values.resize(32);
+    for (int p = 1; p < parts.size(); ++p) {
+        const QVector<int> overlay = packetValues(palettes, parts.at(p));
+        const int offset = packetAddress(palettes, parts.at(p)) - 0x3f00;
+        for (int i = 0; i < overlay.size(); ++i) {
+            if (offset + i >= 0 && offset + i < values.size()) {
+                values[offset + i] = overlay.at(i);
+            }
+        }
+    }
+    return values;
+}
+
 void SmbResourceDocument::setPacketValue(const QString& palettes, const QString& name, int entry, int color) {
     if (color < 0 || color > 0x3f) {
         fail(QStringLiteral("NES colours are 00-3F"));

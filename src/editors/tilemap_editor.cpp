@@ -172,6 +172,9 @@ void MapCanvas::mousePressEvent(QMouseEvent* event) {
         }
         // Right button paints the first brush, which is "empty" by convention.
         const QVector<sdk::CellBrush> brushes = model_->brushes();
+        if (!model_->isCellEditable(cell)) {
+            emit actionFailed(model_->lockReason(cell));
+        }
         paintValue_ = event->button() == Qt::RightButton && !brushes.isEmpty()
                           ? brushes.first().value
                           : model_->currentBrush();
@@ -182,6 +185,13 @@ void MapCanvas::mousePressEvent(QMouseEvent* event) {
         return;
     }
     if (event->button() != Qt::LeftButton) {
+        return;
+    }
+    if (tool_ == QLatin1String("pick")) {
+        const int value = model_->cellValue(cell);
+        if (value >= 0) {
+            model_->setCurrentBrush(value);
+        }
         return;
     }
     if (tool_ == QLatin1String("select")) {

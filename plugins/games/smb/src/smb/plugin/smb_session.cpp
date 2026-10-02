@@ -5,6 +5,7 @@
 #include "smb/plugin/graphics_models.hpp"
 #include "smb/plugin/level_model.hpp"
 #include "smb/plugin/metatile_model.hpp"
+#include "smb/plugin/music_model.hpp"
 #include "smb/plugin/player_models.hpp"
 #include "smb/plugin/playtest_model.hpp"
 #include "smb/plugin/screen_model.hpp"
@@ -117,6 +118,7 @@ std::unique_ptr<SmbSession> SmbSession::open(const sdk::ProjectFile& project, QS
         };
         session->levels_ = first("smb.levels.v1");
         session->world_ = first("smb.world.v1");
+        session->music_ = first("smb.apu-music.v1");
         session->art_.chr = first("nes.chr-2bpp.v1");
         session->art_.metatiles = first("nes.metatile-2x2.v1");
         session->art_.palettes = first("nes.ppu-palette-packets.v1");
@@ -175,9 +177,10 @@ QVector<sdk::Kind> SmbSession::kinds() const {
             kind("graphics", "Tiles", "tiles", sdk::EditorType::Tile),
             kind("metatiles", "Metatiles", "metatiles", sdk::EditorType::TileMap),
             kind("palettes", "Palettes", "palettes", sdk::EditorType::Palette),
-            kind("player", "Player", "sprites", sdk::EditorType::Composition),
+            kind("animations", "Animations", "sprites", sdk::EditorType::Composition),
             kind("screens", "Screens", "tileset", sdk::EditorType::TileMap),
             kind("text", "Text", "text", sdk::EditorType::Table),
+            kind("sound", "Sound", "sound", sdk::EditorType::Sequencer),
             kind("playtest", "Playtest", "playtest", sdk::EditorType::Emulator)};
 }
 
@@ -280,15 +283,41 @@ QVector<sdk::DocumentGroup> SmbSession::documents(const QString& kind) const {
             group.documents << actions;
         }
         groups << group;
-    } else if (kind == QLatin1String("player") && !art_.playerFrames.isEmpty()) {
-        sdk::DocumentGroup group;
-        group.title = QStringLiteral("Player");
-        sdk::DocumentEntry frames = entry(QStringLiteral("frames"), QStringLiteral("Hero frames"),
-                                          QStringLiteral("%1 frames").arg(document_.playerFrameCount(art_.playerFrames)));
-        frames.dirty = document_.resource(art_.playerFrames).value(QStringLiteral("frames")) !=
-                       saved_.resource(art_.playerFrames).value(QStringLiteral("frames"));
-        group.documents << frames;
-        groups << group;
+    } else if (kind == QLatin1String("animations") && !art_.playerFrames.isEmpty()) {
+        QStringList names;
+        for (const QJsonValue& v : document_.resource(art_.playerFrames).value(QStringLiteral("frame_names")).toArray()) {
+            names << v.toString();
+        }
+        const QJsonArray now = document_.resource(art_.playerFrames).value(QStringLiteral("frames")).toArray();
+        const QJsonArray saved = saved_.resource(art_.playerFrames).value(QStringLiteral("frames")).toArray();
+        sdk::DocumentGroup big;
+        big.title = QStringLiteral("Big Hero");
+        sdk::DocumentGroup small;
+        small.title = QStringLiteral("Small Hero");
+        sdk::DocumentGroup other;
+        other.title = QStringLiteral("Other");
+        for (const QString& animation : SmbPlayerFramesModel::animations(names)) {
+            const QVector<int> frames = SmbPlayerFramesModel::framesOf(names, animation);
+            QString label = SmbPlayerFramesModel::animationLabel(animation);
+            sdk::DocumentGroup* group = &other;
+            if (animation.startsWith(QLatin1String("big_"))) {
+                group = &big;
+                label = SmbPlayerFramesModel::animationLabel(animation.mid(4));
+            } else if (animation.startsWith(QLatin1String("small_"))) {
+                group = &small;
+                label = SmbPlayerFramesModel::animationLabel(animation.mid(6));
+            }
+            sdk::DocumentEntry e = entry(animation, label,
+                                         frames.size() == 1 ? QStringLiteral("1 frame")
+                                                            : QStringLiteral("%1 frames").arg(frames.size()));
+            for (int f : frames) {
+                e.dirty = e.dirty || now.at(f) != saved.at(f);
+            }
+            group->documents << e;
+        }
+        for (const sdk::DocumentGroup& g : {big, small, other}) {
+            if (!g.documents.isEmpty()) groups << g;
+        }
     } else if (kind == QLatin1String("screens")) {
         for (const QString& id : document_.resourceIds(QStringLiteral("nes.ppu-screen-packets.v1"))) {
             const SmbScreenSet& set = screenSet(id);
@@ -308,6 +337,53 @@ QVector<sdk::DocumentGroup> SmbSession::documents(const QString& kind) const {
                 groups << group;
             }
         }
+    } else if (kind == QLatin1String("sound") && !music_.isEmpty()) {
+        const SmbMusic music = SmbMusic::fromJson(document_.resource(music_));
+        const SmbMusic saved = SmbMusic::fromJson(saved_.resource(music_));
+        QStringList area;
+        QStringList events;
+        QStringList other;
+        for (const auto& selector : music.selectors) {
+            QStringList& list = selector.first.startsWith(QLatin1String("area_")) ? area : events;
+            if (!list.contains(selector.second) && !area.contains(selector.second) && !events.contains(selector.second)) {
+                list << selector.second;
+            }
+        }
+        QStringList ground;
+        for (const SmbMusicHeader& header : music.headers) {
+            if (header.name.startsWith(QLatin1String("ground_")) && !area.contains(header.name)) {
+                ground << header.name;
+            } else if (!area.contains(header.name) && !events.contains(header.name)) {
+                other << header.name;
+            }
+        }
+        const auto group = [&](const QString& title, const QStringList& names) {
+            sdk::DocumentGroup g;
+            g.title = title;
+            for (const QString& name : names) {
+                QString meta;
+                try {
+                    meta = QStringLiteral("%1 s").arg(music.timeline(name).duration / 60.0988, 0, 'f', 1);
+                } catch (const SmbError&) {
+                }
+                sdk::DocumentEntry e = entry(name, displayName(name), meta);
+                // A song is edited when any byte its channels read changed.
+                try {
+                    for (const SmbMusicChannel& channel : music.timeline(name).channels) {
+                        for (const SmbMusicEvent& ev : channel.events) {
+                            e.dirty = e.dirty || music.arena.value(ev.offset) != saved.arena.value(ev.offset);
+                        }
+                    }
+                } catch (const SmbError&) {
+                }
+                g.documents << e;
+            }
+            if (!g.documents.isEmpty()) groups << g;
+        };
+        group(QStringLiteral("Area music"), area);
+        group(QStringLiteral("Ground theme parts"), ground);
+        group(QStringLiteral("Events"), events);
+        group(QStringLiteral("Other"), other);
     } else if (kind == QLatin1String("text")) {
         sdk::DocumentGroup group;
         group.title = QStringLiteral("Text");
@@ -338,9 +414,14 @@ std::unique_ptr<sdk::EditorModel> SmbSession::openEditor(const QString& kind, co
             (document == QLatin1String("sprites") || document == QLatin1String("background"))) {
             return std::make_unique<SmbTileModel>(this, document == QLatin1String("background"));
         }
-        if (kind == QLatin1String("player") && document == QLatin1String("frames") && !art_.playerFrames.isEmpty() &&
-            !art_.playerPalette.isEmpty()) {
-            return std::make_unique<SmbPlayerFramesModel>(this);
+        if (kind == QLatin1String("animations") && !art_.playerFrames.isEmpty() && !art_.playerPalette.isEmpty()) {
+            QStringList names;
+            for (const QJsonValue& v : document_.resource(art_.playerFrames).value(QStringLiteral("frame_names")).toArray()) {
+                names << v.toString();
+            }
+            if (SmbPlayerFramesModel::animations(names).contains(document)) {
+                return std::make_unique<SmbPlayerFramesModel>(this, document);
+            }
         }
         if (kind == QLatin1String("metatiles") && document.startsWith(QLatin1String("group:"))) {
             const int group = document.mid(6).toInt();
@@ -375,6 +456,10 @@ std::unique_ptr<sdk::EditorModel> SmbSession::openEditor(const QString& kind, co
                 screenSet(id).indexOf(key) >= 0) {
                 return std::make_unique<SmbScreenModel>(this, id, key);
             }
+        }
+        if (kind == QLatin1String("sound") && !music_.isEmpty() &&
+            SmbMusic::fromJson(document_.resource(music_)).indexOf(document) >= 0) {
+            return std::make_unique<SmbMusicModel>(this, document);
         }
         if (kind == QLatin1String("text") && document == QLatin1String("all")) {
             return std::make_unique<SmbTextModel>(this);
@@ -589,13 +674,43 @@ QString SmbSession::selectedStart() const {
     return QStringLiteral("%1 · column %2").arg(areaLabel(start_.area)).arg(start_.cell.x());
 }
 
-QImage SmbSession::areaPreview(const QString& area, int columns) const {
+QImage SmbSession::areaPreview(const QString& area, int columns, int firstColumn) const {
     const SmbArea a = document_.area(levels_, area);
     const SmbLevelScene scene =
         renderSmbLevelScene(area, a.header, a.objects, a.enemies, std::max(0, courseOf(area).first - 1),
                             SmbLevelRendering::fromId(document_.rendering(levels_)));
-    const QImage image = painter_->render(scene, areaTypeOf(area), night(area));
-    return image.copy(0, 0, std::min(image.width(), columns * SmbLevelPainter::kCell), image.height());
+    const QImage image = painter_->render(scene, paletteKey(area), night(area));
+    const int left = std::clamp(firstColumn * SmbLevelPainter::kCell, 0, std::max(0, image.width() - 1));
+    return image.copy(left, 0, std::min(image.width() - left, columns * SmbLevelPainter::kCell), image.height());
+}
+
+QString SmbSession::paletteKey(const QString& area) const {
+    // As the game loads them: GetAreaPalette by type, then GetBGPlayerColor
+    // (background colour control 5 day snow, 6 night snow, 7 the castle
+    // palette), GetAlternatePalette1 (mushroom style) and the axe object
+    // (Boss's sprite palette).
+    const SmbArea a = document_.area(levels_, area);
+    const QStringList packets = document_.packetNames(art_.palettes);
+    QString key = areaTypeOf(area);
+    const auto add = [&](const char* name) {
+        if (packets.contains(QLatin1String(name))) key += QLatin1Char('+') + QLatin1String(name);
+    };
+    switch (a.header.value(2)) {
+    case 5: add("day_snow"); break;
+    case 6: add("night_snow"); break;
+    case 7: add("castle"); break;
+    default: break;
+    }
+    if (a.header.value(3) == 1) {
+        add("mushroom");
+    }
+    for (const SmbAreaObject& object : a.objects) {
+        if (object.row == 13 && object.control == 0x42) {
+            add("boss");
+            break;
+        }
+    }
+    return key;
 }
 
 bool SmbSession::night(const QString& area) const {
@@ -715,7 +830,7 @@ void SmbSession::launch(bool fromStart) {
                                             : QStringLiteral("Super Mario Bros. · %1").arg(areaLabel(start.area));
             plan.label = fromStart ? QStringLiteral("Plan playtest from power-on")
                                    : QStringLiteral("Plan playtest of %1").arg(areaLabel(start.area));
-            h->runProcess(plan, [this, title](const sdk::ProcessResult& result) {
+            h->runProcess(plan, [this, title, fromStart](const sdk::ProcessResult& result) {
                 sdk::Host* host = this->host();
                 if (!host) {
                     return;
@@ -727,7 +842,18 @@ void SmbSession::launch(bool fromStart) {
                     }
                     return;
                 }
-                const sdk::ProcessSpec game = specFromPlan(QJsonDocument::fromJson(result.standardOutput).object());
+                sdk::ProcessSpec game = specFromPlan(QJsonDocument::fromJson(result.standardOutput).object());
+                // The kit's point script reports nothing; the game is up once
+                // it plays the area with Hero placed on the start page
+                // (operating mode 1, task 3, player engine running), so the
+                // boot and the steering can run hidden and fast.
+                const QString page = game.environment.value(QStringLiteral("SMB1_PLAYTEST_PAGE"));
+                if (!fromStart && !page.isEmpty()) {
+                    game.readyWhen = QStringLiteral("memory:read_u8(0x0770) == 1 and memory:read_u8(0x0772) == 3 and "
+                                                    "memory:read_u8(0x000e) >= 7 and memory:read_u8(0x006d) == %1 and "
+                                                    "memory:read_u8(0x071a) == %1")
+                                         .arg(page.toInt());
+                }
                 if (game.program.isEmpty()) {
                     report(sdk::Severity::Error, QStringLiteral("playtest"),
                            QStringLiteral("The kit returned no emulator command."));

@@ -289,7 +289,8 @@ void InspectorPanel::rebuild() {
             };
             if (field.type == sdk::Field::Type::Choice && !readOnly) {
                 QComboBox* combo = grid->addChoice(field.label, field.choices,
-                                                   std::max(0, field.choices.indexOf(field.value.toString())));
+                                                   std::max(0, field.choices.indexOf(field.value.toString())),
+                                                   field.choiceIcons);
                 connect(combo, QOverload<int>::of(&QComboBox::activated), this,
                         [combo, apply](int) { apply(combo->currentText()); });
                 continue;

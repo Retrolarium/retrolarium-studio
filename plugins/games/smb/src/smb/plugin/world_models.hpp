@@ -30,6 +30,8 @@ public:
     int currentRow() const override { return row_; }
     void setCurrentRow(int row) override;
     bool setCell(int row, int column, const QString& value, QString* error) override;
+    QStringList cellChoices(int row, int column) const override;
+    QVector<QImage> cellChoiceIcons(int row, int column) const override;
 
 private:
     QPair<int, int> stepAt(int row) const;      // {world, step}, step from 0

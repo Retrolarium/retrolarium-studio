@@ -140,7 +140,7 @@ QImage SmbLevelPainter::metatile(int value, const QString& areaType, bool night)
         return *found;
     }
     QImage image(16, 16, QImage::Format_ARGB32);
-    const QVector<int> palette = document_.packetValues(art_.palettes, areaType);
+    const QVector<int> palette = document_.paletteFor(art_.palettes, areaType);
     const std::array<int, 4> tiles = document_.metatileTiles(art_.metatiles, value);
     const int start = SmbResourceDocument::metatilePalette(value) * 4;
     const QRgb backdrop =
@@ -165,7 +165,7 @@ QImage SmbLevelPainter::backgroundTile(int tile, const QString& packet, int pale
         return *found;
     }
     QImage image(8, 8, QImage::Format_ARGB32);
-    const QVector<int> values = document_.packetValues(art_.palettes, packet);
+    const QVector<int> values = document_.paletteFor(art_.palettes, packet);
     const int start = nes::backgroundEntry(palette & 3, 0);
     const int chrTile = 256 + (tile & 0xff);
     const bool inTable = chrTile < document_.tileCount(art_.chr);
@@ -186,7 +186,7 @@ QImage SmbLevelPainter::enemy(int id, const QString& areaType) const {
     if (found != cache_.constEnd()) {
         return *found;
     }
-    const QVector<int> palette = document_.packetValues(art_.palettes, areaType);
+    const QVector<int> palette = document_.paletteFor(art_.palettes, areaType);
     const int start = nes::spriteEntry(enemyPalette(id), 0);
     if (start + 3 >= palette.size()) {
         return {};
@@ -215,7 +215,8 @@ QImage SmbLevelPainter::enemy(int id, const QString& areaType) const {
             drawTile(image, 0x64, QPoint(s * 6, s * 6));
         }
     } else if (isLargeLift(id) || isSmallLift(id)) {
-        const int segments = isLargeLift(id) ? (areaType == QLatin1String("castle") ? 4 : 6) : 3;
+        const int segments =
+            isLargeLift(id) ? (areaType.section(QLatin1Char('+'), 0, 0) == QLatin1String("castle") ? 4 : 6) : 3;
         image = QImage(segments * 8, 8, QImage::Format_ARGB32);
         image.fill(Qt::transparent);
         for (int s = 0; s < segments; ++s) {

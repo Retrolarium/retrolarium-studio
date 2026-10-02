@@ -45,6 +45,7 @@ public:
     bool showsCellOverlay() const override { return layer_ == QLatin1String("palettes"); }
     int cellValue(QPoint cell) const override;
     bool isCellEditable(QPoint cell) const override;
+    QString lockReason(QPoint cell) const override;
     void beginStroke() override;
     bool paintCell(QPoint cell, int value) override;
     void endStroke() override;

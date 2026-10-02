@@ -43,7 +43,8 @@ public:
     void addRow(const QString& key, QWidget* field);
     PropertyField* addField(const QString& key, const QString& value,
                             const QString& hint = QString());
-    QComboBox* addChoice(const QString& key, const QStringList& choices, int current = 0);
+    QComboBox* addChoice(const QString& key, const QStringList& choices, int current = 0,
+                         const QVector<QImage>& icons = {});
 
     void setKeyWidth(int pixels);
     void clear();
