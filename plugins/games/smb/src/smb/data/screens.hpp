@@ -6,6 +6,7 @@
 #include <QJsonObject>
 #include <QPoint>
 #include <QString>
+#include <QStringList>
 #include <QVector>
 
 #include <optional>
@@ -49,6 +50,13 @@ struct SmbScreenCommand {
     int bytes() const { return 3 + values.size(); }
 };
 
+// The bytes all screens of a pooled resource take of the range they share.
+struct SmbScreenPool {
+    bool pooled = false;
+    int used = 0;
+    int size = 0;
+};
+
 // A text field: `width` tiles of one screen row from tile `start`.
 struct SmbScreenTextField {
     QString key;
@@ -75,6 +83,8 @@ struct SmbScreen {
     QJsonArray trailing;        // bytes after the terminator, kept as they are
 
     int attributeBase() const { return base + width * height; }
+    // The display list's bytes: its writes and the terminator.
+    int listBytes() const;
     // The command and value index that last writes a tile (an attribute
     // byte); {-1, -1} when nothing does.
     QPoint tileWriter(int tile) const;
@@ -104,6 +114,18 @@ public:
     QVector<SmbScreen> screens;
     QVector<SmbScreenTextField> textFields;
     SmbTextEncoding encoding;   // invalid when the resource has no text
+    // A pooled resource (capacity_pool) packs its screens one after another
+    // into the range they share, so a list may grow while the others leave
+    // room; the growable fields may lengthen their text.
+    bool pooled = false;
+    QStringList growable;
+
+    SmbScreenPool pool() const;
+    // Whether a field's length can change: pooled, listed, and exactly one
+    // write across its row, so its text sets that write's length.
+    bool canGrow(const SmbScreenTextField& field) const;
+    // The longest text a field takes: its width, or to the end of its row.
+    int maxWidth(const SmbScreenTextField& field) const;
 
     int indexOf(const QString& key) const;
     // Changes the value that writes a tile (a repeated command changes its
@@ -123,6 +145,8 @@ public:
 
 private:
     void project(SmbScreen& screen) const;
+    int writerOf(const SmbScreenTextField& field) const;
+    void resizeText(const SmbScreenTextField& field, const QString& text);
 };
 
 class SmbResourceDocument;
@@ -135,7 +159,11 @@ struct SmbTextSlot {
     QString screen;         // screen key; empty for a fixed text field
     QString screenLabel;    // "Status bar"
     int width = 0;
+    int maxWidth = 0;       // more than width when the text can grow
 };
+
+// The shared range of the pooled screen resources; not pooled when none is.
+SmbScreenPool screenPool(const SmbResourceDocument& document);
 
 // Every text slot of the document, fixed fields first.
 QVector<SmbTextSlot> textSlots(const SmbResourceDocument& document);

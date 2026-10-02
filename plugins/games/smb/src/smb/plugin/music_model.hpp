@@ -50,6 +50,8 @@ public:
     bool canPreview() const override { return true; }
     void preview() override;
     void stopPreview() override;
+    bool previewLoops() const override;
+    void setPreviewLoops(bool loop) override;
 
 private:
     const SmbMusic& music() const;
@@ -67,8 +69,9 @@ private:
     QString selected_;
     QSet<QString> muted_;
 
-    std::optional<SmbResourceDocument> before_;
-    quint64 beforeRevision_ = 0;
+    // A note drag in progress: the music it started from. The edited music
+    // is shown from the cache alone and written once, on release.
+    std::optional<SmbMusic> before_;
     bool changed_ = false;
 
     mutable SmbMusic music_;

@@ -8,6 +8,7 @@
 #include "widgets/label.hpp"
 #include "widgets/view_chip.hpp"
 
+#include <QCheckBox>
 #include <QHBoxLayout>
 #include <QKeyEvent>
 #include <QMouseEvent>
@@ -378,6 +379,12 @@ QWidget* SequencerEditor::createToolbar(QWidget* parent) {
         stop->setFont(theme::font(theme::TextRole::Body, 12.0));
         connect(stop, &QPushButton::clicked, this, [this] { sequencer_->stopPreview(); });
         layout->addWidget(stop);
+        auto* loop = new QCheckBox(QStringLiteral("Loop"), bar);
+        loop->setFont(theme::font(theme::TextRole::Body, 12.0));
+        loop->setToolTip(QStringLiteral("Play the part over and over until Stop"));
+        loop->setChecked(sequencer_->previewLoops());
+        connect(loop, &QCheckBox::toggled, this, [this](bool checked) { sequencer_->setPreviewLoops(checked); });
+        layout->addWidget(loop);
         auto* separator = new ui::Divider(Qt::Vertical, ui::Divider::Strength::Line, bar);
         separator->setFixedHeight(18);
         layout->addWidget(separator, 0, Qt::AlignVCenter);

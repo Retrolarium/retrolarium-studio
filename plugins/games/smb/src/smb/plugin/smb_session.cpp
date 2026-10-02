@@ -508,17 +508,6 @@ bool SmbSession::edit(const QString& text, const std::function<void(SmbResourceD
     return true;
 }
 
-void SmbSession::setLive(const SmbResourceDocument& document) {
-    setDocument(document, nextRevision_++);
-}
-
-void SmbSession::commit(const SmbResourceDocument& before, quint64 beforeRevision, const QString& text) {
-    // The live state is already shown; the command's first redo re-applies it.
-    undoStack()->push(new sdk::SnapshotCommand<SmbResourceDocument>(
-        [this](const SmbResourceDocument& doc, quint64 revision) { setDocument(doc, revision); }, before,
-        beforeRevision, document_, revision_, text));
-}
-
 bool SmbSession::save(QString* error) {
     try {
         if (revision_ != savedRevision_) {
@@ -541,6 +530,22 @@ bool SmbSession::save(QString* error) {
 
 QVector<sdk::Diagnostic> SmbSession::diagnostics() const {
     QVector<sdk::Diagnostic> result;
+    const SmbLevelPool pool = document_.levelPool(levels_);
+    if (pool.pooled) {
+        const auto check = [&](const QString& stream, int used, int size) {
+            if (used <= size) return;
+            sdk::Diagnostic d;
+            d.severity = sdk::Severity::Error;
+            d.source = QStringLiteral("levels");
+            d.kind = QStringLiteral("levels");
+            d.location = QStringLiteral("All levels");
+            d.message = QStringLiteral("The %1 streams of all levels need %2 of %3 bytes.").arg(stream).arg(used).arg(size);
+            result << d;
+        };
+        check(QStringLiteral("object"), pool.objectUsed, pool.objectSize);
+        check(QStringLiteral("enemy"), pool.enemyUsed, pool.enemySize);
+        return result;
+    }
     for (const QString& name : document_.areaNames(levels_)) {
         const SmbArea area = document_.area(levels_, name);
         const auto check = [&](const QString& stream, bool fits, int used, int capacity) {

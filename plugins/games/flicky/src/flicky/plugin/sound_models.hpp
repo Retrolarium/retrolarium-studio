@@ -43,6 +43,8 @@ public:
     bool canPreview() const override { return true; }
     void preview() override;
     void stopPreview() override;
+    bool previewLoops() const override;
+    void setPreviewLoops(bool loop) override;
 
 private:
     FlickySoundHeader header() const;

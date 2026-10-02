@@ -217,8 +217,7 @@ int SmbMusicModel::lengthIndexFor(int duration) const {
 
 void SmbMusicModel::beginEdit(const QString& id) {
     selectNote(id);
-    before_ = session_->document();
-    beforeRevision_ = session_->revision();
+    before_ = music();
     changed_ = false;
 }
 
@@ -227,7 +226,7 @@ bool SmbMusicModel::editNote(const QString& id, int pitch, int length) {
     int e = 0;
     if (!before_ || !find(id, &c, &e)) return false;
     // From the state the drag started in.
-    SmbMusic next = SmbMusic::fromJson(before_->resource(session_->music()));
+    SmbMusic next = *before_;
     const SmbMusicTimeline start = next.timeline(header_);
     if (c >= start.channels.size() || e >= start.channels.at(c).events.size()) return false;
     const SmbMusicChannel& channel = start.channels.at(c);
@@ -246,19 +245,33 @@ bool SmbMusicModel::editNote(const QString& id, int pitch, int length) {
         return false;
     }
     if (next.arena == music().arena) return false;
-    SmbResourceDocument document = *before_;
-    document.setResource(session_->music(), next.toJson(before_->resource(session_->music())));
-    session_->setLive(document);
+    // Shown from the cache; the document is written once, on release.
+    music_ = next;
+    try {
+        timeline_ = music_.timeline(header_);
+        timelineError_.clear();
+    } catch (const SmbError& e) {
+        timeline_ = SmbMusicTimeline();
+        timelineError_ = QString::fromUtf8(e.what());
+    }
     changed_ = true;
+    emit contentChanged();
     return true;
 }
 
 void SmbMusicModel::endEdit() {
-    if (before_ && changed_) {
-        session_->commit(*before_, beforeRevision_, QStringLiteral("Edit a note of %1").arg(header_));
-    }
+    const bool changed = before_ && changed_ && music_.arena != before_->arena;
+    const SmbMusic next = music_;
     before_.reset();
     changed_ = false;
+    revision_ = ~quint64(0);  // read the document again
+    if (changed) {
+        const QString id = session_->music();
+        session_->edit(
+            QStringLiteral("Edit a note of %1").arg(header_),
+            [id, next](SmbResourceDocument& d) { d.setResource(id, next.toJson(d.resource(id))); }, nullptr);
+    }
+    emit contentChanged();
 }
 
 bool SmbMusicModel::editMusic(const QString& text, const std::function<void(SmbMusic&)>& change, QString* error) {
@@ -538,6 +551,17 @@ void SmbMusicModel::preview() {
 void SmbMusicModel::stopPreview() {
     if (sdk::Host* host = session_->host()) {
         host->stopAudio();
+    }
+}
+
+bool SmbMusicModel::previewLoops() const {
+    sdk::Host* host = session_->host();
+    return host && host->audioLoops();
+}
+
+void SmbMusicModel::setPreviewLoops(bool loop) {
+    if (sdk::Host* host = session_->host()) {
+        host->setAudioLoop(loop);
     }
 }
 

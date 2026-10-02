@@ -544,7 +544,7 @@ sdk::Inspection SmbScreenModel::inspect() const {
         f.label = field.label;
         f.type = sdk::Field::Type::Text;
         f.value = set().text(field);
-        f.hint = QStringLiteral("max %1").arg(field.width);
+        f.hint = QStringLiteral("max %1").arg(set().maxWidth(field));
         f.monospace = true;
         textFields << f;
     }
@@ -695,6 +695,16 @@ sdk::Inspection SmbScreenModel::inspectWrites() const {
 sdk::Budget SmbScreenModel::budget() const {
     const SmbScreen& s = screen();
     sdk::Budget budget;
+    const SmbScreenPool pool = set().pool();
+    if (pool.pooled) {
+        budget.used = pool.used;
+        budget.capacity = pool.size;
+        budget.text = QStringLiteral("display list %1 bytes · all game screens %2 / %3")
+                          .arg(s.listBytes())
+                          .arg(pool.used)
+                          .arg(pool.size);
+        return budget;
+    }
     budget.used = s.capacity;
     budget.capacity = s.capacity;
     budget.text = QStringLiteral("display list %1 bytes · fixed").arg(s.capacity);

@@ -136,17 +136,38 @@ SmbLevelModel::SmbLevelModel(SmbSession* session, const QString& area)
 }
 
 SmbArea SmbLevelModel::area() const {
+    if (dragArea_) {
+        return *dragArea_;
+    }
     return session_->document().area(session_->levels(), area_);
 }
 
+SmbLevelPool SmbLevelModel::pool(const SmbArea* edited) const {
+    if (!dragOriginal_) {
+        return session_->document().levelPool(session_->levels(), edited);
+    }
+    if (dragAreas_.isEmpty()) {
+        return {};
+    }
+    const SmbArea& current = edited ? *edited : dragArea_ ? *dragArea_ : *dragOriginal_;
+    QVector<SmbArea> areas = dragAreas_;
+    for (SmbArea& a : areas) {
+        if (a.name == current.name) {
+            a = current;
+        }
+    }
+    return SmbResourceDocument::poolOf(areas);
+}
+
 const SmbLevelScene& SmbLevelModel::scene() const {
-    if (sceneRevision_ != session_->revision()) {
+    if (sceneRevision_ != session_->revision() || sceneSerial_ != dragSerial_) {
         const SmbResourceDocument& d = session_->document();
         const SmbArea a = area();
         const QPair<int, int> course = session_->courseOf(area_);
         scene_ = renderSmbLevelScene(area_, a.header, a.objects, a.enemies, std::max(0, course.first - 1),
                                      SmbLevelRendering::fromId(d.rendering(session_->levels())));
         sceneRevision_ = session_->revision();
+        sceneSerial_ = dragSerial_;
     }
     return scene_;
 }
@@ -258,7 +279,36 @@ void SmbLevelModel::setCurrentLibraryItem(const QString& id) {
 
 // ---------------------------------------------------------------- editing
 
-bool SmbLevelModel::commitArea(const SmbArea& edited, const QString& text, QString* error) {
+bool SmbLevelModel::roomFor(const SmbArea& edited, QString* error) const {
+    const SmbLevelPool pool = this->pool(&edited);
+    if (pool.pooled) {
+        if (pool.objectUsed > pool.objectSize) {
+            if (error) {
+                *error = QStringLiteral("All levels share %1 bytes for objects; this would need %2. Delete or "
+                                        "shorten an object in any level first.")
+                             .arg(pool.objectSize)
+                             .arg(pool.objectUsed);
+            }
+            return false;
+        }
+        if (pool.enemyUsed > pool.enemySize) {
+            if (error) {
+                *error = QStringLiteral("All levels share %1 bytes for enemies; this would need %2. Delete an "
+                                        "enemy in any level first.")
+                             .arg(pool.enemySize)
+                             .arg(pool.enemyUsed);
+            }
+            return false;
+        }
+        if (edited.areaBytes() > 256 || edited.enemyBytes() > 256) {
+            if (error) {
+                *error = QStringLiteral("One level holds at most 256 bytes of objects and of enemies; the game "
+                                        "reads them with an 8-bit index.");
+            }
+            return false;
+        }
+        return true;
+    }
     if (!edited.areaFits()) {
         if (error) {
             *error = QStringLiteral("%1 has no room: its objects would take %2 of the %3 bytes the ROM keeps "
@@ -277,6 +327,13 @@ bool SmbLevelModel::commitArea(const SmbArea& edited, const QString& text, QStri
                          .arg(edited.enemyBytes())
                          .arg(edited.enemyCapacity);
         }
+        return false;
+    }
+    return true;
+}
+
+bool SmbLevelModel::commitArea(const SmbArea& edited, const QString& text, QString* error) {
+    if (!roomFor(edited, error)) {
         return false;
     }
     const QString levels = session_->levels();
@@ -329,14 +386,15 @@ std::optional<SmbArea> SmbLevelModel::moved(const SmbArea& original, const QStri
 void SmbLevelModel::beginDrag(const QString& id) {
     selectObject(id);
     dragging_ = id;
-    dragChanged_ = false;
+    dragCell_ = QPoint(-1, -1);
     if (id == QLatin1String("hero")) {
         const QPoint feet = session_->heroCell(area_);
         dragOffset_ = feet - cellsOf(session_->painter().heroBounds(feet)).topLeft();
         return;
     }
-    before_ = session_->document();
-    beforeRevision_ = session_->revision();
+    const SmbResourceDocument& d = session_->document();
+    dragOriginal_ = area();
+    dragAreas_ = d.levelsPooled(session_->levels()) ? d.areas(session_->levels()) : QVector<SmbArea>();
 }
 
 bool SmbLevelModel::dragObject(const QString& id, QPoint topLeftCell) {
@@ -350,42 +408,51 @@ bool SmbLevelModel::dragObject(const QString& id, QPoint topLeftCell) {
         session_->setHeroCell(area_, feet);
         return true;
     }
-    if (!before_ || id != dragging_) {
+    if (!dragOriginal_ || id != dragging_ || topLeftCell == dragCell_) {
         return false;
     }
+    dragCell_ = topLeftCell;
     // From the state the drag started in, so the record moves as one piece.
-    const SmbArea original = before_->area(session_->levels(), area_);
+    const SmbArea& original = *dragOriginal_;
     const bool enemy = id.startsWith(QLatin1String("enemy:"));
     int index = -1;
     // An enemy record's row is two below the cell its sprite starts in.
     const std::optional<SmbArea> next =
         moved(original, id, topLeftCell.x(), topLeftCell.y() + (enemy ? 2 : 0), &index);
-    if (!next || !next->areaFits() || !next->enemiesFit()) {
+    if (!next || !roomFor(*next, nullptr)) {
         return false;
     }
     const SmbArea current = area();
     if (next->objects == current.objects && next->enemies == current.enemies) {
         return false;
     }
-    SmbResourceDocument document = *before_;
-    document.setArea(session_->levels(), *next);
-    session_->setLive(document);
-    dragChanged_ = true;
+    dragArea_ = *next;
+    ++dragSerial_;
     selectObject(QStringLiteral("%1:%2").arg(enemy ? QStringLiteral("enemy") : QStringLiteral("object")).arg(index));
+    emit contentChanged();
     return true;
 }
 
 void SmbLevelModel::endDrag() {
-    if (before_ && dragChanged_) {
-        const QString what = dragging_.startsWith(QLatin1String("enemy:")) ? QStringLiteral("enemy")
-                                                                            : QStringLiteral("object");
-        editing_ = true;
-        session_->commit(*before_, beforeRevision_, QStringLiteral("Move %1 in %2").arg(what, title()));
-        editing_ = false;
+    std::optional<SmbArea> moved = dragArea_;
+    if (moved && moved->objects == dragOriginal_->objects && moved->enemies == dragOriginal_->enemies) {
+        moved.reset();  // dropped where it started
     }
-    before_.reset();
+    const QString what = dragging_.startsWith(QLatin1String("enemy:")) ? QStringLiteral("enemy")
+                                                                        : QStringLiteral("object");
+    dragOriginal_.reset();
+    dragArea_.reset();
+    dragAreas_.clear();
     dragging_.clear();
-    dragChanged_ = false;
+    ++dragSerial_;
+    if (moved) {
+        QString error;
+        if (!commitArea(*moved, QStringLiteral("Move %1 in %2").arg(what, title()), &error)) {
+            emit contentChanged();
+        }
+    } else {
+        emit contentChanged();
+    }
     selectedRecord_ = selectedRecord();
 }
 
@@ -560,9 +627,12 @@ sdk::Library SmbLevelModel::library() const {
     }
     sdk::Library library;
     const SmbArea a = area();
-    library.hint = a.areaBytes() >= a.areaCapacity + (a.areaImplicitTerminator ? 1 : 0)
-                       ? QStringLiteral("area full: delete something to add")
-                       : QStringLiteral("drag onto the level, or pick and use the Add tool");
+    const SmbLevelPool pool = this->pool();
+    const bool full = pool.pooled ? pool.objectSize - pool.objectUsed < 2
+                                  : a.areaBytes() >= a.areaCapacity + (a.areaImplicitTerminator ? 1 : 0);
+    library.hint = full ? (pool.pooled ? QStringLiteral("levels full: delete something in any level")
+                                       : QStringLiteral("area full: delete something to add"))
+                        : QStringLiteral("drag onto the level, or pick and use the Add tool");
     library.items = library_;
     return library;
 }
@@ -586,6 +656,20 @@ QString SmbLevelModel::startPoint() const {
 sdk::Budget SmbLevelModel::budget() const {
     const SmbArea a = area();
     sdk::Budget budget;
+    const SmbLevelPool pool = this->pool();
+    if (pool.pooled) {
+        // The bar shows the ranges all levels share.
+        budget.used = pool.objectUsed;
+        budget.capacity = pool.objectSize;
+        budget.text = QStringLiteral("this level %1 + %2 B · all levels: objects %3 / %4, enemies %5 / %6")
+                          .arg(a.areaBytes())
+                          .arg(a.enemyBytes())
+                          .arg(pool.objectUsed)
+                          .arg(pool.objectSize)
+                          .arg(pool.enemyUsed)
+                          .arg(pool.enemySize);
+        return budget;
+    }
     budget.used = a.areaBytes();
     budget.capacity = a.areaCapacity + (a.areaImplicitTerminator ? 1 : 0);
     budget.text = QStringLiteral("objects %1 / %2 · enemies %3 / %4 bytes")

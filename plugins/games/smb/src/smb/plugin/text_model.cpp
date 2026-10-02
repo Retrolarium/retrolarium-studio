@@ -53,13 +53,13 @@ sdk::Budget SmbTextModel::cellBudget(int row, int) const {
     sdk::Budget budget;
     if (row >= 0 && row < rowCount()) {
         budget.used = session_->text(row).size();
-        budget.capacity = session_->textSlots().at(row).width;
+        budget.capacity = session_->textSlots().at(row).maxWidth;
     }
     return budget;
 }
 
 int SmbTextModel::maxLength(int row, int) const {
-    return row >= 0 && row < rowCount() ? session_->textSlots().at(row).width : -1;
+    return row >= 0 && row < rowCount() ? session_->textSlots().at(row).maxWidth : -1;
 }
 
 bool SmbTextModel::isRowDirty(int row) const {
@@ -110,6 +110,16 @@ sdk::Budget SmbTextModel::budget() const {
     budget.used = used;
     budget.capacity = capacity;
     budget.text = QStringLiteral("text %1 / %2 chars").arg(used).arg(capacity);
+    const SmbScreenPool pool = screenPool(session_->document());
+    if (pool.pooled) {
+        // Screen texts that grow take from the bytes the game screens share.
+        budget.used = pool.used;
+        budget.capacity = pool.size;
+        budget.text = QStringLiteral("text %1 chars · game screens %2 / %3 bytes")
+                          .arg(used)
+                          .arg(pool.used)
+                          .arg(pool.size);
+    }
     return budget;
 }
 
@@ -127,13 +137,14 @@ sdk::Inspection SmbTextModel::inspect() const {
     text.label = QStringLiteral("Text");
     text.type = sdk::Field::Type::Text;
     text.value = value;
-    text.hint = QStringLiteral("max %1").arg(slot.width);
+    const bool grows = slot.maxWidth != slot.width;
+    text.hint = QStringLiteral("max %1").arg(slot.maxWidth);
     text.monospace = true;
     sdk::Field length;
     length.key = QStringLiteral("length");
     length.label = QStringLiteral("Length");
-    length.value = QStringLiteral("%1 / %2").arg(value.size()).arg(slot.width);
-    length.hint = QStringLiteral("fixed slot");
+    length.value = QStringLiteral("%1 / %2").arg(value.size()).arg(slot.maxWidth);
+    length.hint = grows ? QStringLiteral("grows with the text") : QStringLiteral("fixed slot");
     length.monospace = true;
     inspection.fields = {text, length};
     if (!slot.screen.isEmpty()) {
@@ -145,9 +156,13 @@ sdk::Inspection SmbTextModel::inspect() const {
     }
     inspection.preview = value;
     const SmbTextEncoding encoding = slotEncoding(session_->document(), slot);
-    inspection.note = QStringLiteral("Each text has a fixed slot in the ROM; shorter text is padded with blanks. "
-                                     "The font has %1; lowercase becomes uppercase.")
-                          .arg(encoding.summary());
+    inspection.note = grows ? QStringLiteral("This text is as long as you type it, up to the end of its row: the "
+                                             "game screens share their bytes, so a longer text needs another "
+                                             "screen text shorter. The font has %1; lowercase becomes uppercase.")
+                                  .arg(encoding.summary())
+                            : QStringLiteral("Each text has a fixed slot in the ROM; shorter text is padded with "
+                                             "blanks. The font has %1; lowercase becomes uppercase.")
+                                  .arg(encoding.summary());
     if (!slot.screen.isEmpty()) {
         inspection.note += QStringLiteral(" Screens shows where it is drawn.");
     }
@@ -164,7 +179,7 @@ QString SmbTextModel::statusText() const {
         return {};
     }
     const SmbTextSlot& slot = session_->textSlots().at(row_);
-    return QStringLiteral("%1 · %2 / %3").arg(slot.label).arg(session_->text(row_).size()).arg(slot.width);
+    return QStringLiteral("%1 · %2 / %3").arg(slot.label).arg(session_->text(row_).size()).arg(slot.maxWidth);
 }
 
 }  // namespace rl::smb

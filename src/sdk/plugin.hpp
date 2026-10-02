@@ -51,6 +51,10 @@ public:
     // Plays a WAV file (sound previews); a new call replaces the last one.
     virtual void playAudio(const QString& wavPath) = 0;
     virtual void stopAudio() = 0;
+    // Whether previews repeat until stopped. Changing it while a sound
+    // plays takes effect at the end of the current pass.
+    virtual bool audioLoops() const = 0;
+    virtual void setAudioLoop(bool loop) = 0;
 };
 
 // A plugin command in the Project menu, e.g. "Import Flicky (UE) from ROM…".

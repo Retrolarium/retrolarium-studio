@@ -363,10 +363,12 @@ public:
     virtual bool editNote(const QString& id, int pitch, int length);
     virtual void endEdit();
 
-    // Listening.
+    // Listening. A looping preview repeats until stopped (Host::setAudioLoop).
     virtual bool canPreview() const { return false; }
     virtual void preview();
     virtual void stopPreview();
+    virtual bool previewLoops() const { return false; }
+    virtual void setPreviewLoops(bool loop);
 };
 
 // A running build of the project in an emulator.

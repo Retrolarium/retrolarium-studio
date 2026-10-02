@@ -54,6 +54,12 @@ private:
     SmbArea area() const;
     // Writes an edited area as one undo step, if its streams fit.
     bool commitArea(const SmbArea& area, const QString& text, QString* error);
+    // Whether the edited area fits: its own capacity, or the shared ranges
+    // of a pooled resource.
+    bool roomFor(const SmbArea& edited, QString* error) const;
+    // The shared ranges as they stand, with `edited` in place of this area;
+    // during a drag from the areas it started with.
+    SmbLevelPool pool(const SmbArea* edited = nullptr) const;
     // The area with one record moved to an absolute column and a row; the
     // record's new index comes back in *index.
     std::optional<SmbArea> moved(const SmbArea& area, const QString& id, int column, int row, int* index) const;
@@ -72,15 +78,19 @@ private:
     bool editing_ = false;  // this model is writing the document
     QString libraryItem_;
 
-    // A drag in progress: the document it started from.
-    std::optional<SmbResourceDocument> before_;
-    quint64 beforeRevision_ = 0;
+    // A drag in progress. The moved area stays here, shown by this editor
+    // alone, and goes into the document once, as one undo step, on release.
+    std::optional<SmbArea> dragOriginal_;
+    std::optional<SmbArea> dragArea_;
+    QVector<SmbArea> dragAreas_;  // all areas when pooled, for the budget
     QString dragging_;
     QPoint dragOffset_;   // Hero's feet relative to the dragged top-left cell
-    bool dragChanged_ = false;
+    QPoint dragCell_;     // the last cell the drag was asked for
+    quint64 dragSerial_ = 0;
 
     mutable SmbLevelScene scene_;
     mutable quint64 sceneRevision_ = ~quint64(0);
+    mutable quint64 sceneSerial_ = ~quint64(0);
     mutable QVector<sdk::LibraryItem> library_;
     mutable quint64 libraryRevision_ = ~quint64(0);
 };

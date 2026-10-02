@@ -1101,6 +1101,14 @@ void MainWindow::stopAudio() {
     audio_->stop();
 }
 
+bool MainWindow::audioLoops() const {
+    return audio_->isLooping();
+}
+
+void MainWindow::setAudioLoop(bool loop) {
+    audio_->setLooping(loop);
+}
+
 void MainWindow::updateActions() {
     const bool open = session_ != nullptr;
     const bool busy = isBusy();

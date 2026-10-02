@@ -73,6 +73,8 @@ public:
                         std::function<void(const sdk::ProcessResult&)> finished) override;
     void playAudio(const QString& wavPath) override;
     void stopAudio() override;
+    bool audioLoops() const override;
+    void setAudioLoop(bool loop) override;
 
 protected:
     void closeEvent(QCloseEvent* event) override;

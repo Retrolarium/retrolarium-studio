@@ -131,6 +131,43 @@ int main(int argc, char** argv) {
                         QStringLiteral("a write was moved past the end of a row"));
         }
 
+        // Pooled, a growable text sets its write's length and takes bytes
+        // another screen text gives up.
+        {
+            QJsonObject json = document.resource(QStringLiteral("game-screen-packets"));
+            json.insert(QStringLiteral("capacity_pool"), true);
+            json.insert(QStringLiteral("growable_fields"),
+                        QJsonArray{QStringLiteral("status-headings"), QStringLiteral("time-up"),
+                                   QStringLiteral("game-over")});
+            SmbScreenSet set = SmbScreenSet::fromJson(json);
+            const auto field = [](const SmbScreenSet& from, const QString& key) {
+                for (const SmbScreenTextField& f : from.textFields) {
+                    if (f.key == key) return f;
+                }
+                throw std::runtime_error("no such field");
+            };
+            const SmbScreenPool stock = set.pool();
+            expect(stock.used == stock.size, QStringLiteral("the stock game screens do not fill their range"));
+            expect(set.maxWidth(field(set, QStringLiteral("status-player"))) == 5,
+                   QStringLiteral("a fixed field was offered more room"));
+            expect(set.maxWidth(field(set, QStringLiteral("game-over"))) == 21,
+                   QStringLiteral("GAME OVER may not grow to the end of its row"));
+            const QJsonObject before = set.toJson(json);
+            expectThrow([&] { set.setText(field(set, QStringLiteral("game-over")), QStringLiteral("GAME IS OVER")); },
+                        QStringLiteral("a longer text was let past the shared range"));
+            expect(set.toJson(json) == before, QStringLiteral("a refused text changed the screens"));
+            set.setText(field(set, QStringLiteral("time-up")), QStringLiteral("TIME"));
+            set.setText(field(set, QStringLiteral("game-over")), QStringLiteral("GAME IS OVER"));
+            expect(set.pool().used == stock.size - 3 + 3, QStringLiteral("the screens did not trade three bytes"));
+            const SmbScreenSet reopened = SmbScreenSet::fromJson(set.toJson(json));
+            expect(reopened.text(field(reopened, QStringLiteral("game-over"))) == QLatin1String("GAME IS OVER"),
+                   QStringLiteral("the longer text did not survive writing back"));
+            expect(reopened.text(field(reopened, QStringLiteral("time-up"))) == QLatin1String("TIME"),
+                   QStringLiteral("the shorter text did not survive writing back"));
+            expect(field(reopened, QStringLiteral("game-over")).width == 12,
+                   QStringLiteral("the field width was not written back"));
+        }
+
         std::cout << checks << " screen cells rewritten; " << slotList.size() << " text slots checked\n";
     } catch (const std::exception& e) {
         std::cerr << "FAIL: " << e.what() << "\n";

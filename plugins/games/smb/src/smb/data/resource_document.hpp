@@ -43,6 +43,17 @@ struct SmbPhysicsTable {
     QVector<int> values;
 };
 
+// The shared object and enemy ranges of a pooled levels resource
+// (capacity_pool): all areas pack into them one after another.
+struct SmbLevelPool {
+    bool pooled = false;
+    int objectUsed = 0;
+    int objectSize = 0;
+    int enemyUsed = 0;
+    int enemySize = 0;
+    bool fits() const { return objectUsed <= objectSize && enemyUsed <= enemySize; }
+};
+
 // One route step of a world: the area the course plays.
 struct SmbRoute {
     int areaType = 0;           // index into area types: water, ground, underground, castle
@@ -72,6 +83,13 @@ public:
     SmbArea area(const QString& levels, const QString& name) const;
     void setArea(const QString& levels, const SmbArea& area);
     QString rendering(const QString& levels) const;   // "smb1", "ann", "smb2"
+    // Whether the kit packs all areas into shared ranges, and the bytes they
+    // take as it packs them, with `replacement` in place of its area.
+    bool levelsPooled(const QString& levels) const;
+    SmbLevelPool levelPool(const QString& levels, const SmbArea* replacement = nullptr) const;
+    QVector<SmbArea> areas(const QString& levels) const;
+    // The shared ranges `areas` take, packed in their order.
+    static SmbLevelPool poolOf(const QVector<SmbArea>& areas);
     QStringList areaTypes(const QString& levels) const;
 
     // World routes: worlds are 1-based.

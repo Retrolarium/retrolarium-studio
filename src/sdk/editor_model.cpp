@@ -172,5 +172,6 @@ bool SequencerModel::editNote(const QString&, int, int) {
 void SequencerModel::endEdit() {}
 void SequencerModel::preview() {}
 void SequencerModel::stopPreview() {}
+void SequencerModel::setPreviewLoops(bool) {}
 
 }  // namespace rl::sdk

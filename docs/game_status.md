@@ -93,7 +93,7 @@ writer (`retrolarium-flicky-level-writer`) and the scene renderer.
 | Sprites › mappings | Composition | cropped to the sprite and zoomed to fit; pieces drawn with a round's palette; drag a piece, the mirrored `flipped_x` follows |
 | Sprites › animations | Composition | frame strip at the game's delay, play, reorder frames, delay in the inspector |
 | Sprites › bonus motion | Table | raw motion words with their meaning |
-| Sound › music & SFX | Sequencer | tracks as channels, drag pitch, Shift-drag length, mute, Listen (kit YMFM render, unsaved edits included) |
+| Sound › music & SFX | Sequencer | tracks as channels, drag pitch, Shift-drag length, mute, Listen (kit YMFM render, unsaved edits included), Loop to repeat it until Stop |
 | Sound › FM voices, envelopes | Table | operator rows per voice; the 63 priority and envelope bytes |
 | Playtest | Emulator | save, build, MAME embedded in the view at the chosen round; pause, stop, screenshot; a card shows build, start and stop progress |
 
@@ -180,15 +180,15 @@ same file.
 
 | Kind | Editor | State |
 |---|---|---|
-| Levels | TileMap | areas drawn as the game does (metatiles in the area palette, enemies, Hero), day or night, pages of 16 columns; move, add (library) and delete objects and enemies, edit their kind (with previews), size and row and the area header, within the area's stream bytes (every SMB1 JU area is full: delete before adding); drag Hero, or drop the library's Test start, where Play from selected begins |
+| Levels | TileMap | areas drawn as the game does (metatiles in the area palette, enemies, Hero), day or night, pages of 16 columns; move, add (library) and delete objects and enemies, edit their kind (with previews), size and row and the area header, within the area's stream bytes (SMB1 JU areas are full; with a pooled resource, `capacity_pool`, all levels share the kit's object and enemy ranges, so bytes freed in one level serve another); drag Hero, or drop the library's Test start, where Play from selected begins |
 | World | Table | the route of every world (the area each course step plays, numbered as the game shows levels; a selected step is the Play from selected start) and the nine player physics tables (gravity, jump speeds, top speeds, friction, climbing) |
 | Tiles | Tile | sprite and background pattern tables, 2bpp, preview palette from the area packets or the player palettes |
 | Metatiles | TileMap | the 16x16 background blocks of each palette group, four patterns each; paint quadrants from the pattern library, take a pattern with the pick tool, type numbers, or copy a whole block |
 | Palettes | Palette | area packets (eight palettes of four), the packets the game writes over them (snow skies, mushroom platforms, Boss) previewed where they show, and the player table with Hero, Brother and fire previews; the 64-colour NES picker |
 | Animations | Composition | Hero's animations (big and small walk, swim, climb, ...), each its frames of 2x4 sprite patterns in the Hero, Brother or fire colours, with the cells the engine flips drawn flipped; set a cell's pattern from the library; World > Player actions picks the frame each action shows |
-| Screens | TileMap | the status bar, lives, time-up, game-over and warp-zone screens as the PPU display lists leave them; paint tiles from the pattern sheet and 16x16 palettes into the cells the lists write (a repeated write changes its run); on the Writes layer drag a whole write elsewhere or turn it to run down, byte for byte the same list; edit their text fields |
-| Text | Table | every fixed text: the fixed fields and the screens' text fields, in the game's font, within each slot |
-| Sound | Sequencer | every music header (area music, ground theme parts, events) on the piano roll: square 2, square 1, triangle, noise; drag notes to change pitch, square 1 and drum lengths in place, run lengths and beats in the inspector, which names every song sharing a byte; Play renders the song with the kit (`audio render-smb-wav`) |
+| Screens | TileMap | the status bar, lives, time-up, game-over and warp-zone screens as the PPU display lists leave them; paint tiles from the pattern sheet and 16x16 palettes into the cells the lists write (a repeated write changes its run); on the Writes layer drag a whole write elsewhere or turn it to run down, byte for byte the same list; edit their text fields. With a pooled resource (SMB1 JU) the four game screens share their 110 bytes, so one list may grow while another shrinks |
+| Text | Table | every fixed text: the fixed fields and the screens' text fields, in the game's font, within each slot; in SMB1 JU the status headings, TIME UP and GAME OVER are as long as typed, up to the end of their row, taking bytes other screen texts give up |
+| Sound | Sequencer | every music header (area music, ground theme parts, events) on the piano roll: square 2, square 1, triangle, noise; drag notes to change pitch, square 1 and drum lengths in place, run lengths and beats in the inspector, which names every song sharing a byte; Play renders the song with the kit (`audio render-smb-wav`); Loop repeats it until Stop |
 | Playtest | Emulator | Play from selected starts at Hero's cell (`smb-point-playtest-plan`), Play from power-on |
 
 Play from selected starts hidden and fast: the kit's point script reports

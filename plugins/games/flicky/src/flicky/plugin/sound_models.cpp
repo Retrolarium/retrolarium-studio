@@ -272,6 +272,17 @@ void SoundHeaderModel::stopPreview() {
     }
 }
 
+bool SoundHeaderModel::previewLoops() const {
+    sdk::Host* host = session_->host();
+    return host && host->audioLoops();
+}
+
+void SoundHeaderModel::setPreviewLoops(bool loop) {
+    if (sdk::Host* host = session_->host()) {
+        host->setAudioLoop(loop);
+    }
+}
+
 sdk::Inspection SoundHeaderModel::inspect() const {
     const FlickySoundHeader h = header();
     sdk::Inspection inspection;

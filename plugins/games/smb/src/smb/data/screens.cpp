@@ -208,6 +208,14 @@ int SmbScreen::fillTile() const {
     return best;
 }
 
+int SmbScreen::listBytes() const {
+    int bytes = 1;
+    for (const SmbScreenCommand& command : commands) {
+        bytes += command.bytes();
+    }
+    return bytes;
+}
+
 QVector<int> SmbScreen::cellsOf(int c) const {
     QVector<int> cells;
     if (c < 0 || c >= commands.size()) return cells;
@@ -272,6 +280,10 @@ SmbScreenSet SmbScreenSet::fromJson(const QJsonObject& resource) {
         field.width = json.value(QStringLiteral("width")).toInt();
         set.textFields << field;
     }
+    set.pooled = resource.value(QStringLiteral("capacity_pool")).toBool();
+    for (const QJsonValue& value : resource.value(QStringLiteral("growable_fields")).toArray()) {
+        set.growable << value.toString();
+    }
     return set;
 }
 
@@ -300,7 +312,68 @@ QJsonObject SmbScreenSet::toJson(QJsonObject resource) const {
         screensJson.replace(s, json);
     }
     resource.insert(QStringLiteral("screens"), screensJson);
+    QJsonArray fieldsJson = resource.value(QStringLiteral("text_fields")).toArray();
+    for (int i = 0; i < fieldsJson.size(); ++i) {
+        QJsonObject json = fieldsJson.at(i).toObject();
+        for (const SmbScreenTextField& field : textFields) {
+            if (field.key == json.value(QStringLiteral("key")).toString()) {
+                json.insert(QStringLiteral("width"), field.width);
+            }
+        }
+        fieldsJson.replace(i, json);
+    }
+    if (!fieldsJson.isEmpty()) {
+        resource.insert(QStringLiteral("text_fields"), fieldsJson);
+    }
     return resource;
+}
+
+SmbScreenPool SmbScreenSet::pool() const {
+    SmbScreenPool result;
+    result.pooled = pooled;
+    if (!pooled) {
+        return result;
+    }
+    // As the kit packs them; trailing bytes stay only while everything fits.
+    int trailing = 0;
+    for (const SmbScreen& screen : screens) {
+        result.size += screen.capacity;
+        result.used += screen.listBytes();
+        trailing += screen.trailing.size();
+    }
+    if (result.used + trailing <= result.size) {
+        result.used += trailing;
+    }
+    return result;
+}
+
+int SmbScreenSet::writerOf(const SmbScreenTextField& field) const {
+    const int s = indexOf(field.screen);
+    if (s < 0) {
+        return -1;
+    }
+    const SmbScreen& screen = screens.at(s);
+    for (int c = 0; c < screen.commands.size(); ++c) {
+        const SmbScreenCommand& command = screen.commands.at(c);
+        if (command.address == screen.base + field.start && !command.vertical && !command.repeat &&
+            command.length == field.width) {
+            return c;
+        }
+    }
+    return -1;
+}
+
+bool SmbScreenSet::canGrow(const SmbScreenTextField& field) const {
+    return pooled && growable.contains(field.key) && writerOf(field) >= 0;
+}
+
+int SmbScreenSet::maxWidth(const SmbScreenTextField& field) const {
+    if (!canGrow(field)) {
+        return field.width;
+    }
+    const int s = indexOf(field.screen);
+    const int rowWidth = s >= 0 ? screens.at(s).width : 32;
+    return std::min(63, rowWidth - field.start % rowWidth);
 }
 
 int SmbScreenSet::indexOf(const QString& key) const {
@@ -394,9 +467,58 @@ QString SmbScreenSet::text(const SmbScreenTextField& field) const {
     return encoding.decode(screens.at(s).tiles.mid(field.start, field.width));
 }
 
+void SmbScreenSet::resizeText(const SmbScreenTextField& field, const QString& text) {
+    const int s = indexOf(field.screen);
+    const int c = writerOf(field);
+    const int width = std::max(1, int(encoding.fold(text).size()));
+    if (width > maxWidth(field)) {
+        fail(QStringLiteral("The text has %1 characters; %2 holds %3 to the end of its row.")
+                 .arg(width)
+                 .arg(field.label)
+                 .arg(maxWidth(field)));
+    }
+    for (const SmbScreenTextField& other : textFields) {
+        const int row = screens.at(s).width;
+        if (other.key != field.key && other.screen == field.screen && other.start / row == field.start / row &&
+            other.start >= field.start && other.start < field.start + width) {
+            fail(QStringLiteral("%1 would run into %2.").arg(field.label, other.label));
+        }
+    }
+    QString error;
+    const std::optional<QVector<int>> codes = encoding.encode(text, width, &error);
+    if (!codes) fail(error);
+    // On a copy, so a text that does not fit leaves the set as it was.
+    SmbScreenSet next = *this;
+    SmbScreen& screen = next.screens[s];
+    const int fill = screen.fillTile();
+    screen.commands[c].length = width;
+    screen.commands[c].values = *codes;
+    // The name table again from the fill, as the kit projects it.
+    for (int& tile : screen.tiles) tile = fill;
+    project(screen);
+    for (SmbScreenTextField& f : next.textFields) {
+        if (f.key == field.key) {
+            f.width = width;
+        }
+    }
+    const SmbScreenPool shared = next.pool();
+    if (shared.used > shared.size) {
+        fail(QStringLiteral("The game screens share %1 bytes; this text needs %2. Shorten another screen "
+                            "text first.")
+                 .arg(shared.size)
+                 .arg(shared.used));
+    }
+    *this = next;
+}
+
 void SmbScreenSet::setText(const SmbScreenTextField& field, const QString& text) {
     const int s = indexOf(field.screen);
     if (s < 0) fail(QStringLiteral("The text field %1 names no screen.").arg(field.key));
+    if (canGrow(field)) {
+        // The write is as long as the text: shorter text frees its bytes.
+        resizeText(field, text);
+        return;
+    }
     QString error;
     const std::optional<QVector<int>> codes = encoding.encode(text, field.width, &error);
     if (!codes) fail(error);
@@ -426,6 +548,7 @@ QVector<SmbTextSlot> textSlots(const SmbResourceDocument& document) {
             slot.key = message.value(QStringLiteral("key")).toString();
             slot.label = message.value(QStringLiteral("label")).toString();
             slot.width = message.value(QStringLiteral("width")).toInt();
+            slot.maxWidth = slot.width;
             result << slot;
         }
     }
@@ -440,7 +563,21 @@ QVector<SmbTextSlot> textSlots(const SmbResourceDocument& document) {
             const int s = set.indexOf(field.screen);
             slot.screenLabel = s >= 0 ? set.screens.at(s).label : field.screen;
             slot.width = field.width;
+            slot.maxWidth = set.maxWidth(field);
             result << slot;
+        }
+    }
+    return result;
+}
+
+SmbScreenPool screenPool(const SmbResourceDocument& document) {
+    SmbScreenPool result;
+    for (const QString& id : document.resourceIds(QStringLiteral("nes.ppu-screen-packets.v1"))) {
+        const SmbScreenPool pool = SmbScreenSet::fromJson(document.resource(id)).pool();
+        if (pool.pooled) {
+            result.pooled = true;
+            result.used += pool.used;
+            result.size += pool.size;
         }
     }
     return result;

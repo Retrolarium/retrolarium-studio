@@ -75,12 +75,9 @@ public:
 
     // One undo step: the edit runs on a copy that replaces the document.
     bool edit(const QString& text, const std::function<void(SmbResourceDocument&)>& change, QString* error);
-    // Drags and strokes show their changes before they become one step:
-    // remember document() and revision() at the start, show each change
-    // with setLive, and commit once at the end.
+    // Every document change fans out to all editors, so drags and strokes
+    // keep their changes in their own model and edit() once on release.
     quint64 revision() const { return revision_; }
-    void setLive(const SmbResourceDocument& document);
-    void commit(const SmbResourceDocument& before, quint64 beforeRevision, const QString& text);
 
     // Hero's cell per area; an area without one starts at its entrance.
     QPoint heroCell(const QString& area) const;

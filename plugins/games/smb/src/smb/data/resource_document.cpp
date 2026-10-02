@@ -136,6 +136,59 @@ QStringList SmbResourceDocument::areaNames(const QString& levels) const {
     return names;
 }
 
+bool SmbResourceDocument::levelsPooled(const QString& levels) const {
+    return resource(levels).value(QStringLiteral("capacity_pool")).toBool();
+}
+
+SmbLevelPool SmbResourceDocument::levelPool(const QString& levels, const SmbArea* replacement) const {
+    SmbLevelPool pool;
+    pool.pooled = levelsPooled(levels);
+    if (!pool.pooled) {
+        return pool;
+    }
+    QVector<SmbArea> all = areas(levels);
+    for (SmbArea& a : all) {
+        if (replacement && replacement->name == a.name) {
+            a = *replacement;
+        }
+    }
+    return poolOf(all);
+}
+
+QVector<SmbArea> SmbResourceDocument::areas(const QString& levels) const {
+    QVector<SmbArea> result;
+    for (const QString& name : areaNames(levels)) {
+        result << area(levels, name);
+    }
+    return result;
+}
+
+SmbLevelPool SmbResourceDocument::poolOf(const QVector<SmbArea>& areas) {
+    SmbLevelPool pool;
+    pool.pooled = true;
+    // As the kit packs them: in order, an implicit terminator left out
+    // while the next stream starts with that byte.
+    for (int i = 0; i < areas.size(); ++i) {
+        const SmbArea& a = areas.at(i);
+        pool.objectSize += a.areaCapacity;
+        pool.enemySize += a.enemyCapacity;
+        pool.objectUsed += a.areaBytes();
+        pool.enemyUsed += a.enemyBytes();
+        if (i + 1 >= areas.size()) {
+            continue;
+        }
+        const SmbArea& next = areas.at(i + 1);
+        const int nextHeader = ((next.header.value(0) & 3) << 6) | ((next.header.value(1) & 7) << 3) |
+                               (next.header.value(2) & 7);
+        const int nextEnemy = next.enemies.isEmpty()
+                                  ? 0xff
+                                  : ((next.enemies.first().column & 15) << 4) | (next.enemies.first().row & 15);
+        if (a.areaImplicitTerminator && nextHeader == 0xfd) --pool.objectUsed;
+        if (a.enemyImplicitTerminator && nextEnemy == 0xff) --pool.enemyUsed;
+    }
+    return pool;
+}
+
 QString SmbResourceDocument::rendering(const QString& levels) const {
     return resource(levels).value(QStringLiteral("rendering")).toString(QStringLiteral("smb1"));
 }
