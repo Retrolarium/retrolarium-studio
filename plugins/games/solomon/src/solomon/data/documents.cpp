@@ -193,6 +193,72 @@ int SolomonRooms::itemBytes() const {
     return bytes;
 }
 
+QVector<SolomonMirrorSet> SolomonRooms::mirrorSets() const {
+    QVector<SolomonMirrorSet> result;
+    for (const QJsonValue& value : root_.value(QStringLiteral("mirror_enemy_sets")).toArray()) {
+        const QJsonObject o = value.toObject();
+        SolomonMirrorSet set;
+        for (const QJsonValue& type : o.value(QStringLiteral("enemy_types")).toArray()) set.types << type.toInt();
+        set.loopOffset = o.value(QStringLiteral("loop_offset")).toInt();
+        result << set;
+    }
+    return result;
+}
+
+void SolomonRooms::setMirrorSet(int index, const SolomonMirrorSet& set) {
+    if (set.types.isEmpty()) fail(QStringLiteral("A mirror enemy set needs at least one enemy."));
+    for (int type : set.types) {
+        if (type < 0x18 || type > 0x83) fail(QStringLiteral("Enemy types run from $18 to $83."));
+    }
+    if (set.loopOffset < 0 || set.loopOffset >= set.types.size()) {
+        fail(QStringLiteral("The loop must start at one of the set's enemies."));
+    }
+    QJsonArray sets = root_.value(QStringLiteral("mirror_enemy_sets")).toArray();
+    if (index < 0 || index >= sets.size()) fail(QStringLiteral("There is no mirror enemy set %1.").arg(index));
+    QJsonObject o;
+    QJsonArray types;
+    for (int type : set.types) types.append(type);
+    o.insert(QStringLiteral("enemy_types"), types);
+    o.insert(QStringLiteral("loop_offset"), set.loopOffset);
+    sets.replace(index, o);
+    root_.insert(QStringLiteral("mirror_enemy_sets"), sets);
+}
+
+int SolomonRooms::mirrorSetBytes() const {
+    int bytes = 0;
+    for (const SolomonMirrorSet& set : mirrorSets()) bytes += set.types.size() + 1;
+    return bytes;
+}
+
+QVector<SolomonSchedule> SolomonRooms::schedules() const {
+    QVector<SolomonSchedule> result;
+    for (const QJsonValue& value : root_.value(QStringLiteral("mirror_schedules")).toArray()) {
+        const QJsonObject o = value.toObject();
+        SolomonSchedule schedule;
+        for (const QJsonValue& v : o.value(QStringLiteral("initial_phase")).toArray()) schedule.initial << v.toInt();
+        for (const QJsonValue& v : o.value(QStringLiteral("loop_phase")).toArray()) schedule.loop << v.toInt();
+        result << schedule;
+    }
+    return result;
+}
+
+void SolomonRooms::setSchedule(int index, const SolomonSchedule& schedule) {
+    if (schedule.initial.size() != 4 || schedule.loop.size() != 4) {
+        fail(QStringLiteral("A drop schedule has four initial and four looping bytes."));
+    }
+    QJsonArray list = root_.value(QStringLiteral("mirror_schedules")).toArray();
+    if (index < 0 || index >= list.size()) fail(QStringLiteral("There is no drop schedule %1.").arg(index));
+    QJsonObject o;
+    QJsonArray initial;
+    QJsonArray loop;
+    for (int v : schedule.initial) initial.append(v & 0xff);
+    for (int v : schedule.loop) loop.append(v & 0xff);
+    o.insert(QStringLiteral("initial_phase"), initial);
+    o.insert(QStringLiteral("loop_phase"), loop);
+    list.replace(index, o);
+    root_.insert(QStringLiteral("mirror_schedules"), list);
+}
+
 int SolomonRooms::enemyBytes() const {
     int bytes = 0;
     for (int r = 0; r < roomCount(); ++r) bytes += 2 + 2 * enemies(r).size();
@@ -267,7 +333,10 @@ QJsonObject enemyFrame(const QJsonObject& animations, int type) {
     if (type < 0x18 || type > 0x83) return {};
     const QJsonArray configuration = animations.value(QStringLiteral("enemy_configuration")).toArray();
     const int flags = configuration.at((type - 0x18) >> 2).toInt();
-    const int action = (type & 3) | ((flags & 8) ? 0 : 0x18);
+    int action = (type & 3) | ((flags & 8) ? 0 : 0x18);
+    // A fairy's first action is the sparkle she appears in; show her as she
+    // is once she has appeared.
+    if (type >= 0x1c && type <= 0x1f) action = (type & 3) | 0x18;
     return frameForAction(animations, type, action);
 }
 

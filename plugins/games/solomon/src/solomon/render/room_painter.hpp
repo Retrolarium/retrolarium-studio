@@ -32,6 +32,11 @@ public:
     // An enemy type's first frame (16x16, transparent around), or null.
     QImage enemyIcon(int type, int bank) const;
     QImage wizardIcon(int bank, bool facesLeft) const;
+    // A sprite frame record (left_tile, right_tile, flags) as 16x16.
+    QImage frameImage(const QJsonObject& frame, int bank) const;
+    // An 8x16 sprite pattern pair by its OAM tile byte (bit 0 picks the
+    // pattern table), in sprite palette `palette`.
+    QImage spritePair(int tile, int bank, int palette) const;
     int groupOf(int room) const { return room == 50 ? 0 : room / 4; }
 
 private:

@@ -48,6 +48,7 @@ public:
     // Rebuilt when the documents change.
     const SolomonPainter& painter() const;
     quint64 revision() const { return revision_; }
+    QString projectDirectory() const { return project_.directory(); }
 
     // One undo step: the edit runs on a copy of every document.
     bool edit(const QString& text, const std::function<void(SolomonState&)>& change, QString* error);
@@ -69,6 +70,8 @@ private:
     QString roomsPath_;
     QString artPath_;
     QString animationsPath_;
+    QString presentationPath_;
+    QString audioPath_;
     QString graphicsPath_;
     SolomonState state_;
     SolomonState saved_;

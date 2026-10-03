@@ -205,6 +205,33 @@ which never reaches an embedded MAME. Before a launch the runner marks it as
 seen in `cfg/<system>.cfg` (`ui_warnings`, with the features `-listxml`
 reports), so MAME's `skip_warnings` setting skips it.
 
+## Castle Excellent status
+
+Projects from `rltool studio preset` on Castle Excellent (J) or
+Castlequest (U).
+
+| Kind | Editor | What it does |
+|---|---|---|
+| Rooms | TileMap | 100 rooms of 20x20 cells (16x8 px, two tiles each) coloured by the attribute bytes the loader writes; Cells layer paints from the cell sheet, Objects layer moves, adds and removes static objects (24 per room, 2449-byte stream, 141 bytes of saved state) and the start marker for Play from selected |
+| Tiles | Tile | both CHR banks, sprite and background tables |
+| Palettes | Palette | room and screen palette tables |
+| Text | Table | the sub-command menu words (A-Z and blank) |
+| Sound FX | Table | the sound-effect parameter bytes |
+
+## Solomon's Key status
+
+Projects from `rltool studio preset` on Solomon's Key (USA or Europe).
+
+| Kind | Editor | What it does |
+|---|---|---|
+| Rooms | TileMap | 53 rooms of 16x12 cells drawn as the game builds them; Blocks paints brown and white blocks, Items moves, adds and removes items (named from the source reconstruction's catalog; hidden or in a brown block) and moves the door, key, mirrors and constellation, Enemies does the same for enemies (named with direction and speed; at most 17) and Wizard's start; the room inspector sets the tileset, timer speed, Hornhead lifetime and constellation; budgets count the shared item (1342 B) and enemy (726 B) arenas |
+| Mirrors | Table | the Spawn Mirror enemy sets (42 B shared) and drop schedules, with the rooms that use each |
+| Animations | Composition | every action's frame cycle; drop a pattern pair on a half, flip it or change its palette; the action's delay |
+| Screens | TileMap | the two packed title layers on the $2800 name table; paint the cells a layer writes with tiles $80-$FF |
+| Sound | Sequencer | the 26 audio programs by group; notes per virtual channel as the engine steps them, drag to change a note's byte; Listen renders with the kit (`audio render-solomon-wav`) |
+| Demo | Table | the attract demo's 34 input steps |
+| Tiles, Palettes | Tile, Palette | the four CHR banks and the room and ending palettes |
+
 ## Libraries and pattern sheets
 
 A model offers things to place or paint with as an `sdk::Library`. Where it

@@ -146,6 +146,28 @@ QImage SolomonPainter::enemyIcon(int type, int bankIndex) const {
     return image;
 }
 
+QImage SolomonPainter::frameImage(const QJsonObject& frame, int bankIndex) const {
+    QImage image(kCell, kCell, QImage::Format_ARGB32);
+    image.fill(Qt::transparent);
+    drawSprite(image, frame, bank(bankIndex), 0, 0);
+    return image;
+}
+
+QImage SolomonPainter::spritePair(int tile, int bankIndex, int palette) const {
+    QImage image(8, 16, QImage::Format_ARGB32);
+    image.fill(Qt::transparent);
+    const Bank& b = bank(bankIndex);
+    const QVector<int> values = state_->graphics.tableValues(QStringLiteral("room-palettes"));
+    const int base = (tile & 1) * 0x100 + (tile & 0xfe);
+    for (int y = 0; y < 16; ++y) {
+        for (int x = 0; x < 8; ++x) {
+            const int pen = b.pixels.at((base + y / 8) * 64 + (y & 7) * 8 + x);
+            if (pen) image.setPixel(x, y, rgb(values.value(16 + (palette & 3) * 4 + pen)));
+        }
+    }
+    return image;
+}
+
 QImage SolomonPainter::wizardIcon(int bankIndex, bool facesLeft) const {
     QImage image(kCell, kCell, QImage::Format_ARGB32);
     image.fill(Qt::transparent);

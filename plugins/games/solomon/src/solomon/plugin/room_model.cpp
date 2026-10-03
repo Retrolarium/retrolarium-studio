@@ -1,6 +1,7 @@
 #include "solomon/plugin/room_model.hpp"
 
 #include "nes/editors.hpp"
+#include "solomon/data/names.hpp"
 #include "solomon/plugin/solomon_session.hpp"
 
 #include <QPainter>
@@ -214,7 +215,7 @@ sdk::Library SolomonRoomModel::itemLibrary() const {
             if (type == kEmptyPattern) continue;
             sdk::LibraryItem item;
             item.id = QStringLiteral("item:%1").arg(type);
-            item.label = QStringLiteral("Item %1").arg(hex(type));
+            item.label = QStringLiteral("%1 · %2").arg(hex(type), itemName(type));
             item.icon = itemIcon(type);
             items_ << item;
         }
@@ -234,7 +235,7 @@ sdk::Library SolomonRoomModel::enemyLibrary() const {
             if (icon.isNull()) continue;
             sdk::LibraryItem item;
             item.id = QStringLiteral("enemy:%1").arg(type);
-            item.label = QStringLiteral("Enemy %1").arg(hex(type));
+            item.label = QStringLiteral("%1 · %2").arg(hex(type), enemyName(type));
             item.icon = icon;
             enemies_ << item;
         }
@@ -293,16 +294,17 @@ QVector<sdk::MapObject> SolomonRoomModel::objects() const {
             const QString kind = command.value(QStringLiteral("kind")).toString();
             const int type = command.value(QStringLiteral("type")).toInt();
             if (kind == QLatin1String("item")) {
-                add(QStringLiteral("item:%1").arg(c), QStringLiteral("Item %1").arg(hex(type)),
+                add(QStringLiteral("item:%1").arg(c), itemTypeName(type),
                     QRect(point(command.value(QStringLiteral("position"))), QSize(1, 1)));
             } else if (kind == QLatin1String("repeat")) {
                 const QJsonArray positions = command.value(QStringLiteral("positions")).toArray();
                 for (int p = 0; p < positions.size(); ++p) {
-                    add(QStringLiteral("repeat:%1:%2").arg(c).arg(p), QStringLiteral("Item %1").arg(hex(type)),
+                    add(QStringLiteral("repeat:%1:%2").arg(c).arg(p), itemTypeName(type),
                         QRect(point(positions.at(p)), QSize(1, 1)));
                 }
             } else if (kind == QLatin1String("constellation")) {
-                add(QStringLiteral("constellation:%1").arg(c), QStringLiteral("Constellation"),
+                add(QStringLiteral("constellation:%1").arg(c),
+                    QStringLiteral("Constellation · %1").arg(constellationName(command.value(QStringLiteral("opcode")).toInt())),
                     QRect(point(command.value(QStringLiteral("position"))), QSize(3, 2)));
             }
         }
@@ -313,7 +315,7 @@ QVector<sdk::MapObject> SolomonRoomModel::objects() const {
     } else {
         const QVector<SolomonEnemy> enemies = r.enemies(room_);
         for (int i = 0; i < enemies.size(); ++i) {
-            add(QStringLiteral("enemy:%1").arg(i), QStringLiteral("Enemy %1").arg(hex(enemies.at(i).type)),
+            add(QStringLiteral("enemy:%1").arg(i), enemyName(enemies.at(i).type),
                 QRect(enemies.at(i).position, QSize(1, 1)));
         }
         const QPoint start = r.metadataPosition(room_, QStringLiteral("player_start"));
@@ -425,7 +427,7 @@ bool SolomonRoomModel::placeObject(const QString& libraryItem, QPoint cell, QStr
         }
         enemies << SolomonEnemy{type, cell};
         next.setEnemies(room_, enemies);
-        if (!commit(next, QStringLiteral("Add enemy %1 to %2").arg(hex(type), title()), error)) return false;
+        if (!commit(next, QStringLiteral("Add %1 to %2").arg(enemyName(type), title()), error)) return false;
         setCurrentLayer(QStringLiteral("enemies"));
         selectObject(QStringLiteral("enemy:%1").arg(enemies.size() - 1));
         return true;
@@ -441,7 +443,7 @@ bool SolomonRoomModel::placeObject(const QString& libraryItem, QPoint cell, QStr
         const int at = std::max(0, int(commands.size()) - 1);
         commands.insert(at, command);
         next.setItemCommands(room_, commands);
-        if (!commit(next, QStringLiteral("Add item %1 to %2").arg(hex(type), title()), error)) return false;
+        if (!commit(next, QStringLiteral("Add %1 to %2").arg(itemName(type), title()), error)) return false;
         setCurrentLayer(QStringLiteral("items"));
         selectObject(QStringLiteral("item:%1").arg(at));
         return true;
@@ -536,7 +538,7 @@ sdk::Inspection SolomonRoomModel::inspect() const {
         const QJsonObject command = r.itemCommands(room_).at(parts.value(1).toInt()).toObject();
         const int type = command.value(QStringLiteral("type")).toInt();
         inspection.kicker = parts.first() == QLatin1String("repeat") ? QStringLiteral("Repeated item") : QStringLiteral("Item");
-        inspection.title = QStringLiteral("Item %1").arg(hex(type));
+        inspection.title = itemName(type);
         QStringList choices;
         QVector<QImage> icons;
         for (const sdk::LibraryItem& item : itemLibrary().items) {
@@ -544,8 +546,8 @@ sdk::Inspection SolomonRoomModel::inspect() const {
             icons << item.icon;
         }
         const int hiding = type >= 0xc0 ? 0 : (type & 0x80) ? 2 : (type & 0x40) ? 1 : 0;
-        inspection.fields = {choice(QStringLiteral("type"), QStringLiteral("Item"), QStringLiteral("Item %1").arg(hex(type & 0x3f)),
-                                    choices, icons),
+        inspection.fields = {choice(QStringLiteral("type"), QStringLiteral("Item"),
+                                    QStringLiteral("%1 · %2").arg(hex(type & 0x3f), itemName(type)), choices, icons),
                              choice(QStringLiteral("hiding"), QStringLiteral("Where"), hidings().at(hiding), hidings())};
         inspection.note = parts.first() == QLatin1String("repeat")
                               ? QStringLiteral("One of several copies the item list places with one command; they "
@@ -562,7 +564,7 @@ sdk::Inspection SolomonRoomModel::inspect() const {
         const int i = parts.value(1).toInt();
         if (i >= 0 && i < enemies.size()) {
             inspection.kicker = QStringLiteral("Enemy");
-            inspection.title = QStringLiteral("Enemy %1").arg(hex(enemies.at(i).type));
+            inspection.title = enemyName(enemies.at(i).type);
             QStringList choices;
             QVector<QImage> icons;
             for (const sdk::LibraryItem& item : enemyLibrary().items) {
@@ -570,9 +572,11 @@ sdk::Inspection SolomonRoomModel::inspect() const {
                 icons << item.icon;
             }
             inspection.fields = {choice(QStringLiteral("enemy"), QStringLiteral("Type"),
-                                        QStringLiteral("Enemy %1").arg(hex(enemies.at(i).type)), choices, icons)};
-            inspection.note = QStringLiteral("The low two bits of the type pick the direction it starts in. A room "
-                                             "holds at most 17 enemies.");
+                                        QStringLiteral("%1 · %2").arg(hex(enemies.at(i).type), enemyName(enemies.at(i).type)),
+                                        choices, icons)};
+            inspection.note = QStringLiteral("The type byte holds the enemy, the way it faces and its speed; each "
+                                             "choice names all three. A room holds at most 17 enemies.");
+            inspection.engine = {{QStringLiteral("Type byte"), hex(enemies.at(i).type)}};
             inspection.engineTag = QStringLiteral("solomon.rooms@3");
             return inspection;
         }
@@ -581,29 +585,64 @@ sdk::Inspection SolomonRoomModel::inspect() const {
         const QString key = parts.value(1);
         inspection.kicker = QStringLiteral("Room fixture");
         inspection.title = metadataLabel(key);
+        const QJsonObject metadata = r.metadata(room_);
         if (key == QLatin1String("key")) {
-            inspection.fields = {integer(QStringLiteral("status_rate_raw"), QStringLiteral("Key state"),
-                                         r.metadata(room_).value(QStringLiteral("status_rate_raw")).toInt(), 0, 255,
-                                         QStringLiteral("$40+: in a block, $80+: hidden"))};
+            const int status = metadata.value(QStringLiteral("status_rate_raw")).toInt();
+            inspection.fields = {choice(QStringLiteral("key_status"), QStringLiteral("Where"),
+                                        hidings().at(status >= 0x80 ? 1 : status >= 0x40 ? 2 : 0), hidings())};
+        } else if (key.startsWith(QLatin1String("mirror_"))) {
+            const int set = metadata.value(key + QStringLiteral("_enemy_set")).toInt();
+            const int schedule = metadata.value(key + QStringLiteral("_schedule")).toInt();
+            QStringList sets;
+            const QVector<SolomonMirrorSet> all = r.mirrorSets();
+            for (int i = 0; i < all.size(); ++i) {
+                QStringList names;
+                for (int type : all.at(i).types) names << enemyName(type).section(QLatin1Char(' '), 0, 0);
+                names.removeDuplicates();
+                sets << QStringLiteral("Set %1 · %2").arg(i).arg(names.join(QStringLiteral(", ")));
+            }
+            QStringList schedules;
+            for (int i = 0; i < r.schedules().size(); ++i) schedules << QStringLiteral("Schedule %1").arg(i);
+            inspection.fields = {choice(QStringLiteral("enemy_set"), QStringLiteral("Drops"), sets.value(set), sets),
+                                 choice(QStringLiteral("schedule"), QStringLiteral("When"), schedules.value(schedule), schedules)};
         }
         inspection.note = key == QLatin1String("player_start")
                               ? QStringLiteral("Where Wizard appears; she faces the room's middle.")
+                          : key.startsWith(QLatin1String("mirror_"))
+                              ? QStringLiteral("A Spawn Mirror drops the enemies of its set in turn, when its drop "
+                                               "schedule says. Sets and schedules are shared by all rooms; edit them "
+                                               "in Mirrors.")
                               : QStringLiteral("Drag it to move it. Every room has one door, one key and its mirrors.");
         inspection.engineTag = QStringLiteral("solomon.rooms@3");
         return inspection;
     }
     if (parts.first() == QLatin1String("constellation")) {
+        const int opcode = r.itemCommands(room_).at(parts.value(1).toInt()).toObject().value(QStringLiteral("opcode")).toInt();
         inspection.kicker = QStringLiteral("Constellation");
-        inspection.title = QStringLiteral("Constellation");
-        inspection.note = QStringLiteral("The hidden constellation sign; drag it to move it.");
+        inspection.title = constellationName(opcode);
+        QStringList names;
+        for (int k = 0; k < 4; ++k) names << constellationName((opcode & ~3) | k);
+        inspection.fields = {choice(QStringLiteral("constellation"), QStringLiteral("Sign"), constellationName(opcode), names)};
+        inspection.note = QStringLiteral("The constellation sign ends the room's item list; each tileset has four. "
+                                         "Drag it to move it; the room inspector removes it.");
         return inspection;
     }
     inspection.kicker = QStringLiteral("Room");
     inspection.title = title();
-    inspection.fields = {choice(QStringLiteral("bank"), QStringLiteral("CHR bank"), QString::number(bank()),
+    const QJsonArray commands = r.itemCommands(room_);
+    const QJsonObject last = commands.isEmpty() ? QJsonObject() : commands.last().toObject();
+    QStringList signs{QStringLiteral("None")};
+    for (int k = 0; k < 4 && bank() < 3; ++k) signs << constellationName(0xf0 | (bank() << 2) | k);
+    const QString sign = last.value(QStringLiteral("kind")).toString() == QLatin1String("constellation")
+                             ? constellationName(last.value(QStringLiteral("opcode")).toInt())
+                             : QStringLiteral("None");
+    inspection.fields = {choice(QStringLiteral("bank"), QStringLiteral("Tileset"), QString::number(bank()),
                                 {QStringLiteral("0"), QStringLiteral("1"), QStringLiteral("2"), QStringLiteral("3")}),
-                         integer(QStringLiteral("spawn_lifetime"), QStringLiteral("Spawn lifetime"),
-                                 r.spawnLifetime(room_), 0, 255)};
+                         integer(QStringLiteral("time_rate"), QStringLiteral("Timer speed"),
+                                 r.metadata(room_).value(QStringLiteral("status_rate_raw")).toInt() & 0x0f, 0, 15),
+                         integer(QStringLiteral("spawn_lifetime"), QStringLiteral("Hornhead lifetime"),
+                                 r.spawnLifetime(room_), 0, 255, QStringLiteral("also Saramandor")),
+                         choice(QStringLiteral("room_constellation"), QStringLiteral("Constellation"), sign, signs)};
     inspection.note = layer_ == QLatin1String("blocks")
                           ? QStringLiteral("Brown blocks break and can be made by Wizard; white blocks are solid. "
                                            "The right button takes a cell's blocks as the brush.")
@@ -652,11 +691,66 @@ bool SolomonRoomModel::setField(const QString& key, const QVariant& value, QStri
         next.setEnemies(room_, enemies);
         return commit(next, QStringLiteral("Edit an enemy in %1").arg(title()), error);
     }
-    if (key == QLatin1String("status_rate_raw")) {
+    if (key == QLatin1String("key_status") || key == QLatin1String("time_rate")) {
         QJsonObject metadata = next.metadata(room_);
-        metadata.insert(key, std::clamp(value.toInt(), 0, 255));
+        int status = metadata.value(QStringLiteral("status_rate_raw")).toInt();
+        if (key == QLatin1String("key_status")) {
+            const int where = hidings().indexOf(value.toString());
+            status = (status & 0x3f) | (where == 1 ? 0x80 : where == 2 ? 0x40 : 0);
+        } else {
+            status = (status & 0xf0) | std::clamp(value.toInt(), 0, 15);
+        }
+        metadata.insert(QStringLiteral("status_rate_raw"), status);
         next.setMetadata(room_, metadata);
-        return commit(next, QStringLiteral("Edit the key of %1").arg(title()), error);
+        return commit(next, key == QLatin1String("key_status") ? QStringLiteral("Edit the key of %1").arg(title())
+                                                               : QStringLiteral("Edit the timer of %1").arg(title()),
+                      error);
+    }
+    if (key == QLatin1String("enemy_set") || key == QLatin1String("schedule")) {
+        const QString mirror = parts.value(1);
+        if (!mirror.startsWith(QLatin1String("mirror_"))) return false;
+        bool ok = false;
+        const int index = value.toString().section(QLatin1Char(' '), 1, 1).toInt(&ok);
+        if (!ok) return false;
+        QJsonObject metadata = next.metadata(room_);
+        metadata.insert(mirror + (key == QLatin1String("enemy_set") ? QStringLiteral("_enemy_set") : QStringLiteral("_schedule")),
+                        index);
+        next.setMetadata(room_, metadata);
+        return commit(next, QStringLiteral("Edit a mirror of %1").arg(title()), error);
+    }
+    if (key == QLatin1String("constellation") || key == QLatin1String("room_constellation")) {
+        // The item list ends in a plain end opcode or in a constellation;
+        // both carry the tileset in bits 2-3.
+        QJsonArray commands = next.itemCommands(room_);
+        if (commands.isEmpty()) return false;
+        QJsonObject last = commands.last().toObject();
+        const int tileset = bank();
+        const QString wanted = value.toString();
+        if (wanted == QLatin1String("None")) {
+            QJsonObject end;
+            end.insert(QStringLiteral("kind"), QStringLiteral("end"));
+            end.insert(QStringLiteral("opcode"), 0xe0 | (tileset << 2));
+            last = end;
+        } else {
+            if (tileset > 2) {
+                if (error) *error = QStringLiteral("Rooms on tileset 3 have no constellation.");
+                return false;
+            }
+            int opcode = -1;
+            for (int k = 0; k < 4; ++k) {
+                if (constellationName(0xf0 | (tileset << 2) | k) == wanted) opcode = 0xf0 | (tileset << 2) | k;
+            }
+            if (opcode < 0) return false;
+            if (last.value(QStringLiteral("kind")).toString() != QLatin1String("constellation")) {
+                last = QJsonObject();
+                last.insert(QStringLiteral("kind"), QStringLiteral("constellation"));
+                last.insert(QStringLiteral("position"), pointJson(QPoint(6, 1)));
+            }
+            last.insert(QStringLiteral("opcode"), opcode);
+        }
+        commands.replace(commands.size() - 1, last);
+        next.setItemCommands(room_, commands);
+        return commit(next, QStringLiteral("Change the constellation of %1").arg(title()), error);
     }
     if (key == QLatin1String("spawn_lifetime")) {
         QJsonObject root = next.root();
@@ -678,6 +772,10 @@ bool SolomonRoomModel::setField(const QString& key, const QVariant& value, QStri
             const QString kind = command.value(QStringLiteral("kind")).toString();
             if (kind != QLatin1String("end") && kind != QLatin1String("constellation")) continue;
             int opcode = command.value(QStringLiteral("opcode")).toInt();
+            if (kind == QLatin1String("constellation") && bank > 2) {
+                if (error) *error = QStringLiteral("Tileset 3 has no constellations; remove the constellation first.");
+                return false;
+            }
             if (opcode == 0) opcode = 0xe0;
             command.insert(QStringLiteral("opcode"), (opcode & ~0x0c) | (bank << 2));
             commands.replace(c, command);

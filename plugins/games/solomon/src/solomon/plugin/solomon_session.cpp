@@ -3,7 +3,11 @@
 #include "nes/palette.hpp"
 #include "sdk/plugin.hpp"
 #include "sdk/snapshot_command.hpp"
+#include "solomon/plugin/animation_model.hpp"
+#include "solomon/plugin/mirror_models.hpp"
+#include "solomon/plugin/presentation_models.hpp"
 #include "solomon/plugin/room_model.hpp"
+#include "solomon/plugin/sound_model.hpp"
 
 #include <QDateTime>
 #include <QJsonDocument>
@@ -103,6 +107,17 @@ std::unique_ptr<SolomonSession> SolomonSession::open(const sdk::ProjectFile& pro
         session->state_.art = loadJson(session->artPath_);
         session->state_.animations = loadJson(session->animationsPath_);
         session->state_.graphics = nes::Bundle::load(session->graphicsPath_);
+        // The title screen and attract demo; older projects may lack them.
+        const QString presentation = tabDocument(project, QStringLiteral("solomon.presentation@1"));
+        if (!presentation.isEmpty()) {
+            session->presentationPath_ = project.resolve(presentation);
+            session->state_.presentation = loadJson(session->presentationPath_);
+        }
+        const QString audio = tabDocument(project, QStringLiteral("solomon.audio@1"));
+        if (!audio.isEmpty()) {
+            session->audioPath_ = project.resolve(audio);
+            session->state_.audio = loadJson(session->audioPath_);
+        }
         if (session->state_.rooms.root().value(QStringLiteral("schema")).toString() !=
                 QLatin1String("retrolarium.solomon-rooms") ||
             session->state_.rooms.roomCount() == 0) {
@@ -136,6 +151,11 @@ sdk::Profile SolomonSession::profile() const {
 
 QVector<sdk::Kind> SolomonSession::kinds() const {
     return {kind("rooms", "Rooms", "levels", sdk::EditorType::TileMap),
+            kind("mirrors", "Mirrors", "world", sdk::EditorType::Table),
+            kind("animations", "Animations", "sprites", sdk::EditorType::Composition),
+            kind("screens", "Screens", "tileset", sdk::EditorType::TileMap),
+            kind("sound", "Sound", "sound", sdk::EditorType::Sequencer),
+            kind("demo", "Demo", "play", sdk::EditorType::Table),
             kind("graphics", "Tiles", "tiles", sdk::EditorType::Tile),
             kind("palettes", "Palettes", "palettes", sdk::EditorType::Palette),
             kind("playtest", "Playtest", "playtest", sdk::EditorType::Emulator)};
@@ -157,6 +177,68 @@ QVector<sdk::DocumentGroup> SolomonSession::documents(const QString& kind) const
             groups.last().documents << entry(QString::number(r + 1), roomLabel(state_.rooms.roomNumber(r)),
                                              enemies ? QStringLiteral("%1 enemies").arg(enemies) : QString(),
                                              now.at(r) != saved.at(r));
+        }
+    } else if (kind == QLatin1String("mirrors")) {
+        sdk::DocumentGroup group;
+        group.title = QStringLiteral("Spawn Mirrors");
+        group.documents << entry(QStringLiteral("sets"), QStringLiteral("Enemy sets"),
+                                 QStringLiteral("%1 / %2 B").arg(state_.rooms.mirrorSetBytes()).arg(kMirrorSetBytes),
+                                 state_.rooms.mirrorSets() != saved_.rooms.mirrorSets())
+                        << entry(QStringLiteral("schedules"), QStringLiteral("Drop schedules"),
+                                 QStringLiteral("%1").arg(state_.rooms.schedules().size()),
+                                 state_.rooms.schedules() != saved_.rooms.schedules());
+        groups << group;
+    } else if (kind == QLatin1String("screens") && !state_.presentation.isEmpty()) {
+        sdk::DocumentGroup group;
+        group.title = QStringLiteral("Title screen");
+        const QJsonArray now = state_.presentation.value(QStringLiteral("streams")).toArray();
+        const QJsonArray saved = saved_.presentation.value(QStringLiteral("streams")).toArray();
+        group.documents << entry(QStringLiteral("0"), QStringLiteral("Record layer"), QStringLiteral("155 B"), now.at(0) != saved.at(0))
+                        << entry(QStringLiteral("1"), QStringLiteral("Logo layer"), QStringLiteral("247 B"), now.at(1) != saved.at(1));
+        groups << group;
+    } else if (kind == QLatin1String("sound") && !state_.audio.isEmpty()) {
+        const QJsonArray now = state_.audio.value(QStringLiteral("commands")).toArray();
+        const QJsonArray saved = saved_.audio.value(QStringLiteral("commands")).toArray();
+        for (const auto& programs : SolomonSoundModel::programGroups()) {
+            sdk::DocumentGroup group;
+            group.title = programs.first;
+            for (int program : programs.second) {
+                bool dirty = false;
+                const auto notes = SolomonSoundModel::trace(state_.audio, program, 60 * 40);
+                for (const auto& list : notes) {
+                    for (const SolomonNote& note : list) dirty = dirty || now.at(note.command) != saved.at(note.command);
+                }
+                group.documents << entry(QString::number(program), SolomonSoundModel::programLabel(program).section(QStringLiteral(" · "), 1),
+                                         QStringLiteral("#%1").arg(program, 2, 10, QLatin1Char('0')), dirty);
+            }
+            groups << group;
+        }
+    } else if (kind == QLatin1String("demo") && !state_.presentation.isEmpty()) {
+        sdk::DocumentGroup group;
+        group.title = QStringLiteral("Title");
+        group.documents << entry(QStringLiteral("demo"), QStringLiteral("Attract demo"), QStringLiteral("34 steps"),
+                                 state_.presentation.value(QStringLiteral("demo_steps")) !=
+                                     saved_.presentation.value(QStringLiteral("demo_steps")));
+        groups << group;
+    } else if (kind == QLatin1String("animations")) {
+        const QJsonArray frames = state_.animations.value(QStringLiteral("frames")).toArray();
+        const QJsonArray savedFrames = saved_.animations.value(QStringLiteral("frames")).toArray();
+        for (const auto& action : SolomonAnimationModel::actions(state_.animations)) {
+            const QString title = SolomonAnimationModel::groupLabel(action.first);
+            if (groups.isEmpty() || groups.last().title != title) {
+                sdk::DocumentGroup group;
+                group.title = title;
+                groups << group;
+            }
+            const QVector<int> cycle = SolomonAnimationModel::cycle(state_.animations, action.first, action.second, 0);
+            bool dirty = SolomonAnimationModel::descriptor(state_.animations, action.first, action.second) !=
+                         SolomonAnimationModel::descriptor(saved_.animations, action.first, action.second);
+            for (int index : cycle) dirty = dirty || frames.at(index) != savedFrames.at(index);
+            groups.last().documents << entry(QStringLiteral("%1:%2").arg(action.first).arg(action.second),
+                                             SolomonAnimationModel::actionLabel(action.first, action.second),
+                                             cycle.size() == 1 ? QStringLiteral("1 frame")
+                                                               : QStringLiteral("%1 frames").arg(cycle.size()),
+                                             dirty);
         }
     } else if (kind == QLatin1String("graphics")) {
         for (const QString& id : state_.graphics.resourceIds(QStringLiteral("nes.chr-2bpp.v1"))) {
@@ -203,6 +285,30 @@ std::unique_ptr<sdk::EditorModel> SolomonSession::openEditor(const QString& kind
             if (room >= 0 && room < state_.rooms.roomCount()) {
                 return std::make_unique<SolomonRoomModel>(this, room);
             }
+        }
+        if (kind == QLatin1String("screens") && !state_.presentation.isEmpty() &&
+            (document == QLatin1String("0") || document == QLatin1String("1"))) {
+            return std::make_unique<SolomonTitleModel>(this, document.toInt());
+        }
+        if (kind == QLatin1String("sound") && !state_.audio.isEmpty()) {
+            const int program = document.toInt();
+            if (program >= 1 && program <= state_.audio.value(QStringLiteral("effects")).toArray().size()) {
+                return std::make_unique<SolomonSoundModel>(this, program);
+            }
+        }
+        if (kind == QLatin1String("demo") && !state_.presentation.isEmpty()) {
+            return std::make_unique<SolomonDemoModel>(this);
+        }
+        if (kind == QLatin1String("animations")) {
+            const int group = document.section(QLatin1Char(':'), 0, 0).toInt();
+            const int action = document.section(QLatin1Char(':'), 1).toInt();
+            if (!SolomonAnimationModel::descriptor(state_.animations, group, action).isEmpty()) {
+                return std::make_unique<SolomonAnimationModel>(this, group, action);
+            }
+        }
+        if (kind == QLatin1String("mirrors")) {
+            if (document == QLatin1String("sets")) return std::make_unique<SolomonMirrorSetsModel>(this);
+            if (document == QLatin1String("schedules")) return std::make_unique<SolomonSchedulesModel>(this);
         }
         if (kind == QLatin1String("graphics")) {
             const QString id = document.section(QLatin1Char('/'), 0, 0);
@@ -278,6 +384,10 @@ bool SolomonSession::save(QString* error) {
         if (state_.rooms != saved_.rooms) saveJson(roomsPath_, state_.rooms.root());
         if (state_.art != saved_.art) saveJson(artPath_, state_.art);
         if (state_.animations != saved_.animations) saveJson(animationsPath_, state_.animations);
+        if (state_.presentation != saved_.presentation && !presentationPath_.isEmpty()) {
+            saveJson(presentationPath_, state_.presentation);
+        }
+        if (state_.audio != saved_.audio && !audioPath_.isEmpty()) saveJson(audioPath_, state_.audio);
         if (state_.graphics != saved_.graphics) state_.graphics.save(graphicsPath_);
     } catch (const std::exception& e) {
         if (error) {
