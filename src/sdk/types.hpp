@@ -173,4 +173,19 @@ struct Tool {
     QString icon;
 };
 
+// A command an editor offers as a button in its toolbar row ("Loop demo",
+// "Record").
+struct EditorAction {
+    QString id;
+    QString label;
+    QString icon;
+    QString tooltip;
+    bool danger = false;        // red: it replaces data
+    bool showsPlaytest = false; // the Playtest view comes forward after it
+    // Asked first when set: the dialog's heading, text and confirm button.
+    QString confirmHeading;
+    QString confirmText;
+    QString confirmAction;
+};
+
 }  // namespace rl::sdk

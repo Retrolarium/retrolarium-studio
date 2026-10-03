@@ -38,6 +38,7 @@ QHash<QString, Glyph>& glyphs() {
             " 8.172V7l-2.26-2.26a6 6 0 0 0-4.202-1.756L9 2.96l.92.82A6.18 6.18 0 0 1 12 8.4V10l2 2"
             "h1.172a2 2 0 0 1 1.414.586L18.5 14.5");
         add("play", "M6 3l14 9-14 9z", true);
+        add("record", "M12 5a7 7 0 1 0 0 14a7 7 0 1 0 0-14z", true);
         add("stop", "M6 6h12v12H6z", true);
         add("pause", "M6 4h4v16H6z M14 4h4v16h-4z", true);
         add("plus", "M5 12h14 M12 5v14");

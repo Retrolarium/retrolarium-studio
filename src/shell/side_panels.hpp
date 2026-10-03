@@ -3,6 +3,7 @@
 #include "sdk/types.hpp"
 
 #include <QFrame>
+#include <QStringList>
 #include <QVector>
 
 class QButtonGroup;
@@ -48,7 +49,8 @@ public:
     void setGroups(const QVector<sdk::DocumentGroup>& groups);
     void selectDocument(const QString& id);
     QString currentDocument() const;
-    // Refreshes labels and dirty marks, keeping selection and filter.
+    // Refreshes dirty marks, keeping selection and filter; when documents
+    // come or go, the list is rebuilt the same way.
     void updateGroups(const QVector<sdk::DocumentGroup>& groups);
 
 signals:
@@ -58,6 +60,7 @@ private:
     ui::Label* title_;
     QLineEdit* filter_;
     ui::DocumentList* list_;
+    QStringList shape_;  // group titles and document ids
     bool updating_ = false;
 };
 

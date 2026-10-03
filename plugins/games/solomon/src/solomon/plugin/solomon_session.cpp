@@ -135,6 +135,22 @@ std::unique_ptr<SolomonSession> SolomonSession::open(const sdk::ProjectFile& pro
             throw SolomonError("The graphics bundle has no room palettes.");
         }
         session->saved_ = session->state_;
+        // A demo step of 255 frames stalls the game's demo (its counter never
+        // passes 255) and the kit refuses it; recordings made before that
+        // was known have one. Open them at 254 as an edit, so the next build
+        // saves it.
+        const auto clamp = [](SolomonState& s) {
+            QJsonArray steps = s.presentation.value(QStringLiteral("demo_steps")).toArray();
+            for (int i = 0; i < steps.size(); ++i) {
+                QJsonObject step = steps.at(i).toObject();
+                if (step.value(QStringLiteral("duration")).toInt() > 254) {
+                    step.insert(QStringLiteral("duration"), 254);
+                    steps.replace(i, step);
+                }
+            }
+            if (!steps.isEmpty()) s.presentation.insert(QStringLiteral("demo_steps"), steps);
+        };
+        session->edit(QStringLiteral("Shorten a 255-frame demo step to 254"), clamp, nullptr);
         session->painter();
     } catch (const std::exception& e) {
         if (error) {
@@ -252,7 +268,8 @@ QVector<sdk::DocumentGroup> SolomonSession::listDocuments(const QString& kind) c
     } else if (kind == QLatin1String("demo") && !state_.presentation.isEmpty()) {
         sdk::DocumentGroup group;
         group.title = QStringLiteral("Title");
-        group.documents << entry(QStringLiteral("demo"), QStringLiteral("Attract demo"), QStringLiteral("34 steps"),
+        group.documents << entry(QStringLiteral("demo"), QStringLiteral("Attract demo"),
+                                 QStringLiteral("%1 steps").arg(state_.presentation.value(QStringLiteral("demo_steps")).toArray().size()),
                                  state_.presentation.value(QStringLiteral("demo_steps")) !=
                                      saved_.presentation.value(QStringLiteral("demo_steps")));
         groups << group;
@@ -568,12 +585,12 @@ void SolomonSession::setStartRoom(int room) {
     }
 }
 
-void SolomonSession::setDemoRecording(bool recording) {
-    if (recording != demoRecording_) {
-        demoRecording_ = recording;
-        emit startChanged();
-        emit selectedStartChanged();
-    }
+void SolomonSession::playDemo(bool record) {
+    if (!recordingActive_) launchDemo(record);
+}
+
+void SolomonSession::stopRecording() {
+    if (recordingActive_ && host()) host()->stopEmulator();
 }
 
 void SolomonSession::attachDemoEditor(bool attach) {
@@ -587,12 +604,11 @@ void SolomonSession::attachDemoEditor(bool attach) {
 
 QString SolomonSession::playSelectedLabel() const {
     if (recordingActive_) return QStringLiteral("Stop recording");
-    if (!demoStart()) return {};
-    return demoRecording_ ? QStringLiteral("Record demo") : QStringLiteral("Play demo");
+    return demoStart() ? QStringLiteral("Play demo") : QString();
 }
 
 QString SolomonSession::selectedStart() const {
-    if (demoStart()) return demoRecording_ ? QStringLiteral("Record the demo") : QStringLiteral("Attract demo");
+    if (demoStart()) return QStringLiteral("Attract demo");
     return roomLabel(startRoom_);
 }
 
@@ -761,7 +777,7 @@ void SolomonSession::playSelected() {
         if (host()) host()->stopEmulator();
         return;
     }
-    if (demoStart()) launchDemo(demoRecording_);
+    if (demoStart()) launchDemo(false);
     else launch(false);
 }
 
@@ -837,8 +853,10 @@ void SolomonSession::applyRecording(const QString& path) {
         report(sdk::Severity::Warning, QStringLiteral("demo"), QStringLiteral("Nothing was recorded: the demo did not start."));
         return;
     }
-    const SolomonDemoModel::Recording recording = SolomonDemoModel::stepsFromRecording(QString::fromUtf8(file.readAll()));
-    if (recording.steps.isEmpty()) {
+    const int capacity = SolomonDemoModel::demoCapacity(state_.rooms.revision());
+    const SolomonDemoModel::Recording recording =
+        SolomonDemoModel::stepsFromRecording(QString::fromUtf8(file.readAll()), capacity);
+    if (!recording.pressed) {
         report(sdk::Severity::Warning, QStringLiteral("demo"),
                QStringLiteral("No buttons were pressed while recording; the demo stays as it was."));
         return;
@@ -854,7 +872,8 @@ void SolomonSession::applyRecording(const QString& path) {
                           .arg(recording.keptFrames / 60.0, 0, 'f', 1)
                           .arg(steps.size());
     if (recording.droppedFrames > 0) {
-        message += QStringLiteral(" The game keeps 34 steps; the last %1 s did not fit.")
+        message += QStringLiteral(" The demo holds %1 steps; the last %2 s did not fit.")
+                       .arg(capacity)
                        .arg(recording.droppedFrames / 60.0, 0, 'f', 1);
     }
     report(recording.droppedFrames > 0 ? sdk::Severity::Warning : sdk::Severity::Info, QStringLiteral("demo"), message);

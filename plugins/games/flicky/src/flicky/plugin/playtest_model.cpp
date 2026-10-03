@@ -17,13 +17,18 @@ PlaytestModel::PlaytestModel(FlickySession* session) : EmulatorModel(session), s
         emit toolsChanged();
         emit contentChanged();
     });
+    connect(session_, &sdk::Session::selectedStartChanged, this, &sdk::EditorModel::contentChanged);
     connect(session_, &FlickySession::documentsChanged, this, [this](const QString& kind) {
         if (kind == QLatin1String("playtest")) emit contentChanged();
     });
 }
 
 QString PlaytestModel::startLabel() const {
-    return roundLabel(session_->playRound());
+    return session_->demoStart() ? session_->selectedStart() : roundLabel(session_->playRound());
+}
+
+bool PlaytestModel::isRecording() const {
+    return session_->recordingActive();
 }
 
 void PlaytestModel::play() {

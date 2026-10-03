@@ -36,6 +36,11 @@ void PrimaryButton::setIconName(const QString& name) {
     update();
 }
 
+void PrimaryButton::setDanger(bool danger) {
+    danger_ = danger;
+    update();
+}
+
 QSize PrimaryButton::sizeHint() const {
     const QFontMetrics metrics(font());
     int width = kPaddingX * 2 + metrics.horizontalAdvance(text());
@@ -74,13 +79,13 @@ void PrimaryButton::paintEvent(QPaintEvent*) {
     QPainter painter(this);
     const QRect face = faceRect();
 
-    QColor fill = t.accent;
-    QColor ink = t.onAccent;
+    QColor fill = danger_ ? QColor(0xd2, 0x3f, 0x3f) : t.accent;
+    QColor ink = danger_ ? QColor(Qt::white) : t.onAccent;
     if (!isEnabled()) {
         fill = t.lineStrong;
         ink = t.faint;
     } else if (isDown() || hovered_) {
-        fill = t.accentInk;
+        fill = danger_ ? QColor(0xb3, 0x30, 0x30) : t.accentInk;
     }
     painter.fillRect(face, fill);
     if (hasFocus()) {

@@ -45,6 +45,10 @@ public:
     // sets none. Emit toolsChanged() when it moves.
     virtual QString startPoint() const { return {}; }
 
+    // Buttons in the toolbar row; emit toolsChanged() when they change.
+    virtual QVector<EditorAction> actions() const { return {}; }
+    virtual void triggerAction(const QString& id) { Q_UNUSED(id); }
+
     // The inspector library item picked for placing ("place" tool, drops).
     virtual QString currentLibraryItem() const { return {}; }
     // A library shown in the work area beside the canvas, large enough to

@@ -96,7 +96,23 @@ void DocumentPanel::setTitle(const QString& title) {
     title_->setText(title);
 }
 
+namespace {
+
+QStringList shapeOf(const QVector<sdk::DocumentGroup>& groups) {
+    QStringList shape;
+    for (const sdk::DocumentGroup& group : groups) {
+        shape << group.title;
+        for (const sdk::DocumentEntry& entry : group.documents) {
+            shape << entry.id;
+        }
+    }
+    return shape;
+}
+
+}  // namespace
+
 void DocumentPanel::setGroups(const QVector<sdk::DocumentGroup>& groups) {
+    shape_ = shapeOf(groups);
     updating_ = true;
     filter_->clear();
     list_->clear();
@@ -112,6 +128,16 @@ void DocumentPanel::setGroups(const QVector<sdk::DocumentGroup>& groups) {
 }
 
 void DocumentPanel::updateGroups(const QVector<sdk::DocumentGroup>& groups) {
+    if (shapeOf(groups) != shape_) {
+        const QString current = list_->currentDocument();
+        const QString filter = filter_->text();
+        setGroups(groups);
+        updating_ = true;
+        filter_->setText(filter);
+        list_->selectDocument(current);
+        updating_ = false;
+        return;
+    }
     for (const sdk::DocumentGroup& group : groups) {
         for (const sdk::DocumentEntry& entry : group.documents) {
             list_->setDirty(entry.id, entry.dirty);

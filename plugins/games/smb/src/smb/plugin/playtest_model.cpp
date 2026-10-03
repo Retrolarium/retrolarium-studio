@@ -9,6 +9,11 @@ SmbPlaytestModel::SmbPlaytestModel(SmbSession* session) : EmulatorModel(session)
         emit toolsChanged();
         emit contentChanged();
     });
+    connect(session_, &sdk::Session::selectedStartChanged, this, &sdk::EditorModel::contentChanged);
+}
+
+bool SmbPlaytestModel::isRecording() const {
+    return session_->recordingActive();
 }
 
 QString SmbPlaytestModel::startLabel() const {

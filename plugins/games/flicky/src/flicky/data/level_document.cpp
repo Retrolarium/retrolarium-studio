@@ -65,6 +65,61 @@ void validateBonusPlacements(const QJsonObject &root)
     }
 }
 
+constexpr int kAttractDemos = 4;
+
+void validateDemoSteps(const QJsonValue &value, int demo)
+{
+    if (!value.isArray() || value.toArray().isEmpty())
+        fail(QStringLiteral("Flicky demo %1 needs at least one step").arg(demo + 1));
+    for (const auto &item : value.toArray()) {
+        const auto step = item.toObject();
+        (void)integer(step.value(QStringLiteral("frames")), 1, 256,
+                      QStringLiteral("demo step frames"));
+        const auto buttons = step.value(QStringLiteral("buttons"));
+        if (!buttons.isArray())
+            fail(QStringLiteral("Flicky demo step buttons must be a list"));
+        QStringList seen;
+        for (const auto &button : buttons.toArray()) {
+            const QString name = button.toString();
+            if (!FlickyLevelDocument::demoButtons().contains(name) || seen.contains(name))
+                fail(QStringLiteral("Flicky demo buttons are A, B, C, START, UP, DOWN, LEFT and RIGHT"));
+            seen << name;
+        }
+    }
+}
+
+int demoBaselineBytes(const QJsonObject &record, int demo)
+{
+    const auto bytes = record.value(QStringLiteral("baseline_bytes")).toArray();
+    if (bytes.isEmpty() || bytes.size() % 2)
+        fail(QStringLiteral("Flicky demo %1 baseline is not byte pairs").arg(demo + 1));
+    for (const auto &byte : bytes)
+        (void)integer(byte, 0, 255, QStringLiteral("demo baseline byte"));
+    return bytes.size();
+}
+
+void validateAttractDemos(const QJsonObject &root)
+{
+    const auto value = root.value(QStringLiteral("attract_demos"));
+    if (value.isUndefined()) return;
+    const auto records = value.toArray();
+    if (!value.isArray() || records.size() != kAttractDemos)
+        fail(QStringLiteral("Flicky attract demos need four streams"));
+    int capacity = 0;
+    int used = 0;
+    for (int demo = 0; demo < kAttractDemos; ++demo) {
+        const auto record = records.at(demo).toObject();
+        if (record.value(QStringLiteral("id")).toString() != QStringLiteral("demo%1").arg(demo))
+            fail(QStringLiteral("Flicky attract demo identity changed"));
+        capacity += demoBaselineBytes(record, demo);
+        validateDemoSteps(record.value(QStringLiteral("steps")), demo);
+        used += 2 * record.value(QStringLiteral("steps")).toArray().size();
+    }
+    if (used > capacity)
+        fail(QStringLiteral("Flicky attract demos use %1 bytes; the block holds %2")
+                 .arg(used).arg(capacity));
+}
+
 FlickyCollisionGrid gridFromJson(const QJsonValue &value, int layout)
 {
     const auto rows = value.toArray();
@@ -349,6 +404,7 @@ FlickyLevelDocument FlickyLevelDocument::fromJson(const QJsonObject &root)
     (void)integer(capacities.value(QStringLiteral("special_tiles_bytes")), 1,
         1000000, QStringLiteral("special_tiles_bytes capacity"));
     validateBonusPlacements(root);
+    validateAttractDemos(root);
     FlickyLevelDocument document;
     document.root_ = root;
     for (int round = 0; round < 48; ++round) {
@@ -653,6 +709,92 @@ void FlickyLevelDocument::restoreBonusPlacement(const QString &id)
     auto records = root_.value(QStringLiteral("bonus_placements")).toArray();
     records.replace(index, record);
     root_.insert(QStringLiteral("bonus_placements"), records);
+}
+
+const QStringList &FlickyLevelDocument::demoButtons()
+{
+    static const QStringList names {QStringLiteral("A"), QStringLiteral("B"),
+        QStringLiteral("C"), QStringLiteral("START"), QStringLiteral("UP"),
+        QStringLiteral("DOWN"), QStringLiteral("LEFT"), QStringLiteral("RIGHT")};
+    return names;
+}
+
+int FlickyLevelDocument::demoButtonBit(int index)
+{
+    // Ram_Joypad: Start, A, C, B, Right, Left, Down, Up from bit 7 down.
+    static const int bits[] = {0x40, 0x10, 0x20, 0x80, 0x01, 0x02, 0x04, 0x08};
+    return index >= 0 && index < 8 ? bits[index] : 0;
+}
+
+bool FlickyLevelDocument::hasAttractDemos() const noexcept
+{
+    return root_.contains(QStringLiteral("attract_demos"));
+}
+
+QJsonObject FlickyLevelDocument::attractDemo(int demo) const
+{
+    if (demo < 0 || demo >= kAttractDemos || !hasAttractDemos())
+        fail(QStringLiteral("Flicky attract demo is unavailable"));
+    return root_.value(QStringLiteral("attract_demos")).toArray().at(demo).toObject();
+}
+
+QJsonArray FlickyLevelDocument::attractDemoSteps(int demo) const
+{
+    return attractDemo(demo).value(QStringLiteral("steps")).toArray();
+}
+
+QJsonArray FlickyLevelDocument::baselineAttractDemoSteps(int demo) const
+{
+    const auto bytes = attractDemo(demo).value(QStringLiteral("baseline_bytes")).toArray();
+    QJsonArray steps;
+    for (int index = 0; index + 1 < bytes.size(); index += 2) {
+        const int mask = bytes.at(index).toInt();
+        const int hold = bytes.at(index + 1).toInt();
+        QJsonArray buttons;
+        for (int button = 0; button < demoButtons().size(); ++button) {
+            if (mask & demoButtonBit(button)) buttons.append(demoButtons().at(button));
+        }
+        steps.append(QJsonObject {{QStringLiteral("frames"), hold == 0 ? 256 : hold},
+                                  {QStringLiteral("buttons"), buttons}});
+    }
+    return steps;
+}
+
+int FlickyLevelDocument::attractDemoBytes() const
+{
+    int used = 0;
+    for (int demo = 0; hasAttractDemos() && demo < kAttractDemos; ++demo)
+        used += 2 * attractDemoSteps(demo).size();
+    return used;
+}
+
+int FlickyLevelDocument::attractDemoCapacity() const
+{
+    int capacity = 0;
+    for (int demo = 0; hasAttractDemos() && demo < kAttractDemos; ++demo)
+        capacity += attractDemo(demo).value(QStringLiteral("baseline_bytes")).toArray().size();
+    return capacity;
+}
+
+void FlickyLevelDocument::setAttractDemoSteps(int demo, const QJsonArray &steps)
+{
+    auto record = attractDemo(demo);
+    validateDemoSteps(steps, demo);
+    const int used = attractDemoBytes() - 2 * attractDemoSteps(demo).size() + 2 * steps.size();
+    if (used > attractDemoCapacity())
+        fail(QStringLiteral("The demos would use %1 bytes; the ROM block holds %2.")
+                 .arg(used).arg(attractDemoCapacity()));
+    record.insert(QStringLiteral("steps"), steps);
+    auto records = root_.value(QStringLiteral("attract_demos")).toArray();
+    records.replace(demo, record);
+    root_.insert(QStringLiteral("attract_demos"), records);
+}
+
+void FlickyLevelDocument::adoptAttractDemos(const FlickyLevelDocument &other)
+{
+    if (other.hasAttractDemos())
+        root_.insert(QStringLiteral("attract_demos"),
+                     other.root_.value(QStringLiteral("attract_demos")));
 }
 
 int FlickyLevelDocument::cell(int layout, int x, int y) const

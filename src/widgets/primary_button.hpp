@@ -18,6 +18,8 @@ public:
     QSize minimumSizeHint() const override;
 
     void setIconName(const QString& name);
+    // Red instead of the accent, for an action that replaces data.
+    void setDanger(bool danger);
 
 protected:
     void paintEvent(QPaintEvent* event) override;
@@ -30,6 +32,7 @@ private:
 
     QString iconName_;
     bool hovered_ = false;
+    bool danger_ = false;
 };
 
 }  // namespace rl::ui

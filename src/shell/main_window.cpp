@@ -868,6 +868,22 @@ void MainWindow::updateToolbarRow() {
             chip->setToolTip(QStringLiteral("Play from selected (F5) starts here"));
             row->addWidget(chip);
         }
+        for (const sdk::EditorAction& action : model_ ? model_->actions() : QVector<sdk::EditorAction>()) {
+            auto* button = new ui::PrimaryButton(action.label, action.icon, toolbarContent_);
+            button->setDanger(action.danger);
+            button->setToolTip(action.tooltip);
+            connect(button, &QAbstractButton::clicked, this, [this, action] {
+                if (!action.confirmHeading.isEmpty() &&
+                    !frame::MessageDialog::confirm(this, action.label, action.confirmHeading, action.confirmText,
+                                                   action.confirmAction.isEmpty() ? action.label : action.confirmAction)) {
+                    return;
+                }
+                // The model acts before the Playtest view replaces its editor.
+                if (model_) model_->triggerAction(action.id);
+                if (action.showsPlaytest) showPlaytest();
+            });
+            row->addWidget(button);
+        }
         toolbarRowLayout_->addWidget(toolbarContent_);
     }
     toolbarRow_->setVisible(editor_ != nullptr);

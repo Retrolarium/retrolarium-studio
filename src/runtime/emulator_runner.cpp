@@ -135,6 +135,8 @@ local key_aliases = {
     KEYCODE_ENTER = "KEYCODE_1", KEYCODE_RSHIFT = "KEYCODE_5",
 }
 local held, keys_text = {}, ""
+-- Holding Tab runs the game unthrottled and muted (fast forward).
+local fast_forward = false
 local function apply_keys()
     local file = io.open(keys_file, "r")
     local text = ""
@@ -142,6 +144,7 @@ local function apply_keys()
         text = file:read("a") or ""
         file:close()
     end
+    fast_forward = string.find(text, "KEYCODE_TAB", 1, true) ~= nil
     if text == keys_text then return end
     keys_text = text
     local wanted = {}
@@ -228,6 +231,7 @@ end
 local fast = ready_file ~= ""
 local was_throttled, was_frameskip, was_muted = video.throttled, video.frameskip, sound.ui_mute
 local hidden, frames, unmute_at = fast, 0, nil
+local forwarding = false
 if fast then
     video.throttled = false
     video.frameskip = 10
@@ -266,6 +270,12 @@ on_frame(function()
     elseif unmute_at ~= nil and frames >= unmute_at then
         sound.ui_mute = was_muted
         unmute_at = nil
+    end
+    if not hidden and fast_forward ~= forwarding then
+        forwarding = fast_forward
+        video.throttled = was_throttled and not forwarding
+        video.frameskip = forwarding and 10 or was_frameskip
+        sound.ui_mute = forwarding or was_muted
     end
 end)
 

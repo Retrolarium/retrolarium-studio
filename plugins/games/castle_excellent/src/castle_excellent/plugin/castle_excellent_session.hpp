@@ -6,6 +6,7 @@
 #include "sdk/project_file.hpp"
 #include "sdk/session.hpp"
 
+#include <QJsonObject>
 #include <QPoint>
 
 #include <functional>
@@ -13,12 +14,16 @@
 
 namespace rl::castle {
 
-// Both documents of a Castle project, swapped whole by undo.
+// The documents of a Castle project, swapped whole by undo. The title demo
+// (documents/demo.json) is empty in projects made before it.
 struct CastleState {
     CastleLevels levels;
     nes::Bundle graphics;
+    QJsonObject demo;
 
-    bool operator==(const CastleState& other) const { return levels == other.levels && graphics == other.graphics; }
+    bool operator==(const CastleState& other) const {
+        return levels == other.levels && graphics == other.graphics && demo == other.demo;
+    }
 };
 
 // Where "Play from selected" starts: a room (1-100) and the player's pixel
@@ -48,6 +53,7 @@ public:
     void play() override;
     QString selectedStart() const override;
     void playSelected() override;
+    QString playSelectedLabel() const override;
 
     // nes::BundleOwner
     sdk::Session* bundleSession() override { return this; }
@@ -72,6 +78,18 @@ public:
     CastleStart start() const { return start_; }
     void setStart(const CastleStart& start);
 
+    const QJsonObject& demo() const { return state_.demo; }
+    const QJsonObject& savedDemo() const { return saved_.demo; }
+    int demoCapacity() const;
+    bool editDemo(const QString& text, const std::function<void(QJsonObject&)>& change, QString* error);
+    // While a demo editor is open, Play from selected runs the demo.
+    void attachDemoEditor(bool attach);
+    bool demoStart() const { return demoEditors_ > 0; }
+    bool recordingActive() const { return recordingActive_; }
+    // Builds and loops the demo, or records a new one from the controller.
+    void playDemo(bool record);
+    void stopRecording();
+
 signals:
     void startChanged();
 
@@ -81,10 +99,16 @@ private:
     void report(sdk::Severity severity, const QString& source, const QString& message);
     void runBuild(std::function<void(bool)> next);
     void launch(bool fromStart);
+    void launchDemo(bool record);
+    void applyRecording(const QString& path);
+    void upgradeDemo();
 
     sdk::ProjectFile project_;
     QString levelsPath_;
     QString graphicsPath_;
+    QString demoPath_;
+    int demoEditors_ = 0;
+    bool recordingActive_ = false;
     CastleState state_;
     CastleState saved_;
     CastleArt art_;

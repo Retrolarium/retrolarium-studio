@@ -11,6 +11,7 @@
 
 #include <QHash>
 #include <QImage>
+#include <QJsonArray>
 #include <QSet>
 
 #include <array>
@@ -57,11 +58,13 @@ public:
     void play() override;
     QString selectedStart() const override;
     void playSelected() override;
+    QString playSelectedLabel() const override;
 
     const FlickyLevelSceneRenderer& renderer() const { return *renderer_; }
 
     // Levels: whole-document snapshots, dirty by comparison with the saved copy.
     const FlickyLevelDocument& levels() const { return levels_; }
+    const FlickyLevelDocument& savedLevels() const { return savedLevels_; }
     void commitLevels(const FlickyLevelDocument& before, const FlickyLevelDocument& after,
                       const QString& text);
     bool editLevels(const QString& text, const std::function<void(FlickyLevelDocument&)>& edit,
@@ -118,6 +121,20 @@ public:
     QString projectDirectory() const { return project_.directory(); }
     QString projectPath() const { return project_.path(); }
     bool bonusPlacementsDirty() const;
+
+    // Attract demos (attract_demos in the levels document; projects made
+    // before them get them from the kit's upgrade).
+    bool attractDemosDirty() const;
+    bool editDemo(int demo, const QString& text, const QJsonArray& steps, QString* error);
+    // The most steps `demo` can hold beside the other demos.
+    int demoStepCapacity(int demo) const;
+    // While a demo editor is open, Play from selected runs its demo.
+    void attachDemoEditor(int demo, bool attach);
+    bool demoStart() const { return demoEditors_ > 0; }
+    bool recordingActive() const { return recordingActive_; }
+    // Builds and loops the demo, or records a new one from the controller.
+    void playDemo(int demo, bool record);
+    void stopRecording();
     int bonusPhase() const { return bonusPhase_; }
     void setBonusPhase(int phase) { bonusPhase_ = phase; }
     QSet<int>& mutedChannels(const QString& header) { return muted_[header]; }
@@ -160,6 +177,9 @@ private:
     // `round` >= 0 runs the kit's round script, else the game from power-on.
     void launch(int round);
     void launchPlanned(const sdk::ProcessSpec& game, int round);
+    void launchDemo(int demo, bool record);
+    void applyRecording(int demo, const QString& path);
+    void upgradeDemos();
     void replaceLevels(const FlickyLevelDocument& levels);
     void setGraphics(const FlickyGraphicsDocument& doc, quint64 revision);
     void setSemantics(const FlickySemanticsDocument& doc, quint64 revision);
@@ -211,6 +231,9 @@ private:
     QString builtRom_;
     QHash<QString, sdk::ProcessSpec> plans_;
     int bonusPhase_ = 60;
+    int demoEditors_ = 0;
+    int demo_ = 0;
+    bool recordingActive_ = false;
     QString lastBuild_;
 };
 

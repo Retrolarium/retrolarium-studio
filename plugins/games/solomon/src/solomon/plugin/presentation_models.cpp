@@ -292,6 +292,7 @@ sdk::Inspection SolomonTitleModel::inspect() const {
 SolomonDemoModel::SolomonDemoModel(SolomonSession* session) : TableModel(session), session_(session) {
     connect(session_, &sdk::Session::contentChanged, this, &sdk::EditorModel::contentChanged);
     connect(session_, &SolomonSession::startChanged, this, &sdk::EditorModel::toolsChanged);
+    connect(session_, &sdk::Session::selectedStartChanged, this, &sdk::EditorModel::toolsChanged);
     // Play from selected runs the demo while this is open.
     attached_ = session_;
     session_->attachDemoEditor(true);
@@ -305,50 +306,38 @@ QString SolomonDemoModel::startPoint() const {
     return session_->demoStart() ? session_->selectedStart() : QString();
 }
 
-SolomonDemoModel::Recording SolomonDemoModel::stepsFromRecording(const QString& text) {
-    constexpr int kSteps = 34;
-    QVector<QPair<int, int>> changes;
-    int end = -1;
+int SolomonDemoModel::demoCapacity(const QString& revision) {
+    // The tables grow into the filler after them, up to the expansion's
+    // wrappers (kit solomon_presentation, demo_end_cpu).
+    return revision == QLatin1String("europe") ? 85 : 93;
+}
+
+SolomonDemoModel::Recording SolomonDemoModel::stepsFromRecording(const QString& text, int capacity) {
+    Recording result;
+    QVector<QPair<int, int>> steps;
+    int current = 0;
     for (const QString& line : text.split(QLatin1Char('\n'), Qt::SkipEmptyParts)) {
         const QStringList words = line.simplified().split(QLatin1Char(' '));
-        if (words.size() != 2) continue;
-        if (words.at(0) == QLatin1String("end")) end = words.at(1).toInt();
-        else changes << qMakePair(words.at(0).toInt(), words.at(1).toInt() & 0xff);
-    }
-    Recording result;
-    if (changes.isEmpty() && end < 0) return result;
-    // Steps as (duration, buttons): the buttons go in after duration + 1
-    // ticks of the NMI frame counter (the recording's clock) and stay until
-    // the next step.
-    QVector<QPair<int, int>> steps;
-    int last = 0;      // frame of the last install
-    int current = 0;
-    const auto waitUntil = [&](int frame, int buttons) {
-        int gap = std::max(1, frame - last);
-        while (gap > 256) {
-            steps << qMakePair(255, current);
-            last += 256;
-            gap -= 256;
+        if (words.size() == 3 && words.at(0) == QLatin1String("step")) {
+            current = words.at(2).toInt() & 0xff;
+            steps << qMakePair(std::clamp(words.at(1).toInt(), 0, 254), current);
+            result.pressed = result.pressed || current != 0;
+        } else if (words.size() == 2 && words.at(0) == QLatin1String("hold") && !steps.isEmpty()) {
+            // The time after the last change: the demo goes on to it.
+            int ticks = words.at(1).toInt();
+            while (ticks > 0) {
+                const int wait = std::min(ticks, 255);
+                steps << qMakePair(wait - 1, current);
+                ticks -= wait;
+            }
         }
-        steps << qMakePair(gap - 1, buttons);
-        last += gap;
-        current = buttons;
-    };
-    for (const auto& change : changes) {
-        if (change.second != current) waitUntil(change.first, change.second);
     }
-    if (end > last && current != 0) waitUntil(end, 0);
-    // Nothing pressed: no demo to make.
-    if (steps.isEmpty()) return result;
-    int frames = 0;
+    if (!result.pressed) return result;
     for (int i = 0; i < steps.size(); ++i) {
-        if (i < kSteps) frames += steps.at(i).first + 1;
+        if (i < capacity) result.keptFrames += steps.at(i).first + 1;
         else result.droppedFrames += steps.at(i).first + 1;
     }
-    result.keptFrames = frames;
-    steps.resize(std::min<int>(steps.size(), kSteps));
-    // Unused steps end the demo a frame apart without buttons.
-    while (steps.size() < kSteps) steps << qMakePair(0, 0);
+    steps.resize(std::min<int>(steps.size(), capacity));
     for (int i = 0; i < steps.size(); ++i) {
         QJsonObject step;
         step.insert(QStringLiteral("index"), i);
@@ -364,13 +353,40 @@ SolomonDemoModel::Recording SolomonDemoModel::stepsFromRecording(const QString& 
     return result;
 }
 
-bool SolomonDemoModel::setField(const QString& key, const QVariant& value, QString* error) {
-    if (key == QLatin1String("play")) {
-        session_->setDemoRecording(value.toString().startsWith(QLatin1String("Record")));
-        emit selectionChanged();
-        return true;
+QVector<sdk::EditorAction> SolomonDemoModel::actions() const {
+    sdk::EditorAction loop;
+    loop.id = QStringLiteral("loop");
+    loop.label = QStringLiteral("Loop demo");
+    loop.icon = QStringLiteral("play");
+    loop.tooltip = QStringLiteral("Build and play the demo over and over, as the console plays it after power-on");
+    loop.showsPlaytest = true;
+    sdk::EditorAction record;
+    record.danger = true;
+    record.showsPlaytest = true;
+    if (session_->recordingActive()) {
+        record.id = QStringLiteral("stop");
+        record.label = QStringLiteral("Stop recording");
+        record.icon = QStringLiteral("stop");
+        record.tooltip = QStringLiteral("Finish the recording and keep it as the demo");
+    } else {
+        record.id = QStringLiteral("record");
+        record.label = QStringLiteral("Record");
+        record.icon = QStringLiteral("record");
+        record.tooltip = QStringLiteral("Play the demo room with your controller; what you play becomes the demo");
+        record.confirmHeading = QStringLiteral("Record a new demo?");
+        record.confirmText = QStringLiteral("You play room 3 with your controller. When you press Start or Stop "
+                                            "recording, what you played replaces the current demo (%1 steps). "
+                                            "Undo brings it back.")
+                                 .arg(rowCount());
+        record.confirmAction = QStringLiteral("Record");
     }
-    return TableModel::setField(key, value, error);
+    return {loop, record};
+}
+
+void SolomonDemoModel::triggerAction(const QString& id) {
+    if (id == QLatin1String("loop")) session_->playDemo(false);
+    else if (id == QLatin1String("record")) session_->playDemo(true);
+    else if (id == QLatin1String("stop")) session_->stopRecording();
 }
 
 QVector<sdk::TableColumn> SolomonDemoModel::columns() const {
@@ -445,8 +461,11 @@ bool SolomonDemoModel::setCell(int row, int column, const QString& value, QStrin
     if (column == 1) {
         bool ok = false;
         const int frames = value.trimmed().toInt(&ok);
-        if (!ok || frames < 0 || frames > 255) {
-            if (error) *error = QStringLiteral("A step lasts 0-255 frames.");
+        if (!ok || frames < 0 || frames > 254) {
+            if (error) {
+                *error = QStringLiteral("A step waits 0-254 frames: the game waits for its frame counter to pass "
+                                        "the value, and 255 it never passes.");
+            }
             return false;
         }
         step.insert(QStringLiteral("duration"), frames);
@@ -477,7 +496,10 @@ sdk::Budget SolomonDemoModel::budget() const {
         frames += v.toObject().value(QStringLiteral("duration")).toInt() + 1;
     }
     sdk::Budget budget;
-    budget.text = QStringLiteral("%1 steps · %2 frames, %3 s").arg(rowCount()).arg(frames).arg(frames / 60);
+    const int capacity = demoCapacity(session_->rooms().revision());
+    budget.used = rowCount();
+    budget.capacity = capacity;
+    budget.text = QStringLiteral("%1 / %2 steps · %3 frames, %4 s").arg(rowCount()).arg(capacity).arg(frames).arg(frames / 60);
     return budget;
 }
 
@@ -485,17 +507,12 @@ sdk::Inspection SolomonDemoModel::inspect() const {
     sdk::Inspection inspection;
     inspection.kicker = QStringLiteral("Attract demo");
     inspection.title = QStringLiteral("Step %1").arg(row_ + 1);
-    sdk::Field play;
-    play.key = QStringLiteral("play");
-    play.label = QStringLiteral("Play");
-    play.type = sdk::Field::Type::Choice;
-    play.choices = QStringList{QStringLiteral("Loop the demo"), QStringLiteral("Record a new demo")};
-    play.value = session_->demoRecording() ? play.choices.at(1) : play.choices.at(0);
-    inspection.fields = {play};
     inspection.note = QStringLiteral("When the title waits, the game plays this input in room 3: each step waits "
-                                     "its frames, then holds its buttons. Play from selected loops the demo in "
-                                     "the emulator. Record a new demo plays the room with your controller and "
-                                     "turns what you press into the 34 steps when you press Start or Stop.");
+                                     "its frames, then holds its buttons. Loop demo plays it over and over in "
+                                     "the emulator. Record plays the room with your controller and turns what "
+                                     "you press into steps when you press Start or Stop recording; the tables "
+                                     "hold up to %1 steps.")
+                           .arg(demoCapacity(session_->rooms().revision()));
     inspection.engineTag = QStringLiteral("solomon.presentation@1");
     return inspection;
 }

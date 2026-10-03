@@ -314,6 +314,7 @@ CastlePlaytestModel::CastlePlaytestModel(CastleSession* session) : EmulatorModel
         emit toolsChanged();
         emit contentChanged();
     });
+    connect(session_, &sdk::Session::selectedStartChanged, this, &sdk::EditorModel::contentChanged);
 }
 
 QString CastlePlaytestModel::startLabel() const {
@@ -322,6 +323,10 @@ QString CastlePlaytestModel::startLabel() const {
 
 void CastlePlaytestModel::play() {
     session_->playSelected();
+}
+
+bool CastlePlaytestModel::isRecording() const {
+    return session_->recordingActive();
 }
 
 sdk::Inspection CastlePlaytestModel::inspect() const {

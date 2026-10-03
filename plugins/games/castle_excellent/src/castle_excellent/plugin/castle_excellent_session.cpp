@@ -1,5 +1,6 @@
 #include "castle/plugin/castle_session.hpp"
 
+#include "castle/plugin/demo_model.hpp"
 #include "castle/plugin/room_model.hpp"
 #include "castle/plugin/table_models.hpp"
 #include "nes/palette.hpp"
@@ -7,9 +8,13 @@
 #include "sdk/snapshot_command.hpp"
 
 #include <QDateTime>
+#include <QFile>
 #include <QJsonArray>
 #include <QJsonDocument>
+#include <QSaveFile>
 #include <QUndoStack>
+
+#include <algorithm>
 
 namespace rl::castle {
 
@@ -70,6 +75,21 @@ sdk::ProcessSpec specFromPlan(const QJsonObject& json) {
     return game;
 }
 
+QJsonObject loadJsonObject(const QString& path) {
+    QFile file(path);
+    if (!file.open(QIODevice::ReadOnly)) throw CastleError(QStringLiteral("Cannot read %1.").arg(path).toStdString());
+    const QJsonDocument doc = QJsonDocument::fromJson(file.readAll());
+    if (!doc.isObject()) throw CastleError(QStringLiteral("%1 is not a JSON object.").arg(path).toStdString());
+    return doc.object();
+}
+
+void saveJsonObject(const QString& path, const QJsonObject& value) {
+    QSaveFile file(path);
+    if (!file.open(QIODevice::WriteOnly)) throw CastleError(QStringLiteral("Cannot write %1.").arg(path).toStdString());
+    file.write(QJsonDocument(value).toJson(QJsonDocument::Indented));
+    if (!file.commit()) throw CastleError(QStringLiteral("Cannot write %1.").arg(path).toStdString());
+}
+
 QString first(const nes::Bundle& bundle, const char* codec) {
     const QStringList ids = bundle.resourceIds(QString::fromLatin1(codec));
     return ids.isEmpty() ? QString() : ids.first();
@@ -96,6 +116,11 @@ std::unique_ptr<CastleSession> CastleSession::open(const sdk::ProjectFile& proje
         session->graphicsPath_ = project.resolve(graphics);
         session->state_.levels = CastleLevels::load(session->levelsPath_);
         session->state_.graphics = nes::Bundle::load(session->graphicsPath_);
+        const QString demo = tabDocument(project, QStringLiteral("castle.demo@1"));
+        if (!demo.isEmpty()) {
+            session->demoPath_ = project.resolve(demo);
+            session->state_.demo = loadJsonObject(session->demoPath_);
+        }
         session->saved_ = session->state_;
         const nes::Bundle& g = session->state_.graphics;
         session->art_.chr = QStringLiteral("chr-bank-%1").arg(session->state_.levels.chrBank());
@@ -139,6 +164,7 @@ QVector<sdk::Kind> CastleSession::kinds() const {
             kind("palettes", "Palettes", "palettes", sdk::EditorType::Palette),
             kind("text", "Text", "text", sdk::EditorType::Table),
             kind("sfx", "Sound FX", "sound", sdk::EditorType::Table),
+            kind("demo", "Demo", "play", sdk::EditorType::Table),
             kind("playtest", "Playtest", "playtest", sdk::EditorType::Emulator)};
 }
 
@@ -202,6 +228,18 @@ QVector<sdk::DocumentGroup> CastleSession::documents(const QString& kind) const 
                                      state_.graphics.resource(id) != saved_.graphics.resource(id));
         }
         groups << group;
+    } else if (kind == QLatin1String("demo")) {
+        sdk::DocumentGroup group;
+        group.title = QStringLiteral("Title");
+        if (state_.demo.isEmpty()) {
+            group.documents << entry(QStringLiteral("upgrade"), QStringLiteral("Add the title demo to this project"),
+                                     QStringLiteral("kit"));
+        } else {
+            group.documents << entry(QStringLiteral("demo"), QStringLiteral("Title demo"),
+                                     QStringLiteral("%1 steps").arg(state_.demo.value(QStringLiteral("steps")).toArray().size()),
+                                     state_.demo != saved_.demo);
+        }
+        groups << group;
     } else if (kind == QLatin1String("playtest")) {
         sdk::DocumentGroup group;
         group.title = QStringLiteral("Session");
@@ -244,6 +282,15 @@ std::unique_ptr<sdk::EditorModel> CastleSession::openEditor(const QString& kind,
         if (kind == QLatin1String("sfx") &&
             state_.graphics.resourceIds(QStringLiteral("castle.sfx-parameters.v1")).contains(document)) {
             return std::make_unique<CastleSfxModel>(this, document);
+        }
+        if (kind == QLatin1String("demo")) {
+            if (document == QLatin1String("upgrade") && state_.demo.isEmpty()) {
+                upgradeDemo();
+                return nullptr;
+            }
+            if (document == QLatin1String("demo") && !state_.demo.isEmpty()) {
+                return std::make_unique<CastleDemoModel>(this);
+            }
         }
         if (kind == QLatin1String("playtest")) {
             return std::make_unique<CastlePlaytestModel>(this);
@@ -305,6 +352,9 @@ bool CastleSession::save(QString* error) {
         if (state_.graphics != saved_.graphics) {
             state_.graphics.save(graphicsPath_);
         }
+        if (state_.demo != saved_.demo && !demoPath_.isEmpty()) {
+            saveJsonObject(demoPath_, state_.demo);
+        }
     } catch (const std::exception& e) {
         if (error) {
             *error = QString::fromUtf8(e.what());
@@ -332,6 +382,7 @@ void CastleSession::setStart(const CastleStart& start) {
 }
 
 QString CastleSession::selectedStart() const {
+    if (demoStart()) return QStringLiteral("Title demo");
     return QStringLiteral("%1 · %2, %3").arg(roomLabel(start_.room)).arg(start_.pixel.x()).arg(start_.pixel.y());
 }
 
@@ -454,7 +505,191 @@ void CastleSession::play() {
 }
 
 void CastleSession::playSelected() {
-    launch(false);
+    if (recordingActive_) stopRecording();
+    else if (demoStart()) launchDemo(false);
+    else launch(false);
+}
+
+QString CastleSession::playSelectedLabel() const {
+    if (recordingActive_) return QStringLiteral("Stop recording");
+    return demoStart() ? QStringLiteral("Play demo") : QString();
+}
+
+// ---------------------------------------------------------------- demo
+
+int CastleSession::demoCapacity() const {
+    const int capacity = state_.demo.value(QStringLiteral("layout")).toObject().value(QStringLiteral("capacity")).toInt();
+    return capacity > 0 ? capacity : 72;
+}
+
+bool CastleSession::editDemo(const QString& text, const std::function<void(QJsonObject&)>& change, QString* error) {
+    QJsonObject next = state_.demo;
+    change(next);
+    const QJsonArray steps = next.value(QStringLiteral("steps")).toArray();
+    int commands = 0;
+    for (const QJsonValue& step : steps) commands += step.toObject().value(QStringLiteral("commands")).toInt();
+    if (steps.isEmpty() || commands > demoCapacity()) {
+        if (error) *error = QStringLiteral("The demo holds 1-%1 commands of 12 frames.").arg(demoCapacity());
+        return false;
+    }
+    return edit(text, [next](CastleState& s) { s.demo = next; }, error);
+}
+
+void CastleSession::attachDemoEditor(bool attach) {
+    const bool before = demoStart();
+    demoEditors_ = std::max(0, demoEditors_ + (attach ? 1 : -1));
+    if (demoStart() != before) {
+        emit startChanged();
+        emit selectedStartChanged();
+    }
+}
+
+void CastleSession::playDemo(bool record) {
+    if (!recordingActive_) launchDemo(record);
+}
+
+void CastleSession::stopRecording() {
+    if (recordingActive_ && host()) host()->stopEmulator();
+}
+
+void CastleSession::upgradeDemo() {
+    sdk::Host* h = host();
+    if (!h || h->isBusy()) return;
+    QString error;
+    sdk::ProcessSpec spec =
+        h->kitCommand({QStringLiteral("studio"), QStringLiteral("castle-upgrade"), project_.path()}, project_.directory(), &error);
+    if (spec.program.isEmpty()) {
+        report(sdk::Severity::Error, QStringLiteral("demo"), error);
+        return;
+    }
+    spec.label = QStringLiteral("Add the title demo");
+    h->runProcess(spec, [this](const sdk::ProcessResult& result) {
+        if (!result.succeeded()) {
+            if (!result.cancelled) {
+                report(sdk::Severity::Error, QStringLiteral("demo"),
+                       QStringLiteral("Adding the title demo failed: %1").arg(failureText(result)));
+            }
+            return;
+        }
+        QString loadError;
+        const sdk::ProjectFile reloaded = sdk::ProjectFile::load(project_.path(), &loadError);
+        const QString demo = reloaded.path().isEmpty() ? QString() : tabDocument(reloaded, QStringLiteral("castle.demo@1"));
+        if (demo.isEmpty()) {
+            report(sdk::Severity::Error, QStringLiteral("demo"), QStringLiteral("The kit added no demo document. %1").arg(loadError));
+            return;
+        }
+        project_ = reloaded;
+        demoPath_ = project_.resolve(demo);
+        try {
+            // The new document joins the saved state; other unsaved edits stay.
+            const QJsonObject value = loadJsonObject(demoPath_);
+            state_.demo = value;
+            saved_.demo = value;
+        } catch (const std::exception& e) {
+            report(sdk::Severity::Error, QStringLiteral("demo"), QString::fromUtf8(e.what()));
+            return;
+        }
+        report(sdk::Severity::Info, QStringLiteral("demo"), QStringLiteral("Added documents/demo.json: the title demo."));
+        emit contentChanged();
+        emit documentsChanged(QStringLiteral("demo"));
+    });
+}
+
+void CastleSession::launchDemo(bool record) {
+    runBuild([this, record](bool ok) {
+        sdk::Host* h = host();
+        if (!ok || !h) return;
+        const QString mame = h->emulatorPath(QStringLiteral("mame"));
+        if (mame.isEmpty()) {
+            report(sdk::Severity::Error, QStringLiteral("playtest"),
+                   QStringLiteral("MAME was not found. Set RETROLARIUM_MAME to consoles.exe."));
+            return;
+        }
+        QStringList arguments{QStringLiteral("studio"), QStringLiteral("castle-demo-plan"), project_.path(),
+                              QStringLiteral("--mame"), mame};
+        const QString recording = project_.resolve(QStringLiteral("build/demo-recording.txt"));
+        if (record) {
+            QFile::remove(recording);
+            arguments << QStringLiteral("--record") << recording;
+        }
+        QString error;
+        sdk::ProcessSpec plan = h->kitCommand(arguments, project_.directory(), &error);
+        if (plan.program.isEmpty()) {
+            report(sdk::Severity::Error, QStringLiteral("playtest"), error);
+            return;
+        }
+        plan.label = record ? QStringLiteral("Plan demo recording") : QStringLiteral("Plan title demo");
+        h->runProcess(plan, [this, record, recording](const sdk::ProcessResult& result) {
+            sdk::Host* host = this->host();
+            if (!host) return;
+            if (!result.succeeded()) {
+                if (!result.cancelled) {
+                    report(sdk::Severity::Error, QStringLiteral("playtest"),
+                           QStringLiteral("Demo plan failed: %1").arg(failureText(result)));
+                }
+                return;
+            }
+            sdk::ProcessSpec game = specFromPlan(QJsonDocument::fromJson(result.standardOutput).object());
+            if (game.program.isEmpty()) {
+                report(sdk::Severity::Error, QStringLiteral("playtest"), QStringLiteral("The kit returned no emulator command."));
+                return;
+            }
+            const std::string model = state_.graphics.paletteModel(art_.roomPalette).toStdString();
+            for (int i = 0; i < 64; ++i) game.palette << nes::masterColor(i, model);
+            // The Playtest view covers the way to the demo.
+            game.readyFile = project_.resolve(QStringLiteral("build/demo-ready.txt"));
+            game.environment.insert(QStringLiteral("CASTLE_DEMO_READY"), game.readyFile);
+            if (record) {
+                recordingActive_ = true;
+                emit selectedStartChanged();
+                report(sdk::Severity::Info, QStringLiteral("demo"),
+                       QStringLiteral("Recording: play with the controller; it ends after %1 s, on Start or on Stop "
+                                      "recording.")
+                           .arg(demoCapacity() * 12 / 60));
+            }
+            const QString name = profile().name;
+            const QString title = record ? QStringLiteral("%1 · recording the demo").arg(name)
+                                         : QStringLiteral("%1 · title demo").arg(name);
+            host->launchEmulator(game, title, [this, record, recording](const sdk::ProcessResult& run) {
+                if (run.crashed || (!run.started && !run.error.isEmpty())) {
+                    report(sdk::Severity::Error, QStringLiteral("playtest"),
+                           run.error.isEmpty() ? QStringLiteral("The emulator crashed.") : run.error);
+                }
+                if (record) {
+                    recordingActive_ = false;
+                    emit selectedStartChanged();
+                    applyRecording(recording);
+                }
+            });
+        });
+    });
+}
+
+void CastleSession::applyRecording(const QString& path) {
+    QFile file(path);
+    if (!file.open(QIODevice::ReadOnly)) {
+        report(sdk::Severity::Warning, QStringLiteral("demo"), QStringLiteral("Nothing was recorded: the demo did not start."));
+        return;
+    }
+    const CastleDemoModel::Recording recording =
+        CastleDemoModel::stepsFromRecording(QString::fromUtf8(file.readAll()), demoCapacity());
+    if (!recording.pressed) {
+        report(sdk::Severity::Warning, QStringLiteral("demo"),
+               QStringLiteral("No buttons were pressed while recording; the demo stays as it was."));
+        return;
+    }
+    const QJsonArray steps = recording.steps;
+    QString error;
+    if (!editDemo(QStringLiteral("Record the title demo"),
+                  [steps](QJsonObject& demo) { demo.insert(QStringLiteral("steps"), steps); }, &error)) {
+        report(sdk::Severity::Error, QStringLiteral("demo"), error);
+        return;
+    }
+    report(sdk::Severity::Info, QStringLiteral("demo"),
+           QStringLiteral("Recorded %1 commands (%2 s) into the title demo's %3 steps.")
+               .arg(recording.commands)
+               .arg(recording.commands * 12 / 60.0, 0, 'f', 1)
+               .arg(steps.size()));
 }
 
 void CastleSession::launch(bool fromStart) {

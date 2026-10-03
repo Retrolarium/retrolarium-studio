@@ -87,6 +87,7 @@ public:
     QString coreLabel() const override { return QStringLiteral("MAME · nes"); }
     QString startLabel() const override;
     void play() override;
+    bool isRecording() const override;
 
 private:
     CastleSession* session_;

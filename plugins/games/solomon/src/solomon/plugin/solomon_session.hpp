@@ -62,8 +62,9 @@ public:
     // While a Demo editor is open, Play from selected runs the attract demo
     // instead of a room: looping it, or recording a new one.
     bool demoStart() const { return demoEditors_ > 0; }
-    bool demoRecording() const { return demoRecording_; }
-    void setDemoRecording(bool recording);
+    // Builds and loops the demo, or records a new one from the controller.
+    void playDemo(bool record);
+    void stopRecording();
     bool recordingActive() const { return recordingActive_; }
     void attachDemoEditor(bool attach);
 
@@ -95,7 +96,6 @@ private:
     quint64 nextRevision_ = 1;
     int startRoom_ = 1;
     int demoEditors_ = 0;
-    bool demoRecording_ = false;
     bool recordingActive_ = false;      // a demo recording runs in the emulator
     QString lastBuild_;
 

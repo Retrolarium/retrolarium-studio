@@ -22,6 +22,7 @@ public:
     QSize screenSize() const override { return {320, 224}; }
     QString coreLabel() const override { return QStringLiteral("MAME · genesis"); }
     QString startLabel() const override;
+    bool isRecording() const override;
     void play() override;
 
 private:

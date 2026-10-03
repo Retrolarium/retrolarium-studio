@@ -41,6 +41,8 @@ studio_enable_warnings(flicky_data)
 add_library(flicky_plugin STATIC
     flicky/src/flicky/plugin/bonus_model.cpp
     flicky/src/flicky/plugin/bonus_model.hpp
+    flicky/src/flicky/plugin/demo_model.cpp
+    flicky/src/flicky/plugin/demo_model.hpp
     flicky/src/flicky/plugin/flicky_plugin.cpp
     flicky/src/flicky/plugin/flicky_plugin.hpp
     flicky/src/flicky/plugin/flicky_session.cpp
@@ -110,6 +112,8 @@ studio_enable_warnings(smb_data)
 
 # Super Mario Bros. plugin: profile, document lists and editor models.
 add_library(smb_plugin STATIC
+    smb/src/smb/plugin/demo_model.cpp
+    smb/src/smb/plugin/demo_model.hpp
     smb/src/smb/plugin/graphics_models.cpp
     smb/src/smb/plugin/graphics_models.hpp
     smb/src/smb/plugin/level_model.cpp
@@ -173,6 +177,8 @@ add_library(castle_plugin STATIC
     castle/src/castle/plugin/castle_plugin.hpp
     castle/src/castle/plugin/castle_session.cpp
     castle/src/castle/plugin/castle_session.hpp
+    castle/src/castle/plugin/demo_model.cpp
+    castle/src/castle/plugin/demo_model.hpp
     castle/src/castle/plugin/room_model.cpp
     castle/src/castle/plugin/room_model.hpp
     castle/src/castle/plugin/table_models.cpp

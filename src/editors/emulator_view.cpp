@@ -460,7 +460,7 @@ QWidget* EmulatorView::createToolbar(QWidget* parent) {
         status = QStringLiteral("Stopping…");
     } else if (running) {
         status = runner_->isPaused()                 ? QStringLiteral("Paused")
-                 : stage_->surface()->hasFocus() ? QStringLiteral("Running · arrows, Z X, Enter, right Shift or a game pad")
+                 : stage_->surface()->hasFocus() ? QStringLiteral("Running · arrows, Z X, Enter, right Shift or a game pad · hold Tab to fast-forward")
                                                  : QStringLiteral("Running · click the picture for the keyboard");
     }
     auto* state = new ui::Label(status, ui::Label::Role::Small, bar);

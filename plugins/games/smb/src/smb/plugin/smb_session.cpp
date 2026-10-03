@@ -3,6 +3,7 @@
 #include "nes/palette.hpp"
 #include "sdk/plugin.hpp"
 #include "sdk/snapshot_command.hpp"
+#include "smb/plugin/demo_model.hpp"
 #include "smb/plugin/graphics_models.hpp"
 #include "smb/plugin/level_model.hpp"
 #include "smb/plugin/metatile_model.hpp"
@@ -15,6 +16,8 @@
 
 #include <QDateTime>
 #include <QDir>
+#include <QFile>
+#include <QSaveFile>
 #include <QFileInfo>
 #include <QJsonArray>
 #include <QJsonDocument>
@@ -23,6 +26,21 @@
 namespace rl::smb {
 
 namespace {
+
+QJsonObject loadJsonObject(const QString& path) {
+    QFile file(path);
+    if (!file.open(QIODevice::ReadOnly)) throw SmbError(QStringLiteral("Cannot read %1.").arg(path).toStdString());
+    const QJsonDocument doc = QJsonDocument::fromJson(file.readAll());
+    if (!doc.isObject()) throw SmbError(QStringLiteral("%1 is not a JSON object.").arg(path).toStdString());
+    return doc.object();
+}
+
+void saveJsonObject(const QString& path, const QJsonObject& value) {
+    QSaveFile file(path);
+    if (!file.open(QIODevice::WriteOnly)) throw SmbError(QStringLiteral("Cannot write %1.").arg(path).toStdString());
+    file.write(QJsonDocument(value).toJson(QJsonDocument::Indented));
+    if (!file.commit()) throw SmbError(QStringLiteral("Cannot write %1.").arg(path).toStdString());
+}
 
 QString tabDocument(const sdk::ProjectFile& project, const QString& codec) {
     for (const QVariant& value : project.list(QStringLiteral("workspace.tabs"))) {
@@ -130,6 +148,12 @@ std::unique_ptr<SmbSession> SmbSession::open(const sdk::ProjectFile& project, QS
             throw SmbError("The resource bundle lacks levels, pattern tiles, metatiles or palettes.");
         }
         session->painter_ = std::make_unique<SmbLevelPainter>(session->document_, session->art_);
+        const QString demo = tabDocument(project, QStringLiteral("smb.demo@1"));
+        if (!demo.isEmpty()) {
+            session->demoPath_ = project.resolve(demo);
+            session->demo_ = loadJsonObject(session->demoPath_);
+            session->savedDemo_ = session->demo_;
+        }
         const QStringList areas = session->document_.areaNames(session->levels_);
         if (!areas.isEmpty()) {
             // Start where the game does: the area of world 1, course 1.
@@ -182,6 +206,7 @@ QVector<sdk::Kind> SmbSession::kinds() const {
             kind("screens", "Screens", "tileset", sdk::EditorType::TileMap),
             kind("text", "Text", "text", sdk::EditorType::Table),
             kind("sound", "Sound", "sound", sdk::EditorType::Sequencer),
+            kind("demo", "Demo", "play", sdk::EditorType::Table),
             kind("playtest", "Playtest", "playtest", sdk::EditorType::Emulator)};
 }
 
@@ -395,6 +420,19 @@ QVector<sdk::DocumentGroup> SmbSession::documents(const QString& kind) const {
         }
         group.documents << e;
         groups << group;
+    } else if (kind == QLatin1String("demo")) {
+        sdk::DocumentGroup group;
+        group.title = QStringLiteral("Title");
+        if (demo_.isEmpty()) {
+            group.documents << entry(QStringLiteral("upgrade"), QStringLiteral("Add the title demo to this project"),
+                                     QStringLiteral("kit"));
+        } else {
+            sdk::DocumentEntry e = entry(QStringLiteral("demo"), QStringLiteral("Title demo"),
+                                         QStringLiteral("%1 steps").arg(demo_.value(QStringLiteral("steps")).toArray().size()));
+            e.dirty = demo_ != savedDemo_;
+            group.documents << e;
+        }
+        groups << group;
     } else if (kind == QLatin1String("playtest")) {
         sdk::DocumentGroup group;
         group.title = QStringLiteral("Session");
@@ -465,6 +503,13 @@ std::unique_ptr<sdk::EditorModel> SmbSession::openEditor(const QString& kind, co
         if (kind == QLatin1String("text") && document == QLatin1String("all")) {
             return std::make_unique<SmbTextModel>(this);
         }
+        if (kind == QLatin1String("demo")) {
+            if (document == QLatin1String("upgrade") && demo_.isEmpty()) {
+                upgradeDemo();
+                return nullptr;
+            }
+            if (document == QLatin1String("demo") && !demo_.isEmpty()) return std::make_unique<SmbDemoModel>(this);
+        }
         if (kind == QLatin1String("playtest")) {
             return std::make_unique<SmbPlaytestModel>(this);
         }
@@ -513,6 +558,7 @@ bool SmbSession::save(QString* error) {
         if (revision_ != savedRevision_) {
             document_.save(documentPath_);
         }
+        if (demo_ != savedDemo_ && !demoPath_.isEmpty()) saveJsonObject(demoPath_, demo_);
     } catch (const std::exception& e) {
         if (error) {
             *error = QString::fromUtf8(e.what());
@@ -521,6 +567,7 @@ bool SmbSession::save(QString* error) {
     }
     saved_ = document_;
     savedRevision_ = revision_;
+    savedDemo_ = demo_;
     undoStack()->setClean();
     for (const sdk::Kind& k : kinds()) {
         emit documentsChanged(k.id);
@@ -674,6 +721,7 @@ void SmbSession::selectStart(const QString& area) {
 }
 
 QString SmbSession::selectedStart() const {
+    if (demoStart()) return QStringLiteral("Title demo");
     if (start_.area.isEmpty()) {
         return {};
     }
@@ -794,7 +842,200 @@ void SmbSession::play() {
 }
 
 void SmbSession::playSelected() {
-    launch(false);
+    if (recordingActive_) stopRecording();
+    else if (demoStart()) launchDemo(false);
+    else launch(false);
+}
+
+QString SmbSession::playSelectedLabel() const {
+    if (recordingActive_) return QStringLiteral("Stop recording");
+    return demoStart() ? QStringLiteral("Play demo") : QString();
+}
+
+// ---------------------------------------------------------------- demo
+
+int SmbSession::demoCapacity() const {
+    const int capacity = demo_.value(QStringLiteral("layout")).toObject().value(QStringLiteral("capacity")).toInt();
+    return capacity > 0 ? capacity : 21;
+}
+
+void SmbSession::setDemo(const QJsonObject& demo) {
+    demo_ = demo;
+    emit contentChanged();
+    emit documentsChanged(QStringLiteral("demo"));
+}
+
+bool SmbSession::editDemo(const QString& text, const std::function<void(QJsonObject&)>& change, QString* error) {
+    QJsonObject next = demo_;
+    change(next);
+    if (next == demo_) return true;
+    const QJsonArray steps = next.value(QStringLiteral("steps")).toArray();
+    if (steps.isEmpty() || steps.size() > demoCapacity()) {
+        if (error) *error = QStringLiteral("The demo holds 1-%1 steps.").arg(demoCapacity());
+        return false;
+    }
+    undoStack()->push(new sdk::SnapshotCommand<QJsonObject>(
+        [this](const QJsonObject& value, quint64) { setDemo(value); }, demo_, 0, next, 0, text));
+    return true;
+}
+
+void SmbSession::attachDemoEditor(bool attach) {
+    const bool before = demoStart();
+    demoEditors_ = std::max(0, demoEditors_ + (attach ? 1 : -1));
+    if (demoStart() != before) {
+        emit startChanged();
+        emit selectedStartChanged();
+    }
+}
+
+void SmbSession::playDemo(bool record) {
+    if (!recordingActive_) launchDemo(record);
+}
+
+void SmbSession::stopRecording() {
+    if (recordingActive_ && host()) host()->stopEmulator();
+}
+
+void SmbSession::upgradeDemo() {
+    sdk::Host* h = host();
+    if (!h || h->isBusy()) return;
+    QString error;
+    sdk::ProcessSpec spec =
+        h->kitCommand({QStringLiteral("studio"), QStringLiteral("smb-upgrade"), project_.path()}, project_.directory(), &error);
+    if (spec.program.isEmpty()) {
+        report(sdk::Severity::Error, QStringLiteral("demo"), error);
+        return;
+    }
+    spec.label = QStringLiteral("Add the title demo");
+    h->runProcess(spec, [this](const sdk::ProcessResult& result) {
+        if (!result.succeeded()) {
+            if (!result.cancelled) {
+                report(sdk::Severity::Error, QStringLiteral("demo"),
+                       QStringLiteral("Adding the title demo failed: %1").arg(failureText(result)));
+            }
+            return;
+        }
+        QString loadError;
+        const sdk::ProjectFile reloaded = sdk::ProjectFile::load(project_.path(), &loadError);
+        const QString demo = reloaded.path().isEmpty() ? QString() : tabDocument(reloaded, QStringLiteral("smb.demo@1"));
+        if (demo.isEmpty()) {
+            report(sdk::Severity::Error, QStringLiteral("demo"), QStringLiteral("The kit added no demo document. %1").arg(loadError));
+            return;
+        }
+        project_ = reloaded;
+        demoPath_ = project_.resolve(demo);
+        try {
+            demo_ = loadJsonObject(demoPath_);
+            savedDemo_ = demo_;
+        } catch (const std::exception& e) {
+            report(sdk::Severity::Error, QStringLiteral("demo"), QString::fromUtf8(e.what()));
+            return;
+        }
+        report(sdk::Severity::Info, QStringLiteral("demo"), QStringLiteral("Added documents/demo.json: the title demo."));
+        emit contentChanged();
+        emit documentsChanged(QStringLiteral("demo"));
+    });
+}
+
+void SmbSession::launchDemo(bool record) {
+    runBuild(
+        [this, record](bool ok) {
+            sdk::Host* h = host();
+            if (!ok || !h) return;
+            const QString mame = h->emulatorPath(QStringLiteral("mame"));
+            if (mame.isEmpty()) {
+                report(sdk::Severity::Error, QStringLiteral("playtest"),
+                       QStringLiteral("MAME was not found. Set RETROLARIUM_MAME to consoles.exe."));
+                return;
+            }
+            QStringList arguments{QStringLiteral("studio"), QStringLiteral("smb-demo-plan"), project_.path(),
+                                  QStringLiteral("--mame"), mame};
+            const QString recording = project_.resolve(QStringLiteral("build/demo-recording.txt"));
+            if (record) {
+                QFile::remove(recording);
+                arguments << QStringLiteral("--record") << recording;
+            }
+            QString error;
+            sdk::ProcessSpec plan = h->kitCommand(arguments, project_.directory(), &error);
+            if (plan.program.isEmpty()) {
+                report(sdk::Severity::Error, QStringLiteral("playtest"), error);
+                return;
+            }
+            plan.label = record ? QStringLiteral("Plan demo recording") : QStringLiteral("Plan title demo");
+            h->runProcess(plan, [this, record, recording](const sdk::ProcessResult& result) {
+                sdk::Host* host = this->host();
+                if (!host) return;
+                if (!result.succeeded()) {
+                    if (!result.cancelled) {
+                        report(sdk::Severity::Error, QStringLiteral("playtest"),
+                               QStringLiteral("Demo plan failed: %1").arg(failureText(result)));
+                    }
+                    return;
+                }
+                sdk::ProcessSpec game = specFromPlan(QJsonDocument::fromJson(result.standardOutput).object());
+                if (game.program.isEmpty()) {
+                    report(sdk::Severity::Error, QStringLiteral("playtest"), QStringLiteral("The kit returned no emulator command."));
+                    return;
+                }
+                const std::string model = document_.paletteModel(art_.palettes).toStdString();
+                for (int i = 0; i < 64; ++i) game.palette << nes::masterColor(i, model);
+                // The Playtest view covers the way to the demo.
+                game.readyFile = project_.resolve(QStringLiteral("build/demo-ready.txt"));
+                game.environment.insert(QStringLiteral("SMB_DEMO_READY"), game.readyFile);
+                if (record) {
+                    recordingActive_ = true;
+                    emit selectedStartChanged();
+                    report(sdk::Severity::Info, QStringLiteral("demo"),
+                           QStringLiteral("Recording: play 1-1 with the controller; it ends when Hero dies, on Start or "
+                                          "on Stop recording."));
+                }
+                const QString title = record ? QStringLiteral("Super Mario Bros. · recording the demo")
+                                             : QStringLiteral("Super Mario Bros. · title demo");
+                host->launchEmulator(game, title, [this, record, recording](const sdk::ProcessResult& run) {
+                    if (run.crashed || (!run.started && !run.error.isEmpty())) {
+                        report(sdk::Severity::Error, QStringLiteral("playtest"),
+                               run.error.isEmpty() ? QStringLiteral("The emulator crashed.") : run.error);
+                    }
+                    if (record) {
+                        recordingActive_ = false;
+                        emit selectedStartChanged();
+                        applyRecording(recording);
+                    }
+                });
+            });
+        },
+        false);
+}
+
+void SmbSession::applyRecording(const QString& path) {
+    QFile file(path);
+    if (!file.open(QIODevice::ReadOnly)) {
+        report(sdk::Severity::Warning, QStringLiteral("demo"), QStringLiteral("Nothing was recorded: the demo did not start."));
+        return;
+    }
+    const int capacity = demoCapacity();
+    const SmbDemoModel::Recording recording = SmbDemoModel::stepsFromRecording(QString::fromUtf8(file.readAll()), capacity);
+    if (!recording.pressed) {
+        report(sdk::Severity::Warning, QStringLiteral("demo"),
+               QStringLiteral("No buttons were pressed while recording; the demo stays as it was."));
+        return;
+    }
+    const QJsonArray steps = recording.steps;
+    QString error;
+    if (!editDemo(QStringLiteral("Record the title demo"),
+                  [steps](QJsonObject& demo) { demo.insert(QStringLiteral("steps"), steps); }, &error)) {
+        report(sdk::Severity::Error, QStringLiteral("demo"), error);
+        return;
+    }
+    QString message = QStringLiteral("Recorded %1 s of input into the demo's %2 steps.")
+                          .arg(recording.keptFrames / 60.0, 0, 'f', 1)
+                          .arg(steps.size());
+    if (recording.droppedFrames > 0) {
+        message += QStringLiteral(" The game's tables hold %1 steps; the last %2 s did not fit.")
+                       .arg(capacity)
+                       .arg(recording.droppedFrames / 60.0, 0, 'f', 1);
+    }
+    report(recording.droppedFrames > 0 ? sdk::Severity::Warning : sdk::Severity::Info, QStringLiteral("demo"), message);
 }
 
 void SmbSession::launch(bool fromStart) {

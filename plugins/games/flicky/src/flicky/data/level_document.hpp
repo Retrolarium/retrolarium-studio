@@ -2,6 +2,7 @@
 
 #include "flicky/data/collision.hpp"
 
+#include <QJsonArray>
 #include <QJsonObject>
 #include <QHash>
 #include <QPoint>
@@ -45,6 +46,20 @@ public:
     void setBonusPlacement(const QString &id, int side, int worldX);
     void setBonusPlacementY(const QString &id, int worldY);
     void restoreBonusPlacement(const QString &id);
+    // The attract demos (attract_demos): four input streams of steps, each
+    // {frames 1-256, buttons}, sharing the bytes of the original block (two
+    // per step). Buttons are listed in demoButtons() order.
+    [[nodiscard]] bool hasAttractDemos() const noexcept;
+    [[nodiscard]] QJsonObject attractDemo(int demo) const;
+    [[nodiscard]] QJsonArray attractDemoSteps(int demo) const;
+    [[nodiscard]] QJsonArray baselineAttractDemoSteps(int demo) const;
+    [[nodiscard]] int attractDemoBytes() const;
+    [[nodiscard]] int attractDemoCapacity() const;
+    void setAttractDemoSteps(int demo, const QJsonArray &steps);
+    // Takes the attract demos of `other` (after a kit upgrade adds them).
+    void adoptAttractDemos(const FlickyLevelDocument &other);
+    [[nodiscard]] static const QStringList &demoButtons();
+    [[nodiscard]] static int demoButtonBit(int index);
     [[nodiscard]] static QStringList objectFields();
     [[nodiscard]] static bool isSpecialObjectField(const QString &field);
     [[nodiscard]] static bool isVariableObjectField(const QString &field);

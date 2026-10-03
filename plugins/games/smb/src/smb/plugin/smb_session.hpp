@@ -7,6 +7,7 @@
 #include "smb/render/level_image.hpp"
 
 #include <QHash>
+#include <QJsonObject>
 #include <QPoint>
 
 #include <functional>
@@ -46,7 +47,22 @@ public:
     bool canPlay() const override { return true; }
     void play() override;
     QString selectedStart() const override;
+    QString playSelectedLabel() const override;
     void playSelected() override;
+
+    // The title demo (documents/demo.json); empty in projects made before
+    // it existed, which add it through the kit.
+    const QJsonObject& demo() const { return demo_; }
+    const QJsonObject& savedDemo() const { return savedDemo_; }
+    int demoCapacity() const;
+    bool editDemo(const QString& text, const std::function<void(QJsonObject&)>& change, QString* error);
+    // While a demo editor is open, Play from selected runs the demo.
+    void attachDemoEditor(bool attach);
+    bool demoStart() const { return demoEditors_ > 0; }
+    bool recordingActive() const { return recordingActive_; }
+    // Builds and loops the demo, or records a new one from the controller.
+    void playDemo(bool record);
+    void stopRecording();
 
     const SmbResourceDocument& document() const { return document_; }
     const SmbResourceDocument& saved() const { return saved_; }
@@ -106,6 +122,10 @@ private:
     void report(sdk::Severity severity, const QString& source, const QString& message);
     void runBuild(std::function<void(bool)> next, bool force);
     void launch(bool fromStart);
+    void launchDemo(bool record);
+    void applyRecording(const QString& path);
+    void upgradeDemo();
+    void setDemo(const QJsonObject& demo);
 
     sdk::ProjectFile project_;
     QString documentPath_;
@@ -123,6 +143,11 @@ private:
     SmbStart start_;
     QString lighting_ = QStringLiteral("Auto");
     QString lastBuild_;
+    QString demoPath_;
+    QJsonObject demo_;
+    QJsonObject savedDemo_;
+    int demoEditors_ = 0;
+    bool recordingActive_ = false;
 
     mutable QHash<QString, SmbScreenSet> screenSets_;
     mutable quint64 screenRevision_ = ~quint64(0);

@@ -83,7 +83,8 @@ private:
     mutable QVector<sdk::LibraryItem> sheet_;
 };
 
-// The attract demo: 34 steps of held buttons and how many frames each lasts.
+// The attract demo: steps of held buttons and how many frames each waits
+// (the game's 34, or up to demoCapacity() in the free bytes after them).
 class SolomonDemoModel final : public sdk::TableModel {
     Q_OBJECT
 
@@ -91,21 +92,25 @@ public:
     explicit SolomonDemoModel(SolomonSession* session);
     ~SolomonDemoModel() override;
 
-    // A recording (the demo script's "tick buttons" lines and "end tick")
-    // as the game's 34 steps: each step waits its duration plus one tick,
-    // then holds its buttons until the next one.
+    // A recording (the demo script's "step duration buttons" lines, then
+    // "hold ticks" for the time after the last change) as at most
+    // `capacity` steps.
     struct Recording {
         QJsonArray steps;
         int keptFrames = 0;
         int droppedFrames = 0;
+        bool pressed = false;   // any button at all
     };
-    static Recording stepsFromRecording(const QString& text);
+    static Recording stepsFromRecording(const QString& text, int capacity);
+    // How many steps the demo tables may hold for a revision.
+    static int demoCapacity(const QString& revision);
 
     QString title() const override { return QStringLiteral("Attract demo"); }
     sdk::Budget budget() const override;
     sdk::Inspection inspect() const override;
-    bool setField(const QString& key, const QVariant& value, QString* error) override;
     QString startPoint() const override;
+    QVector<sdk::EditorAction> actions() const override;
+    void triggerAction(const QString& id) override;
 
     QVector<sdk::TableColumn> columns() const override;
     int rowCount() const override;

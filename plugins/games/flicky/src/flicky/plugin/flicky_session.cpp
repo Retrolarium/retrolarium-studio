@@ -7,6 +7,7 @@
 #include "megadrive/vdp.hpp"
 
 #include "flicky/plugin/bonus_model.hpp"
+#include "flicky/plugin/demo_model.hpp"
 #include "flicky/plugin/playtest_model.hpp"
 #include "flicky/plugin/sound_models.hpp"
 #include "flicky/plugin/sprite_models.hpp"
@@ -23,6 +24,8 @@
 #include <QJsonDocument>
 #include <QUndoCommand>
 #include <QUndoStack>
+
+#include <algorithm>
 
 namespace rl::flicky {
 
@@ -158,6 +161,11 @@ QVector<sdk::Kind> FlickySession::kinds() const {
         kind("palettes", "Palettes", sdk::EditorType::Palette),
         kind("sprites", "Sprites", sdk::EditorType::Composition),
         kind("text", "Text", sdk::EditorType::Table),
+        [] {
+            sdk::Kind demo = kind("demo", "Demo", sdk::EditorType::Table);
+            demo.icon = QStringLiteral("play");
+            return demo;
+        }(),
         kind("sound", "Sound", sdk::EditorType::Sequencer),
         kind("playtest", "Playtest", sdk::EditorType::Emulator),
     };
@@ -264,6 +272,24 @@ QVector<sdk::DocumentGroup> FlickySession::documents(const QString& kind) const 
                             {entry(QStringLiteral("game-text"), QStringLiteral("Game text"),
                                    QStringLiteral("%1 strings").arg(semantics().textIds().size()),
                                    !sameText(semantics(), semantics_.saved))}));
+    } else if (kind == QLatin1String("demo")) {
+        sdk::DocumentGroup demos = group(QStringLiteral("Attract demos"));
+        if (!levels_.hasAttractDemos()) {
+            demos.documents.append(entry(QStringLiteral("upgrade"),
+                                         QStringLiteral("Add the attract demos to this project"),
+                                         QStringLiteral("kit")));
+        } else {
+            for (int demo = 0; demo < 4; ++demo) {
+                const QJsonArray steps = levels_.attractDemoSteps(demo);
+                const int round = levels_.attractDemo(demo).value(QStringLiteral("round")).toInt();
+                demos.documents.append(entry(QStringLiteral("demo-%1").arg(demo + 1),
+                                             QStringLiteral("Demo %1 · Round %2").arg(demo + 1).arg(two(round)),
+                                             QStringLiteral("%1 steps").arg(steps.size()),
+                                             savedLevels_.hasAttractDemos() &&
+                                                 steps != savedLevels_.attractDemoSteps(demo)));
+            }
+        }
+        groups.append(demos);
     } else if (kind == QLatin1String("sound")) {
         sdk::DocumentGroup songs = group(QStringLiteral("Music & SFX"));
         for (const QString& id : sound().headerIds()) {
@@ -319,6 +345,15 @@ std::unique_ptr<sdk::EditorModel> FlickySession::openEditor(const QString& kind,
         }
     } else if (kind == QLatin1String("text")) {
         return std::make_unique<TextModel>(this);
+    } else if (kind == QLatin1String("demo")) {
+        if (document == QLatin1String("upgrade") && !levels_.hasAttractDemos()) {
+            upgradeDemos();
+            return nullptr;
+        }
+        const int demo = document.startsWith(QLatin1String("demo-")) ? document.mid(5).toInt() - 1 : -1;
+        if (demo >= 0 && demo < 4 && levels_.hasAttractDemos()) {
+            return std::make_unique<FlickyDemoModel>(this, demo);
+        }
     } else if (kind == QLatin1String("sprites")) {
         // Ids come from the document lists; anything else is refused here so
         // models never see an unknown record.
@@ -419,13 +454,21 @@ bool FlickySession::roundDiffersFromBaseline(int round) const {
 }
 
 void FlickySession::replaceLevels(const FlickyLevelDocument& levels) {
-    levels_ = levels;
+    if (!levels.hasAttractDemos() && levels_.hasAttractDemos()) {
+        // Snapshots from before the kit added the demos keep them.
+        FlickyLevelDocument next = levels;
+        next.adoptAttractDemos(levels_);
+        levels_ = next;
+    } else {
+        levels_ = levels;
+    }
     for (auto it = previews_.begin(); it != previews_.end();) {
         it = it.key().startsWith(QLatin1String("round:")) ? previews_.erase(it) : std::next(it);
     }
     emit levelsChanged();
     emit contentChanged();
     emit documentsChanged(QStringLiteral("levels"));
+    emit documentsChanged(QStringLiteral("demo"));
     emit diagnosticsChanged();
 }
 
@@ -662,7 +705,7 @@ bool FlickySession::save(QString* error) {
         }
         return false;
     };
-    bool levelsDirty = bonusPlacementsDirty();
+    bool levelsDirty = bonusPlacementsDirty() || attractDemosDirty();
     for (int layout = 0; layout < objects::kLayouts && !levelsDirty; ++layout) {
         levelsDirty = isLayoutDirty(layout);
     }
@@ -753,6 +796,10 @@ bool FlickySession::canRevert(const QString& kind, const QString& document) cons
         for (const QString& id : semantics().textIds()) {
             if (semantics().textValue(id) != semantics().baselineTextValue(id)) return true;
         }
+    }
+    if (kind == QLatin1String("demo") && document.startsWith(QLatin1String("demo-")) && levels_.hasAttractDemos()) {
+        const int demo = document.mid(5).toInt() - 1;
+        return demo >= 0 && demo < 4 && levels_.attractDemoSteps(demo) != levels_.baselineAttractDemoSteps(demo);
     }
     if (kind == QLatin1String("sprites")) {
         const QString id = document.section(QLatin1Char(':'), 1);
@@ -857,6 +904,11 @@ bool FlickySession::revert(const QString& kind, const QString& document, QString
                          },
                          error);
     }
+    if (kind == QLatin1String("demo") && canRevert(kind, document)) {
+        const int demo = document.mid(5).toInt() - 1;
+        return editDemo(demo, QStringLiteral("Revert demo %1").arg(demo + 1), levels_.baselineAttractDemoSteps(demo),
+                        error);
+    }
     if (kind == QLatin1String("text")) {
         return editSemantics(QStringLiteral("Revert game text"),
                              [](FlickySemanticsDocument& s) {
@@ -896,6 +948,9 @@ QVector<sdk::Diagnostic> FlickySession::diagnostics() const {
 }
 
 QString FlickySession::selectedStart() const {
+    if (demoStart()) {
+        return QStringLiteral("Demo %1").arg(demo_ + 1);
+    }
     return QStringLiteral("Round ") + two(playRound_ + 1);
 }
 
@@ -1195,7 +1250,224 @@ void FlickySession::play() {
 }
 
 void FlickySession::playSelected() {
-    launch(playRound_);
+    if (recordingActive_) {
+        stopRecording();
+    } else if (demoStart()) {
+        launchDemo(demo_, false);
+    } else {
+        launch(playRound_);
+    }
+}
+
+QString FlickySession::playSelectedLabel() const {
+    if (recordingActive_) return QStringLiteral("Stop recording");
+    return demoStart() ? QStringLiteral("Play demo") : QString();
+}
+
+// ---------------------------------------------------------------- attract demos
+
+bool FlickySession::attractDemosDirty() const {
+    if (!levels_.hasAttractDemos() || !savedLevels_.hasAttractDemos()) {
+        return levels_.hasAttractDemos() != savedLevels_.hasAttractDemos();
+    }
+    for (int demo = 0; demo < 4; ++demo) {
+        if (levels_.attractDemoSteps(demo) != savedLevels_.attractDemoSteps(demo)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool FlickySession::editDemo(int demo, const QString& text, const QJsonArray& steps, QString* error) {
+    if (!levels_.hasAttractDemos() || levels_.attractDemoSteps(demo) == steps) {
+        return true;
+    }
+    return editLevels(text, [demo, steps](FlickyLevelDocument& levels) { levels.setAttractDemoSteps(demo, steps); },
+                      error);
+}
+
+int FlickySession::demoStepCapacity(int demo) const {
+    const int others = levels_.attractDemoBytes() - 2 * levels_.attractDemoSteps(demo).size();
+    return (levels_.attractDemoCapacity() - others) / 2;
+}
+
+void FlickySession::attachDemoEditor(int demo, bool attach) {
+    const QString before = selectedStart();
+    demoEditors_ = std::max(0, demoEditors_ + (attach ? 1 : -1));
+    if (attach) {
+        demo_ = demo;
+    }
+    if (selectedStart() != before) {
+        emit selectedStartChanged();
+    }
+}
+
+void FlickySession::playDemo(int demo, bool record) {
+    if (!recordingActive_) {
+        launchDemo(demo, record);
+    }
+}
+
+void FlickySession::stopRecording() {
+    if (recordingActive_ && host()) {
+        host()->stopEmulator();
+    }
+}
+
+void FlickySession::upgradeDemos() {
+    sdk::Host* h = host();
+    if (!h || h->isBusy()) {
+        return;
+    }
+    QString error;
+    sdk::ProcessSpec spec = h->kitCommand({QStringLiteral("studio"), QStringLiteral("flicky-upgrade"), project_.path()},
+                                          project_.directory(), &error);
+    if (spec.program.isEmpty()) {
+        report(sdk::Severity::Error, QStringLiteral("demo"), error);
+        return;
+    }
+    spec.label = QStringLiteral("Add the attract demos");
+    h->runProcess(spec, [this](const sdk::ProcessResult& result) {
+        if (!result.succeeded()) {
+            if (!result.cancelled) {
+                report(sdk::Severity::Error, QStringLiteral("demo"),
+                       QStringLiteral("Adding the attract demos failed: %1").arg(failureText(result)));
+            }
+            return;
+        }
+        try {
+            // The kit adds the section to the saved levels document; unsaved
+            // level edits stay as they are.
+            const FlickyLevelDocument upgraded = FlickyLevelDocument::load(levelsPath_);
+            if (!upgraded.hasAttractDemos()) {
+                report(sdk::Severity::Error, QStringLiteral("demo"), QStringLiteral("The kit added no attract demos."));
+                return;
+            }
+            savedLevels_.adoptAttractDemos(upgraded);
+            levels_.adoptAttractDemos(upgraded);
+        } catch (const std::exception& e) {
+            report(sdk::Severity::Error, QStringLiteral("demo"), QString::fromUtf8(e.what()));
+            return;
+        }
+        report(sdk::Severity::Info, QStringLiteral("demo"),
+               QStringLiteral("Added the four attract demos to level/levels.json."));
+        emit contentChanged();
+        emit documentsChanged(QStringLiteral("demo"));
+    });
+}
+
+void FlickySession::launchDemo(int demo, bool record) {
+    runBuild(
+        [this, demo, record](bool ok) {
+            sdk::Host* h = host();
+            if (!ok || !h) {
+                return;
+            }
+            const QString mame = h->emulatorPath(QStringLiteral("mame"));
+            if (mame.isEmpty()) {
+                report(sdk::Severity::Error, QStringLiteral("playtest"),
+                       QStringLiteral("MAME was not found. Set RETROLARIUM_MAME to consoles.exe."));
+                return;
+            }
+            QStringList arguments{QStringLiteral("studio"), QStringLiteral("flicky-demo-plan"), project_.path(),
+                                  QStringLiteral("--mame"), mame, QStringLiteral("--demo"), QString::number(demo + 1)};
+            const QString recording = QDir(project_.directory()).filePath(QStringLiteral("build/demo-recording.txt"));
+            if (record) {
+                QFile::remove(recording);
+                arguments << QStringLiteral("--record") << recording;
+            }
+            QString error;
+            sdk::ProcessSpec plan = h->kitCommand(arguments, project_.directory(), &error);
+            if (plan.program.isEmpty()) {
+                report(sdk::Severity::Error, QStringLiteral("playtest"), error);
+                return;
+            }
+            plan.label = record ? QStringLiteral("Plan demo recording") : QStringLiteral("Plan attract demo");
+            h->runProcess(plan, [this, demo, record, recording](const sdk::ProcessResult& result) {
+                sdk::Host* host = this->host();
+                if (!host) {
+                    return;
+                }
+                if (!result.succeeded()) {
+                    if (!result.cancelled) {
+                        report(sdk::Severity::Error, QStringLiteral("playtest"),
+                               QStringLiteral("Demo plan failed: %1").arg(failureText(result)));
+                    }
+                    return;
+                }
+                const QJsonObject json = QJsonDocument::fromJson(result.standardOutput).object();
+                sdk::ProcessSpec game;
+                game.program = json.value(QStringLiteral("program")).toString();
+                for (const QJsonValue& argument : json.value(QStringLiteral("arguments")).toArray()) {
+                    game.arguments << argument.toString();
+                }
+                game.workingDirectory = json.value(QStringLiteral("working_directory")).toString();
+                const QJsonObject environment = json.value(QStringLiteral("environment")).toObject();
+                for (auto it = environment.constBegin(); it != environment.constEnd(); ++it) {
+                    game.environment.insert(it.key(), it.value().toString());
+                }
+                if (game.program.isEmpty()) {
+                    report(sdk::Severity::Error, QStringLiteral("playtest"),
+                           QStringLiteral("The kit returned no emulator command."));
+                    return;
+                }
+                // The Playtest view covers the way to the demo.
+                game.readyFile = QDir(project_.directory()).filePath(QStringLiteral("build/demo-ready.txt"));
+                game.environment.insert(QStringLiteral("FLICKY_DEMO_READY"), game.readyFile);
+                if (record) {
+                    recordingActive_ = true;
+                    emit selectedStartChanged();
+                    report(sdk::Severity::Info, QStringLiteral("demo"),
+                           QStringLiteral("Recording: play the round with the controller; it ends when the bird is "
+                                          "caught, on Start or on Stop recording."));
+                }
+                const QString title = record ? QStringLiteral("Flicky · recording demo %1").arg(demo + 1)
+                                             : QStringLiteral("Flicky · demo %1").arg(demo + 1);
+                host->launchEmulator(game, title, [this, demo, record, recording](const sdk::ProcessResult& run) {
+                    if (run.crashed || (!run.started && !run.error.isEmpty())) {
+                        report(sdk::Severity::Error, QStringLiteral("playtest"),
+                               run.error.isEmpty() ? QStringLiteral("The emulator crashed.") : run.error);
+                    }
+                    if (record) {
+                        recordingActive_ = false;
+                        emit selectedStartChanged();
+                        applyRecording(demo, recording);
+                    }
+                });
+            });
+        },
+        false);
+}
+
+void FlickySession::applyRecording(int demo, const QString& path) {
+    QFile file(path);
+    if (!file.open(QIODevice::ReadOnly)) {
+        report(sdk::Severity::Warning, QStringLiteral("demo"), QStringLiteral("Nothing was recorded: the demo did not start."));
+        return;
+    }
+    const int capacity = demoStepCapacity(demo);
+    const FlickyDemoModel::Recording recording =
+        FlickyDemoModel::stepsFromRecording(QString::fromUtf8(file.readAll()), capacity);
+    if (!recording.pressed) {
+        report(sdk::Severity::Warning, QStringLiteral("demo"),
+               QStringLiteral("No buttons were pressed while recording; the demo stays as it was."));
+        return;
+    }
+    QString error;
+    if (!editDemo(demo, QStringLiteral("Record demo %1").arg(demo + 1), recording.steps, &error)) {
+        report(sdk::Severity::Error, QStringLiteral("demo"), error);
+        return;
+    }
+    QString message = QStringLiteral("Recorded %1 s of input into demo %2 (%3 steps).")
+                          .arg(recording.keptFrames / 60.0, 0, 'f', 1)
+                          .arg(demo + 1)
+                          .arg(recording.steps.size());
+    if (recording.droppedFrames > 0) {
+        message += QStringLiteral(" The demos share %1 bytes; the last %2 s did not fit.")
+                       .arg(levels_.attractDemoCapacity())
+                       .arg(recording.droppedFrames / 60.0, 0, 'f', 1);
+    }
+    report(recording.droppedFrames > 0 ? sdk::Severity::Warning : sdk::Severity::Info, QStringLiteral("demo"), message);
 }
 
 void FlickySession::launch(int round) {
