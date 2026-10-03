@@ -348,7 +348,8 @@ void InspectorPanel::rebuild() {
         lib->addLayout(header);
         if (inspection.library.grid) {
             auto* sheet = new editors::LibrarySheet(libBox);
-            sheet->setItems(inspection.library.items, model_->currentLibraryItem());
+            sheet->setItems(inspection.library.items, model_->currentLibraryItem(), inspection.library.columns,
+                            inspection.library.cell);
             QPointer<sdk::EditorModel> model = model_;
             sheet->onPick = [model](const QString& id) {
                 if (model) {

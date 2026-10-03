@@ -3,6 +3,8 @@
 #include "sdk/editor_model.hpp"
 
 #include <QHash>
+#include <QPointer>
+#include <QJsonArray>
 #include <QJsonObject>
 
 namespace rl::solomon {
@@ -13,10 +15,12 @@ class SolomonSession;
 // (row * 32 + column of the $2800 table) to {token, tile index}.
 QHash<int, QPair<int, int>> titleWriters(const QJsonObject& presentation, int stream);
 
-// One packed title stream ("record", "logo") on the 32x30 name table the
-// title screen is drawn in. The cells its literal runs write can be
-// painted with tiles $80-$FF of the title patterns; the other stream shows
-// faintly for context. The stream keeps its byte size.
+// One packed title stream on the 32x30 name table the title screen is drawn
+// in: stream 0 draws the logo, stream 1 the castle (the source names them
+// after the routines that queue them, "record" and "logo"). The cells its
+// literal runs write can be painted with tiles $80-$FF of the title
+// patterns; the other stream shows faintly for context. The stream keeps
+// its byte size.
 class SolomonTitleModel final : public sdk::TileMapModel {
     Q_OBJECT
 
@@ -48,9 +52,20 @@ public:
     bool paintCell(QPoint cell, int value) override;
     void endStroke() override;
 
+    // The layer names by what they draw.
+    static QString layerName(int stream);
+
 private:
+    // Each name-table cell's tile and writer {token, index} of a stream,
+    // -1 where it writes none.
+    struct Layer {
+        QVector<int> values;
+        QVector<QPair<int, int>> writers;
+    };
+
     QJsonObject presentation() const;
-    QImage tile(int value, bool faint) const;
+    const Layer& layer(int stream) const;
+    const QImage& tile(int value, bool faint) const;
 
     SolomonSession* session_;
     int stream_;
@@ -58,6 +73,14 @@ private:
     QPoint cell_{-1, -1};
     bool stroking_ = false;
     QJsonObject draft_;
+    quint64 draftVersion_ = 0;
+
+    // Rebuilt when the documents or the stroke's draft change.
+    mutable Layer layers_[2];
+    mutable quint64 layersKey_ = ~quint64(0);
+    mutable QHash<int, QImage> tiles_;
+    mutable quint64 tilesRevision_ = ~quint64(0);
+    mutable QVector<sdk::LibraryItem> sheet_;
 };
 
 // The attract demo: 34 steps of held buttons and how many frames each lasts.
@@ -66,10 +89,23 @@ class SolomonDemoModel final : public sdk::TableModel {
 
 public:
     explicit SolomonDemoModel(SolomonSession* session);
+    ~SolomonDemoModel() override;
+
+    // A recording (the demo script's "tick buttons" lines and "end tick")
+    // as the game's 34 steps: each step waits its duration plus one tick,
+    // then holds its buttons until the next one.
+    struct Recording {
+        QJsonArray steps;
+        int keptFrames = 0;
+        int droppedFrames = 0;
+    };
+    static Recording stepsFromRecording(const QString& text);
 
     QString title() const override { return QStringLiteral("Attract demo"); }
     sdk::Budget budget() const override;
     sdk::Inspection inspect() const override;
+    bool setField(const QString& key, const QVariant& value, QString* error) override;
+    QString startPoint() const override;
 
     QVector<sdk::TableColumn> columns() const override;
     int rowCount() const override;
@@ -81,6 +117,8 @@ public:
 
 private:
     SolomonSession* session_;
+    // The session may close before the editor goes.
+    QPointer<SolomonSession> attached_;
     int row_ = 0;
 };
 

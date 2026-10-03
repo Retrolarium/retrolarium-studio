@@ -190,10 +190,14 @@ add_library(solomon_plugin STATIC
     solomon/src/solomon/data/documents.hpp
     solomon/src/solomon/data/names.cpp
     solomon/src/solomon/data/names.hpp
+    solomon/src/solomon/data/text.cpp
+    solomon/src/solomon/data/text.hpp
     solomon/src/solomon/plugin/animation_model.cpp
     solomon/src/solomon/plugin/animation_model.hpp
     solomon/src/solomon/plugin/mirror_models.cpp
     solomon/src/solomon/plugin/mirror_models.hpp
+    solomon/src/solomon/plugin/palette_model.cpp
+    solomon/src/solomon/plugin/palette_model.hpp
     solomon/src/solomon/plugin/presentation_models.cpp
     solomon/src/solomon/plugin/presentation_models.hpp
     solomon/src/solomon/plugin/room_model.cpp
@@ -204,6 +208,8 @@ add_library(solomon_plugin STATIC
     solomon/src/solomon/plugin/solomon_session.hpp
     solomon/src/solomon/plugin/sound_model.cpp
     solomon/src/solomon/plugin/sound_model.hpp
+    solomon/src/solomon/plugin/text_models.cpp
+    solomon/src/solomon/plugin/text_models.hpp
     solomon/src/solomon/render/room_painter.cpp
     solomon/src/solomon/render/room_painter.hpp
 )

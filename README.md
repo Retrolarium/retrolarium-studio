@@ -226,11 +226,16 @@ Projects from `rltool studio preset` on Solomon's Key (USA or Europe).
 |---|---|---|
 | Rooms | TileMap | 53 rooms of 16x12 cells drawn as the game builds them; Blocks paints brown and white blocks, Items moves, adds and removes items (named from the source reconstruction's catalog; hidden or in a brown block) and moves the door, key, mirrors and constellation, Enemies does the same for enemies (named with direction and speed; at most 17) and Wizard's start; the room inspector sets the tileset, timer speed, Hornhead lifetime, constellation and the ROM layout; budgets count the shared item (1342 B) and enemy (726 B) arenas, or with an Expanded ROM 256 B per room list and 8762 B (Europe 8890 B) for all of them |
 | Mirrors | Table | the Spawn Mirror enemy sets (42 B shared, 726 B with an Expanded ROM) and drop schedules, with the rooms that use each |
-| Animations | Composition | every action's frame cycle; drop a pattern pair on a half, flip it or change its palette; the action's delay |
-| Screens | TileMap | the two packed title layers on the $2800 name table; paint the cells a layer writes with tiles $80-$FF |
+| Animations | Composition | each object's actions grouped into families that show the same frames as drawn or mirrored (the game keeps a frame record per facing, the halves swapped and flipped); drop a pattern pair on a half, flip it or change its palette, and with Mirrors linked the edit reaches every action of the family, mirrored as it shows it; the delay |
+| Screens | TileMap | the two packed title layers (logo, castle) on the $2800 name table, painted with tiles $80-$FF; the text screens (room intro, room clear, game over, title text, licence, the three endings) in their font bank: select a line to edit its text, drag it to move it, paint font tiles into it |
 | Sound | Sequencer | the 26 audio programs by group; notes per virtual channel as the engine steps them, drag to change a note's byte; Listen renders with the kit (`audio render-solomon-wav`) |
-| Demo | Table | the attract demo's 34 input steps |
-| Tiles, Palettes | Tile, Palette | the four CHR banks and the room and ending palettes |
+| Demo | Table | the attract demo's 34 input steps; Play from selected loops the demo in MAME, or records a new one from the controller (`studio solomon-demo-plan`) |
+| Text | Table | every line the game draws: HUD, room clear, game over, title, licence, room intro, special-room names and the ending; lines may change length within their regions (`solomon_text`) |
+| Tiles, Palettes | Tile, Palette | the four CHR banks; each palette group's colours (a world's four rooms: the shared room template with the group's colour 1), the room intro, title and licence palettes, the ending fade |
+
+The screen text lives in `documents/text.json` (`retrolarium.solomon-text`).
+Projects made before it existed show "Add screen text to this project" under
+Text, which runs `rltool studio solomon-upgrade` on the project.
 
 The room inspector's ROM choice Expanded builds the ROM the way Solomon's
 Keychain does: the kit (`solomon_expansion`) turns the CNROM image into GxROM

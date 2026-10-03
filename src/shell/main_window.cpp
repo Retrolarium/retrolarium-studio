@@ -36,6 +36,7 @@
 #include <QPushButton>
 #include <QSettings>
 #include <QStackedWidget>
+#include <QTimer>
 #include <QToolButton>
 #include <QUndoStack>
 #include <QVBoxLayout>
@@ -617,15 +618,15 @@ bool MainWindow::openProjectFile(const QString& path) {
 
     QUndoStack* undo = session_->undoStack();
     connect(undo, &QUndoStack::indexChanged, this, [this] {
-        updateDirtyState();
+        scheduleDirtyState();
         updateStatus();
     });
-    connect(undo, &QUndoStack::cleanChanged, this, [this] { updateDirtyState(); });
+    connect(undo, &QUndoStack::cleanChanged, this, [this] { scheduleDirtyState(); });
     connect(session_.get(), &sdk::Session::documentsChanged, this, [this](const QString& kind) {
         if (kind == kind_) {
             documents_->updateGroups(session_->documents(kind_));
         }
-        updateDirtyState();
+        scheduleDirtyState();
     });
     connect(session_.get(), &sdk::Session::diagnosticsChanged, this, &MainWindow::refreshDiagnostics);
     connect(session_.get(), &sdk::Session::selectedStartChanged, this, &MainWindow::updateActions);
@@ -936,6 +937,16 @@ void MainWindow::updateBreadcrumb() {
     updateActions();
 }
 
+void MainWindow::scheduleDirtyState() {
+    if (!dirtyTimer_) {
+        dirtyTimer_ = new QTimer(this);
+        dirtyTimer_->setSingleShot(true);
+        dirtyTimer_->setInterval(0);
+        connect(dirtyTimer_, &QTimer::timeout, this, &MainWindow::updateDirtyState);
+    }
+    dirtyTimer_->start();
+}
+
 void MainWindow::updateDirtyState() {
     const bool open = session_ != nullptr;
     QUndoStack* undo = open ? session_->undoStack() : nullptr;
@@ -1120,9 +1131,12 @@ void MainWindow::updateActions() {
     const QString start = canPlay ? session_->selectedStart() : QString();
     buildAction_->setEnabled(canBuild && !busy);
     playAction_->setEnabled(canPlay && !busy);
+    const QString label = canPlay ? session_->playSelectedLabel() : QString();
     playSelectedAction_->setEnabled(!start.isEmpty() && !busy);
-    playSelectedAction_->setText(start.isEmpty() ? QStringLiteral("Play from selected")
-                                                 : QStringLiteral("Play from %1").arg(start));
+    playSelectedAction_->setText(!label.isEmpty() ? label
+                                 : start.isEmpty() ? QStringLiteral("Play from selected")
+                                                   : QStringLiteral("Play from %1").arg(start));
+    playSelectedButton_->setText(label.isEmpty() ? QStringLiteral("Play from selected") : label);
     buildButton_->setEnabled(canBuild || busy);
     buildButton_->setText(busy ? QStringLiteral("Cancel") : QStringLiteral("Build"));
     playButton_->setEnabled(canPlay && !busy);

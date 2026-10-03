@@ -1,6 +1,7 @@
 #pragma once
 
 #include "nes/bundle.hpp"
+#include "solomon/data/text.hpp"
 
 #include <QJsonArray>
 #include <QJsonObject>
@@ -127,11 +128,13 @@ struct SolomonState {
     QJsonObject animations;     // retrolarium.solomon-animations
     QJsonObject presentation;   // retrolarium.solomon-presentation: title streams, attract demo
     QJsonObject audio;          // retrolarium.solomon-audio: stream commands and tables
+    SolomonText text;           // retrolarium.solomon-text: screen text and static palettes
     nes::Bundle graphics;
 
     bool operator==(const SolomonState& other) const {
         return rooms == other.rooms && art == other.art && animations == other.animations &&
-               presentation == other.presentation && audio == other.audio && graphics == other.graphics;
+               presentation == other.presentation && audio == other.audio && text == other.text &&
+               graphics == other.graphics;
     }
 };
 

@@ -10,6 +10,21 @@ namespace rl::solomon {
 
 class SolomonSession;
 
+// Actions that show the same animation, as drawn or mirrored: the game keeps
+// a frame record per facing (the halves swapped and flipped) and many
+// actions point at the same frames. `transform` bit 0 mirrors across, bit 1
+// mirrors down.
+struct AnimationMember {
+    int action = 0;
+    int transform = 0;
+};
+
+struct AnimationFamily {
+    int group = 0;
+    QVector<AnimationMember> members;   // the first is shown as drawn
+    int frames = 0;
+};
+
 // One action of an object type (Wizard standing, a Golem walking): the frames
 // its animation cycles through, each a 16x16 sprite of two 8x16 halves.
 // Drop a pattern pair on a half, flip it or change its palette in the
@@ -22,10 +37,15 @@ public:
     SolomonAnimationModel(SolomonSession* session, int group, int action);
 
     // Actions of the animation tables: {group, action} per entry, groups
-    // that share a table listed once.
+    // that share a table listed once, each group up to the next one.
     static QVector<QPair<int, int>> actions(const QJsonObject& animations);
+    // The actions grouped into families of the same frames and speed.
+    static QVector<AnimationFamily> families(const QJsonObject& animations);
     static QString groupLabel(int group);
     static QString actionLabel(int group, int action);
+    static QString familyLabel(const AnimationFamily& family);
+    // A frame record as its mirror shows it.
+    static QJsonObject mirrored(const QJsonObject& record, int transform);
     // The descriptor of an action, or empty.
     static QJsonObject descriptor(const QJsonObject& animations, int group, int action);
     // The frame records' indices the action cycles through, in order.
@@ -59,6 +79,7 @@ public:
 private:
     QVector<int> frameList() const;
     QJsonObject frameRecord() const;
+    AnimationFamily family() const;
     bool editFrame(const QString& text, const std::function<void(QJsonObject&)>& change, QString* error);
     int halfPalette(int half) const;
 
@@ -70,6 +91,7 @@ private:
     int frame_ = 0;
     int piece_ = -1;    // 0 left half, 1 right half
     int tile_ = 0;      // the sheet's current pattern pair
+    bool linked_ = true;    // edits reach the family's mirrored actions
 
     mutable QVector<sdk::LibraryItem> sheet_;
     mutable QString sheetKey_;

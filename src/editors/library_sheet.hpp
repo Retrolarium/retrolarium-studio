@@ -18,14 +18,15 @@ class Label;
 
 namespace rl::editors {
 
-// Library items as a sheet of square tiles, sixteen to a row like a pattern
-// table viewer: a click picks one, dragging drops it onto a canvas, the
-// tooltip names it. Tiles grow with the width.
+// Library items as a sheet of tiles like a pattern table viewer, sixteen to
+// a row unless the library says otherwise: a click picks one, dragging
+// drops it onto a canvas, the tooltip names it. Tiles grow with the width.
 class LibrarySheet final : public QWidget {
 public:
     explicit LibrarySheet(QWidget* parent = nullptr);
 
-    void setItems(const QVector<sdk::LibraryItem>& items, const QString& current);
+    void setItems(const QVector<sdk::LibraryItem>& items, const QString& current, int columns = 16,
+                  QSize cell = QSize(1, 1));
     std::function<void(const QString&)> onPick;
 
     bool hasHeightForWidth() const override { return true; }
@@ -41,13 +42,14 @@ protected:
     void paintEvent(QPaintEvent* event) override;
 
 private:
-    static constexpr int kColumns = 16;
-
-    int cellSize() const;
+    int cellWidth() const;
+    int cellHeight(int width) const;
     int indexAt(QPoint pos) const;
 
     QVector<sdk::LibraryItem> items_;
     QString current_;
+    int columns_ = 16;
+    QSize cell_{1, 1};
     int hovered_ = -1;
     int pressed_ = -1;
     QPoint pressPos_;
@@ -61,7 +63,7 @@ class SheetPane final : public QWidget {
 public:
     explicit SheetPane(sdk::EditorModel* model, QWidget* parent = nullptr);
 
-    QSize sizeHint() const override { return {16 * 24 + 32, 480}; }
+    QSize sizeHint() const override;
 
 private:
     void refresh();

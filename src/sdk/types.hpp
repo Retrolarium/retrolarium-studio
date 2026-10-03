@@ -96,9 +96,12 @@ struct LibraryItem {
 // Inspection::library to show it in the inspector; both behave the same.
 struct Library {
     QString hint;           // "drag onto the map"
-    // A sheet of square tiles without labels (pattern tables), sixteen to a
-    // row, instead of labelled entries.
+    // A sheet of tiles without labels (pattern tables) instead of labelled
+    // entries: `columns` to a row, each cell shaped like `cell` (8x16 for
+    // sprite pattern pairs).
     bool grid = false;
+    int columns = 16;
+    QSize cell{1, 1};
     QVector<LibraryItem> items;
 };
 

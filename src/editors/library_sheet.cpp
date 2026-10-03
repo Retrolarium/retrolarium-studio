@@ -32,34 +32,44 @@ LibrarySheet::LibrarySheet(QWidget* parent) : QWidget(parent) {
     setSizePolicy(policy);
 }
 
-void LibrarySheet::setItems(const QVector<sdk::LibraryItem>& items, const QString& current) {
-    const bool resized = items.size() != items_.size();
+void LibrarySheet::setItems(const QVector<sdk::LibraryItem>& items, const QString& current, int columns, QSize cell) {
+    columns = std::max(1, columns);
+    if (cell.isEmpty()) cell = QSize(1, 1);
+    const bool resized = items.size() != items_.size() || columns != columns_ || cell != cell_;
     items_ = items;
     current_ = current;
+    columns_ = columns;
+    cell_ = cell;
     if (resized) {
         updateGeometry();
     }
     update();
 }
 
-int LibrarySheet::cellSize() const {
-    return std::max(1, width() / kColumns);
+int LibrarySheet::cellWidth() const {
+    return std::max(1, width() / columns_);
+}
+
+int LibrarySheet::cellHeight(int width) const {
+    return std::max(1, width * cell_.height() / cell_.width());
 }
 
 int LibrarySheet::heightForWidth(int width) const {
-    const int rows = (int(items_.size()) + kColumns - 1) / kColumns;
-    return rows * std::max(1, width / kColumns);
+    const int rows = (int(items_.size()) + columns_ - 1) / columns_;
+    return rows * cellHeight(std::max(1, width / columns_));
 }
 
 QSize LibrarySheet::sizeHint() const {
-    return {kColumns * 16, heightForWidth(kColumns * 16)};
+    // Cells at least twice their pixel size, square ones at least 16.
+    const int cell = std::max(16, 2 * cell_.width());
+    return {columns_ * cell, heightForWidth(columns_ * cell)};
 }
 
 int LibrarySheet::indexAt(QPoint pos) const {
-    const int cell = cellSize();
-    const int column = pos.x() / cell;
-    const int index = (pos.y() / cell) * kColumns + column;
-    return pos.x() >= 0 && pos.y() >= 0 && column < kColumns && index < items_.size() ? index : -1;
+    const int w = cellWidth();
+    const int column = pos.x() / w;
+    const int index = (pos.y() / cellHeight(w)) * columns_ + column;
+    return pos.x() >= 0 && pos.y() >= 0 && column < columns_ && index < items_.size() ? index : -1;
 }
 
 bool LibrarySheet::event(QEvent* event) {
@@ -107,9 +117,11 @@ void LibrarySheet::mouseMoveEvent(QMouseEvent* event) {
     auto* drag = new QDrag(this);
     drag->setMimeData(mime);
     if (!item.icon.isNull()) {
-        const int size = std::max(cellSize(), 32);
-        drag->setPixmap(QPixmap::fromImage(item.icon.scaled(size, size, Qt::KeepAspectRatio, Qt::FastTransformation)));
-        drag->setHotSpot(QPoint(size / 2, size / 2));
+        const int size = std::max(std::max(cellWidth(), cellHeight(cellWidth())), 32);
+        const QPixmap pixmap =
+            QPixmap::fromImage(item.icon.scaled(size, size, Qt::KeepAspectRatio, Qt::FastTransformation));
+        drag->setPixmap(pixmap);
+        drag->setHotSpot(QPoint(pixmap.width() / 2, pixmap.height() / 2));
     }
     drag->exec(Qt::CopyAction);
 }
@@ -128,10 +140,12 @@ void LibrarySheet::mouseReleaseEvent(QMouseEvent* event) {
 void LibrarySheet::paintEvent(QPaintEvent*) {
     const theme::Tokens& t = theme::current();
     QPainter painter(this);
-    const int cell = cellSize();
-    painter.fillRect(QRect(0, 0, cell * kColumns, heightForWidth(width())), t.canvas);
+    const int cw = cellWidth();
+    const int ch = cellHeight(cw);
+    const int height = heightForWidth(width());
+    painter.fillRect(QRect(0, 0, cw * columns_, height), t.canvas);
     for (int i = 0; i < items_.size(); ++i) {
-        const QRect r((i % kColumns) * cell, (i / kColumns) * cell, cell, cell);
+        const QRect r((i % columns_) * cw, (i / columns_) * ch, cw, ch);
         const QImage& icon = items_.at(i).icon;
         if (!icon.isNull()) {
             // Pixel art at the cell size, crisp.
@@ -139,15 +153,15 @@ void LibrarySheet::paintEvent(QPaintEvent*) {
         }
     }
     // A faint grid every tile, stronger every fourth like a pattern viewer.
-    for (int c = 1; c < kColumns; ++c) {
-        painter.fillRect(QRect(c * cell, 0, 1, heightForWidth(width())), c % 4 == 0 ? t.lineStrong : t.line);
+    for (int c = 1; c < columns_; ++c) {
+        painter.fillRect(QRect(c * cw, 0, 1, height), c % 4 == 0 ? t.lineStrong : t.line);
     }
-    const int rows = (int(items_.size()) + kColumns - 1) / kColumns;
+    const int rows = (int(items_.size()) + columns_ - 1) / columns_;
     for (int r = 1; r < rows; ++r) {
-        painter.fillRect(QRect(0, r * cell, cell * kColumns, 1), r % 4 == 0 ? t.lineStrong : t.line);
+        painter.fillRect(QRect(0, r * ch, cw * columns_, 1), r % 4 == 0 ? t.lineStrong : t.line);
     }
     for (int i = 0; i < items_.size(); ++i) {
-        const QRect r((i % kColumns) * cell, (i / kColumns) * cell, cell + 1, cell + 1);
+        const QRect r((i % columns_) * cw, (i / columns_) * ch, cw + 1, ch + 1);
         if (items_.at(i).id == current_) {
             theme::paint::hairlineRect(painter, r, t.accent, 2.0);
         } else if (i == hovered_) {
@@ -191,10 +205,14 @@ SheetPane::SheetPane(sdk::EditorModel* model, QWidget* parent)
     refresh();
 }
 
+QSize SheetPane::sizeHint() const {
+    return {std::max(16 * 24, sheet_->sizeHint().width()) + 32, 480};
+}
+
 void SheetPane::refresh() {
     const sdk::Library library = model_->sheet();
     hint_->setText(library.hint);
-    sheet_->setItems(library.items, model_->currentLibraryItem());
+    sheet_->setItems(library.items, model_->currentLibraryItem(), library.columns, library.cell);
     setVisible(!library.items.isEmpty());
 }
 

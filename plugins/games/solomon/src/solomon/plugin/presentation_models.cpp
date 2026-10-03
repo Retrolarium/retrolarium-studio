@@ -80,8 +80,36 @@ QJsonObject SolomonTitleModel::presentation() const {
     return stroking_ ? draft_ : session_->state().presentation;
 }
 
+QString SolomonTitleModel::layerName(int stream) {
+    return stream == 0 ? QStringLiteral("Logo layer") : QStringLiteral("Castle layer");
+}
+
 QString SolomonTitleModel::title() const {
-    return stream_ == 0 ? QStringLiteral("Title · record layer") : QStringLiteral("Title · logo layer");
+    return QStringLiteral("Title · %1").arg(layerName(stream_).toLower());
+}
+
+const SolomonTitleModel::Layer& SolomonTitleModel::layer(int stream) const {
+    // Draft versions count up from the session revision's top half so a
+    // stroke never meets a committed key.
+    const quint64 key = stroking_ ? (quint64(1) << 63) | draftVersion_ : session_->revision();
+    if (key != layersKey_) {
+        layersKey_ = key;
+        const QJsonObject doc = presentation();
+        for (int s = 0; s < 2; ++s) {
+            Layer& l = layers_[s];
+            l.values.fill(-1, 32 * 30);
+            l.writers.fill(qMakePair(-1, -1), 32 * 30);
+            const QJsonArray tokens = tokensOf(doc, s);
+            const QHash<int, QPair<int, int>> writers = titleWriters(doc, s);
+            for (auto it = writers.constBegin(); it != writers.constEnd(); ++it) {
+                if (it.key() < 0 || it.key() >= 32 * 30) continue;
+                l.writers[it.key()] = it.value();
+                l.values[it.key()] =
+                    tokens.at(it.value().first).toObject().value(QStringLiteral("tiles")).toArray().at(it.value().second).toInt();
+            }
+        }
+    }
+    return layers_[std::clamp(stream, 0, 1)];
 }
 
 QVector<sdk::Tool> SolomonTitleModel::tools() const {
@@ -89,7 +117,15 @@ QVector<sdk::Tool> SolomonTitleModel::tools() const {
             {QStringLiteral("pick"), QStringLiteral("Take a cell's tile as the brush"), QStringLiteral("pick")}};
 }
 
-QImage SolomonTitleModel::tile(int value, bool faint) const {
+const QImage& SolomonTitleModel::tile(int value, bool faint) const {
+    if (tilesRevision_ != session_->revision()) {
+        tiles_.clear();
+        sheet_.clear();
+        tilesRevision_ = session_->revision();
+    }
+    const int key = (value & 0xff) | (faint ? 0x100 : 0);
+    auto found = tiles_.constFind(key);
+    if (found != tiles_.constEnd()) return *found;
     QImage image(8, 8, QImage::Format_ARGB32);
     const nes::Bundle& g = session_->bundle();
     const QString chr = QStringLiteral("chr-bank-%1").arg(kTitleBank);
@@ -101,28 +137,20 @@ QImage SolomonTitleModel::tile(int value, bool faint) const {
             image.setPixel(x, y, c.rgb());
         }
     }
-    return image;
+    return *tiles_.insert(key, image);
 }
 
 QImage SolomonTitleModel::render() const {
     QImage image(32 * 8, 30 * 8, QImage::Format_RGB32);
     image.fill(Qt::black);
     QPainter painter(&image);
-    const QJsonObject doc = presentation();
-    for (int s = 0; s < 2; ++s) {
-        if (s == stream_) continue;
-        const QHash<int, QPair<int, int>> writers = titleWriters(doc, s);
-        const QJsonArray tokens = tokensOf(doc, s);
-        for (auto it = writers.constBegin(); it != writers.constEnd(); ++it) {
-            const int value = tokens.at(it.value().first).toObject().value(QStringLiteral("tiles")).toArray().at(it.value().second).toInt();
-            painter.drawImage((it.key() % 32) * 8, (it.key() / 32) * 8, tile(value, true));
+    for (int pass = 0; pass < 2; ++pass) {
+        // The other layer dimmed first, this one on top.
+        const int s = pass == 0 ? 1 - stream_ : stream_;
+        const QVector<int>& values = layer(s).values;
+        for (int cell = 0; cell < values.size(); ++cell) {
+            if (values.at(cell) >= 0) painter.drawImage((cell % 32) * 8, (cell / 32) * 8, tile(values.at(cell), pass == 0));
         }
-    }
-    const QHash<int, QPair<int, int>> writers = titleWriters(doc, stream_);
-    const QJsonArray tokens = tokensOf(doc, stream_);
-    for (auto it = writers.constBegin(); it != writers.constEnd(); ++it) {
-        const int value = tokens.at(it.value().first).toObject().value(QStringLiteral("tiles")).toArray().at(it.value().second).toInt();
-        painter.drawImage((it.key() % 32) * 8, (it.key() / 32) * 8, tile(value, false));
     }
     return image;
 }
@@ -149,22 +177,23 @@ sdk::Library SolomonTitleModel::sheet() const {
     sdk::Library library;
     library.grid = true;
     library.hint = QStringLiteral("click: brush · drag onto a cell");
-    for (int value = 0x80; value <= 0xff; ++value) {
-        sdk::LibraryItem item;
-        item.id = QStringLiteral("tile:%1").arg(value);
-        item.label = QStringLiteral("Tile %1").arg(nes::hex(value));
-        item.icon = tile(value, false);
-        library.items << item;
+    if (tilesRevision_ != session_->revision()) tile(0x80, false);  // drops a stale sheet
+    if (sheet_.isEmpty()) {
+        for (int value = 0x80; value <= 0xff; ++value) {
+            sdk::LibraryItem item;
+            item.id = QStringLiteral("tile:%1").arg(value);
+            item.label = QStringLiteral("Tile %1").arg(nes::hex(value));
+            item.icon = tile(value, false);
+            sheet_ << item;
+        }
     }
+    library.items = sheet_;
     return library;
 }
 
 int SolomonTitleModel::cellValue(QPoint cell) const {
     if (cell.x() < 0 || cell.y() < 0 || cell.x() >= 32 || cell.y() >= 30) return -1;
-    const QJsonObject doc = presentation();
-    const auto writer = titleWriters(doc, stream_).value(cell.y() * 32 + cell.x(), qMakePair(-1, -1));
-    if (writer.first < 0) return -1;
-    return tokensOf(doc, stream_).at(writer.first).toObject().value(QStringLiteral("tiles")).toArray().at(writer.second).toInt();
+    return layer(stream_).values.at(cell.y() * 32 + cell.x());
 }
 
 bool SolomonTitleModel::isCellEditable(QPoint cell) const {
@@ -188,13 +217,14 @@ bool SolomonTitleModel::placeObject(const QString& libraryItem, QPoint cell, QSt
 void SolomonTitleModel::beginStroke() {
     draft_ = session_->state().presentation;
     stroking_ = true;
+    ++draftVersion_;
 }
 
 bool SolomonTitleModel::paintCell(QPoint cell, int value) {
     cell_ = cell;
     if (value < 0x80 || value > 0xff || !isCellEditable(cell) || cellValue(cell) == value) return false;
     QJsonObject doc = presentation();
-    const auto writer = titleWriters(doc, stream_).value(cell.y() * 32 + cell.x());
+    const auto writer = layer(stream_).writers.at(cell.y() * 32 + cell.x());
     QJsonArray streams = doc.value(QStringLiteral("streams")).toArray();
     QJsonObject stream = streams.at(stream_).toObject();
     QJsonArray tokens = stream.value(QStringLiteral("tokens")).toArray();
@@ -208,6 +238,7 @@ bool SolomonTitleModel::paintCell(QPoint cell, int value) {
     doc.insert(QStringLiteral("streams"), streams);
     if (stroking_) {
         draft_ = doc;
+        ++draftVersion_;
         emit contentChanged();
         return true;
     }
@@ -260,6 +291,84 @@ sdk::Inspection SolomonTitleModel::inspect() const {
 
 SolomonDemoModel::SolomonDemoModel(SolomonSession* session) : TableModel(session), session_(session) {
     connect(session_, &sdk::Session::contentChanged, this, &sdk::EditorModel::contentChanged);
+    connect(session_, &SolomonSession::startChanged, this, &sdk::EditorModel::toolsChanged);
+    // Play from selected runs the demo while this is open.
+    attached_ = session_;
+    session_->attachDemoEditor(true);
+}
+
+SolomonDemoModel::~SolomonDemoModel() {
+    if (attached_) attached_->attachDemoEditor(false);
+}
+
+QString SolomonDemoModel::startPoint() const {
+    return session_->demoStart() ? session_->selectedStart() : QString();
+}
+
+SolomonDemoModel::Recording SolomonDemoModel::stepsFromRecording(const QString& text) {
+    constexpr int kSteps = 34;
+    QVector<QPair<int, int>> changes;
+    int end = -1;
+    for (const QString& line : text.split(QLatin1Char('\n'), Qt::SkipEmptyParts)) {
+        const QStringList words = line.simplified().split(QLatin1Char(' '));
+        if (words.size() != 2) continue;
+        if (words.at(0) == QLatin1String("end")) end = words.at(1).toInt();
+        else changes << qMakePair(words.at(0).toInt(), words.at(1).toInt() & 0xff);
+    }
+    Recording result;
+    if (changes.isEmpty() && end < 0) return result;
+    // Steps as (duration, buttons): the buttons go in after duration + 1
+    // ticks of the NMI frame counter (the recording's clock) and stay until
+    // the next step.
+    QVector<QPair<int, int>> steps;
+    int last = 0;      // frame of the last install
+    int current = 0;
+    const auto waitUntil = [&](int frame, int buttons) {
+        int gap = std::max(1, frame - last);
+        while (gap > 256) {
+            steps << qMakePair(255, current);
+            last += 256;
+            gap -= 256;
+        }
+        steps << qMakePair(gap - 1, buttons);
+        last += gap;
+        current = buttons;
+    };
+    for (const auto& change : changes) {
+        if (change.second != current) waitUntil(change.first, change.second);
+    }
+    if (end > last && current != 0) waitUntil(end, 0);
+    int frames = 0;
+    for (int i = 0; i < steps.size(); ++i) {
+        if (i < kSteps) frames += steps.at(i).first + 1;
+        else result.droppedFrames += steps.at(i).first + 1;
+    }
+    result.keptFrames = frames;
+    steps.resize(std::min<int>(steps.size(), kSteps));
+    // Unused steps end the demo a frame apart without buttons.
+    while (steps.size() < kSteps) steps << qMakePair(0, 0);
+    for (int i = 0; i < steps.size(); ++i) {
+        QJsonObject step;
+        step.insert(QStringLiteral("index"), i);
+        step.insert(QStringLiteral("duration"), steps.at(i).first);
+        QJsonArray held;
+        static const int kBits[] = {0x80, 0x40, 0x20, 0x10, 0x08, 0x04, 0x02, 0x01};
+        for (int b = 0; b < 8; ++b) {
+            if (steps.at(i).second & kBits[b]) held.append(buttonNames().at(b));
+        }
+        step.insert(QStringLiteral("buttons"), held);
+        result.steps.append(step);
+    }
+    return result;
+}
+
+bool SolomonDemoModel::setField(const QString& key, const QVariant& value, QString* error) {
+    if (key == QLatin1String("play")) {
+        session_->setDemoRecording(value.toString().startsWith(QLatin1String("Record")));
+        emit selectionChanged();
+        return true;
+    }
+    return TableModel::setField(key, value, error);
 }
 
 QVector<sdk::TableColumn> SolomonDemoModel::columns() const {
@@ -305,7 +414,8 @@ QString SolomonDemoModel::cell(int row, int column) const {
     }
     case 3: {
         int frames = 0;
-        for (int i = 0; i < row; ++i) frames += steps.at(i).toObject().value(QStringLiteral("duration")).toInt();
+        // A step waits its duration plus one tick of the NMI frame counter.
+        for (int i = 0; i < row; ++i) frames += steps.at(i).toObject().value(QStringLiteral("duration")).toInt() + 1;
         return QStringLiteral("%1.%2 s").arg(frames / 60).arg(frames % 60 * 10 / 60);
     }
     default: return {};
@@ -362,7 +472,7 @@ bool SolomonDemoModel::setCell(int row, int column, const QString& value, QStrin
 sdk::Budget SolomonDemoModel::budget() const {
     int frames = 0;
     for (const QJsonValue& v : session_->state().presentation.value(QStringLiteral("demo_steps")).toArray()) {
-        frames += v.toObject().value(QStringLiteral("duration")).toInt();
+        frames += v.toObject().value(QStringLiteral("duration")).toInt() + 1;
     }
     sdk::Budget budget;
     budget.text = QStringLiteral("%1 steps · %2 frames, %3 s").arg(rowCount()).arg(frames).arg(frames / 60);
@@ -373,8 +483,17 @@ sdk::Inspection SolomonDemoModel::inspect() const {
     sdk::Inspection inspection;
     inspection.kicker = QStringLiteral("Attract demo");
     inspection.title = QStringLiteral("Step %1").arg(row_ + 1);
-    inspection.note = QStringLiteral("When the title waits, the game plays this input: each step holds its "
-                                     "buttons for its number of frames. Write buttons as words, e.g. B RIGHT.");
+    sdk::Field play;
+    play.key = QStringLiteral("play");
+    play.label = QStringLiteral("Play");
+    play.type = sdk::Field::Type::Choice;
+    play.choices = QStringList{QStringLiteral("Loop the demo"), QStringLiteral("Record a new demo")};
+    play.value = session_->demoRecording() ? play.choices.at(1) : play.choices.at(0);
+    inspection.fields = {play};
+    inspection.note = QStringLiteral("When the title waits, the game plays this input in room 3: each step waits "
+                                     "its frames, then holds its buttons. Play from selected loops the demo in "
+                                     "the emulator. Record a new demo plays the room with your controller and "
+                                     "turns what you press into the 34 steps when you press Start or Stop.");
     inspection.engineTag = QStringLiteral("solomon.presentation@1");
     return inspection;
 }

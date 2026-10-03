@@ -13,6 +13,7 @@ class QLabel;
 class QMenu;
 class QPushButton;
 class QStackedWidget;
+class QTimer;
 class QToolButton;
 class QHBoxLayout;
 
@@ -95,6 +96,9 @@ private:
     void updateProjectChrome();
     void updateBreadcrumb();
     void updateDirtyState();
+    // Runs updateDirtyState once the current event is handled: an edit
+    // reports every kind's documents, and each report would rescan all.
+    void scheduleDirtyState();
     void updateStatus(const QString& transient = QString());
     void refreshDiagnostics();
     void saveAll();
@@ -119,6 +123,7 @@ private:
     runtime::ProcessRunner* processes_ = nullptr;
     runtime::EmulatorRunner* emulator_ = nullptr;
     runtime::AudioPlayer* audio_ = nullptr;
+    QTimer* dirtyTimer_ = nullptr;
     QString projectPath_;
     QString kind_;
     QString document_;

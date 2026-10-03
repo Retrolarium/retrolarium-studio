@@ -37,14 +37,17 @@ public:
     // An 8x16 sprite pattern pair by its OAM tile byte (bit 0 picks the
     // pattern table), in sprite palette `palette`.
     QImage spritePair(int tile, int bank, int palette) const;
-    int groupOf(int room) const { return room == 50 ? 0 : room / 4; }
+    // The palette group a room loads; room 51 (the bonus room) takes
+    // world 1's.
+    static int groupOf(int room) { return room == 50 ? 0 : room / 4; }
+    // The 32 colours a palette group loads.
+    QVector<int> palette(int group) const;
 
 private:
     struct Bank {
         QVector<quint8> pixels;     // 512 tiles, 64 pens each
     };
     const Bank& bank(int index) const;
-    QVector<int> palette(int group) const;
     void drawPattern(QImage& image, int x, int y, const SolomonPattern& pattern, const QVector<int>& palette,
                      const Bank& bank, int opacity = 255, bool transparentZero = false) const;
     void drawSprite(QImage& image, const QJsonObject& frame, const Bank& bank, int x, int y,
