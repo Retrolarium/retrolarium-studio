@@ -1,6 +1,7 @@
 #include "builtin_plugins.hpp"
 #include "gallery/theme_gallery.hpp"
 #include "shell/main_window.hpp"
+#include "theme/brand.hpp"
 #include "theme/theme.hpp"
 #include "theme/typography.hpp"
 
@@ -76,6 +77,11 @@ int main(int argc, char* argv[]) {
 
     rl::theme::Theme::instance().install(
         app, rl::theme::modeFromName(parser.value(themeOption), rl::theme::Mode::Dark));
+    // The window and taskbar icon follow the theme: the accent tile in the
+    // light one, the dark tile in the dark one.
+    QApplication::setWindowIcon(rl::theme::brand::appIcon(rl::theme::Theme::instance().mode()));
+    QObject::connect(&rl::theme::Theme::instance(), &rl::theme::Theme::changed, &app,
+                     [](rl::theme::Mode mode) { QApplication::setWindowIcon(rl::theme::brand::appIcon(mode)); });
 
     if (parser.isSet(fontReportOption)) {
         QFile report(parser.value(fontReportOption));

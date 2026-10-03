@@ -184,11 +184,28 @@ target_include_directories(castle_plugin PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/cast
 target_link_libraries(castle_plugin PUBLIC nes_editors studio_sdk)
 studio_enable_warnings(castle_plugin)
 
+# Solomon's Key: the room documents, their painter and the editor models.
+add_library(solomon_plugin STATIC
+    solomon/src/solomon/data/documents.cpp
+    solomon/src/solomon/data/documents.hpp
+    solomon/src/solomon/plugin/room_model.cpp
+    solomon/src/solomon/plugin/room_model.hpp
+    solomon/src/solomon/plugin/solomon_plugin.cpp
+    solomon/src/solomon/plugin/solomon_plugin.hpp
+    solomon/src/solomon/plugin/solomon_session.cpp
+    solomon/src/solomon/plugin/solomon_session.hpp
+    solomon/src/solomon/render/room_painter.cpp
+    solomon/src/solomon/render/room_painter.hpp
+)
+target_include_directories(solomon_plugin PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/solomon/src)
+target_link_libraries(solomon_plugin PUBLIC nes_editors studio_sdk)
+studio_enable_warnings(solomon_plugin)
+
 # The one translation unit that names concrete plugins.
 add_library(studio_builtin_plugins STATIC
     builtin_plugins.cpp
     builtin_plugins.hpp
 )
 target_include_directories(studio_builtin_plugins PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(studio_builtin_plugins PUBLIC castle_plugin flicky_plugin smb_plugin studio_sdk)
+target_link_libraries(studio_builtin_plugins PUBLIC castle_plugin flicky_plugin smb_plugin solomon_plugin studio_sdk)
 studio_enable_warnings(studio_builtin_plugins)

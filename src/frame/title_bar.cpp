@@ -1,5 +1,6 @@
 #include "frame/title_bar.hpp"
 
+#include "theme/brand.hpp"
 #include "theme/theme.hpp"
 #include "theme/typography.hpp"
 
@@ -29,7 +30,7 @@ constexpr int kTitleGap = 24;
 const QColor kCloseHover(0xc4, 0x2b, 0x1c);
 const QColor kClosePressed(0xb2, 0x27, 0x1a);
 
-// The studio mark: a square outline in the accent with a centred dot.
+// The Retrolarium mark, muted while the window is inactive.
 class AppMark final : public QWidget {
 public:
     explicit AppMark(QWidget* parent) : QWidget(parent) {
@@ -39,18 +40,11 @@ public:
 
 protected:
     void paintEvent(QPaintEvent*) override {
-        const theme::Tokens& t = theme::current();
         const QWidget* w = window();
         const bool active = w->isActiveWindow() || w->property("rlDrawActive").toBool();
-        const QColor ink = active ? t.accent : t.faint;
         QPainter painter(this);
-        painter.setRenderHint(QPainter::Antialiasing, true);
-        QPen pen(ink);
-        pen.setWidthF(1.5);
-        pen.setJoinStyle(Qt::MiterJoin);
-        painter.setPen(pen);
-        painter.drawRect(QRectF(0.75, 0.75, kMarkSize - 1.5, kMarkSize - 1.5));
-        painter.fillRect(QRectF(kMarkSize / 2.0 - 2.5, kMarkSize / 2.0 - 2.5, 5, 5), ink);
+        painter.drawPixmap(0, 0, theme::brand::mark(theme::Theme::instance().mode(), kMarkSize, devicePixelRatioF(),
+                                                    !active));
     }
 };
 

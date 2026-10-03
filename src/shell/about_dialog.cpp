@@ -2,6 +2,7 @@
 
 #include "sdk/plugin.hpp"
 #include "theme/typography.hpp"
+#include "widgets/brand_mark.hpp"
 #include "widgets/label.hpp"
 #include "widgets/primary_button.hpp"
 
@@ -48,12 +49,21 @@ AboutDialog::AboutDialog(QWidget* parent) : StudioDialog(QStringLiteral("About")
     content->setContentsMargins(28, 22, 28, 20);
     content->setSpacing(8);
 
-    content->addWidget(new ui::Label(QStringLiteral("Retrolarium Studio"), ui::Label::Role::Title, body()));
+    // The mark beside the name and version.
+    auto* heading = new QHBoxLayout;
+    heading->setSpacing(16);
+    heading->addWidget(new ui::BrandMark(48, body()), 0, Qt::AlignTop);
+    auto* names = new QVBoxLayout;
+    names->setSpacing(4);
+    names->addWidget(new ui::Label(QStringLiteral("Retrolarium Studio"), ui::Label::Role::Title, body()));
     auto* version = new ui::Label(QStringLiteral("Version %1 · Qt %2").arg(QCoreApplication::applicationVersion(),
                                                                          QString::fromLatin1(qVersion())),
                                   ui::Label::Role::Mono, body());
     version->setTone(QStringLiteral("faint"));
-    content->addWidget(version);
+    names->addWidget(version);
+    names->addStretch(1);
+    heading->addLayout(names, 1);
+    content->addLayout(heading);
     content->addSpacing(6);
 
     auto* intro = paragraph(QStringLiteral("A studio for changing classic console games from their disassemblies: "

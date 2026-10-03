@@ -4,9 +4,9 @@ namespace rl::sdk {
 class PluginRegistry;
 }
 
-namespace rl::flicky {
+namespace rl::solomon {
 
-// Adds the Flicky (UE) plugin to the studio's registry.
+// Adds the Solomon's Key plugin to the studio's registry.
 void registerPlugin(sdk::PluginRegistry& registry);
 
-}  // namespace rl::flicky
+}  // namespace rl::solomon

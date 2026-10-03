@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=Retrolarium
+Comment=Level, graphics, text and music editor for NES, Mega Drive and SNES games
+Exec=retrolarium %F
+Icon=retrolarium
+Categories=Development;Graphics;

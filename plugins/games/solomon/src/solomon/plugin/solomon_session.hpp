@@ -1,46 +1,30 @@
 #pragma once
 
-#include "castle/data/levels.hpp"
-#include "castle/render/room_painter.hpp"
 #include "nes/editors.hpp"
 #include "sdk/project_file.hpp"
 #include "sdk/session.hpp"
-
-#include <QPoint>
+#include "solomon/data/documents.hpp"
+#include "solomon/render/room_painter.hpp"
 
 #include <functional>
 #include <memory>
 
-namespace rl::castle {
+namespace rl::solomon {
 
-// Both documents of a Castle project, swapped whole by undo.
-struct CastleState {
-    CastleLevels levels;
-    nes::Bundle graphics;
-
-    bool operator==(const CastleState& other) const { return levels == other.levels && graphics == other.graphics; }
-};
-
-// Where "Play from selected" starts: a room (1-100) and the player's pixel
-// position in it.
-struct CastleStart {
-    int room = 1;
-    QPoint pixel{152, 136};
-};
-
-// An open Castle Excellent / Castlequest project (`rltool studio preset`):
-// the room document and the graphics bundle.
-class CastleSession final : public sdk::Session, public nes::BundleOwner {
+// An open Solomon's Key project (`rltool studio preset`): the rooms, room
+// art, animation tables and the graphics bundle.
+class SolomonSession final : public sdk::Session, public nes::BundleOwner {
     Q_OBJECT
 
 public:
-    static std::unique_ptr<CastleSession> open(const sdk::ProjectFile& project, QString* error);
+    static std::unique_ptr<SolomonSession> open(const sdk::ProjectFile& project, QString* error);
 
     sdk::Profile profile() const override;
     QVector<sdk::Kind> kinds() const override;
     QVector<sdk::DocumentGroup> documents(const QString& kind) const override;
     std::unique_ptr<sdk::EditorModel> openEditor(const QString& kind, const QString& document) override;
     bool save(QString* error) override;
+    QVector<sdk::Diagnostic> diagnostics() const override;
 
     bool canBuild() const override { return true; }
     void build() override;
@@ -58,46 +42,45 @@ public:
     QVector<sdk::PaletteSample> paletteSamples(const QString& table) const override;
     QStringList paletteRowLabels(const QString& table) const override;
 
-    const CastleLevels& levels() const { return state_.levels; }
-    const CastleLevels& savedLevels() const { return saved_.levels; }
-    const CastleArt& art() const { return art_; }
+    const SolomonState& state() const { return state_; }
+    const SolomonState& saved() const { return saved_; }
+    const SolomonRooms& rooms() const { return state_.rooms; }
     // Rebuilt when the documents change.
-    const CastlePainter& painter() const;
+    const SolomonPainter& painter() const;
     quint64 revision() const { return revision_; }
-    QString projectDirectory() const { return project_.directory(); }
 
-    // One undo step: the edit runs on a copy of both documents.
-    bool edit(const QString& text, const std::function<void(CastleState&)>& change, QString* error);
+    // One undo step: the edit runs on a copy of every document.
+    bool edit(const QString& text, const std::function<void(SolomonState&)>& change, QString* error);
 
-    CastleStart start() const { return start_; }
-    void setStart(const CastleStart& start);
+    int startRoom() const { return startRoom_; }   // 1-based
+    void setStartRoom(int room);
 
 signals:
     void startChanged();
 
 private:
-    CastleSession() = default;
-    void setState(const CastleState& state, quint64 revision);
+    SolomonSession() = default;
+    void setState(const SolomonState& state, quint64 revision);
     void report(sdk::Severity severity, const QString& source, const QString& message);
     void runBuild(std::function<void(bool)> next);
     void launch(bool fromStart);
 
     sdk::ProjectFile project_;
-    QString levelsPath_;
+    QString roomsPath_;
+    QString artPath_;
+    QString animationsPath_;
     QString graphicsPath_;
-    CastleState state_;
-    CastleState saved_;
-    CastleArt art_;
+    SolomonState state_;
+    SolomonState saved_;
     quint64 revision_ = 0;
     quint64 nextRevision_ = 1;
-    CastleStart start_;
+    int startRoom_ = 1;
     QString lastBuild_;
 
-    mutable std::unique_ptr<CastlePainter> painter_;
+    mutable std::unique_ptr<SolomonPainter> painter_;
     mutable quint64 painterRevision_ = ~quint64(0);
 };
 
-// "Room 7"
 QString roomLabel(int room);
 
-}  // namespace rl::castle
+}  // namespace rl::solomon

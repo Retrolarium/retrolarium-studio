@@ -49,6 +49,8 @@ add_library(studio_ui STATIC
     src/frame/studio_window.hpp
     src/frame/title_bar.cpp
     src/frame/title_bar.hpp
+    src/theme/brand.cpp
+    src/theme/brand.hpp
     src/theme/icons.cpp
     src/theme/icons.hpp
     src/theme/industry_style.cpp
@@ -67,6 +69,8 @@ add_library(studio_ui STATIC
     src/theme/window_frame.hpp
     src/widgets/badge.cpp
     src/widgets/badge.hpp
+    src/widgets/brand_mark.cpp
+    src/widgets/brand_mark.hpp
     src/widgets/budget_bar.cpp
     src/widgets/budget_bar.hpp
     src/widgets/collapsible_section.cpp
@@ -192,6 +196,8 @@ add_executable(retrolarium-studio WIN32
 target_compile_definitions(retrolarium-studio PRIVATE RETROLARIUM_STUDIO_VERSION="${PROJECT_VERSION}")
 if(WIN32)
     enable_language(RC)
+    # The executable icon Explorer shows: the accent tile.
+    set(BRAND_ICO "${CMAKE_CURRENT_SOURCE_DIR}/resources/brand/windows/retrolarium.ico")
     configure_file(resources/version.rc.in ${CMAKE_CURRENT_BINARY_DIR}/version.rc @ONLY)
     target_sources(retrolarium-studio PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/version.rc)
 endif()

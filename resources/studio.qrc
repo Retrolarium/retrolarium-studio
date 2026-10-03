@@ -10,4 +10,19 @@
         <file alias="IBMPlexMono-Medium.ttf">fonts/IBMPlexMono-Medium.ttf</file>
         <file alias="IBMPlexMono-SemiBold.ttf">fonts/IBMPlexMono-SemiBold.ttf</file>
     </qresource>
+    <qresource prefix="/brand">
+        <file alias="icon-16.png">brand/png/icon-16.png</file>
+        <file alias="icon-24.png">brand/png/icon-24.png</file>
+        <file alias="icon-32.png">brand/png/icon-32.png</file>
+        <file alias="icon-48.png">brand/png/icon-48.png</file>
+        <file alias="icon-64.png">brand/png/icon-64.png</file>
+        <file alias="icon-128.png">brand/png/icon-128.png</file>
+        <file alias="icon-256.png">brand/png/icon-256.png</file>
+        <file alias="icon-dark-16.png">brand/png/icon-dark-16.png</file>
+        <file alias="icon-dark-32.png">brand/png/icon-dark-32.png</file>
+        <file alias="icon-dark-48.png">brand/png/icon-dark-48.png</file>
+        <file alias="icon-dark-256.png">brand/png/icon-dark-256.png</file>
+        <file alias="mark.svg">brand/svg/mark.svg</file>
+        <file alias="mark-on-dark.svg">brand/svg/mark-on-dark.svg</file>
+    </qresource>
 </RCC>

@@ -16,6 +16,7 @@
 #include "theme/theme.hpp"
 #include "theme/typography.hpp"
 #include "widgets/badge.hpp"
+#include "widgets/brand_mark.hpp"
 #include "widgets/budget_bar.hpp"
 #include "widgets/label.hpp"
 #include "widgets/toast.hpp"
@@ -488,12 +489,14 @@ QWidget* MainWindow::buildWelcome() {
     auto* layout = new QVBoxLayout(column);
     layout->setContentsMargins(0, 0, 0, 0);
     layout->setSpacing(10);
+    layout->addWidget(new ui::BrandMark(64, column));
+    layout->addSpacing(14);
     layout->addWidget(new ui::Label(QStringLiteral("Retrolarium Studio"), ui::Label::Role::Caps, column));
     auto* title = new ui::Label(QStringLiteral("Open a project to start"), ui::Label::Role::Title, column);
     layout->addWidget(title);
     auto* note = new ui::Label(
-        QStringLiteral("Projects are .rlj files. Game support comes from plugins; the "
-                       "Project menu lists what each one can import."),
+        QStringLiteral("Projects are .rlj files kept with a game's disassembly, in its "
+                       "retrolarium folder. Open one with File → Open project or Ctrl+O."),
         ui::Label::Role::Small, column);
     note->setWordWrap(true);
     layout->addWidget(note);

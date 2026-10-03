@@ -1,17 +1,17 @@
-#include "castle/plugin/castle_session.hpp"
+#include "solomon/plugin/solomon_session.hpp"
 
-#include "castle/plugin/room_model.hpp"
-#include "castle/plugin/table_models.hpp"
 #include "nes/palette.hpp"
 #include "sdk/plugin.hpp"
 #include "sdk/snapshot_command.hpp"
+#include "solomon/plugin/room_model.hpp"
 
 #include <QDateTime>
-#include <QJsonArray>
 #include <QJsonDocument>
 #include <QUndoStack>
 
-namespace rl::castle {
+#include <algorithm>
+
+namespace rl::solomon {
 
 namespace {
 
@@ -70,9 +70,10 @@ sdk::ProcessSpec specFromPlan(const QJsonObject& json) {
     return game;
 }
 
-QString first(const nes::Bundle& bundle, const char* codec) {
-    const QStringList ids = bundle.resourceIds(QString::fromLatin1(codec));
-    return ids.isEmpty() ? QString() : ids.first();
+// Rooms 1-48 come in twelve worlds of four; 49-53 are the bonus, princess
+// and other special rooms.
+QString worldOf(int room) {
+    return room < 48 ? QStringLiteral("World %1").arg(room / 4 + 1) : QStringLiteral("Special rooms");
 }
 
 }  // namespace
@@ -83,94 +84,93 @@ QString roomLabel(int room) {
 
 // ---------------------------------------------------------------- opening
 
-std::unique_ptr<CastleSession> CastleSession::open(const sdk::ProjectFile& project, QString* error) {
-    std::unique_ptr<CastleSession> session(new CastleSession);
+std::unique_ptr<SolomonSession> SolomonSession::open(const sdk::ProjectFile& project, QString* error) {
+    std::unique_ptr<SolomonSession> session(new SolomonSession);
     session->project_ = project;
     try {
-        const QString levels = tabDocument(project, QStringLiteral("castle.prefix-rooms@1"));
+        const QString rooms = tabDocument(project, QStringLiteral("solomon.rooms@3"));
+        const QString art = tabDocument(project, QStringLiteral("solomon.room-art@1"));
+        const QString animations = tabDocument(project, QStringLiteral("solomon.animations@1"));
         const QString graphics = tabDocument(project, QStringLiteral("nes.chr-2bpp.v1"));
-        if (levels.isEmpty() || graphics.isEmpty()) {
-            throw CastleError("The project has no Castle rooms or graphics tab.");
+        if (rooms.isEmpty() || art.isEmpty() || animations.isEmpty() || graphics.isEmpty()) {
+            throw SolomonError("The project lacks the rooms, room art, animations or graphics tab.");
         }
-        session->levelsPath_ = project.resolve(levels);
+        session->roomsPath_ = project.resolve(rooms);
+        session->artPath_ = project.resolve(art);
+        session->animationsPath_ = project.resolve(animations);
         session->graphicsPath_ = project.resolve(graphics);
-        session->state_.levels = CastleLevels::load(session->levelsPath_);
+        session->state_.rooms = SolomonRooms(loadJson(session->roomsPath_));
+        session->state_.art = loadJson(session->artPath_);
+        session->state_.animations = loadJson(session->animationsPath_);
         session->state_.graphics = nes::Bundle::load(session->graphicsPath_);
+        if (session->state_.rooms.root().value(QStringLiteral("schema")).toString() !=
+                QLatin1String("retrolarium.solomon-rooms") ||
+            session->state_.rooms.roomCount() == 0) {
+            throw SolomonError("The rooms document is not a Solomon's Key rooms document.");
+        }
+        if (!session->state_.graphics.contains(QStringLiteral("room-palettes"))) {
+            throw SolomonError("The graphics bundle has no room palettes.");
+        }
         session->saved_ = session->state_;
-        const nes::Bundle& g = session->state_.graphics;
-        session->art_.chr = QStringLiteral("chr-bank-%1").arg(session->state_.levels.chrBank());
-        if (!g.contains(session->art_.chr)) {
-            session->art_.chr = first(g, "nes.chr-2bpp.v1");
-        }
-        session->art_.roomPalette = g.contains(QStringLiteral("room-palettes")) ? QStringLiteral("room-palettes")
-                                                                                : first(g, "nes.palette-table.v1");
-        session->art_.cellVisuals = first(g, "castle.room-cell-visuals.v1");
-        session->art_.descriptors = first(g, "castle.metasprite-descriptors.v1");
-        if (session->art_.chr.isEmpty() || session->art_.roomPalette.isEmpty() ||
-            g.tableValues(session->art_.roomPalette).size() < 32) {
-            throw CastleError("The graphics bundle lacks the room patterns or palette.");
-        }
         session->painter();
     } catch (const std::exception& e) {
         if (error) {
-            *error = QStringLiteral("Cannot open the Castle project: %1").arg(QString::fromUtf8(e.what()));
+            *error = QStringLiteral("Cannot open the Solomon's Key project: %1").arg(QString::fromUtf8(e.what()));
         }
         return nullptr;
     }
     return session;
 }
 
-sdk::Profile CastleSession::profile() const {
+sdk::Profile SolomonSession::profile() const {
     sdk::Profile profile;
-    const bool usa = state_.levels.revision().contains(QLatin1String("usa"));
-    profile.name = usa ? QStringLiteral("Castlequest") : QStringLiteral("Castle Excellent");
+    profile.name = QStringLiteral("Solomon's Key");
     profile.badge = QStringLiteral("NES");
     profile.platform = QStringLiteral("NES");
-    profile.revision = usa ? QStringLiteral("U") : QStringLiteral("J");
+    profile.revision = state_.rooms.revision() == QLatin1String("europe") ? QStringLiteral("E") : QStringLiteral("U");
     profile.cpu = QStringLiteral("6502");
     profile.chip = QStringLiteral("2A03");
-    profile.codec = QStringLiteral("castle.prefix-rooms@1");
+    profile.codec = QStringLiteral("solomon.rooms@3");
     return profile;
 }
 
-QVector<sdk::Kind> CastleSession::kinds() const {
+QVector<sdk::Kind> SolomonSession::kinds() const {
     return {kind("rooms", "Rooms", "levels", sdk::EditorType::TileMap),
             kind("graphics", "Tiles", "tiles", sdk::EditorType::Tile),
             kind("palettes", "Palettes", "palettes", sdk::EditorType::Palette),
-            kind("text", "Text", "text", sdk::EditorType::Table),
-            kind("sfx", "Sound FX", "sound", sdk::EditorType::Table),
             kind("playtest", "Playtest", "playtest", sdk::EditorType::Emulator)};
 }
 
-QVector<sdk::DocumentGroup> CastleSession::documents(const QString& kind) const {
+QVector<sdk::DocumentGroup> SolomonSession::documents(const QString& kind) const {
     QVector<sdk::DocumentGroup> groups;
     if (kind == QLatin1String("rooms")) {
-        sdk::DocumentGroup group;
-        group.title = QStringLiteral("Castle");
-        for (int r = 0; r < state_.levels.roomCount(); ++r) {
-            const QVector<CastleObject> objects = state_.levels.objects(r);
-            const bool dirty = state_.levels.cells(r) != saved_.levels.cells(r) || objects != saved_.levels.objects(r);
-            group.documents << entry(QString::number(r + 1), roomLabel(state_.levels.roomNumber(r)),
-                                     objects.isEmpty() ? QString() : QStringLiteral("%1 obj").arg(objects.size()),
-                                     dirty);
+        const QJsonArray now = state_.rooms.root().value(QStringLiteral("rooms")).toArray();
+        const QJsonArray saved = saved_.rooms.root().value(QStringLiteral("rooms")).toArray();
+        for (int r = 0; r < state_.rooms.roomCount(); ++r) {
+            const QString title = worldOf(r);
+            if (groups.isEmpty() || groups.last().title != title) {
+                sdk::DocumentGroup group;
+                group.title = title;
+                groups << group;
+            }
+            const int enemies = state_.rooms.enemies(r).size();
+            groups.last().documents << entry(QString::number(r + 1), roomLabel(state_.rooms.roomNumber(r)),
+                                             enemies ? QStringLiteral("%1 enemies").arg(enemies) : QString(),
+                                             now.at(r) != saved.at(r));
         }
-        groups << group;
     } else if (kind == QLatin1String("graphics")) {
         for (const QString& id : state_.graphics.resourceIds(QStringLiteral("nes.chr-2bpp.v1"))) {
             sdk::DocumentGroup group;
+            group.title = id;
             const int count = state_.graphics.tileCount(id);
-            group.title = id == art_.chr ? QStringLiteral("%1 · rooms").arg(id) : id;
+            const bool changed = state_.graphics.resource(id) != saved_.graphics.resource(id);
             for (int half = 0; half * 256 < count; ++half) {
                 bool dirty = false;
-                for (int t = half * 256; t < std::min(count, half * 256 + 256) && !dirty; ++t) {
+                for (int t = half * 256; changed && t < std::min(count, half * 256 + 256) && !dirty; ++t) {
                     dirty = state_.graphics.tilePixels(id, t) != saved_.graphics.tilePixels(id, t);
                 }
-                group.documents << entry(QStringLiteral("%1/%2").arg(id).arg(half),
-                                         half == 0 ? QStringLiteral("Pattern table 0") : QStringLiteral("Pattern table 1"),
-                                         id == art_.chr ? (half == 0 ? QStringLiteral("sprites")
-                                                                     : QStringLiteral("room cells"))
-                                                        : QStringLiteral("256 tiles"),
-                                         dirty);
+                group.documents << entry(QStringLiteral("%1/%2").arg(id).arg(half), QStringLiteral("Pattern table %1").arg(half),
+                                         half == 0 ? QStringLiteral("sprites") : QStringLiteral("rooms"), dirty);
             }
             groups << group;
         }
@@ -178,28 +178,12 @@ QVector<sdk::DocumentGroup> CastleSession::documents(const QString& kind) const 
         sdk::DocumentGroup group;
         group.title = QStringLiteral("Palettes");
         for (const QString& id : state_.graphics.resourceIds(QStringLiteral("nes.palette-table.v1"))) {
-            const bool dirty = state_.graphics.tableValues(id) != saved_.graphics.tableValues(id);
             group.documents << entry(id,
-                                     id == QLatin1String("room-palettes")     ? QStringLiteral("Rooms")
-                                     : id == QLatin1String("screen-palettes") ? QStringLiteral("Screens")
-                                                                              : id,
-                                     QStringLiteral("%1 colours").arg(state_.graphics.tableValues(id).size()), dirty);
-        }
-        groups << group;
-    } else if (kind == QLatin1String("text")) {
-        sdk::DocumentGroup group;
-        group.title = QStringLiteral("Text");
-        for (const QString& id : state_.graphics.resourceIds(QStringLiteral("castle.sub-command-text.v1"))) {
-            group.documents << entry(id, QStringLiteral("Menu text"), QString(),
-                                     state_.graphics.resource(id) != saved_.graphics.resource(id));
-        }
-        groups << group;
-    } else if (kind == QLatin1String("sfx")) {
-        sdk::DocumentGroup group;
-        group.title = QStringLiteral("Sound effects");
-        for (const QString& id : state_.graphics.resourceIds(QStringLiteral("castle.sfx-parameters.v1"))) {
-            group.documents << entry(id, QStringLiteral("Parameters"), QString(),
-                                     state_.graphics.resource(id) != saved_.graphics.resource(id));
+                                     id == QLatin1String("room-palettes") ? QStringLiteral("Rooms")
+                                     : id == QLatin1String("ending-fade") ? QStringLiteral("Ending fade")
+                                                                          : id,
+                                     QStringLiteral("%1 colours").arg(state_.graphics.tableValues(id).size()),
+                                     state_.graphics.tableValues(id) != saved_.graphics.tableValues(id));
         }
         groups << group;
     } else if (kind == QLatin1String("playtest")) {
@@ -212,12 +196,12 @@ QVector<sdk::DocumentGroup> CastleSession::documents(const QString& kind) const 
     return groups;
 }
 
-std::unique_ptr<sdk::EditorModel> CastleSession::openEditor(const QString& kind, const QString& document) {
+std::unique_ptr<sdk::EditorModel> SolomonSession::openEditor(const QString& kind, const QString& document) {
     try {
         if (kind == QLatin1String("rooms")) {
             const int room = document.toInt() - 1;
-            if (room >= 0 && room < state_.levels.roomCount()) {
-                return std::make_unique<CastleRoomModel>(this, room);
+            if (room >= 0 && room < state_.rooms.roomCount()) {
+                return std::make_unique<SolomonRoomModel>(this, room);
             }
         }
         if (kind == QLatin1String("graphics")) {
@@ -225,7 +209,6 @@ std::unique_ptr<sdk::EditorModel> CastleSession::openEditor(const QString& kind,
             const int half = document.section(QLatin1Char('/'), 1).toInt();
             if (state_.graphics.resourceIds(QStringLiteral("nes.chr-2bpp.v1")).contains(id) &&
                 half * 256 < state_.graphics.tileCount(id)) {
-                // Rooms draw sprites from table 0 and cells from table 1.
                 return std::make_unique<nes::ChrTileModel>(
                     this, id, half * 256, std::min(256, state_.graphics.tileCount(id) - half * 256),
                     QStringLiteral("%1 · table %2").arg(id).arg(half), half == 0);
@@ -235,18 +218,10 @@ std::unique_ptr<sdk::EditorModel> CastleSession::openEditor(const QString& kind,
             state_.graphics.resourceIds(QStringLiteral("nes.palette-table.v1")).contains(document)) {
             return std::make_unique<nes::PaletteTableModel>(
                 this, document, document == QLatin1String("room-palettes") ? QStringLiteral("Room palettes")
-                                                                           : QStringLiteral("Screen palettes"));
-        }
-        if (kind == QLatin1String("text") &&
-            state_.graphics.resourceIds(QStringLiteral("castle.sub-command-text.v1")).contains(document)) {
-            return std::make_unique<CastleTextModel>(this, document);
-        }
-        if (kind == QLatin1String("sfx") &&
-            state_.graphics.resourceIds(QStringLiteral("castle.sfx-parameters.v1")).contains(document)) {
-            return std::make_unique<CastleSfxModel>(this, document);
+                                                                           : QStringLiteral("Ending fade"));
         }
         if (kind == QLatin1String("playtest")) {
-            return std::make_unique<CastlePlaytestModel>(this);
+            return std::make_unique<SolomonPlaytestModel>(this);
         }
     } catch (const std::exception& e) {
         report(sdk::Severity::Error, kind, QString::fromUtf8(e.what()));
@@ -256,25 +231,26 @@ std::unique_ptr<sdk::EditorModel> CastleSession::openEditor(const QString& kind,
 
 // ---------------------------------------------------------------- editing
 
-const CastlePainter& CastleSession::painter() const {
+const SolomonPainter& SolomonSession::painter() const {
     if (!painter_ || painterRevision_ != revision_) {
-        painter_ = std::make_unique<CastlePainter>(state_.levels, state_.graphics, art_);
+        painter_ = std::make_unique<SolomonPainter>(&state_);
         painterRevision_ = revision_;
     }
     return *painter_;
 }
 
-void CastleSession::setState(const CastleState& state, quint64 revision) {
+void SolomonSession::setState(const SolomonState& state, quint64 revision) {
     state_ = state;
     revision_ = revision;
     emit contentChanged();
     for (const sdk::Kind& k : kinds()) {
         emit documentsChanged(k.id);
     }
+    emit diagnosticsChanged();
 }
 
-bool CastleSession::edit(const QString& text, const std::function<void(CastleState&)>& change, QString* error) {
-    CastleState next = state_;
+bool SolomonSession::edit(const QString& text, const std::function<void(SolomonState&)>& change, QString* error) {
+    SolomonState next = state_;
     try {
         change(next);
     } catch (const std::exception& e) {
@@ -286,25 +262,23 @@ bool CastleSession::edit(const QString& text, const std::function<void(CastleSta
     if (next == state_) {
         return true;
     }
-    undoStack()->push(new sdk::SnapshotCommand<CastleState>(
-        [this](const CastleState& s, quint64 revision) { setState(s, revision); }, state_, revision_, next,
+    undoStack()->push(new sdk::SnapshotCommand<SolomonState>(
+        [this](const SolomonState& s, quint64 revision) { setState(s, revision); }, state_, revision_, next,
         nextRevision_++, text));
     return true;
 }
 
-bool CastleSession::editBundle(const QString& text, const std::function<void(nes::Bundle&)>& change,
-                               QString* error) {
-    return edit(text, [change](CastleState& s) { change(s.graphics); }, error);
+bool SolomonSession::editBundle(const QString& text, const std::function<void(nes::Bundle&)>& change,
+                                QString* error) {
+    return edit(text, [change](SolomonState& s) { change(s.graphics); }, error);
 }
 
-bool CastleSession::save(QString* error) {
+bool SolomonSession::save(QString* error) {
     try {
-        if (state_.levels != saved_.levels) {
-            state_.levels.save(levelsPath_);
-        }
-        if (state_.graphics != saved_.graphics) {
-            state_.graphics.save(graphicsPath_);
-        }
+        if (state_.rooms != saved_.rooms) saveJson(roomsPath_, state_.rooms.root());
+        if (state_.art != saved_.art) saveJson(artPath_, state_.art);
+        if (state_.animations != saved_.animations) saveJson(animationsPath_, state_.animations);
+        if (state_.graphics != saved_.graphics) state_.graphics.save(graphicsPath_);
     } catch (const std::exception& e) {
         if (error) {
             *error = QString::fromUtf8(e.what());
@@ -319,72 +293,80 @@ bool CastleSession::save(QString* error) {
     return true;
 }
 
-void CastleSession::setStart(const CastleStart& start) {
-    CastleStart next = start;
-    next.room = std::clamp(next.room, 1, std::max(1, state_.levels.roomCount()));
-    next.pixel = QPoint(std::clamp(next.pixel.x(), 0, 319), std::clamp(next.pixel.y(), 0, 159));
-    if (next.room == start_.room && next.pixel == start_.pixel) {
-        return;
-    }
-    start_ = next;
-    emit startChanged();
-    emit selectedStartChanged();
+QVector<sdk::Diagnostic> SolomonSession::diagnostics() const {
+    QVector<sdk::Diagnostic> result;
+    const auto check = [&](const QString& stream, int used, int capacity) {
+        if (used <= capacity) return;
+        sdk::Diagnostic d;
+        d.severity = sdk::Severity::Error;
+        d.source = QStringLiteral("rooms");
+        d.kind = QStringLiteral("rooms");
+        d.location = QStringLiteral("All rooms");
+        d.message = QStringLiteral("The %1 streams of all rooms need %2 of %3 bytes.").arg(stream).arg(used).arg(capacity);
+        result << d;
+    };
+    check(QStringLiteral("item"), state_.rooms.itemBytes(), kItemArenaBytes);
+    check(QStringLiteral("enemy"), state_.rooms.enemyBytes(), kEnemyArenaBytes);
+    return result;
 }
 
-QString CastleSession::selectedStart() const {
-    return QStringLiteral("%1 · %2, %3").arg(roomLabel(start_.room)).arg(start_.pixel.x()).arg(start_.pixel.y());
+void SolomonSession::setStartRoom(int room) {
+    room = std::clamp(room, 1, std::max(1, state_.rooms.roomCount()));
+    if (room != startRoom_) {
+        startRoom_ = room;
+        emit startChanged();
+        emit selectedStartChanged();
+    }
+}
+
+QString SolomonSession::selectedStart() const {
+    return roomLabel(startRoom_);
 }
 
 // ---------------------------------------------------------------- palettes
 
-QVector<nes::PreviewPalette> CastleSession::previewPalettes(const QString&, bool sprites) const {
+QVector<nes::PreviewPalette> SolomonSession::previewPalettes(const QString&, bool sprites) const {
     QVector<nes::PreviewPalette> result;
-    const QVector<int> room = state_.graphics.tableValues(art_.roomPalette);
+    const QVector<int> values = state_.graphics.tableValues(QStringLiteral("room-palettes"));
     for (int p = 0; p < 4; ++p) {
         const int at = (sprites ? 16 : 0) + p * 4;
-        if (at + 4 <= room.size()) {
-            result << nes::PreviewPalette{QStringLiteral("Room %1 %2").arg(sprites ? QStringLiteral("SPR") : QStringLiteral("BG")).arg(p),
-                                          room.mid(at, 4)};
-        }
-    }
-    for (const QString& id : state_.graphics.resourceIds(QStringLiteral("nes.palette-table.v1"))) {
-        if (id == art_.roomPalette) continue;
-        const QVector<int> values = state_.graphics.tableValues(id);
-        for (int at = 0; at + 4 <= values.size(); at += 4) {
-            result << nes::PreviewPalette{QStringLiteral("Screen %1").arg(at / 4), values.mid(at, 4)};
+        if (at + 4 <= values.size()) {
+            result << nes::PreviewPalette{
+                QStringLiteral("Room %1 %2").arg(sprites ? QStringLiteral("SPR") : QStringLiteral("BG")).arg(p),
+                values.mid(at, 4)};
         }
     }
     return result;
 }
 
-QStringList CastleSession::paletteRowLabels(const QString& table) const {
+QStringList SolomonSession::paletteRowLabels(const QString& table) const {
     QStringList labels;
     const int rows = state_.graphics.tableValues(table).size() / 4;
     for (int r = 0; r < rows; ++r) {
-        const int set = r / 8;
-        const QString kind = r % 8 < 4 ? QStringLiteral("BG %1").arg(r % 4) : QStringLiteral("SPR %1").arg(r % 4);
-        labels << (rows > 8 ? QStringLiteral("Set %1 · %2").arg(set).arg(kind) : kind);
+        labels << (table == QLatin1String("room-palettes")
+                       ? (r < 4 ? QStringLiteral("BG %1").arg(r) : QStringLiteral("SPR %1").arg(r - 4))
+                       : QStringLiteral("Step %1").arg(r));
     }
     return labels;
 }
 
-QVector<sdk::PaletteSample> CastleSession::paletteSamples(const QString& table) const {
+QVector<sdk::PaletteSample> SolomonSession::paletteSamples(const QString& table) const {
     QVector<sdk::PaletteSample> result;
-    if (table != art_.roomPalette || state_.levels.roomCount() == 0) {
+    if (table != QLatin1String("room-palettes")) {
         return result;
     }
     sdk::PaletteSample sample;
-    sample.label = roomLabel(start_.room);
-    sample.caption = QStringLiteral("%1, as the game draws it").arg(roomLabel(start_.room));
-    const int r = start_.room - 1;
-    sample.image = painter().room(state_.levels.cells(r), state_.levels.objects(r));
+    sample.label = roomLabel(startRoom_);
+    sample.caption = QStringLiteral("%1, as the game draws it; colour 1 of each row is the world's own").arg(
+        roomLabel(startRoom_));
+    sample.image = painter().room(startRoom_ - 1);
     result << sample;
     return result;
 }
 
 // ---------------------------------------------------------------- build and play
 
-void CastleSession::report(sdk::Severity severity, const QString& source, const QString& message) {
+void SolomonSession::report(sdk::Severity severity, const QString& source, const QString& message) {
     if (!host()) {
         return;
     }
@@ -396,7 +378,7 @@ void CastleSession::report(sdk::Severity severity, const QString& source, const 
     host()->report(d);
 }
 
-void CastleSession::runBuild(std::function<void(bool)> next) {
+void SolomonSession::runBuild(std::function<void(bool)> next) {
     sdk::Host* h = host();
     if (!h || h->isBusy()) {
         next(false);
@@ -445,21 +427,21 @@ void CastleSession::runBuild(std::function<void(bool)> next) {
     });
 }
 
-void CastleSession::build() {
+void SolomonSession::build() {
     runBuild([](bool) {});
 }
 
-void CastleSession::play() {
+void SolomonSession::play() {
     launch(true);
 }
 
-void CastleSession::playSelected() {
+void SolomonSession::playSelected() {
     launch(false);
 }
 
-void CastleSession::launch(bool fromStart) {
-    const CastleStart start = start_;
-    runBuild([this, fromStart, start](bool ok) {
+void SolomonSession::launch(bool fromStart) {
+    const int room = startRoom_;
+    runBuild([this, fromStart, room](bool ok) {
         sdk::Host* h = host();
         if (!ok || !h) {
             return;
@@ -475,11 +457,10 @@ void CastleSession::launch(bool fromStart) {
             arguments = QStringList{QStringLiteral("studio"), QStringLiteral("launch-plan"), project_.path(),
                                     QStringLiteral("--mame"), mame};
         } else {
-            arguments = QStringList{QStringLiteral("studio"), QStringLiteral("castle-point-playtest-plan"),
+            // The kit numbers rooms from 0.
+            arguments = QStringList{QStringLiteral("studio"), QStringLiteral("solomon-point-playtest-plan"),
                                     project_.path(), QStringLiteral("--mame"), mame, QStringLiteral("--room"),
-                                    QString::number(start.room), QStringLiteral("--x"),
-                                    QString::number(start.pixel.x()), QStringLiteral("--y"),
-                                    QString::number(start.pixel.y())};
+                                    QString::number(room - 1)};
         }
         QString error;
         sdk::ProcessSpec plan = h->kitCommand(arguments, project_.directory(), &error);
@@ -487,11 +468,10 @@ void CastleSession::launch(bool fromStart) {
             report(sdk::Severity::Error, QStringLiteral("playtest"), error);
             return;
         }
-        const QString name = profile().name;
-        const QString title = fromStart ? QStringLiteral("%1 · power-on").arg(name)
-                                        : QStringLiteral("%1 · %2").arg(name, roomLabel(start.room));
+        const QString title = fromStart ? QStringLiteral("Solomon's Key · power-on")
+                                        : QStringLiteral("Solomon's Key · %1").arg(roomLabel(room));
         plan.label = fromStart ? QStringLiteral("Plan playtest from power-on")
-                               : QStringLiteral("Plan playtest of %1").arg(roomLabel(start.room));
+                               : QStringLiteral("Plan playtest of %1").arg(roomLabel(room));
         h->runProcess(plan, [this, title](const sdk::ProcessResult& result) {
             sdk::Host* host = this->host();
             if (!host) {
@@ -509,9 +489,8 @@ void CastleSession::launch(bool fromStart) {
                 report(sdk::Severity::Error, QStringLiteral("playtest"), QStringLiteral("The kit returned no emulator command."));
                 return;
             }
-            const std::string model = state_.graphics.paletteModel(art_.roomPalette).toStdString();
             for (int i = 0; i < 64; ++i) {
-                game.palette << nes::masterColor(i, model);
+                game.palette << nes::masterColor(i);
             }
             host->launchEmulator(game, title, [this](const sdk::ProcessResult& run) {
                 if (run.crashed || (!run.started && !run.error.isEmpty())) {
@@ -523,4 +502,4 @@ void CastleSession::launch(bool fromStart) {
     });
 }
 
-}  // namespace rl::castle
+}  // namespace rl::solomon

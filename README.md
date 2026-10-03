@@ -37,12 +37,15 @@ plugins/
              Enigma (over ../retrolarium_core); Qt-free
   flicky/    Flicky (UE): data/ documents and codecs, render/ scene renderer,
              plugin/ session and editor models, tools/ level writer
-  nes/       NES platform: master palette, palette packet layout; header-only
+  nes/       NES platform: master palette, palette packet layout; the resource
+             bundle and the CHR and palette-table editors NES games share
+  castle/    Castle Excellent / Castlequest: rooms, painter, tables
+  solomon/   Solomon's Key: rooms, painter
   smb/       Super Mario Bros.: data/ resource bundle and area catalog,
              render/ level renderer and painter, plugin/ session and models,
              tests/ the renderer's golden test
   builtin_plugins.cpp   registers the linked plugins
-resources/   bundled fonts (OFL) and the Qt resource file
+resources/   bundled fonts (OFL), the brand set and the Qt resource file
 tools/       Docker build and run scripts
 ```
 
@@ -273,6 +276,16 @@ build\win-amd64\retrolarium-studio.exe --theme light --size 1600x2700 --screensh
 ```
 
 `Ctrl+Shift+L` or View → Toggle theme switches the theme at runtime.
+
+## Brand
+
+`resources/brand` is the Retrolarium brand set ("Scanline R", see its
+README): SVG and pixel-snapped PNG icons, the Windows `.ico`, the macOS
+`.icns` and the Linux hicolor tree for packaging. The studio uses the `.ico`
+for the executable, the accent tile as the window and taskbar icon in the
+light theme and the dark tile in the dark one, and the mark (`mark.svg` on
+light, `mark-on-dark.svg` on dark) in the title bar, the welcome page and
+About; `theme/brand.hpp` hands them out for the current theme.
 
 ## Fonts
 
