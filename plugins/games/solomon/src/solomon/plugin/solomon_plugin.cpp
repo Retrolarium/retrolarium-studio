@@ -1,32 +1,32 @@
-#include "smb/plugin/smb_plugin.hpp"
+#include "castle/plugin/castle_plugin.hpp"
 
+#include "castle/plugin/castle_session.hpp"
 #include "sdk/plugin.hpp"
-#include "smb/plugin/smb_session.hpp"
 
-namespace rl::smb {
+namespace rl::castle {
 
 namespace {
 
-// Opens projects created by `rltool studio preset` from an SMB1 ROM.
-class SmbPlugin final : public sdk::Plugin {
+// Opens projects created by `rltool studio preset` from a Castle ROM.
+class CastlePlugin final : public sdk::Plugin {
 public:
-    QString id() const override { return QStringLiteral("smb1"); }
-    QString displayName() const override { return QStringLiteral("Super Mario Bros."); }
+    QString id() const override { return QStringLiteral("castle-excellent"); }
+    QString displayName() const override { return QStringLiteral("Castle Excellent"); }
 
     bool canOpen(const sdk::ProjectFile& project) const override {
-        return project.string(QStringLiteral("project.profile")) == QLatin1String("smb1.v1") &&
+        return project.string(QStringLiteral("project.profile")) == QLatin1String("castle-excellent.v1") &&
                project.string(QStringLiteral("project.source_mode")) == QLatin1String("binary-profile");
     }
 
     std::unique_ptr<sdk::Session> open(const sdk::ProjectFile& project, QString* error) override {
-        return SmbSession::open(project, error);
+        return CastleSession::open(project, error);
     }
 };
 
 }  // namespace
 
 void registerPlugin(sdk::PluginRegistry& registry) {
-    registry.add(std::make_unique<SmbPlugin>());
+    registry.add(std::make_unique<CastlePlugin>());
 }
 
-}  // namespace rl::smb
+}  // namespace rl::castle

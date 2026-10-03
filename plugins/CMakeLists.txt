@@ -74,6 +74,17 @@ target_link_libraries(retrolarium-flicky-level-writer PRIVATE flicky_data)
 add_library(platform_nes INTERFACE)
 target_include_directories(platform_nes INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/nes/src)
 
+# NES editors shared by NES games: the resource bundle (CHR banks, palette
+# tables) and the pattern and palette-table models over it.
+add_library(nes_editors STATIC
+    nes/src/nes/bundle.cpp
+    nes/src/nes/bundle.hpp
+    nes/src/nes/editors.cpp
+    nes/src/nes/editors.hpp
+)
+target_link_libraries(nes_editors PUBLIC platform_nes studio_sdk Qt5::Core Qt5::Gui)
+studio_enable_warnings(nes_editors)
+
 # Super Mario Bros. data: the NES resource bundle, the area catalog and the
 # level renderer (ported from the original app, pinned by the golden test).
 add_library(smb_data STATIC
@@ -153,11 +164,31 @@ add_executable(smb_music_test
 )
 target_link_libraries(smb_music_test PRIVATE smb_data)
 
+# Castle Excellent / Castlequest: the room document, its painter and the
+# editor models.
+add_library(castle_plugin STATIC
+    castle/src/castle/data/levels.cpp
+    castle/src/castle/data/levels.hpp
+    castle/src/castle/plugin/castle_plugin.cpp
+    castle/src/castle/plugin/castle_plugin.hpp
+    castle/src/castle/plugin/castle_session.cpp
+    castle/src/castle/plugin/castle_session.hpp
+    castle/src/castle/plugin/room_model.cpp
+    castle/src/castle/plugin/room_model.hpp
+    castle/src/castle/plugin/table_models.cpp
+    castle/src/castle/plugin/table_models.hpp
+    castle/src/castle/render/room_painter.cpp
+    castle/src/castle/render/room_painter.hpp
+)
+target_include_directories(castle_plugin PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/castle/src)
+target_link_libraries(castle_plugin PUBLIC nes_editors studio_sdk)
+studio_enable_warnings(castle_plugin)
+
 # The one translation unit that names concrete plugins.
 add_library(studio_builtin_plugins STATIC
     builtin_plugins.cpp
     builtin_plugins.hpp
 )
 target_include_directories(studio_builtin_plugins PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(studio_builtin_plugins PUBLIC flicky_plugin smb_plugin studio_sdk)
+target_link_libraries(studio_builtin_plugins PUBLIC castle_plugin flicky_plugin smb_plugin studio_sdk)
 studio_enable_warnings(studio_builtin_plugins)
