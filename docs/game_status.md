@@ -224,13 +224,20 @@ Projects from `rltool studio preset` on Solomon's Key (USA or Europe).
 
 | Kind | Editor | What it does |
 |---|---|---|
-| Rooms | TileMap | 53 rooms of 16x12 cells drawn as the game builds them; Blocks paints brown and white blocks, Items moves, adds and removes items (named from the source reconstruction's catalog; hidden or in a brown block) and moves the door, key, mirrors and constellation, Enemies does the same for enemies (named with direction and speed; at most 17) and Wizard's start; the room inspector sets the tileset, timer speed, Hornhead lifetime and constellation; budgets count the shared item (1342 B) and enemy (726 B) arenas |
-| Mirrors | Table | the Spawn Mirror enemy sets (42 B shared) and drop schedules, with the rooms that use each |
+| Rooms | TileMap | 53 rooms of 16x12 cells drawn as the game builds them; Blocks paints brown and white blocks, Items moves, adds and removes items (named from the source reconstruction's catalog; hidden or in a brown block) and moves the door, key, mirrors and constellation, Enemies does the same for enemies (named with direction and speed; at most 17) and Wizard's start; the room inspector sets the tileset, timer speed, Hornhead lifetime, constellation and the ROM layout; budgets count the shared item (1342 B) and enemy (726 B) arenas, or with an Expanded ROM 256 B per room list and 8762 B (Europe 8890 B) for all of them |
+| Mirrors | Table | the Spawn Mirror enemy sets (42 B shared, 726 B with an Expanded ROM) and drop schedules, with the rooms that use each |
 | Animations | Composition | every action's frame cycle; drop a pattern pair on a half, flip it or change its palette; the action's delay |
 | Screens | TileMap | the two packed title layers on the $2800 name table; paint the cells a layer writes with tiles $80-$FF |
 | Sound | Sequencer | the 26 audio programs by group; notes per virtual channel as the engine steps them, drag to change a note's byte; Listen renders with the kit (`audio render-solomon-wav`) |
 | Demo | Table | the attract demo's 34 input steps |
 | Tiles, Palettes | Tile, Palette | the four CHR banks and the room and ending palettes |
+
+The room inspector's ROM choice Expanded builds the ROM the way Solomon's
+Keychain does: the kit (`solomon_expansion`) turns the CNROM image into GxROM
+(mapper 66) with two 32 KiB PRG banks. Bank 1 runs the game; bank 0 is a copy
+that also holds every room's item and enemy lists, and small wrappers at the
+same address in both banks switch to it around the two room decoders. The
+mirror enemy sets move into the enemy arena that frees up in bank 1.
 
 ## Libraries and pattern sheets
 

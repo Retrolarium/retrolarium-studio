@@ -45,6 +45,13 @@ struct SolomonSchedule {
 
 constexpr int kMirrorSetBytes = 42;     // every enemy set with its loop byte
 
+// The expanded ROM (kit solomon_expansion: mapper 66, 64 KiB PRG) keeps the
+// item and enemy streams in a second PRG bank, each up to 256 bytes, and
+// gives the mirror enemy sets the freed enemy arena.
+constexpr int kExpandedStreamLimit = 256;
+constexpr int kExpandedMirrorSetBytes = 726;
+int expandedDataBytes(const QString& revision);  // every room's item and enemy streams
+
 struct SolomonEnemy {
     int type = 0x18;
     QPoint position;
@@ -88,6 +95,14 @@ public:
     QVector<SolomonSchedule> schedules() const;
     void setSchedule(int index, const SolomonSchedule& schedule);
     int enemyBytes() const;                 // all rooms
+    // Whether the build writes the expanded mapper-66 ROM.
+    bool expanded() const { return root_.value(QStringLiteral("expanded_rom")).toBool(); }
+    void setExpanded(bool expanded);
+    int itemCapacity() const { return expanded() ? expandedDataBytes(revision()) - enemyBytes() : kItemArenaBytes; }
+    int enemyCapacity() const { return expanded() ? expandedDataBytes(revision()) - itemBytes() : kEnemyArenaBytes; }
+    int mirrorSetCapacity() const { return expanded() ? kExpandedMirrorSetBytes : kMirrorSetBytes; }
+    // Why the rooms do not fit what the ROM keeps for them; empty when they do.
+    QString overflow() const;
 
     bool operator==(const SolomonRooms& other) const { return root_ == other.root_; }
     bool operator!=(const SolomonRooms& other) const { return root_ != other.root_; }

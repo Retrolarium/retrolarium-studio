@@ -391,19 +391,12 @@ void SolomonRoomModel::endDrag() {
 }
 
 bool SolomonRoomModel::commit(const SolomonRooms& next, const QString& text, QString* error) {
-    const int items = next.itemBytes();
-    if (items > kItemArenaBytes) {
-        if (error) {
-            *error = QStringLiteral("The item lists of all rooms share %1 bytes; this needs %2. Remove an item in "
-                                    "any room first.").arg(kItemArenaBytes).arg(items);
-        }
-        return false;
-    }
-    const int enemies = next.enemyBytes();
-    if (enemies > kEnemyArenaBytes) {
-        if (error) {
-            *error = QStringLiteral("The enemy lists of all rooms share %1 bytes; this needs %2.").arg(kEnemyArenaBytes).arg(enemies);
-        }
+    // Refuse only what makes things worse: an edit that frees bytes is fine
+    // even while the rooms are still over.
+    const QString overflow = next.overflow();
+    if (!overflow.isEmpty() && next.itemBytes() + next.enemyBytes() >=
+                                   session_->rooms().itemBytes() + session_->rooms().enemyBytes()) {
+        if (error) *error = overflow;
         return false;
     }
     return session_->edit(text, [next](SolomonState& s) { s.rooms = next; }, error);
@@ -509,6 +502,19 @@ QString SolomonRoomModel::objectLabel(const QString& id) const {
 sdk::Budget SolomonRoomModel::budget() const {
     const SolomonRooms& r = rooms();
     sdk::Budget budget;
+    if (r.expanded()) {
+        const int capacity = expandedDataBytes(r.revision());
+        budget.used = r.itemBytes() + r.enemyBytes();
+        budget.capacity = capacity;
+        budget.text = QStringLiteral("this room: items %1 / %2 B, enemies %3 / %4 · expanded ROM: %5 / %6 B")
+                          .arg(SolomonRooms::itemStreamBytes(r.itemCommands(room_)))
+                          .arg(kExpandedStreamLimit)
+                          .arg(r.enemies(room_).size())
+                          .arg(kMaximumEnemies)
+                          .arg(budget.used)
+                          .arg(capacity);
+        return budget;
+    }
     budget.used = r.itemBytes();
     budget.capacity = kItemArenaBytes;
     budget.text = QStringLiteral("this room: items %1 B, enemies %2 / %3 · all rooms: items %4 / %5 B, enemies %6 / %7 B")
@@ -642,7 +648,10 @@ sdk::Inspection SolomonRoomModel::inspect() const {
                                  r.metadata(room_).value(QStringLiteral("status_rate_raw")).toInt() & 0x0f, 0, 15),
                          integer(QStringLiteral("spawn_lifetime"), QStringLiteral("Hornhead lifetime"),
                                  r.spawnLifetime(room_), 0, 255, QStringLiteral("also Saramandor")),
-                         choice(QStringLiteral("room_constellation"), QStringLiteral("Constellation"), sign, signs)};
+                         choice(QStringLiteral("room_constellation"), QStringLiteral("Constellation"), sign, signs),
+                         choice(QStringLiteral("rom_layout"), QStringLiteral("ROM"),
+                                r.expanded() ? QStringLiteral("Expanded") : QStringLiteral("Original"),
+                                {QStringLiteral("Original"), QStringLiteral("Expanded")})};
     inspection.note = layer_ == QLatin1String("blocks")
                           ? QStringLiteral("Brown blocks break and can be made by Wizard; white blocks are solid. "
                                            "The right button takes a cell's blocks as the brush.")
@@ -690,6 +699,17 @@ bool SolomonRoomModel::setField(const QString& key, const QVariant& value, QStri
         enemies[i].type = type;
         next.setEnemies(room_, enemies);
         return commit(next, QStringLiteral("Edit an enemy in %1").arg(title()), error);
+    }
+    if (key == QLatin1String("rom_layout")) {
+        const bool expanded = value.toString().startsWith(QLatin1String("Expanded"));
+        next.setExpanded(expanded);
+        const QString overflow = next.overflow();
+        if (!overflow.isEmpty()) {
+            if (error) *error = overflow;
+            return false;
+        }
+        return session_->edit(expanded ? QStringLiteral("Expand the ROM") : QStringLiteral("Return to the original ROM"),
+                              [next](SolomonState& s) { s.rooms = next; }, error);
     }
     if (key == QLatin1String("key_status") || key == QLatin1String("time_rate")) {
         QJsonObject metadata = next.metadata(room_);

@@ -182,7 +182,7 @@ QVector<sdk::DocumentGroup> SolomonSession::documents(const QString& kind) const
         sdk::DocumentGroup group;
         group.title = QStringLiteral("Spawn Mirrors");
         group.documents << entry(QStringLiteral("sets"), QStringLiteral("Enemy sets"),
-                                 QStringLiteral("%1 / %2 B").arg(state_.rooms.mirrorSetBytes()).arg(kMirrorSetBytes),
+                                 QStringLiteral("%1 / %2 B").arg(state_.rooms.mirrorSetBytes()).arg(state_.rooms.mirrorSetCapacity()),
                                  state_.rooms.mirrorSets() != saved_.rooms.mirrorSets())
                         << entry(QStringLiteral("schedules"), QStringLiteral("Drop schedules"),
                                  QStringLiteral("%1").arg(state_.rooms.schedules().size()),
@@ -415,8 +415,17 @@ QVector<sdk::Diagnostic> SolomonSession::diagnostics() const {
         d.message = QStringLiteral("The %1 streams of all rooms need %2 of %3 bytes.").arg(stream).arg(used).arg(capacity);
         result << d;
     };
-    check(QStringLiteral("item"), state_.rooms.itemBytes(), kItemArenaBytes);
-    check(QStringLiteral("enemy"), state_.rooms.enemyBytes(), kEnemyArenaBytes);
+    const QString overflow = state_.rooms.overflow();
+    if (!overflow.isEmpty()) {
+        sdk::Diagnostic d;
+        d.severity = sdk::Severity::Error;
+        d.source = QStringLiteral("rooms");
+        d.kind = QStringLiteral("rooms");
+        d.location = QStringLiteral("All rooms");
+        d.message = overflow;
+        result << d;
+    }
+    Q_UNUSED(check);
     return result;
 }
 

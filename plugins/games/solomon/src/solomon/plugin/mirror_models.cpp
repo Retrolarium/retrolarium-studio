@@ -157,11 +157,12 @@ bool SolomonMirrorSetsModel::setCell(int row, int column, const QString& value, 
         if (error) *error = QString::fromUtf8(e.what());
         return false;
     }
-    if (next.mirrorSetBytes() > kMirrorSetBytes) {
+    if (next.mirrorSetBytes() > next.mirrorSetCapacity()) {
         if (error) {
-            *error = QStringLiteral("The mirror enemy sets share %1 bytes; this needs %2. Shorten another set first.")
-                         .arg(kMirrorSetBytes)
-                         .arg(next.mirrorSetBytes());
+            *error = QStringLiteral("The mirror enemy sets share %1 bytes; this needs %2. Shorten another set first%3.")
+                         .arg(next.mirrorSetCapacity())
+                         .arg(next.mirrorSetBytes())
+                         .arg(next.expanded() ? QString() : QStringLiteral(", or switch the ROM to Expanded"));
         }
         return false;
     }
@@ -172,7 +173,7 @@ bool SolomonMirrorSetsModel::setCell(int row, int column, const QString& value, 
 sdk::Budget SolomonMirrorSetsModel::budget() const {
     sdk::Budget budget;
     budget.used = session_->rooms().mirrorSetBytes();
-    budget.capacity = kMirrorSetBytes;
+    budget.capacity = session_->rooms().mirrorSetCapacity();
     budget.text = QStringLiteral("enemy sets %1 / %2 B").arg(budget.used).arg(budget.capacity);
     return budget;
 }

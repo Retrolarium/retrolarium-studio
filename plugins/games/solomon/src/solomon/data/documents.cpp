@@ -259,6 +259,43 @@ void SolomonRooms::setSchedule(int index, const SolomonSchedule& schedule) {
     root_.insert(QStringLiteral("mirror_schedules"), list);
 }
 
+int expandedDataBytes(const QString& revision) {
+    // Bank 0's two stream regions: the old enemy, block and item areas and
+    // the audio area, which bank 0 does not need.
+    return revision == QLatin1String("europe") ? 3270 + 5620 : 3270 + 5492;
+}
+
+void SolomonRooms::setExpanded(bool expanded) {
+    if (expanded) root_.insert(QStringLiteral("expanded_rom"), true);
+    else root_.remove(QStringLiteral("expanded_rom"));
+}
+
+QString SolomonRooms::overflow() const {
+    if (!expanded()) {
+        if (itemBytes() > kItemArenaBytes) {
+            return QStringLiteral("The item lists of all rooms share %1 bytes; they need %2. Remove an item in any "
+                                  "room, or switch the ROM to Expanded.").arg(kItemArenaBytes).arg(itemBytes());
+        }
+        if (enemyBytes() > kEnemyArenaBytes) {
+            return QStringLiteral("The enemy lists of all rooms share %1 bytes; they need %2. Remove an enemy in any "
+                                  "room, or switch the ROM to Expanded.").arg(kEnemyArenaBytes).arg(enemyBytes());
+        }
+        return {};
+    }
+    for (int r = 0; r < roomCount(); ++r) {
+        if (itemStreamBytes(itemCommands(r)) > kExpandedStreamLimit) {
+            return QStringLiteral("Room %1's item list needs %2 bytes; the game reads at most %3 per room.")
+                .arg(r + 1).arg(itemStreamBytes(itemCommands(r))).arg(kExpandedStreamLimit);
+        }
+    }
+    const int total = itemBytes() + enemyBytes();
+    if (total > expandedDataBytes(revision())) {
+        return QStringLiteral("The expanded ROM keeps %1 bytes for every room's items and enemies; they need %2.")
+            .arg(expandedDataBytes(revision())).arg(total);
+    }
+    return {};
+}
+
 int SolomonRooms::enemyBytes() const {
     int bytes = 0;
     for (int r = 0; r < roomCount(); ++r) bytes += 2 + 2 * enemies(r).size();
