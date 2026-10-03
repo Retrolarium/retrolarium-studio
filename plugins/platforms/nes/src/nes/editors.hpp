@@ -43,8 +43,10 @@ class ChrTileModel final : public sdk::TileModel {
     Q_OBJECT
 
 public:
+    // `height` 16 edits 8x16 sprite pattern pairs: unit n is tiles 2n and
+    // 2n+1 from `first`, `count` tiles in all.
     ChrTileModel(BundleOwner* owner, const QString& resource, int first, int count, const QString& title,
-                 bool sprites);
+                 bool sprites, int height = 8);
 
     QString title() const override { return title_; }
     sdk::Inspection inspect() const override;
@@ -54,6 +56,7 @@ public:
 
     int tileCount() const override { return count_; }
     int penCount() const override { return 4; }
+    QSize tileSize() const override { return {8, height_}; }
     QVector<QColor> penColors() const override;
     QVector<quint8> tilePixels(int tile) const override;
     bool isTileDirty(int tile) const override;
@@ -69,6 +72,9 @@ public:
 
 private:
     bool writeTile(const QVector<quint8>& pixels, const QString& text, QString* error);
+    int stack() const { return height_ / 8; }   // CHR tiles per unit
+    int chrTile(int unit, int part = 0) const { return first_ + unit * stack() + part; }
+    QVector<quint8> unitPixels(int unit) const;
 
     BundleOwner* owner_;
     QString resource_;
@@ -76,6 +82,7 @@ private:
     int count_;
     QString title_;
     bool sprites_;
+    int height_ = 8;
     int tile_ = 0;
     int pen_ = 1;
     QString palette_;

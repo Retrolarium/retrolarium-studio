@@ -272,8 +272,10 @@ void MainWindow::buildMenus() {
     playSelectedAction_->setShortcut(QKeySequence(QStringLiteral("F5")));
     connect(playSelectedAction_, &QAction::triggered, this, [this] {
         if (session_ && session_->canPlay() && !session_->selectedStart().isEmpty() && !isBusy()) {
-            showPlaytest();
+            // The session reads its start before the Playtest view replaces
+            // the editor that sets it.
             session_->playSelected();
+            showPlaytest();
         }
     });
     build->addSeparator();
@@ -1087,6 +1089,10 @@ void MainWindow::showPlaytest() {
     if (!kind.isEmpty() && kind_ != kind) {
         selectKind(kind);
     }
+}
+
+void MainWindow::stopEmulator() {
+    emulator_->stop();
 }
 
 void MainWindow::launchEmulator(const sdk::ProcessSpec& spec, const QString& title,

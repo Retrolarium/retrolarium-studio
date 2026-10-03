@@ -18,14 +18,15 @@ QColor color(int index, const QString& model) {
 // ---------------------------------------------------------------- patterns
 
 ChrTileModel::ChrTileModel(BundleOwner* owner, const QString& resource, int first, int count, const QString& title,
-                           bool sprites)
+                           bool sprites, int height)
     : TileModel(owner->bundleSession()),
       owner_(owner),
       resource_(resource),
       first_(first),
-      count_(count),
+      count_(count / (height == 16 ? 2 : 1)),
       title_(title),
-      sprites_(sprites) {
+      sprites_(sprites),
+      height_(height == 16 ? 16 : 8) {
     const QVector<PreviewPalette> palettes = owner_->previewPalettes(resource_, sprites_);
     if (!palettes.isEmpty()) {
         palette_ = palettes.first().name;
@@ -47,16 +48,27 @@ QVector<QColor> ChrTileModel::penColors() const {
     return colors;
 }
 
+QVector<quint8> ChrTileModel::unitPixels(int unit) const {
+    QVector<quint8> pixels;
+    for (int part = 0; part < stack(); ++part) pixels += owner_->bundle().tilePixels(resource_, chrTile(unit, part));
+    return pixels;
+}
+
 QVector<quint8> ChrTileModel::tilePixels(int tile) const {
     if (stroking_ && tile == tile_) {
         return pending_;
     }
-    return owner_->bundle().tilePixels(resource_, first_ + tile);
+    return unitPixels(tile);
 }
 
 bool ChrTileModel::isTileDirty(int tile) const {
-    return owner_->bundle().tilePixels(resource_, first_ + tile) !=
-           owner_->savedBundle().tilePixels(resource_, first_ + tile);
+    for (int part = 0; part < stack(); ++part) {
+        if (owner_->bundle().tilePixels(resource_, chrTile(tile, part)) !=
+            owner_->savedBundle().tilePixels(resource_, chrTile(tile, part))) {
+            return true;
+        }
+    }
+    return false;
 }
 
 void ChrTileModel::setCurrentTile(int tile) {
@@ -76,12 +88,12 @@ void ChrTileModel::setCurrentPen(int pen) {
 }
 
 void ChrTileModel::beginStroke() {
-    pending_ = owner_->bundle().tilePixels(resource_, first_ + tile_);
+    pending_ = unitPixels(tile_);
     stroking_ = true;
 }
 
 bool ChrTileModel::setPixel(QPoint pixel, int pen) {
-    if (!stroking_ || pixel.x() < 0 || pixel.x() > 7 || pixel.y() < 0 || pixel.y() > 7) {
+    if (!stroking_ || pixel.x() < 0 || pixel.x() > 7 || pixel.y() < 0 || pixel.y() >= height_) {
         return false;
     }
     quint8& value = pending_[pixel.y() * 8 + pixel.x()];
@@ -95,8 +107,14 @@ bool ChrTileModel::setPixel(QPoint pixel, int pen) {
 
 bool ChrTileModel::writeTile(const QVector<quint8>& pixels, const QString& text, QString* error) {
     const QString resource = resource_;
-    const int tile = first_ + tile_;
-    return owner_->editBundle(text, [resource, tile, pixels](Bundle& b) { b.setTilePixels(resource, tile, pixels); },
+    const int tile = chrTile(tile_);
+    const int parts = stack();
+    return owner_->editBundle(text,
+                              [resource, tile, parts, pixels](Bundle& b) {
+                                  for (int part = 0; part < parts; ++part) {
+                                      b.setTilePixels(resource, tile + part, pixels.mid(part * 64, 64));
+                                  }
+                              },
                               error);
 }
 
@@ -105,17 +123,17 @@ void ChrTileModel::endStroke() {
         return;
     }
     stroking_ = false;
-    if (pending_ != owner_->bundle().tilePixels(resource_, first_ + tile_)) {
+    if (pending_ != unitPixels(tile_)) {
         writeTile(pending_, QStringLiteral("Paint tile %1").arg(hex(tile_)), nullptr);
     }
     emit contentChanged();
 }
 
 bool ChrTileModel::fill(QPoint pixel, int pen, QString* error) {
-    if (pixel.x() < 0 || pixel.x() > 7 || pixel.y() < 0 || pixel.y() > 7) {
+    if (pixel.x() < 0 || pixel.x() > 7 || pixel.y() < 0 || pixel.y() >= height_) {
         return false;
     }
-    QVector<quint8> pixels = owner_->bundle().tilePixels(resource_, first_ + tile_);
+    QVector<quint8> pixels = unitPixels(tile_);
     const quint8 from = pixels.at(pixel.y() * 8 + pixel.x());
     const quint8 to = quint8(pen & 3);
     if (from == to) {
@@ -124,7 +142,7 @@ bool ChrTileModel::fill(QPoint pixel, int pen, QString* error) {
     QVector<QPoint> stack{pixel};
     while (!stack.isEmpty()) {
         const QPoint p = stack.takeLast();
-        if (p.x() < 0 || p.x() > 7 || p.y() < 0 || p.y() > 7 || pixels.at(p.y() * 8 + p.x()) != from) {
+        if (p.x() < 0 || p.x() > 7 || p.y() < 0 || p.y() >= height_ || pixels.at(p.y() * 8 + p.x()) != from) {
             continue;
         }
         pixels[p.y() * 8 + p.x()] = to;
@@ -162,17 +180,21 @@ void ChrTileModel::setViewOption(const QString& key, const QString& value) {
 }
 
 QString ChrTileModel::statusText() const {
+    if (height_ == 16) return QStringLiteral("%1 · pair %2").arg(title_, hex((chrTile(tile_) - first_) & 0xff));
     return QStringLiteral("%1 · tile %2").arg(title_, hex(tile_));
 }
 
 sdk::Inspection ChrTileModel::inspect() const {
     sdk::Inspection inspection;
-    inspection.kicker = sprites_ ? QStringLiteral("Sprite tile") : QStringLiteral("Background tile");
-    inspection.title = hex(tile_);
+    inspection.kicker = height_ == 16 ? QStringLiteral("8x16 sprite pair")
+                        : sprites_    ? QStringLiteral("Sprite tile")
+                                      : QStringLiteral("Background tile");
+    inspection.title = height_ == 16 ? QStringLiteral("Tiles %1-%2").arg(hex(chrTile(tile_) & 0xff), hex((chrTile(tile_) + 1) & 0xff))
+                                     : hex(tile_);
     sdk::Field address;
     address.key = QStringLiteral("address");
     address.label = QStringLiteral("CHR address");
-    address.value = hex((first_ + tile_) * 16, 4);
+    address.value = hex(chrTile(tile_) * 16, 4);
     address.monospace = true;
     sdk::Field palette;
     palette.key = QStringLiteral("palette");

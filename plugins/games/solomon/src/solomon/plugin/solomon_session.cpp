@@ -295,6 +295,11 @@ QVector<sdk::DocumentGroup> SolomonSession::listDocuments(const QString& kind) c
                 group.documents << entry(QStringLiteral("%1/%2").arg(id).arg(half), QStringLiteral("Pattern table %1").arg(half),
                                          half == 0 ? QStringLiteral("sprites") : QStringLiteral("rooms"), dirty);
             }
+            // The 8x16 pairs sprite halves are drawn from, in either table.
+            for (int half = 0; half * 256 < count; ++half) {
+                group.documents << entry(QStringLiteral("%1/pairs%2").arg(id).arg(half),
+                                         QStringLiteral("Sprite pairs · table %1").arg(half), QStringLiteral("8x16"), false);
+            }
             groups << group;
         }
     } else if (kind == QLatin1String("palettes")) {
@@ -388,6 +393,16 @@ std::unique_ptr<sdk::EditorModel> SolomonSession::openEditor(const QString& kind
         if (kind == QLatin1String("mirrors")) {
             if (document == QLatin1String("sets")) return std::make_unique<SolomonMirrorSetsModel>(this);
             if (document == QLatin1String("schedules")) return std::make_unique<SolomonSchedulesModel>(this);
+        }
+        if (kind == QLatin1String("graphics") && document.section(QLatin1Char('/'), 1).startsWith(QLatin1String("pairs"))) {
+            const QString id = document.section(QLatin1Char('/'), 0, 0);
+            const int half = document.section(QLatin1Char('/'), 1).mid(5).toInt();
+            if (state_.graphics.resourceIds(QStringLiteral("nes.chr-2bpp.v1")).contains(id) &&
+                half * 256 < state_.graphics.tileCount(id)) {
+                return std::make_unique<nes::ChrTileModel>(
+                    this, id, half * 256, std::min(256, state_.graphics.tileCount(id) - half * 256),
+                    QStringLiteral("%1 · pairs of table %2").arg(id).arg(half), true, 16);
+            }
         }
         if (kind == QLatin1String("graphics")) {
             const QString id = document.section(QLatin1Char('/'), 0, 0);
@@ -571,6 +586,7 @@ void SolomonSession::attachDemoEditor(bool attach) {
 }
 
 QString SolomonSession::playSelectedLabel() const {
+    if (recordingActive_) return QStringLiteral("Stop recording");
     if (!demoStart()) return {};
     return demoRecording_ ? QStringLiteral("Record demo") : QStringLiteral("Play demo");
 }
@@ -741,6 +757,10 @@ void SolomonSession::play() {
 }
 
 void SolomonSession::playSelected() {
+    if (recordingActive_) {
+        if (host()) host()->stopEmulator();
+        return;
+    }
     if (demoStart()) launchDemo(demoRecording_);
     else launch(false);
 }
@@ -785,7 +805,12 @@ void SolomonSession::launchDemo(bool record) {
                 return;
             }
             for (int i = 0; i < 64; ++i) game.palette << nes::masterColor(i);
+            // The Playtest view covers the boot until the demo room loads.
+            game.readyFile = project_.resolve(QStringLiteral("build/demo-ready.txt"));
+            game.environment.insert(QStringLiteral("SOLOMON_DEMO_READY"), game.readyFile);
             if (record) {
+                recordingActive_ = true;
+                emit selectedStartChanged();
                 report(sdk::Severity::Info, QStringLiteral("demo"),
                        QStringLiteral("Recording: play the demo room with the controller; press Start or Stop to finish."));
             }
@@ -796,7 +821,11 @@ void SolomonSession::launchDemo(bool record) {
                     report(sdk::Severity::Error, QStringLiteral("playtest"),
                            run.error.isEmpty() ? QStringLiteral("The emulator crashed.") : run.error);
                 }
-                if (record) applyRecording(recording);
+                if (record) {
+                    recordingActive_ = false;
+                    emit selectedStartChanged();
+                    applyRecording(recording);
+                }
             });
         });
     });
@@ -810,7 +839,8 @@ void SolomonSession::applyRecording(const QString& path) {
     }
     const SolomonDemoModel::Recording recording = SolomonDemoModel::stepsFromRecording(QString::fromUtf8(file.readAll()));
     if (recording.steps.isEmpty()) {
-        report(sdk::Severity::Warning, QStringLiteral("demo"), QStringLiteral("Nothing was recorded."));
+        report(sdk::Severity::Warning, QStringLiteral("demo"),
+               QStringLiteral("No buttons were pressed while recording; the demo stays as it was."));
         return;
     }
     const QJsonArray steps = recording.steps;
@@ -863,7 +893,7 @@ void SolomonSession::launch(bool fromStart) {
                                         : QStringLiteral("Solomon's Key · %1").arg(roomLabel(room));
         plan.label = fromStart ? QStringLiteral("Plan playtest from power-on")
                                : QStringLiteral("Plan playtest of %1").arg(roomLabel(room));
-        h->runProcess(plan, [this, title](const sdk::ProcessResult& result) {
+        h->runProcess(plan, [this, title, fromStart](const sdk::ProcessResult& result) {
             sdk::Host* host = this->host();
             if (!host) {
                 return;
@@ -882,6 +912,11 @@ void SolomonSession::launch(bool fromStart) {
             }
             for (int i = 0; i < 64; ++i) {
                 game.palette << nes::masterColor(i);
+            }
+            if (!fromStart) {
+                // The Playtest view covers the boot until the room is up.
+                game.readyFile = project_.resolve(QStringLiteral("build/playtest-ready.txt"));
+                game.environment.insert(QStringLiteral("SOLOMON_PLAYTEST_RESULT"), game.readyFile);
             }
             host->launchEmulator(game, title, [this](const sdk::ProcessResult& run) {
                 if (run.crashed || (!run.started && !run.error.isEmpty())) {

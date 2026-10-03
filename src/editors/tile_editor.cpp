@@ -45,17 +45,19 @@ TileAtlas::TileAtlas(sdk::TileModel* model, QWidget* parent) : QWidget(parent), 
 
 void TileAtlas::refresh() {
     const int count = model_->tileCount();
+    const QSize size = model_->tileSize();
     const int rows = std::max(1, (count + kColumns - 1) / kColumns);
-    image_ = QImage(kColumns * 8, rows * 8, QImage::Format_RGB32);
+    image_ = QImage(kColumns * size.width(), rows * size.height(), QImage::Format_RGB32);
     image_.fill(QColor(0x0e, 0x10, 0x12));
     const QVector<QColor> colors = model_->penColors();
+    const int area = size.width() * size.height();
     for (int tile = 0; tile < count; ++tile) {
         const QVector<quint8> pixels = model_->tilePixels(tile);
-        const int ox = (tile % kColumns) * 8;
-        const int oy = (tile / kColumns) * 8;
-        for (int i = 0; i < 64 && i < pixels.size(); ++i) {
+        const int ox = (tile % kColumns) * size.width();
+        const int oy = (tile / kColumns) * size.height();
+        for (int i = 0; i < area && i < pixels.size(); ++i) {
             const int pen = pixels.at(i);
-            image_.setPixel(ox + i % 8, oy + i / 8,
+            image_.setPixel(ox + i % size.width(), oy + i / size.width(),
                             (pen < colors.size() ? colors.at(pen) : QColor(Qt::black)).rgb());
         }
     }
@@ -63,9 +65,14 @@ void TileAtlas::refresh() {
     update();
 }
 
+int TileAtlas::cellHeight() const {
+    const QSize size = model_->tileSize();
+    return kCell * size.height() / std::max(1, size.width());
+}
+
 QSize TileAtlas::sizeHint() const {
     const int rows = std::max(1, (model_->tileCount() + kColumns - 1) / kColumns);
-    return QSize(kColumns * kCell, rows * kCell);
+    return QSize(kColumns * kCell, rows * cellHeight());
 }
 
 void TileAtlas::paintEvent(QPaintEvent* event) {
@@ -74,12 +81,15 @@ void TileAtlas::paintEvent(QPaintEvent* event) {
     painter.fillRect(rect(), t.canvas);
     const int count = model_->tileCount();
     const QRect dirty = event->rect();
+    const QSize size = model_->tileSize();
+    const int height = cellHeight();
     for (int tile = 0; tile < count; ++tile) {
-        const QRect cell((tile % kColumns) * kCell, (tile / kColumns) * kCell, kCell, kCell);
+        const QRect cell((tile % kColumns) * kCell, (tile / kColumns) * height, kCell, height);
         if (!cell.intersects(dirty)) {
             continue;
         }
-        const QRect source((tile % kColumns) * 8, (tile / kColumns) * 8, 8, 8);
+        const QRect source((tile % kColumns) * size.width(), (tile / kColumns) * size.height(), size.width(),
+                           size.height());
         painter.drawImage(cell.adjusted(1, 1, -1, -1), image_, source);
         if (model_->isTileDirty(tile)) {
             painter.fillRect(QRect(cell.left() + 2, cell.top() + 2, 4, 4), t.accent);
@@ -87,14 +97,14 @@ void TileAtlas::paintEvent(QPaintEvent* event) {
     }
     const int current = model_->currentTile();
     if (current >= 0 && current < count) {
-        const QRect cell((current % kColumns) * kCell, (current / kColumns) * kCell, kCell, kCell);
+        const QRect cell((current % kColumns) * kCell, (current / kColumns) * height, kCell, height);
         paint::hairlineRect(painter, cell, theme::canvas::kSelection, 2.0);
     }
 }
 
 void TileAtlas::mousePressEvent(QMouseEvent* event) {
     setFocus();
-    const int tile = (event->pos().y() / kCell) * kColumns + event->pos().x() / kCell;
+    const int tile = (event->pos().y() / cellHeight()) * kColumns + event->pos().x() / kCell;
     if (event->pos().x() < kColumns * kCell && tile >= 0 && tile < model_->tileCount()) {
         model_->setCurrentTile(tile);
     }
@@ -118,6 +128,8 @@ void TileAtlas::keyPressEvent(QKeyEvent* event) {
 // ---------------------------------------------------------------- pixels
 
 PixelCanvas::PixelCanvas(sdk::TileModel* model, QWidget* parent) : QWidget(parent), model_(model) {
+    // A tall tile at the 8x8 scale would not fit the window.
+    pixel_ = model_->tileSize().height() > 8 ? 26 : kPixel;
     setMouseTracking(true);
     setCursor(Qt::CrossCursor);
     setFixedSize(sizeHint());
@@ -127,14 +139,13 @@ PixelCanvas::PixelCanvas(sdk::TileModel* model, QWidget* parent) : QWidget(paren
 }
 
 QSize PixelCanvas::sizeHint() const {
-    // 8 pixels with 1px gaps, a 1px frame and room for the corner marks.
-    const int grid = 8 * kPixel + 7 + 2;
-    return QSize(grid + 14, grid + 14);
+    // The pixels with 1px gaps, a 1px frame and room for the corner marks.
+    return gridRect().size() + QSize(14, 14);
 }
 
 QRect PixelCanvas::gridRect() const {
-    const int grid = 8 * kPixel + 7 + 2;
-    return QRect(7, 7, grid, grid);
+    const QSize size = model_->tileSize();
+    return QRect(7, 7, size.width() * pixel_ + size.width() - 1 + 2, size.height() * pixel_ + size.height() - 1 + 2);
 }
 
 QPoint PixelCanvas::pixelAt(const QPoint& pos) const {
@@ -142,8 +153,9 @@ QPoint PixelCanvas::pixelAt(const QPoint& pos) const {
     if (local.x() < 0 || local.y() < 0) {
         return {-1, -1};
     }
-    const QPoint p(local.x() / (kPixel + 1), local.y() / (kPixel + 1));
-    return p.x() < 8 && p.y() < 8 ? p : QPoint(-1, -1);
+    const QSize size = model_->tileSize();
+    const QPoint p(local.x() / (pixel_ + 1), local.y() / (pixel_ + 1));
+    return p.x() < size.width() && p.y() < size.height() ? p : QPoint(-1, -1);
 }
 
 void PixelCanvas::paintEvent(QPaintEvent*) {
@@ -154,11 +166,12 @@ void PixelCanvas::paintEvent(QPaintEvent*) {
     paint::hairlineRect(painter, grid, t.lineStrong);
     const QVector<quint8> pixels = model_->tilePixels(model_->currentTile());
     const QVector<QColor> colors = model_->penColors();
-    for (int y = 0; y < 8; ++y) {
-        for (int x = 0; x < 8; ++x) {
-            const int pen = y * 8 + x < pixels.size() ? pixels.at(y * 8 + x) : 0;
-            const QRect cell(grid.left() + 1 + x * (kPixel + 1), grid.top() + 1 + y * (kPixel + 1),
-                             kPixel, kPixel);
+    const QSize size = model_->tileSize();
+    for (int y = 0; y < size.height(); ++y) {
+        for (int x = 0; x < size.width(); ++x) {
+            const int index = y * size.width() + x;
+            const int pen = index < pixels.size() ? pixels.at(index) : 0;
+            const QRect cell(grid.left() + 1 + x * (pixel_ + 1), grid.top() + 1 + y * (pixel_ + 1), pixel_, pixel_);
             painter.fillRect(cell, pen < colors.size() ? colors.at(pen) : QColor(Qt::black));
             if (QPoint(x, y) == hover_) {
                 paint::hairlineRect(painter, cell, QColor(255, 255, 255, 220));
@@ -199,7 +212,7 @@ void PixelCanvas::mousePressEvent(QMouseEvent* event) {
         return;
     }
     const QVector<quint8> pixels = model_->tilePixels(model_->currentTile());
-    const int under = pixels.value(p.y() * 8 + p.x());
+    const int under = pixels.value(p.y() * model_->tileSize().width() + p.x());
     // Right button picks the pen under the cursor whatever the tool.
     if (event->button() == Qt::RightButton || tool_ == QLatin1String("pick")) {
         model_->setCurrentPen(under);
@@ -338,8 +351,8 @@ TileEditor::TileEditor(sdk::TileModel* model, QWidget* parent)
     // Keep the selected tile in view when it changes from the keyboard.
     connect(tiles_, &sdk::EditorModel::selectionChanged, this, [scroll, this] {
         const int tile = tiles_->currentTile();
-        const int y = (tile / TileAtlas::kColumns) * TileAtlas::kCell;
-        scroll->ensureVisible(0, y + TileAtlas::kCell / 2, 0, TileAtlas::kCell);
+        const int y = (tile / TileAtlas::kColumns) * atlas_->cellHeight();
+        scroll->ensureVisible(0, y + atlas_->cellHeight() / 2, 0, atlas_->cellHeight());
     });
 }
 

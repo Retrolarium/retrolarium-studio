@@ -64,6 +64,7 @@ public:
     bool demoStart() const { return demoEditors_ > 0; }
     bool demoRecording() const { return demoRecording_; }
     void setDemoRecording(bool recording);
+    bool recordingActive() const { return recordingActive_; }
     void attachDemoEditor(bool attach);
 
 signals:
@@ -95,6 +96,7 @@ private:
     int startRoom_ = 1;
     int demoEditors_ = 0;
     bool demoRecording_ = false;
+    bool recordingActive_ = false;      // a demo recording runs in the emulator
     QString lastBuild_;
 
     mutable std::unique_ptr<SolomonPainter> painter_;

@@ -814,6 +814,7 @@ SolomonPlaytestModel::SolomonPlaytestModel(SolomonSession* session) : EmulatorMo
         emit toolsChanged();
         emit contentChanged();
     });
+    connect(session_, &sdk::Session::selectedStartChanged, this, &sdk::EditorModel::contentChanged);
 }
 
 QString SolomonPlaytestModel::coreLabel() const {
@@ -827,6 +828,10 @@ QString SolomonPlaytestModel::startLabel() const {
 
 void SolomonPlaytestModel::play() {
     session_->playSelected();
+}
+
+bool SolomonPlaytestModel::isRecording() const {
+    return session_->recordingActive();
 }
 
 sdk::Inspection SolomonPlaytestModel::inspect() const {

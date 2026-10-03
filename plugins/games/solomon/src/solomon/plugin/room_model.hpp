@@ -96,6 +96,7 @@ public:
     QString coreLabel() const override;
     QString startLabel() const override;
     void play() override;
+    bool isRecording() const override;
 
 private:
     SolomonSession* session_;

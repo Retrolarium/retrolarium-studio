@@ -338,6 +338,8 @@ SolomonDemoModel::Recording SolomonDemoModel::stepsFromRecording(const QString& 
         if (change.second != current) waitUntil(change.first, change.second);
     }
     if (end > last && current != 0) waitUntil(end, 0);
+    // Nothing pressed: no demo to make.
+    if (steps.isEmpty()) return result;
     int frames = 0;
     for (int i = 0; i < steps.size(); ++i) {
         if (i < kSteps) frames += steps.at(i).first + 1;

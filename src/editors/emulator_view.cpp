@@ -149,6 +149,57 @@ private:
     bool paused_ = false;
 };
 
+// A blinking red dot and REC in the picture's corner while the game records
+// the player's input. Native to lie over the emulator surface.
+class RecordBadge final : public QWidget {
+public:
+    explicit RecordBadge(QWidget* parent) : QWidget(parent), blink_(new QTimer(this)) {
+        setAttribute(Qt::WA_NativeWindow);
+        setAttribute(Qt::WA_OpaquePaintEvent);
+        setAttribute(Qt::WA_TransparentForMouseEvents);
+        setFixedSize(66, 24);
+        blink_->setInterval(500);
+        QObject::connect(blink_, &QTimer::timeout, this, [this] {
+            lit_ = !lit_;
+            update();
+        });
+        hide();
+    }
+
+    void setRecording(bool recording) {
+        if (recording == isVisible()) return;
+        if (recording) {
+            lit_ = true;
+            blink_->start();
+            show();
+            raise();
+        } else {
+            blink_->stop();
+            hide();
+        }
+    }
+
+protected:
+    void paintEvent(QPaintEvent*) override {
+        QPainter painter(this);
+        painter.fillRect(rect(), QColor(0, 0, 0));
+        painter.setRenderHint(QPainter::Antialiasing, true);
+        const QColor red(0xff, 0x30, 0x30);
+        if (lit_) {
+            painter.setPen(Qt::NoPen);
+            painter.setBrush(red);
+            painter.drawEllipse(QRectF(8, 6, 12, 12));
+        }
+        painter.setFont(theme::font(theme::TextRole::Caps, 11.0));
+        painter.setPen(red);
+        painter.drawText(rect().adjusted(26, 0, 0, 0), Qt::AlignVCenter | Qt::AlignLeft, QStringLiteral("REC"));
+    }
+
+private:
+    QTimer* blink_;
+    bool lit_ = true;
+};
+
 }  // namespace
 
 // The canvas ground with the emulator surface fitted at the screen aspect.
@@ -156,7 +207,7 @@ class EmulatorStage final : public QWidget {
 public:
     EmulatorStage(sdk::EmulatorModel* model, runtime::EmulatorRunner* runner, QWidget* parent)
         : QWidget(parent), model_(model), runner_(runner), surface_(new runtime::EmulatorSurface(this)),
-          cover_(new ScreenCover(this)), busy_(new BusyCard(this)) {
+          cover_(new ScreenCover(this)), record_(new RecordBadge(this)), busy_(new BusyCard(this)) {
         setMinimumHeight(240);
         surface_->hide();
         runner_->setSurface(surface_);
@@ -182,6 +233,8 @@ public:
         } else {
             cover_->hide();
         }
+        record_->setRecording(runner_->isRunning() && model_->isRecording());
+        record_->raise();
         busy_->raise();
         update();
     }
@@ -238,6 +291,7 @@ private:
         const QRect screen = screenRect();
         surface_->setGeometry(screen);
         cover_->setGeometry(screen);
+        record_->move(screen.right() - record_->width() - 10, screen.top() + 10);
         busy_->move(screen.center() - QPoint(busy_->width() / 2, busy_->height() / 2));
         busy_->raise();
     }
@@ -246,6 +300,7 @@ private:
     runtime::EmulatorRunner* runner_;
     runtime::EmulatorSurface* surface_;
     ScreenCover* cover_;
+    RecordBadge* record_;
     runtime::EmulatorRunner::Phase lastPhase_ = runtime::EmulatorRunner::Phase::Idle;
     BusyCard* busy_;
 };
@@ -287,7 +342,7 @@ EmulatorView::EmulatorView(sdk::EmulatorModel* model, runtime::EmulatorRunner* r
         }
     }
     connect(stage_->surface(), &runtime::EmulatorSurface::focusChanged, this, &EditorView::toolbarChanged);
-    connect(emulator_, &sdk::EditorModel::contentChanged, stage_, qOverload<>(&QWidget::update));
+    connect(emulator_, &sdk::EditorModel::contentChanged, stage_, [this] { stage_->refresh(); });
     connect(emulator_, &sdk::EditorModel::toolsChanged, this, &EditorView::toolbarChanged);
     updateState();
 }

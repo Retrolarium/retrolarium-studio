@@ -38,7 +38,7 @@ private:
     QString tool_ = QStringLiteral("pencil");
 };
 
-// Every tile of the bank, 16 per row, 4 screen pixels per tile pixel.
+// Every tile of the bank, 16 per row; tall tiles take tall cells.
 class TileAtlas final : public QWidget {
     Q_OBJECT
 
@@ -47,6 +47,7 @@ public:
 
     QSize sizeHint() const override;
     void refresh();
+    int cellHeight() const;
 
     static constexpr int kColumns = 16;
     static constexpr int kCell = 34;
@@ -61,7 +62,7 @@ private:
     QImage image_;  // all tiles at 1x, 16 per row
 };
 
-// The selected tile as an 8x8 grid of large pixels.
+// The selected tile as a grid of large pixels.
 class PixelCanvas final : public QWidget {
     Q_OBJECT
 
@@ -89,6 +90,7 @@ private:
     void paintLine(QPoint from, QPoint to);
 
     sdk::TileModel* model_;
+    int pixel_ = kPixel;    // smaller for tall tiles
     QString tool_ = QStringLiteral("pencil");
     QPoint hover_{-1, -1};
     bool painting_ = false;

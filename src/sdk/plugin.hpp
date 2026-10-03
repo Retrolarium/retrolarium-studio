@@ -47,6 +47,8 @@ public:
     // it exits. The host adds its own window-embedding arguments.
     virtual void launchEmulator(const ProcessSpec& spec, const QString& title,
                                 std::function<void(const ProcessResult&)> finished) = 0;
+    // Stops the running emulator as the Stop button does; `finished` runs.
+    virtual void stopEmulator() = 0;
 
     // Plays a WAV file (sound previews); a new call replaces the last one.
     virtual void playAudio(const QString& wavPath) = 0;

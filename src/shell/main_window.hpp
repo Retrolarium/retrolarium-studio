@@ -72,6 +72,7 @@ public:
     QString emulatorPath(const QString& id) const override;
     void launchEmulator(const sdk::ProcessSpec& spec, const QString& title,
                         std::function<void(const sdk::ProcessResult&)> finished) override;
+    void stopEmulator() override;
     void playAudio(const QString& wavPath) override;
     void stopAudio() override;
     bool audioLoops() const override;

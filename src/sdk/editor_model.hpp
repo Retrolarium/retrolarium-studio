@@ -159,7 +159,9 @@ public:
     virtual int tileCount() const = 0;
     virtual int penCount() const = 0;                   // 2, 4 or 16
     virtual QVector<QColor> penColors() const = 0;
-    virtual QVector<quint8> tilePixels(int tile) const = 0;  // 64, row-major
+    // Pixels per tile: 8x8, or 8x16 for sprite pattern pairs.
+    virtual QSize tileSize() const { return {8, 8}; }
+    virtual QVector<quint8> tilePixels(int tile) const = 0;  // width * height, row-major
     virtual bool isTileDirty(int tile) const;
 
     virtual int currentTile() const = 0;
@@ -384,6 +386,9 @@ public:
     virtual QString coreLabel() const = 0;  // "MAME · genesis"
     virtual QString startLabel() const = 0; // "Round 07"
     virtual void play() = 0;
+    // The game records the player's input now: the view marks the picture.
+    // Emit contentChanged() when it changes.
+    virtual bool isRecording() const { return false; }
 };
 
 }  // namespace rl::sdk
