@@ -159,6 +159,19 @@ QImage CastlePainter::sprite(const CastleSprite& s) const {
     return image;
 }
 
+QImage CastlePainter::player() const {
+    // PLAYER_NEUTRAL_METASPRITE ($B4C2): descriptors 6 and 7.
+    constexpr int kNeutral = 6;
+    QImage image(16, 16, QImage::Format_ARGB32);
+    image.fill(Qt::transparent);
+    QPainter painter(&image);
+    for (int i = 0; i < 2; ++i) {
+        const int d = (kNeutral + i) * 2;
+        painter.drawImage(i * 8, 0, sprite(CastleSprite{descriptors_.value(d), descriptors_.value(d + 1), 0, 0}));
+    }
+    return image;
+}
+
 int CastlePainter::runtimeType(int encodedType) const {
     return runtimeTypes_.value(encodedType, -1);
 }

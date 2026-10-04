@@ -70,6 +70,60 @@ private:
     mutable QString traceKey_;      // session revision, or the draft's version
 };
 
+// One MML sequence alone on the piano roll, on the voice that plays it (the
+// triangle when a track set starts it there, else a pulse). Notes drag as in
+// a track set; the inspector edits the whole MML text and what plays next.
+class CastleSequenceModel final : public sdk::SequencerModel {
+    Q_OBJECT
+
+public:
+    CastleSequenceModel(CastleSession* session, int stream);
+
+    QString title() const override;
+    sdk::Inspection inspect() const override;
+    bool setField(const QString& key, const QVariant& value, QString* error) override;
+    QString statusText() const override;
+    sdk::Budget budget() const override;
+
+    QString chipLabel() const override { return QStringLiteral("2A03 · APU"); }
+    QVector<sdk::SequencerChannel> channels() const override;
+    int currentChannel() const override { return 0; }
+    void setCurrentChannel(int) override {}
+
+    QVector<sdk::SequencerNote> notes(int channel) const override;
+    int pitchMinimum() const override { return 24; }
+    int pitchMaximum() const override { return 108; }
+    int ticksPerBar() const override { return 48; }
+
+    QString selectedNote() const override { return selected_; }
+    void selectNote(const QString& id) override;
+    void beginEdit(const QString& id) override;
+    bool editNote(const QString& id, int pitch, int length) override;
+    void endEdit() override;
+
+    bool canPreview() const override { return true; }
+    void preview() override;
+    void stopPreview() override;
+    bool previewLoops() const override;
+    void setPreviewLoops(bool loop) override;
+
+private:
+    // `music` with track set 0 starting this sequence alone on its voice.
+    QJsonObject solo(const QJsonObject& music) const;
+    QString id() const;
+    const QVector<CastleMusicNote>& traced() const;
+
+    CastleSession* session_;
+    int stream_;
+    int voice_ = 0;                 // 0 pulse 1, 2 triangle
+    QString selected_;
+    bool editing_ = false;
+    QJsonObject draft_;
+    int draftVersion_ = 0;
+    mutable QVector<CastleMusicNote> trace_;
+    mutable QString traceKey_;
+};
+
 // The 21 MML streams as text: edit a stream's commands and where it
 // restarts. The arena they share is fixed; the budget shows what is left.
 class CastleStreamsModel final : public sdk::TableModel {

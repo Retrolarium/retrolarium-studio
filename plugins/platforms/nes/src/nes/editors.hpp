@@ -97,6 +97,9 @@ class PaletteTableModel final : public sdk::PaletteModel {
 
 public:
     PaletteTableModel(BundleOwner* owner, const QString& resource, const QString& title);
+    // Show `count` entries from `first` only, as their own palette: row
+    // labels and samples come from the owner under `key`.
+    void setWindow(int first, int count, const QString& key);
 
     QString title() const override { return title_; }
     sdk::Inspection inspect() const override;
@@ -114,13 +117,17 @@ public:
     QVector<sdk::PaletteSample> samples() const override;
 
 private:
-    int flatEntry() const { return entry_.y() * 4 + entry_.x(); }
+    int flatEntry() const { return first_ + entry_.y() * 4 + entry_.x(); }
+    QVector<int> values() const;
     QString rowLabel(int row) const;
 
     BundleOwner* owner_;
     QString resource_;
     QString title_;
     QPoint entry_;
+    int first_ = 0;
+    int count_ = -1;        // -1: to the end
+    QString key_;           // row labels and samples
 };
 
 QString hex(int value, int digits = 2);

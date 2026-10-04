@@ -49,6 +49,9 @@ public:
     QVector<CastleSprite> sprites(const CastleObject& object) const;
     // One 8x16 sprite (tile pair and attributes), transparent around.
     QImage sprite(const CastleSprite& sprite) const;
+    // The player's standing frame (16x16), as the game draws it at the
+    // start of a room.
+    QImage player() const;
     // Pixels an object covers; a dot-sized box when it has no picture.
     QRect bounds(const CastleObject& object) const;
     QImage objectIcon(int type) const;      // cropped to its sprites, transparent around

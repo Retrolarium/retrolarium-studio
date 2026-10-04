@@ -49,6 +49,7 @@ private:
     mutable QImage image_;
     mutable quint64 imageRevision_ = ~quint64(0);
     mutable int imageDivisor_ = 0;
+    mutable QString imageStart_;
 };
 
 }  // namespace rl::castle

@@ -424,8 +424,8 @@ QVector<sdk::DocumentGroup> SmbSession::documents(const QString& kind) const {
         sdk::DocumentGroup group;
         group.title = QStringLiteral("Title");
         if (demo_.isEmpty()) {
-            group.documents << entry(QStringLiteral("upgrade"), QStringLiteral("Add the title demo to this project"),
-                                     QStringLiteral("kit"));
+            // Opening it adds the document from the project's own source.
+            group.documents << entry(QStringLiteral("demo"), QStringLiteral("Title demo"), QStringLiteral("not added yet"));
         } else {
             sdk::DocumentEntry e = entry(QStringLiteral("demo"), QStringLiteral("Title demo"),
                                          QStringLiteral("%1 steps").arg(demo_.value(QStringLiteral("steps")).toArray().size()));
@@ -504,7 +504,7 @@ std::unique_ptr<sdk::EditorModel> SmbSession::openEditor(const QString& kind, co
             return std::make_unique<SmbTextModel>(this);
         }
         if (kind == QLatin1String("demo")) {
-            if (document == QLatin1String("upgrade") && demo_.isEmpty()) {
+            if (document == QLatin1String("demo") && demo_.isEmpty()) {
                 upgradeDemo();
                 return nullptr;
             }
@@ -934,6 +934,7 @@ void SmbSession::upgradeDemo() {
         report(sdk::Severity::Info, QStringLiteral("demo"), QStringLiteral("Added documents/demo.json: the title demo."));
         emit contentChanged();
         emit documentsChanged(QStringLiteral("demo"));
+        emit documentRequested(QStringLiteral("demo"), QStringLiteral("demo"));
     });
 }
 

@@ -20,9 +20,11 @@ struct CastleState {
     CastleLevels levels;
     nes::Bundle graphics;
     QJsonObject demo;
+    QJsonObject screens;    // documents/screens.json, empty before it is added
 
     bool operator==(const CastleState& other) const {
-        return levels == other.levels && graphics == other.graphics && demo == other.demo;
+        return levels == other.levels && graphics == other.graphics && demo == other.demo &&
+               screens == other.screens;
     }
 };
 
@@ -83,6 +85,12 @@ public:
     QJsonObject savedMusic() const;
     bool editMusic(const QString& text, const QJsonObject& next, QString* error);
 
+    // The screens document (ending, title and castle-map name tables, the
+    // GAME OVER message); empty in projects made before it.
+    const QJsonObject& screensDocument() const { return state_.screens; }
+    const QJsonObject& savedScreens() const { return saved_.screens; }
+    bool editScreens(const QString& text, const QJsonObject& next, QString* error);
+
     const QJsonObject& demo() const { return state_.demo; }
     const QJsonObject& savedDemo() const { return saved_.demo; }
     int demoCapacity() const;
@@ -106,12 +114,15 @@ private:
     void launch(bool fromStart);
     void launchDemo(bool record);
     void applyRecording(const QString& path);
-    void upgradeDemo();
+    // Runs the kit's castle-upgrade (title demo and screens), loads what it
+    // added and opens `kind`/`document`.
+    void upgradeDocuments(const QString& kind, const QString& document);
 
     sdk::ProjectFile project_;
     QString levelsPath_;
     QString graphicsPath_;
     QString demoPath_;
+    QString screensPath_;
     QString musicId_;
     int demoEditors_ = 0;
     bool recordingActive_ = false;

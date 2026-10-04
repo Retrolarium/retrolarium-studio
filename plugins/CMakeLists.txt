@@ -175,6 +175,8 @@ add_library(castle_plugin STATIC
     castle/src/castle/data/levels.hpp
     castle/src/castle/data/music.cpp
     castle/src/castle/data/music.hpp
+    castle/src/castle/plugin/animation_model.cpp
+    castle/src/castle/plugin/animation_model.hpp
     castle/src/castle/plugin/castle_plugin.cpp
     castle/src/castle/plugin/castle_plugin.hpp
     castle/src/castle/plugin/castle_session.cpp
@@ -189,6 +191,8 @@ add_library(castle_plugin STATIC
     castle/src/castle/plugin/music_models.hpp
     castle/src/castle/plugin/room_model.cpp
     castle/src/castle/plugin/room_model.hpp
+    castle/src/castle/plugin/screen_model.cpp
+    castle/src/castle/plugin/screen_model.hpp
     castle/src/castle/plugin/sprite_model.cpp
     castle/src/castle/plugin/sprite_model.hpp
     castle/src/castle/plugin/table_models.cpp

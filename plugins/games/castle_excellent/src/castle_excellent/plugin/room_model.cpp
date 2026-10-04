@@ -14,8 +14,6 @@ namespace {
 
 constexpr int kObjectStreamBytes = 2449;     // $EF6B-$F8FB, three bytes per object
 constexpr int kStateBytes = 141;             // one persistent bit per object, per room rounded to bytes
-constexpr int kStartWidth = 16;
-constexpr int kStartHeight = 16;
 
 QString hex(int value) {
     return nes::hex(value);
@@ -43,25 +41,6 @@ sdk::Field readOnly(const QString& key, const QString& label, const QVariant& va
     return field;
 }
 
-// The player's start, drawn as a marker: a little figure with a flag.
-QImage startMarker() {
-    QImage image(kStartWidth, kStartHeight, QImage::Format_ARGB32);
-    image.fill(Qt::transparent);
-    QPainter p(&image);
-    p.setRenderHint(QPainter::Antialiasing, false);
-    p.setPen(Qt::NoPen);
-    p.setBrush(QColor(0xff, 0xd8, 0x4a));
-    p.drawRect(5, 1, 6, 5);         // head
-    p.setBrush(QColor(0x2e, 0x8b, 0xff));
-    p.drawRect(4, 6, 8, 6);         // body
-    p.setBrush(QColor(0xff, 0xff, 0xff));
-    p.drawRect(4, 12, 3, 4);        // legs
-    p.drawRect(9, 12, 3, 4);
-    p.setPen(QColor(0, 0, 0));
-    p.setBrush(Qt::NoBrush);
-    p.drawRect(0, 0, kStartWidth - 1, kStartHeight - 1);
-    return image;
-}
 
 }  // namespace
 
@@ -140,7 +119,7 @@ QImage CastleRoomModel::render() const {
     QImage image = session_->painter().room(roomCells(), roomObjects());
     if (session_->start().room == room_ + 1) {
         QPainter painter(&image);
-        painter.drawImage(session_->start().pixel, startMarker());
+        painter.drawImage(session_->start().pixel, session_->painter().player());
     }
     return image;
 }

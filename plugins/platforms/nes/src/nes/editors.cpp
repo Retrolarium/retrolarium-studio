@@ -213,17 +213,27 @@ sdk::Inspection ChrTileModel::inspect() const {
 // ---------------------------------------------------------------- palette tables
 
 PaletteTableModel::PaletteTableModel(BundleOwner* owner, const QString& resource, const QString& title)
-    : PaletteModel(owner->bundleSession()), owner_(owner), resource_(resource), title_(title) {
+    : PaletteModel(owner->bundleSession()), owner_(owner), resource_(resource), title_(title), key_(resource) {
     connect(owner_->bundleSession(), &sdk::Session::contentChanged, this, &sdk::EditorModel::contentChanged);
 }
 
+void PaletteTableModel::setWindow(int first, int count, const QString& key) {
+    first_ = std::max(0, first);
+    count_ = count;
+    key_ = key;
+}
+
+QVector<int> PaletteTableModel::values() const {
+    return owner_->bundle().tableValues(resource_).mid(first_, count_);
+}
+
 QString PaletteTableModel::rowLabel(int row) const {
-    const QStringList labels = owner_->paletteRowLabels(resource_);
+    const QStringList labels = owner_->paletteRowLabels(key_);
     return row < labels.size() ? labels.at(row) : QStringLiteral("Palette %1").arg(row);
 }
 
 QVector<sdk::PaletteRow> PaletteTableModel::rows() const {
-    const QVector<int> values = owner_->bundle().tableValues(resource_);
+    const QVector<int> values = this->values();
     const QString model = owner_->bundle().paletteModel(resource_);
     QVector<sdk::PaletteRow> rows;
     for (int start = 0; start < values.size(); start += 4) {
@@ -274,7 +284,7 @@ bool PaletteTableModel::assignGamut(int index, QString* error) {
 }
 
 QVector<sdk::PaletteSample> PaletteTableModel::samples() const {
-    return owner_->paletteSamples(resource_);
+    return owner_->paletteSamples(key_);
 }
 
 QString PaletteTableModel::statusText() const {

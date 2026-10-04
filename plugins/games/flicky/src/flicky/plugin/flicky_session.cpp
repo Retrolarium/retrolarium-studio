@@ -275,9 +275,9 @@ QVector<sdk::DocumentGroup> FlickySession::documents(const QString& kind) const 
     } else if (kind == QLatin1String("demo")) {
         sdk::DocumentGroup demos = group(QStringLiteral("Attract demos"));
         if (!levels_.hasAttractDemos()) {
-            demos.documents.append(entry(QStringLiteral("upgrade"),
-                                         QStringLiteral("Add the attract demos to this project"),
-                                         QStringLiteral("kit")));
+            // Opening it adds the demos from the project's own source.
+            demos.documents.append(entry(QStringLiteral("demo-1"), QStringLiteral("Attract demos"),
+                                         QStringLiteral("not added yet")));
         } else {
             for (int demo = 0; demo < 4; ++demo) {
                 const QJsonArray steps = levels_.attractDemoSteps(demo);
@@ -346,7 +346,7 @@ std::unique_ptr<sdk::EditorModel> FlickySession::openEditor(const QString& kind,
     } else if (kind == QLatin1String("text")) {
         return std::make_unique<TextModel>(this);
     } else if (kind == QLatin1String("demo")) {
-        if (document == QLatin1String("upgrade") && !levels_.hasAttractDemos()) {
+        if (!levels_.hasAttractDemos()) {
             upgradeDemos();
             return nullptr;
         }
@@ -1353,6 +1353,7 @@ void FlickySession::upgradeDemos() {
                QStringLiteral("Added the four attract demos to level/levels.json."));
         emit contentChanged();
         emit documentsChanged(QStringLiteral("demo"));
+        emit documentRequested(QStringLiteral("demo"), QStringLiteral("demo-1"));
     });
 }
 

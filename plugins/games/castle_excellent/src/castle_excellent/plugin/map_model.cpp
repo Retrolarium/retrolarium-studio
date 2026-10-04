@@ -9,6 +9,7 @@ namespace rl::castle {
 CastleMapModel::CastleMapModel(CastleSession* session) : TileMapModel(session), session_(session) {
     connect(session_, &sdk::Session::contentChanged, this, &sdk::EditorModel::contentChanged);
     connect(session_, &CastleSession::startChanged, this, [this] {
+        emit contentChanged();
         emit selectionChanged();
         emit toolsChanged();
     });
@@ -51,7 +52,11 @@ QVector<sdk::Tool> CastleMapModel::tools() const {
 }
 
 QImage CastleMapModel::render() const {
-    if (imageRevision_ == session_->revision() && imageDivisor_ == divisor_ && !image_.isNull()) return image_;
+    const QString startKey = session_->selectedStart();
+    if (imageRevision_ == session_->revision() && imageDivisor_ == divisor_ && imageStart_ == startKey && !image_.isNull()) {
+        return image_;
+    }
+    imageStart_ = startKey;
     const int kRoomWidth = cellSize().width();
     const int kRoomHeight = cellSize().height();
     QImage image(kColumns * kRoomWidth, kRows * kRoomHeight, QImage::Format_RGB32);
@@ -66,6 +71,12 @@ QImage CastleMapModel::render() const {
         const QRect at(((number - 1) % kColumns) * kRoomWidth, ((number - 1) / kColumns) * kRoomHeight, kRoomWidth,
                        kRoomHeight);
         painter.drawImage(at, art.room(levels.cells(r), levels.objects(r)));
+    }
+    // The player where Play from selected starts.
+    const CastleStart start = session_->start();
+    if (start.room >= 1 && start.room <= kColumns * kRows) {
+        const QPoint origin(((start.room - 1) % kColumns) * kRoomWidth, ((start.room - 1) / kColumns) * kRoomHeight);
+        painter.drawImage(QRect(origin + start.pixel / divisor_, QSize(16, 16) / divisor_), art.player());
     }
     // Room borders, faint, so the grid reads at any zoom.
     painter.setPen(QColor(255, 255, 255, 40));
