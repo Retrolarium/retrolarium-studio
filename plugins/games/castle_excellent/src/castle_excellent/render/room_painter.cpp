@@ -126,6 +126,17 @@ QImage CastlePainter::cell(int type, int palette) const {
     return image;
 }
 
+QImage CastlePainter::backgroundTile(int tile, int palette) const {
+    QImage image(8, 8, QImage::Format_RGB32);
+    for (int y = 0; y < 8; ++y) {
+        for (int x = 0; x < 8; ++x) {
+            const int pen = pixel(256 + (tile & 0xff), x, y);
+            image.setPixel(x, y, color(palette_.value((palette & 3) * 4 + pen, 0x0f)).rgb());
+        }
+    }
+    return image;
+}
+
 QImage CastlePainter::cellIcon(int type) const {
     return cell(type, ownPalettes_.value(type));
 }

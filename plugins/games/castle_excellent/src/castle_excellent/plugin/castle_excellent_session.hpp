@@ -78,6 +78,11 @@ public:
     CastleStart start() const { return start_; }
     void setStart(const CastleStart& start);
 
+    // The music resource of the graphics bundle (castle.mml-music.v1).
+    QJsonObject music() const;
+    QJsonObject savedMusic() const;
+    bool editMusic(const QString& text, const QJsonObject& next, QString* error);
+
     const QJsonObject& demo() const { return state_.demo; }
     const QJsonObject& savedDemo() const { return saved_.demo; }
     int demoCapacity() const;
@@ -107,6 +112,7 @@ private:
     QString levelsPath_;
     QString graphicsPath_;
     QString demoPath_;
+    QString musicId_;
     int demoEditors_ = 0;
     bool recordingActive_ = false;
     CastleState state_;

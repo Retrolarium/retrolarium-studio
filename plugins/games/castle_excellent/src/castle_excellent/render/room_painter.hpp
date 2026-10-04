@@ -40,11 +40,15 @@ public:
     // The 2-bit palette of every cell of a room, as the loader leaves them.
     QVector<int> cellPalettes(const QVector<int>& cells) const;
     QImage cell(int type, int palette) const;               // 16x8
+    // One background pattern (second pattern table) in a room palette, 8x8.
+    QImage backgroundTile(int tile, int palette) const;
     // A cell type in its own palette, for the sheet.
     QImage cellIcon(int type) const;
     QImage room(const QVector<int>& cells, const QVector<CastleObject>& objects) const;   // 320x160
 
     QVector<CastleSprite> sprites(const CastleObject& object) const;
+    // One 8x16 sprite (tile pair and attributes), transparent around.
+    QImage sprite(const CastleSprite& sprite) const;
     // Pixels an object covers; a dot-sized box when it has no picture.
     QRect bounds(const CastleObject& object) const;
     QImage objectIcon(int type) const;      // cropped to its sprites, transparent around
@@ -54,7 +58,6 @@ public:
     QColor color(int index) const;
 
 private:
-    QImage sprite(const CastleSprite& sprite) const;
     int pixel(int tile, int x, int y) const;
 
     QVector<quint8> chr_;

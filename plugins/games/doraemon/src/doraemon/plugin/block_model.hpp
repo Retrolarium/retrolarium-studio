@@ -1,27 +1,27 @@
 #pragma once
 
 #include "sdk/editor_model.hpp"
-#include "smb/data/resource_document.hpp"
 
 #include <QHash>
+#include <QPair>
 
 #include <array>
-#include <optional>
 
-namespace rl::smb {
+namespace rl::castle {
 
-class SmbSession;
+class CastleSession;
 
-// The 16x16 background blocks of one palette group, eight to a row. Each
-// block is four 8x8 patterns; paint a quadrant with the library pattern or
-// type its number. Every level that places the block changes with it.
-class SmbMetatileModel final : public sdk::TileMapModel {
+// The 100 room cells (castle.room-cell-visuals.v1): each is two background
+// patterns side by side, 16x8, with the palette the room loader gives it.
+// The sheet shows them ten to a row; painting puts the brush pattern into a
+// cell's left or right half.
+class CastleCellModel final : public sdk::TileMapModel {
     Q_OBJECT
 
 public:
-    SmbMetatileModel(SmbSession* session, int group);
+    explicit CastleCellModel(CastleSession* session);
 
-    QString title() const override;
+    QString title() const override { return QStringLiteral("Room cells"); }
     sdk::Budget budget() const override;
     sdk::Inspection inspect() const override;
     bool setField(const QString& key, const QVariant& value, QString* error) override;
@@ -52,29 +52,22 @@ public:
     QString selectedObject() const override;
     void selectObject(const QString& id) override;
 
-    static constexpr int kPerRow = 8;
+    static constexpr int kPerRow = 10;
 
 private:
     int count() const;
-    int encoded(int index) const { return (group_ << 6) | index; }
-    // The block and quadrant (row-major) under a cell; {-1, -1} for none.
-    QPair<int, int> blockAt(QPoint cell) const;
-    int tileOf(const SmbResourceDocument& document, int index, int quadrant) const;
-    sdk::Library library() const;
+    // The cell and half (0 left, 1 right) under a sheet tile; {-1, -1} for none.
+    QPair<int, int> cellAt(QPoint at) const;
+    int tileOf(int cell, int half) const;
+    int paletteOf(int cell) const;
+    bool setCellFields(int cell, int left, int right, int palette, const QString& text, QString* error);
 
-    SmbSession* session_;
-    int group_;
-    QString packet_;
-    int selected_ = -1;     // block index within the group
-    int tile_ = 0x24;
-
-    // A stroke paints into these, drawn over the document, and writes the
-    // document once when it ends: rewriting the 2 MB bundle per cell stalls.
+    CastleSession* session_;
+    int selected_ = -1;
+    int tile_ = 2;
+    int libraryPalette_ = 0;
     bool stroking_ = false;
-    QHash<int, std::array<int, 4>> pending_;    // block index: its four patterns
-
-    mutable QVector<sdk::LibraryItem> library_;
-    mutable QString libraryKey_;
+    QHash<int, std::array<int, 2>> pending_;     // cell -> left, right
 };
 
-}  // namespace rl::smb
+}  // namespace rl::castle

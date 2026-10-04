@@ -632,6 +632,17 @@ bool MainWindow::openProjectFile(const QString& path) {
     });
     connect(session_.get(), &sdk::Session::diagnosticsChanged, this, &MainWindow::refreshDiagnostics);
     connect(session_.get(), &sdk::Session::selectedStartChanged, this, &MainWindow::updateActions);
+    connect(
+        session_.get(), &sdk::Session::documentRequested, this,
+        [this](const QString& kind, const QString& document) {
+            if (!session_ || kind.isEmpty()) return;
+            selectKind(kind);
+            if (!document.isEmpty()) {
+                documents_->selectDocument(document);
+                selectDocument(document);
+            }
+        },
+        Qt::QueuedConnection);
 
     updateProjectChrome();
     const QVector<sdk::Kind> kinds = session_->kinds();

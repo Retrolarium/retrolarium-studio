@@ -1,7 +1,11 @@
 #include "castle/plugin/castle_session.hpp"
 
+#include "castle/plugin/cell_model.hpp"
 #include "castle/plugin/demo_model.hpp"
+#include "castle/plugin/map_model.hpp"
+#include "castle/plugin/music_models.hpp"
 #include "castle/plugin/room_model.hpp"
+#include "castle/plugin/sprite_model.hpp"
 #include "castle/plugin/table_models.hpp"
 #include "nes/palette.hpp"
 #include "sdk/plugin.hpp"
@@ -12,6 +16,7 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QSaveFile>
+#include <QSet>
 #include <QUndoStack>
 
 #include <algorithm>
@@ -131,6 +136,7 @@ std::unique_ptr<CastleSession> CastleSession::open(const sdk::ProjectFile& proje
                                                                                 : first(g, "nes.palette-table.v1");
         session->art_.cellVisuals = first(g, "castle.room-cell-visuals.v1");
         session->art_.descriptors = first(g, "castle.metasprite-descriptors.v1");
+        session->musicId_ = first(g, "castle.mml-music.v1");
         if (session->art_.chr.isEmpty() || session->art_.roomPalette.isEmpty() ||
             g.tableValues(session->art_.roomPalette).size() < 32) {
             throw CastleError("The graphics bundle lacks the room patterns or palette.");
@@ -161,8 +167,11 @@ sdk::Profile CastleSession::profile() const {
 QVector<sdk::Kind> CastleSession::kinds() const {
     return {kind("rooms", "Rooms", "levels", sdk::EditorType::TileMap),
             kind("graphics", "Tiles", "tiles", sdk::EditorType::Tile),
+            kind("cells", "Cells", "metatiles", sdk::EditorType::TileMap),
+            kind("sprites", "Sprites", "sprites", sdk::EditorType::TileMap),
             kind("palettes", "Palettes", "palettes", sdk::EditorType::Palette),
             kind("text", "Text", "text", sdk::EditorType::Table),
+            kind("music", "Music", "sound", sdk::EditorType::Sequencer),
             kind("sfx", "Sound FX", "sound", sdk::EditorType::Table),
             kind("demo", "Demo", "play", sdk::EditorType::Table),
             kind("playtest", "Playtest", "playtest", sdk::EditorType::Emulator)};
@@ -171,6 +180,10 @@ QVector<sdk::Kind> CastleSession::kinds() const {
 QVector<sdk::DocumentGroup> CastleSession::documents(const QString& kind) const {
     QVector<sdk::DocumentGroup> groups;
     if (kind == QLatin1String("rooms")) {
+        sdk::DocumentGroup overview;
+        overview.title = QStringLiteral("Overview");
+        overview.documents << entry(QStringLiteral("map"), QStringLiteral("Castle map"), QStringLiteral("10 × 10"));
+        groups << overview;
         sdk::DocumentGroup group;
         group.title = QStringLiteral("Castle");
         for (int r = 0; r < state_.levels.roomCount(); ++r) {
@@ -200,6 +213,24 @@ QVector<sdk::DocumentGroup> CastleSession::documents(const QString& kind) const 
             }
             groups << group;
         }
+    } else if (kind == QLatin1String("cells")) {
+        sdk::DocumentGroup group;
+        group.title = QStringLiteral("Cells");
+        if (!art_.cellVisuals.isEmpty()) {
+            group.documents << entry(QStringLiteral("cells"), QStringLiteral("Room cells"),
+                                     QStringLiteral("%1 · 16x8").arg(painter().cellTypeCount()),
+                                     state_.graphics.resource(art_.cellVisuals) != saved_.graphics.resource(art_.cellVisuals));
+        }
+        groups << group;
+    } else if (kind == QLatin1String("sprites")) {
+        sdk::DocumentGroup group;
+        group.title = QStringLiteral("Sprites");
+        if (!art_.descriptors.isEmpty()) {
+            group.documents << entry(QStringLiteral("sprites"), QStringLiteral("Player & object frames"),
+                                     QStringLiteral("8x16"),
+                                     state_.graphics.resource(art_.descriptors) != saved_.graphics.resource(art_.descriptors));
+        }
+        groups << group;
     } else if (kind == QLatin1String("palettes")) {
         sdk::DocumentGroup group;
         group.title = QStringLiteral("Palettes");
@@ -228,6 +259,32 @@ QVector<sdk::DocumentGroup> CastleSession::documents(const QString& kind) const 
                                      state_.graphics.resource(id) != saved_.graphics.resource(id));
         }
         groups << group;
+    } else if (kind == QLatin1String("music") && !musicId_.isEmpty()) {
+        const QJsonObject now = music();
+        const QJsonObject saved = savedMusic();
+        sdk::DocumentGroup tracks;
+        tracks.title = QStringLiteral("Track sets");
+        const QJsonArray sets = now.value(QStringLiteral("track_sets")).toArray();
+        for (int t = 0; t < sets.size(); ++t) {
+            const QJsonObject set = sets.at(t).toObject();
+            // A track set is edited with the streams it plays.
+            bool dirty = set != saved.value(QStringLiteral("track_sets")).toArray().at(t).toObject();
+            QSet<QString> ids;
+            for (const QJsonValue& id : set.value(QStringLiteral("streams")).toArray()) ids.insert(id.toString());
+            const QJsonArray streams = now.value(QStringLiteral("streams")).toArray();
+            for (int i = 0; i < streams.size() && !dirty; ++i) {
+                dirty = ids.contains(streams.at(i).toObject().value(QStringLiteral("id")).toString()) &&
+                        streams.at(i) != saved.value(QStringLiteral("streams")).toArray().at(i);
+            }
+            tracks.documents << entry(QStringLiteral("track:%1").arg(t), set.value(QStringLiteral("name")).toString(),
+                                      QString::number(t), dirty);
+        }
+        sdk::DocumentGroup text;
+        text.title = QStringLiteral("MML");
+        text.documents << entry(QStringLiteral("streams"), QStringLiteral("MML streams"),
+                                QStringLiteral("%1 B").arg(CastleMusic::usedBytes(now)),
+                                now.value(QStringLiteral("streams")) != saved.value(QStringLiteral("streams")));
+        groups << tracks << text;
     } else if (kind == QLatin1String("demo")) {
         sdk::DocumentGroup group;
         group.title = QStringLiteral("Title");
@@ -252,6 +309,9 @@ QVector<sdk::DocumentGroup> CastleSession::documents(const QString& kind) const 
 
 std::unique_ptr<sdk::EditorModel> CastleSession::openEditor(const QString& kind, const QString& document) {
     try {
+        if (kind == QLatin1String("rooms") && document == QLatin1String("map")) {
+            return std::make_unique<CastleMapModel>(this);
+        }
         if (kind == QLatin1String("rooms")) {
             const int room = document.toInt() - 1;
             if (room >= 0 && room < state_.levels.roomCount()) {
@@ -282,6 +342,19 @@ std::unique_ptr<sdk::EditorModel> CastleSession::openEditor(const QString& kind,
         if (kind == QLatin1String("sfx") &&
             state_.graphics.resourceIds(QStringLiteral("castle.sfx-parameters.v1")).contains(document)) {
             return std::make_unique<CastleSfxModel>(this, document);
+        }
+        if (kind == QLatin1String("cells") && document == QLatin1String("cells") && !art_.cellVisuals.isEmpty()) {
+            return std::make_unique<CastleCellModel>(this);
+        }
+        if (kind == QLatin1String("sprites") && document == QLatin1String("sprites") && !art_.descriptors.isEmpty()) {
+            return std::make_unique<CastleSpriteModel>(this);
+        }
+        if (kind == QLatin1String("music") && !musicId_.isEmpty()) {
+            if (document == QLatin1String("streams")) return std::make_unique<CastleStreamsModel>(this);
+            const int track = document.startsWith(QLatin1String("track:")) ? document.mid(6).toInt() : -1;
+            if (track >= 0 && track < music().value(QStringLiteral("track_sets")).toArray().size()) {
+                return std::make_unique<CastleMusicModel>(this, track);
+            }
         }
         if (kind == QLatin1String("demo")) {
             if (document == QLatin1String("upgrade") && state_.demo.isEmpty()) {
@@ -513,6 +586,22 @@ void CastleSession::playSelected() {
 QString CastleSession::playSelectedLabel() const {
     if (recordingActive_) return QStringLiteral("Stop recording");
     return demoStart() ? QStringLiteral("Play demo") : QString();
+}
+
+// ---------------------------------------------------------------- music
+
+QJsonObject CastleSession::music() const {
+    return musicId_.isEmpty() ? QJsonObject() : state_.graphics.resource(musicId_);
+}
+
+QJsonObject CastleSession::savedMusic() const {
+    return musicId_.isEmpty() ? QJsonObject() : saved_.graphics.resource(musicId_);
+}
+
+bool CastleSession::editMusic(const QString& text, const QJsonObject& next, QString* error) {
+    if (musicId_.isEmpty()) return false;
+    const QString id = musicId_;
+    return editBundle(text, [id, next](nes::Bundle& b) { b.setResource(id, next); }, error);
 }
 
 // ---------------------------------------------------------------- demo

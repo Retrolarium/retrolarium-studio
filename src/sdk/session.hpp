@@ -72,6 +72,9 @@ signals:
     // Any document data changed; open editors re-render.
     void contentChanged();
     void selectedStartChanged();
+    // An editor asks the window to open another document (queued: the
+    // asking editor may be replaced).
+    void documentRequested(const QString& kind, const QString& document);
 
 private:
     QUndoStack* undoStack_;
