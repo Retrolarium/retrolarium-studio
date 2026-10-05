@@ -41,13 +41,15 @@ int areaPreset(const nes::Bundle& bundle, World world, const QString& map, int c
     if (map == QLatin1String("city")) return row < 22 ? 1 : 0;
     // The underground rooms (data/world1/underground_rooms.json): bands of
     // rows, each split into regions by the room cameras; presets 3-11 by
-    // room, 2 on the finale. Duplicate entrances share their room's preset.
+    // room ($29 = room + 3), 2 on the finale, the shaft at columns 0-7 that
+    // scrolls up from camera row $22 to the top. Duplicate entrances share
+    // their room's preset (8/9 and 7/10/11 are byte-identical).
     struct Region {
         int band;
         int start;
         int preset;
     };
-    static const Region kRegions[] = {{0, 8, 8},  {8, 0, 2},  {8, 16, 3}, {8, 32, 4},
+    static const Region kRegions[] = {{0, 0, 2},  {0, 8, 8},  {8, 0, 2},  {8, 16, 3}, {8, 32, 4},
                                       {8, 48, 5}, {16, 0, 6}, {16, 16, 7}, {16, 24, 10}};
     int band = 0;
     for (const Region& r : kRegions) {

@@ -5,6 +5,10 @@
 
 #include <QHash>
 #include <QImage>
+#include <QJsonArray>
+#include <QJsonObject>
+
+#include <optional>
 
 namespace rl::doraemon {
 
@@ -29,8 +33,12 @@ public:
     sdk::Library sheet() const override;
     void setCurrentLibraryItem(const QString& id) override;
 
-    QSize gridSize() const override { return {width_, height_}; }
-    QSize cellSize() const override { return {32, 32}; }
+    // Blocks are painted in 32x32 cells; World 1's objects sit in 8x8 cells.
+    QSize gridSize() const override;
+    QSize cellSize() const override;
+    QVector<sdk::MapLayer> layers() const override;
+    QString currentLayer() const override { return layer_; }
+    void setCurrentLayer(const QString& id) override;
     QVector<sdk::Tool> tools() const override;
     QImage render() const override;
 
@@ -48,8 +56,23 @@ public:
     QVector<sdk::MapObject> objects() const override;
     QString selectedObject() const override;
     void selectObject(const QString& id) override;
+    void beginDrag(const QString& id) override;
+    bool dragObject(const QString& id, QPoint topLeftCell) override;
+    void endDrag() override;
 
 private:
+    // World 1's placement list for this map (world1-city-objects /
+    // world1-underground-objects); empty for World 3.
+    QString objectsId() const;
+    QJsonArray records() const;
+    bool commitRecords(const QJsonArray& records, const QString& text, QString* error);
+    // A placement's sprite in its area's colours, where it is drawn.
+    QImage objectImage(const QJsonObject& record, QPoint* topLeft) const;
+    QString objectName(int type) const;
+    QStringList typeChoices() const;
+    sdk::Inspection inspectObject() const;
+    bool setObjectField(const QString& key, const QVariant& value, QString* error);
+    bool objectLayer() const { return layer_ == QLatin1String("objects"); }
     QVector<int> cells() const;
     bool commit(const QVector<int>& cells, const QString& text, QString* error);
     int presetAt(int cell) const;
@@ -63,6 +86,9 @@ private:
     int block_ = 0;
     int cell_ = -1;
     QHash<int, int> stroke_;        // cell -> painted block
+    QString layer_ = QStringLiteral("blocks");
+    int object_ = -1;               // selected placement
+    std::optional<QJsonArray> dragged_;     // the list while a placement is dragged
     mutable QImage base_;
     mutable quint64 baseRevision_ = ~quint64(0);
 };

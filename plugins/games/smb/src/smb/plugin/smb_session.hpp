@@ -124,7 +124,9 @@ private:
     void launch(bool fromStart);
     void launchDemo(bool record);
     void applyRecording(const QString& path);
-    void upgradeDemo();
+    // Runs the kit's upgrade (the title demo, new bundle resources), then
+    // opens the document that asked for it.
+    void upgradeProject(const QString& kind, const QString& document);
     void setDemo(const QJsonObject& demo);
 
     sdk::ProjectFile project_;

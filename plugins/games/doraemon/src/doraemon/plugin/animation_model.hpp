@@ -23,6 +23,26 @@ struct DoraemonAnimation {
 const QVector<DoraemonAnimation>& doraemonAnimations();
 QString metaspriteId(World world);      // the bundle resource
 
+// One sprite of a World 1 / World 3 metasprite, its offset from the
+// metasprite's origin (the entity's top-left), as the game composes it.
+struct SpritePiece {
+    int x = 0;
+    int y = 0;
+    int tile = 0;
+    bool flipX = false;
+    bool flipY = false;
+};
+QVector<SpritePiece> metaspritePieces(const DoraemonSession* session, World world, int index);
+// World 3 entity types $00-$1F: base metasprite and initial render flags
+// ($8ED5 / $8EF5).
+int world3TypeMetasprite(int type);
+int world3TypeFlags(int type);
+// The pieces drawn in one sprite palette row (four NES colours).
+QImage metaspriteImage(const DoraemonSession* session, World world, int index, const QVector<int>& colours,
+                       QPoint* origin);
+// A World 2 2x2 record (16x16) in one chapter sprite preset (6-8).
+QImage world2Image(const DoraemonSession* session, int index, int preset);
+
 // One animation on the composition canvas. World 1/3 frames are variable
 // records: select a piece to set its tile, offset and flips, drag it, or
 // drop a pattern on it; a frame that mirrors another (an alias) is shown

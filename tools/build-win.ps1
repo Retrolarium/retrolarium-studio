@@ -11,7 +11,8 @@ param(
 )
 
 # Cross-compiles Retrolarium Studio with the static Qt 5 MinGW SDK from
-# Longreach Qt inside Docker. Output: build\win-amd64\retrolarium-studio.exe
+# Longreach Qt inside Docker and installs it into build\win-amd64: the app,
+# the helper programs the plugins install, their tests and tests.json.
 
 $ErrorActionPreference = "Stop"
 
@@ -46,13 +47,8 @@ cmake -S /src/retrolarium_studio -B /out/.cmake-build \
     -DCMAKE_BUILD_TYPE=$STUDIO_CONFIGURATION \
     -DCMAKE_TOOLCHAIN_FILE=/kit-cmake/qt5/toolchain-win-amd64.cmake \
     -DCMAKE_PREFIX_PATH=/usr/local/Qt-5.15
-cmake --build /out/.cmake-build --target retrolarium-studio retrolarium-flicky-level-writer smb_level_renderer_golden_test smb_area_streams_test smb_screens_test smb_music_test --parallel $STUDIO_BUILD_JOBS -- -k
-cp /out/.cmake-build/retrolarium-studio.exe /out/
-cp /out/.cmake-build/plugins/retrolarium-flicky-level-writer.exe /out/
-cp /out/.cmake-build/plugins/smb_level_renderer_golden_test.exe /out/
-cp /out/.cmake-build/plugins/smb_area_streams_test.exe /out/
-cp /out/.cmake-build/plugins/smb_screens_test.exe /out/
-cp /out/.cmake-build/plugins/smb_music_test.exe /out/
+cmake --build /out/.cmake-build --parallel $STUDIO_BUILD_JOBS -- -k
+cmake --install /out/.cmake-build --prefix /out
 x86_64-w64-mingw32-objdump -p /out/retrolarium-studio.exe | grep 'DLL Name' | sort -u
 '@
 

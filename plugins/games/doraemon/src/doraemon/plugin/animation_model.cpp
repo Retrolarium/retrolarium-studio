@@ -28,6 +28,90 @@ const char* const kFlips[4] = {"None", "Horizontal", "Vertical", "Both"};
 
 }  // namespace
 
+int world3TypeMetasprite(int type) {
+    static const int kBases[32] = {0x10, 0x14, 0x18, 0x1C, 0x20, 0x24, 0x40, 0xB0, 0x30, 0x34, 0x28,
+                                   0x2C, 0x80, 0x84, 0x88, 0x8C, 0x64, 0x40, 0x70, 0x74, 0x50, 0x54,
+                                   0x58, 0x5C, 0x44, 0x60, 0x4C, 0x48, 0x90, 0x94, 0x98, 0x9C};
+    return kBases[type & 0x1F];
+}
+
+int world3TypeFlags(int type) {
+    static const int kFlags[32] = {2, 3, 1, 3, 0x20, 0, 1, 0, 3, 3, 0, 0, 2, 2, 2, 2,
+                                   0, 1, 0, 1, 1,    1, 1, 1, 0, 0, 1, 0, 1, 1, 1, 1};
+    return kFlags[type & 0x1F];
+}
+
+QVector<SpritePiece> metaspritePieces(const DoraemonSession* session, World world, int index) {
+    QVector<SpritePiece> result;
+    const QJsonObject r = session->resource(metaspriteId(world));
+    const QJsonArray entries = r.value(QStringLiteral("entries")).toArray();
+    QJsonObject entry = entries.at(index).toObject();
+    int flip = -1;
+    if (entry.contains(QStringLiteral("alias"))) {
+        flip = entry.value(QStringLiteral("flip")).toInt();
+        entry = entries.at(entry.value(QStringLiteral("alias")).toInt()).toObject();
+    }
+    if (!entry.contains(QStringLiteral("record"))) return result;
+    const QJsonObject rec = r.value(QStringLiteral("records")).toArray().at(entry.value(QStringLiteral("record")).toInt()).toObject();
+    const int xExtent = rec.value(QStringLiteral("x_extent")).toInt();
+    const int yExtent = rec.value(QStringLiteral("y_extent")).toInt();
+    for (const QJsonValue& v : rec.value(QStringLiteral("pieces")).toArray()) {
+        const QJsonArray piece = v.toArray();
+        SpritePiece p;
+        p.y = piece.at(0).toInt() & 0x7f;
+        p.x = piece.at(1).toInt() & 0x7f;
+        p.flipY = (piece.at(0).toInt() & 0x80) != 0;
+        p.flipX = (piece.at(1).toInt() & 0x80) != 0;
+        if (flip > 0 && (flip & 2)) {
+            p.y = yExtent - p.y;
+            p.flipY = !p.flipY;
+        }
+        if (flip > 0 && (flip & 1)) {
+            p.x = xExtent - p.x;
+            p.flipX = !p.flipX;
+        }
+        p.tile = piece.at(2).toInt();
+        result << p;
+    }
+    return result;
+}
+
+QImage metaspriteImage(const DoraemonSession* session, World world, int index, const QVector<int>& colours,
+                       QPoint* origin) {
+    const QVector<SpritePiece> pieces = metaspritePieces(session, world, index);
+    QRect box;
+    for (const SpritePiece& p : pieces) box |= QRect(p.x, p.y, 8, 8);
+    if (box.isEmpty()) box = QRect(0, 0, 8, 8);
+    QImage image(box.size(), QImage::Format_ARGB32);
+    image.fill(Qt::transparent);
+    QPainter painter(&image);
+    for (const SpritePiece& p : pieces) {
+        const QImage tile = session->painter().tile(world, p.tile, colours, true).mirrored(p.flipX, p.flipY);
+        painter.drawImage(p.x - box.left(), p.y - box.top(), tile);
+    }
+    if (origin) *origin = box.topLeft();
+    return image;
+}
+
+QImage world2Image(const DoraemonSession* session, int index, int preset) {
+    const QJsonObject r = session->resource(metaspriteId(World::Two));
+    const QJsonArray tiles = r.value(QStringLiteral("tiles")).toArray().at(index).toArray();
+    const int descriptor = r.value(QStringLiteral("descriptors")).toArray().at(index).toInt();
+    const QJsonArray attributes = r.value(QStringLiteral("attributes")).toArray();
+    const QVector<int> colours = session->painter().colours(World::Two, preset, descriptor & 3);
+    QImage image(16, 16, QImage::Format_ARGB32);
+    image.fill(Qt::transparent);
+    QPainter painter(&image);
+    for (int q = 0; q < 4; ++q) {
+        const int tile = tiles.at(q).toInt();
+        if (tile == 0) continue;
+        const int a = attributes.at(((descriptor >> 2) & 0x0F) * 4 + q).toInt();
+        painter.drawImage((q % 2) * 8, (q / 2) * 8,
+                          session->painter().tile(World::Two, tile, colours, true).mirrored((a & 0x40) != 0, (a & 0x80) != 0));
+    }
+    return image;
+}
+
 QString metaspriteId(World world) {
     // World 2's enemy table was read 16 bytes early before the kit named it
     // world2-enemy-metasprites; projects with the old id are upgraded.
@@ -92,12 +176,10 @@ const QVector<DoraemonAnimation>& doraemonAnimations() {
         list << make(three, "Doraemon", QStringLiteral("Swim (one way)"), run(0x00, 3), 8)
              << make(three, "Doraemon", QStringLiteral("Swim (other way)"), run(0x03, 3), 8);
         // Entity types $00-$1F: metasprite base and render flags ($8ED5, $8EF5).
-        const int bases[32] = {0x10, 0x14, 0x18, 0x1C, 0x20, 0x24, 0x40, 0xB0, 0x30, 0x34, 0x28, 0x2C, 0x80, 0x84, 0x88, 0x8C,
-                               0x64, 0x40, 0x70, 0x74, 0x50, 0x54, 0x58, 0x5C, 0x44, 0x60, 0x4C, 0x48, 0x90, 0x94, 0x98, 0x9C};
-        const int flags[32] = {2, 3, 1, 3, 0x20, 0, 1, 0, 3, 3, 0, 0, 2, 2, 2, 2, 0, 1, 0, 1, 1, 1, 1, 1, 0, 0, 1, 0, 1, 1, 1, 1};
         for (int t = 0; t < 32; ++t) {
             list << make(three, "Creatures", QStringLiteral("Type %1").arg(nes::hex(t)),
-                         run(bases[t], std::min(4, 0xBC - bases[t])), 8, flags[t] & 3);
+                         run(world3TypeMetasprite(t), std::min(4, 0xBC - world3TypeMetasprite(t))), 8,
+                         world3TypeFlags(t) & 3);
         }
         list << make(three, "Frames", QStringLiteral("World 3 · all frames"), run(0, 188), 15);
         return list;

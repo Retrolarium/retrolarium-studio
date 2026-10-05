@@ -73,6 +73,7 @@ add_executable(retrolarium-flicky-level-writer
     flicky/tools/level_writer_main.cpp
 )
 target_link_libraries(retrolarium-flicky-level-writer PRIVATE flicky_data)
+install(TARGETS retrolarium-flicky-level-writer RUNTIME DESTINATION .)
 
 # NES platform: the PPU master palette and palette packet layout. Header-only, Qt-free.
 add_library(platform_nes INTERFACE)
@@ -85,6 +86,8 @@ add_library(nes_editors STATIC
     nes/src/nes/bundle.hpp
     nes/src/nes/editors.cpp
     nes/src/nes/editors.hpp
+    nes/src/nes/sound_effect_model.cpp
+    nes/src/nes/sound_effect_model.hpp
 )
 target_link_libraries(nes_editors PUBLIC platform_nes studio_sdk Qt5::Core Qt5::Gui)
 studio_enable_warnings(nes_editors)
@@ -134,41 +137,43 @@ add_library(smb_plugin STATIC
     smb/src/smb/plugin/smb_plugin.hpp
     smb/src/smb/plugin/smb_session.cpp
     smb/src/smb/plugin/smb_session.hpp
+    smb/src/smb/plugin/sound_effects.cpp
+    smb/src/smb/plugin/sound_effects.hpp
     smb/src/smb/plugin/text_model.cpp
     smb/src/smb/plugin/text_model.hpp
     smb/src/smb/plugin/world_models.cpp
     smb/src/smb/plugin/world_models.hpp
 )
-target_link_libraries(smb_plugin PUBLIC smb_data studio_sdk)
+target_link_libraries(smb_plugin PUBLIC nes_editors smb_data studio_sdk)
 studio_enable_warnings(smb_plugin)
 
-# The renderer against the kit's output for every SMB1 JU area:
-#   smb_level_renderer_golden_test plugins/smb/tests/smb1_ju_level_scenes.json
+# The renderer against the kit's output for every SMB1 JU area.
 add_executable(smb_level_renderer_golden_test
     smb/tests/level_renderer_golden_test.cpp
 )
 target_link_libraries(smb_level_renderer_golden_test PRIVATE smb_data)
+studio_add_test(smb_level_renderer_golden_test plugins/smb/tests/smb1_ju_level_scenes.json)
 
-# Record insertion and removal against every SMB1 JU area:
-#   smb_area_streams_test plugins/smb/tests/smb1_ju_level_scenes.json
+# Record insertion and removal against every SMB1 JU area.
 add_executable(smb_area_streams_test
     smb/tests/area_streams_test.cpp
 )
 target_link_libraries(smb_area_streams_test PRIVATE smb_data)
+studio_add_test(smb_area_streams_test plugins/smb/tests/smb1_ju_level_scenes.json)
 
-# Screen packets and text against the SMB1 JU screens:
-#   smb_screens_test plugins/smb/tests/smb1_ju_screens.json
+# Screen packets and text against the SMB1 JU screens.
 add_executable(smb_screens_test
     smb/tests/screens_test.cpp
 )
 target_link_libraries(smb_screens_test PRIVATE smb_data)
+studio_add_test(smb_screens_test plugins/smb/tests/smb1_ju_screens.json)
 
-# The music decoder against the kit's timelines for every SMB1 JU header:
-#   smb_music_test plugins/smb/tests/smb1_ju_music.json
+# The music decoder against the kit's timelines for every SMB1 JU header.
 add_executable(smb_music_test
     smb/tests/music_test.cpp
 )
 target_link_libraries(smb_music_test PRIVATE smb_data)
+studio_add_test(smb_music_test plugins/smb/tests/smb1_ju_music.json)
 
 # Castle Excellent / Castlequest: the room document, its painter and the
 # editor models.

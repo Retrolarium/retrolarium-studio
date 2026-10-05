@@ -176,10 +176,9 @@ changed documents; Revert returns a document to its state when it was opened
 Projects come from `rltool studio preset <rom>`; every editor reads and
 writes `documents/resources.json`, the NES resource bundle. The level
 renderer is the original app's, pinned to the kit's output for all 34 SMB1
-JU areas by `smb_level_renderer_golden_test` (run it with
-`plugins/smb/tests/smb1_ju_level_scenes.json`). `smb_area_streams_test` checks
+JU areas by `smb_level_renderer_golden_test`. `smb_area_streams_test` checks
 the stream edits (remove and reinsert every record of every area) against the
-same file.
+same scenes; `tools\test-win.ps1` runs both with the other SMB tests.
 
 | Kind | Editor | State |
 |---|---|---|
@@ -288,8 +287,15 @@ Requires Docker with the `qt5-win-amd64-gpl-enabled` image and
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File tools\build-win.ps1
+powershell -ExecutionPolicy Bypass -File tools\test-win.ps1
 powershell -ExecutionPolicy Bypass -File tools\run-win.ps1 -Theme dark
 ```
+
+The build installs into `build\win-amd64` what the CMake files install: the
+app, the helper programs plugins need next to it and the plugins' test
+programs. A plugin registers a test with `studio_add_test(target fixture...)`
+(fixtures relative to this directory); CTest runs them on a native build and
+`test-win.ps1` runs them from the generated `tests.json`.
 
 Open a project directly, optionally at a document:
 

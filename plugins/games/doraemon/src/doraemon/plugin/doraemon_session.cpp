@@ -9,7 +9,9 @@
 #include "doraemon/plugin/route_model.hpp"
 #include "doraemon/plugin/screen_model.hpp"
 #include "doraemon/plugin/text_model.hpp"
+#include "nes/editors.hpp"
 #include "nes/palette.hpp"
+#include "nes/sound_effect_model.hpp"
 #include "sdk/plugin.hpp"
 #include "sdk/snapshot_command.hpp"
 
@@ -128,6 +130,71 @@ const QStringList kRoutes{QStringLiteral("Part 1"), QStringLiteral("Part 2"), QS
 std::pair<int, int> presetOf(const QString& id) {
     if (!id.startsWith(QLatin1String("world")) || !id.contains(QLatin1String("-palette-"))) return {0, -1};
     return {id.mid(5, 1).toInt(), id.section(QLatin1Char('-'), 2).toInt()};
+}
+
+const char* const kSoundDrivers[4] = {"World 1", "World 2", "World 3", "Title and ending"};
+
+// The effect requests of the four bank-local drivers (QueueEffect,
+// UpdateEffects): what each one's handler pair does, from the source
+// reconstruction's structural roles, and where play starts it when the
+// call site says so. Request 0 resets the effects and is not listed.
+QVector<nes::SoundEffect> soundEffects(int driver) {
+    static const char* const kRoles[26] = {
+        nullptr,
+        "Pulse 2 tone C",
+        "Triangle and noise burst",
+        "Pulse 2 tone A",
+        "Pulse 2 pitch run, long",
+        "Pulse 2 pitch run, short",
+        "Pulse 1 alternating burst",
+        "Pulse 1 tone",
+        "Pulse 1 tone, holds the triangle",
+        "Noise ramp",
+        "Tonal sequence on all channels",
+        "Pulse 2 tone B",
+        "Noise sweep, slow",
+        "Noise swell",
+        "Pulse 2 three steps",
+        "Pulse 2 pitch run",
+        "Pulse 1 melody",
+        "Triangle rise",
+        "Pulse 2 two tones",
+        "Pulse 2 pitch run, wide",
+        "Pulse 2 fade",
+        "Pulse 1 alternator (repeats)",
+        "Pulse 1 alternator (repeats)",
+        "Pulse 1 alternator (repeats)",
+        "Pulse 1 alternator (repeats)",
+        "Noise sweep, fast"};
+    // World 2's driver has fifteen requests with its own order.
+    static const int kWorld2[15] = {0, 1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 14, 15, 16, 17};
+    struct Known {
+        int driver;
+        int request;
+        const char* name;
+    };
+    static const Known kKnown[] = {{0, 0x06, "Pause"},          {0, 0x11, "Bull Robot"},  {0, 0x12, "Jump"},
+                                   {0, 0x13, "Warp Door"},  {1, 0x09, "Part complete"}, {1, 0x0A, "Inventory attack"}};
+    QVector<nes::SoundEffect> result;
+    const int count = driver == 1 ? 15 : 26;
+    for (int request = 1; request < count; ++request) {
+        const int role = driver == 1 ? kWorld2[request] : request;
+        QString name = QString::fromLatin1(kRoles[role]);
+        if (driver == 3 && request == 22) name = QStringLiteral("Pulse 1 and rising noise (repeats)");
+        if (driver == 3 && request == 23) name = QStringLiteral("Pulse 1 and falling noise (repeats)");
+        if (driver == 3 && request == 24) name = QStringLiteral("Pulse pair and noise tail");
+        for (const Known& known : kKnown) {
+            if (known.driver == driver && known.request == request) name = QStringLiteral("%1 · %2").arg(QString::fromLatin1(known.name), name);
+        }
+        result << nes::SoundEffect{QStringLiteral("doraemon:%1:%2").arg(driver).arg(request),
+                                   QStringLiteral("%1 %2").arg(nes::hex(request), name),
+                                   QStringLiteral("%1 · request %2").arg(QString::fromLatin1(kSoundDrivers[driver]), nes::hex(request)),
+                                   name.contains(QLatin1String("(repeats)"))
+                                       ? QStringLiteral("It repeats until the game starts another sound; the preview "
+                                                        "stops after five seconds.")
+                                       : QString()};
+    }
+    return result;
 }
 
 }  // namespace
@@ -316,16 +383,20 @@ QVector<sdk::DocumentGroup> DoraemonSession::documents(const QString& kind) cons
     } else if (kind == QLatin1String("sound")) {
         // Opening one adds the document from the project's own source.
         const bool missing = state_.music.isEmpty();
-        static const char* const kDrivers[4] = {"World 1", "World 2", "World 3", "Title and ending"};
         static const int kTracks[4] = {8, 6, 8, 4};
         for (int d = 0; d < 4; ++d) {
             const QJsonArray now = state_.music.value(QStringLiteral("drivers")).toArray().at(d).toObject().value(QStringLiteral("segments")).toArray();
             const QJsonArray saved = saved_.music.value(QStringLiteral("drivers")).toArray().at(d).toObject().value(QStringLiteral("segments")).toArray();
             for (int t = 0; t < kTracks[d]; ++t) {
-                group(QString::fromLatin1(kDrivers[d])).documents
+                group(QString::fromLatin1(kSoundDrivers[d])).documents
                     << entry(QStringLiteral("track:%1:%2").arg(d).arg(t), DoraemonMusicModel::trackTitle(d, t),
                              missing ? QStringLiteral("not added yet") : QStringLiteral("4 ch"), !missing && now != saved);
             }
+        }
+        // The music first, then each driver's effects.
+        for (int d = 0; d < 4; ++d) {
+            sdk::DocumentGroup& effects = group(QStringLiteral("Sound effects · %1").arg(QString::fromLatin1(kSoundDrivers[d])));
+            for (const nes::SoundEffect& effect : soundEffects(d)) effects.documents << entry(QStringLiteral("sfx:") + effect.key, effect.title);
         }
     } else if (kind == QLatin1String("text")) {
         // Opening one adds the document from the project's own source.
@@ -355,6 +426,11 @@ std::unique_ptr<sdk::EditorModel> DoraemonSession::openEditor(const QString& kin
         if (kind == QLatin1String("levels")) {
             for (const MapEntry& m : hierarchyMaps()) {
                 if (document == QStringLiteral("%1/%2").arg(int(m.world)).arg(m.id)) {
+                    // Map objects came with a newer kit.
+                    if (m.world != World::Two && !state_.bundle.contains(QStringLiteral("world2-secret-screens"))) {
+                        upgradeDocuments(kind, document);
+                        return nullptr;
+                    }
                     return std::make_unique<DoraemonMapModel>(this, m.world, m.id, m.label);
                 }
             }
@@ -362,6 +438,10 @@ std::unique_ptr<sdk::EditorModel> DoraemonSession::openEditor(const QString& kin
         if (kind == QLatin1String("levels") && document.startsWith(QLatin1String("route/"))) {
             const int route = document.mid(6).toInt();
             if (route < 0 || route >= kRoutes.size()) return nullptr;
+            if (!state_.bundle.contains(QStringLiteral("world2-secret-screens"))) {
+                upgradeDocuments(kind, document);
+                return nullptr;
+            }
             if (world2View_.isEmpty() && !loadWorld2View()) {
                 computeWorld2View(kind, document);
                 return nullptr;
@@ -392,6 +472,14 @@ std::unique_ptr<sdk::EditorModel> DoraemonSession::openEditor(const QString& kin
             !kShellPalettes.contains(document)) {
             const auto [world, preset] = presetOf(document);
             return std::make_unique<nes::PaletteTableModel>(this, document, QStringLiteral("World %1 · preset %2").arg(world).arg(preset));
+        }
+        if (kind == QLatin1String("sound") && document.startsWith(QLatin1String("sfx:"))) {
+            for (const nes::SoundEffect& effect : soundEffects(document.section(QLatin1Char(':'), 2, 2).toInt())) {
+                if (QStringLiteral("sfx:") + effect.key == document) {
+                    return std::make_unique<nes::SoundEffectModel>(this, effect, project_.path(), project_.directory());
+                }
+            }
+            return nullptr;
         }
         if (kind == QLatin1String("sound") && document.startsWith(QLatin1String("track:"))) {
             if (state_.music.isEmpty()) {

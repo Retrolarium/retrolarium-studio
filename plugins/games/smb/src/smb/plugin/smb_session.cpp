@@ -1,6 +1,9 @@
 #include "smb/plugin/smb_session.hpp"
 
+#include "nes/editors.hpp"
 #include "nes/palette.hpp"
+#include "nes/sound_effect_model.hpp"
+#include "smb/plugin/sound_effects.hpp"
 #include "sdk/plugin.hpp"
 #include "sdk/snapshot_command.hpp"
 #include "smb/plugin/demo_model.hpp"
@@ -410,6 +413,18 @@ QVector<sdk::DocumentGroup> SmbSession::documents(const QString& kind) const {
         group(QStringLiteral("Ground theme parts"), ground);
         group(QStringLiteral("Events"), events);
         group(QStringLiteral("Other"), other);
+        sdk::DocumentGroup effects;
+        effects.title = QStringLiteral("Sound effects");
+        for (const nes::SoundEffect& effect : soundEffects()) {
+            effects.documents << entry(QStringLiteral("sfx:") + effect.key, effect.title, effect.trigger.section(QStringLiteral(" queue"), 0, 0));
+        }
+        const bool tables = document_.resourceIds(QStringLiteral("smb.sfx-tables.v1")).contains(kSfxTables);
+        sdk::DocumentEntry e = entry(kSfxTables, QStringLiteral("Sound effect tables"),
+                                     tables ? QStringLiteral("81 B") : QStringLiteral("not added yet"));
+        e.dirty = tables && saved_.resourceIds(QStringLiteral("smb.sfx-tables.v1")).contains(kSfxTables) &&
+                  document_.resource(kSfxTables) != saved_.resource(kSfxTables);
+        effects.documents << e;
+        groups << effects;
     } else if (kind == QLatin1String("text")) {
         sdk::DocumentGroup group;
         group.title = QStringLiteral("Text");
@@ -496,6 +511,20 @@ std::unique_ptr<sdk::EditorModel> SmbSession::openEditor(const QString& kind, co
                 return std::make_unique<SmbScreenModel>(this, id, key);
             }
         }
+        if (kind == QLatin1String("sound") && (document.startsWith(QLatin1String("sfx:")) || document == kSfxTables)) {
+            // The effect tables came with a newer kit.
+            if (!document_.resourceIds(QStringLiteral("smb.sfx-tables.v1")).contains(kSfxTables)) {
+                upgradeProject(kind, document);
+                return nullptr;
+            }
+            if (document == kSfxTables) return std::make_unique<SmbSfxTablesModel>(this);
+            for (const nes::SoundEffect& effect : soundEffects()) {
+                if (QStringLiteral("sfx:") + effect.key == document) {
+                    return std::make_unique<nes::SoundEffectModel>(this, effect, project_.path(), project_.directory(),
+                                                                   soundEffectData(this));
+                }
+            }
+        }
         if (kind == QLatin1String("sound") && !music_.isEmpty() &&
             SmbMusic::fromJson(document_.resource(music_)).indexOf(document) >= 0) {
             return std::make_unique<SmbMusicModel>(this, document);
@@ -505,7 +534,7 @@ std::unique_ptr<sdk::EditorModel> SmbSession::openEditor(const QString& kind, co
         }
         if (kind == QLatin1String("demo")) {
             if (document == QLatin1String("demo") && demo_.isEmpty()) {
-                upgradeDemo();
+                upgradeProject(kind, document);
                 return nullptr;
             }
             if (document == QLatin1String("demo") && !demo_.isEmpty()) return std::make_unique<SmbDemoModel>(this);
@@ -896,45 +925,59 @@ void SmbSession::stopRecording() {
     if (recordingActive_ && host()) host()->stopEmulator();
 }
 
-void SmbSession::upgradeDemo() {
+void SmbSession::upgradeProject(const QString& kind, const QString& document) {
     sdk::Host* h = host();
     if (!h || h->isBusy()) return;
     QString error;
+    // The kit merges into the files: they must hold every edit first.
+    if (isModified() && !save(&error)) {
+        report(sdk::Severity::Error, kind, error);
+        return;
+    }
     sdk::ProcessSpec spec =
         h->kitCommand({QStringLiteral("studio"), QStringLiteral("smb-upgrade"), project_.path()}, project_.directory(), &error);
     if (spec.program.isEmpty()) {
-        report(sdk::Severity::Error, QStringLiteral("demo"), error);
+        report(sdk::Severity::Error, kind, error);
         return;
     }
-    spec.label = QStringLiteral("Add the title demo");
-    h->runProcess(spec, [this](const sdk::ProcessResult& result) {
+    spec.label = QStringLiteral("Add what this kit edits to the project");
+    h->runProcess(spec, [this, kind, document](const sdk::ProcessResult& result) {
         if (!result.succeeded()) {
             if (!result.cancelled) {
-                report(sdk::Severity::Error, QStringLiteral("demo"),
-                       QStringLiteral("Adding the title demo failed: %1").arg(failureText(result)));
+                report(sdk::Severity::Error, kind, QStringLiteral("Upgrading the project failed: %1").arg(failureText(result)));
             }
             return;
         }
         QString loadError;
         const sdk::ProjectFile reloaded = sdk::ProjectFile::load(project_.path(), &loadError);
-        const QString demo = reloaded.path().isEmpty() ? QString() : tabDocument(reloaded, QStringLiteral("smb.demo@1"));
-        if (demo.isEmpty()) {
-            report(sdk::Severity::Error, QStringLiteral("demo"), QStringLiteral("The kit added no demo document. %1").arg(loadError));
+        if (reloaded.path().isEmpty()) {
+            report(sdk::Severity::Error, kind, loadError);
             return;
         }
         project_ = reloaded;
-        demoPath_ = project_.resolve(demo);
         try {
-            demo_ = loadJsonObject(demoPath_);
-            savedDemo_ = demo_;
+            const QString demo = tabDocument(project_, QStringLiteral("smb.demo@1"));
+            if (!demo.isEmpty() && demo_.isEmpty()) {
+                demoPath_ = project_.resolve(demo);
+                demo_ = loadJsonObject(demoPath_);
+                savedDemo_ = demo_;
+            }
+            // Resources the bundle gained; it was saved before the upgrade,
+            // and older undo steps would drop them again.
+            const SmbResourceDocument bundle = SmbResourceDocument::load(documentPath_);
+            if (bundle.root() != document_.root()) {
+                undoStack()->clear();
+                document_ = saved_ = bundle;
+                revision_ = savedRevision_ = nextRevision_++;
+            }
         } catch (const std::exception& e) {
-            report(sdk::Severity::Error, QStringLiteral("demo"), QString::fromUtf8(e.what()));
+            report(sdk::Severity::Error, kind, QString::fromUtf8(e.what()));
             return;
         }
-        report(sdk::Severity::Info, QStringLiteral("demo"), QStringLiteral("Added documents/demo.json: the title demo."));
+        report(sdk::Severity::Info, kind, QStringLiteral("Added the documents and resources this kit edits to the project."));
         emit contentChanged();
-        emit documentsChanged(QStringLiteral("demo"));
-        emit documentRequested(QStringLiteral("demo"), QStringLiteral("demo"));
+        for (const sdk::Kind& k : kinds()) emit documentsChanged(k.id);
+        emit documentRequested(kind, document);
     });
 }
 

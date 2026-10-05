@@ -14,8 +14,10 @@ class DoraemonSession;
 // One World 2 route ("Part 1" ...) as the stage bytecode lays its screens
 // out: panels of 16x15 metatiles in the direction the ship scrolls, each in
 // its background preset. Painting a background cell writes the selector's
-// logical screen (and every selector sharing its stream); enemy spawns are
-// marked and stay where they are.
+// logical screen (and every selector sharing its stream). The Objects layer
+// shows the enemy spawn tokens as their sprites in the chapter's colours:
+// drag one to another cell, change its enemy, add or remove one; screens
+// that can drop an inventory item carry a translucent secret symbol.
 class DoraemonRouteModel final : public sdk::TileMapModel {
     Q_OBJECT
 
@@ -29,6 +31,9 @@ public:
     bool setField(const QString& key, const QVariant& value, QString* error) override;
     QString statusText() const override;
     QString currentLibraryItem() const override;
+    QVector<sdk::MapLayer> layers() const override;
+    QString currentLayer() const override { return layer_; }
+    void setCurrentLayer(const QString& id) override;
     sdk::Library sheet() const override;
     void setCurrentLibraryItem(const QString& id) override;
 
@@ -52,6 +57,10 @@ public:
     QVector<sdk::MapObject> objects() const override;
     QString selectedObject() const override;
     void selectObject(const QString& id) override;
+    void beginDrag(const QString& id) override;
+    bool dragObject(const QString& id, QPoint topLeftCell) override;
+    void endDrag() override;
+    bool removeObject(const QString& id, QString* error) override;
 
     static constexpr int kSpawnBase = 208;
     static constexpr int kPadding = 239;
@@ -77,6 +86,11 @@ private:
     Located locate(QPoint cell) const;
     int valueAt(const Located& at) const;
     bool commit(const QHash<QPair<int, int>, int>& cells, const QString& text, QString* error);
+    bool objectLayer() const { return layer_ == QLatin1String("objects"); }
+    QPoint cellOf(int index) const { return {index % gridSize().width(), index / gridSize().width()}; }
+    QVector<int> secretScreens() const;
+    sdk::Inspection inspectObject() const;
+    bool setObjectField(const QString& key, const QVariant& value, QString* error);
 
     DoraemonSession* session_;
     int route_;
@@ -88,6 +102,12 @@ private:
     QVector<QJsonObject> annotations_;
     int metatile_ = 1;
     int cell_ = -1;
+    int chapter_ = 6;           // the part's sprite preset (World 2 presets 6-8)
+    QString layer_ = QStringLiteral("blocks");
+    QString object_;            // "spawn:<cell>" or "secret:<slot>"
+    int enemy_ = 1;             // the enemy state the place tool adds
+    int dragFrom_ = -1;         // the dragged spawn's cell
+    int dragTo_ = -1;
     // (selector, raw) -> painted metatile
     QHash<QPair<int, int>, int> stroke_;
 };

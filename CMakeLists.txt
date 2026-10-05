@@ -187,6 +187,25 @@ set(RETROLARIUM_CORE_BUILD_CLI OFF CACHE BOOL "" FORCE)
 set(RETROLARIUM_CORE_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../retrolarium_core retrolarium_core)
 
+# Test programs register here with the fixtures they read, as paths
+# relative to this directory. CTest runs them on a native build; the install
+# step writes tests.json, which tools/test-win.ps1 runs the Windows build by.
+enable_testing()
+set_property(GLOBAL PROPERTY STUDIO_TESTS "")
+function(studio_add_test target)
+    set(fixtures "")
+    set(arguments "")
+    foreach(fixture IN LISTS ARGN)
+        list(APPEND fixtures "${PROJECT_SOURCE_DIR}/${fixture}")
+        string(APPEND arguments ", \"${fixture}\"")
+    endforeach()
+    add_test(NAME ${target} COMMAND ${target} ${fixtures})
+    install(TARGETS ${target} RUNTIME DESTINATION .)
+    string(SUBSTRING "${arguments}" 2 -1 arguments)
+    set_property(GLOBAL APPEND_STRING PROPERTY STUDIO_TESTS
+        "  {\"name\": \"${target}\", \"program\": \"$<TARGET_FILE_NAME:${target}>\", \"arguments\": [${arguments}]},\n")
+endfunction()
+
 add_subdirectory(plugins)
 
 add_executable(retrolarium-studio WIN32
@@ -203,3 +222,9 @@ if(WIN32)
 endif()
 target_link_libraries(retrolarium-studio PRIVATE studio_shell studio_builtin_plugins)
 studio_enable_warnings(retrolarium-studio)
+install(TARGETS retrolarium-studio RUNTIME DESTINATION .)
+
+get_property(studio_tests GLOBAL PROPERTY STUDIO_TESTS)
+string(REGEX REPLACE ",\n$" "\n" studio_tests "${studio_tests}")
+file(GENERATE OUTPUT ${CMAKE_BINARY_DIR}/tests.json CONTENT "[\n${studio_tests}]\n")
+install(FILES ${CMAKE_BINARY_DIR}/tests.json DESTINATION .)

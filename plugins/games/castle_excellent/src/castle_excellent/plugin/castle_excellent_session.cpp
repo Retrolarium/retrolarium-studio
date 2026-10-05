@@ -7,6 +7,7 @@
 #include "castle/plugin/music_models.hpp"
 #include "castle/plugin/room_model.hpp"
 #include "castle/plugin/screen_model.hpp"
+#include "nes/sound_effect_model.hpp"
 #include "castle/plugin/sprite_model.hpp"
 #include "castle/plugin/table_models.hpp"
 #include "nes/palette.hpp"
@@ -100,6 +101,20 @@ void saveJsonObject(const QString& path, const QJsonObject& value) {
 QString first(const nes::Bundle& bundle, const char* codec) {
     const QStringList ids = bundle.resourceIds(QString::fromLatin1(codec));
     return ids.isEmpty() ? QString() : ids.first();
+}
+
+// The five start routines of the sound effect engine ($C20D-$C2BD); each
+// is played by UpdateSoundEffects ($C2F9) from the next frame.
+QVector<nes::SoundEffect> soundEffects() {
+    const QString tuned = QStringLiteral("Its tunable bytes are in SFX parameters.");
+    return {{QStringLiteral("castle:1"), QStringLiteral("Jump"), QStringLiteral("Start routine $C20D"), QString()},
+            {QStringLiteral("castle:2"), QStringLiteral("Crush"),
+             QStringLiteral("Start routine $C233"), QString()},
+            {QStringLiteral("castle:3"), QStringLiteral("Item collected"),
+             QStringLiteral("Start routine $C272"), tuned},
+            {QStringLiteral("castle:4"), QStringLiteral("Flame"), QStringLiteral("Start routine $C29A"), tuned},
+            {QStringLiteral("castle:5"), QStringLiteral("Cell opens"),
+             QStringLiteral("Start routine $C2BD"), QString()}};
 }
 
 }  // namespace
@@ -337,6 +352,9 @@ QVector<sdk::DocumentGroup> CastleSession::documents(const QString& kind) const 
                                 now.value(QStringLiteral("streams")) != saved.value(QStringLiteral("streams")));
         sdk::DocumentGroup effects;
         effects.title = QStringLiteral("Sound effects");
+        for (const nes::SoundEffect& effect : soundEffects()) {
+            effects.documents << entry(QStringLiteral("sfx:") + effect.key, effect.title, QString());
+        }
         for (const QString& id : state_.graphics.resourceIds(QStringLiteral("castle.sfx-parameters.v1"))) {
             effects.documents << entry(id, QStringLiteral("SFX parameters"), QString(),
                                        state_.graphics.resource(id) != saved_.graphics.resource(id));
@@ -422,6 +440,15 @@ std::unique_ptr<sdk::EditorModel> CastleSession::openEditor(const QString& kind,
         }
         if (kind == QLatin1String("animations") && document == QLatin1String("sprites") && !art_.descriptors.isEmpty()) {
             return std::make_unique<CastleSpriteModel>(this);
+        }
+        if (kind == QLatin1String("sound") && document.startsWith(QLatin1String("sfx:"))) {
+            const QStringList watched = state_.graphics.resourceIds(QStringLiteral("castle.sfx-parameters.v1"));
+            for (const nes::SoundEffect& effect : soundEffects()) {
+                if (QStringLiteral("sfx:") + effect.key == document) {
+                    return std::make_unique<nes::SoundEffectModel>(this, effect, project_.path(), project_.directory(),
+                                                                   nes::bundleSoundEffectData(this, watched));
+                }
+            }
         }
         if (kind == QLatin1String("sound") &&
             state_.graphics.resourceIds(QStringLiteral("castle.sfx-parameters.v1")).contains(document)) {

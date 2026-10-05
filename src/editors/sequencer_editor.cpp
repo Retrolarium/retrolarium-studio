@@ -405,8 +405,9 @@ QWidget* SequencerEditor::createToolbar(QWidget* parent) {
             [this](const QString& value) { roll_->setPixelsPerTick(value.section(QLatin1Char(' '), 0, 0).toInt()); });
     layout->addWidget(zoom);
     layout->addStretch(1);
-    layout->addWidget(new ui::Label(QStringLiteral("Drag a note up or down; Shift-drag changes its length"),
-                                    ui::Label::Role::Small, bar));
+    const QString hint = sequencer_->isReadOnly() ? sequencer_->readOnlyReason()
+                                                  : QStringLiteral("Drag a note up or down; Shift-drag changes its length");
+    layout->addWidget(new ui::Label(hint, ui::Label::Role::Small, bar));
     return bar;
 }
 
