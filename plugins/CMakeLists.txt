@@ -204,6 +204,31 @@ target_include_directories(castle_plugin PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/cast
 target_link_libraries(castle_plugin PUBLIC nes_editors studio_sdk)
 studio_enable_warnings(castle_plugin)
 
+# Pac-Man: the maze, actor frames, screens and sound of the resource bundle.
+add_library(pacman_plugin STATIC
+    pacman/src/pacman/plugin/animation_model.cpp
+    pacman/src/pacman/plugin/animation_model.hpp
+    pacman/src/pacman/plugin/demo_model.cpp
+    pacman/src/pacman/plugin/demo_model.hpp
+    pacman/src/pacman/plugin/maze_model.cpp
+    pacman/src/pacman/plugin/maze_model.hpp
+    pacman/src/pacman/plugin/pacman_plugin.cpp
+    pacman/src/pacman/plugin/pacman_plugin.hpp
+    pacman/src/pacman/plugin/pacman_session.cpp
+    pacman/src/pacman/plugin/pacman_session.hpp
+    pacman/src/pacman/plugin/playtest_model.cpp
+    pacman/src/pacman/plugin/playtest_model.hpp
+    pacman/src/pacman/plugin/screen_model.cpp
+    pacman/src/pacman/plugin/screen_model.hpp
+    pacman/src/pacman/plugin/sound_model.cpp
+    pacman/src/pacman/plugin/sound_model.hpp
+    pacman/src/pacman/render/painter.cpp
+    pacman/src/pacman/render/painter.hpp
+)
+target_include_directories(pacman_plugin PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/pacman/src)
+target_link_libraries(pacman_plugin PUBLIC nes_editors studio_sdk)
+studio_enable_warnings(pacman_plugin)
+
 # Solomon's Key: the room documents, their painter and the editor models.
 add_library(solomon_plugin STATIC
     solomon/src/solomon/data/documents.cpp
@@ -243,5 +268,5 @@ add_library(studio_builtin_plugins STATIC
     builtin_plugins.hpp
 )
 target_include_directories(studio_builtin_plugins PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(studio_builtin_plugins PUBLIC castle_plugin flicky_plugin smb_plugin solomon_plugin studio_sdk)
+target_link_libraries(studio_builtin_plugins PUBLIC castle_plugin flicky_plugin pacman_plugin smb_plugin solomon_plugin studio_sdk)
 studio_enable_warnings(studio_builtin_plugins)

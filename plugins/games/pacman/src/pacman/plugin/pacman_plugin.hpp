@@ -4,9 +4,9 @@ namespace rl::sdk {
 class PluginRegistry;
 }
 
-namespace rl::flicky {
+namespace rl::pacman {
 
-// Adds the Flicky (UE) plugin to the studio's registry.
+// Adds the Pac-Man (NES) plugin to the studio's registry.
 void registerPlugin(sdk::PluginRegistry& registry);
 
-}  // namespace rl::flicky
+}  // namespace rl::pacman

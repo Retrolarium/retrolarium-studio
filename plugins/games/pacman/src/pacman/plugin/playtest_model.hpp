@@ -2,29 +2,28 @@
 
 #include "sdk/editor_model.hpp"
 
-namespace rl::smb {
+namespace rl::pacman {
 
-class SmbSession;
+class PacmanSession;
 
-// The Playtest view of an SMB project: the build runs in MAME's NES driver
-// from the start point chosen in the level editor.
-class SmbPlaytestModel final : public sdk::EmulatorModel {
+// The running build: Play from selected starts a one-player game at the
+// start round, past the title.
+class PacmanPlaytestModel final : public sdk::EmulatorModel {
     Q_OBJECT
 
 public:
-    explicit SmbPlaytestModel(SmbSession* session);
+    explicit PacmanPlaytestModel(PacmanSession* session);
 
     QString title() const override { return QStringLiteral("Build and run"); }
     sdk::Inspection inspect() const override;
-
+    bool setField(const QString& key, const QVariant& value, QString* error) override;
     QSize screenSize() const override { return {256, 240}; }
     QString coreLabel() const override { return QStringLiteral("MAME · nes"); }
     QString startLabel() const override;
     void play() override;
-    bool isRecording() const override;
 
 private:
-    SmbSession* session_;
+    PacmanSession* session_;
 };
 
-}  // namespace rl::smb
+}  // namespace rl::pacman

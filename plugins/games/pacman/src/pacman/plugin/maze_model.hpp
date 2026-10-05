@@ -3,34 +3,34 @@
 #include "sdk/editor_model.hpp"
 
 #include <QHash>
-#include <QPair>
+#include <QVector>
 
-#include <array>
+#include <optional>
 
-namespace rl::castle {
+namespace rl::pacman {
 
-class CastleSession;
+class PacmanSession;
 
-// The 100 room cells (castle.room-cell-visuals.v1): each is two background
-// patterns side by side, 16x8, with the palette the room loader gives it.
-// The sheet shows them ten to a row; painting puts the brush pattern into a
-// cell's left or right half.
-class CastleCellModel final : public sdk::TileMapModel {
+// The 27x22 maze (pacman.maze-rle.v1): paint maze tiles from the sheet; the
+// engine's landmarks (tunnel ends, ghost house and door, spawns, power
+// pellets) are marked, and the checks the kit runs show as you paint.
+class PacmanMazeModel final : public sdk::TileMapModel {
     Q_OBJECT
 
 public:
-    explicit CastleCellModel(CastleSession* session);
+    explicit PacmanMazeModel(PacmanSession* session);
 
-    QString title() const override { return QStringLiteral("Room cells"); }
+    QString title() const override { return QStringLiteral("Maze"); }
     sdk::Budget budget() const override;
     sdk::Inspection inspect() const override;
     bool setField(const QString& key, const QVariant& value, QString* error) override;
-    QVector<sdk::ViewOption> viewOptions() const override;
-    void setViewOption(const QString& key, const QString& value) override;
     QString statusText() const override;
     QString currentLibraryItem() const override;
     sdk::Library sheet() const override;
     void setCurrentLibraryItem(const QString& id) override;
+    QString startPoint() const override;
+    QVector<sdk::ViewOption> viewOptions() const override;
+    void setViewOption(const QString& key, const QString& value) override;
 
     QSize gridSize() const override;
     QSize cellSize() const override { return {8, 8}; }
@@ -52,22 +52,15 @@ public:
     QString selectedObject() const override;
     void selectObject(const QString& id) override;
 
-    static constexpr int kPerRow = 10;
-
 private:
-    int count() const;
-    // The cell and half (0 left, 1 right) under a sheet tile; {-1, -1} for none.
-    QPair<int, int> cellAt(QPoint at) const;
-    int tileOf(int cell, int half) const;
-    int paletteOf(int cell) const;
-    bool setCellFields(int cell, int left, int right, int palette, const QString& text, QString* error);
+    QVector<int> grid() const;
+    bool commit(const QVector<int>& grid, const QString& text, QString* error);
 
-    CastleSession* session_;
-    int selected_ = -1;
-    int tile_ = 2;
-    int libraryPalette_ = 0;
-    bool stroking_ = false;
-    QHash<int, std::array<int, 2>> pending_;     // cell -> left, right
+    PacmanSession* session_;
+    int tile_ = 0x03;
+    int cell_ = -1;
+    std::optional<QVector<int>> stroke_;
+    bool strokeChanged_ = false;
 };
 
-}  // namespace rl::castle
+}  // namespace rl::pacman
