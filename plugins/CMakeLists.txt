@@ -206,6 +206,8 @@ studio_enable_warnings(castle_plugin)
 
 # Doraemon: the World 1-3 maps, blocks and palettes of the resource bundle.
 add_library(doraemon_plugin STATIC
+    doraemon/src/doraemon/plugin/animation_model.cpp
+    doraemon/src/doraemon/plugin/animation_model.hpp
     doraemon/src/doraemon/plugin/block_model.cpp
     doraemon/src/doraemon/plugin/block_model.hpp
     doraemon/src/doraemon/plugin/doraemon_plugin.cpp
@@ -213,11 +215,17 @@ add_library(doraemon_plugin STATIC
     doraemon/src/doraemon/plugin/doraemon_session.cpp
     doraemon/src/doraemon/plugin/doraemon_session.hpp
     doraemon/src/doraemon/plugin/map_model.cpp
+    doraemon/src/doraemon/plugin/music_model.cpp
+    doraemon/src/doraemon/plugin/music_model.hpp
     doraemon/src/doraemon/plugin/map_model.hpp
     doraemon/src/doraemon/plugin/playtest_model.cpp
     doraemon/src/doraemon/plugin/playtest_model.hpp
     doraemon/src/doraemon/plugin/route_model.cpp
     doraemon/src/doraemon/plugin/route_model.hpp
+    doraemon/src/doraemon/plugin/screen_model.cpp
+    doraemon/src/doraemon/plugin/screen_model.hpp
+    doraemon/src/doraemon/plugin/text_model.cpp
+    doraemon/src/doraemon/plugin/text_model.hpp
     doraemon/src/doraemon/render/painter.cpp
     doraemon/src/doraemon/render/painter.hpp
 )

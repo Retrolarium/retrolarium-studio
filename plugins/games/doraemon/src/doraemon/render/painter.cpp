@@ -63,6 +63,9 @@ int areaPreset(const nes::Bundle& bundle, World world, const QString& map, int c
 DoraemonPainter::DoraemonPainter(const nes::Bundle& bundle) : bundle_(&bundle) {
     for (World w : {World::One, World::Two, World::Three}) {
         if (bundle.contains(chrId(w))) chr_.insert(chrId(w), bundle.allPixels(chrId(w)));
+        if (w == World::Three && bundle.contains(QStringLiteral("chr-bank-3"))) {
+            chr_.insert(QStringLiteral("chr-bank-3"), bundle.allPixels(QStringLiteral("chr-bank-3")));
+        }
         if (w != World::Two && bundle.contains(hierarchyId(w))) hierarchies_.insert(int(w), bundle.resource(hierarchyId(w)));
     }
 }
@@ -88,6 +91,17 @@ QImage DoraemonPainter::tile(World world, int tile, const QVector<int>& colours,
     for (int i = 0; i < 64; ++i) {
         const int pen = base + i < pixels.size() ? pixels.at(base + i) : 0;
         image.setPixel(i % 8, i / 8, sprite && pen == 0 ? qRgba(0, 0, 0, 0) : color(colours.value(pen)).rgba());
+    }
+    return image;
+}
+
+QImage DoraemonPainter::shellTile(int tile, const QVector<int>& colours, int table) const {
+    const QVector<quint8> pixels = chr_.value(QStringLiteral("chr-bank-3"));
+    const int base = ((table & 1) * 256 + (tile & 0xff)) * 64;
+    QImage image(8, 8, QImage::Format_ARGB32);
+    for (int i = 0; i < 64; ++i) {
+        const int pen = base + i < pixels.size() ? pixels.at(base + i) : 0;
+        image.setPixel(i % 8, i / 8, color(colours.value(pen)).rgba());
     }
     return image;
 }
