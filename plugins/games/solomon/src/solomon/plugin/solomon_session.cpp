@@ -174,15 +174,15 @@ sdk::Profile SolomonSession::profile() const {
 }
 
 QVector<sdk::Kind> SolomonSession::kinds() const {
-    return {kind("rooms", "Rooms", "levels", sdk::EditorType::TileMap),
-            kind("mirrors", "Mirrors", "world", sdk::EditorType::Table),
-            kind("animations", "Animations", "sprites", sdk::EditorType::Composition),
-            kind("screens", "Screens", "tileset", sdk::EditorType::TileMap),
-            kind("sound", "Sound", "sound", sdk::EditorType::Sequencer),
-            kind("demo", "Demo", "play", sdk::EditorType::Table),
-            kind("text", "Text", "text", sdk::EditorType::Table),
+    // The Spawn Mirrors' enemy sets and drop schedules list under Levels.
+    return {kind("rooms", "Levels", "levels", sdk::EditorType::TileMap),
             kind("graphics", "Tiles", "tiles", sdk::EditorType::Tile),
             kind("palettes", "Palettes", "palettes", sdk::EditorType::Palette),
+            kind("animations", "Animations", "sprites", sdk::EditorType::Composition),
+            kind("screens", "Screens", "tileset", sdk::EditorType::TileMap),
+            kind("text", "Text", "text", sdk::EditorType::Table),
+            kind("sound", "Sound", "sound", sdk::EditorType::Sequencer),
+            kind("demo", "Demo", "play", sdk::EditorType::Table),
             kind("playtest", "Playtest", "playtest", sdk::EditorType::Emulator)};
 }
 
@@ -209,7 +209,6 @@ QVector<sdk::DocumentGroup> SolomonSession::listDocuments(const QString& kind) c
                                              enemies ? QStringLiteral("%1 enemies").arg(enemies) : QString(),
                                              now.at(r) != saved.at(r));
         }
-    } else if (kind == QLatin1String("mirrors")) {
         sdk::DocumentGroup group;
         group.title = QStringLiteral("Spawn Mirrors");
         group.documents << entry(QStringLiteral("sets"), QStringLiteral("Enemy sets"),
@@ -407,7 +406,7 @@ std::unique_ptr<sdk::EditorModel> SolomonSession::openEditor(const QString& kind
                 return std::make_unique<SolomonAnimationModel>(this, group, action);
             }
         }
-        if (kind == QLatin1String("mirrors")) {
+        if (kind == QLatin1String("rooms")) {
             if (document == QLatin1String("sets")) return std::make_unique<SolomonMirrorSetsModel>(this);
             if (document == QLatin1String("schedules")) return std::make_unique<SolomonSchedulesModel>(this);
         }
@@ -471,7 +470,7 @@ const QVector<AnimationFamily>& SolomonSession::animationFamilies() const {
 void SolomonSession::setState(const SolomonState& state, quint64 revision) {
     // Only the kinds whose documents changed list again.
     QStringList changed;
-    if (!(state.rooms == state_.rooms)) changed << QStringLiteral("rooms") << QStringLiteral("mirrors");
+    if (!(state.rooms == state_.rooms)) changed << QStringLiteral("rooms");
     if (state.animations != state_.animations) changed << QStringLiteral("animations");
     if (state.presentation != state_.presentation) changed << QStringLiteral("screens") << QStringLiteral("demo");
     if (!(state.text == state_.text)) {

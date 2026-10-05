@@ -2,6 +2,7 @@
 
 #include "doraemon/plugin/animation_model.hpp"
 #include "doraemon/plugin/block_model.hpp"
+#include "doraemon/plugin/demo_model.hpp"
 #include "doraemon/plugin/map_model.hpp"
 #include "doraemon/plugin/music_model.hpp"
 #include "doraemon/plugin/playtest_model.hpp"
@@ -163,6 +164,11 @@ std::unique_ptr<DoraemonSession> DoraemonSession::open(const sdk::ProjectFile& p
             session->musicPath_ = project.resolve(music);
             session->state_.music = loadJsonObject(session->musicPath_);
         }
+        const QString demo = tabDocument(project, QStringLiteral("doraemon.demo@1"));
+        if (!demo.isEmpty()) {
+            session->demoPath_ = project.resolve(demo);
+            session->state_.demo = loadJsonObject(session->demoPath_);
+        }
         session->saved_ = session->state_;
         session->painter();
         session->loadWorld2View();
@@ -194,6 +200,7 @@ QVector<sdk::Kind> DoraemonSession::kinds() const {
             kind("screens", "Screens", "tileset", sdk::EditorType::TileMap),
             kind("text", "Text", "text", sdk::EditorType::Table),
             kind("sound", "Sound", "sound", sdk::EditorType::Sequencer),
+            kind("demo", "Demo", "play", sdk::EditorType::Table),
             kind("playtest", "Playtest", "playtest", sdk::EditorType::Emulator)};
 }
 
@@ -286,7 +293,7 @@ QVector<sdk::DocumentGroup> DoraemonSession::documents(const QString& kind) cons
         }
     } else if (kind == QLatin1String("animations")) {
         // Opening one adds the catalogs from the project's own source.
-        const bool missing = !state_.bundle.contains(QStringLiteral("world2-metasprites"));
+        const bool missing = !state_.bundle.contains(QStringLiteral("world2-enemy-metasprites"));
         const QVector<DoraemonAnimation>& animations = doraemonAnimations();
         for (int i = 0; i < animations.size(); ++i) {
             const DoraemonAnimation& a = animations.at(i);
@@ -300,7 +307,7 @@ QVector<sdk::DocumentGroup> DoraemonSession::documents(const QString& kind) cons
         }
     } else if (kind == QLatin1String("screens")) {
         // Opening one adds what the screens need from the project's own source.
-        const bool missing = state_.text.isEmpty() || !state_.bundle.contains(QStringLiteral("shell-palette-ending"));
+        const bool missing = state_.text.isEmpty() || !state_.bundle.contains(QStringLiteral("shell-help-sprites-3"));
         sdk::DocumentGroup& g = group(QStringLiteral("Screens"));
         for (const QString& id : shell::screenIds()) {
             g.documents << entry(id, shell::screenLabel(id), missing ? QStringLiteral("not added yet") : QStringLiteral("32 × 30"),
@@ -329,6 +336,13 @@ QVector<sdk::DocumentGroup> DoraemonSession::documents(const QString& kind) cons
                              missing ? QStringLiteral("not added yet") : QString(), dirty);
         g.documents << entry(QStringLiteral("credits"), QStringLiteral("Ending credits"),
                              missing ? QStringLiteral("not added yet") : QStringLiteral("380 rows"), dirty);
+    } else if (kind == QLatin1String("demo")) {
+        // Opening it adds the document from the project's own source.
+        group(QStringLiteral("Attract mode")).documents
+            << entry(QStringLiteral("world1"), QStringLiteral("World 1 demo"),
+                     state_.demo.isEmpty() ? QStringLiteral("not added yet")
+                                           : QStringLiteral("%1 steps").arg(state_.demo.value(QStringLiteral("steps")).toArray().size()),
+                     !state_.demo.isEmpty() && state_.demo != saved_.demo);
     } else if (kind == QLatin1String("playtest")) {
         group(QStringLiteral("Session")).documents
             << entry(QStringLiteral("playtest"), QStringLiteral("Build and run"), lastBuild_.isEmpty() ? QString() : QStringLiteral("built"));
@@ -390,14 +404,14 @@ std::unique_ptr<sdk::EditorModel> DoraemonSession::openEditor(const QString& kin
         if (kind == QLatin1String("animations") && document.startsWith(QLatin1String("anim:"))) {
             const int index = document.mid(5).toInt();
             if (index < 0 || index >= doraemonAnimations().size()) return nullptr;
-            if (!state_.bundle.contains(QStringLiteral("world2-metasprites"))) {
+            if (!state_.bundle.contains(QStringLiteral("world2-enemy-metasprites"))) {
                 upgradeDocuments(kind, document);
                 return nullptr;
             }
             return std::make_unique<DoraemonAnimationModel>(this, index);
         }
         if (kind == QLatin1String("screens") && shell::screenIds().contains(document)) {
-            if (state_.text.isEmpty() || !state_.bundle.contains(QStringLiteral("shell-palette-ending"))) {
+            if (state_.text.isEmpty() || !state_.bundle.contains(QStringLiteral("shell-help-sprites-3"))) {
                 upgradeDocuments(kind, document);
                 return nullptr;
             }
@@ -416,6 +430,13 @@ std::unique_ptr<sdk::EditorModel> DoraemonSession::openEditor(const QString& kin
                 return nullptr;
             }
             return std::make_unique<DoraemonTextModel>(this, document == QLatin1String("credits"));
+        }
+        if (kind == QLatin1String("demo") && document == QLatin1String("world1")) {
+            if (state_.demo.isEmpty()) {
+                upgradeDocuments(kind, document);
+                return nullptr;
+            }
+            return std::make_unique<DoraemonDemoModel>(this);
         }
         if (kind == QLatin1String("playtest")) return std::make_unique<DoraemonPlaytestModel>(this);
     } catch (const std::exception& e) {
@@ -440,6 +461,7 @@ void DoraemonSession::setState(const DoraemonState& state, quint64 revision) {
     // Snapshots from before the kit added documents and resources keep them.
     if (state_.text.isEmpty()) state_.text = current.text;
     if (state_.music.isEmpty()) state_.music = current.music;
+    if (state_.demo.isEmpty()) state_.demo = current.demo;
     state_.bundle = withResourcesOf(state_.bundle, current.bundle);
     revision_ = revision;
     emit contentChanged();
@@ -544,6 +566,7 @@ bool DoraemonSession::save(QString* error) {
         if (state_.bundle != saved_.bundle) state_.bundle.save(bundlePath_);
         if (state_.text != saved_.text && !textPath_.isEmpty()) saveJsonObject(textPath_, state_.text);
         if (state_.music != saved_.music && !musicPath_.isEmpty()) saveJsonObject(musicPath_, state_.music);
+        if (state_.demo != saved_.demo && !demoPath_.isEmpty()) saveJsonObject(demoPath_, state_.demo);
     } catch (const std::exception& e) {
         if (error) *error = QString::fromUtf8(e.what());
         return false;
@@ -679,7 +702,7 @@ void DoraemonSession::upgradeDocuments(const QString& kind, const QString& docum
     spec.label = QStringLiteral("Add what this kit edits to the project");
     h->runProcess(spec, [this, kind](const sdk::ProcessResult& result) {
         if (!result.succeeded()) {
-            if (!result.cancelled) report(sdk::Severity::Error, kind, QStringLiteral("Adding the text failed: %1").arg(failureText(result)));
+            if (!result.cancelled) report(sdk::Severity::Error, kind, QStringLiteral("Adding the documents failed: %1").arg(failureText(result)));
             return;
         }
         QString loadError;
@@ -700,6 +723,11 @@ void DoraemonSession::upgradeDocuments(const QString& kind, const QString& docum
             if (!music.isEmpty() && state_.music.isEmpty()) {
                 musicPath_ = project_.resolve(music);
                 state_.music = saved_.music = loadJsonObject(musicPath_);
+            }
+            const QString demo = tabDocument(project_, QStringLiteral("doraemon.demo@1"));
+            if (!demo.isEmpty() && state_.demo.isEmpty()) {
+                demoPath_ = project_.resolve(demo);
+                state_.demo = saved_.demo = loadJsonObject(demoPath_);
             }
             // Resources the bundle gained (saved before the upgrade ran).
             const nes::Bundle reloaded = nes::Bundle::load(bundlePath_);
@@ -831,15 +859,122 @@ void DoraemonSession::build() {
 }
 
 void DoraemonSession::play() {
-    launch();
+    launchWorld(0);
 }
 
 void DoraemonSession::playSelected() {
-    launch();
+    if (recordingActive_) stopRecording();
+    else if (demoStart()) launchDemo(false);
+    else launchWorld(startWorld_);
 }
 
-void DoraemonSession::launch() {
-    runBuild([this](bool ok) {
+// ---------------------------------------------------------------- demo
+
+int DoraemonSession::demoCapacity() const {
+    const QJsonObject layout = state_.demo.value(QStringLiteral("layout")).toObject();
+    return (layout.value(QStringLiteral("limit_cpu")).toInt() - layout.value(QStringLiteral("stream_cpu")).toInt()) / 2 - 1;
+}
+
+bool DoraemonSession::editDemo(const QString& label, const QJsonArray& steps, QString* error) {
+    if (state_.demo.isEmpty() || steps.isEmpty() || steps.size() > demoCapacity()) {
+        if (error) *error = QStringLiteral("The demo holds 1-%1 steps.").arg(demoCapacity());
+        return false;
+    }
+    DoraemonState next = state_;
+    next.demo.insert(QStringLiteral("steps"), steps);
+    return edit(label, next, error);
+}
+
+void DoraemonSession::attachDemoEditor(bool attach) {
+    const bool before = demoStart();
+    demoEditors_ = std::max(0, demoEditors_ + (attach ? 1 : -1));
+    if (demoStart() != before) emit selectedStartChanged();
+}
+
+void DoraemonSession::playDemo(bool record) {
+    if (!recordingActive_) launchDemo(record);
+}
+
+void DoraemonSession::stopRecording() {
+    if (recordingActive_ && host()) host()->stopEmulator();
+}
+
+QJsonArray DoraemonSession::stepsFromRecording(const QString& text, int capacity) {
+    static const struct {
+        const char* id;
+        int bit;
+    } kButtons[] = {{"a", 0x80}, {"b", 0x40}, {"up", 0x08}, {"down", 0x04}, {"left", 0x02}, {"right", 0x01}};
+    QJsonArray result;
+    for (const QString& line : text.split(QLatin1Char('\n'), Qt::SkipEmptyParts)) {
+        const QStringList words = line.simplified().split(QLatin1Char(' '));
+        if (words.size() != 2 || result.size() >= capacity) continue;
+        const int value = words.at(0).toInt();
+        const int updates = words.at(1).toInt();
+        if (value < 0 || value > 255 || updates < 1 || updates > 256) continue;
+        QJsonArray buttons;
+        for (const auto& b : kButtons) {
+            if (value & b.bit) buttons.append(QString::fromLatin1(b.id));
+        }
+        result.append(QJsonObject{{QStringLiteral("index"), result.size()},
+                                  {QStringLiteral("frames"), updates},
+                                  {QStringLiteral("buttons"), buttons}});
+    }
+    return result;
+}
+
+QString DoraemonSession::selectedStart() const {
+    if (demoStart()) return QStringLiteral("World 1 demo");
+    if (startBlock_.x() >= 0) {
+        return QStringLiteral("World 1 · %1 %2, %3")
+            .arg(startUnderground_ ? QStringLiteral("underground") : QStringLiteral("block"))
+            .arg(startBlock_.x())
+            .arg(startBlock_.y());
+    }
+    if (startStage_ >= 0) return QStringLiteral("World 2 · Part %1").arg(startStage_ + 1);
+    if (startRoom_ > 0) return QStringLiteral("World 3 · room %1").arg(startRoom_);
+    return QStringLiteral("World %1").arg(startWorld_);
+}
+
+void DoraemonSession::setStartWorld(int world) {
+    const int next = std::clamp(world, 1, 3);
+    if (next == startWorld_ && !hasStartPoint()) return;
+    startWorld_ = next;
+    startBlock_ = QPoint(-1, -1);
+    startUnderground_ = false;
+    startStage_ = -1;
+    startRoom_ = 0;
+    emit selectedStartChanged();
+}
+
+void DoraemonSession::setStartBlock(QPoint block, bool underground) {
+    if (startWorld_ == 1 && block == startBlock_ && underground == startUnderground_) return;
+    setStartWorld(1);
+    startBlock_ = block;
+    startUnderground_ = underground;
+    emit selectedStartChanged();
+}
+
+void DoraemonSession::setStartStage(int stage) {
+    if (startWorld_ == 2 && stage == startStage_) return;
+    setStartWorld(2);
+    startStage_ = std::clamp(stage, 0, 2);
+    emit selectedStartChanged();
+}
+
+void DoraemonSession::setStartRoom(int room) {
+    if (startWorld_ == 3 && room == startRoom_) return;
+    setStartWorld(3);
+    startRoom_ = std::clamp(room, 0, 63);
+    emit selectedStartChanged();
+}
+
+QString DoraemonSession::playSelectedLabel() const {
+    if (recordingActive_) return QStringLiteral("Stop recording");
+    return demoStart() ? QStringLiteral("Play demo") : QStringLiteral("Play %1").arg(selectedStart());
+}
+
+void DoraemonSession::launchDemo(bool record) {
+    runBuild([this, record](bool ok) {
         sdk::Host* h = host();
         if (!ok || !h) return;
         const QString mame = h->emulatorPath(QStringLiteral("mame"));
@@ -848,16 +983,121 @@ void DoraemonSession::launch() {
                    QStringLiteral("MAME was not found. Set RETROLARIUM_MAME to consoles.exe."));
             return;
         }
+        QStringList arguments{QStringLiteral("studio"), QStringLiteral("doraemon-demo-plan"), project_.path(),
+                              QStringLiteral("--mame"), mame};
+        const QString recording = project_.resolve(QStringLiteral("build/demo-recording.txt"));
+        if (record) {
+            QFile::remove(recording);
+            arguments << QStringLiteral("--record") << recording;
+        }
         QString error;
-        sdk::ProcessSpec plan = h->kitCommand(
-            {QStringLiteral("studio"), QStringLiteral("launch-plan"), project_.path(), QStringLiteral("--mame"), mame},
-            project_.directory(), &error);
+        sdk::ProcessSpec plan = h->kitCommand(arguments, project_.directory(), &error);
         if (plan.program.isEmpty()) {
             report(sdk::Severity::Error, QStringLiteral("playtest"), error);
             return;
         }
-        plan.label = QStringLiteral("Plan playtest from power-on");
-        h->runProcess(plan, [this](const sdk::ProcessResult& result) {
+        plan.label = record ? QStringLiteral("Plan demo recording") : QStringLiteral("Plan attract demo");
+        h->runProcess(plan, [this, record, recording](const sdk::ProcessResult& result) {
+            sdk::Host* host = this->host();
+            if (!host) return;
+            if (!result.succeeded()) {
+                if (!result.cancelled) {
+                    report(sdk::Severity::Error, QStringLiteral("playtest"),
+                           QStringLiteral("Demo plan failed: %1").arg(failureText(result)));
+                }
+                return;
+            }
+            sdk::ProcessSpec game = specFromPlan(QJsonDocument::fromJson(result.standardOutput).object());
+            if (game.program.isEmpty()) {
+                report(sdk::Severity::Error, QStringLiteral("playtest"), QStringLiteral("The kit returned no emulator command."));
+                return;
+            }
+            for (int i = 0; i < 64; ++i) game.palette << nes::masterColor(i, "nes");
+            // The Playtest view covers the boot and the title.
+            game.readyFile = project_.resolve(QStringLiteral("build/demo-ready.txt"));
+            QFile::remove(game.readyFile);
+            game.environment.insert(QStringLiteral("DORAEMON_DEMO_READY"), game.readyFile);
+            if (record) {
+                recordingActive_ = true;
+                emit selectedStartChanged();
+                report(sdk::Severity::Info, QStringLiteral("demo"),
+                       QStringLiteral("Recording: when World 1's demo starts Doraemon follows the controller until "
+                                      "you press Start or Stop recording, the game ends the demo, or its steps "
+                                      "are full."));
+            }
+            const QString title = record ? QStringLiteral("Doraemon · recording the demo") : QStringLiteral("Doraemon · attract demo");
+            host->launchEmulator(game, title, [this, record, recording](const sdk::ProcessResult& run) {
+                if (run.crashed || (!run.started && !run.error.isEmpty())) {
+                    report(sdk::Severity::Error, QStringLiteral("playtest"),
+                           run.error.isEmpty() ? QStringLiteral("The emulator crashed.") : run.error);
+                }
+                if (record) {
+                    recordingActive_ = false;
+                    emit selectedStartChanged();
+                    applyRecording(recording);
+                }
+            });
+        });
+    });
+}
+
+void DoraemonSession::applyRecording(const QString& path) {
+    QFile file(path);
+    if (!file.open(QIODevice::ReadOnly)) {
+        report(sdk::Severity::Warning, QStringLiteral("demo"), QStringLiteral("Nothing was recorded: the demo did not start."));
+        return;
+    }
+    const QJsonArray steps = stepsFromRecording(QString::fromUtf8(file.readAll()), demoCapacity());
+    if (steps.isEmpty()) {
+        report(sdk::Severity::Warning, QStringLiteral("demo"),
+               QStringLiteral("The demo ended before Doraemon followed the controller; it stays as it was."));
+        return;
+    }
+    QString error;
+    if (!editDemo(QStringLiteral("Record the World 1 demo"), steps, &error)) {
+        report(sdk::Severity::Error, QStringLiteral("demo"), error);
+        return;
+    }
+    int frames = 0;
+    for (const QJsonValue& step : steps) frames += step.toObject().value(QStringLiteral("frames")).toInt();
+    report(sdk::Severity::Info, QStringLiteral("demo"),
+           QStringLiteral("Recorded %1 steps (%2 s) into World 1's demo.").arg(steps.size()).arg(frames / 60.0, 0, 'f', 1));
+}
+
+// ---------------------------------------------------------------- playtest
+
+void DoraemonSession::launchWorld(int world) {
+    runBuild([this, world](bool ok) {
+        sdk::Host* h = host();
+        if (!ok || !h) return;
+        const QString mame = h->emulatorPath(QStringLiteral("mame"));
+        if (mame.isEmpty()) {
+            report(sdk::Severity::Error, QStringLiteral("playtest"),
+                   QStringLiteral("MAME was not found. Set RETROLARIUM_MAME to consoles.exe."));
+            return;
+        }
+        QStringList arguments{QStringLiteral("studio"), QStringLiteral("launch-plan"), project_.path(),
+                              QStringLiteral("--mame"), mame};
+        if (world > 0) {
+            arguments = QStringList{QStringLiteral("studio"), QStringLiteral("doraemon-playtest-plan"), project_.path(),
+                                    QStringLiteral("--mame"), mame, QStringLiteral("--world"), QString::number(world)};
+            if (world == 1 && startBlock_.x() >= 0) {
+                arguments << (startUnderground_ ? QStringLiteral("--underground") : QStringLiteral("--block"))
+                          << QString::number(startBlock_.x()) << QString::number(startBlock_.y());
+            } else if (world == 2 && startStage_ >= 0) {
+                arguments << QStringLiteral("--stage") << QString::number(startStage_);
+            } else if (world == 3 && startRoom_ > 0) {
+                arguments << QStringLiteral("--room") << QString::number(startRoom_);
+            }
+        }
+        QString error;
+        sdk::ProcessSpec plan = h->kitCommand(arguments, project_.directory(), &error);
+        if (plan.program.isEmpty()) {
+            report(sdk::Severity::Error, QStringLiteral("playtest"), error);
+            return;
+        }
+        plan.label = world > 0 ? QStringLiteral("Plan playtest from %1").arg(selectedStart()) : QStringLiteral("Plan playtest from power-on");
+        h->runProcess(plan, [this, world](const sdk::ProcessResult& result) {
             sdk::Host* host = this->host();
             if (!host) return;
             if (!result.succeeded()) {
@@ -873,7 +1113,14 @@ void DoraemonSession::launch() {
                 return;
             }
             for (int i = 0; i < 64; ++i) game.palette << nes::masterColor(i, "nes");
-            host->launchEmulator(game, QStringLiteral("Doraemon · power-on"), [this](const sdk::ProcessResult& run) {
+            if (world > 0) {
+                // The Playtest view covers the boot, the title and the status screen.
+                game.readyFile = project_.resolve(QStringLiteral("build/playtest-ready.txt"));
+                QFile::remove(game.readyFile);
+                game.environment.insert(QStringLiteral("DORAEMON_PLAYTEST_READY"), game.readyFile);
+            }
+            const QString title = world > 0 ? QStringLiteral("Doraemon · %1").arg(selectedStart()) : QStringLiteral("Doraemon · power-on");
+            host->launchEmulator(game, title, [this](const sdk::ProcessResult& run) {
                 if (run.crashed || (!run.started && !run.error.isEmpty())) {
                     report(sdk::Severity::Error, QStringLiteral("playtest"),
                            run.error.isEmpty() ? QStringLiteral("The emulator crashed.") : run.error);

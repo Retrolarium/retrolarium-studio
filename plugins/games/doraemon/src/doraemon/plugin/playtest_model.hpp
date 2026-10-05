@@ -6,7 +6,7 @@ namespace rl::doraemon {
 
 class DoraemonSession;
 
-// The running build, from power-on.
+// The running build, from power-on or from a world past the title.
 class DoraemonPlaytestModel final : public sdk::EmulatorModel {
     Q_OBJECT
 
@@ -17,8 +17,9 @@ public:
     sdk::Inspection inspect() const override;
     QSize screenSize() const override { return {256, 240}; }
     QString coreLabel() const override { return QStringLiteral("MAME · nes"); }
-    QString startLabel() const override { return QStringLiteral("Power-on"); }
+    QString startLabel() const override;
     void play() override;
+    bool setField(const QString& key, const QVariant& value, QString* error) override;
 
 private:
     DoraemonSession* session_;

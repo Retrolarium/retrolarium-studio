@@ -19,9 +19,10 @@ struct DoraemonState {
     nes::Bundle bundle;
     QJsonObject text;
     QJsonObject music;      // documents/music.json, empty before it is added
+    QJsonObject demo;       // documents/demo.json, empty before it is added
 
     bool operator==(const DoraemonState& other) const {
-        return bundle == other.bundle && text == other.text && music == other.music;
+        return bundle == other.bundle && text == other.text && music == other.music && demo == other.demo;
     }
 };
 
@@ -45,6 +46,8 @@ public:
     bool canPlay() const override { return true; }
     void play() override;
     void playSelected() override;
+    QString selectedStart() const override;
+    QString playSelectedLabel() const override;
 
     // nes::BundleOwner
     sdk::Session* bundleSession() override { return this; }
@@ -81,6 +84,32 @@ public:
     // Writes the current music to a file the kit can read.
     QString writeMusicSnapshot(QString* error) const;
     QString projectPath() const { return project_.path(); }
+
+    // World 1's attract demo (retrolarium.doraemon-demo).
+    const QJsonObject& demo() const { return state_.demo; }
+    const QJsonObject& savedDemo() const { return saved_.demo; }
+    int demoCapacity() const;
+    bool editDemo(const QString& label, const QJsonArray& steps, QString* error);
+    // While a demo editor is open, Play from selected loops the demo.
+    void attachDemoEditor(bool attach);
+    bool demoStart() const { return demoEditors_ > 0; }
+    bool recordingActive() const { return recordingActive_; }
+    void playDemo(bool record);
+    void stopRecording();
+
+    // Where Play from selected starts, past the title: a world from its
+    // beginning, or a World 1 city or underground block, a World 2 stage
+    // (0-2, Parts 1-3) or a World 3 room (1-63). Picking a world clears the
+    // point.
+    int startWorld() const { return startWorld_; }
+    void setStartWorld(int world);
+    void setStartBlock(QPoint block, bool underground = false);
+    void setStartStage(int stage);
+    void setStartRoom(int room);
+    bool hasStartPoint() const { return startBlock_.x() >= 0 || startStage_ >= 0 || startRoom_ > 0; }
+    // Demo steps from a recording ("<buttons> <updates>" lines); empty when
+    // nothing was recorded.
+    static QJsonArray stepsFromRecording(const QString& text, int capacity);
     QString projectDirectory() const { return project_.directory(); }
 
 signals:
@@ -90,11 +119,14 @@ private:
     DoraemonSession() = default;
     void setState(const DoraemonState& state, quint64 revision);
     bool edit(const QString& label, const DoraemonState& next, QString* error);
-    // Runs the kit's doraemon-upgrade (the text), loads it and opens
-    // `kind`/`document`.
+    // Runs the kit's doraemon-upgrade (documents and bundle resources newer
+    // kits edit), loads them and opens `kind`/`document`.
     void upgradeDocuments(const QString& kind, const QString& document);
     void runBuild(std::function<void(bool)> next);
-    void launch();
+    void launchDemo(bool record);
+    // Power-on (world 0), or the start world and point past the title.
+    void launchWorld(int world);
+    void applyRecording(const QString& path);
     QString world2ViewPath() const;
     bool loadWorld2View();
     // Asks the kit for the view, then opens `kind`/`document`.
@@ -104,6 +136,14 @@ private:
     QString bundlePath_;
     QString textPath_;
     QString musicPath_;
+    QString demoPath_;
+    int demoEditors_ = 0;
+    int startWorld_ = 1;
+    QPoint startBlock_{-1, -1};
+    bool startUnderground_ = false;
+    int startStage_ = -1;
+    int startRoom_ = 0;
+    bool recordingActive_ = false;
     QHash<QString, QJsonObject> traces_;    // "hash/driver/track"
     QString tracing_;
     QString musicHash_;

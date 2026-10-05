@@ -519,13 +519,14 @@ void TileMapEditor::fitZoom() {
     const QSize room = scroll_->viewport()->size() - QSize(kPadSide * 2, kPadTop + kPadBottom);
     // The largest step up to 4x that shows the whole map; a scrolling level
     // (pages) always fits its height and scrolls sideways, so short and long
-    // levels open at the same zoom.
+    // levels open at the same zoom, and a tall strip fits its width (up to
+    // 2x) and scrolls down.
     int zoom = kMinZoom;
     for (int step : kZoomSteps) {
-        const bool fits = map_->pageColumns() > 0
-                              ? mapHeight * step / 4 <= room.height()
-                              : mapWidth * step / 4 <= room.width() && mapHeight * step / 4 <= room.height();
-        if (step <= 16 && fits) zoom = step;
+        const bool fits = map_->pageColumns() > 0 ? mapHeight * step / 4 <= room.height()
+                          : map_->scrollsDown() ? mapWidth * step / 4 <= room.width()
+                                                : mapWidth * step / 4 <= room.width() && mapHeight * step / 4 <= room.height();
+        if (step <= (map_->scrollsDown() ? 8 : 16) && fits) zoom = step;
     }
     setZoom(zoom);
     emit toolbarChanged();

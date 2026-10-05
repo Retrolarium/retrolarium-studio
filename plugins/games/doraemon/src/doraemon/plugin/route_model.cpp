@@ -28,6 +28,15 @@ DoraemonRouteModel::DoraemonRouteModel(DoraemonSession* session, int route)
     : TileMapModel(session), session_(session), route_(route) {
     readPanels();
     connect(session_, &sdk::Session::contentChanged, this, &sdk::EditorModel::contentChanged);
+    connect(session_, &sdk::Session::selectedStartChanged, this, &sdk::EditorModel::toolsChanged);
+    // Play from selected starts World 2 at this route's part (2A and 2B
+    // branch off Part 2).
+    const QString part = name_.section(QLatin1Char(' '), 1, 1);
+    session_->setStartStage(part.startsWith(QLatin1Char('3')) ? 2 : part.startsWith(QLatin1Char('2')) ? 1 : 0);
+}
+
+QString DoraemonRouteModel::startPoint() const {
+    return session_->selectedStart();
 }
 
 void DoraemonRouteModel::readPanels() {

@@ -5,22 +5,22 @@
 #include <QJsonArray>
 #include <QPointer>
 
-namespace rl::pacman {
+namespace rl::doraemon {
 
-class PacmanSession;
+class DoraemonSession;
 
-// The attract demo (retrolarium.pacman-demo): the directions the demo's
-// Pac-Man holds, each for a number of movement updates. Loop demo plays it
-// in MAME as the attract mode does; Record steers it with the controller
-// and keeps what was played.
-class PacmanDemoModel final : public sdk::TableModel {
+// World 1's attract demo (retrolarium.doraemon-demo): the buttons the demo
+// holds, each for a number of updates. Loop demo plays it in MAME as the
+// attract mode does; Record steers it with the controller and keeps what
+// was played.
+class DoraemonDemoModel final : public sdk::TableModel {
     Q_OBJECT
 
 public:
-    explicit PacmanDemoModel(PacmanSession* session);
-    ~PacmanDemoModel() override;
+    explicit DoraemonDemoModel(DoraemonSession* session);
+    ~DoraemonDemoModel() override;
 
-    QString title() const override { return QStringLiteral("Attract demo"); }
+    QString title() const override { return QStringLiteral("World 1 demo"); }
     sdk::Budget budget() const override;
     sdk::Inspection inspect() const override;
     QString startPoint() const override;
@@ -36,14 +36,16 @@ public:
     bool setCell(int row, int column, const QString& value, QString* error) override;
     QStringList cellChoices(int row, int column) const override;
 
+    // "B+Down" for ["b", "down"], "none" for no buttons.
+    static QString buttonsText(const QJsonArray& buttons);
+
 private:
     QJsonArray steps() const;
-    int capacity() const;
     bool commit(const QString& text, QJsonArray steps);
 
-    PacmanSession* session_;
-    QPointer<PacmanSession> attached_;
+    DoraemonSession* session_;
+    QPointer<DoraemonSession> attached_;
     int row_ = 0;
 };
 
-}  // namespace rl::pacman
+}  // namespace rl::doraemon

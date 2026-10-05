@@ -111,6 +111,18 @@ bool SemanticsPaletteModel::setChannel(int channel, int level, QString* error) {
 
 QVector<sdk::PaletteSample> SemanticsPaletteModel::samples() const {
     QVector<sdk::PaletteSample> result;
+    if (id_ == QLatin1String("Title_LogoPalette")) {
+        // Line 3 of the title screen: the logo.
+        sdk::PaletteSample sample;
+        sample.label = QStringLiteral("Title");
+        sample.caption = QStringLiteral("Title screen");
+        try {
+            sample.image = session_->renderer().renderScreen(FlickyLevelSceneRenderer::Screen::Title);
+        } catch (const std::exception&) {
+        }
+        result.append(sample);
+        return result;
+    }
     for (int round : rounds()) {
         if (objects::isBonusRound(round)) {
             continue;

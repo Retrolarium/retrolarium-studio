@@ -23,6 +23,7 @@ public:
     DoraemonRouteModel(DoraemonSession* session, int route);
 
     QString title() const override;
+    QString startPoint() const override;
     sdk::Budget budget() const override;
     sdk::Inspection inspect() const override;
     bool setField(const QString& key, const QVariant& value, QString* error) override;

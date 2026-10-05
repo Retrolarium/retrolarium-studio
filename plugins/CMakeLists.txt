@@ -55,6 +55,8 @@ add_library(flicky_plugin STATIC
     flicky/src/flicky/plugin/objects.hpp
     flicky/src/flicky/plugin/playtest_model.cpp
     flicky/src/flicky/plugin/playtest_model.hpp
+    flicky/src/flicky/plugin/screen_model.cpp
+    flicky/src/flicky/plugin/screen_model.hpp
     flicky/src/flicky/plugin/semantics_models.cpp
     flicky/src/flicky/plugin/semantics_models.hpp
     flicky/src/flicky/plugin/sound_models.cpp
@@ -210,6 +212,8 @@ add_library(doraemon_plugin STATIC
     doraemon/src/doraemon/plugin/animation_model.hpp
     doraemon/src/doraemon/plugin/block_model.cpp
     doraemon/src/doraemon/plugin/block_model.hpp
+    doraemon/src/doraemon/plugin/demo_model.cpp
+    doraemon/src/doraemon/plugin/demo_model.hpp
     doraemon/src/doraemon/plugin/doraemon_plugin.cpp
     doraemon/src/doraemon/plugin/doraemon_plugin.hpp
     doraemon/src/doraemon/plugin/doraemon_session.cpp

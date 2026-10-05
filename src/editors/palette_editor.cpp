@@ -94,9 +94,7 @@ public:
     bool hasHeightForWidth() const override { return minimumWidth_ == 0 && !image_.isNull(); }
     int heightForWidth(int width) const override {
         if (image_.isNull()) return 250;
-        const int room = std::max(1, width - 32);
-        const int scale = std::clamp(room / image_.width(), 1, kMaxSpriteScale);
-        return image_.height() * scale + 32;
+        return image_.height() * fittedScale(std::max(1, width - 32)) + 32;
     }
     QSize sizeHint() const override {
         return hasHeightForWidth() ? QSize(280, heightForWidth(280)) : QSize(280, 250);
@@ -121,7 +119,7 @@ protected:
         // Whole steps from 2x up keep pixels square; below that, use the room.
         int scale = std::min(room.width() / image.width(), room.height() / image.height());
         if (hasHeightForWidth()) {
-            scale = std::min(scale, kMaxSpriteScale);
+            scale = std::min(scale, fittedScale(room.width()));
         }
         const QSize size = scale >= 2 ? image.size() * scale : image.size().scaled(room.size(), Qt::KeepAspectRatio);
         const int top = hasHeightForWidth() ? room.top() : room.top() + (room.height() - size.height()) / 2;
@@ -132,7 +130,15 @@ protected:
     }
 
 private:
+    // A sample that is not a scrolling scene grows with the column, up to 8x
+    // for a sprite, but never past kMaxSampleHeight: a whole 256x224 screen
+    // stays at 2x instead of overflowing the column.
     static constexpr int kMaxSpriteScale = 8;
+    static constexpr int kMaxSampleHeight = 480;
+
+    int fittedScale(int roomWidth) const {
+        return std::clamp(std::min(roomWidth / image_.width(), kMaxSampleHeight / image_.height()), 1, kMaxSpriteScale);
+    }
 
     QImage image_;
     int minimumWidth_;
@@ -273,7 +279,9 @@ void PaletteEditor::rebuild() {
     // Swatch rows.
     const QVector<sdk::PaletteRow> rows = palette_->rows();
     const QPoint current = palette_->currentEntry();
-    const bool stacked = rows.size() > 4;
+    // One or two rows fit across the top; from three on the swatches stack
+    // in the left column so the preview starts at the top beside them.
+    const bool stacked = rows.size() > 2;
     QVBoxLayout* swatches = stacked ? side_ : top_;
     top_->parentWidget()->setVisible(!stacked);
     side_->parentWidget()->setVisible(stacked);

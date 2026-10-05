@@ -106,6 +106,9 @@ public:
     virtual QSize gridSize() const = 0;     // cells
     virtual QSize cellSize() const = 0;     // pixels per cell in render()
     virtual int pageColumns() const { return 0; }  // 0: a single screen
+    // A tall strip (a credits roll): opens fitted to its width and scrolls
+    // down, instead of shrinking to show it whole.
+    virtual bool scrollsDown() const { return false; }
 
     virtual QVector<MapLayer> layers() const { return {}; }
     virtual QString currentLayer() const { return {}; }

@@ -20,6 +20,7 @@ public:
     DoraemonMapModel(DoraemonSession* session, World world, QString map, QString label);
 
     QString title() const override { return label_; }
+    QString startPoint() const override;
     sdk::Budget budget() const override;
     sdk::Inspection inspect() const override;
     bool setField(const QString& key, const QVariant& value, QString* error) override;

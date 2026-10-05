@@ -21,6 +21,13 @@ DoraemonMapModel::DoraemonMapModel(DoraemonSession* session, World world, QStrin
     : TileMapModel(session), session_(session), world_(world), map_(std::move(map)), label_(std::move(label)) {
     session_->painter().mapCells(world_, map_, &width_, &height_);
     connect(session_, &sdk::Session::contentChanged, this, &sdk::EditorModel::contentChanged);
+    connect(session_, &sdk::Session::selectedStartChanged, this, &sdk::EditorModel::toolsChanged);
+    // Play from selected starts the world of the map being edited.
+    session_->setStartWorld(int(world_));
+}
+
+QString DoraemonMapModel::startPoint() const {
+    return session_->selectedStart();
 }
 
 QVector<int> DoraemonMapModel::cells() const {
@@ -197,6 +204,13 @@ void DoraemonMapModel::selectObject(const QString& id) {
         cell_ = cell;
         emit selectionChanged();
         emit toolsChanged();
+    }
+    // Play from selected starts at the picked city or underground block (the
+    // kit drops in through a manhole) or World 3 room.
+    if (cell_ >= 0 && world_ == World::One) {
+        session_->setStartBlock(QPoint(cell_ % width_, cell_ / width_), map_ != QLatin1String("city"));
+    } else if (cell_ >= 0 && world_ == World::Three) {
+        session_->setStartRoom(((cell_ / width_) / kRoomCells) * 8 + (cell_ % width_) / kRoomCells);
     }
 }
 

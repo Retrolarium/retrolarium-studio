@@ -9,6 +9,7 @@
 #include "flicky/plugin/bonus_model.hpp"
 #include "flicky/plugin/demo_model.hpp"
 #include "flicky/plugin/playtest_model.hpp"
+#include "flicky/plugin/screen_model.hpp"
 #include "flicky/plugin/sound_models.hpp"
 #include "flicky/plugin/sprite_models.hpp"
 #include "sdk/snapshot_command.hpp"
@@ -159,14 +160,19 @@ QVector<sdk::Kind> FlickySession::kinds() const {
         kind("levels", "Levels", sdk::EditorType::TileMap),
         kind("tiles", "Tiles", sdk::EditorType::Tile),
         kind("palettes", "Palettes", sdk::EditorType::Palette),
-        kind("sprites", "Sprites", sdk::EditorType::Composition),
+        kind("sprites", "Animations", sdk::EditorType::Composition),
+        [] {
+            sdk::Kind screens = kind("screens", "Screens", sdk::EditorType::TileMap);
+            screens.icon = QStringLiteral("tileset");
+            return screens;
+        }(),
         kind("text", "Text", sdk::EditorType::Table),
+        kind("sound", "Sound", sdk::EditorType::Sequencer),
         [] {
             sdk::Kind demo = kind("demo", "Demo", sdk::EditorType::Table);
             demo.icon = QStringLiteral("play");
             return demo;
         }(),
-        kind("sound", "Sound", sdk::EditorType::Sequencer),
         kind("playtest", "Playtest", sdk::EditorType::Emulator),
     };
 }
@@ -210,19 +216,25 @@ QVector<sdk::DocumentGroup> FlickySession::documents(const QString& kind) const 
                                          isBankDirty(id)));
         }
         groups.append(banks);
-        bool paletteDirty = false;
-        for (int i = 0; i < 10; ++i) {
-            paletteDirty = paletteDirty || !(g.segaPaletteEntry(i) == graphics_.saved.segaPaletteEntry(i));
-        }
+    } else if (kind == QLatin1String("screens")) {
+        const FlickyGraphicsDocument& g = graphics();
         bool mapDirty = false;
         for (int i = 0; i < 48; ++i) {
             mapDirty = mapDirty || g.segaTilemapWord(i) != graphics_.saved.segaTilemapWord(i);
         }
-        groups.append(group(QStringLiteral("SEGA screen"),
-                            {entry(QStringLiteral("sega_palette"), QStringLiteral("sega_palette"),
-                                   QStringLiteral("10 entries"), paletteDirty),
-                             entry(QStringLiteral("sega_tilemap"), QStringLiteral("sega_tilemap"),
-                                   QStringLiteral("12 × 4"), mapDirty)}));
+        sdk::DocumentGroup screens = group(QStringLiteral("Screens"));
+        screens.documents.append(entry(QStringLiteral("sega_tilemap"), QStringLiteral("SEGA logo"),
+                                       QStringLiteral("12 × 4"), mapDirty));
+        for (const QString& id : ScreenModel::documentIds()) {
+            ScreenModel::Screen screen;
+            ScreenModel::screenOf(id, &screen);
+            bool textDirty = false;
+            for (const QString& text : ScreenModel::textIds(this, screen)) {
+                textDirty = textDirty || semantics().textValue(text) != semantics_.saved.textValue(text);
+            }
+            screens.documents.append(entry(id, ScreenModel::screenTitle(screen), QString(), textDirty));
+        }
+        groups.append(screens);
     } else if (kind == QLatin1String("palettes")) {
         const FlickySemanticsDocument& s = semantics();
         sdk::DocumentGroup level = group(QStringLiteral("Level palettes"));
@@ -240,9 +252,16 @@ QVector<sdk::DocumentGroup> FlickySession::documents(const QString& kind) const 
                 other.documents.append(palette);
             }
         }
+        bool segaDirty = false;
+        for (int i = 0; i < 10; ++i) {
+            segaDirty = segaDirty || !(graphics().segaPaletteEntry(i) == graphics_.saved.segaPaletteEntry(i));
+        }
+        other.documents.append(entry(QStringLiteral("sega_palette"), QStringLiteral("SEGA logo"),
+                                     QStringLiteral("10 entries"), segaDirty));
         groups << level << accent << other;
     } else if (kind == QLatin1String("sprites")) {
-        sdk::DocumentGroup mappings = group(QStringLiteral("Mappings"));
+        // Animations first; the frames they show (sprite mappings) below.
+        sdk::DocumentGroup mappings = group(QStringLiteral("Frames"));
         for (const QString& id : sequences().mappingIds()) {
             const QJsonObject mapping = sequences().mapping(id);
             mappings.documents.append(entry(QStringLiteral("mapping:") + id, id,
@@ -263,7 +282,7 @@ QVector<sdk::DocumentGroup> FlickySession::documents(const QString& kind) const 
                                           record.value(QStringLiteral("kind")).toString(),
                                           record != sequences_.saved.bonusMotion(id)));
         }
-        groups << mappings << animations;
+        groups << animations << mappings;
         if (!motion.documents.isEmpty()) {
             groups << motion;
         }
@@ -291,14 +310,21 @@ QVector<sdk::DocumentGroup> FlickySession::documents(const QString& kind) const 
         }
         groups.append(demos);
     } else if (kind == QLatin1String("sound")) {
-        sdk::DocumentGroup songs = group(QStringLiteral("Music & SFX"));
+        // Music first, then the sound effects (sfxheader blocks), then the
+        // shared voices and data.
+        sdk::DocumentGroup songs = group(QStringLiteral("Music"));
+        sdk::DocumentGroup effects = group(QStringLiteral("Sound effects"));
         for (const QString& id : sound().headerIds()) {
+            const FlickySoundHeader& header = sound().header(id);
             bool dirty = false;
-            for (const FlickySoundTrack& track : sound().header(id).tracks) {
+            for (const FlickySoundTrack& track : header.tracks) {
                 dirty = dirty || sound().blockText(track.sequence) != sound_.saved.blockText(track.sequence);
             }
             dirty = dirty || sound().blockText(id) != sound_.saved.blockText(id);
-            songs.documents.append(entry(QStringLiteral("header:") + id, id, sound().header(id).kind, dirty));
+            const bool sfx = header.kind == QLatin1String("sfx");
+            (sfx ? effects : songs)
+                .documents.append(entry(QStringLiteral("header:") + id, id,
+                                        QStringLiteral("%1 ch").arg(header.tracks.size()), dirty));
         }
         sdk::DocumentGroup voices = group(QStringLiteral("FM voices"));
         for (const QString& id : sound().voiceBankIds()) {
@@ -310,7 +336,7 @@ QVector<sdk::DocumentGroup> FlickySession::documents(const QString& kind) const 
         data.documents.append(entry(QStringLiteral("envelopes"), QStringLiteral("Priority & envelopes"),
                                     QStringLiteral("%1 bytes").arg(sound().priorityEnvelopeBytes().size()),
                                     sound().priorityEnvelopeBytes() != sound_.saved.priorityEnvelopeBytes()));
-        groups << songs << voices << data;
+        groups << songs << effects << voices << data;
     } else if (kind == QLatin1String("playtest")) {
         groups.append(group(QString(), {entry(QStringLiteral("playtest"), QStringLiteral("Build and run"),
                                               lastBuild_.isEmpty() ? QString() : QStringLiteral("built"))}));
@@ -329,17 +355,22 @@ std::unique_ptr<sdk::EditorModel> FlickySession::openEditor(const QString& kind,
             }
             return std::make_unique<LevelsModel>(this, round);
         }
-    } else if (kind == QLatin1String("tiles")) {
-        if (document == QLatin1String("sega_palette")) {
-            return std::make_unique<SegaPaletteModel>(this);
-        }
+    } else if (kind == QLatin1String("screens")) {
         if (document == QLatin1String("sega_tilemap")) {
             return std::make_unique<SegaTilemapModel>(this);
         }
+        ScreenModel::Screen screen;
+        if (ScreenModel::screenOf(document, &screen)) {
+            return std::make_unique<ScreenModel>(this, screen);
+        }
+    } else if (kind == QLatin1String("tiles")) {
         if (graphics().tileAssetIds().contains(document)) {
             return std::make_unique<TileBankModel>(this, document);
         }
     } else if (kind == QLatin1String("palettes")) {
+        if (document == QLatin1String("sega_palette")) {
+            return std::make_unique<SegaPaletteModel>(this);
+        }
         if (semantics().paletteIds().contains(document)) {
             return std::make_unique<SemanticsPaletteModel>(this, document);
         }
@@ -762,6 +793,18 @@ bool FlickySession::save(QString* error) {
 }
 
 bool FlickySession::canRevert(const QString& kind, const QString& document) const {
+    // The SEGA logo's map and palette live in graphics.json with the tiles.
+    if ((kind == QLatin1String("screens") && document == QLatin1String("sega_tilemap")) ||
+        (kind == QLatin1String("palettes") && document == QLatin1String("sega_palette"))) {
+        return canRevert(QStringLiteral("tiles"), document);
+    }
+    ScreenModel::Screen screen;
+    if (kind == QLatin1String("screens") && ScreenModel::screenOf(document, &screen)) {
+        for (const QString& id : ScreenModel::textIds(this, screen)) {
+            if (semantics().textValue(id) != semantics().baselineTextValue(id)) return true;
+        }
+        return false;
+    }
     if (kind == QLatin1String("levels")) {
         const int round = roundFromId(document);
         return round >= 0 && roundDiffersFromBaseline(round);
@@ -827,6 +870,19 @@ bool FlickySession::canRevert(const QString& kind, const QString& document) cons
 }
 
 bool FlickySession::revert(const QString& kind, const QString& document, QString* error) {
+    if ((kind == QLatin1String("screens") && document == QLatin1String("sega_tilemap")) ||
+        (kind == QLatin1String("palettes") && document == QLatin1String("sega_palette"))) {
+        return revert(QStringLiteral("tiles"), document, error);
+    }
+    ScreenModel::Screen screen;
+    if (kind == QLatin1String("screens") && ScreenModel::screenOf(document, &screen)) {
+        const QStringList ids = ScreenModel::textIds(this, screen);
+        return editSemantics(QStringLiteral("Revert %1").arg(ScreenModel::screenTitle(screen)),
+                             [ids](FlickySemanticsDocument& s) {
+                                 for (const QString& id : ids) s.restoreText(id);
+                             },
+                             error);
+    }
     if (kind == QLatin1String("levels")) {
         const int round = roundFromId(document);
         if (round < 0) {

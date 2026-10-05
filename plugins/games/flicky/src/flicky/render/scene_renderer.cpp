@@ -537,6 +537,24 @@ megadrive::Tile FlickyLevelSceneRenderer::tile(int index) const
 {
     const auto cached = tileCache_.constFind(index);
     if (cached != tileCache_.constEnd()) return cached.value();
+    if (fontPens_) {
+        const auto font = [&](const QString &id, int offset) {
+            auto pixels = graphics_->tile(id, offset);
+            for (auto &pixel : pixels) pixel = pixel ? fontPens_ >> 4 : fontPens_ & 0xF;
+            tileCache_.insert(index, pixels);
+            return pixels;
+        };
+        if (logoVram_ && index >= 0x740
+                && index - 0x740 < graphics_->tileCount(QStringLiteral("logo_tiles"))) {
+            const auto pixels = graphics_->tile(QStringLiteral("logo_tiles"), index - 0x740);
+            tileCache_.insert(index, pixels);
+            return pixels;
+        }
+        if (index >= 0x30 && index - 0x30 < graphics_->tileCount(QStringLiteral("latin_font")))
+            return font(QStringLiteral("latin_font"), index - 0x30);
+        if (index >= 0x20 && index - 0x20 < graphics_->tileCount(QStringLiteral("japanese_font")))
+            return font(QStringLiteral("japanese_font"), index - 0x20);
+    }
     static const std::array<std::pair<int, const char *>, 4> banks {{
         {0x693, "exit_tiles"}, {0x640, "score_tiles"},
         {0x400, "sprite_tiles"}, {0x200, "level_tiles"},
@@ -823,6 +841,279 @@ QImage FlickyLevelSceneRenderer::renderBonusPhase(
         for (int x = 0; x < screenWidth; ++x)
             if (qAlpha(priorityText.pixel(x, y)) != 0)
                 frame.setPixel(x, y, priorityText.pixel(x, y));
+    return frame;
+}
+
+namespace {
+
+// The labels a dc.l / dc.w pointer table names, in order ("Label" or
+// "Label-Sys_GameEntryPoint").
+QStringList labelList(const QString &path, const QString &label)
+{
+    QFile file(path);
+    if (!file.open(QIODevice::ReadOnly))
+        throw FlickyLevelSceneError(("cannot read Flicky source: " + path).toStdString());
+    static const QRegularExpression labelRx(
+        QStringLiteral(R"(^([A-Za-z_][A-Za-z0-9_]*):\s*(.*)$)"));
+    static const QRegularExpression pointerRx(
+        QStringLiteral(R"(^dc\.(?:l|w)\s+([A-Za-z_][A-Za-z0-9_]*)(?:-Sys_GameEntryPoint)?\s*$)"));
+    QStringList result;
+    bool collecting = false;
+    for (const auto &raw : QString::fromUtf8(file.readAll()).split(QLatin1Char('\n'))) {
+        auto code = raw.section(QLatin1Char(';'), 0, 0).trimmed();
+        const auto match = labelRx.match(code);
+        if (match.hasMatch()) {
+            if (collecting) break;
+            if (match.captured(1) != label) continue;
+            collecting = true;
+            code = match.captured(2).trimmed();
+        } else if (!collecting) {
+            continue;
+        }
+        const auto pointer = pointerRx.match(code);
+        if (!pointer.hasMatch()) {
+            if (code.isEmpty()) continue;
+            break;
+        }
+        result << pointer.captured(1);
+    }
+    if (result.isEmpty())
+        throw FlickyLevelSceneError(("missing Flicky pointer table: " + label).toStdString());
+    return result;
+}
+
+// Bytes of a dc.b table (tableWords packs them into words).
+QVector<int> tableBytes(const QString &path, const QString &label)
+{
+    QVector<int> bytes;
+    for (int word : tableWords(path, label)) bytes << (word >> 8) << (word & 0xFF);
+    return bytes;
+}
+
+// The credits roll: Ending_StateCredits stops after line $5D.
+QStringList creditsLines(const QString &ending)
+{
+    return labelList(ending, QStringLiteral("Ending_CreditsLinePointers")).mid(0, 0x5D);
+}
+
+} // namespace
+
+QVector<FlickyLevelSceneRenderer::ScreenText> FlickyLevelSceneRenderer::screenTexts(Screen screen) const
+{
+    const QDir source(sourceRoot_);
+    QVector<ScreenText> result;
+    const auto at = [&](const QString &file, const char *label, const char *id, bool tall) {
+        const int address = tableWords(source.filePath(file), QString::fromLatin1(label)).value(0);
+        const int offset = address - 0xC000;
+        ScreenText text;
+        text.id = QString::fromLatin1(id);
+        text.cell = QPoint((offset % 0x40) / 2, offset / 0x40);
+        text.doubleHeight = tall;
+        result.push_back(text);
+    };
+    const auto frontEnd = QStringLiteral("src/game/screens/front_end.s");
+    const auto ending = QStringLiteral("src/game/screens/ending.s");
+    switch (screen) {
+    case Screen::Title:
+        // Title_TextPointersAlt (the overseas board this ROM reports): each
+        // label is the plane A VRAM address the string is drawn at.
+        at(frontEnd, "Title_CastLabel", "Title_CastText", false);
+        at(frontEnd, "Title_FlickyLabel", "Title_FlickyText", false);
+        at(frontEnd, "Title_ChirpLabel", "Title_ChirpText", false);
+        at(frontEnd, "Title_TigerLabel", "Title_TigerText", false);
+        at(frontEnd, "Title_LizardLabel", "Title_LizardText", false);
+        at(frontEnd, "Title_CopyrightLabel", "Title_Sega1991Text", false);
+        at(frontEnd, "Title_TrademarkLabel", "Title_TmText", true);
+        break;
+    case Screen::Guide:
+        // Guide_TextPointers, drawn with Text_DrawDoubleHeight.
+        at(frontEnd, "Guide_MoveLabel", "Guide_MakeYourMoveText", true);
+        at(frontEnd, "Guide_HelpLabel", "Guide_HelpText", true);
+        at(frontEnd, "Guide_GuideLabel", "Guide_GuideText", true);
+        at(frontEnd, "Guide_DoorLabel", "Guide_ToTheDoorText", true);
+        at(frontEnd, "Guide_ButtonLabel", "Guide_PressButtonToJumpText", true);
+        at(frontEnd, "Guide_ScoreLabel", "Guide_RackUpASuperText", true);
+        break;
+    case Screen::Ending:
+        at(ending, "Ending_CongratsLabel", "Ending_CongratulationsText", false);
+        at(ending, "Ending_SuperPlayerLabel", "Ending_YouAreASuperText", false);
+        break;
+    case Screen::Credits: {
+        // Ending_DrawCreditsLine writes line N at column 4 as the roll
+        // scrolls a row; here line N is row N of the strip.
+        const auto lines = creditsLines(source.filePath(ending));
+        for (int row = 0; row < lines.size(); ++row) {
+            if (lines.at(row) == QLatin1String("Ending_BlankLine")) continue;
+            ScreenText text;
+            text.id = lines.at(row);
+            text.cell = QPoint(4, row);
+            result.push_back(text);
+        }
+        break;
+    }
+    }
+    return result;
+}
+
+QSize FlickyLevelSceneRenderer::screenSize(Screen screen) const
+{
+    if (screen != Screen::Credits) return {screenWidth, screenHeight};
+    const auto lines = creditsLines(QDir(sourceRoot_).filePath(
+        QStringLiteral("src/game/screens/ending.s")));
+    return {screenWidth, static_cast<int>(lines.size()) * tileSize};
+}
+
+void FlickyLevelSceneRenderer::drawScreenTexts(
+    QImage &frame, const std::array<int, 64> &palette, Screen screen) const
+{
+    for (const auto &text : screenTexts(screen)) {
+        QString value = semantics_->textValue(text.id);
+        if (text.id == QLatin1String("Title_Sega1991Text"))
+            value.prepend(QChar(0x27));    // the (c) glyph before the label's text
+        if (!text.doubleHeight) {
+            drawBonusString(frame, palette, value,
+                0xC000 + text.cell.y() * 0x40 + text.cell.x() * 2);
+            continue;
+        }
+        // Text_DrawDoubleHeight writes Text_CharToTileIndex(c) - $20 with
+        // no text base: for these characters the character's own tile, under
+        // the blank tile $20.
+        for (int column = 0; column < value.size(); ++column) {
+            const int x = (text.cell.x() + column) * tileSize;
+            drawTile(frame, palette, x, text.cell.y() * tileSize, value.at(column).unicode(), true);
+            drawTile(frame, palette, x, (text.cell.y() - 1) * tileSize, 0x20, true);
+        }
+    }
+}
+
+QImage FlickyLevelSceneRenderer::renderScreen(Screen screen) const
+{
+    // Each screen's VRAM: the 1bpp fonts at $20 (Japanese) and $30 (Latin
+    // over it), expanded with pen 2 on pen 0 (on pen 1 once the title has
+    // reloaded them for a game); the title's logo at $740; the level,
+    // sprite, score and exit tiles where the game loads them.
+    tileCache_.clear();
+    fontPens_ = screen == Screen::Guide ? 0x21 : 0x20;
+    logoVram_ = screen == Screen::Title;
+    struct Restore {
+        const FlickyLevelSceneRenderer *self;
+        ~Restore() { self->fontPens_ = 0; self->logoVram_ = false; self->tileCache_.clear(); }
+    } restore {this};
+    const QDir source(sourceRoot_);
+    const auto frontEnd = source.filePath(QStringLiteral("src/game/screens/front_end.s"));
+    const auto tables = source.filePath(QStringLiteral("src/data/tables.s"));
+    const auto pairs = [&](const char *xs, const char *ys) {
+        return tableWords(frontEnd, QString::fromLatin1(xs))
+            + tableWords(frontEnd, QString::fromLatin1(ys));
+    };
+
+    if (screen == Screen::Guide) {
+        // Guide_Init: round 1's tiles and palette, the cast's door and the
+        // exit (Level_DrawBackgroundObject 0 with its entry arrow) at
+        // (15, 6) and (5, 23), the round's upper and lower ground, a ledge
+        // of $220D on plane B and twenty sprites.
+        const auto theme = roundTheme(1);
+        const auto palette = paletteForRound(1);
+        Plane planeA {};
+        Plane planeB {};
+        const auto &upper = table(QStringLiteral("Level_UpperGroundData%1").arg(theme.tileset));
+        const auto &lower = table(QStringLiteral("Level_LowerGroundData%1").arg(theme.tileset));
+        for (int x = 0; x < mapWidth; x += 4) {
+            writeTilemap(planeB, x, 0, upper, 4, 2);
+            writeTilemap(planeB, x, 26, lower, 4, 2);
+        }
+        for (int x = 5; x < 5 + 22; ++x)
+            planeB[static_cast<std::size_t>(18 * mapWidth + x)] = 0x220D;
+        QImage frame(screenWidth, screenHeight, QImage::Format_RGB32);
+        frame.fill(mdColour(palette[0]));
+        drawPlane(frame, palette, planeB, 0);
+        drawPlane(frame, palette, planeA, 0);
+        drawScreenTexts(frame, palette, screen);
+        Plane objects {};
+        Plane arrows {};
+        for (const QPoint point : {QPoint(15, 6), QPoint(5, 23)}) {
+            writeTilemap(objects, point.x(), point.y(), table(QStringLiteral("Level_BgObject0Data")), 3, 3);
+            writeTilemap(arrows, point.x(), point.y() - 1, table(QStringLiteral("UI_EntryArrowFrame1")), 3, 1);
+        }
+        drawPlane(frame, palette, arrows, 0);
+        drawPlane(frame, palette, objects, 0);
+        const auto mappings = labelList(frontEnd, QStringLiteral("Guide_CharacterMappingPointers"));
+        const auto flipped = tableBytes(frontEnd, QStringLiteral("Guide_CharacterFlagTable"));
+        const auto positions = tableWords(frontEnd, QStringLiteral("Guide_CharacterPositions"));
+        for (int index = 0; index < mappings.size(); ++index)
+            drawMapping(frame, palette, mappings.at(index),
+                positions.value(index * 2) - 128, positions.value(index * 2 + 1) - 128,
+                flipped.value(index) != 0, false);
+        return frame;
+    }
+
+    if (screen == Screen::Ending || screen == Screen::Credits) {
+        // Ending_Init: the shared palette over a blue backdrop ($800).
+        auto palette = sharedPalette_;
+        palette[0] = 0x800;
+        QImage frame(screenSize(screen), QImage::Format_RGB32);
+        frame.fill(mdColour(palette[0]));
+        if (screen == Screen::Ending) {
+            // Ending_DrawGraphics: ten plane B tilemaps.
+            const auto ending = source.filePath(QStringLiteral("src/game/screens/ending.s"));
+            const auto maps = labelList(ending, QStringLiteral("Ending_GraphicsMappingPointers"));
+            const auto sizes = tableBytes(ending, QStringLiteral("Ending_GraphicsSizeTable"));
+            const auto places = tableWords(ending, QStringLiteral("Ending_GraphicsPositions"));
+            Plane planeB {};
+            for (int index = 0; index < maps.size(); ++index) {
+                const int offset = places.value(index) - 0xE000;
+                const int width = sizes.value(index * 4 + 1) + 1;
+                const int height = sizes.value(index * 4 + 3) + 1;
+                writeTilemap(planeB, (offset % 0x40) / 2, offset / 0x40,
+                    tableWords(tables, maps.at(index)), width, height);
+            }
+            drawPlane(frame, palette, planeB, 0);
+        }
+        drawScreenTexts(frame, palette, screen);
+        return frame;
+    }
+
+    // Title_Init: the shared palette with Title_LogoPalette in line 3.
+    auto palette = sharedPalette_;
+    const auto logo = semantics_->paletteColours(QStringLiteral("Title_LogoPalette"));
+    for (int index = 0; index < 8 && index < logo.size(); ++index)
+        palette[static_cast<std::size_t>(48 + index)] = logo[index] & 0xEEE;
+    QImage frame(screenWidth, screenHeight, QImage::Format_RGB32);
+    frame.fill(mdColour(palette[0]));
+    // Sprites: x and y tables follow each other, two words an object.
+    const auto statics = pairs("Title_StaticXTable", "Title_StaticYTable");
+    for (int index = 0; index < 6; ++index)
+        drawMapping(frame, palette, QStringLiteral("Title_StaticMap%1").arg(index),
+            statics.value(index * 2) - 128, statics.value(index * 2 + 1) - 128,
+            false, false);
+    // Obj_TitleBird: the first frame of each cast member's animation
+    // (Title_BirdAnimIndexTable picks the pointer table's entry).
+    static const std::array<const char *, 4> birds {{
+        "Player_AnimWalk", "Chirp_AnimIdle", "Tiger_AnimRun", "Lizard_AnimRight"}};
+    const auto birdsAt = pairs("Title_BirdXTable", "Title_BirdYTable");
+    for (int index = 0; index < 4; ++index) {
+        const auto frames = sequences_->animation(QString::fromLatin1(birds[index]))
+            .value(QStringLiteral("frames")).toArray();
+        if (frames.isEmpty()) continue;
+        drawMapping(frame, palette, frames.at(0).toString(),
+            birdsAt.value(index * 2) - 128, birdsAt.value(index * 2 + 1) - 128,
+            false, false);
+    }
+    // Obj_TitleCursor: PUSH START BUTTON, shown in its blink's on phase.
+    drawMapping(frame, palette, QStringLiteral("Obj_TitleCursorData"),
+        0xF0 - 128, 0x120 - 128, false, false);
+    // Plane A text (priority tiles, over the sprites) and the HUD.
+    drawScreenTexts(frame, palette, screen);
+    const auto &oneUp = table(QStringLiteral("UI_Draw1UPAndHILabelsData0"));
+    const auto &high = table(QStringLiteral("UI_Draw1UPAndHILabelsData1"));
+    for (int column = 0; column < 2; ++column)
+        drawTile(frame, palette, (4 + column) * tileSize, tileSize,
+                 oneUp.at(column), true);
+    for (int column = 0; column < 3; ++column)
+        drawTile(frame, palette, (18 + column) * tileSize, tileSize,
+                 high.at(column), true);
+    drawBonusString(frame, palette, QStringLiteral("0"), 0xC058);
+    drawBonusString(frame, palette, QStringLiteral("100000"), 0xC06C);
     return frame;
 }
 

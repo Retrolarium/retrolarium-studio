@@ -29,6 +29,9 @@ const char* const kFlips[4] = {"None", "Horizontal", "Vertical", "Both"};
 }  // namespace
 
 QString metaspriteId(World world) {
+    // World 2's enemy table was read 16 bytes early before the kit named it
+    // world2-enemy-metasprites; projects with the old id are upgraded.
+    if (world == World::Two) return QStringLiteral("world2-enemy-metasprites");
     return QStringLiteral("world%1-metasprites").arg(int(world));
 }
 

@@ -20,7 +20,9 @@ namespace shell {
 const QStringList& screenIds();     // "title", "help-1", "help-2", "help-3", "ending"
 QString screenLabel(const QString& id);
 QString paletteOf(const QString& id);       // its bundle palette resource
-int patternTable(const QString& id);        // of CHR bank 3
+// The CHR bank 3 table a screen row draws from: the help screens show
+// their chapter name from table 0 above the sprite-0 split at line 55.
+int patternTable(const QString& id, int row = 29);
 
 // Where a name-table byte lives in the text document.
 struct Source {

@@ -47,7 +47,8 @@ public:
     QImage tile(World world, int tile, const QVector<int>& colours, bool sprite = false) const;
     // A pattern of CHR bank 3: the title and help screens draw from its
     // second table, the ending's picture from its first.
-    QImage shellTile(int tile, const QVector<int>& colours, int table = 1) const;
+    // A CHR bank 3 tile; a sprite leaves pen 0 transparent.
+    QImage shellTile(int tile, const QVector<int>& colours, int table = 1, bool sprite = false) const;
 
     // A 16x16 small block and a 32x32 big block of a hierarchy world in a
     // preset's colours.

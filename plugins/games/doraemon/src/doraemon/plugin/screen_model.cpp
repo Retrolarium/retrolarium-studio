@@ -47,9 +47,13 @@ QString paletteOf(const QString& id) {
     return QStringLiteral("shell-palette-title");
 }
 
-int patternTable(const QString& id) {
-    // Bank3_RunEnding clears the background-table bit for the picture.
-    return id == QLatin1String("ending") ? 0 : 1;
+int patternTable(const QString& id, int row) {
+    // Bank3_RunEnding clears the background-table bit for the picture; the
+    // attract help's sprite 0 ($EF at line 55) splits the screen, the
+    // chapter name above it drawn from table 0.
+    if (id == QLatin1String("ending")) return 0;
+    if (id.startsWith(QLatin1String("help-")) && row < 7) return 0;
+    return 1;
 }
 
 QVector<int> cells(const QJsonObject& text, const QString& id, QHash<int, Source>* sources) {
@@ -159,14 +163,31 @@ QImage render(const DoraemonSession* session, const QString& id, const QJsonObje
         const int y = cell / 32;
         const int attribute = table.at(960 + (y / 4) * 8 + x / 4);
         const int row = (attribute >> (((y % 4) / 2) * 4 + ((x % 4) / 2) * 2)) & 3;
-        const int key = row * 256 + (table.at(cell) & 0xff);
+        const int patterns = patternTable(id, y);
+        const int key = patterns * 1024 + row * 256 + (table.at(cell) & 0xff);
         auto found = cache.find(key);
         if (found == cache.end()) {
             QVector<int> colours = values.mid(row * 4, 4);
             while (colours.size() < 4) colours << 0x0f;
-            found = cache.insert(key, session->painter().shellTile(table.at(cell), colours, patternTable(id)));
+            found = cache.insert(key, session->painter().shellTile(table.at(cell), colours, patterns));
         }
         painter.drawImage(x * 8, y * 8, *found);
+    }
+    // The help's item icons are sprites (Shell_CopyTerminatedOamStream),
+    // from table 0 in the sprite rows of the palette; the first is on top.
+    const QString sprites = QStringLiteral("shell-help-sprites-") + id.mid(5);
+    if (id.startsWith(QLatin1String("help-")) && session->bundle().contains(sprites)) {
+        const QJsonArray list = session->bundle().resource(sprites).value(QStringLiteral("sprites")).toArray();
+        for (int i = list.size() - 1; i >= 0; --i) {
+            const QJsonObject s = list.at(i).toObject();
+            const int attributes = s.value(QStringLiteral("attributes")).toInt();
+            QVector<int> colours = values.mid(16 + (attributes & 3) * 4, 4);
+            while (colours.size() < 4) colours << 0x0f;
+            const QImage tile = session->painter()
+                                    .shellTile(s.value(QStringLiteral("tile")).toInt(), colours, 0, true)
+                                    .mirrored((attributes & 0x40) != 0, (attributes & 0x80) != 0);
+            painter.drawImage(s.value(QStringLiteral("x")).toInt(), s.value(QStringLiteral("y")).toInt() + 1, tile);
+        }
     }
     return image;
 }

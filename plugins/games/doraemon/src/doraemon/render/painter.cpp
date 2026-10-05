@@ -95,13 +95,13 @@ QImage DoraemonPainter::tile(World world, int tile, const QVector<int>& colours,
     return image;
 }
 
-QImage DoraemonPainter::shellTile(int tile, const QVector<int>& colours, int table) const {
+QImage DoraemonPainter::shellTile(int tile, const QVector<int>& colours, int table, bool sprite) const {
     const QVector<quint8> pixels = chr_.value(QStringLiteral("chr-bank-3"));
     const int base = ((table & 1) * 256 + (tile & 0xff)) * 64;
     QImage image(8, 8, QImage::Format_ARGB32);
     for (int i = 0; i < 64; ++i) {
         const int pen = base + i < pixels.size() ? pixels.at(base + i) : 0;
-        image.setPixel(i % 8, i / 8, color(colours.value(pen)).rgba());
+        image.setPixel(i % 8, i / 8, sprite && pen == 0 ? qRgba(0, 0, 0, 0) : color(colours.value(pen)).rgba());
     }
     return image;
 }
