@@ -1,27 +1,28 @@
 #pragma once
 
+#include "doraemon/render/painter.hpp"
 #include "sdk/editor_model.hpp"
 
 #include <QHash>
-#include <QPair>
-
 #include <array>
 
-namespace rl::castle {
+namespace rl::doraemon {
 
-class CastleSession;
+class DoraemonSession;
 
-// The 100 room cells (castle.room-cell-visuals.v1): each is two background
-// patterns side by side, 16x8, with the palette the room loader gives it.
-// The sheet shows them ten to a row; painting puts the brush pattern into a
-// cell's left or right half.
-class CastleCellModel final : public sdk::TileMapModel {
+// A sheet of blocks, sixteen to a row: World 1/3 small blocks (16x16, four
+// patterns and an attribute byte), big blocks (32x32, four small blocks),
+// or World 2's metatiles (16x16, four patterns, a palette row and a solid
+// flag). Painting puts the sheet's piece into one quarter of a block.
+class DoraemonBlockModel final : public sdk::TileMapModel {
     Q_OBJECT
 
 public:
-    explicit CastleCellModel(CastleSession* session);
+    enum class Kind { Small, Big, Metatile };
 
-    QString title() const override { return QStringLiteral("Room cells"); }
+    DoraemonBlockModel(DoraemonSession* session, Kind kind, World world);
+
+    QString title() const override;
     sdk::Budget budget() const override;
     sdk::Inspection inspect() const override;
     bool setField(const QString& key, const QVariant& value, QString* error) override;
@@ -33,12 +34,12 @@ public:
     void setCurrentLibraryItem(const QString& id) override;
 
     QSize gridSize() const override;
-    QSize cellSize() const override { return {8, 8}; }
+    QSize cellSize() const override;
     QVector<sdk::Tool> tools() const override;
     QImage render() const override;
 
     QVector<sdk::CellBrush> brushes() const override;
-    int currentBrush() const override { return tile_; }
+    int currentBrush() const override { return piece_; }
     void setCurrentBrush(int value) override;
     int cellValue(QPoint cell) const override;
     bool isCellEditable(QPoint cell) const override;
@@ -52,22 +53,26 @@ public:
     QString selectedObject() const override;
     void selectObject(const QString& id) override;
 
-    static constexpr int kPerRow = 10;
+    static constexpr int kPerRow = 16;
 
 private:
     int count() const;
-    // The cell and half (0 left, 1 right) under a sheet tile; {-1, -1} for none.
-    QPair<int, int> cellAt(QPoint at) const;
-    int tileOf(int cell, int half) const;
-    int paletteOf(int cell) const;
-    bool setCellFields(int cell, int left, int right, int palette, const QString& text, QString* error);
+    QString resourceId() const;
+    QString listKey() const;           // "small_blocks", "big_blocks", "tiles"
+    // The block and quarter under a grid cell; {-1, -1} outside.
+    std::array<int, 2> blockAt(QPoint cell) const;
+    std::array<int, 4> quarters(int block) const;
+    QImage blockImage(int block) const;
+    QImage pieceImage(int piece) const;
+    bool commitQuarters(const QHash<int, std::array<int, 4>>& blocks, const QString& text, QString* error);
 
-    CastleSession* session_;
+    DoraemonSession* session_;
+    Kind kind_;
+    World world_;
+    int preset_ = 0;
+    int piece_ = 0;
     int selected_ = -1;
-    int tile_ = 2;
-    int libraryPalette_ = 0;
-    bool stroking_ = false;
-    QHash<int, std::array<int, 2>> pending_;     // cell -> left, right
+    QHash<int, std::array<int, 4>> stroke_;
 };
 
-}  // namespace rl::castle
+}  // namespace rl::doraemon

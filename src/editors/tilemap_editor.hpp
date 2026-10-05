@@ -26,6 +26,7 @@ public:
 
     QWidget* createToolbar(QWidget* parent) override;
 
+    // Zoom in quarters: 1 is a quarter size, 4 one to one, 32 eight times.
     int zoom() const;
     void setZoom(int zoom);
     bool gridVisible() const;
@@ -88,7 +89,9 @@ private:
 
     sdk::TileMapModel* model_;
     QImage image_;
-    int zoom_ = 2;
+    int scaled(int pixels) const { return pixels * zoom_ / 4; }
+
+    int zoom_ = 8;      // quarters
     bool grid_ = true;
     QString tool_ = QStringLiteral("select");
 

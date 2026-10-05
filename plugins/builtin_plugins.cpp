@@ -1,6 +1,7 @@
 #include "builtin_plugins.hpp"
 
 #include "castle/plugin/castle_plugin.hpp"
+#include "doraemon/plugin/doraemon_plugin.hpp"
 #include "flicky/plugin/flicky_plugin.hpp"
 #include "pacman/plugin/pacman_plugin.hpp"
 #include "smb/plugin/smb_plugin.hpp"
@@ -13,6 +14,7 @@ namespace rl::plugins {
 void registerBuiltinPlugins() {
     sdk::PluginRegistry& registry = sdk::PluginRegistry::instance();
     castle::registerPlugin(registry);
+    doraemon::registerPlugin(registry);
     flicky::registerPlugin(registry);
     pacman::registerPlugin(registry);
     smb::registerPlugin(registry);

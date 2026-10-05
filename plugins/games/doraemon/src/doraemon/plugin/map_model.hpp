@@ -1,26 +1,25 @@
 #pragma once
 
+#include "doraemon/render/painter.hpp"
 #include "sdk/editor_model.hpp"
 
 #include <QHash>
-#include <QVector>
+#include <QImage>
 
-#include <optional>
+namespace rl::doraemon {
 
-namespace rl::pacman {
+class DoraemonSession;
 
-class PacmanSession;
-
-// The 27x22 maze (pacman.maze-rle.v1): paint maze tiles from the sheet; the
-// engine's landmarks (tunnel ends, ghost house and door, spawns, power
-// pellets) are marked, and the checks the kit runs show as you paint.
-class PacmanMazeModel final : public sdk::TileMapModel {
+// A World 1 / World 3 map (doraemon.hierarchy.v1): paint 32x32 big blocks
+// from the world's sheet. Each area is drawn in the colours the game gives
+// it; World 3's rooms can be given another of the world's presets.
+class DoraemonMapModel final : public sdk::TileMapModel {
     Q_OBJECT
 
 public:
-    explicit PacmanMazeModel(PacmanSession* session);
+    DoraemonMapModel(DoraemonSession* session, World world, QString map, QString label);
 
-    QString title() const override { return QStringLiteral("Maze"); }
+    QString title() const override { return label_; }
     sdk::Budget budget() const override;
     sdk::Inspection inspect() const override;
     bool setField(const QString& key, const QVariant& value, QString* error) override;
@@ -28,17 +27,14 @@ public:
     QString currentLibraryItem() const override;
     sdk::Library sheet() const override;
     void setCurrentLibraryItem(const QString& id) override;
-    QString startPoint() const override;
-    QVector<sdk::ViewOption> viewOptions() const override;
-    void setViewOption(const QString& key, const QString& value) override;
 
-    QSize gridSize() const override;
-    QSize cellSize() const override { return {8, 8}; }
+    QSize gridSize() const override { return {width_, height_}; }
+    QSize cellSize() const override { return {32, 32}; }
     QVector<sdk::Tool> tools() const override;
     QImage render() const override;
 
     QVector<sdk::CellBrush> brushes() const override;
-    int currentBrush() const override { return tile_; }
+    int currentBrush() const override { return block_; }
     void setCurrentBrush(int value) override;
     int cellValue(QPoint cell) const override;
     bool isCellEditable(QPoint cell) const override;
@@ -53,14 +49,21 @@ public:
     void selectObject(const QString& id) override;
 
 private:
-    QVector<int> grid() const;
-    bool commit(const QVector<int>& grid, const QString& text, QString* error);
+    QVector<int> cells() const;
+    bool commit(const QVector<int>& cells, const QString& text, QString* error);
+    int presetAt(int cell) const;
 
-    PacmanSession* session_;
-    int tile_ = 0x03;
+    DoraemonSession* session_;
+    World world_;
+    QString map_;
+    QString label_;
+    int width_ = 0;
+    int height_ = 0;
+    int block_ = 0;
     int cell_ = -1;
-    std::optional<QVector<int>> stroke_;
-    bool strokeChanged_ = false;
+    QHash<int, int> stroke_;        // cell -> painted block
+    mutable QImage base_;
+    mutable quint64 baseRevision_ = ~quint64(0);
 };
 
-}  // namespace rl::pacman
+}  // namespace rl::doraemon

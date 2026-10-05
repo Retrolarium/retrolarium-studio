@@ -34,8 +34,24 @@ namespace {
 constexpr int kPadTop = 44;
 constexpr int kPadSide = 36;
 constexpr int kPadBottom = 40;
+// Zoom steps in quarters: large maps (Doraemon's are 2048 pixels and more)
+// open below one to one.
+constexpr int kZoomSteps[] = {1, 2, 4, 8, 12, 16, 20, 24, 28, 32};
 constexpr int kMinZoom = 1;
-constexpr int kMaxZoom = 8;
+constexpr int kMaxZoom = 32;
+
+QString zoomLabel(int quarters) {
+    if (quarters == 1) return QStringLiteral("¼×");
+    if (quarters == 2) return QStringLiteral("½×");
+    return QStringLiteral("%1×").arg(quarters / 4);
+}
+
+int zoomStep(int quarters, int delta) {
+    const int count = int(sizeof(kZoomSteps) / sizeof(kZoomSteps[0]));
+    int index = 0;
+    while (index + 1 < count && kZoomSteps[index] < quarters) ++index;
+    return kZoomSteps[std::clamp(index + delta, 0, count - 1)];
+}
 
 ui::Divider* toolbarSeparator(QWidget* parent) {
     auto* separator = new ui::Divider(Qt::Vertical, ui::Divider::Strength::Line, parent);
@@ -91,8 +107,8 @@ void MapCanvas::updateCursor() {
 }
 
 QSize MapCanvas::sizeHint() const {
-    const QSize map(model_->gridSize().width() * model_->cellSize().width() * zoom_,
-                    model_->gridSize().height() * model_->cellSize().height() * zoom_);
+    const QSize map(scaled(model_->gridSize().width() * model_->cellSize().width()),
+                    scaled(model_->gridSize().height() * model_->cellSize().height()));
     return QSize(map.width() + kPadSide * 2, map.height() + kPadTop + kPadBottom);
 }
 
@@ -106,8 +122,8 @@ QRect MapCanvas::mapRect() const {
 
 QPoint MapCanvas::cellAt(const QPoint& pos) const {
     const QRect map = mapRect();
-    const int cw = model_->cellSize().width() * zoom_;
-    const int ch = model_->cellSize().height() * zoom_;
+    const int cw = std::max(1, scaled(model_->cellSize().width()));
+    const int ch = std::max(1, scaled(model_->cellSize().height()));
     const QPoint local = pos - map.topLeft();
     return QPoint(local.x() >= 0 ? local.x() / cw : -1, local.y() >= 0 ? local.y() / ch : -1);
 }
@@ -317,8 +333,8 @@ void MapCanvas::paintEvent(QPaintEvent*) {
     paint::dotGrid(painter, rect(), 16, theme::canvas::kGridDot);
 
     const QRect map = mapRect();
-    const int cw = model_->cellSize().width() * zoom_;
-    const int ch = model_->cellSize().height() * zoom_;
+    const int cw = std::max(1, scaled(model_->cellSize().width()));
+    const int ch = std::max(1, scaled(model_->cellSize().height()));
     const QSize grid = model_->gridSize();
 
     if (!image_.isNull()) {
@@ -341,7 +357,7 @@ void MapCanvas::paintEvent(QPaintEvent*) {
         }
     }
 
-    if (grid_ && zoom_ >= 2) {
+    if (grid_ && zoom_ >= 8) {
         const QColor line(0, 0, 0, 41);
         for (int x = 1; x < grid.width(); ++x) {
             painter.fillRect(QRect(map.left() + x * cw, map.top(), 1, map.height()), line);
@@ -450,7 +466,7 @@ TileMapEditor::TileMapEditor(sdk::TileMapModel* model, QWidget* parent)
     canvas_->setTool(tool_);
 
     connect(canvas_, &MapCanvas::zoomRequested, this, [this](int delta) {
-        setZoom(zoom() + delta);
+        setZoom(zoomStep(zoom(), delta));
         emit toolbarChanged();
     });
     connect(canvas_, &MapCanvas::actionFailed, this, &EditorView::actionFailed);
@@ -501,13 +517,16 @@ void TileMapEditor::fitZoom() {
     const int mapWidth = std::max(1, grid.width() * cell.width());
     const int mapHeight = std::max(1, grid.height() * cell.height());
     const QSize room = scroll_->viewport()->size() - QSize(kPadSide * 2, kPadTop + kPadBottom);
-    int zoom = std::min(room.width() / mapWidth, room.height() / mapHeight);
-    // A scrolling level (pages) always fits its height and scrolls
-    // sideways, so short and long levels open at the same zoom.
-    if (map_->pageColumns() > 0) {
-        zoom = room.height() / mapHeight;
+    // The largest step up to 4x that shows the whole map; a scrolling level
+    // (pages) always fits its height and scrolls sideways, so short and long
+    // levels open at the same zoom.
+    int zoom = kMinZoom;
+    for (int step : kZoomSteps) {
+        const bool fits = map_->pageColumns() > 0
+                              ? mapHeight * step / 4 <= room.height()
+                              : mapWidth * step / 4 <= room.width() && mapHeight * step / 4 <= room.height();
+        if (step <= 16 && fits) zoom = step;
     }
-    zoom = std::clamp(zoom, kMinZoom, 4);
     setZoom(zoom);
     emit toolbarChanged();
 }
@@ -587,13 +606,15 @@ QWidget* TileMapEditor::createToolbar(QWidget* parent) {
     layout->addWidget(gridChip);
 
     QStringList zooms;
-    for (int z = kMinZoom; z <= kMaxZoom; ++z) {
-        zooms << QStringLiteral("%1×").arg(z);
+    for (int step : kZoomSteps) {
+        zooms << zoomLabel(step);
     }
-    auto* zoomChip = new ui::ViewChip(QStringLiteral("Zoom"), QStringLiteral("%1×").arg(zoom()), bar);
+    auto* zoomChip = new ui::ViewChip(QStringLiteral("Zoom"), zoomLabel(zoom()), bar);
     zoomChip->setChoices(zooms);
     connect(zoomChip, &ui::ViewChip::valueChosen, this, [this](const QString& value) {
-        setZoom(QString(value).remove(QStringLiteral("×")).toInt());
+        for (int step : kZoomSteps) {
+            if (zoomLabel(step) == value) setZoom(step);
+        }
     });
     layout->addWidget(zoomChip);
     layout->addStretch(1);

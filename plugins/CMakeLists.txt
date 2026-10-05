@@ -204,6 +204,27 @@ target_include_directories(castle_plugin PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/cast
 target_link_libraries(castle_plugin PUBLIC nes_editors studio_sdk)
 studio_enable_warnings(castle_plugin)
 
+# Doraemon: the World 1-3 maps, blocks and palettes of the resource bundle.
+add_library(doraemon_plugin STATIC
+    doraemon/src/doraemon/plugin/block_model.cpp
+    doraemon/src/doraemon/plugin/block_model.hpp
+    doraemon/src/doraemon/plugin/doraemon_plugin.cpp
+    doraemon/src/doraemon/plugin/doraemon_plugin.hpp
+    doraemon/src/doraemon/plugin/doraemon_session.cpp
+    doraemon/src/doraemon/plugin/doraemon_session.hpp
+    doraemon/src/doraemon/plugin/map_model.cpp
+    doraemon/src/doraemon/plugin/map_model.hpp
+    doraemon/src/doraemon/plugin/playtest_model.cpp
+    doraemon/src/doraemon/plugin/playtest_model.hpp
+    doraemon/src/doraemon/plugin/route_model.cpp
+    doraemon/src/doraemon/plugin/route_model.hpp
+    doraemon/src/doraemon/render/painter.cpp
+    doraemon/src/doraemon/render/painter.hpp
+)
+target_include_directories(doraemon_plugin PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/doraemon/src)
+target_link_libraries(doraemon_plugin PUBLIC nes_editors studio_sdk)
+studio_enable_warnings(doraemon_plugin)
+
 # Pac-Man: the maze, actor frames, screens and sound of the resource bundle.
 add_library(pacman_plugin STATIC
     pacman/src/pacman/plugin/animation_model.cpp
@@ -268,5 +289,5 @@ add_library(studio_builtin_plugins STATIC
     builtin_plugins.hpp
 )
 target_include_directories(studio_builtin_plugins PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(studio_builtin_plugins PUBLIC castle_plugin flicky_plugin pacman_plugin smb_plugin solomon_plugin studio_sdk)
+target_link_libraries(studio_builtin_plugins PUBLIC castle_plugin doraemon_plugin flicky_plugin pacman_plugin smb_plugin solomon_plugin studio_sdk)
 studio_enable_warnings(studio_builtin_plugins)
