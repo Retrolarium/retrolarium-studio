@@ -1,6 +1,7 @@
 #include "pacman/render/painter.hpp"
 
 #include "nes/palette.hpp"
+#include "sdk/i18n.hpp"
 
 #include <QJsonArray>
 #include <QPainter>
@@ -15,19 +16,19 @@ namespace maze {
 
 QString tileName(int tile) {
     switch (tile) {
-    case 0x00: return QStringLiteral("empty floor");
-    case 0x01: return QStringLiteral("power pellet");
-    case 0x02: return QStringLiteral("hidden power pellet");
+    case 0x00: return rlTr("pacman", "empty floor");
+    case 0x01: return rlTr("pacman", "power pellet");
+    case 0x02: return rlTr("pacman", "hidden power pellet");
     case 0x03: return QStringLiteral("pellet");
-    case 0x04: return QStringLiteral("left tunnel edge");
-    case 0x05: return QStringLiteral("right tunnel edge");
-    case 0x06: return QStringLiteral("tunnel floor");
-    case 0x07: return QStringLiteral("cleared floor");
-    case 0x08: return QStringLiteral("special floor");
-    case 0x09: return QStringLiteral("alternate pellet");
+    case 0x04: return rlTr("pacman", "left tunnel edge");
+    case 0x05: return rlTr("pacman", "right tunnel edge");
+    case 0x06: return rlTr("pacman", "tunnel floor");
+    case 0x07: return rlTr("pacman", "cleared floor");
+    case 0x08: return rlTr("pacman", "special floor");
+    case 0x09: return rlTr("pacman", "alternate pellet");
     case 0x20: return QStringLiteral("space");
-    case 0x2c: return QStringLiteral("ghost-house door");
-    case 0x2d: return QStringLiteral("maze blank");
+    case 0x2c: return rlTr("pacman", "ghost-house door");
+    case 0x2d: return rlTr("pacman", "maze blank");
     default: return tile < 0x10 ? QStringLiteral("floor") : QStringLiteral("wall");
     }
 }
@@ -36,7 +37,7 @@ Report inspect(const QVector<int>& grid) {
     // scripts/authoring/maze_studio_model.py and the kit's pacman_maze.
     Report report;
     if (grid.size() != kRows * kColumns) {
-        report.errors << QStringLiteral("The maze is not 27x22.");
+        report.errors << rlTr("pacman", "The maze is not 27x22.");
         return report;
     }
     const auto at = [&grid](int row, int column) { return grid.at(row * kColumns + column); };
@@ -45,21 +46,21 @@ Report inspect(const QVector<int>& grid) {
         if (tile == 0x01) ++report.powerPellets;
     }
     if (report.pellets != 192) {
-        report.errors << QStringLiteral("%1 pellets; the round ends after 192.").arg(report.pellets);
+        report.errors << rlTr("pacman", "%1 pellets; the round ends after 192.").arg(report.pellets);
     }
     if (report.powerPellets != 4) {
-        report.errors << QStringLiteral("%1 power pellets; the blinking table expects 4.").arg(report.powerPellets);
+        report.errors << rlTr("pacman", "%1 power pellets; the blinking table expects 4.").arg(report.powerPellets);
     }
-    if (at(kDoorRow, kDoorColumn) != 0x2c) report.errors << QStringLiteral("The ghost-house door at 11,11 must stay $2C.");
+    if (at(kDoorRow, kDoorColumn) != 0x2c) report.errors << rlTr("pacman", "The ghost-house door at 11,11 must stay $2C.");
     const int spawns[5][2] = {{kPacmanRow, kPacmanColumn}, {10, 11}, {13, 10}, {13, 11}, {13, 12}};
     for (const auto& spawn : spawns) {
         if (at(spawn[0], spawn[1]) >= 0x10) {
-            report.errors << QStringLiteral("The spawn at %1,%2 is blocked.").arg(spawn[0]).arg(spawn[1]);
+            report.errors << rlTr("pacman", "The spawn at %1,%2 is blocked.").arg(spawn[0]).arg(spawn[1]);
         }
     }
     for (int column : {0, kColumns - 1}) {
         if (at(kTunnelRow, column) >= 0x10) {
-            report.errors << QStringLiteral("The tunnel end at %1,%2 must stay open.").arg(kTunnelRow).arg(column);
+            report.errors << rlTr("pacman", "The tunnel end at %1,%2 must stay open.").arg(kTunnelRow).arg(column);
         }
     }
     // Passable regions, the tunnel wrapping around.
@@ -92,9 +93,9 @@ Report inspect(const QVector<int>& grid) {
     }
     std::sort(sizes.begin(), sizes.end(), std::greater<int>());
     if (sizes.size() > 2 || (sizes.size() == 2 && sizes.at(1) > 6)) {
-        report.errors << QStringLiteral("The paths split into separate parts.");
+        report.errors << rlTr("pacman", "The paths split into separate parts.");
     } else if (sizes.size() == 2) {
-        report.warnings << QStringLiteral("The six-tile ghost-house inside is separate from the paths.");
+        report.warnings << rlTr("pacman", "The six-tile ghost-house inside is separate from the paths.");
     }
     // Runs of up to four equal tiles, never across a row.
     for (int row = 0; row < kRows; ++row) {
@@ -107,7 +108,7 @@ Report inspect(const QVector<int>& grid) {
         }
     }
     if (report.rleBytes > kRleBytes) {
-        report.errors << QStringLiteral("The maze needs %1 RLE bytes; the ROM holds %2.").arg(report.rleBytes).arg(kRleBytes);
+        report.errors << rlTr("pacman", "The maze needs %1 RLE bytes; the ROM holds %2.").arg(report.rleBytes).arg(kRleBytes);
     }
     return report;
 }

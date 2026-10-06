@@ -2,6 +2,7 @@
 
 #include "nes/editors.hpp"
 #include "pacman/plugin/pacman_session.hpp"
+#include "sdk/i18n.hpp"
 
 #include <QJsonArray>
 #include <QPainter>
@@ -33,7 +34,7 @@ const QStringList& ids() {
 }
 
 QString label(const QString& id) {
-    return id == QLatin1String("attract") ? QStringLiteral("Character introduction") : QStringLiteral("Title");
+    return id == QLatin1String("attract") ? rlTr("pacman", "Character introduction") : rlTr("pacman", "Title");
 }
 
 QString paletteTable(const QString& id) {
@@ -147,9 +148,9 @@ QJsonObject PacmanScreenModel::collection() const {
 }
 
 QVector<sdk::Tool> PacmanScreenModel::tools() const {
-    return {{QStringLiteral("select"), QStringLiteral("Select a cell"), QStringLiteral("select")},
-            {QStringLiteral("paint"), QStringLiteral("Paint the sheet's tile (right button takes one)"), QStringLiteral("paint")},
-            {QStringLiteral("pick"), QStringLiteral("Take a cell's tile as the brush"), QStringLiteral("pick")}};
+    return {{QStringLiteral("select"), tr("Select a cell"), QStringLiteral("select")},
+            {QStringLiteral("paint"), tr("Paint the sheet's tile (right button takes one)"), QStringLiteral("paint")},
+            {QStringLiteral("pick"), tr("Take a cell's tile as the brush"), QStringLiteral("pick")}};
 }
 
 QImage PacmanScreenModel::render() const {
@@ -194,7 +195,7 @@ bool PacmanScreenModel::isCellEditable(QPoint cell) const {
 }
 
 QString PacmanScreenModel::lockReason(QPoint) const {
-    return QStringLiteral("Only the tiles the screen's packets write can change; the code fills the rest.");
+    return tr("Only the tiles the screen's packets write can change; the code fills the rest.");
 }
 
 bool PacmanScreenModel::setCell(int cell, int value, const QString& text, QString* error) {
@@ -212,7 +213,7 @@ bool PacmanScreenModel::placeObject(const QString& libraryItem, QPoint cell, QSt
     if (!libraryItem.startsWith(QLatin1String("tile:")) || !isCellEditable(cell)) return false;
     setCurrentLibraryItem(libraryItem);
     selectObject(QStringLiteral("cell:%1").arg(cell.y() * 32 + cell.x()));
-    return setCell(cell.y() * 32 + cell.x(), tile_, QStringLiteral("Set a %1 tile").arg(title().toLower()), error);
+    return setCell(cell.y() * 32 + cell.x(), tile_, tr("Set a %1 tile").arg(title().toLower()), error);
 }
 
 void PacmanScreenModel::beginStroke() {
@@ -243,7 +244,7 @@ void PacmanScreenModel::endStroke() {
         return;
     }
     QString error;
-    session_->editBundle(QStringLiteral("Paint the %1").arg(title().toLower()),
+    session_->editBundle(tr("Paint the %1").arg(title().toLower()),
                          [painted](nes::Bundle& b) { b.setResource(ids::kScreens, painted); }, &error);
 }
 
@@ -275,14 +276,14 @@ void PacmanScreenModel::selectObject(const QString& id) {
 
 bool PacmanScreenModel::setField(const QString& key, const QVariant& value, QString* error) {
     if (cell_ < 0 || key != QLatin1String("tile")) return TileMapModel::setField(key, value, error);
-    return setCell(cell_, std::clamp(value.toInt(), 0, 255), QStringLiteral("Set a %1 tile").arg(title().toLower()), error);
+    return setCell(cell_, std::clamp(value.toInt(), 0, 255), tr("Set a %1 tile").arg(title().toLower()), error);
 }
 
 sdk::Library PacmanScreenModel::sheet() const {
     sdk::Library result;
     result.grid = true;
     result.columns = 16;
-    result.hint = QStringLiteral("click: brush · drag onto a cell");
+    result.hint = tr("click: brush · drag onto a cell");
     // The palette of the selected cell, or the screen's first.
     int palette = 0;
     if (cell_ >= 0) {
@@ -306,23 +307,23 @@ sdk::Inspection PacmanScreenModel::inspect() const {
     sdk::Inspection inspection;
     inspection.engineTag = QStringLiteral("pacman.screen-collection.v1");
     if (cell_ < 0) {
-        inspection.kicker = QStringLiteral("Screen");
+        inspection.kicker = tr("Screen");
         inspection.title = title();
         inspection.note = screen_ == QLatin1String("attract")
-                              ? QStringLiteral("The attract mode's character introduction once every row is drawn. "
-                                               "Its packets (names, nicknames, points, the logo) can be painted; the "
-                                               "frame, the colours and the ghosts come from the code.")
-                              : QStringLiteral("The title screen: the score line, the logo, the menu and the "
-                                               "copyright. The cells the screen's packets and logo write can be "
-                                               "painted; the scores are drawn by the code. Edit the words in Text.");
+                              ? tr("The attract mode's character introduction once every row is drawn. "
+                                   "Its packets (names, nicknames, points, the logo) can be painted; the "
+                                   "frame, the colours and the ghosts come from the code.")
+                              : tr("The title screen: the score line, the logo, the menu and the "
+                                   "copyright. The cells the screen's packets and logo write can be "
+                                   "painted; the scores are drawn by the code. Edit the words in Text.");
         return inspection;
     }
     const QVector<int> table = screens::cells(collection(), screen_);
-    inspection.kicker = QStringLiteral("Cell");
-    inspection.title = QStringLiteral("Column %1, row %2").arg(cell_ % 32).arg(cell_ / 32);
+    inspection.kicker = tr("Cell");
+    inspection.title = tr("Column %1, row %2").arg(cell_ % 32).arg(cell_ / 32);
     sdk::Field tile;
     tile.key = QStringLiteral("tile");
-    tile.label = QStringLiteral("Tile");
+    tile.label = tr("Tile");
     tile.value = table.at(cell_);
     tile.hint = nes::hex(table.at(cell_));
     tile.monospace = true;
@@ -330,7 +331,7 @@ sdk::Inspection PacmanScreenModel::inspect() const {
         tile.type = sdk::Field::Type::Integer;
         tile.minimum = 0;
         tile.maximum = 255;
-        inspection.note = QStringLiteral("A tile one of the screen's packets writes.");
+        inspection.note = tr("A tile one of the screen's packets writes.");
     } else {
         inspection.note = lockReason({});
     }
@@ -339,8 +340,8 @@ sdk::Inspection PacmanScreenModel::inspect() const {
 }
 
 QString PacmanScreenModel::statusText() const {
-    if (cell_ < 0) return QStringLiteral("Screens · %1").arg(title());
-    return QStringLiteral("Screens · %1 · %2, %3").arg(title()).arg(cell_ % 32).arg(cell_ / 32);
+    if (cell_ < 0) return tr("Screens · %1").arg(title());
+    return tr("Screens · %1 · %2, %3").arg(title()).arg(cell_ % 32).arg(cell_ / 32);
 }
 
 // ---------------------------------------------------------------- text
@@ -395,7 +396,7 @@ PacmanTextModel::PacmanTextModel(PacmanSession* session) : TableModel(session), 
 QVector<sdk::TableColumn> PacmanTextModel::columns() const {
     sdk::TableColumn where;
     where.key = QStringLiteral("where");
-    where.label = QStringLiteral("Where");
+    where.label = tr("Where");
     where.width = 220;
     where.muted = true;
     sdk::TableColumn text;
@@ -405,7 +406,7 @@ QVector<sdk::TableColumn> PacmanTextModel::columns() const {
     text.editable = true;
     sdk::TableColumn length;
     length.key = QStringLiteral("length");
-    length.label = QStringLiteral("Places");
+    length.label = tr("Places");
     length.width = 70;
     length.muted = true;
     return {where, text, length};
@@ -475,7 +476,7 @@ bool PacmanTextModel::setCell(int row, int column, const QString& value, QString
             bool ok = false;
             const int code = close > i ? upper.mid(i + 1, close - i - 1).toInt(&ok, 16) : -1;
             if (!ok || code < 0 || code > 255) {
-                if (error) *error = QStringLiteral("Write a tile as {HH}, two hex digits.");
+                if (error) *error = tr("Write a tile as {HH}, two hex digits.");
                 return false;
             }
             codes << code;
@@ -485,21 +486,21 @@ bool PacmanTextModel::setCell(int row, int column, const QString& value, QString
         const int at = e.characters.indexOf(upper.at(i));
         if (at < 0) {
             if (error) {
-                *error = QStringLiteral("The game has no '%1'. It writes: %2").arg(upper.at(i)).arg(e.characters.trimmed());
+                *error = tr("The game has no '%1'. It writes: %2").arg(upper.at(i)).arg(e.characters.trimmed());
             }
             return false;
         }
         codes << e.codes.at(at);
     }
     if (codes.size() > width) {
-        if (error) *error = QStringLiteral("%1 has %2 places.").arg(field.value(QStringLiteral("label")).toString()).arg(width);
+        if (error) *error = tr("%1 has %2 places.").arg(field.value(QStringLiteral("label")).toString()).arg(width);
         return false;
     }
     while (codes.size() < width) codes << e.padding;
     QJsonArray bytes = valueAt(collection, path).toArray();
     for (int i = 0; i < width; ++i) bytes.replace(start + i, codes.at(i));
     const QJsonObject next = withValue(collection, path, bytes).toObject();
-    return session_->editBundle(QStringLiteral("Edit %1").arg(field.value(QStringLiteral("label")).toString()),
+    return session_->editBundle(tr("Edit %1").arg(field.value(QStringLiteral("label")).toString()),
                                 [next](nes::Bundle& b) { b.setResource(ids::kScreens, next); }, error);
 }
 
@@ -509,9 +510,9 @@ sdk::Inspection PacmanTextModel::inspect() const {
     inspection.kicker = QStringLiteral("Text");
     inspection.title = cell(row_, 0);
     inspection.preview = cell(row_, 1);
-    inspection.note = QStringLiteral("The text keeps its places on the screen; shorter text is padded with spaces. "
-                                     "The game's letters are A-Z, 0-9, '.', ';' and the space; any other tile is "
-                                     "written {HH}.");
+    inspection.note = tr("The text keeps its places on the screen; shorter text is padded with spaces. "
+                         "The game's letters are A-Z, 0-9, '.', ';' and the space; any other tile is "
+                         "written {HH}.");
     return inspection;
 }
 

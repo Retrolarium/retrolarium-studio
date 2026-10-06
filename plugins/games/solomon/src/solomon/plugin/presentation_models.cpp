@@ -2,6 +2,7 @@
 
 #include "nes/editors.hpp"
 #include "nes/palette.hpp"
+#include "sdk/i18n.hpp"
 #include "solomon/plugin/solomon_session.hpp"
 
 #include <QJsonArray>
@@ -19,7 +20,7 @@ constexpr int kTitleTable = 0x100;
 const int kPreviewPalette[4] = {0x0f, 0x11, 0x21, 0x30};
 
 const QStringList& buttonNames() {
-    static const QStringList kNames{QStringLiteral("A"),  QStringLiteral("B"),    QStringLiteral("SELECT"),
+    static const QStringList kNames{QStringLiteral("A"),  QStringLiteral("B"),    rlTr("solomon", "SELECT"),
                                     QStringLiteral("START"), QStringLiteral("UP"), QStringLiteral("DOWN"),
                                     QStringLiteral("LEFT"),  QStringLiteral("RIGHT")};
     return kNames;
@@ -81,11 +82,11 @@ QJsonObject SolomonTitleModel::presentation() const {
 }
 
 QString SolomonTitleModel::layerName(int stream) {
-    return stream == 0 ? QStringLiteral("Logo layer") : QStringLiteral("Castle layer");
+    return stream == 0 ? tr("Logo layer") : tr("Castle layer");
 }
 
 QString SolomonTitleModel::title() const {
-    return QStringLiteral("Title · %1").arg(layerName(stream_).toLower());
+    return tr("Title · %1").arg(layerName(stream_).toLower());
 }
 
 const SolomonTitleModel::Layer& SolomonTitleModel::layer(int stream) const {
@@ -113,8 +114,8 @@ const SolomonTitleModel::Layer& SolomonTitleModel::layer(int stream) const {
 }
 
 QVector<sdk::Tool> SolomonTitleModel::tools() const {
-    return {{QStringLiteral("paint"), QStringLiteral("Paint the sheet's tile (right button takes one)"), QStringLiteral("paint")},
-            {QStringLiteral("pick"), QStringLiteral("Take a cell's tile as the brush"), QStringLiteral("pick")}};
+    return {{QStringLiteral("paint"), tr("Paint the sheet's tile (right button takes one)"), QStringLiteral("paint")},
+            {QStringLiteral("pick"), tr("Take a cell's tile as the brush"), QStringLiteral("pick")}};
 }
 
 const QImage& SolomonTitleModel::tile(int value, bool faint) const {
@@ -128,7 +129,7 @@ const QImage& SolomonTitleModel::tile(int value, bool faint) const {
     if (found != tiles_.constEnd()) return *found;
     QImage image(8, 8, QImage::Format_ARGB32);
     const nes::Bundle& g = session_->bundle();
-    const QString chr = QStringLiteral("chr-bank-%1").arg(kTitleBank);
+    const QString chr = tr("chr-bank-%1").arg(kTitleBank);
     const QVector<quint8> pixels = g.contains(chr) ? g.tilePixels(chr, kTitleTable + (value & 0xff)) : QVector<quint8>(64, 0);
     for (int y = 0; y < 8; ++y) {
         for (int x = 0; x < 8; ++x) {
@@ -176,13 +177,13 @@ void SolomonTitleModel::setCurrentLibraryItem(const QString& id) {
 sdk::Library SolomonTitleModel::sheet() const {
     sdk::Library library;
     library.grid = true;
-    library.hint = QStringLiteral("click: brush · drag onto a cell");
+    library.hint = tr("click: brush · drag onto a cell");
     if (tilesRevision_ != session_->revision()) tile(0x80, false);  // drops a stale sheet
     if (sheet_.isEmpty()) {
         for (int value = 0x80; value <= 0xff; ++value) {
             sdk::LibraryItem item;
             item.id = QStringLiteral("tile:%1").arg(value);
-            item.label = QStringLiteral("Tile %1").arg(nes::hex(value));
+            item.label = tr("Tile %1").arg(nes::hex(value));
             item.icon = tile(value, false);
             sheet_ << item;
         }
@@ -201,7 +202,7 @@ bool SolomonTitleModel::isCellEditable(QPoint cell) const {
 }
 
 QString SolomonTitleModel::lockReason(QPoint) const {
-    return QStringLiteral("This layer writes no tile there; the stream keeps its layout and only its tiles change.");
+    return tr("This layer writes no tile there; the stream keeps its layout and only its tiles change.");
 }
 
 bool SolomonTitleModel::placeObject(const QString& libraryItem, QPoint cell, QString* error) {
@@ -242,7 +243,7 @@ bool SolomonTitleModel::paintCell(QPoint cell, int value) {
         emit contentChanged();
         return true;
     }
-    return session_->edit(QStringLiteral("Paint the %1").arg(title()),
+    return session_->edit(tr("Paint the %1").arg(title()),
                           [doc](SolomonState& s) { s.presentation = doc; }, nullptr);
 }
 
@@ -251,7 +252,7 @@ void SolomonTitleModel::endStroke() {
     stroking_ = false;
     const QJsonObject doc = draft_;
     if (doc != session_->state().presentation) {
-        session_->edit(QStringLiteral("Paint the %1").arg(title()), [doc](SolomonState& s) { s.presentation = doc; }, nullptr);
+        session_->edit(tr("Paint the %1").arg(title()), [doc](SolomonState& s) { s.presentation = doc; }, nullptr);
     }
     emit contentChanged();
 }
@@ -262,27 +263,27 @@ sdk::Budget SolomonTitleModel::budget() const {
     sdk::Budget budget;
     budget.used = size;
     budget.capacity = size;
-    budget.text = QStringLiteral("packed stream %1 B · fixed").arg(size);
+    budget.text = tr("packed stream %1 B · fixed").arg(size);
     return budget;
 }
 
 QString SolomonTitleModel::statusText() const {
-    return QStringLiteral("%1 · brush %2").arg(title(), nes::hex(brush_));
+    return tr("%1 · brush %2").arg(title(), nes::hex(brush_));
 }
 
 sdk::Inspection SolomonTitleModel::inspect() const {
     sdk::Inspection inspection;
-    inspection.kicker = QStringLiteral("Title screen");
+    inspection.kicker = tr("Title screen");
     inspection.title = title();
     sdk::Field brush;
     brush.key = QStringLiteral("brush");
-    brush.label = QStringLiteral("Brush");
+    brush.label = tr("Brush");
     brush.value = nes::hex(brush_);
     brush.monospace = true;
     inspection.fields = {brush};
-    inspection.note = QStringLiteral("The title screen is two packed streams of cursor moves and tile runs. Paint "
-                                     "the cells this layer writes with tiles $80-$FF; codes below $80 are the "
-                                     "stream's commands. The other layer shows dimmed. Colours are a preview.");
+    inspection.note = tr("The title screen is two packed streams of cursor moves and tile runs. Paint "
+                         "the cells this layer writes with tiles $80-$FF; codes below $80 are the "
+                         "stream's commands. The other layer shows dimmed. Colours are a preview.");
     inspection.engineTag = QStringLiteral("solomon.screens@1");
     return inspection;
 }
@@ -357,29 +358,29 @@ SolomonDemoModel::Recording SolomonDemoModel::stepsFromRecording(const QString& 
 QVector<sdk::EditorAction> SolomonDemoModel::actions() const {
     sdk::EditorAction loop;
     loop.id = QStringLiteral("loop");
-    loop.label = QStringLiteral("Loop demo");
+    loop.label = tr("Loop demo");
     loop.icon = QStringLiteral("play");
-    loop.tooltip = QStringLiteral("Build and play the demo over and over, as the console plays it after power-on");
+    loop.tooltip = tr("Build and play the demo over and over, as the console plays it after power-on");
     loop.showsPlaytest = true;
     sdk::EditorAction record;
     record.danger = true;
     record.showsPlaytest = true;
     if (session_->recordingActive()) {
         record.id = QStringLiteral("stop");
-        record.label = QStringLiteral("Stop recording");
+        record.label = tr("Stop recording");
         record.icon = QStringLiteral("stop");
-        record.tooltip = QStringLiteral("Finish the recording and keep it as the demo");
+        record.tooltip = tr("Finish the recording and keep it as the demo");
     } else {
         record.id = QStringLiteral("record");
-        record.label = QStringLiteral("Record");
+        record.label = tr("Record");
         record.icon = QStringLiteral("record");
-        record.tooltip = QStringLiteral("Play the demo room with your controller; what you play becomes the demo");
-        record.confirmHeading = QStringLiteral("Record a new demo?");
-        record.confirmText = QStringLiteral("You play room 3 with your controller. When you press Start or Stop "
-                                            "recording, what you played replaces the current demo (%1 steps). "
-                                            "Undo brings it back.")
+        record.tooltip = tr("Play the demo room with your controller; what you play becomes the demo");
+        record.confirmHeading = tr("Record a new demo?");
+        record.confirmText = tr("You play room 3 with your controller. When you press Start or Stop "
+                                "recording, what you played replaces the current demo (%1 steps). "
+                                "Undo brings it back.")
                                  .arg(rowCount());
-        record.confirmAction = QStringLiteral("Record");
+        record.confirmAction = tr("Record");
     }
     return {loop, record};
 }
@@ -393,7 +394,7 @@ void SolomonDemoModel::triggerAction(const QString& id) {
 QVector<sdk::TableColumn> SolomonDemoModel::columns() const {
     sdk::TableColumn step;
     step.key = QStringLiteral("step");
-    step.label = QStringLiteral("Step");
+    step.label = tr("Step");
     step.width = 70;
     step.muted = true;
     sdk::TableColumn frames;
@@ -404,12 +405,12 @@ QVector<sdk::TableColumn> SolomonDemoModel::columns() const {
     frames.editable = true;
     sdk::TableColumn buttons;
     buttons.key = QStringLiteral("buttons");
-    buttons.label = QStringLiteral("Buttons held");
+    buttons.label = tr("Buttons held");
     buttons.monospace = true;
     buttons.editable = true;
     sdk::TableColumn at;
     at.key = QStringLiteral("at");
-    at.label = QStringLiteral("Starts at");
+    at.label = tr("Starts at");
     at.width = 120;
     at.muted = true;
     return {step, frames, buttons, at};
@@ -464,8 +465,8 @@ bool SolomonDemoModel::setCell(int row, int column, const QString& value, QStrin
         const int frames = value.trimmed().toInt(&ok);
         if (!ok || frames < 0 || frames > 254) {
             if (error) {
-                *error = QStringLiteral("A step waits 0-254 frames: the game waits for its frame counter to pass "
-                                        "the value, and 255 it never passes.");
+                *error = tr("A step waits 0-254 frames: the game waits for its frame counter to pass "
+                            "the value, and 255 it never passes.");
             }
             return false;
         }
@@ -479,7 +480,7 @@ bool SolomonDemoModel::setCell(int row, int column, const QString& value, QStrin
         }
         for (const QString& word : words) {
             if (word != QLatin1String("-") && !buttonNames().contains(word)) {
-                if (error) *error = QStringLiteral("Buttons are A, B, SELECT, START, UP, DOWN, LEFT and RIGHT.");
+                if (error) *error = tr("Buttons are A, B, SELECT, START, UP, DOWN, LEFT and RIGHT.");
                 return false;
             }
         }
@@ -487,7 +488,7 @@ bool SolomonDemoModel::setCell(int row, int column, const QString& value, QStrin
     }
     steps.replace(row, step);
     doc.insert(QStringLiteral("demo_steps"), steps);
-    return session_->edit(QStringLiteral("Edit demo step %1").arg(row + 1),
+    return session_->edit(tr("Edit demo step %1").arg(row + 1),
                           [doc](SolomonState& s) { s.presentation = doc; }, error);
 }
 
@@ -500,19 +501,19 @@ sdk::Budget SolomonDemoModel::budget() const {
     const int capacity = demoCapacity(session_->rooms().revision());
     budget.used = rowCount();
     budget.capacity = capacity;
-    budget.text = QStringLiteral("%1 / %2 steps · %3 frames, %4 s").arg(rowCount()).arg(capacity).arg(frames).arg(frames / 60);
+    budget.text = tr("%1 / %2 steps · %3 frames, %4 s").arg(rowCount()).arg(capacity).arg(frames).arg(frames / 60);
     return budget;
 }
 
 sdk::Inspection SolomonDemoModel::inspect() const {
     sdk::Inspection inspection;
-    inspection.kicker = QStringLiteral("Attract demo");
-    inspection.title = QStringLiteral("Step %1").arg(row_ + 1);
-    inspection.note = QStringLiteral("When the title waits, the game plays this input in room 3: each step waits "
-                                     "its frames, then holds its buttons. Loop demo plays it over and over in "
-                                     "the emulator. Record plays the room with your controller and turns what "
-                                     "you press into steps when you press Start or Stop recording; the tables "
-                                     "hold up to %1 steps.")
+    inspection.kicker = tr("Attract demo");
+    inspection.title = tr("Step %1").arg(row_ + 1);
+    inspection.note = tr("When the title waits, the game plays this input in room 3: each step waits "
+                         "its frames, then holds its buttons. Loop demo plays it over and over in "
+                         "the emulator. Record plays the room with your controller and turns what "
+                         "you press into steps when you press Start or Stop recording; the tables "
+                         "hold up to %1 steps.")
                            .arg(demoCapacity(session_->rooms().revision()));
     inspection.engineTag = QStringLiteral("solomon.presentation@1");
     return inspection;

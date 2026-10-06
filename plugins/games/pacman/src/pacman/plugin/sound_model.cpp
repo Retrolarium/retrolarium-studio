@@ -66,7 +66,7 @@ QVector<sdk::SequencerChannel> PacmanSoundModel::channels() const {
     for (int c = 0; c < slots_.size(); ++c) {
         sdk::SequencerChannel channel;
         channel.id = QString::number(slots_.at(c));
-        channel.label = slots_.size() > 1 ? QStringLiteral("Square %1").arg(c + 1) : QStringLiteral("Square");
+        channel.label = slots_.size() > 1 ? tr("Square %1").arg(c + 1) : QStringLiteral("Square");
         channel.detail = all.at(slots_.at(c)).toObject().value(QStringLiteral("label")).toString();
         channel.color = kColours[c % 2];
         result << channel;
@@ -153,7 +153,7 @@ bool PacmanSoundModel::commit(const QString& text, const QJsonObject& next, QStr
         used += streamBytes(slot.toObject().value(QStringLiteral("stream")).toObject());
     }
     if (used > next.value(QStringLiteral("capacity")).toInt()) {
-        if (error) *error = QStringLiteral("The sound arena holds %1 bytes.").arg(next.value(QStringLiteral("capacity")).toInt());
+        if (error) *error = tr("The sound arena holds %1 bytes.").arg(next.value(QStringLiteral("capacity")).toInt());
         return false;
     }
     return session_->editBundle(text, [next](nes::Bundle& b) { b.setResource(ids::kSound, next); }, error);
@@ -189,7 +189,7 @@ void PacmanSoundModel::endEdit() {
     const QJsonObject next = draft_;
     if (next != session_->resource(ids::kSound)) {
         QString error;
-        if (!commit(QStringLiteral("Edit a note of %1").arg(title_), next, &error)) {
+        if (!commit(tr("Edit a note of %1").arg(title_), next, &error)) {
             session_->report(sdk::Severity::Error, QStringLiteral("sound"), error);
         }
     }
@@ -203,7 +203,7 @@ bool PacmanSoundModel::setField(const QString& key, const QVariant& value, QStri
         int next = reg;
         if (key == QLatin1String("duty")) next = (reg & 0x3f) | (std::max(0, int(kDuties.indexOf(value.toString()))) << 6);
         else next = (reg & 0xf0) | std::clamp(value.toInt(), 0, 15);
-        return commit(QStringLiteral("Set the voice of %1").arg(title_), withPrologue(now, channel_, 1, next), error);
+        return commit(tr("Set the voice of %1").arg(title_), withPrologue(now, channel_, 1, next), error);
     }
     const int channel = selected_.section(QLatin1Char(':'), 0, 0).toInt();
     const int command = selected_.section(QLatin1Char(':'), 1, 1).toInt();
@@ -217,14 +217,14 @@ bool PacmanSoundModel::setField(const QString& key, const QVariant& value, QStri
             if (pitchName(p) == value.toString()) pitch = p;
         }
         if (valueOf(pitch) < 0) {
-            if (error) *error = QStringLiteral("Pick a note from A2 up.");
+            if (error) *error = tr("Pick a note from A2 up.");
             return false;
         }
         c.insert(QStringLiteral("value"), valueOf(pitch));
     } else {
         return SequencerModel::setField(key, value, error);
     }
-    return commit(QStringLiteral("Edit a note of %1").arg(title_), withCommand(now, channel, command, c), error);
+    return commit(tr("Edit a note of %1").arg(title_), withCommand(now, channel, command, c), error);
 }
 
 void PacmanSoundModel::preview() {
@@ -237,7 +237,7 @@ void PacmanSoundModel::preview() {
     QSaveFile file(document);
     if (!file.open(QIODevice::WriteOnly) ||
         file.write(QJsonDocument(session_->bundle().root()).toJson(QJsonDocument::Compact)) < 0 || !file.commit()) {
-        session_->report(sdk::Severity::Error, QStringLiteral("sound"), QStringLiteral("Cannot write %1.").arg(document));
+        session_->report(sdk::Severity::Error, QStringLiteral("sound"), tr("Cannot write %1.").arg(document));
         return;
     }
     QStringList arguments{QStringLiteral("audio"), QStringLiteral("render-wav"), document, QStringLiteral("--output"), wav,
@@ -249,13 +249,13 @@ void PacmanSoundModel::preview() {
         session_->report(sdk::Severity::Error, QStringLiteral("sound"), error);
         return;
     }
-    spec.label = QStringLiteral("Render %1").arg(title_);
+    spec.label = tr("Render %1").arg(title_);
     PacmanSession* session = session_;
     const QString label = title_;
     host->runProcess(spec, [host, session, wav, label](const sdk::ProcessResult& result) {
         if (!result.succeeded() || !QFileInfo(wav).isFile()) {
             if (!result.cancelled) {
-                session->report(sdk::Severity::Error, QStringLiteral("sound"), QStringLiteral("Rendering %1 failed.").arg(label));
+                session->report(sdk::Severity::Error, QStringLiteral("sound"), tr("Rendering %1 failed.").arg(label));
             }
             return;
         }
@@ -289,7 +289,7 @@ sdk::Budget PacmanSoundModel::budget() const {
     sdk::Budget budget;
     budget.used = used;
     budget.capacity = s.value(QStringLiteral("capacity")).toInt();
-    budget.text = QStringLiteral("this %1 B · all sounds %2 / %3 bytes").arg(mine).arg(used).arg(budget.capacity);
+    budget.text = tr("this %1 B · all sounds %2 / %3 bytes").arg(mine).arg(used).arg(budget.capacity);
     return budget;
 }
 
@@ -302,11 +302,11 @@ sdk::Inspection PacmanSoundModel::inspect() const {
                                        : QJsonObject();
     if (c.isEmpty()) {
         const int reg = stream(channel_).value(QStringLiteral("prologue")).toArray().at(1).toInt();
-        inspection.kicker = slots_.size() > 1 ? QStringLiteral("Tune") : QStringLiteral("Sound effect");
+        inspection.kicker = slots_.size() > 1 ? tr("Tune") : tr("Sound effect");
         inspection.title = title_;
         sdk::Field duty;
         duty.key = QStringLiteral("duty");
-        duty.label = QStringLiteral("Duty");
+        duty.label = tr("Duty");
         duty.type = sdk::Field::Type::Choice;
         duty.choices = kDuties;
         duty.value = kDuties.at((reg >> 6) & 3);
@@ -315,25 +315,25 @@ sdk::Inspection PacmanSoundModel::inspect() const {
         volume.key = QStringLiteral("volume");
         // Bit 4 picks a constant volume; without it the low bits are the
         // envelope's decay period, restarted by every note.
-        volume.label = (reg & 0x10) ? QStringLiteral("Volume") : QStringLiteral("Decay");
-        volume.hint = (reg & 0x10) ? QStringLiteral("0-15") : QStringLiteral("slow 15 · 0 fast");
+        volume.label = (reg & 0x10) ? tr("Volume") : tr("Decay");
+        volume.hint = (reg & 0x10) ? QStringLiteral("0-15") : tr("slow 15 · 0 fast");
         volume.type = sdk::Field::Type::Integer;
         volume.value = reg & 0x0f;
         volume.minimum = 0;
         volume.maximum = 15;
         inspection.fields = {duty, volume};
-        inspection.note = QStringLiteral("Notes in frames (60 a second), in the order the stream plays them. Drag a "
-                                         "note up or down to retune it, stretch it to change its duration; grey notes "
-                                         "hold the note before them. Duty and volume (or the decay of each note's "
-                                         "envelope) are the voice the stream starts with; the sounds share one arena.");
+        inspection.note = tr("Notes in frames (60 a second), in the order the stream plays them. Drag a "
+                             "note up or down to retune it, stretch it to change its duration; grey notes "
+                             "hold the note before them. Duty and volume (or the decay of each note's "
+                             "envelope) are the voice the stream starts with; the sounds share one arena.");
         return inspection;
     }
     const bool note = c.value(QStringLiteral("kind")).toString() == QLatin1String("note");
-    inspection.kicker = note ? QStringLiteral("Note") : QStringLiteral("Hold");
-    inspection.title = QStringLiteral("%1 · step %2").arg(channels().value(channel).label).arg(command + 1);
+    inspection.kicker = note ? tr("Note") : tr("Hold");
+    inspection.title = tr("%1 · step %2").arg(channels().value(channel).label).arg(command + 1);
     sdk::Field duration;
     duration.key = QStringLiteral("duration");
-    duration.label = QStringLiteral("Duration");
+    duration.label = tr("Duration");
     duration.type = sdk::Field::Type::Integer;
     duration.value = c.value(QStringLiteral("duration")).toInt();
     duration.minimum = 1;
@@ -342,7 +342,7 @@ sdk::Inspection PacmanSoundModel::inspect() const {
     if (note) {
         sdk::Field pitch;
         pitch.key = QStringLiteral("pitch");
-        pitch.label = QStringLiteral("Pitch");
+        pitch.label = tr("Pitch");
         pitch.type = sdk::Field::Type::Choice;
         for (int p = pitchMinimum(); p <= pitchMaximum(); ++p) pitch.choices << pitchName(p);
         pitch.value = pitchName(pitchOf(c.value(QStringLiteral("value")).toInt()));
@@ -350,13 +350,13 @@ sdk::Inspection PacmanSoundModel::inspect() const {
         inspection.fields = {pitch, duration};
     } else {
         inspection.fields = {duration};
-        inspection.note = QStringLiteral("A duration marker: the note before it sounds on for these frames.");
+        inspection.note = tr("A duration marker: the note before it sounds on for these frames.");
     }
     return inspection;
 }
 
 QString PacmanSoundModel::statusText() const {
-    return QStringLiteral("Sound · %1").arg(title_);
+    return tr("Sound · %1").arg(title_);
 }
 
 }  // namespace rl::pacman

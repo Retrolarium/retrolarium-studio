@@ -1,6 +1,7 @@
 #include "solomon/plugin/mirror_models.hpp"
 
 #include "nes/editors.hpp"
+#include "sdk/i18n.hpp"
 #include "solomon/data/names.hpp"
 #include "solomon/plugin/solomon_session.hpp"
 
@@ -56,7 +57,7 @@ QString mirrorUsers(const SolomonSession* session, const QString& field, int ind
         }
         if (!mirrors.isEmpty()) users << QString::number(rooms.roomNumber(r));
     }
-    return users.isEmpty() ? QStringLiteral("no room") : QStringLiteral("rooms ") + users.join(QStringLiteral(", "));
+    return users.isEmpty() ? rlTr("solomon", "no room") : rlTr("solomon", "rooms ") + users.join(QStringLiteral(", "));
 }
 
 // ---------------------------------------------------------------- enemy sets
@@ -73,22 +74,22 @@ QVector<sdk::TableColumn> SolomonMirrorSetsModel::columns() const {
     set.muted = true;
     sdk::TableColumn types;
     types.key = QStringLiteral("types");
-    types.label = QStringLiteral("Enemy types");
+    types.label = tr("Enemy types");
     types.width = 220;
     types.monospace = true;
     types.editable = true;
     sdk::TableColumn loop;
     loop.key = QStringLiteral("loop");
-    loop.label = QStringLiteral("Loops from");
+    loop.label = tr("Loops from");
     loop.width = 100;
     loop.monospace = true;
     loop.editable = true;
     sdk::TableColumn drops;
     drops.key = QStringLiteral("drops");
-    drops.label = QStringLiteral("Drops");
+    drops.label = tr("Drops");
     sdk::TableColumn users;
     users.key = QStringLiteral("users");
-    users.label = QStringLiteral("Used by");
+    users.label = tr("Used by");
     users.width = 200;
     users.muted = true;
     return {set, types, loop, drops, users};
@@ -136,7 +137,7 @@ bool SolomonMirrorSetsModel::setCell(int row, int column, const QString& value, 
     if (column == 1) {
         const QVector<int> types = parseBytes(value, -1);
         if (types.isEmpty()) {
-            if (error) *error = QStringLiteral("Write the enemy types as hex bytes, e.g. 78 79 70.");
+            if (error) *error = tr("Write the enemy types as hex bytes, e.g. 78 79 70.");
             return false;
         }
         set.types = types;
@@ -145,7 +146,7 @@ bool SolomonMirrorSetsModel::setCell(int row, int column, const QString& value, 
         bool ok = false;
         const int from = value.trimmed().toInt(&ok);
         if (!ok || from < 1 || from > set.types.size()) {
-            if (error) *error = QStringLiteral("The loop starts at one of the set's enemies, 1-%1.").arg(set.types.size());
+            if (error) *error = tr("The loop starts at one of the set's enemies, 1-%1.").arg(set.types.size());
             return false;
         }
         set.loopOffset = from - 1;
@@ -159,14 +160,14 @@ bool SolomonMirrorSetsModel::setCell(int row, int column, const QString& value, 
     }
     if (next.mirrorSetBytes() > next.mirrorSetCapacity()) {
         if (error) {
-            *error = QStringLiteral("The mirror enemy sets share %1 bytes; this needs %2. Shorten another set first%3.")
+            *error = tr("The mirror enemy sets share %1 bytes; this needs %2. Shorten another set first%3.")
                          .arg(next.mirrorSetCapacity())
                          .arg(next.mirrorSetBytes())
-                         .arg(next.expanded() ? QString() : QStringLiteral(", or switch the ROM to Expanded"));
+                         .arg(next.expanded() ? QString() : tr(", or switch the ROM to Expanded"));
         }
         return false;
     }
-    return session_->edit(QStringLiteral("Edit mirror enemy set %1").arg(row),
+    return session_->edit(tr("Edit mirror enemy set %1").arg(row),
                           [next](SolomonState& s) { s.rooms = next; }, error);
 }
 
@@ -174,7 +175,7 @@ sdk::Budget SolomonMirrorSetsModel::budget() const {
     sdk::Budget budget;
     budget.used = session_->rooms().mirrorSetBytes();
     budget.capacity = session_->rooms().mirrorSetCapacity();
-    budget.text = QStringLiteral("enemy sets %1 / %2 B").arg(budget.used).arg(budget.capacity);
+    budget.text = tr("enemy sets %1 / %2 B").arg(budget.used).arg(budget.capacity);
     return budget;
 }
 
@@ -182,8 +183,8 @@ sdk::Inspection SolomonMirrorSetsModel::inspect() const {
     sdk::Inspection inspection;
     const QVector<SolomonMirrorSet> sets = session_->rooms().mirrorSets();
     if (row_ < 0 || row_ >= sets.size()) return inspection;
-    inspection.kicker = QStringLiteral("Mirror enemy set");
-    inspection.title = QStringLiteral("Set %1").arg(row_);
+    inspection.kicker = tr("Mirror enemy set");
+    inspection.title = tr("Set %1").arg(row_);
     const SolomonMirrorSet& set = sets.at(row_);
     for (int i = 0; i < set.types.size(); ++i) {
         sdk::Field field;
@@ -192,9 +193,9 @@ sdk::Inspection SolomonMirrorSetsModel::inspect() const {
         field.value = QStringLiteral("%1 · %2").arg(nes::hex(set.types.at(i)), enemyName(set.types.at(i)));
         inspection.fields << field;
     }
-    inspection.note = QStringLiteral("A mirror drops these in order; after the last it starts again at the one "
-                                     "marked ↺. Every set ends in a loop byte, so a set takes one byte more than "
-                                     "its enemies. Used by %1.").arg(mirrorUsers(session_, QStringLiteral("_enemy_set"), row_));
+    inspection.note = tr("A mirror drops these in order; after the last it starts again at the one "
+                         "marked ↺. Every set ends in a loop byte, so a set takes one byte more than "
+                         "its enemies. Used by %1.").arg(mirrorUsers(session_, QStringLiteral("_enemy_set"), row_));
     inspection.engineTag = QStringLiteral("solomon.mirror-enemy-sets.v1");
     return inspection;
 }
@@ -208,28 +209,28 @@ SolomonSchedulesModel::SolomonSchedulesModel(SolomonSession* session) : TableMod
 QVector<sdk::TableColumn> SolomonSchedulesModel::columns() const {
     sdk::TableColumn index;
     index.key = QStringLiteral("schedule");
-    index.label = QStringLiteral("Schedule");
+    index.label = tr("Schedule");
     index.width = 80;
     index.muted = true;
     sdk::TableColumn initial;
     initial.key = QStringLiteral("initial");
-    initial.label = QStringLiteral("First");
+    initial.label = tr("First");
     initial.width = 130;
     initial.monospace = true;
     initial.editable = true;
     sdk::TableColumn loop;
     loop.key = QStringLiteral("loop");
-    loop.label = QStringLiteral("Then, looping");
+    loop.label = tr("Then, looping");
     loop.width = 130;
     loop.monospace = true;
     loop.editable = true;
     sdk::TableColumn bits;
     bits.key = QStringLiteral("bits");
-    bits.label = QStringLiteral("Drops (first | looping)");
+    bits.label = tr("Drops (first | looping)");
     bits.monospace = true;
     sdk::TableColumn users;
     users.key = QStringLiteral("users");
-    users.label = QStringLiteral("Used by");
+    users.label = tr("Used by");
     users.width = 200;
     users.muted = true;
     return {index, initial, loop, bits, users};
@@ -271,25 +272,25 @@ bool SolomonSchedulesModel::setCell(int row, int column, const QString& value, Q
     if (row < 0 || row >= list.size() || (column != 1 && column != 2)) return TableModel::setCell(row, column, value, error);
     const QVector<int> bytes = parseBytes(value, 4);
     if (bytes.isEmpty()) {
-        if (error) *error = QStringLiteral("Write four hex bytes, e.g. 80 00 80 00.");
+        if (error) *error = tr("Write four hex bytes, e.g. 80 00 80 00.");
         return false;
     }
     SolomonSchedule schedule = list.at(row);
     (column == 1 ? schedule.initial : schedule.loop) = bytes;
     SolomonRooms next = session_->rooms();
     next.setSchedule(row, schedule);
-    return session_->edit(QStringLiteral("Edit drop schedule %1").arg(row), [next](SolomonState& s) { s.rooms = next; },
+    return session_->edit(tr("Edit drop schedule %1").arg(row), [next](SolomonState& s) { s.rooms = next; },
                           error);
 }
 
 sdk::Inspection SolomonSchedulesModel::inspect() const {
     sdk::Inspection inspection;
     if (row_ < 0 || row_ >= rowCount()) return inspection;
-    inspection.kicker = QStringLiteral("Drop schedule");
-    inspection.title = QStringLiteral("Schedule %1").arg(row_);
-    inspection.note = QStringLiteral("A mirror reads these bits highest first as the frame counter steps, the "
-                                     "first four bytes once and then the other four over and over; each set "
-                                     "bit (■) drops the next enemy of its set. Used by %1.")
+    inspection.kicker = tr("Drop schedule");
+    inspection.title = tr("Schedule %1").arg(row_);
+    inspection.note = tr("A mirror reads these bits highest first as the frame counter steps, the "
+                         "first four bytes once and then the other four over and over; each set "
+                         "bit (■) drops the next enemy of its set. Used by %1.")
                           .arg(mirrorUsers(session_, QStringLiteral("_schedule"), row_));
     inspection.engineTag = QStringLiteral("solomon.mirror-schedules.v1");
     return inspection;

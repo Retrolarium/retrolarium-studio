@@ -1,5 +1,6 @@
 #include "smb/plugin/player_models.hpp"
 
+#include "sdk/i18n.hpp"
 #include "smb/plugin/smb_session.hpp"
 
 #include <QJsonArray>
@@ -38,12 +39,12 @@ QVector<int> intsOf(const QJsonValue& value) {
 // The action slots of the frame-offset table, as the engine indexes them.
 const QStringList& actionNames() {
     static const QStringList names{
-        QStringLiteral("Big · jump"),   QStringLiteral("Big · swim"),   QStringLiteral("Big · stand"),
-        QStringLiteral("Big · skid"),   QStringLiteral("Big · walk"),   QStringLiteral("Big · climb"),
-        QStringLiteral("Big · crouch"), QStringLiteral("Big · throw"),  QStringLiteral("Small · jump"),
-        QStringLiteral("Small · swim"), QStringLiteral("Small · stand"), QStringLiteral("Small · skid"),
-        QStringLiteral("Small · walk"), QStringLiteral("Small · climb"), QStringLiteral("Small · killed"),
-        QStringLiteral("Small · throw slot")};
+        rlTr("smb", "Big · jump"),   rlTr("smb", "Big · swim"),   rlTr("smb", "Big · stand"),
+        rlTr("smb", "Big · skid"),   rlTr("smb", "Big · walk"),   rlTr("smb", "Big · climb"),
+        rlTr("smb", "Big · crouch"), rlTr("smb", "Big · throw"),  rlTr("smb", "Small · jump"),
+        rlTr("smb", "Small · swim"), rlTr("smb", "Small · stand"), rlTr("smb", "Small · skid"),
+        rlTr("smb", "Small · walk"), rlTr("smb", "Small · climb"), rlTr("smb", "Small · killed"),
+        rlTr("smb", "Small · throw slot")};
     return names;
 }
 
@@ -163,8 +164,8 @@ QImage SmbPlayerFramesModel::render() const {
 QVector<sdk::ViewOption> SmbPlayerFramesModel::viewOptions() const {
     sdk::ViewOption palette;
     palette.key = QStringLiteral("palette");
-    palette.label = QStringLiteral("Colours");
-    const QStringList names{QStringLiteral("Hero"), QStringLiteral("Brother"), QStringLiteral("Fire")};
+    palette.label = tr("Colours");
+    const QStringList names{tr("Hero"), tr("Brother"), tr("Fire")};
     palette.value = names.value(palette_);
     const int rows = session_->document().tableValues(session_->playerPalette()).size() / 4;
     palette.choices = names.mid(0, std::max(1, std::min(rows, int(names.size()))));
@@ -173,7 +174,7 @@ QVector<sdk::ViewOption> SmbPlayerFramesModel::viewOptions() const {
 
 void SmbPlayerFramesModel::setViewOption(const QString& key, const QString& value) {
     if (key == QLatin1String("palette")) {
-        palette_ = std::max(0, QStringList{QStringLiteral("Hero"), QStringLiteral("Brother"), QStringLiteral("Fire")}.indexOf(value));
+        palette_ = std::max(0, QStringList{tr("Hero"), tr("Brother"), tr("Fire")}.indexOf(value));
         emit contentChanged();
         emit selectionChanged();
     }
@@ -212,7 +213,7 @@ QVector<sdk::CompositionFrame> SmbPlayerFramesModel::frames() const {
         sdk::CompositionFrame frame;
         frame.id = names.at(i);
         frame.label = frameLabel(names.at(i));
-        frame.detail = QStringLiteral("frame %1 · %2").arg(i).arg(hex(i * kTilesPerFrame));
+        frame.detail = tr("frame %1 · %2").arg(i).arg(hex(i * kTilesPerFrame));
         result << frame;
     }
     return result;
@@ -248,13 +249,13 @@ void SmbPlayerFramesModel::setCurrentLibraryItem(const QString& id) {
 
 bool SmbPlayerFramesModel::setTile(int piece, int tile, QString* error) {
     if (piece < 0 || piece >= kTilesPerFrame || tile < 0 || tile > 255) {
-        if (error) *error = QStringLiteral("A player pattern is 0-255.");
+        if (error) *error = tr("A player pattern is 0-255.");
         return false;
     }
     const QString id = session_->playerFrames();
     const int frame = global();
     const QStringList names = frameNames(session_->document(), id);
-    return session_->edit(QStringLiteral("Set a pattern of %1").arg(frameLabel(names.value(frame))),
+    return session_->edit(tr("Set a pattern of %1").arg(frameLabel(names.value(frame))),
                           [id, frame, piece, tile](SmbResourceDocument& d) {
                               QJsonObject r = d.resource(id);
                               QJsonArray framesJson = r.value(QStringLiteral("frames")).toArray();
@@ -297,38 +298,38 @@ sdk::Inspection SmbPlayerFramesModel::inspect() const {
     }
 
     if (piece_ < 0 || piece_ >= t.size()) {
-        inspection.kicker = QStringLiteral("Player frame");
+        inspection.kicker = tr("Player frame");
         inspection.title = frameLabel(names.value(frameIndex));
         sdk::Field frame;
         frame.key = QStringLiteral("frame");
-        frame.label = QStringLiteral("Frame");
-        frame.value = QStringLiteral("%1 of %2 · table %3").arg(frame_ + 1).arg(frameList().size()).arg(frameIndex);
+        frame.label = tr("Frame");
+        frame.value = tr("%1 of %2 · table %3").arg(frame_ + 1).arg(frameList().size()).arg(frameIndex);
         frame.monospace = true;
         sdk::Field actions;
         actions.key = QStringLiteral("actions");
-        actions.label = QStringLiteral("Shown for");
-        actions.value = usedBy.isEmpty() ? QStringLiteral("animation steps") : usedBy.join(QStringLiteral(", "));
+        actions.label = tr("Shown for");
+        actions.value = usedBy.isEmpty() ? tr("animation steps") : usedBy.join(QStringLiteral(", "));
         sdk::Field patterns;
         patterns.key = QStringLiteral("patterns");
-        patterns.label = QStringLiteral("Patterns");
+        patterns.label = tr("Patterns");
         QStringList list;
         for (int v : t) list << (v == blank ? QStringLiteral("--") : hex(v).mid(1));
         patterns.value = list.join(QLatin1Char(' '));
         patterns.monospace = true;
         inspection.fields = {frame, actions, patterns};
-        inspection.note = QStringLiteral("Each frame is eight 8x8 sprite patterns, two across and four down; "
-                                         "%1 leaves a cell empty. Drag a pattern from the sheet onto a cell, or "
-                                         "select a cell and click one. Cells marked ↔ are drawn flipped by the "
-                                         "engine; SMB stores no flips of its own.")
+        inspection.note = tr("Each frame is eight 8x8 sprite patterns, two across and four down; "
+                             "%1 leaves a cell empty. Drag a pattern from the sheet onto a cell, or "
+                             "select a cell and click one. Cells marked ↔ are drawn flipped by the "
+                             "engine; SMB stores no flips of its own.")
                               .arg(hex(blank));
         return inspection;
     }
 
-    inspection.kicker = QStringLiteral("Frame pattern");
-    inspection.title = QStringLiteral("%1 · cell %2").arg(frameLabel(names.value(frameIndex))).arg(piece_ + 1);
+    inspection.kicker = tr("Frame pattern");
+    inspection.title = tr("%1 · cell %2").arg(frameLabel(names.value(frameIndex))).arg(piece_ + 1);
     sdk::Field tile;
     tile.key = QStringLiteral("tile");
-    tile.label = QStringLiteral("Pattern");
+    tile.label = tr("Pattern");
     tile.type = sdk::Field::Type::Integer;
     tile.value = t.at(piece_);
     tile.minimum = 0;
@@ -337,21 +338,21 @@ sdk::Inspection SmbPlayerFramesModel::inspect() const {
     tile.monospace = true;
     sdk::Field empty;
     empty.key = QStringLiteral("blank");
-    empty.label = QStringLiteral("Empty");
+    empty.label = tr("Empty");
     empty.type = sdk::Field::Type::Choice;
-    empty.choices = QStringList{QStringLiteral("No"), QStringLiteral("Yes")};
-    empty.value = t.at(piece_) == blank ? QStringLiteral("Yes") : QStringLiteral("No");
+    empty.choices = QStringList{tr("No"), QStringLiteral("Yes")};
+    empty.value = t.at(piece_) == blank ? QStringLiteral("Yes") : tr("No");
     inspection.fields = {tile, empty};
-    inspection.note = QStringLiteral("Click a pattern in the Patterns sheet to put it here, or type its number. Patterns "
-                                     "are shared: other frames that use one change with it in Tiles.");
+    inspection.note = tr("Click a pattern in the Patterns sheet to put it here, or type its number. Patterns "
+                         "are shared: other frames that use one change with it in Tiles.");
     if (mirrored(frameIndex, piece_)) {
         sdk::Field flip;
         flip.key = QStringLiteral("flip");
-        flip.label = QStringLiteral("Drawn");
-        flip.value = QStringLiteral("mirrored by the engine");
+        flip.label = tr("Drawn");
+        flip.value = tr("mirrored by the engine");
         inspection.fields << flip;
-        inspection.note += QStringLiteral(" The engine flips this cell, so it usually holds the same pattern as "
-                                          "the cell to its left.");
+        inspection.note += tr(" The engine flips this cell, so it usually holds the same pattern as "
+                              "the cell to its left.");
     }
     return inspection;
 }
@@ -364,8 +365,8 @@ sdk::Library SmbPlayerFramesModel::library() const {
     // The sprite pattern table in the chosen player colours, as a sheet.
     sdk::Library library;
     library.grid = true;
-    library.hint = piece_ >= 0 ? QStringLiteral("click: into the cell · or drag onto a cell")
-                               : QStringLiteral("drag onto a cell");
+    library.hint = piece_ >= 0 ? tr("click: into the cell · or drag onto a cell")
+                               : tr("drag onto a cell");
     const QVector<QRgb> pens = colors();
     const int base = session_->document().playerTileBase(session_->playerFrames());
     const int blank = session_->document().playerBlankTile(session_->playerFrames());
@@ -373,7 +374,7 @@ sdk::Library SmbPlayerFramesModel::library() const {
         sdk::LibraryItem item;
         item.id = QStringLiteral("tile:%1").arg(p);
         item.label = hex(p);
-        item.hint = p == blank ? QStringLiteral("empty cell") : QString();
+        item.hint = p == blank ? tr("empty cell") : QString();
         QImage icon(8, 8, QImage::Format_ARGB32);
         icon.fill(Qt::transparent);
         for (int y = 0; y < 8; ++y) {
@@ -396,14 +397,14 @@ bool SmbPlayerFramesModel::moveFrame(int from, int to, QString* error) {
     const QVector<int> list = frameList();
     if (from < 0 || from >= list.size() || to < 0 || to >= list.size() || from == to) {
         if (error && list.size() <= 1) {
-            *error = QStringLiteral("%1 has a single frame.").arg(title());
+            *error = tr("%1 has a single frame.").arg(title());
         }
         return false;
     }
     const QString id = session_->playerFrames();
     const int a = list.at(from);
     const int b = list.at(to);
-    const bool ok = session_->edit(QStringLiteral("Move a frame of %1").arg(title()),
+    const bool ok = session_->edit(tr("Move a frame of %1").arg(title()),
                                    [id, a, b](SmbResourceDocument& d) {
                                        QJsonObject r = d.resource(id);
                                        QJsonArray frames = r.value(QStringLiteral("frames")).toArray();
@@ -432,7 +433,7 @@ bool SmbPlayerFramesModel::dropItem(const QString& libraryItem, const QString& p
 
 QString SmbPlayerFramesModel::statusText() const {
     const QStringList names = frameNames(session_->document(), session_->playerFrames());
-    return QStringLiteral("%1 · frame %2").arg(frameLabel(names.value(global()))).arg(global());
+    return tr("%1 · frame %2").arg(frameLabel(names.value(global()))).arg(global());
 }
 
 // ---------------------------------------------------------------- actions
@@ -444,16 +445,16 @@ SmbPlayerActionsModel::SmbPlayerActionsModel(SmbSession* session) : TableModel(s
 QVector<sdk::TableColumn> SmbPlayerActionsModel::columns() const {
     sdk::TableColumn action;
     action.key = QStringLiteral("action");
-    action.label = QStringLiteral("Action");
+    action.label = tr("Action");
     action.width = 220;
     action.muted = true;
     sdk::TableColumn frame;
     frame.key = QStringLiteral("frame");
-    frame.label = QStringLiteral("Shows");
+    frame.label = tr("Shows");
     frame.editable = true;
     sdk::TableColumn byte;
     byte.key = QStringLiteral("byte");
-    byte.label = QStringLiteral("Byte");
+    byte.label = tr("Byte");
     byte.width = 90;
     byte.muted = true;
     byte.monospace = true;
@@ -476,7 +477,7 @@ QString SmbPlayerActionsModel::cell(int row, int column) const {
         return {};
     }
     const int k = row - offsets.size();
-    if (column == 0) return k == 0 ? QStringLiteral("Swim kick · left pattern") : QStringLiteral("Swim kick · right pattern");
+    if (column == 0) return k == 0 ? tr("Swim kick · left pattern") : tr("Swim kick · right pattern");
     if (column == 1 || column == 2) return hex(kick.value(k));
     return {};
 }
@@ -512,10 +513,10 @@ bool SmbPlayerActionsModel::setValue(int row, const QString& text, QString* erro
         const int number = text.trimmed().toInt(&numeric);
         if (frame < 0 && numeric) frame = number;
         if (frame < 0 || frame >= names.size()) {
-            if (error) *error = QStringLiteral("Name a frame, like Big walk 1, or give its number 0-%1.").arg(names.size() - 1);
+            if (error) *error = tr("Name a frame, like Big walk 1, or give its number 0-%1.").arg(names.size() - 1);
             return false;
         }
-        return session_->edit(QStringLiteral("%1 shows %2").arg(actionNames().value(row), frameLabel(names.at(frame))),
+        return session_->edit(tr("%1 shows %2").arg(actionNames().value(row), frameLabel(names.at(frame))),
                               [id, row, frame](SmbResourceDocument& d) {
                                   QJsonObject res = d.resource(id);
                                   QJsonArray offsets = res.value(QStringLiteral("frame_offsets")).toArray();
@@ -530,10 +531,10 @@ bool SmbPlayerActionsModel::setValue(int row, const QString& text, QString* erro
     bool ok = false;
     const int tile = t.startsWith(QLatin1Char('$')) ? t.mid(1).toInt(&ok, 16) : t.toInt(&ok);
     if (!ok || tile < 0 || tile > 255) {
-        if (error) *error = QStringLiteral("Give a pattern 0-255 (or $00-$FF).");
+        if (error) *error = tr("Give a pattern 0-255 (or $00-$FF).");
         return false;
     }
-    return session_->edit(QStringLiteral("Swim kick pattern"),
+    return session_->edit(tr("Swim kick pattern"),
                           [id, k, tile](SmbResourceDocument& d) {
                               QJsonObject res = d.resource(id);
                               QJsonArray kick = res.value(QStringLiteral("swim_kick_tiles")).toArray();
@@ -587,31 +588,31 @@ sdk::Inspection SmbPlayerActionsModel::inspect() const {
     inspection.engineTag = QStringLiteral("smb.player-frames.v1");
     inspection.title = cell(row_, 0);
     if (row_ < offsetCount) {
-        inspection.kicker = QStringLiteral("Player action");
+        inspection.kicker = tr("Player action");
         sdk::Field frame;
         frame.key = QStringLiteral("frame");
-        frame.label = QStringLiteral("Shows");
+        frame.label = tr("Shows");
         frame.type = sdk::Field::Type::Choice;
         for (const QString& name : frameNames(session_->document(), session_->playerFrames())) {
             frame.choices << frameLabel(name);
         }
         frame.value = cell(row_, 1);
         inspection.fields = {frame};
-        inspection.note = QStringLiteral("The first frame the game shows for this action; walking, swimming and "
-                                         "climbing step on through the frames after it.");
+        inspection.note = tr("The first frame the game shows for this action; walking, swimming and "
+                             "climbing step on through the frames after it.");
     } else {
-        inspection.kicker = QStringLiteral("Swim kick");
+        inspection.kicker = tr("Swim kick");
         sdk::Field pattern;
         pattern.key = QStringLiteral("pattern");
-        pattern.label = QStringLiteral("Pattern");
+        pattern.label = tr("Pattern");
         pattern.type = sdk::Field::Type::Text;
         pattern.value = cell(row_, 1);
         pattern.monospace = true;
         inspection.fields = {pattern};
-        inspection.note = QStringLiteral("While swimming the game swaps these two patterns into the bottom row for "
-                                         "the kick.");
+        inspection.note = tr("While swimming the game swaps these two patterns into the bottom row for "
+                             "the kick.");
     }
-    inspection.engine = {{QStringLiteral("Byte"), cell(row_, 2)}};
+    inspection.engine = {{tr("Byte"), cell(row_, 2)}};
     return inspection;
 }
 

@@ -40,12 +40,12 @@ int PacmanDemoModel::capacity() const {
 QVector<sdk::TableColumn> PacmanDemoModel::columns() const {
     sdk::TableColumn step;
     step.key = QStringLiteral("step");
-    step.label = QStringLiteral("Step");
+    step.label = tr("Step");
     step.width = 70;
     step.muted = true;
     sdk::TableColumn direction;
     direction.key = QStringLiteral("direction");
-    direction.label = QStringLiteral("Direction");
+    direction.label = tr("Direction");
     direction.width = 140;
     direction.editable = true;
     sdk::TableColumn frames;
@@ -56,7 +56,7 @@ QVector<sdk::TableColumn> PacmanDemoModel::columns() const {
     frames.editable = true;
     sdk::TableColumn at;
     at.key = QStringLiteral("at");
-    at.label = QStringLiteral("Starts at");
+    at.label = tr("Starts at");
     at.muted = true;
     return {step, direction, frames, at};
 }
@@ -72,7 +72,7 @@ QString PacmanDemoModel::cell(int row, int column) const {
     switch (column) {
     case 0: return QString::number(row + 1);
     case 1: return item.value(QStringLiteral("direction")).toString();
-    case 2: return row == 0 ? QStringLiteral("%1 (fixed)").arg(kFirstUpdates)
+    case 2: return row == 0 ? tr("%1 (fixed)").arg(kFirstUpdates)
                             : QString::number(item.value(QStringLiteral("frames")).toInt());
     case 3: {
         int frames = 0;
@@ -122,25 +122,25 @@ bool PacmanDemoModel::setCell(int row, int column, const QString& value, QString
     if (column == 1) {
         const QString direction = value.trimmed().toLower();
         if (!directions().contains(direction)) {
-            if (error) *error = QStringLiteral("Directions are up, left, down and right.");
+            if (error) *error = tr("Directions are up, left, down and right.");
             return false;
         }
         item.insert(QStringLiteral("direction"), direction);
     } else {
         if (row == 0) {
-            if (error) *error = QStringLiteral("The first step always lasts %1 frames.").arg(kFirstUpdates);
+            if (error) *error = tr("The first step always lasts %1 frames.").arg(kFirstUpdates);
             return false;
         }
         bool ok = false;
         const int frames = value.trimmed().toInt(&ok);
         if (!ok || frames < 1 || frames > 256) {
-            if (error) *error = QStringLiteral("A step lasts 1-256 frames.");
+            if (error) *error = tr("A step lasts 1-256 frames.");
             return false;
         }
         item.insert(QStringLiteral("frames"), frames);
     }
     list.replace(row, item);
-    return session_->editDemo(QStringLiteral("Edit demo step %1").arg(row + 1), list, error);
+    return session_->editDemo(tr("Edit demo step %1").arg(row + 1), list, error);
 }
 
 sdk::Budget PacmanDemoModel::budget() const {
@@ -149,7 +149,7 @@ sdk::Budget PacmanDemoModel::budget() const {
     sdk::Budget budget;
     budget.used = steps().size();
     budget.capacity = capacity();
-    budget.text = QStringLiteral("%1 / %2 steps · %3 s of movement").arg(budget.used).arg(budget.capacity).arg(frames / 60);
+    budget.text = tr("%1 / %2 steps · %3 s of movement").arg(budget.used).arg(budget.capacity).arg(frames / 60);
     return budget;
 }
 
@@ -160,42 +160,42 @@ QString PacmanDemoModel::startPoint() const {
 QVector<sdk::EditorAction> PacmanDemoModel::actions() const {
     sdk::EditorAction add;
     add.id = QStringLiteral("add");
-    add.label = QStringLiteral("Add step");
+    add.label = tr("Add step");
     add.icon = QStringLiteral("plus");
-    add.tooltip = QStringLiteral("Add a step after the selected one");
+    add.tooltip = tr("Add a step after the selected one");
     sdk::EditorAction remove;
     remove.id = QStringLiteral("remove");
-    remove.label = QStringLiteral("Remove step");
+    remove.label = tr("Remove step");
     remove.icon = QStringLiteral("erase");
-    remove.tooltip = QStringLiteral("Remove the selected step (the first stays)");
+    remove.tooltip = tr("Remove the selected step (the first stays)");
     sdk::EditorAction loop;
     loop.id = QStringLiteral("loop");
-    loop.label = QStringLiteral("Loop demo");
+    loop.label = tr("Loop demo");
     loop.icon = QStringLiteral("play");
-    loop.tooltip = QStringLiteral("Build and play the attract demo over and over, as the console does");
+    loop.tooltip = tr("Build and play the attract demo over and over, as the console does");
     loop.showsPlaytest = true;
     sdk::EditorAction record;
     record.danger = true;
     record.showsPlaytest = true;
     if (session_->recordingActive()) {
         record.id = QStringLiteral("stop");
-        record.label = QStringLiteral("Stop recording");
+        record.label = tr("Stop recording");
         record.icon = QStringLiteral("stop");
-        record.tooltip = QStringLiteral("Finish the recording and keep it as the demo");
+        record.tooltip = tr("Finish the recording and keep it as the demo");
     } else {
         record.id = QStringLiteral("record");
-        record.label = QStringLiteral("Record");
+        record.label = tr("Record");
         record.icon = QStringLiteral("record");
-        record.tooltip = QStringLiteral("Steer the demo's Pac-Man with your controller; the way you play becomes the demo");
-        record.confirmHeading = QStringLiteral("Record a new demo?");
-        record.confirmText = QStringLiteral("After the title the demo starts; Pac-Man runs the first step's way for "
-                                            "%1 frames, then follows your controller until he is caught, you press "
-                                            "Start or Stop recording, or the %2 steps are full. What you played "
-                                            "replaces the current demo (%3 steps). Undo brings it back.")
+        record.tooltip = tr("Steer the demo's Pac-Man with your controller; the way you play becomes the demo");
+        record.confirmHeading = tr("Record a new demo?");
+        record.confirmText = tr("After the title the demo starts; Pac-Man runs the first step's way for "
+                                "%1 frames, then follows your controller until he is caught, you press "
+                                "Start or Stop recording, or the %2 steps are full. What you played "
+                                "replaces the current demo (%3 steps). Undo brings it back.")
                                  .arg(kFirstUpdates)
                                  .arg(capacity())
                                  .arg(rowCount());
-        record.confirmAction = QStringLiteral("Record");
+        record.confirmAction = tr("Record");
     }
     return {add, remove, loop, record};
 }
@@ -211,31 +211,31 @@ void PacmanDemoModel::triggerAction(const QString& id) {
         QJsonArray list = steps();
         if (list.size() >= capacity()) {
             session_->report(sdk::Severity::Warning, QStringLiteral("demo"),
-                             QStringLiteral("The demo holds %1 steps.").arg(capacity()));
+                             tr("The demo holds %1 steps.").arg(capacity()));
             return;
         }
         QJsonObject item = list.at(row_).toObject();
         item.insert(QStringLiteral("frames"), 32);
         list.insert(row_ + 1, item);
-        if (commit(QStringLiteral("Add a demo step"), list)) setCurrentRow(row_ + 1);
+        if (commit(tr("Add a demo step"), list)) setCurrentRow(row_ + 1);
     } else if (id == QLatin1String("remove")) {
         QJsonArray list = steps();
         if (row_ <= 0 || row_ >= list.size()) return;
         list.removeAt(row_);
-        if (commit(QStringLiteral("Remove a demo step"), list)) setCurrentRow(std::min(row_, int(list.size()) - 1));
+        if (commit(tr("Remove a demo step"), list)) setCurrentRow(std::min(row_, int(list.size()) - 1));
     }
 }
 
 sdk::Inspection PacmanDemoModel::inspect() const {
     sdk::Inspection inspection;
-    inspection.kicker = QStringLiteral("Attract demo");
-    inspection.title = QStringLiteral("Step %1").arg(row_ + 1);
-    inspection.note = QStringLiteral("In the attract mode Pac-Man follows these steps instead of the controller: each "
-                                     "holds a direction for its frames of movement (pauses do not count), and Pac-Man "
-                                     "turns as soon as the maze lets him. The first step always lasts %1 frames. The "
-                                     "demo ends when its one life is lost; past the last step Pac-Man keeps its "
-                                     "direction. Loop demo plays it in the emulator, Record steers it with your "
-                                     "controller.")
+    inspection.kicker = tr("Attract demo");
+    inspection.title = tr("Step %1").arg(row_ + 1);
+    inspection.note = tr("In the attract mode Pac-Man follows these steps instead of the controller: each "
+                         "holds a direction for its frames of movement (pauses do not count), and Pac-Man "
+                         "turns as soon as the maze lets him. The first step always lasts %1 frames. The "
+                         "demo ends when its one life is lost; past the last step Pac-Man keeps its "
+                         "direction. Loop demo plays it in the emulator, Record steers it with your "
+                         "controller.")
                           .arg(kFirstUpdates);
     inspection.engineTag = QStringLiteral("pacman.demo@1");
     return inspection;

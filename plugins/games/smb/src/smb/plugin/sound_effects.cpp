@@ -1,6 +1,7 @@
 #include "smb/plugin/sound_effects.hpp"
 
 #include "nes/editors.hpp"
+#include "sdk/i18n.hpp"
 #include "smb/data/level_records.hpp"
 #include "smb/data/music.hpp"
 #include "smb/plugin/smb_session.hpp"
@@ -24,20 +25,20 @@ QJsonArray records(const SmbResourceDocument& document) {
 // Which effects read a table byte.
 QString playedBy(const QString& table, int index) {
     if (table == QLatin1String("extra_life")) return QStringLiteral("1-up");
-    if (table == QLatin1String("power_up_grab")) return QStringLiteral("Power-up");
+    if (table == QLatin1String("power_up_grab")) return rlTr("smb", "Power-up");
     if (table == QLatin1String("power_up_reveal_and_vine")) {
         // The reveal plays sixteen frames' worth, the vine all of it.
-        return index < 16 ? QStringLiteral("Power-up appears, Vine") : QStringLiteral("Vine");
+        return index < 16 ? rlTr("smb", "Power-up appears, Vine") : rlTr("smb", "Vine");
     }
-    if (table == QLatin1String("brick_shatter_noise")) return QStringLiteral("Brick breaks");
+    if (table == QLatin1String("brick_shatter_noise")) return rlTr("smb", "Brick breaks");
     return {};
 }
 
 QString tableTitle(const QString& table) {
-    if (table == QLatin1String("extra_life")) return QStringLiteral("1-up notes");
-    if (table == QLatin1String("power_up_grab")) return QStringLiteral("Power-up notes");
-    if (table == QLatin1String("power_up_reveal_and_vine")) return QStringLiteral("Reveal / vine notes");
-    if (table == QLatin1String("brick_shatter_noise")) return QStringLiteral("Brick noise");
+    if (table == QLatin1String("extra_life")) return rlTr("smb", "1-up notes");
+    if (table == QLatin1String("power_up_grab")) return rlTr("smb", "Power-up notes");
+    if (table == QLatin1String("power_up_reveal_and_vine")) return rlTr("smb", "Reveal / vine notes");
+    if (table == QLatin1String("brick_shatter_noise")) return rlTr("smb", "Brick noise");
     return table;
 }
 
@@ -115,10 +116,10 @@ QVector<nes::SoundEffect> soundEffects() {
     QVector<nes::SoundEffect> result;
     for (const Effect& e : kEffects) {
         const QString queue = QString::fromLatin1(e.queue);
-        const QString label = queue == QLatin1String("square1") ? QStringLiteral("Square 1 queue ($FF)")
-                              : queue == QLatin1String("square2") ? QStringLiteral("Square 2 queue ($FE)")
-                                                                  : QStringLiteral("Noise queue ($FD)");
-        const QString note = e.table ? QStringLiteral("Its notes come from the %1 table (Sound effect tables).")
+        const QString label = queue == QLatin1String("square1") ? rlTr("smb", "Square 1 queue ($FF)")
+                              : queue == QLatin1String("square2") ? rlTr("smb", "Square 2 queue ($FE)")
+                                                                  : rlTr("smb", "Noise queue ($FD)");
+        const QString note = e.table ? rlTr("smb", "Its notes come from the %1 table (Sound effect tables).")
                                            .arg(QString::fromLatin1(e.table))
                                      : QString();
         result << nes::SoundEffect{QStringLiteral("smb:%1:%2").arg(queue).arg(e.bit), QString::fromLatin1(e.name),
@@ -151,12 +152,12 @@ SmbSfxTablesModel::Row SmbSfxTablesModel::rowAt(int row) const {
 QString SmbSfxTablesModel::valueLabel(int record, int value) const {
     const QString table = records(session_->document()).at(record).toObject().value(QStringLiteral("id")).toString();
     if (noiseTable(table)) {
-        return QStringLiteral("%1 · period %2%3").arg(nes::hex(value)).arg(value & 0x0F).arg(value & 0x80 ? QStringLiteral(", short loop") : QString());
+        return tr("%1 · period %2%3").arg(nes::hex(value)).arg(value & 0x0F).arg(value & 0x80 ? tr(", short loop") : QString());
     }
     try {
         const SmbMusic music = SmbMusic::fromJson(session_->document().resource(session_->music()));
         const int pitch = music.pitchOf(value / 2, QStringLiteral("square2"));
-        if (pitch < 0) return QStringLiteral("%1 · no tone").arg(nes::hex(value));
+        if (pitch < 0) return tr("%1 · no tone").arg(nes::hex(value));
         // Named as the piano roll names them.
         static const char* const kNames[12] = {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"};
         return QStringLiteral("%1 · %2%3").arg(nes::hex(value), QString::fromLatin1(kNames[pitch % 12])).arg(pitch / 12);
@@ -168,24 +169,24 @@ QString SmbSfxTablesModel::valueLabel(int record, int value) const {
 QVector<sdk::TableColumn> SmbSfxTablesModel::columns() const {
     sdk::TableColumn table;
     table.key = QStringLiteral("table");
-    table.label = QStringLiteral("Table");
+    table.label = tr("Table");
     table.width = 170;
     table.muted = true;
     sdk::TableColumn index;
     index.key = QStringLiteral("index");
-    index.label = QStringLiteral("Byte");
+    index.label = tr("Byte");
     index.width = 60;
     index.monospace = true;
     index.muted = true;
     sdk::TableColumn value;
     value.key = QStringLiteral("value");
-    value.label = QStringLiteral("Value");
+    value.label = tr("Value");
     value.width = 190;
     value.monospace = true;
     value.editable = true;
     sdk::TableColumn plays;
     plays.key = QStringLiteral("plays");
-    plays.label = QStringLiteral("Played by");
+    plays.label = tr("Played by");
     plays.muted = true;
     return {table, index, value, plays};
 }
@@ -250,37 +251,37 @@ bool SmbSfxTablesModel::setCell(int row, int column, const QString& value, QStri
     const QString table = records(session_->document()).at(at.record).toObject().value(QStringLiteral("id")).toString();
     if (!ok || number < 0 || number > 255 || (!noiseTable(table) && number % 2)) {
         if (error) {
-            *error = noiseTable(table) ? QStringLiteral("A noise byte is 0-255 ($80 picks the short loop).")
-                                       : QStringLiteral("A note byte is an even offset into the period table, 0-100.");
+            *error = noiseTable(table) ? tr("A noise byte is 0-255 ($80 picks the short loop).")
+                                       : tr("A note byte is an even offset into the period table, 0-100.");
         }
         return false;
     }
     return soundEffectData(session_)->setTableValue(table, at.index, number,
-                                                    QStringLiteral("Edit %1 byte %2").arg(tableTitle(table)).arg(at.index), error);
+                                                    tr("Edit %1 byte %2").arg(tableTitle(table)).arg(at.index), error);
 }
 
 sdk::Budget SmbSfxTablesModel::budget() const {
     sdk::Budget budget;
-    budget.text = QStringLiteral("%1 bytes in four fixed tables").arg(rowCount());
+    budget.text = tr("%1 bytes in four fixed tables").arg(rowCount());
     return budget;
 }
 
 sdk::Inspection SmbSfxTablesModel::inspect() const {
     sdk::Inspection inspection;
-    inspection.kicker = QStringLiteral("Sound effect tables");
+    inspection.kicker = tr("Sound effect tables");
     inspection.engineTag = kCodec;
     const Row at = rowAt(row_);
     if (at.record >= 0) {
         const QString table = records(session_->document()).at(at.record).toObject().value(QStringLiteral("id")).toString();
-        inspection.title = QStringLiteral("%1 · byte %2").arg(tableTitle(table)).arg(at.index);
+        inspection.title = tr("%1 · byte %2").arg(tableTitle(table)).arg(at.index);
     } else {
         inspection.title = title();
     }
-    inspection.note = QStringLiteral("The bytes SoundEngine steps through for the 1-up, the power-up, the power-up "
-                                     "reveal and vine, and breaking bricks. Note bytes are offsets into the music "
-                                     "period table, so a value plays the note music plays with it; changing the period "
-                                     "table in Music changes these too. The 1-up, power-up and brick tables are read "
-                                     "from their last byte back. Open an effect to hear the change and drag its notes.");
+    inspection.note = tr("The bytes SoundEngine steps through for the 1-up, the power-up, the power-up "
+                         "reveal and vine, and breaking bricks. Note bytes are offsets into the music "
+                         "period table, so a value plays the note music plays with it; changing the period "
+                         "table in Music changes these too. The 1-up, power-up and brick tables are read "
+                         "from their last byte back. Open an effect to hear the change and drag its notes.");
     return inspection;
 }
 

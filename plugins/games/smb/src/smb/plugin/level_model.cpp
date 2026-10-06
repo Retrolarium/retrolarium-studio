@@ -185,10 +185,10 @@ QSize SmbLevelModel::gridSize() const {
 }
 
 QVector<sdk::Tool> SmbLevelModel::tools() const {
-    return {{QStringLiteral("select"), QStringLiteral("Select and move (Hero: the start point)"),
+    return {{QStringLiteral("select"), tr("Select and move (Hero: the start point)"),
              QStringLiteral("select")},
-            {QStringLiteral("place"), QStringLiteral("Add the library item"), QStringLiteral("place")},
-            {QStringLiteral("remove"), QStringLiteral("Delete objects and enemies"), QStringLiteral("erase")}};
+            {QStringLiteral("place"), tr("Add the library item"), QStringLiteral("place")},
+            {QStringLiteral("remove"), tr("Delete objects and enemies"), QStringLiteral("erase")}};
 }
 
 QImage SmbLevelModel::render() const {
@@ -230,7 +230,7 @@ QVector<sdk::MapObject> SmbLevelModel::objects() const {
     }
     sdk::MapObject hero;
     hero.id = QStringLiteral("hero");
-    hero.label = QStringLiteral("Hero · start point");
+    hero.label = tr("Hero · start point");
     hero.cells = cellsOf(session_->painter().heroBounds(session_->heroCell(area_)));
     hero.movable = true;
     result << hero;
@@ -284,8 +284,8 @@ bool SmbLevelModel::roomFor(const SmbArea& edited, QString* error) const {
     if (pool.pooled) {
         if (pool.objectUsed > pool.objectSize) {
             if (error) {
-                *error = QStringLiteral("All levels share %1 bytes for objects; this would need %2. Delete or "
-                                        "shorten an object in any level first.")
+                *error = tr("All levels share %1 bytes for objects; this would need %2. Delete or "
+                            "shorten an object in any level first.")
                              .arg(pool.objectSize)
                              .arg(pool.objectUsed);
             }
@@ -293,8 +293,8 @@ bool SmbLevelModel::roomFor(const SmbArea& edited, QString* error) const {
         }
         if (pool.enemyUsed > pool.enemySize) {
             if (error) {
-                *error = QStringLiteral("All levels share %1 bytes for enemies; this would need %2. Delete an "
-                                        "enemy in any level first.")
+                *error = tr("All levels share %1 bytes for enemies; this would need %2. Delete an "
+                            "enemy in any level first.")
                              .arg(pool.enemySize)
                              .arg(pool.enemyUsed);
             }
@@ -302,8 +302,8 @@ bool SmbLevelModel::roomFor(const SmbArea& edited, QString* error) const {
         }
         if (edited.areaBytes() > 256 || edited.enemyBytes() > 256) {
             if (error) {
-                *error = QStringLiteral("One level holds at most 256 bytes of objects and of enemies; the game "
-                                        "reads them with an 8-bit index.");
+                *error = tr("One level holds at most 256 bytes of objects and of enemies; the game "
+                            "reads them with an 8-bit index.");
             }
             return false;
         }
@@ -311,8 +311,8 @@ bool SmbLevelModel::roomFor(const SmbArea& edited, QString* error) const {
     }
     if (!edited.areaFits()) {
         if (error) {
-            *error = QStringLiteral("%1 has no room: its objects would take %2 of the %3 bytes the ROM keeps "
-                                    "for them. Each area has a fixed space; delete or shorten an object first.")
+            *error = tr("%1 has no room: its objects would take %2 of the %3 bytes the ROM keeps "
+                        "for them. Each area has a fixed space; delete or shorten an object first.")
                          .arg(title())
                          .arg(edited.areaBytes())
                          .arg(edited.areaCapacity);
@@ -321,8 +321,8 @@ bool SmbLevelModel::roomFor(const SmbArea& edited, QString* error) const {
     }
     if (!edited.enemiesFit()) {
         if (error) {
-            *error = QStringLiteral("%1 has no room: its enemies would take %2 of the %3 bytes the ROM keeps "
-                                    "for them. Each area has a fixed space; delete an enemy first.")
+            *error = tr("%1 has no room: its enemies would take %2 of the %3 bytes the ROM keeps "
+                        "for them. Each area has a fixed space; delete an enemy first.")
                          .arg(title())
                          .arg(edited.enemyBytes())
                          .arg(edited.enemyCapacity);
@@ -447,7 +447,7 @@ void SmbLevelModel::endDrag() {
     ++dragSerial_;
     if (moved) {
         QString error;
-        if (!commitArea(*moved, QStringLiteral("Move %1 in %2").arg(what, title()), &error)) {
+        if (!commitArea(*moved, tr("Move %1 in %2").arg(what, title()), &error)) {
             emit contentChanged();
         }
     } else {
@@ -486,11 +486,11 @@ bool SmbLevelModel::placeObject(const QString& libraryItem, QPoint cell, QString
         name = enemyName(enemyKind);
     } else {
         if (error) {
-            *error = QStringLiteral("Pick an object or an enemy in the library first.");
+            *error = tr("Pick an object or an enemy in the library first.");
         }
         return false;
     }
-    if (!commitArea(next, QStringLiteral("Add %1").arg(name), error)) {
+    if (!commitArea(next, tr("Add %1").arg(name), error)) {
         return false;
     }
     selectObject(id);
@@ -510,11 +510,11 @@ bool SmbLevelModel::removeObject(const QString& id, QString* error) {
         removeEnemy(next.enemies, e);
     } else {
         if (error && id == QLatin1String("hero")) {
-            *error = QStringLiteral("Hero is the start point; move him instead.");
+            *error = tr("Hero is the start point; move him instead.");
         }
         return false;
     }
-    if (!commitArea(next, QStringLiteral("Delete %1").arg(name), error)) {
+    if (!commitArea(next, tr("Delete %1").arg(name), error)) {
         return false;
     }
     selectObject(QString());
@@ -545,7 +545,7 @@ bool SmbLevelModel::setField(const QString& key, const QVariant& value, QString*
         } else {
             return TileMapModel::setField(key, value, error);
         }
-        return commitArea(next, QStringLiteral("Edit %1").arg(areaObjectName(record.row, record.control)), error);
+        return commitArea(next, tr("Edit %1").arg(areaObjectName(record.row, record.control)), error);
     }
     if (e >= 0 && e < next.enemies.size()) {
         SmbEnemyRecord& record = next.enemies[e];
@@ -562,7 +562,7 @@ bool SmbLevelModel::setField(const QString& key, const QVariant& value, QString*
         } else {
             return TileMapModel::setField(key, value, error);
         }
-        return commitArea(next, QStringLiteral("Edit %1").arg(enemyName(record.objectOrPage)), error);
+        return commitArea(next, tr("Edit %1").arg(enemyName(record.objectOrPage)), error);
     }
     static const QStringList kHeader{QStringLiteral("timer"), QStringLiteral("entrance"), QStringLiteral("foreground"),
                                      QStringLiteral("style"), QStringLiteral("background"), QStringLiteral("terrain")};
@@ -573,7 +573,7 @@ bool SmbLevelModel::setField(const QString& key, const QVariant& value, QString*
     }
     next.header[field] = field == 0 ? std::max(0, int(timers().indexOf(value.toString())))
                                     : std::clamp(value.toInt(), 0, kMaximum.at(field));
-    return commitArea(next, QStringLiteral("Edit %1 header").arg(title()), error);
+    return commitArea(next, tr("Edit %1 header").arg(title()), error);
 }
 
 // ---------------------------------------------------------------- inspector
@@ -594,8 +594,8 @@ sdk::Library SmbLevelModel::library() const {
         }
         sdk::LibraryItem start;
         start.id = QStringLiteral("start");
-        start.label = QStringLiteral("Test start");
-        start.hint = QStringLiteral("drop where Play from selected (F5) puts Hero; not level data");
+        start.label = tr("Test start");
+        start.hint = tr("drop where Play from selected (F5) puts Hero; not level data");
         start.icon = session_->painter().hero();
         library_ << start;
         const QVector<SmbObjectKind>& objects = objectCatalog();
@@ -604,7 +604,7 @@ sdk::Library SmbLevelModel::library() const {
             sdk::LibraryItem item;
             item.id = QStringLiteral("add-object:%1").arg(i);
             item.label = kind.name;
-            item.hint = kind.row == 8 ? QStringLiteral("object") : QStringLiteral("row %1").arg(kind.row);
+            item.hint = kind.row == 8 ? QStringLiteral("object") : tr("row %1").arg(kind.row);
             try {
                 const SmbLevelScene scene = renderSmbLevelScene(area_, header, {newObject(kind, 1, 6)}, {}, 0, rendering);
                 const QImage image = session_->painter().render(scene, type, night);
@@ -630,9 +630,9 @@ sdk::Library SmbLevelModel::library() const {
     const SmbLevelPool pool = this->pool();
     const bool full = pool.pooled ? pool.objectSize - pool.objectUsed < 2
                                   : a.areaBytes() >= a.areaCapacity + (a.areaImplicitTerminator ? 1 : 0);
-    library.hint = full ? (pool.pooled ? QStringLiteral("levels full: delete something in any level")
-                                       : QStringLiteral("area full: delete something to add"))
-                        : QStringLiteral("drag onto the level, or pick and use the Add tool");
+    library.hint = full ? (pool.pooled ? tr("levels full: delete something in any level")
+                                       : tr("area full: delete something to add"))
+                        : tr("drag onto the level, or pick and use the Add tool");
     library.items = library_;
     return library;
 }
@@ -650,7 +650,7 @@ QString SmbLevelModel::startPoint() const {
     if (start.area != area_) {
         return {};
     }
-    return QStringLiteral("World %1-%2 · column %3").arg(start.world).arg(start.level).arg(start.cell.x());
+    return tr("World %1-%2 · column %3").arg(start.world).arg(start.level).arg(start.cell.x());
 }
 
 sdk::Budget SmbLevelModel::budget() const {
@@ -661,7 +661,7 @@ sdk::Budget SmbLevelModel::budget() const {
         // The bar shows the ranges all levels share.
         budget.used = pool.objectUsed;
         budget.capacity = pool.objectSize;
-        budget.text = QStringLiteral("this level %1 + %2 B · all levels: objects %3 / %4, enemies %5 / %6")
+        budget.text = tr("this level %1 + %2 B · all levels: objects %3 / %4, enemies %5 / %6")
                           .arg(a.areaBytes())
                           .arg(a.enemyBytes())
                           .arg(pool.objectUsed)
@@ -672,7 +672,7 @@ sdk::Budget SmbLevelModel::budget() const {
     }
     budget.used = a.areaBytes();
     budget.capacity = a.areaCapacity + (a.areaImplicitTerminator ? 1 : 0);
-    budget.text = QStringLiteral("objects %1 / %2 · enemies %3 / %4 bytes")
+    budget.text = tr("objects %1 / %2 · enemies %3 / %4 bytes")
                       .arg(a.areaBytes())
                       .arg(a.areaCapacity)
                       .arg(a.enemyBytes())
@@ -683,9 +683,9 @@ sdk::Budget SmbLevelModel::budget() const {
 QVector<sdk::ViewOption> SmbLevelModel::viewOptions() const {
     sdk::ViewOption lighting;
     lighting.key = QStringLiteral("lighting");
-    lighting.label = QStringLiteral("Lighting");
+    lighting.label = tr("Lighting");
     lighting.value = session_->lighting();
-    lighting.choices = QStringList{QStringLiteral("Auto"), QStringLiteral("Day"), QStringLiteral("Night")};
+    lighting.choices = QStringList{tr("Auto"), QStringLiteral("Day"), QStringLiteral("Night")};
     return {lighting};
 }
 
@@ -698,12 +698,12 @@ void SmbLevelModel::setViewOption(const QString& key, const QString& value) {
 
 QString SmbLevelModel::statusText() const {
     const QPair<int, int> course = session_->levelOf(area_);
-    return course.first > 0 ? QStringLiteral("%1 · World %2-%3 · %4 columns")
+    return course.first > 0 ? tr("%1 · World %2-%3 · %4 columns")
                                   .arg(title())
                                   .arg(course.first)
                                   .arg(course.second)
                                   .arg(scene().width)
-                            : QStringLiteral("%1 · %2 columns").arg(title()).arg(scene().width);
+                            : tr("%1 · %2 columns").arg(title()).arg(scene().width);
 }
 
 sdk::Inspection SmbLevelModel::inspect() const {
@@ -716,7 +716,7 @@ sdk::Inspection SmbLevelModel::inspect() const {
     if (o >= 0 && o < a.objects.size()) {
         const SmbAreaObject& record = a.objects.at(o);
         const int page = objectPages(a.objects).at(o);
-        inspection.kicker = QStringLiteral("Area object");
+        inspection.kicker = tr("Area object");
         inspection.title = areaObjectName(record.row, record.control);
         const int cls = objectClass(record);
         if (cls >= 0) {
@@ -727,32 +727,32 @@ sdk::Inspection SmbLevelModel::inspect() const {
                 kinds << objectCatalog().at(i).name;
                 icons << libraryIcon(QStringLiteral("add-object:%1").arg(i));
             }
-            sdk::Field kind = choice(QStringLiteral("kind"), QStringLiteral("Kind"), inspection.title, kinds);
+            sdk::Field kind = choice(QStringLiteral("kind"), tr("Kind"), inspection.title, kinds);
             kind.choiceIcons = icons;
             inspection.fields << kind;
         }
         if (hasLength(record)) {
-            inspection.fields << integer(QStringLiteral("length"), QStringLiteral("Size"), (record.control & 15) + 1,
+            inspection.fields << integer(QStringLiteral("length"), tr("Size"), (record.control & 15) + 1,
                                          1, 16, QStringLiteral("cells"));
         }
         if (record.row <= 11) {
-            inspection.fields << integer(QStringLiteral("row"), QStringLiteral("Row"), record.row, 0, 11);
+            inspection.fields << integer(QStringLiteral("row"), tr("Row"), record.row, 0, 11);
         }
-        inspection.fields << readOnly(QStringLiteral("column"), QStringLiteral("Column"),
-                                      QStringLiteral("%1 (page %2, column %3)").arg(page * 16 + record.column).arg(page)
+        inspection.fields << readOnly(QStringLiteral("column"), tr("Column"),
+                                      tr("%1 (page %2, column %3)").arg(page * 16 + record.column).arg(page)
                                           .arg(record.column),
                                       true);
-        inspection.note = QStringLiteral("Drag to move it, Delete to remove it. The game reads the stream in page "
-                                         "and column order; moving a record keeps the others where they are.");
-        inspection.engine = {{QStringLiteral("Record"), QStringLiteral("%1 of %2").arg(o).arg(a.objects.size())},
-                             {QStringLiteral("Bytes"), hex((record.column << 4) | record.row) + QLatin1Char(' ') +
+        inspection.note = tr("Drag to move it, Delete to remove it. The game reads the stream in page "
+                             "and column order; moving a record keeps the others where they are.");
+        inspection.engine = {{tr("Record"), tr("%1 of %2").arg(o).arg(a.objects.size())},
+                             {tr("Bytes"), hex((record.column << 4) | record.row) + QLatin1Char(' ') +
                                                            hex((record.pageAdvance ? 0x80 : 0) | record.control)}};
         return inspection;
     }
     if (e >= 0 && e < a.enemies.size()) {
         const SmbEnemyRecord& record = a.enemies.at(e);
         const int page = enemyPages(a.enemies).at(e);
-        inspection.kicker = QStringLiteral("Enemy");
+        inspection.kicker = tr("Enemy");
         inspection.title = enemyName(record.objectOrPage);
         QStringList kinds;
         QVector<QImage> icons;
@@ -764,51 +764,51 @@ sdk::Inspection SmbLevelModel::inspect() const {
             kinds.prepend(inspection.title);
             icons.prepend(QImage());
         }
-        sdk::Field kind = choice(QStringLiteral("kind"), QStringLiteral("Kind"), inspection.title, kinds);
+        sdk::Field kind = choice(QStringLiteral("kind"), tr("Kind"), inspection.title, kinds);
         kind.choiceIcons = icons;
         inspection.fields = {kind,
-                             choice(QStringLiteral("hard"), QStringLiteral("Hard mode only"),
+                             choice(QStringLiteral("hard"), tr("Hard mode only"),
                                     yesNo().at(record.hardMode ? 1 : 0), yesNo()),
-                             integer(QStringLiteral("row"), QStringLiteral("Row"), record.row, 0, 13),
-                             readOnly(QStringLiteral("column"), QStringLiteral("Column"),
-                                      QStringLiteral("%1 (page %2, column %3)").arg(page * 16 + record.column).arg(page)
+                             integer(QStringLiteral("row"), tr("Row"), record.row, 0, 13),
+                             readOnly(QStringLiteral("column"), tr("Column"),
+                                      tr("%1 (page %2, column %3)").arg(page * 16 + record.column).arg(page)
                                           .arg(record.column),
                                       true)};
-        inspection.note = QStringLiteral("Hard-mode enemies appear from world 5 on and on a second quest.");
-        inspection.engine = {{QStringLiteral("Record"), QStringLiteral("%1 of %2").arg(e).arg(a.enemies.size())},
-                             {QStringLiteral("Object"), hex(record.objectOrPage)}};
+        inspection.note = tr("Hard-mode enemies appear from world 5 on and on a second quest.");
+        inspection.engine = {{tr("Record"), tr("%1 of %2").arg(e).arg(a.enemies.size())},
+                             {tr("Object"), hex(record.objectOrPage)}};
         return inspection;
     }
     if (selected_ == QLatin1String("hero")) {
         const SmbStart start = session_->start();
         const QPoint cell = session_->heroCell(area_);
-        inspection.kicker = QStringLiteral("Start point");
-        inspection.title = QStringLiteral("Hero");
-        inspection.fields = {readOnly(QStringLiteral("column"), QStringLiteral("Column"), cell.x()),
-                             readOnly(QStringLiteral("row"), QStringLiteral("Row"), cell.y()),
-                             readOnly(QStringLiteral("page"), QStringLiteral("Page"), cell.x() / 16),
-                             readOnly(QStringLiteral("course"), QStringLiteral("Plays as"),
-                                      QStringLiteral("World %1-%2").arg(start.world).arg(start.level))};
-        inspection.note = QStringLiteral("Drag Hero to where Play from selected (F5) puts him. The start point "
-                                         "is a playtest setting, not level data.");
+        inspection.kicker = tr("Start point");
+        inspection.title = tr("Hero");
+        inspection.fields = {readOnly(QStringLiteral("column"), tr("Column"), cell.x()),
+                             readOnly(QStringLiteral("row"), tr("Row"), cell.y()),
+                             readOnly(QStringLiteral("page"), tr("Page"), cell.x() / 16),
+                             readOnly(QStringLiteral("course"), tr("Plays as"),
+                                      tr("World %1-%2").arg(start.world).arg(start.level))};
+        inspection.note = tr("Drag Hero to where Play from selected (F5) puts him. The start point "
+                             "is a playtest setting, not level data.");
         return inspection;
     }
-    inspection.kicker = QStringLiteral("Area");
+    inspection.kicker = tr("Area");
     inspection.title = title();
     const QVector<int>& h = a.header;
-    inspection.fields = {choice(QStringLiteral("timer"), QStringLiteral("Timer"), timers().value(h.value(0)), timers()),
-                         integer(QStringLiteral("entrance"), QStringLiteral("Entrance"), h.value(1), 0, 7),
-                         integer(QStringLiteral("foreground"), QStringLiteral("Foreground"), h.value(2), 0, 7),
-                         integer(QStringLiteral("style"), QStringLiteral("Style"), h.value(3), 0, 3),
-                         integer(QStringLiteral("background"), QStringLiteral("Background"), h.value(4), 0, 3),
-                         integer(QStringLiteral("terrain"), QStringLiteral("Terrain"), h.value(5), 0, 15)};
-    inspection.note = QStringLiteral("Drag objects and enemies onto the level from the library. Foreground 4-7 "
-                                     "set the sky colour (night, snow); terrain picks the floor and ceiling.");
-    inspection.engine = {{QStringLiteral("Objects"), QStringLiteral("%1 records · %2 / %3 bytes")
+    inspection.fields = {choice(QStringLiteral("timer"), tr("Timer"), timers().value(h.value(0)), timers()),
+                         integer(QStringLiteral("entrance"), tr("Entrance"), h.value(1), 0, 7),
+                         integer(QStringLiteral("foreground"), tr("Foreground"), h.value(2), 0, 7),
+                         integer(QStringLiteral("style"), tr("Style"), h.value(3), 0, 3),
+                         integer(QStringLiteral("background"), tr("Background"), h.value(4), 0, 3),
+                         integer(QStringLiteral("terrain"), tr("Terrain"), h.value(5), 0, 15)};
+    inspection.note = tr("Drag objects and enemies onto the level from the library. Foreground 4-7 "
+                         "set the sky colour (night, snow); terrain picks the floor and ceiling.");
+    inspection.engine = {{tr("Objects"), tr("%1 records · %2 / %3 bytes")
                                                          .arg(a.objects.size())
                                                          .arg(a.areaBytes())
                                                          .arg(a.areaCapacity)},
-                         {QStringLiteral("Enemies"), QStringLiteral("%1 records · %2 / %3 bytes")
+                         {tr("Enemies"), tr("%1 records · %2 / %3 bytes")
                                                          .arg(a.enemies.size())
                                                          .arg(a.enemyBytes())
                                                          .arg(a.enemyCapacity)}};

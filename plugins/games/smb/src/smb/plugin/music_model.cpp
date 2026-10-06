@@ -1,5 +1,6 @@
 #include "smb/plugin/music_model.hpp"
 
+#include "sdk/i18n.hpp"
 #include "sdk/plugin.hpp"
 #include "smb/plugin/smb_session.hpp"
 
@@ -21,8 +22,8 @@ QString hex(int value, int digits = 2) {
 }
 
 const QStringList& beatNames() {
-    static const QStringList names{QStringLiteral("Rest"), QStringLiteral("Short"), QStringLiteral("Strong"),
-                                   QStringLiteral("Long")};
+    static const QStringList names{rlTr("smb", "Rest"), rlTr("smb", "Short"), rlTr("smb", "Strong"),
+                                   rlTr("smb", "Long")};
     return names;
 }
 
@@ -268,7 +269,7 @@ void SmbMusicModel::endEdit() {
     if (changed) {
         const QString id = session_->music();
         session_->edit(
-            QStringLiteral("Edit a note of %1").arg(header_),
+            tr("Edit a note of %1").arg(header_),
             [id, next](SmbResourceDocument& d) { d.setResource(id, next.toJson(d.resource(id))); }, nullptr);
     }
     emit contentChanged();
@@ -299,13 +300,13 @@ bool SmbMusicModel::setField(const QString& key, const QVariant& value, QString*
     const int offset = event.offset;
     if (key == QLatin1String("period")) {
         const int period = value.toInt();
-        return editMusic(QStringLiteral("Set a note of %1").arg(header_),
+        return editMusic(tr("Set a note of %1").arg(header_),
                          [channelId, offset, period](SmbMusic& m) { m.setNotePeriod(channelId, offset, period); }, error);
     }
     if (key == QLatin1String("length")) {
         // "20 ticks (entry 2)"
-        const int index = value.toString().section(QStringLiteral("entry "), 1).section(QLatin1Char(')'), 0, 0).toInt();
-        return editMusic(QStringLiteral("Set a note length of %1").arg(header_),
+        const int index = value.toString().section(tr("entry "), 1).section(QLatin1Char(')'), 0, 0).toInt();
+        return editMusic(tr("Set a note length of %1").arg(header_),
                          [channelId, offset, index](SmbMusic& m) { m.setEventLength(channelId, offset, index); }, error);
     }
     if (key == QLatin1String("run")) {
@@ -318,17 +319,17 @@ bool SmbMusicModel::setField(const QString& key, const QVariant& value, QString*
             }
         }
         if (lengthOffset < 0) {
-            if (error) *error = QStringLiteral("No length byte starts this run.");
+            if (error) *error = tr("No length byte starts this run.");
             return false;
         }
-        const int index = value.toString().section(QStringLiteral("entry "), 1).section(QLatin1Char(')'), 0, 0).toInt();
-        return editMusic(QStringLiteral("Set a run length of %1").arg(header_),
+        const int index = value.toString().section(tr("entry "), 1).section(QLatin1Char(')'), 0, 0).toInt();
+        return editMusic(tr("Set a run length of %1").arg(header_),
                          [channelId, lengthOffset, index](SmbMusic& m) { m.setEventLength(channelId, lengthOffset, index); },
                          error);
     }
     if (key == QLatin1String("beat")) {
         const int beat = std::max(0, beatNames().indexOf(value.toString()));
-        return editMusic(QStringLiteral("Set a beat of %1").arg(header_),
+        return editMusic(tr("Set a beat of %1").arg(header_),
                          [offset, beat](SmbMusic& m) { m.setBeat(offset, beat); }, error);
     }
     return SequencerModel::setField(key, value, error);
@@ -350,61 +351,61 @@ sdk::Inspection SmbMusicModel::inspect() const {
     const int base = t.lengthBase;
     QStringList lengthChoices;
     for (int i = 0; i < 8 && base + i < music().lengths.size(); ++i) {
-        lengthChoices << QStringLiteral("%1 ticks (entry %2)").arg(music().lengths.at(base + i)).arg(i);
+        lengthChoices << tr("%1 ticks (entry %2)").arg(music().lengths.at(base + i)).arg(i);
     }
     int c = 0;
     int e = 0;
     if (!find(selected_, &c, &e)) {
-        inspection.kicker = QStringLiteral("Song");
+        inspection.kicker = tr("Song");
         inspection.title = header_;
         sdk::Field length;
         length.key = QStringLiteral("duration");
-        length.label = QStringLiteral("Length");
-        length.value = QStringLiteral("%1 ticks · %2 s").arg(t.duration).arg(t.duration / kFrameRate, 0, 'f', 1);
+        length.label = tr("Length");
+        length.value = tr("%1 ticks · %2 s").arg(t.duration).arg(t.duration / kFrameRate, 0, 'f', 1);
         length.monospace = true;
         sdk::Field chans;
         chans.key = QStringLiteral("channels");
-        chans.label = QStringLiteral("Channels");
+        chans.label = tr("Channels");
         QStringList names;
         for (const SmbMusicChannel& ch : t.channels) names << SmbMusic::channelLabel(ch.id);
         chans.value = names.join(QStringLiteral(", "));
         sdk::Field used;
         used.key = QStringLiteral("used");
-        used.label = QStringLiteral("Played as");
+        used.label = tr("Played as");
         QStringList selectors;
         for (const auto& s : music().selectors) {
             if (s.second == header_) selectors << s.first;
         }
-        if (music().groundSchedule.contains(header_)) selectors << QStringLiteral("ground theme");
+        if (music().groundSchedule.contains(header_)) selectors << tr("ground theme");
         used.value = selectors.isEmpty() ? QStringLiteral("—") : selectors.join(QStringLiteral(", "));
         inspection.fields = {length, chans, used};
         inspection.note = timelineError_.isEmpty()
-                              ? QStringLiteral("Drag a note up or down to change its pitch; square 1 and drum notes "
-                                               "also change length. Songs share stream bytes, so the inspector names "
-                                               "every song a note belongs to. Play renders the song with the kit.")
+                              ? tr("Drag a note up or down to change its pitch; square 1 and drum notes "
+                                   "also change length. Songs share stream bytes, so the inspector names "
+                                   "every song a note belongs to. Play renders the song with the kit.")
                               : timelineError_;
-        inspection.engine = {{QStringLiteral("Stream"), hex(t.channels.isEmpty() ? 0 : t.channels.first().entry, 4)},
-                             {QStringLiteral("Length row"), QString::number(base)}};
+        inspection.engine = {{tr("Stream"), hex(t.channels.isEmpty() ? 0 : t.channels.first().entry, 4)},
+                             {tr("Length row"), QString::number(base)}};
         return inspection;
     }
     const SmbMusicChannel& channel = t.channels.at(c);
     const SmbMusicEvent& event = channel.events.at(e);
     const int raw = music().arena.value(event.offset);
-    inspection.kicker = QStringLiteral("Note · %1").arg(SmbMusic::channelLabel(channel.id));
+    inspection.kicker = tr("Note · %1").arg(SmbMusic::channelLabel(channel.id));
     sdk::Field start;
     start.key = QStringLiteral("start");
-    start.label = QStringLiteral("Start");
-    start.value = QStringLiteral("tick %1").arg(event.tick);
+    start.label = tr("Start");
+    start.value = tr("tick %1").arg(event.tick);
     start.monospace = true;
     sdk::Field length;
     length.key = QStringLiteral("length");
-    length.label = QStringLiteral("Length");
+    length.label = tr("Length");
     if (channel.id == QLatin1String("square1") || channel.id == QLatin1String("noise")) {
         length.type = sdk::Field::Type::Choice;
         length.choices = lengthChoices;
         length.value = lengthChoices.value(event.lengthIndex);
     } else {
-        length.value = QStringLiteral("%1 ticks").arg(event.duration);
+        length.value = tr("%1 ticks").arg(event.duration);
         length.monospace = true;
     }
     inspection.fields << start;
@@ -412,31 +413,31 @@ sdk::Inspection SmbMusicModel::inspect() const {
         inspection.title = beatNames().value(event.beat);
         sdk::Field beat;
         beat.key = QStringLiteral("beat");
-        beat.label = QStringLiteral("Beat");
+        beat.label = tr("Beat");
         beat.type = sdk::Field::Type::Choice;
         beat.choices = beatNames();
         beat.value = beatNames().value(event.beat);
         inspection.fields << beat << length;
     } else if (event.kind == SmbMusicEvent::Kind::Rest) {
-        inspection.title = QStringLiteral("Rest");
+        inspection.title = tr("Rest");
         inspection.fields << length;
     } else {
         const int pitch = music().pitchOf(event.periodIndex, channel.id);
-        inspection.title = pitch >= 0 ? pitchName(pitch) : QStringLiteral("Silent");
+        inspection.title = pitch >= 0 ? pitchName(pitch) : tr("Silent");
         sdk::Field period;
         period.key = QStringLiteral("period");
-        period.label = QStringLiteral("Period entry");
+        period.label = tr("Period entry");
         period.type = sdk::Field::Type::Integer;
         period.value = event.periodIndex;
         period.minimum = channel.id == QLatin1String("square1") ? 0 : 1;
         period.maximum = channel.id == QLatin1String("square1") ? 31 : std::min(63, int(music().periods.size()) - 1);
-        period.hint = QStringLiteral("timer %1").arg(music().periods.value(event.periodIndex));
+        period.hint = tr("timer %1").arg(music().periods.value(event.periodIndex));
         period.monospace = true;
         inspection.fields << period << length;
         if (channel.id != QLatin1String("square1")) {
             sdk::Field run;
             run.key = QStringLiteral("run");
-            run.label = QStringLiteral("Run length");
+            run.label = tr("Run length");
             run.type = sdk::Field::Type::Choice;
             run.choices = lengthChoices;
             run.value = lengthChoices.value(lengthIndexFor(event.duration));
@@ -445,22 +446,22 @@ sdk::Inspection SmbMusicModel::inspect() const {
     }
     sdk::Field byte;
     byte.key = QStringLiteral("byte");
-    byte.label = QStringLiteral("Byte");
-    byte.value = QStringLiteral("%1 at %2").arg(hex(raw)).arg(hex(event.offset, 4));
+    byte.label = tr("Byte");
+    byte.value = tr("%1 at %2").arg(hex(raw)).arg(hex(event.offset, 4));
     byte.monospace = true;
     inspection.fields << byte;
     const QStringList readers = music().readersOf(event.offset);
     sdk::Field shared;
     shared.key = QStringLiteral("shared");
-    shared.label = QStringLiteral("Heard in");
+    shared.label = tr("Heard in");
     shared.value = readers.join(QStringLiteral(", "));
     inspection.fields << shared;
     QString note = channel.id == QLatin1String("square1") || channel.id == QLatin1String("noise")
-                       ? QStringLiteral("This byte holds both the note and its length.")
-                       : QStringLiteral("On this channel a length byte sets the length of every note after it; Run "
-                                        "length changes that byte.");
+                       ? tr("This byte holds both the note and its length.")
+                       : tr("On this channel a length byte sets the length of every note after it; Run "
+                            "length changes that byte.");
     if (readers.size() > 1) {
-        note += QStringLiteral(" Other songs read this byte too and change with it.");
+        note += tr(" Other songs read this byte too and change with it.");
     }
     inspection.note = note;
     return inspection;
@@ -476,7 +477,7 @@ sdk::Budget SmbMusicModel::budget() const {
 
 QString SmbMusicModel::statusText() const {
     const SmbMusicTimeline& t = timeline();
-    return QStringLiteral("%1 · %2 ticks · %3 channels").arg(header_).arg(t.duration).arg(t.channels.size());
+    return tr("%1 · %2 ticks · %3 channels").arg(header_).arg(t.duration).arg(t.channels.size());
 }
 
 // ---------------------------------------------------------------- listening
@@ -521,7 +522,7 @@ void SmbMusicModel::preview() {
         host->report(d);
         return;
     }
-    spec.label = QStringLiteral("Render %1").arg(header_);
+    spec.label = tr("Render %1").arg(header_);
     const QString header = header_;
     host->runProcess(spec, [host, wav, header](const sdk::ProcessResult& result) {
         if (!result.succeeded()) {
@@ -529,7 +530,7 @@ void SmbMusicModel::preview() {
                 sdk::Diagnostic d;
                 d.severity = sdk::Severity::Error;
                 d.source = QStringLiteral("sound");
-                d.message = QStringLiteral("Rendering %1 failed: %2")
+                d.message = tr("Rendering %1 failed: %2")
                                 .arg(header, QString::fromUtf8(result.standardError).trimmed().section(QLatin1Char('\n'), -1));
                 host->report(d);
             }
@@ -539,11 +540,11 @@ void SmbMusicModel::preview() {
             sdk::Diagnostic d;
             d.severity = sdk::Severity::Error;
             d.source = QStringLiteral("sound");
-            d.message = QStringLiteral("The kit wrote no WAV for %1.").arg(header);
+            d.message = tr("The kit wrote no WAV for %1.").arg(header);
             host->report(d);
             return;
         }
-        host->log(QStringLiteral("  Playing %1").arg(QDir::toNativeSeparators(wav)));
+        host->log(tr("  Playing %1").arg(QDir::toNativeSeparators(wav)));
         host->playAudio(wav);
     });
 }

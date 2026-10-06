@@ -1,5 +1,6 @@
 #include "smb/plugin/demo_model.hpp"
 
+#include "sdk/i18n.hpp"
 #include "smb/plugin/smb_session.hpp"
 
 #include <QJsonObject>
@@ -12,7 +13,7 @@ namespace rl::smb {
 namespace {
 
 const QStringList& buttonNames() {
-    static const QStringList kNames{QStringLiteral("A"),     QStringLiteral("B"),  QStringLiteral("SELECT"),
+    static const QStringList kNames{QStringLiteral("A"),     QStringLiteral("B"),  rlTr("smb", "SELECT"),
                                     QStringLiteral("START"), QStringLiteral("UP"), QStringLiteral("DOWN"),
                                     QStringLiteral("LEFT"),  QStringLiteral("RIGHT")};
     return kNames;
@@ -74,7 +75,7 @@ QJsonArray SmbDemoModel::steps() const {
 QVector<sdk::TableColumn> SmbDemoModel::columns() const {
     sdk::TableColumn step;
     step.key = QStringLiteral("step");
-    step.label = QStringLiteral("Step");
+    step.label = tr("Step");
     step.width = 70;
     step.muted = true;
     sdk::TableColumn frames;
@@ -85,12 +86,12 @@ QVector<sdk::TableColumn> SmbDemoModel::columns() const {
     frames.editable = true;
     sdk::TableColumn buttons;
     buttons.key = QStringLiteral("buttons");
-    buttons.label = QStringLiteral("Buttons held");
+    buttons.label = tr("Buttons held");
     buttons.monospace = true;
     buttons.editable = true;
     sdk::TableColumn at;
     at.key = QStringLiteral("at");
-    at.label = QStringLiteral("Starts at");
+    at.label = tr("Starts at");
     at.width = 120;
     at.muted = true;
     return {step, frames, buttons, at};
@@ -142,7 +143,7 @@ bool SmbDemoModel::setCell(int row, int column, const QString& value, QString* e
         bool ok = false;
         const int frames = value.trimmed().toInt(&ok);
         if (!ok || frames < 1 || frames > 255) {
-            if (error) *error = QStringLiteral("A step lasts 1-255 frames.");
+            if (error) *error = tr("A step lasts 1-255 frames.");
             return false;
         }
         step.insert(QStringLiteral("frames"), frames);
@@ -154,14 +155,14 @@ bool SmbDemoModel::setCell(int row, int column, const QString& value, QString* e
         }
         for (const QString& word : words) {
             if (word != QLatin1String("-") && !buttonNames().contains(word)) {
-                if (error) *error = QStringLiteral("Buttons are A, B, SELECT, START, UP, DOWN, LEFT and RIGHT.");
+                if (error) *error = tr("Buttons are A, B, SELECT, START, UP, DOWN, LEFT and RIGHT.");
                 return false;
             }
         }
         step.insert(QStringLiteral("buttons"), held);
     }
     list.replace(row, step);
-    return session_->editDemo(QStringLiteral("Edit demo step %1").arg(row + 1),
+    return session_->editDemo(tr("Edit demo step %1").arg(row + 1),
                               [list](QJsonObject& demo) { demo.insert(QStringLiteral("steps"), list); }, error);
 }
 
@@ -171,7 +172,7 @@ sdk::Budget SmbDemoModel::budget() const {
     sdk::Budget budget;
     budget.used = rowCount();
     budget.capacity = session_->demoCapacity();
-    budget.text = QStringLiteral("%1 / %2 steps · %3 frames, %4 s")
+    budget.text = tr("%1 / %2 steps · %3 frames, %4 s")
                       .arg(rowCount())
                       .arg(session_->demoCapacity())
                       .arg(frames)
@@ -186,29 +187,29 @@ QString SmbDemoModel::startPoint() const {
 QVector<sdk::EditorAction> SmbDemoModel::actions() const {
     sdk::EditorAction loop;
     loop.id = QStringLiteral("loop");
-    loop.label = QStringLiteral("Loop demo");
+    loop.label = tr("Loop demo");
     loop.icon = QStringLiteral("play");
-    loop.tooltip = QStringLiteral("Build and play the demo over and over, as the console plays it after power-on");
+    loop.tooltip = tr("Build and play the demo over and over, as the console plays it after power-on");
     loop.showsPlaytest = true;
     sdk::EditorAction record;
     record.danger = true;
     record.showsPlaytest = true;
     if (session_->recordingActive()) {
         record.id = QStringLiteral("stop");
-        record.label = QStringLiteral("Stop recording");
+        record.label = tr("Stop recording");
         record.icon = QStringLiteral("stop");
-        record.tooltip = QStringLiteral("Finish the recording and keep it as the demo");
+        record.tooltip = tr("Finish the recording and keep it as the demo");
     } else {
         record.id = QStringLiteral("record");
-        record.label = QStringLiteral("Record");
+        record.label = tr("Record");
         record.icon = QStringLiteral("record");
-        record.tooltip = QStringLiteral("Play the demo with your controller; what you play becomes the demo");
-        record.confirmHeading = QStringLiteral("Record a new demo?");
-        record.confirmText = QStringLiteral("You play 1-1 with your controller. When Hero dies, you press Start "
-                                            "or Stop recording, what you played replaces the current demo (%1 "
-                                            "steps). Undo brings it back.")
+        record.tooltip = tr("Play the demo with your controller; what you play becomes the demo");
+        record.confirmHeading = tr("Record a new demo?");
+        record.confirmText = tr("You play 1-1 with your controller. When Hero dies, you press Start "
+                                "or Stop recording, what you played replaces the current demo (%1 "
+                                "steps). Undo brings it back.")
                                  .arg(rowCount());
-        record.confirmAction = QStringLiteral("Record");
+        record.confirmAction = tr("Record");
     }
     return {loop, record};
 }
@@ -221,13 +222,13 @@ void SmbDemoModel::triggerAction(const QString& id) {
 
 sdk::Inspection SmbDemoModel::inspect() const {
     sdk::Inspection inspection;
-    inspection.kicker = QStringLiteral("Title demo");
-    inspection.title = QStringLiteral("Step %1").arg(row_ + 1);
-    inspection.note = QStringLiteral("When the title waits, the game plays this input in 1-1: each step holds its "
-                                     "buttons for its frames. Loop demo plays it over and over in the emulator. "
-                                     "Record plays 1-1 with your controller and keeps what you play when Hero "
-                                     "dies, you press Start or Stop recording; the game's tables hold %1 steps. "
-                                     "Write buttons as words, e.g. B RIGHT.")
+    inspection.kicker = tr("Title demo");
+    inspection.title = tr("Step %1").arg(row_ + 1);
+    inspection.note = tr("When the title waits, the game plays this input in 1-1: each step holds its "
+                         "buttons for its frames. Loop demo plays it over and over in the emulator. "
+                         "Record plays 1-1 with your controller and keeps what you play when Hero "
+                         "dies, you press Start or Stop recording; the game's tables hold %1 steps. "
+                         "Write buttons as words, e.g. B RIGHT.")
                           .arg(session_->demoCapacity());
     inspection.engineTag = QStringLiteral("smb.demo@1");
     return inspection;

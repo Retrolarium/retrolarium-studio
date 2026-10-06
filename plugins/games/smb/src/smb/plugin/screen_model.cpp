@@ -69,9 +69,9 @@ int SmbScreenModel::backdrop() const {
 // ---------------------------------------------------------------- view
 
 QVector<sdk::MapLayer> SmbScreenModel::layers() const {
-    return {{QStringLiteral("tiles"), QStringLiteral("Tiles")},
-            {QStringLiteral("palettes"), QStringLiteral("Palettes")},
-            {QStringLiteral("writes"), QStringLiteral("Writes")}};
+    return {{QStringLiteral("tiles"), tr("Tiles")},
+            {QStringLiteral("palettes"), tr("Palettes")},
+            {QStringLiteral("writes"), tr("Writes")}};
 }
 
 void SmbScreenModel::setCurrentLayer(const QString& id) {
@@ -86,21 +86,21 @@ void SmbScreenModel::setCurrentLayer(const QString& id) {
 
 QVector<sdk::Tool> SmbScreenModel::tools() const {
     if (layer_ == QLatin1String("writes")) {
-        return {{QStringLiteral("select"), QStringLiteral("Select a write and drag it elsewhere"),
+        return {{QStringLiteral("select"), tr("Select a write and drag it elsewhere"),
                  QStringLiteral("select")}};
     }
-    return {{QStringLiteral("select"), QStringLiteral("Select a cell"), QStringLiteral("select")},
+    return {{QStringLiteral("select"), tr("Select a cell"), QStringLiteral("select")},
             {QStringLiteral("paint"),
-             layer_ == QLatin1String("tiles") ? QStringLiteral("Paint the sheet's tile (right button takes one)")
-                                              : QStringLiteral("Paint a palette onto 16x16 blocks"),
+             layer_ == QLatin1String("tiles") ? tr("Paint the sheet's tile (right button takes one)")
+                                              : tr("Paint a palette onto 16x16 blocks"),
              QStringLiteral("paint")},
-            {QStringLiteral("pick"), QStringLiteral("Take a cell's tile or palette as the brush"), QStringLiteral("pick")}};
+            {QStringLiteral("pick"), tr("Take a cell's tile or palette as the brush"), QStringLiteral("pick")}};
 }
 
 QVector<sdk::ViewOption> SmbScreenModel::viewOptions() const {
     sdk::ViewOption palette;
     palette.key = QStringLiteral("palette");
-    palette.label = QStringLiteral("Colours");
+    palette.label = tr("Colours");
     palette.value = packetLabel(packet_);
     for (const QString& name : session_->document().packetNames(session_->palettes())) {
         if (session_->document().packetValues(session_->palettes(), name).size() >= 16) {
@@ -109,8 +109,8 @@ QVector<sdk::ViewOption> SmbScreenModel::viewOptions() const {
     }
     sdk::ViewOption written;
     written.key = QStringLiteral("written");
-    written.label = QStringLiteral("Written cells");
-    written.value = showWritten_ ? QStringLiteral("On") : QStringLiteral("Off");
+    written.label = tr("Written cells");
+    written.value = showWritten_ ? QStringLiteral("On") : tr("Off");
     written.toggle = true;
     return {palette, written};
 }
@@ -160,12 +160,12 @@ QVector<sdk::CellBrush> SmbScreenModel::brushes() const {
                                           QColor(120, 255, 90, 70)};
         QVector<sdk::CellBrush> result;
         for (int p = 0; p < 4; ++p) {
-            result << sdk::CellBrush{p, QStringLiteral("BG %1").arg(p), kColors[p]};
+            result << sdk::CellBrush{p, tr("BG %1").arg(p), kColors[p]};
         }
         return result;
     }
-    return {{kBlankTile, QStringLiteral("Blank"), QColor()},
-            {tile_, QStringLiteral("Tile %1").arg(hex(tile_)), QColor()}};
+    return {{kBlankTile, tr("Blank"), QColor()},
+            {tile_, tr("Tile %1").arg(hex(tile_)), QColor()}};
 }
 
 int SmbScreenModel::currentBrush() const {
@@ -236,16 +236,16 @@ bool SmbScreenModel::placeObject(const QString& libraryItem, QPoint cell, QStrin
     setCurrentLibraryItem(libraryItem);
     const QString screenKey = key_;
     selectObject(QStringLiteral("cell:%1").arg(tile));
-    return editSet(QStringLiteral("Set a tile in %1").arg(title()),
+    return editSet(tr("Set a tile in %1").arg(title()),
                    [screenKey, tile, value](SmbScreenSet& set) { set.setTile(set.indexOf(screenKey), tile, value); },
                    error);
 }
 
 QString SmbScreenModel::lockReason(QPoint) const {
     return layer_ == QLatin1String("palettes")
-               ? QStringLiteral("The game never writes the palettes of this block, so they stay as they are.")
-               : QStringLiteral("The game never writes this cell (shaded): it keeps the blank fill. Paint the bright "
-                                "cells the screen draws.");
+               ? tr("The game never writes the palettes of this block, so they stay as they are.")
+               : tr("The game never writes this cell (shaded): it keeps the blank fill. Paint the bright "
+                    "cells the screen draws.");
 }
 
 void SmbScreenModel::beginStroke() {
@@ -277,7 +277,7 @@ bool SmbScreenModel::paintCell(QPoint cell, int value) {
 }
 
 void SmbScreenModel::endStroke() {
-    commitCopy(QStringLiteral("Paint %1 in %2")
+    commitCopy(tr("Paint %1 in %2")
                    .arg(layer_ == QLatin1String("palettes") ? QStringLiteral("palettes") : QStringLiteral("tiles"),
                         title()));
 }
@@ -346,9 +346,9 @@ QString SmbScreenModel::writeLabel(int c) const {
         for (int i = 0; i < command.length; ++i) codes << command.values.value(command.valueIndex(i));
         text = set().encoding.decode(codes).trimmed();
     }
-    const QString shape = command.repeat ? QStringLiteral("%1x same").arg(command.length)
-                                         : QStringLiteral("%1 tiles").arg(command.length);
-    return text.isEmpty() || text.contains(QLatin1Char('?')) ? QStringLiteral("write %1 · %2").arg(c + 1).arg(shape)
+    const QString shape = command.repeat ? tr("%1x same").arg(command.length)
+                                         : tr("%1 tiles").arg(command.length);
+    return text.isEmpty() || text.contains(QLatin1Char('?')) ? tr("write %1 · %2").arg(c + 1).arg(shape)
                                                               : QStringLiteral("\"%1\"").arg(text);
 }
 
@@ -386,7 +386,7 @@ bool SmbScreenModel::dragObject(const QString& id, QPoint topLeftCell) {
 void SmbScreenModel::endDrag() {
     if (!dragging_) return;
     dragging_ = false;
-    commitCopy(QStringLiteral("Move a write in %1").arg(title()));
+    commitCopy(tr("Move a write in %1").arg(title()));
 }
 
 void SmbScreenModel::commitCopy(const QString& text) {
@@ -452,7 +452,7 @@ bool SmbScreenModel::setField(const QString& key, const QVariant& value, QString
         const int c = write_;
         const bool vertical = value.toString() == QLatin1String("Down");
         const int cell = screen().commands.value(c).address - screen().base;
-        return editSet(QStringLiteral("Turn a write in %1").arg(title()),
+        return editSet(tr("Turn a write in %1").arg(title()),
                        [screenKey, c, cell, vertical](SmbScreenSet& s) {
                            s.moveCommand(s.indexOf(screenKey), c, cell, vertical);
                        },
@@ -460,7 +460,7 @@ bool SmbScreenModel::setField(const QString& key, const QVariant& value, QString
     }
     if (key.startsWith(QLatin1String("text:"))) {
         const QString fieldKey = key.mid(5);
-        return editSet(QStringLiteral("Edit text in %1").arg(title()),
+        return editSet(tr("Edit text in %1").arg(title()),
                        [fieldKey, value](SmbScreenSet& s) {
                            for (const SmbScreenTextField& field : s.textFields) {
                                if (field.key == fieldKey) s.setText(field, value.toString());
@@ -474,12 +474,12 @@ bool SmbScreenModel::setField(const QString& key, const QVariant& value, QString
     const int cell = cell_;
     if (key == QLatin1String("tile")) {
         const int tile = value.toInt();
-        return editSet(QStringLiteral("Set a tile in %1").arg(title()),
+        return editSet(tr("Set a tile in %1").arg(title()),
                        [screenKey, cell, tile](SmbScreenSet& s) { s.setTile(s.indexOf(screenKey), cell, tile); }, error);
     }
     if (key == QLatin1String("palette")) {
         const int palette = value.toInt();
-        return editSet(QStringLiteral("Set a palette in %1").arg(title()),
+        return editSet(tr("Set a palette in %1").arg(title()),
                        [screenKey, cell, palette](SmbScreenSet& s) { s.setPalette(s.indexOf(screenKey), cell, palette); },
                        error);
     }
@@ -521,7 +521,7 @@ sdk::Library SmbScreenModel::library() const {
     }
     sdk::Library result;
     result.grid = true;
-    result.hint = QStringLiteral("click: brush · drag onto a cell");
+    result.hint = tr("click: brush · drag onto a cell");
     result.items = library_;
     return result;
 }
@@ -544,7 +544,7 @@ sdk::Inspection SmbScreenModel::inspect() const {
         f.label = field.label;
         f.type = sdk::Field::Type::Text;
         f.value = set().text(field);
-        f.hint = QStringLiteral("max %1").arg(set().maxWidth(field));
+        f.hint = tr("max %1").arg(set().maxWidth(field));
         f.monospace = true;
         textFields << f;
     }
@@ -553,37 +553,37 @@ sdk::Inspection SmbScreenModel::inspect() const {
         for (int tile = 0; tile < s.tiles.size(); ++tile) {
             if (s.tileWriter(tile).x() >= 0) ++written;
         }
-        inspection.kicker = QStringLiteral("Screen");
+        inspection.kicker = tr("Screen");
         inspection.title = s.label;
         sdk::Field list;
         list.key = QStringLiteral("list");
-        list.label = QStringLiteral("Display list");
-        list.value = QStringLiteral("%1 writes · %2 bytes").arg(s.commands.size()).arg(s.capacity);
+        list.label = tr("Display list");
+        list.value = tr("%1 writes · %2 bytes").arg(s.commands.size()).arg(s.capacity);
         list.monospace = true;
         sdk::Field cells;
         cells.key = QStringLiteral("cells");
-        cells.label = QStringLiteral("Written cells");
-        cells.value = QStringLiteral("%1 of %2").arg(written).arg(s.tiles.size());
+        cells.label = tr("Written cells");
+        cells.value = tr("%1 of %2").arg(written).arg(s.tiles.size());
         cells.monospace = true;
         inspection.fields = {list, cells};
         inspection.fields += textFields;
-        inspection.note = QStringLiteral("The game draws this screen by writing a short display list into the name "
-                                         "table; shaded cells keep the fill tile and cannot change. Pick a tile in "
-                                         "the Patterns sheet and paint, or switch to Palettes to colour 16x16 blocks.");
-        inspection.engine = {{QStringLiteral("Resource"), resource_},
-                             {QStringLiteral("Name table"), hex(s.base, 4)},
-                             {QStringLiteral("Capacity"), QStringLiteral("%1 bytes").arg(s.capacity)}};
+        inspection.note = tr("The game draws this screen by writing a short display list into the name "
+                             "table; shaded cells keep the fill tile and cannot change. Pick a tile in "
+                             "the Patterns sheet and paint, or switch to Palettes to colour 16x16 blocks.");
+        inspection.engine = {{tr("Resource"), resource_},
+                             {tr("Name table"), hex(s.base, 4)},
+                             {tr("Capacity"), tr("%1 bytes").arg(s.capacity)}};
         return inspection;
     }
     const int x = cell_ % s.width;
     const int y = cell_ / s.width;
     const QPoint writer = s.tileWriter(cell_);
     const QPoint attributeWriter = s.attributeWriter(s.attributeIndexOf(cell_));
-    inspection.kicker = QStringLiteral("Name table cell");
+    inspection.kicker = tr("Name table cell");
     inspection.title = QStringLiteral("Cell %1, %2").arg(x).arg(y);
     sdk::Field tile;
     tile.key = QStringLiteral("tile");
-    tile.label = QStringLiteral("Tile");
+    tile.label = tr("Tile");
     tile.type = writer.x() >= 0 ? sdk::Field::Type::Integer : sdk::Field::Type::ReadOnly;
     tile.value = s.tiles.at(cell_);
     tile.minimum = 0;
@@ -592,37 +592,37 @@ sdk::Inspection SmbScreenModel::inspect() const {
     tile.monospace = true;
     sdk::Field palette;
     palette.key = QStringLiteral("palette");
-    palette.label = QStringLiteral("Palette");
+    palette.label = tr("Palette");
     palette.type = attributeWriter.x() >= 0 ? sdk::Field::Type::Integer : sdk::Field::Type::ReadOnly;
     palette.value = s.paletteOf(cell_);
     palette.minimum = 0;
     palette.maximum = 3;
-    palette.hint = QStringLiteral("16x16 block");
+    palette.hint = tr("16x16 block");
     sdk::Field by;
     by.key = QStringLiteral("writer");
-    by.label = QStringLiteral("Written by");
+    by.label = tr("Written by");
     by.monospace = true;
     if (writer.x() < 0) {
-        by.value = QStringLiteral("nothing (fill)");
+        by.value = tr("nothing (fill)");
     } else {
         const SmbScreenCommand& c = s.commands.at(writer.x());
-        by.value = QStringLiteral("write %1 · %2%3").arg(writer.x() + 1).arg(hex(c.address, 4))
-                       .arg(c.repeat ? QStringLiteral(" · %1x same").arg(c.length) : QString());
+        by.value = tr("write %1 · %2%3").arg(writer.x() + 1).arg(hex(c.address, 4))
+                       .arg(c.repeat ? tr(" · %1x same").arg(c.length) : QString());
     }
     inspection.fields = {tile, palette, by};
     inspection.fields += textFields;
     if (writer.x() < 0) {
-        inspection.note = QStringLiteral("The display list never writes this cell, so it keeps the fill tile.");
+        inspection.note = tr("The display list never writes this cell, so it keeps the fill tile.");
     } else if (s.commands.at(writer.x()).repeat) {
-        inspection.note = QStringLiteral("This cell is part of a repeated write: the game writes one tile %1 times, "
-                                         "so changing it changes the whole run.")
+        inspection.note = tr("This cell is part of a repeated write: the game writes one tile %1 times, "
+                             "so changing it changes the whole run.")
                               .arg(s.commands.at(writer.x()).length);
     } else {
-        inspection.note = QStringLiteral("Pick a tile in the Patterns sheet and paint, or type its number. Palettes are "
-                                         "set per 16x16 block by the attribute table.");
+        inspection.note = tr("Pick a tile in the Patterns sheet and paint, or type its number. Palettes are "
+                             "set per 16x16 block by the attribute table.");
     }
-    inspection.engine = {{QStringLiteral("PPU address"), hex(s.base + cell_, 4)},
-                         {QStringLiteral("Attribute"), QStringLiteral("%1 · bits %2-%3")
+    inspection.engine = {{tr("PPU address"), hex(s.base + cell_, 4)},
+                         {tr("Attribute"), tr("%1 · bits %2-%3")
                                                            .arg(hex(s.attributeBase() + s.attributeIndexOf(cell_), 4))
                                                            .arg(s.attributeShiftOf(cell_))
                                                            .arg(s.attributeShiftOf(cell_) + 1)}};
@@ -634,61 +634,61 @@ sdk::Inspection SmbScreenModel::inspectWrites() const {
     sdk::Inspection inspection;
     inspection.engineTag = QStringLiteral("nes.ppu-screen-packets.v1");
     // What a move cannot carry along.
-    QString caveats = QStringLiteral(" Text fields keep their place in the ROM layout, so text a write carries "
-                                     "away no longer shows in Text.");
+    QString caveats = tr(" Text fields keep their place in the ROM layout, so text a write carries "
+                         "away no longer shows in Text.");
     if (key_ == QLatin1String("status")) {
-        caveats += QStringLiteral(" The score, coins, world and time digits are drawn by the game's code at fixed "
-                                  "places and do not follow the headings.");
+        caveats += tr(" The score, coins, world and time digits are drawn by the game's code at fixed "
+                      "places and do not follow the headings.");
     }
     if (write_ < 0 || write_ >= s.commands.size() || s.cellsOf(write_).isEmpty()) {
         int tileWrites = 0;
         for (int c = 0; c < s.commands.size(); ++c) {
             if (!s.cellsOf(c).isEmpty()) ++tileWrites;
         }
-        inspection.kicker = QStringLiteral("Writes");
+        inspection.kicker = tr("Writes");
         inspection.title = s.label;
         sdk::Field list;
         list.key = QStringLiteral("list");
-        list.label = QStringLiteral("Display list");
-        list.value = QStringLiteral("%1 writes · %2 bytes").arg(s.commands.size()).arg(s.capacity);
+        list.label = tr("Display list");
+        list.value = tr("%1 writes · %2 bytes").arg(s.commands.size()).arg(s.capacity);
         list.monospace = true;
         sdk::Field movable;
         movable.key = QStringLiteral("movable");
-        movable.label = QStringLiteral("To the name table");
+        movable.label = tr("To the name table");
         movable.value = QString::number(tileWrites);
         movable.monospace = true;
         inspection.fields = {list, movable};
-        inspection.note = QStringLiteral("Each write puts a run of tiles on the screen. Drag one to move it, or turn "
-                                         "it to run down; the list keeps its size.") + caveats;
+        inspection.note = tr("Each write puts a run of tiles on the screen. Drag one to move it, or turn "
+                             "it to run down; the list keeps its size.") + caveats;
         return inspection;
     }
     const SmbScreenCommand& command = s.commands.at(write_);
     const int cell = command.address - s.base;
-    inspection.kicker = QStringLiteral("Write %1").arg(write_ + 1);
+    inspection.kicker = tr("Write %1").arg(write_ + 1);
     inspection.title = writeLabel(write_);
     sdk::Field start;
     start.key = QStringLiteral("start");
-    start.label = QStringLiteral("Starts at");
-    start.value = QStringLiteral("cell %1, %2").arg(cell % s.width).arg(cell / s.width);
+    start.label = tr("Starts at");
+    start.value = tr("cell %1, %2").arg(cell % s.width).arg(cell / s.width);
     start.monospace = true;
     sdk::Field direction;
     direction.key = QStringLiteral("direction");
-    direction.label = QStringLiteral("Runs");
+    direction.label = tr("Runs");
     direction.type = sdk::Field::Type::Choice;
-    direction.choices = QStringList{QStringLiteral("Across"), QStringLiteral("Down")};
-    direction.value = command.vertical ? QStringLiteral("Down") : QStringLiteral("Across");
+    direction.choices = QStringList{tr("Across"), QStringLiteral("Down")};
+    direction.value = command.vertical ? QStringLiteral("Down") : tr("Across");
     sdk::Field length;
     length.key = QStringLiteral("length");
-    length.label = QStringLiteral("Length");
-    length.value = command.repeat ? QStringLiteral("%1 cells, one tile repeated").arg(command.length)
-                                  : QStringLiteral("%1 cells").arg(command.length);
+    length.label = tr("Length");
+    length.value = command.repeat ? tr("%1 cells, one tile repeated").arg(command.length)
+                                  : tr("%1 cells").arg(command.length);
     sdk::Field bytes;
     bytes.key = QStringLiteral("bytes");
-    bytes.label = QStringLiteral("Bytes");
-    bytes.value = QStringLiteral("%1 at PPU %2").arg(command.bytes()).arg(hex(command.address, 4));
+    bytes.label = tr("Bytes");
+    bytes.value = tr("%1 at PPU %2").arg(command.bytes()).arg(hex(command.address, 4));
     bytes.monospace = true;
     inspection.fields = {start, direction, length, bytes};
-    inspection.note = QStringLiteral("Drag the write to move it; the cells it leaves show the blank fill.") + caveats;
+    inspection.note = tr("Drag the write to move it; the cells it leaves show the blank fill.") + caveats;
     return inspection;
 }
 
@@ -699,7 +699,7 @@ sdk::Budget SmbScreenModel::budget() const {
     if (pool.pooled) {
         budget.used = pool.used;
         budget.capacity = pool.size;
-        budget.text = QStringLiteral("display list %1 bytes · all game screens %2 / %3")
+        budget.text = tr("display list %1 bytes · all game screens %2 / %3")
                           .arg(s.listBytes())
                           .arg(pool.used)
                           .arg(pool.size);
@@ -707,16 +707,16 @@ sdk::Budget SmbScreenModel::budget() const {
     }
     budget.used = s.capacity;
     budget.capacity = s.capacity;
-    budget.text = QStringLiteral("display list %1 bytes · fixed").arg(s.capacity);
+    budget.text = tr("display list %1 bytes · fixed").arg(s.capacity);
     return budget;
 }
 
 QString SmbScreenModel::statusText() const {
     const SmbScreen& s = screen();
     if (cell_ < 0 || cell_ >= s.tiles.size()) {
-        return QStringLiteral("%1 · %2x%3 tiles").arg(s.label).arg(s.width).arg(s.height);
+        return tr("%1 · %2x%3 tiles").arg(s.label).arg(s.width).arg(s.height);
     }
-    return QStringLiteral("%1 · cell %2, %3 · tile %4").arg(s.label).arg(cell_ % s.width).arg(cell_ / s.width)
+    return tr("%1 · cell %2, %3 · tile %4").arg(s.label).arg(cell_ % s.width).arg(cell_ / s.width)
         .arg(hex(s.tiles.at(cell_)));
 }
 

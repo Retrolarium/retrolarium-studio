@@ -12,22 +12,22 @@ SmbTextModel::SmbTextModel(SmbSession* session) : TableModel(session), session_(
 QVector<sdk::TableColumn> SmbTextModel::columns() const {
     sdk::TableColumn name;
     name.key = QStringLiteral("name");
-    name.label = QStringLiteral("Name");
+    name.label = tr("Name");
     name.width = 220;
     name.muted = true;
     sdk::TableColumn where;
     where.key = QStringLiteral("where");
-    where.label = QStringLiteral("Shown on");
+    where.label = tr("Shown on");
     where.width = 150;
     where.muted = true;
     sdk::TableColumn text;
     text.key = QStringLiteral("text");
-    text.label = QStringLiteral("Game text");
+    text.label = tr("Game text");
     text.monospace = true;
     text.editable = true;
     sdk::TableColumn length;
     length.key = QStringLiteral("length");
-    length.label = QStringLiteral("Length");
+    length.label = tr("Length");
     length.width = 170;
     length.budget = true;
     return {name, where, text, length};
@@ -44,7 +44,7 @@ QString SmbTextModel::cell(int row, int column) const {
     }
     const SmbTextSlot& slot = slotList.at(row);
     if (column == 0) return slot.label;
-    if (column == 1) return slot.screen.isEmpty() ? QStringLiteral("Game logic") : slot.screenLabel;
+    if (column == 1) return slot.screen.isEmpty() ? tr("Game logic") : slot.screenLabel;
     if (column == 2) return session_->text(row);
     return {};
 }
@@ -81,7 +81,7 @@ bool SmbTextModel::setText(int row, const QString& value, QString* error) {
         return false;
     }
     const SmbTextSlot slot = session_->textSlots().at(row);
-    return session_->edit(QStringLiteral("Edit %1").arg(slot.label),
+    return session_->edit(tr("Edit %1").arg(slot.label),
                           [slot, value](SmbResourceDocument& d) { setSlotText(d, slot, value); }, error);
 }
 
@@ -109,13 +109,13 @@ sdk::Budget SmbTextModel::budget() const {
     sdk::Budget budget;
     budget.used = used;
     budget.capacity = capacity;
-    budget.text = QStringLiteral("text %1 / %2 chars").arg(used).arg(capacity);
+    budget.text = tr("text %1 / %2 chars").arg(used).arg(capacity);
     const SmbScreenPool pool = screenPool(session_->document());
     if (pool.pooled) {
         // Screen texts that grow take from the bytes the game screens share.
         budget.used = pool.used;
         budget.capacity = pool.size;
-        budget.text = QStringLiteral("text %1 chars · game screens %2 / %3 bytes")
+        budget.text = tr("text %1 chars · game screens %2 / %3 bytes")
                           .arg(used)
                           .arg(pool.used)
                           .arg(pool.size);
@@ -130,7 +130,7 @@ sdk::Inspection SmbTextModel::inspect() const {
     }
     const SmbTextSlot& slot = session_->textSlots().at(row_);
     const QString value = session_->text(row_);
-    inspection.kicker = slot.screen.isEmpty() ? QStringLiteral("Text field") : QStringLiteral("Screen text");
+    inspection.kicker = slot.screen.isEmpty() ? QStringLiteral("Text field") : tr("Screen text");
     inspection.title = slot.label;
     sdk::Field text;
     text.key = QStringLiteral("text");
@@ -138,39 +138,39 @@ sdk::Inspection SmbTextModel::inspect() const {
     text.type = sdk::Field::Type::Text;
     text.value = value;
     const bool grows = slot.maxWidth != slot.width;
-    text.hint = QStringLiteral("max %1").arg(slot.maxWidth);
+    text.hint = tr("max %1").arg(slot.maxWidth);
     text.monospace = true;
     sdk::Field length;
     length.key = QStringLiteral("length");
-    length.label = QStringLiteral("Length");
+    length.label = tr("Length");
     length.value = QStringLiteral("%1 / %2").arg(value.size()).arg(slot.maxWidth);
-    length.hint = grows ? QStringLiteral("grows with the text") : QStringLiteral("fixed slot");
+    length.hint = grows ? tr("grows with the text") : tr("fixed slot");
     length.monospace = true;
     inspection.fields = {text, length};
     if (!slot.screen.isEmpty()) {
         sdk::Field where;
         where.key = QStringLiteral("where");
-        where.label = QStringLiteral("Screen");
+        where.label = tr("Screen");
         where.value = slot.screenLabel;
         inspection.fields << where;
     }
     inspection.preview = value;
     const SmbTextEncoding encoding = slotEncoding(session_->document(), slot);
-    inspection.note = grows ? QStringLiteral("This text is as long as you type it, up to the end of its row: the "
-                                             "game screens share their bytes, so a longer text needs another "
-                                             "screen text shorter. The font has %1; lowercase becomes uppercase.")
+    inspection.note = grows ? tr("This text is as long as you type it, up to the end of its row: the "
+                                 "game screens share their bytes, so a longer text needs another "
+                                 "screen text shorter. The font has %1; lowercase becomes uppercase.")
                                   .arg(encoding.summary())
-                            : QStringLiteral("Each text has a fixed slot in the ROM; shorter text is padded with "
-                                             "blanks. The font has %1; lowercase becomes uppercase.")
+                            : tr("Each text has a fixed slot in the ROM; shorter text is padded with "
+                                 "blanks. The font has %1; lowercase becomes uppercase.")
                                   .arg(encoding.summary());
     if (!slot.screen.isEmpty()) {
-        inspection.note += QStringLiteral(" Screens shows where it is drawn.");
+        inspection.note += tr(" Screens shows where it is drawn.");
     }
     inspection.engineTag = slot.screen.isEmpty() ? QStringLiteral("nes.fixed-text-fields.v1")
                                                  : QStringLiteral("nes.ppu-screen-packets.v1");
-    inspection.engine = {{QStringLiteral("Resource"), slot.resource},
-                         {QStringLiteral("Key"), slot.key},
-                         {QStringLiteral("Saved"), slotText(session_->saved(), slot)}};
+    inspection.engine = {{tr("Resource"), slot.resource},
+                         {tr("Key"), slot.key},
+                         {tr("Saved"), slotText(session_->saved(), slot)}};
     return inspection;
 }
 

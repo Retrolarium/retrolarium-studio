@@ -33,9 +33,9 @@ QSize PacmanMazeModel::gridSize() const {
 }
 
 QVector<sdk::Tool> PacmanMazeModel::tools() const {
-    return {{QStringLiteral("select"), QStringLiteral("Select a cell"), QStringLiteral("select")},
-            {QStringLiteral("paint"), QStringLiteral("Paint the sheet's tile (right button takes one)"), QStringLiteral("paint")},
-            {QStringLiteral("pick"), QStringLiteral("Take a cell's tile as the brush"), QStringLiteral("pick")}};
+    return {{QStringLiteral("select"), tr("Select a cell"), QStringLiteral("select")},
+            {QStringLiteral("paint"), tr("Paint the sheet's tile (right button takes one)"), QStringLiteral("paint")},
+            {QStringLiteral("pick"), tr("Take a cell's tile as the brush"), QStringLiteral("pick")}};
 }
 
 QImage PacmanMazeModel::render() const {
@@ -107,7 +107,7 @@ bool PacmanMazeModel::placeObject(const QString& libraryItem, QPoint cell, QStri
     QVector<int> g = grid();
     g[cell.y() * kColumns + cell.x()] = tile_;
     selectObject(QStringLiteral("cell:%1").arg(cell.y() * kColumns + cell.x()));
-    return commit(g, QStringLiteral("Set a maze tile"), error);
+    return commit(g, tr("Set a maze tile"), error);
 }
 
 void PacmanMazeModel::beginStroke() {
@@ -136,7 +136,7 @@ void PacmanMazeModel::endStroke() {
         return;
     }
     QString error;
-    commit(painted, QStringLiteral("Paint the maze"), &error);
+    commit(painted, tr("Paint the maze"), &error);
 }
 
 QVector<sdk::MapObject> PacmanMazeModel::objects() const {
@@ -150,15 +150,15 @@ QVector<sdk::MapObject> PacmanMazeModel::objects() const {
         result << o;
     };
     // The engine's fixed places (maze_studio_model.semantic_overlays).
-    landmark(QStringLiteral("tunnel-left"), QStringLiteral("Tunnel"), QRect(0, kTunnelRow, 1, 1));
-    landmark(QStringLiteral("tunnel-right"), QStringLiteral("Tunnel"), QRect(kColumns - 1, kTunnelRow, 1, 1));
-    landmark(QStringLiteral("house"), QStringLiteral("Ghost house"), QRect(9, 11, 5, 4));
-    landmark(QStringLiteral("door"), QStringLiteral("Door"), QRect(kDoorColumn, kDoorRow, 1, 1));
-    landmark(QStringLiteral("pacman"), QStringLiteral("Pac-Man start"), QRect(kPacmanColumn, kPacmanRow, 1, 1));
+    landmark(QStringLiteral("tunnel-left"), tr("Tunnel"), QRect(0, kTunnelRow, 1, 1));
+    landmark(QStringLiteral("tunnel-right"), tr("Tunnel"), QRect(kColumns - 1, kTunnelRow, 1, 1));
+    landmark(QStringLiteral("house"), tr("Ghost house"), QRect(9, 11, 5, 4));
+    landmark(QStringLiteral("door"), tr("Door"), QRect(kDoorColumn, kDoorRow, 1, 1));
+    landmark(QStringLiteral("pacman"), tr("Pac-Man start"), QRect(kPacmanColumn, kPacmanRow, 1, 1));
     const QVector<int> g = grid();
     for (int i = 0; i < g.size(); ++i) {
         if (g.at(i) == 0x01) {
-            landmark(QStringLiteral("power:%1").arg(i), QStringLiteral("Power pellet"), QRect(i % kColumns, i / kColumns, 1, 1));
+            landmark(QStringLiteral("power:%1").arg(i), tr("Power pellet"), QRect(i % kColumns, i / kColumns, 1, 1));
         }
     }
     for (int i = 0; i < g.size(); ++i) {
@@ -190,14 +190,14 @@ bool PacmanMazeModel::setField(const QString& key, const QVariant& value, QStrin
     if (cell_ < 0 || key != QLatin1String("tile")) return TileMapModel::setField(key, value, error);
     QVector<int> g = grid();
     g[cell_] = std::clamp(value.toInt(), 0, kSheetTiles - 1);
-    return commit(g, QStringLiteral("Set a maze tile"), error);
+    return commit(g, tr("Set a maze tile"), error);
 }
 
 sdk::Library PacmanMazeModel::sheet() const {
     sdk::Library result;
     result.grid = true;
     result.columns = 16;
-    result.hint = QStringLiteral("click: brush · drag onto a cell");
+    result.hint = tr("click: brush · drag onto a cell");
     const QVector<int> palette = session_->painter().colours(ids::kGameplay, 1);
     for (int tile = 0; tile < kSheetTiles; ++tile) {
         sdk::LibraryItem item;
@@ -215,7 +215,7 @@ sdk::Budget PacmanMazeModel::budget() const {
     sdk::Budget budget;
     budget.used = report.rleBytes;
     budget.capacity = kRleBytes;
-    budget.text = QStringLiteral("%1 / 192 pellets · %2 / 4 power · RLE %3 / %4 bytes")
+    budget.text = tr("%1 / 192 pellets · %2 / 4 power · RLE %3 / %4 bytes")
                       .arg(report.pellets)
                       .arg(report.powerPellets)
                       .arg(report.rleBytes)
@@ -229,27 +229,27 @@ sdk::Inspection PacmanMazeModel::inspect() const {
     sdk::Inspection inspection;
     inspection.engineTag = QStringLiteral("pacman.maze-rle.v1");
     QString checks;
-    if (report.errors.isEmpty()) checks = QStringLiteral("The maze passes the engine's checks.");
-    else checks = QStringLiteral("To fix before a build: ") + report.errors.join(QLatin1Char(' '));
+    if (report.errors.isEmpty()) checks = tr("The maze passes the engine's checks.");
+    else checks = tr("To fix before a build: ") + report.errors.join(QLatin1Char(' '));
     if (!report.warnings.isEmpty()) checks += QLatin1Char(' ') + report.warnings.join(QLatin1Char(' '));
     if (cell_ < 0 || cell_ >= g.size()) {
-        inspection.kicker = QStringLiteral("Maze");
+        inspection.kicker = tr("Maze");
         inspection.title = title();
         sdk::Field pellets;
         pellets.key = QStringLiteral("pellets");
-        pellets.label = QStringLiteral("Pellets");
-        pellets.value = QStringLiteral("%1 of 192 · %2 of 4 power").arg(report.pellets).arg(report.powerPellets);
+        pellets.label = tr("Pellets");
+        pellets.value = tr("%1 of 192 · %2 of 4 power").arg(report.pellets).arg(report.powerPellets);
         inspection.fields = {pellets};
-        inspection.note = QStringLiteral("Every round plays this maze. The round ends when 192 pellets are eaten, four "
-                                         "of them power pellets; the door, the spawns and the tunnel ends stay where "
-                                         "the engine expects them. Changed cells are outlined. ") + checks;
+        inspection.note = tr("Every round plays this maze. The round ends when 192 pellets are eaten, four "
+                             "of them power pellets; the door, the spawns and the tunnel ends stay where "
+                             "the engine expects them. Changed cells are outlined. ") + checks;
         return inspection;
     }
-    inspection.kicker = QStringLiteral("Maze cell");
-    inspection.title = QStringLiteral("Row %1, column %2").arg(cell_ / kColumns).arg(cell_ % kColumns);
+    inspection.kicker = tr("Maze cell");
+    inspection.title = tr("Row %1, column %2").arg(cell_ / kColumns).arg(cell_ % kColumns);
     sdk::Field tile;
     tile.key = QStringLiteral("tile");
-    tile.label = QStringLiteral("Tile");
+    tile.label = tr("Tile");
     tile.type = sdk::Field::Type::Integer;
     tile.value = g.at(cell_);
     tile.minimum = 0;
@@ -257,14 +257,14 @@ sdk::Inspection PacmanMazeModel::inspect() const {
     tile.hint = QStringLiteral("%1 · %2").arg(nes::hex(g.at(cell_)), tileName(g.at(cell_)));
     tile.monospace = true;
     inspection.fields = {tile};
-    inspection.note = QStringLiteral("Tiles below $10 are paths Pac-Man and the ghosts can walk; $10 and up are walls. ") + checks;
+    inspection.note = tr("Tiles below $10 are paths Pac-Man and the ghosts can walk; $10 and up are walls. ") + checks;
     return inspection;
 }
 
 QString PacmanMazeModel::statusText() const {
-    if (cell_ < 0) return QStringLiteral("Maze · 27x22");
+    if (cell_ < 0) return tr("Maze · 27x22");
     const QVector<int> g = grid();
-    return QStringLiteral("Maze · row %1, column %2 · %3").arg(cell_ / kColumns).arg(cell_ % kColumns).arg(nes::hex(g.value(cell_)));
+    return tr("Maze · row %1, column %2 · %3").arg(cell_ / kColumns).arg(cell_ % kColumns).arg(nes::hex(g.value(cell_)));
 }
 
 QString PacmanMazeModel::startPoint() const {
@@ -276,8 +276,8 @@ QVector<sdk::ViewOption> PacmanMazeModel::viewOptions() const {
     // selected starts.
     sdk::ViewOption round;
     round.key = QStringLiteral("round");
-    round.label = QStringLiteral("Start");
-    for (int r = 1; r <= 23; ++r) round.choices << QStringLiteral("Round %1").arg(r);
+    round.label = tr("Start");
+    for (int r = 1; r <= 23; ++r) round.choices << tr("Round %1").arg(r);
     round.value = session_->selectedStart();
     return {round};
 }

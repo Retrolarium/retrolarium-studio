@@ -1,5 +1,7 @@
 #include "solomon/data/names.hpp"
 
+#include "sdk/i18n.hpp"
+
 #include <QStringList>
 
 namespace rl::solomon {
@@ -93,7 +95,7 @@ QString itemTypeName(int type) {
     if (type >= 0xc0) return name;
     QStringList flags;
     if (type & 0x40) flags << QStringLiteral("hidden");
-    if (type & 0x80) flags << QStringLiteral("in a brown block");
+    if (type & 0x80) flags << rlTr("solomon", "in a brown block");
     return flags.isEmpty() ? name : QStringLiteral("%1 (%2)").arg(name, flags.join(QStringLiteral(", ")));
 }
 
@@ -102,23 +104,23 @@ QString constellationName(int opcode) {
 }
 
 QString enemyName(int type) {
-    if (type < 0x18 || type > 0x83) return QStringLiteral("Not an enemy");
+    if (type < 0x18 || type > 0x83) return rlTr("solomon", "Not an enemy");
     if (type < 0x1c) {
         const int variant = type - 0x18;
-        return variant ? QStringLiteral("Medal Hero variant %1").arg(variant + 1) : QStringLiteral("Medal Hero");
+        return variant ? rlTr("solomon", "Medal Hero variant %1").arg(variant + 1) : rlTr("solomon", "Medal Hero");
     }
     if (type < 0x20) {
         static const char* const kFairies[4] = {"Fairy", "Captive Fairy", "Erratic Fairy (glitch)",
                                                 "Erratic Captive Fairy (glitch)"};
         return QString::fromLatin1(kFairies[type - 0x1c]);
     }
-    if (type < 0x24) return QStringLiteral("Bullet (%1)").arg(direction4(type - 0x20));
-    if (type < 0x28) return QStringLiteral("Wall Face (%1)").arg(direction4(type - 0x24));
+    if (type < 0x24) return rlTr("solomon", "Bullet (%1)").arg(direction4(type - 0x20));
+    if (type < 0x28) return rlTr("solomon", "Wall Face (%1)").arg(direction4(type - 0x24));
     if (type < 0x30) {
         static const char* const kSpins[4] = {"right, counterclockwise", "left, clockwise", "up, clockwise",
                                               "down, counterclockwise"};
         const int offset = type - 0x28;
-        return QStringLiteral("Fireball (%1, speed %2)").arg(QString::fromLatin1(kSpins[offset & 3])).arg(offset / 4 + 1);
+        return rlTr("solomon", "Fireball (%1, speed %2)").arg(QString::fromLatin1(kSpins[offset & 3])).arg(offset / 4 + 1);
     }
     if (type < 0x50) {
         const int offset = type - 0x30;
@@ -127,29 +129,29 @@ QString enemyName(int type) {
         const bool neul = group % 2 == 0;
         const QString direction = neul ? (variant < 2 ? QStringLiteral("up") : QStringLiteral("down"))
                                        : (variant < 2 ? QStringLiteral("right") : QStringLiteral("left"));
-        return QStringLiteral("%1 (%2, speed %3%4)%5")
-            .arg(neul ? QStringLiteral("Neul") : QStringLiteral("Ghost"), direction)
+        return rlTr("solomon", "%1 (%2, speed %3%4)%5")
+            .arg(neul ? rlTr("solomon", "Neul") : rlTr("solomon", "Ghost"), direction)
             .arg(group / 2 % 2 + 1)
-            .arg(group >= 4 ? QStringLiteral(", no slow-down") : QString())
-            .arg(variant & 1 ? QStringLiteral(" variant 2") : QString());
+            .arg(group >= 4 ? rlTr("solomon", ", no slow-down") : QString())
+            .arg(variant & 1 ? rlTr("solomon", " variant 2") : QString());
     }
     QString family;
     int base = 0;
-    if (type < 0x5c) { family = QStringLiteral("Hornhead"); base = 0x50; }
-    else if (type < 0x68) { family = QStringLiteral("Saramandor"); base = 0x5c; }
-    else if (type < 0x70) { family = QStringLiteral("Dragon"); base = 0x68; }
-    else if (type < 0x78) { family = QStringLiteral("Golem"); base = 0x70; }
-    else if (type < 0x80) { family = QStringLiteral("Gargoyle"); base = 0x78; }
+    if (type < 0x5c) { family = rlTr("solomon", "Hornhead"); base = 0x50; }
+    else if (type < 0x68) { family = rlTr("solomon", "Saramandor"); base = 0x5c; }
+    else if (type < 0x70) { family = rlTr("solomon", "Dragon"); base = 0x68; }
+    else if (type < 0x78) { family = rlTr("solomon", "Golem"); base = 0x70; }
+    else if (type < 0x80) { family = rlTr("solomon", "Gargoyle"); base = 0x78; }
     else {
         static const char* const kFlames[4] = {"Red flame", "White flame", "Red flame variant 2", "White flame variant 2"};
         return QString::fromLatin1(kFlames[type - 0x80]);
     }
     const int offset = type - base;
     const int variant = offset & 3;
-    return QStringLiteral("%1 (%2, speed %3)%4")
+    return rlTr("solomon", "%1 (%2, speed %3)%4")
         .arg(family, variant == 0 || variant == 2 ? QStringLiteral("right") : QStringLiteral("left"))
         .arg(offset / 4 + 1)
-        .arg(variant >= 2 ? QStringLiteral(" variant 2") : QString());
+        .arg(variant >= 2 ? rlTr("solomon", " variant 2") : QString());
 }
 
 }  // namespace rl::solomon

@@ -1,5 +1,7 @@
 #include "solomon/data/documents.hpp"
 
+#include "sdk/i18n.hpp"
+
 #include <QFile>
 #include <QJsonDocument>
 #include <QSaveFile>
@@ -17,12 +19,12 @@ namespace {
 QJsonObject loadJson(const QString& path) {
     QFile file(path);
     if (!file.open(QIODevice::ReadOnly)) {
-        fail(QStringLiteral("Cannot read %1: %2").arg(path, file.errorString()));
+        fail(rlTr("solomon", "Cannot read %1: %2").arg(path, file.errorString()));
     }
     QJsonParseError error;
     const QJsonDocument json = QJsonDocument::fromJson(file.readAll(), &error);
     if (!json.isObject()) {
-        fail(QStringLiteral("%1 is not a JSON document: %2").arg(path, error.errorString()));
+        fail(rlTr("solomon", "%1 is not a JSON document: %2").arg(path, error.errorString()));
     }
     return json.object();
 }
@@ -30,11 +32,11 @@ QJsonObject loadJson(const QString& path) {
 void saveJson(const QString& path, const QJsonObject& root) {
     QSaveFile file(path);
     if (!file.open(QIODevice::WriteOnly)) {
-        fail(QStringLiteral("Cannot write %1: %2").arg(path, file.errorString()));
+        fail(rlTr("solomon", "Cannot write %1: %2").arg(path, file.errorString()));
     }
     file.write(QJsonDocument(root).toJson(QJsonDocument::Indented));
     if (!file.commit()) {
-        fail(QStringLiteral("Cannot write %1: %2").arg(path, file.errorString()));
+        fail(rlTr("solomon", "Cannot write %1: %2").arg(path, file.errorString()));
     }
 }
 
@@ -59,7 +61,7 @@ int SolomonRooms::roomCount() const {
 QJsonObject SolomonRooms::room(int index) const {
     const QJsonArray rooms = root_.value(QStringLiteral("rooms")).toArray();
     if (index < 0 || index >= rooms.size()) {
-        fail(QStringLiteral("There is no room %1.").arg(index + 1));
+        fail(rlTr("solomon", "There is no room %1.").arg(index + 1));
     }
     return rooms.at(index).toObject();
 }
@@ -87,7 +89,7 @@ bool SolomonRooms::block(int index, QPoint cell, bool white) const {
 
 void SolomonRooms::setBlock(int index, QPoint cell, bool white, bool on) {
     if (cell.x() < 0 || cell.y() < 0 || cell.x() >= kWidth || cell.y() >= kHeight) {
-        fail(QStringLiteral("The cell is outside the room."));
+        fail(rlTr("solomon", "The cell is outside the room."));
     }
     QJsonObject r = room(index);
     const QString key = white ? QStringLiteral("white") : QStringLiteral("brown");
@@ -144,12 +146,12 @@ QVector<SolomonEnemy> SolomonRooms::enemies(int index) const {
 
 void SolomonRooms::setEnemies(int index, const QVector<SolomonEnemy>& enemies) {
     if (enemies.size() > kMaximumEnemies) {
-        fail(QStringLiteral("A room holds at most %1 enemies; the game keeps them in a fixed pool.").arg(kMaximumEnemies));
+        fail(rlTr("solomon", "A room holds at most %1 enemies; the game keeps them in a fixed pool.").arg(kMaximumEnemies));
     }
     QJsonArray list;
     for (const SolomonEnemy& e : enemies) {
         if (e.type < 0x18 || e.type > 0x83) {
-            fail(QStringLiteral("Enemy types run from $18 to $83."));
+            fail(rlTr("solomon", "Enemy types run from $18 to $83."));
         }
         QJsonObject json;
         json.insert(QStringLiteral("position"), pointJson(e.position));
@@ -206,15 +208,15 @@ QVector<SolomonMirrorSet> SolomonRooms::mirrorSets() const {
 }
 
 void SolomonRooms::setMirrorSet(int index, const SolomonMirrorSet& set) {
-    if (set.types.isEmpty()) fail(QStringLiteral("A mirror enemy set needs at least one enemy."));
+    if (set.types.isEmpty()) fail(rlTr("solomon", "A mirror enemy set needs at least one enemy."));
     for (int type : set.types) {
-        if (type < 0x18 || type > 0x83) fail(QStringLiteral("Enemy types run from $18 to $83."));
+        if (type < 0x18 || type > 0x83) fail(rlTr("solomon", "Enemy types run from $18 to $83."));
     }
     if (set.loopOffset < 0 || set.loopOffset >= set.types.size()) {
-        fail(QStringLiteral("The loop must start at one of the set's enemies."));
+        fail(rlTr("solomon", "The loop must start at one of the set's enemies."));
     }
     QJsonArray sets = root_.value(QStringLiteral("mirror_enemy_sets")).toArray();
-    if (index < 0 || index >= sets.size()) fail(QStringLiteral("There is no mirror enemy set %1.").arg(index));
+    if (index < 0 || index >= sets.size()) fail(rlTr("solomon", "There is no mirror enemy set %1.").arg(index));
     QJsonObject o;
     QJsonArray types;
     for (int type : set.types) types.append(type);
@@ -244,10 +246,10 @@ QVector<SolomonSchedule> SolomonRooms::schedules() const {
 
 void SolomonRooms::setSchedule(int index, const SolomonSchedule& schedule) {
     if (schedule.initial.size() != 4 || schedule.loop.size() != 4) {
-        fail(QStringLiteral("A drop schedule has four initial and four looping bytes."));
+        fail(rlTr("solomon", "A drop schedule has four initial and four looping bytes."));
     }
     QJsonArray list = root_.value(QStringLiteral("mirror_schedules")).toArray();
-    if (index < 0 || index >= list.size()) fail(QStringLiteral("There is no drop schedule %1.").arg(index));
+    if (index < 0 || index >= list.size()) fail(rlTr("solomon", "There is no drop schedule %1.").arg(index));
     QJsonObject o;
     QJsonArray initial;
     QJsonArray loop;
@@ -273,24 +275,24 @@ void SolomonRooms::setExpanded(bool expanded) {
 QString SolomonRooms::overflow() const {
     if (!expanded()) {
         if (itemBytes() > kItemArenaBytes) {
-            return QStringLiteral("The item lists of all rooms share %1 bytes; they need %2. Remove an item in any "
-                                  "room, or switch the ROM to Expanded.").arg(kItemArenaBytes).arg(itemBytes());
+            return rlTr("solomon", "The item lists of all rooms share %1 bytes; they need %2. Remove an item in any "
+                                   "room, or switch the ROM to Expanded.").arg(kItemArenaBytes).arg(itemBytes());
         }
         if (enemyBytes() > kEnemyArenaBytes) {
-            return QStringLiteral("The enemy lists of all rooms share %1 bytes; they need %2. Remove an enemy in any "
-                                  "room, or switch the ROM to Expanded.").arg(kEnemyArenaBytes).arg(enemyBytes());
+            return rlTr("solomon", "The enemy lists of all rooms share %1 bytes; they need %2. Remove an enemy in any "
+                                   "room, or switch the ROM to Expanded.").arg(kEnemyArenaBytes).arg(enemyBytes());
         }
         return {};
     }
     for (int r = 0; r < roomCount(); ++r) {
         if (itemStreamBytes(itemCommands(r)) > kExpandedStreamLimit) {
-            return QStringLiteral("Room %1's item list needs %2 bytes; the game reads at most %3 per room.")
+            return rlTr("solomon", "Room %1's item list needs %2 bytes; the game reads at most %3 per room.")
                 .arg(r + 1).arg(itemStreamBytes(itemCommands(r))).arg(kExpandedStreamLimit);
         }
     }
     const int total = itemBytes() + enemyBytes();
     if (total > expandedDataBytes(revision())) {
-        return QStringLiteral("The expanded ROM keeps %1 bytes for every room's items and enemies; they need %2.")
+        return rlTr("solomon", "The expanded ROM keeps %1 bytes for every room's items and enemies; they need %2.")
             .arg(expandedDataBytes(revision())).arg(total);
     }
     return {};

@@ -1,5 +1,7 @@
 #include "solomon/data/text.hpp"
 
+#include "sdk/i18n.hpp"
+
 #include <QJsonArray>
 #include <QStringList>
 
@@ -42,17 +44,17 @@ int tileOf(QChar c) {
 QString programLabel(int program) {
     switch (program) {
     case 0: return QStringLiteral("HUD");
-    case 2: return QStringLiteral("Room clear · thanks");
-    case 3: return QStringLiteral("Room clear · released");
-    case 4: return QStringLiteral("Room clear · next room");
-    case 6: return QStringLiteral("Game over");
-    case 9: return QStringLiteral("Title · records");
-    case 10: return QStringLiteral("Title · start");
-    case 11: return QStringLiteral("Title · copyright");
-    case 15: return QStringLiteral("Licence · title");
-    case 16: return QStringLiteral("Licence · copyright");
-    case 17: return QStringLiteral("Licence · licensed by");
-    default: return QStringLiteral("Program %1").arg(program, 2, 10, QLatin1Char('0'));
+    case 2: return rlTr("solomon", "Room clear · thanks");
+    case 3: return rlTr("solomon", "Room clear · released");
+    case 4: return rlTr("solomon", "Room clear · next room");
+    case 6: return rlTr("solomon", "Game over");
+    case 9: return rlTr("solomon", "Title · records");
+    case 10: return rlTr("solomon", "Title · start");
+    case 11: return rlTr("solomon", "Title · copyright");
+    case 15: return rlTr("solomon", "Licence · title");
+    case 16: return rlTr("solomon", "Licence · copyright");
+    case 17: return rlTr("solomon", "Licence · licensed by");
+    default: return rlTr("solomon", "Program %1").arg(program, 2, 10, QLatin1Char('0'));
     }
 }
 
@@ -109,7 +111,7 @@ QVector<int> textToTiles(const QString& text, QString* error) {
             bool ok = false;
             const int value = close > i ? text.mid(i + 1, close - i - 1).toInt(&ok, 16) : -1;
             if (!ok || value < 0 || value > 255) {
-                if (error) *error = QStringLiteral("Write a tile as {XX} with two hex digits.");
+                if (error) *error = rlTr("solomon", "Write a tile as {XX} with two hex digits.");
                 return {};
             }
             tiles << value;
@@ -124,8 +126,8 @@ QVector<int> textToTiles(const QString& text, QString* error) {
         const int tile = tileOf(c);
         if (tile < 0) {
             if (error) {
-                *error = QStringLiteral("The font has no \"%1\". It has A-Z, 0-9, space and , . ' \" © ♥; "
-                                        "write other tiles as {XX}.").arg(c);
+                *error = rlTr("solomon", "The font has no \"%1\". It has A-Z, 0-9, space and , . ' \" © ♥; "
+                                         "write other tiles as {XX}.").arg(c);
             }
             return {};
         }
@@ -147,7 +149,7 @@ QVector<TextString> SolomonText::strings() const {
             if (!isText(command)) continue;
             TextString s;
             s.id = QStringLiteral("s:%1:%2").arg(p).arg(c);
-            s.label = lines > 1 ? QStringLiteral("%1 · line %2").arg(programLabel(p)).arg(++line) : programLabel(p);
+            s.label = lines > 1 ? rlTr("solomon", "%1 · line %2").arg(programLabel(p)).arg(++line) : programLabel(p);
             s.tiles = ints(command.value(QStringLiteral("bytes")));
             s.addresses = {command.value(QStringLiteral("address")).toInt()};
             s.vertical = command.value(QStringLiteral("vertical")).toBool();
@@ -184,7 +186,7 @@ QVector<TextString> SolomonText::strings() const {
     for (int i = 0; i < initial.size(); ++i) {
         TextString s;
         s.id = QStringLiteral("i:%1").arg(i);
-        s.label = QStringLiteral("Ending · fairies, line %1").arg(i + 1);
+        s.label = rlTr("solomon", "Ending · fairies, line %1").arg(i + 1);
         s.tiles = ints(initial.at(i).toObject().value(QStringLiteral("tiles")));
         s.addresses = ints(initial.at(i).toObject().value(QStringLiteral("addresses")));
         s.movable = true;
@@ -194,7 +196,7 @@ QVector<TextString> SolomonText::strings() const {
     for (int m = 0; m < messages.size(); ++m) {
         TextString s;
         s.id = QStringLiteral("m:%1").arg(m);
-        s.label = QStringLiteral("Ending · message %1").arg(m + 1);
+        s.label = rlTr("solomon", "Ending · message %1").arg(m + 1);
         s.tiles = ints(messages.at(m).toObject().value(QStringLiteral("tiles")));
         s.addresses = ints(messages.at(m).toObject().value(QStringLiteral("addresses")));
         s.movable = true;
@@ -331,24 +333,24 @@ SolomonText::Usage SolomonText::messageUsage() const {
 QString SolomonText::overflow() const {
     const Usage s = staticUsage();
     if (s.used > s.capacity) {
-        return QStringLiteral("The HUD, room-clear, title and licence text share %1 bytes; they need %2. Shorten "
-                              "another line first.").arg(s.capacity).arg(s.used);
+        return rlTr("solomon", "The HUD, room-clear, title and licence text share %1 bytes; they need %2. Shorten "
+                               "another line first.").arg(s.capacity).arg(s.used);
     }
     const Usage i = initialUsage();
     if (i.used > i.capacity) {
-        return QStringLiteral("The two fairy lines of the ending share %1 bytes; they need %2.").arg(i.capacity).arg(i.used);
+        return rlTr("solomon", "The two fairy lines of the ending share %1 bytes; they need %2.").arg(i.capacity).arg(i.used);
     }
     const Usage m = messageUsage();
     if (m.used > m.capacity) {
-        return QStringLiteral("The ending messages share %1 bytes; they need %2. Shorten another message first.")
+        return rlTr("solomon", "The ending messages share %1 bytes; they need %2. Shorten another message first.")
             .arg(m.capacity).arg(m.used);
     }
     for (const TextString& str : strings()) {
         if (str.tiles.isEmpty() || str.tiles.size() > 64) {
-            return QStringLiteral("%1 needs 1-64 characters.").arg(str.label);
+            return rlTr("solomon", "%1 needs 1-64 characters.").arg(str.label);
         }
         if ((str.id.startsWith(QLatin1Char('i')) || str.id.startsWith(QLatin1Char('m'))) && str.tiles.contains(0)) {
-            return QStringLiteral("%1 cannot use 0: the digit ends an ending message. Write O instead.").arg(str.label);
+            return rlTr("solomon", "%1 cannot use 0: the digit ends an ending message. Write O instead.").arg(str.label);
         }
     }
     return {};

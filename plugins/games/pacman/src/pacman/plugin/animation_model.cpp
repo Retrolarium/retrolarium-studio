@@ -2,6 +2,7 @@
 
 #include "nes/editors.hpp"
 #include "pacman/plugin/pacman_session.hpp"
+#include "sdk/i18n.hpp"
 
 #include <QJsonArray>
 #include <QJsonObject>
@@ -50,10 +51,10 @@ PacmanAnimation ghost(const char* id, const char* label, int first) {
 
 QString ghostName(int palette) {
     switch (palette & 3) {
-    case 0: return QStringLiteral("Red");
-    case 1: return QStringLiteral("Pink");
-    case 2: return QStringLiteral("Cyan");
-    default: return QStringLiteral("Orange");
+    case 0: return rlTr("pacman", "Red");
+    case 1: return rlTr("pacman", "Pink");
+    case 2: return rlTr("pacman", "Cyan");
+    default: return rlTr("pacman", "Orange");
     }
 }
 
@@ -110,7 +111,7 @@ const PacmanFrame& PacmanAnimationModel::current() const {
 QString PacmanAnimationModel::title() const {
     const PacmanAnimation& a = animation();
     if (a.group == QLatin1String("Pac-Man") || a.group == QLatin1String("Ghosts")) {
-        return QStringLiteral("%1 · %2").arg(a.group == QLatin1String("Ghosts") ? QStringLiteral("Ghost") : a.group, a.label);
+        return QStringLiteral("%1 · %2").arg(a.group == QLatin1String("Ghosts") ? tr("Ghost") : a.group, a.label);
     }
     return a.label;
 }
@@ -169,7 +170,7 @@ QVector<sdk::CompositionPiece> PacmanAnimationModel::pieces() const {
     for (int q = 0; q < 4; ++q) {
         sdk::CompositionPiece piece;
         piece.id = QStringLiteral("q:%1").arg(q);
-        piece.label = QStringLiteral("Sprite %1 · %2").arg(q + 1).arg(nes::hex(tileOf(q)));
+        piece.label = tr("Sprite %1 · %2").arg(q + 1).arg(nes::hex(tileOf(q)));
         piece.pixels = QRect(origin() - QPoint(8, 8) + QPoint((q % 2) * 8, (q / 2) * 8), QSize(8, 8));
         piece.movable = false;
         result << piece;
@@ -195,9 +196,9 @@ QVector<sdk::CompositionFrame> PacmanAnimationModel::frames() const {
     for (int i = 0; i < list.size(); ++i) {
         sdk::CompositionFrame f;
         f.id = QString::number(i);
-        f.label = list.at(i).alternate ? QStringLiteral("Alt %1").arg(list.at(i).index)
-                                       : QStringLiteral("Frame %1").arg(list.at(i).index);
-        f.detail = QStringLiteral("%1 ticks").arg(list.at(i).ticks);
+        f.label = list.at(i).alternate ? tr("Alt %1").arg(list.at(i).index)
+                                       : tr("Frame %1").arg(list.at(i).index);
+        f.detail = tr("%1 ticks").arg(list.at(i).ticks);
         result << f;
     }
     return result;
@@ -219,7 +220,7 @@ QVector<sdk::ViewOption> PacmanAnimationModel::viewOptions() const {
     if (!animation().ghost) return {};
     sdk::ViewOption option;
     option.key = QStringLiteral("ghost");
-    option.label = QStringLiteral("Ghost");
+    option.label = tr("Ghost");
     for (int g = 0; g < 4; ++g) option.choices << ghostName(g);
     option.value = ghostName(ghost_);
     return {option};
@@ -239,7 +240,7 @@ void PacmanAnimationModel::setViewOption(const QString& key, const QString& valu
 bool PacmanAnimationModel::setQuarter(int quarter, int tile, int attributes, QString* error) {
     const PacmanFrame f = current();
     return session_->editBundle(
-        QStringLiteral("Edit %1 frame %2").arg(f.alternate ? QStringLiteral("alternate") : QStringLiteral("actor")).arg(f.index),
+        tr("Edit %1 frame %2").arg(f.alternate ? QStringLiteral("alternate") : QStringLiteral("actor")).arg(f.index),
         [f, quarter, tile, attributes](nes::Bundle& b) {
             QJsonObject actors = b.resource(ids::kActors);
             const QString tilesKey = f.alternate ? QStringLiteral("alternate_tile_quads") : QStringLiteral("standard_tile_quads");
@@ -263,7 +264,7 @@ bool PacmanAnimationModel::setQuarter(int quarter, int tile, int attributes, QSt
 bool PacmanAnimationModel::dropItem(const QString& libraryItem, const QString& piece, QString* error) {
     const int quarter = piece.startsWith(QLatin1String("q:")) ? piece.mid(2).toInt() : -1;
     if (!libraryItem.startsWith(QLatin1String("tile:")) || quarter < 0) {
-        if (error) *error = QStringLiteral("Drop a sprite pattern onto a quarter of the frame.");
+        if (error) *error = tr("Drop a sprite pattern onto a quarter of the frame.");
         return false;
     }
     selectPiece(piece);
@@ -281,8 +282,8 @@ bool PacmanAnimationModel::setField(const QString& key, const QVariant& value, Q
     } else if (key == QLatin1String("priority")) {
         attributes = (attributes & ~0x20) | (value.toString() == QLatin1String("Behind the maze") ? 0x20 : 0);
     } else if (key == QLatin1String("flip")) {
-        static const QStringList kFlips{QStringLiteral("None"), QStringLiteral("Horizontal"), QStringLiteral("Vertical"),
-                                        QStringLiteral("Both")};
+        static const QStringList kFlips{QStringLiteral("None"), tr("Horizontal"), tr("Vertical"),
+                                        tr("Both")};
         const int flip = std::max(0, int(kFlips.indexOf(value.toString())));
         attributes = (attributes & ~0xc0) | ((flip & 1) ? 0x40 : 0) | ((flip & 2) ? 0x80 : 0);
     } else {
@@ -295,7 +296,7 @@ sdk::Library PacmanAnimationModel::sheet() const {
     sdk::Library result;
     result.grid = true;
     result.columns = 16;
-    result.hint = QStringLiteral("drag a pattern onto a quarter");
+    result.hint = tr("drag a pattern onto a quarter");
     const QVector<QVector<int>> palettes = sprites();
     const int p = selected_ >= 0 ? (palette() | (attributesOf(selected_) & 3)) & 3 : palette();
     const QColor backdrop = session_->painter().color(palettes.at(p).value(0, 0x0f));
@@ -319,8 +320,8 @@ sdk::Inspection PacmanAnimationModel::inspect() const {
     inspection.engineTag = QStringLiteral("pacman.actor-mapping.v1");
     const PacmanFrame& f = current();
     if (selected_ < 0) {
-        inspection.kicker = animation().group == QLatin1String("Frames") ? QStringLiteral("Actor frames")
-                                                                         : QStringLiteral("Animation");
+        inspection.kicker = animation().group == QLatin1String("Frames") ? tr("Actor frames")
+                                                                         : tr("Animation");
         inspection.title = title();
         sdk::Field count;
         count.key = QStringLiteral("frames");
@@ -328,65 +329,65 @@ sdk::Inspection PacmanAnimationModel::inspect() const {
         count.value = QString::number(animation().frames.size());
         sdk::Field shown;
         shown.key = QStringLiteral("frame");
-        shown.label = QStringLiteral("Shown");
-        shown.value = f.alternate ? QStringLiteral("alternate frame %1").arg(f.index)
-                                  : QStringLiteral("actor frame %1").arg(f.index);
+        shown.label = tr("Shown");
+        shown.value = f.alternate ? tr("alternate frame %1").arg(f.index)
+                                  : tr("actor frame %1").arg(f.index);
         inspection.fields = {count, shown};
-        QString note = QStringLiteral("A frame is four 8x8 sprites around the actor's position. Select one to change "
-                                      "its pattern, palette, priority or flip, or drop a pattern from the sheet on it. "
-                                      "Frames are shared: every animation that shows one changes with it.");
-        if (animation().ghost) note += QStringLiteral(" Ghost shows the frames in each ghost's colours.");
+        QString note = tr("A frame is four 8x8 sprites around the actor's position. Select one to change "
+                          "its pattern, palette, priority or flip, or drop a pattern from the sheet on it. "
+                          "Frames are shared: every animation that shows one changes with it.");
+        if (animation().ghost) note += tr(" Ghost shows the frames in each ghost's colours.");
         if (animation().fruit) {
-            note += QStringLiteral(" The fruit's colour is the one Fruit by stage gives round %1 (the start round).")
+            note += tr(" The fruit's colour is the one Fruit by stage gives round %1 (the start round).")
                         .arg(session_->startRound());
         }
         inspection.note = note;
         return inspection;
     }
     const int attributes = attributesOf(selected_);
-    inspection.kicker = QStringLiteral("Sprite");
-    inspection.title = QStringLiteral("%1 · sprite %2").arg(frames().value(frame_).label).arg(selected_ + 1);
+    inspection.kicker = tr("Sprite");
+    inspection.title = tr("%1 · sprite %2").arg(frames().value(frame_).label).arg(selected_ + 1);
     sdk::Field tile;
     tile.key = QStringLiteral("tile");
-    tile.label = QStringLiteral("Pattern");
+    tile.label = tr("Pattern");
     tile.type = sdk::Field::Type::Integer;
     tile.value = tileOf(selected_);
     tile.minimum = 0;
     tile.maximum = 255;
-    tile.hint = QStringLiteral("%1 · sprite table").arg(nes::hex(tileOf(selected_)));
+    tile.hint = tr("%1 · sprite table").arg(nes::hex(tileOf(selected_)));
     tile.monospace = true;
     sdk::Field pal;
     pal.key = QStringLiteral("palette");
-    pal.label = QStringLiteral("Palette bits");
+    pal.label = tr("Palette bits");
     pal.type = sdk::Field::Type::Choice;
     const QVector<QVector<int>> palettes = sprites();
     for (int p = 0; p < 4; ++p) {
-        pal.choices << QStringLiteral("SPR %1").arg(p);
+        pal.choices << tr("SPR %1").arg(p);
         pal.choiceIcons << session_->painter().tile(256 + tileOf(selected_), palettes.at((palette() | p) & 3));
     }
-    pal.value = QStringLiteral("SPR %1").arg(attributes & 3);
-    pal.hint = QStringLiteral("ORed with the actor's");
+    pal.value = tr("SPR %1").arg(attributes & 3);
+    pal.hint = tr("ORed with the actor's");
     sdk::Field priority;
     priority.key = QStringLiteral("priority");
-    priority.label = QStringLiteral("Priority");
+    priority.label = tr("Priority");
     priority.type = sdk::Field::Type::Choice;
-    priority.choices = QStringList{QStringLiteral("In front"), QStringLiteral("Behind the maze")};
+    priority.choices = QStringList{tr("In front"), QStringLiteral("Behind the maze")};
     priority.value = priority.choices.at((attributes & 0x20) ? 1 : 0);
     sdk::Field flip;
     flip.key = QStringLiteral("flip");
-    flip.label = QStringLiteral("Flip");
+    flip.label = tr("Flip");
     flip.type = sdk::Field::Type::Choice;
-    flip.choices = QStringList{QStringLiteral("None"), QStringLiteral("Horizontal"), QStringLiteral("Vertical"),
-                               QStringLiteral("Both")};
+    flip.choices = QStringList{QStringLiteral("None"), tr("Horizontal"), tr("Vertical"),
+                               tr("Both")};
     flip.value = flip.choices.at(((attributes & 0x40) ? 1 : 0) | ((attributes & 0x80) ? 2 : 0));
     inspection.fields = {tile, pal, priority, flip};
-    inspection.note = QStringLiteral("The game ORs the actor's own palette (Pac-Man and Red 0, Pink 1, Cyan 2, "
-                                     "Orange 3, fruit 3) into these bits.");
+    inspection.note = tr("The game ORs the actor's own palette (Pac-Man and Red 0, Pink 1, Cyan 2, "
+                         "Orange 3, fruit 3) into these bits.");
     return inspection;
 }
 
 QString PacmanAnimationModel::statusText() const {
-    return QStringLiteral("Animations · %1 · %2").arg(title(), frames().value(frame_).label);
+    return tr("Animations · %1 · %2").arg(title(), frames().value(frame_).label);
 }
 
 }  // namespace rl::pacman

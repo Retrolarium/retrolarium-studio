@@ -1,6 +1,7 @@
 #include "smb/plugin/graphics_models.hpp"
 
 #include "nes/palette.hpp"
+#include "sdk/i18n.hpp"
 #include "smb/data/area_streams.hpp"
 #include "smb/plugin/player_models.hpp"
 #include "smb/plugin/smb_session.hpp"
@@ -52,7 +53,7 @@ const QStringList& areaPackets() {
 }
 
 const QStringList& playerNames() {
-    static const QStringList kNames{QStringLiteral("Hero"), QStringLiteral("Brother"), QStringLiteral("Fire")};
+    static const QStringList kNames{rlTr("smb", "Hero"), rlTr("smb", "Brother"), rlTr("smb", "Fire")};
     return kNames;
 }
 
@@ -62,12 +63,12 @@ const QStringList& playerNames() {
 
 SmbTileModel::SmbTileModel(SmbSession* session, bool background)
     : TileModel(session), session_(session), background_(background) {
-    palette_ = background_ ? QStringLiteral("Ground BG 0") : QStringLiteral("Hero");
+    palette_ = background_ ? tr("Ground BG 0") : tr("Hero");
     connect(session_, &SmbSession::documentChanged, this, &sdk::EditorModel::contentChanged);
 }
 
 QString SmbTileModel::title() const {
-    return background_ ? QStringLiteral("Background tiles") : QStringLiteral("Sprite tiles");
+    return background_ ? tr("Background tiles") : tr("Sprite tiles");
 }
 
 QStringList SmbTileModel::paletteChoices() const {
@@ -167,7 +168,7 @@ void SmbTileModel::endStroke() {
     }
     stroking_ = false;
     if (pending_ != session_->document().tilePixels(session_->chr(), base() + tile_)) {
-        writeTile(pending_, QStringLiteral("Paint tile %1").arg(hex(tile_)), nullptr);
+        writeTile(pending_, tr("Paint tile %1").arg(hex(tile_)), nullptr);
     }
     emit contentChanged();
 }
@@ -192,13 +193,13 @@ bool SmbTileModel::fill(QPoint pixel, int pen, QString* error) {
         stack << QPoint(p.x() + 1, p.y()) << QPoint(p.x() - 1, p.y()) << QPoint(p.x(), p.y() + 1)
               << QPoint(p.x(), p.y() - 1);
     }
-    return writeTile(pixels, QStringLiteral("Fill tile %1").arg(hex(tile_)), error);
+    return writeTile(pixels, tr("Fill tile %1").arg(hex(tile_)), error);
 }
 
 QVector<sdk::ViewOption> SmbTileModel::viewOptions() const {
     sdk::ViewOption palette;
     palette.key = QStringLiteral("palette");
-    palette.label = QStringLiteral("Palette");
+    palette.label = tr("Palette");
     palette.value = palette_;
     palette.choices = paletteChoices();
     return {palette};
@@ -213,28 +214,28 @@ void SmbTileModel::setViewOption(const QString& key, const QString& value) {
 }
 
 QString SmbTileModel::statusText() const {
-    return QStringLiteral("%1 · tile %2").arg(title(), hex(tile_));
+    return tr("%1 · tile %2").arg(title(), hex(tile_));
 }
 
 sdk::Inspection SmbTileModel::inspect() const {
     sdk::Inspection inspection;
-    inspection.kicker = background_ ? QStringLiteral("Background tile") : QStringLiteral("Sprite tile");
+    inspection.kicker = background_ ? tr("Background tile") : tr("Sprite tile");
     inspection.title = hex(tile_);
     sdk::Field address;
     address.key = QStringLiteral("address");
-    address.label = QStringLiteral("CHR address");
+    address.label = tr("CHR address");
     address.value = hex(base() * 16 + tile_ * 16, 4);
     address.monospace = true;
     sdk::Field palette;
     palette.key = QStringLiteral("palette");
-    palette.label = QStringLiteral("Preview palette");
+    palette.label = tr("Preview palette");
     palette.value = palette_;
     inspection.fields = {address, palette};
-    inspection.note = QStringLiteral("2bpp patterns: four pens, pen 0 transparent. The preview palette only "
-                                     "colours the editor; tiles carry no palette of their own.");
+    inspection.note = tr("2bpp patterns: four pens, pen 0 transparent. The preview palette only "
+                         "colours the editor; tiles carry no palette of their own.");
     inspection.engineTag = QStringLiteral("nes.chr-2bpp.v1");
-    inspection.engine = {{QStringLiteral("Tile index"), QString::number(base() + tile_)},
-                         {QStringLiteral("Bytes"), QStringLiteral("16 per tile, two bit planes")}};
+    inspection.engine = {{tr("Tile index"), QString::number(base() + tile_)},
+                         {tr("Bytes"), tr("16 per tile, two bit planes")}};
     return inspection;
 }
 
@@ -246,7 +247,7 @@ SmbPacketModel::SmbPacketModel(SmbSession* session, const QString& packet)
 }
 
 QString SmbPacketModel::title() const {
-    return titled(packet_) + QStringLiteral(" palette");
+    return titled(packet_) + tr(" palette");
 }
 
 QVector<sdk::PaletteRow> SmbPacketModel::rows() const {
@@ -255,8 +256,8 @@ QVector<sdk::PaletteRow> SmbPacketModel::rows() const {
     for (int start = 0; start < values.size(); start += 4) {
         sdk::PaletteRow row;
         const int index = start / 4;
-        row.label = values.size() > 4 ? (index < 4 ? QStringLiteral("BG %1").arg(index)
-                                                   : QStringLiteral("SPR %1").arg(index - 4))
+        row.label = values.size() > 4 ? (index < 4 ? tr("BG %1").arg(index)
+                                                   : tr("SPR %1").arg(index - 4))
                                       : titled(packet_);
         for (int i = start; i < std::min(int(values.size()), start + 4); ++i) {
             row.colors << nesColor(session_, values.at(i));
@@ -275,7 +276,7 @@ void SmbPacketModel::setCurrentEntry(QPoint entry) {
 }
 
 QString SmbPacketModel::pickerTitle() const {
-    return QStringLiteral("NES palette · 64 colours");
+    return tr("NES palette · 64 colours");
 }
 
 QVector<QColor> SmbPacketModel::gamut() const {
@@ -294,7 +295,7 @@ bool SmbPacketModel::assignGamut(int index, QString* error) {
     const QString palettes = session_->palettes();
     const QString packet = packet_;
     const int entry = flatEntry();
-    return session_->edit(QStringLiteral("Set %1 colour %2").arg(titled(packet_)).arg(entry),
+    return session_->edit(tr("Set %1 colour %2").arg(titled(packet_)).arg(entry),
                           [palettes, packet, entry, index](SmbResourceDocument& d) {
                               d.setPacketValue(palettes, packet, entry, index);
                           },
@@ -324,7 +325,7 @@ QVector<sdk::PaletteSample> SmbPacketModel::samples() const {
         }
         int first = 0;
         int width = 8;
-        QString where = QStringLiteral("start of the level");
+        QString where = tr("start of the level");
         if (session_->document().packetAddress(session_->palettes(), packet_) == 0x3f00) {
             // It recolours background palette 0 (trees, bushes, mushroom
             // tops): start just before the first block drawn in it.
@@ -336,7 +337,7 @@ QVector<sdk::PaletteSample> SmbPacketModel::samples() const {
                 for (int value : scene.metatiles.at(column)) {
                     if (value != 0 && SmbResourceDocument::metatilePalette(value) == 0) {
                         first = std::max(0, column - 2);
-                        if (column > 2) where = QStringLiteral("column %1").arg(column);
+                        if (column > 2) where = tr("column %1").arg(column);
                         break;
                     }
                 }
@@ -351,19 +352,19 @@ QVector<sdk::PaletteSample> SmbPacketModel::samples() const {
                     first = std::max(0, pages.at(i) * 16 + a.objects.at(i).column - 15);
                 }
             }
-            where = QStringLiteral("Boss's bridge");
+            where = tr("Boss's bridge");
             width = 17;
         }
         sdk::PaletteSample sample;
         sample.label = chosen;
         const QPair<int, int> course = session_->levelOf(chosen);
-        sample.caption = course.first > 0 ? QStringLiteral("World %1-%2, %3").arg(course.first).arg(course.second).arg(where)
+        sample.caption = course.first > 0 ? tr("World %1-%2, %3").arg(course.first).arg(course.second).arg(where)
                                           : QStringLiteral("%1, %2").arg(titled(chosen), where);
         if (packet_ == QLatin1String("boss")) {
             // Only Boss wears it: show him alone, like the player previews.
             constexpr int kBoss = 0x2d;
             sample.image = session_->painter().enemy(kBoss, session_->paletteKey(chosen));
-            sample.caption = QStringLiteral("Boss, as in World %1-%2").arg(course.first).arg(course.second);
+            sample.caption = tr("Boss, as in World %1-%2").arg(course.first).arg(course.second);
             result << sample;
             return result;
         }
@@ -394,8 +395,8 @@ QVector<sdk::PaletteSample> SmbPacketModel::samples() const {
         sdk::PaletteSample sample;
         sample.label = chosen;
         const QPair<int, int> course = session_->levelOf(chosen);
-        sample.caption = course.first > 0 ? QStringLiteral("World %1-%2, start of the level").arg(course.first).arg(course.second)
-                                          : QStringLiteral("%1, start of the level").arg(titled(chosen));
+        sample.caption = course.first > 0 ? tr("World %1-%2, start of the level").arg(course.first).arg(course.second)
+                                          : tr("%1, start of the level").arg(titled(chosen));
         sample.image = session_->areaPreview(chosen, 32);
         sample.minimumWidth = 8 * SmbLevelPainter::kCell;
         result << sample;
@@ -404,26 +405,26 @@ QVector<sdk::PaletteSample> SmbPacketModel::samples() const {
 }
 
 QString SmbPacketModel::statusText() const {
-    return QStringLiteral("%1 · entry %2 · %3").arg(title()).arg(flatEntry()).arg(hex(currentGamutIndex()));
+    return tr("%1 · entry %2 · %3").arg(title()).arg(flatEntry()).arg(hex(currentGamutIndex()));
 }
 
 sdk::Inspection SmbPacketModel::inspect() const {
     sdk::Inspection inspection;
-    inspection.kicker = QStringLiteral("Colour");
+    inspection.kicker = tr("Colour");
     inspection.title = QStringLiteral("%1 · %2").arg(title()).arg(flatEntry());
     sdk::Field value;
     value.key = QStringLiteral("value");
-    value.label = QStringLiteral("Colour");
+    value.label = tr("Colour");
     value.value = hex(currentGamutIndex());
     value.monospace = true;
     sdk::Field address;
     address.key = QStringLiteral("address");
-    address.label = QStringLiteral("PPU address");
+    address.label = tr("PPU address");
     address.value = hex(0x3f00 + flatEntry(), 4);
     address.monospace = true;
     inspection.fields = {value, address};
-    inspection.note = QStringLiteral("Entry 0 of each palette shows the backdrop. Background palettes colour "
-                                     "metatiles, sprite palettes colour enemies and items.");
+    inspection.note = tr("Entry 0 of each palette shows the backdrop. Background palettes colour "
+                         "metatiles, sprite palettes colour enemies and items.");
     inspection.engineTag = QStringLiteral("nes.ppu-palette-packets.v1");
     return inspection;
 }
@@ -439,7 +440,7 @@ QVector<sdk::PaletteRow> SmbPlayerPaletteModel::rows() const {
     QVector<sdk::PaletteRow> rows;
     for (int start = 0; start < values.size(); start += 4) {
         sdk::PaletteRow row;
-        row.label = playerNames().value(start / 4, QStringLiteral("Row %1").arg(start / 4));
+        row.label = playerNames().value(start / 4, tr("Row %1").arg(start / 4));
         for (int i = start; i < std::min(int(values.size()), start + 4); ++i) {
             row.colors << nesColor(session_, values.at(i));
             row.labels << QStringLiteral("%1").arg(values.at(i), 2, 16, QLatin1Char('0')).toUpper();
@@ -457,7 +458,7 @@ void SmbPlayerPaletteModel::setCurrentEntry(QPoint entry) {
 }
 
 QString SmbPlayerPaletteModel::pickerTitle() const {
-    return QStringLiteral("NES palette · 64 colours");
+    return tr("NES palette · 64 colours");
 }
 
 QVector<QColor> SmbPlayerPaletteModel::gamut() const {
@@ -475,7 +476,7 @@ int SmbPlayerPaletteModel::currentGamutIndex() const {
 bool SmbPlayerPaletteModel::assignGamut(int index, QString* error) {
     const QString table = session_->playerPalette();
     const int entry = entry_.y() * 4 + entry_.x();
-    return session_->edit(QStringLiteral("Set player colour %1").arg(entry),
+    return session_->edit(tr("Set player colour %1").arg(entry),
                           [table, entry, index](SmbResourceDocument& d) { d.setTableValue(table, entry, index); },
                           error);
 }
@@ -496,28 +497,28 @@ QVector<sdk::PaletteSample> SmbPlayerPaletteModel::samples() const {
     }
     painter.end();
     sdk::PaletteSample sample;
-    sample.label = QStringLiteral("Hero · Brother · Fire");
-    sample.caption = QStringLiteral("Small Hero standing in each row's colours");
+    sample.label = tr("Hero · Brother · Fire");
+    sample.caption = tr("Small Hero standing in each row's colours");
     sample.image = image;
     return {sample};
 }
 
 QString SmbPlayerPaletteModel::statusText() const {
-    return QStringLiteral("Player palettes · %1").arg(hex(currentGamutIndex()));
+    return tr("Player palettes · %1").arg(hex(currentGamutIndex()));
 }
 
 sdk::Inspection SmbPlayerPaletteModel::inspect() const {
     sdk::Inspection inspection;
-    inspection.kicker = QStringLiteral("Colour");
+    inspection.kicker = tr("Colour");
     inspection.title = QStringLiteral("%1 · %2").arg(playerNames().value(entry_.y())).arg(entry_.x());
     sdk::Field value;
     value.key = QStringLiteral("value");
-    value.label = QStringLiteral("Colour");
+    value.label = tr("Colour");
     value.value = hex(currentGamutIndex());
     value.monospace = true;
     inspection.fields = {value};
-    inspection.note = QStringLiteral("The game loads one row into sprite palette 0 for the player: Hero, "
-                                     "Brother, or the fire item colours.");
+    inspection.note = tr("The game loads one row into sprite palette 0 for the player: Hero, "
+                         "Brother, or the fire item colours.");
     inspection.engineTag = QStringLiteral("nes.palette-table.v1");
     return inspection;
 }

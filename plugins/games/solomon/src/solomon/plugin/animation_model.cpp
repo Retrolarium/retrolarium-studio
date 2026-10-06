@@ -204,19 +204,19 @@ QString SolomonAnimationModel::familyLabel(const AnimationFamily& family) {
     if (family.members.size() > 3) list += QStringLiteral(" +%1").arg(family.members.size() - 3);
     const QString name = actionLabel(family.group, first.action);
     if (!name.startsWith(QLatin1String("Action "))) return QStringLiteral("%1 · %2").arg(name.section(QLatin1Char(','), 0, 0), list);
-    return QStringLiteral("Actions %1").arg(list);
+    return tr("Actions %1").arg(list);
 }
 
 QString SolomonAnimationModel::groupLabel(int group) {
-    if (group == 0) return QStringLiteral("Wizard");
-    if (group < 6) return QStringLiteral("Objects $%1").arg(group * 4, 2, 16, QLatin1Char('0')).toUpper();
+    if (group == 0) return tr("Wizard");
+    if (group < 6) return tr("Objects $%1").arg(group * 4, 2, 16, QLatin1Char('0')).toUpper();
     // An enemy family, without the direction and speed of its variants.
     return enemyName(group * 4).section(QLatin1String(" ("), 0, 0);
 }
 
 QString SolomonAnimationModel::actionLabel(int group, int action) {
-    if (group == 0 && action == 0x16) return QStringLiteral("Standing, right");
-    if (group == 0 && action == 0x17) return QStringLiteral("Standing, left");
+    if (group == 0 && action == 0x16) return tr("Standing, right");
+    if (group == 0 && action == 0x17) return tr("Standing, left");
     if (group >= 6 && action >= 0x18 && action <= 0x1b) return QStringLiteral("Action %1 (shown first)").arg(hex(action));
     return QStringLiteral("Action %1").arg(hex(action));
 }
@@ -300,8 +300,8 @@ QImage SolomonAnimationModel::render() const {
 
 QVector<sdk::CompositionPiece> SolomonAnimationModel::pieces() const {
     if (frameRecord().isEmpty()) return {};
-    return {{QStringLiteral("0"), QStringLiteral("Left"), QRect(0, 0, 8, 16), false},
-            {QStringLiteral("1"), QStringLiteral("Right"), QRect(8, 0, 8, 16), false}};
+    return {{QStringLiteral("0"), tr("Left"), QRect(0, 0, 8, 16), false},
+            {QStringLiteral("1"), tr("Right"), QRect(8, 0, 8, 16), false}};
 }
 
 void SolomonAnimationModel::selectPiece(const QString& id) {
@@ -323,7 +323,7 @@ QVector<sdk::CompositionFrame> SolomonAnimationModel::frames() const {
     for (int i = 0; i < list.size(); ++i) {
         sdk::CompositionFrame f;
         f.id = QString::number(list.at(i));
-        f.label = QStringLiteral("Frame %1").arg(i + 1);
+        f.label = tr("Frame %1").arg(i + 1);
         f.detail = hex(frames.at(list.at(i)).toObject().value(QStringLiteral("cpu_address")).toInt(), 4);
         result << f;
     }
@@ -347,8 +347,8 @@ int SolomonAnimationModel::frameDurationMs(int) const {
 
 bool SolomonAnimationModel::moveFrame(int, int, QString* error) {
     if (error) {
-        *error = QStringLiteral("The game steps through frames that lie one after another in ROM; their order "
-                                "is where they are. Edit a frame's patterns instead.");
+        *error = tr("The game steps through frames that lie one after another in ROM; their order "
+                    "is where they are. Edit a frame's patterns instead.");
     }
     return false;
 }
@@ -405,7 +405,7 @@ bool SolomonAnimationModel::dropItem(const QString& libraryItem, const QString& 
     tile_ = tile;
     piece_ = half;
     const QString key = half == 0 ? QStringLiteral("left_tile") : QStringLiteral("right_tile");
-    return editFrame(QStringLiteral("Set a pattern of %1").arg(title()),
+    return editFrame(tr("Set a pattern of %1").arg(title()),
                      [key, tile](QJsonObject& record) { record.insert(key, tile); }, error);
 }
 
@@ -439,8 +439,8 @@ sdk::Library SolomonAnimationModel::sheet() const {
             const int tile = (row * 16 + column % 16) * 2 + column / 16;
             sdk::LibraryItem item;
             item.id = QStringLiteral("tile:%1").arg(tile);
-            item.label = QStringLiteral("Pattern pair %1").arg(hex(tile));
-            item.hint = tile & 1 ? QStringLiteral("background table") : QStringLiteral("sprite table");
+            item.label = tr("Pattern pair %1").arg(hex(tile));
+            item.hint = tile & 1 ? tr("background table") : tr("sprite table");
             item.icon = session_->painter().spritePair(tile, bank_, palette);
             sheet_ << item;
         }
@@ -449,7 +449,7 @@ sdk::Library SolomonAnimationModel::sheet() const {
     library.grid = true;
     library.columns = 32;
     library.cell = QSize(8, 16);
-    library.hint = QStringLiteral("click: pattern · drag onto a half");
+    library.hint = tr("click: pattern · drag onto a half");
     library.items = sheet_;
     return library;
 }
@@ -457,22 +457,22 @@ sdk::Library SolomonAnimationModel::sheet() const {
 QVector<sdk::ViewOption> SolomonAnimationModel::viewOptions() const {
     sdk::ViewOption bank;
     bank.key = QStringLiteral("bank");
-    bank.label = QStringLiteral("Tileset");
+    bank.label = tr("Tileset");
     bank.value = QString::number(bank_);
     bank.choices = QStringList{QStringLiteral("0"), QStringLiteral("1"), QStringLiteral("2"), QStringLiteral("3")};
     QVector<sdk::ViewOption> options{bank};
     if (family().members.size() > 1) {
         sdk::ViewOption linked;
         linked.key = QStringLiteral("linked");
-        linked.label = QStringLiteral("Mirrors");
-        linked.value = linked_ ? QStringLiteral("Linked") : QStringLiteral("Separate");
-        linked.choices = QStringList{QStringLiteral("Linked"), QStringLiteral("Separate")};
+        linked.label = tr("Mirrors");
+        linked.value = linked_ ? QStringLiteral("Linked") : tr("Separate");
+        linked.choices = QStringList{QStringLiteral("Linked"), tr("Separate")};
         options << linked;
     }
     if (descriptor(session_->state().animations, group_, action_).value(QStringLiteral("uses_variants")).toBool()) {
         sdk::ViewOption variant;
         variant.key = QStringLiteral("variant");
-        variant.label = QStringLiteral("Variant");
+        variant.label = tr("Variant");
         variant.value = QString::number(variant_);
         variant.choices = QStringList{QStringLiteral("0"), QStringLiteral("1"), QStringLiteral("2"), QStringLiteral("3")};
         options << variant;
@@ -496,7 +496,7 @@ void SolomonAnimationModel::setViewOption(const QString& key, const QString& val
 }
 
 QString SolomonAnimationModel::statusText() const {
-    return QStringLiteral("%1 · frame %2 of %3").arg(title()).arg(frame_ + 1).arg(frameList().size());
+    return tr("%1 · frame %2 of %3").arg(title()).arg(frame_ + 1).arg(frameList().size());
 }
 
 sdk::Inspection SolomonAnimationModel::inspect() const {
@@ -506,11 +506,11 @@ sdk::Inspection SolomonAnimationModel::inspect() const {
     if (piece_ >= 0 && !record.isEmpty()) {
         const Half h = unpack(record.value(QStringLiteral("flags")).toInt(), piece_);
         const int tile = record.value(piece_ == 0 ? QStringLiteral("left_tile") : QStringLiteral("right_tile")).toInt();
-        inspection.kicker = QStringLiteral("Sprite half");
-        inspection.title = piece_ == 0 ? QStringLiteral("Left half") : QStringLiteral("Right half");
+        inspection.kicker = tr("Sprite half");
+        inspection.title = piece_ == 0 ? tr("Left half") : tr("Right half");
         sdk::Field pattern;
         pattern.key = QStringLiteral("tile");
-        pattern.label = QStringLiteral("Pattern pair");
+        pattern.label = tr("Pattern pair");
         pattern.type = sdk::Field::Type::Integer;
         pattern.value = tile;
         pattern.minimum = 0;
@@ -518,38 +518,38 @@ sdk::Inspection SolomonAnimationModel::inspect() const {
         pattern.hint = hex(tile);
         sdk::Field hflip;
         hflip.key = QStringLiteral("hflip");
-        hflip.label = QStringLiteral("Flip across");
+        hflip.label = tr("Flip across");
         hflip.type = sdk::Field::Type::Choice;
         hflip.value = yesNo().at(h.hflip ? 1 : 0);
         hflip.choices = yesNo();
         sdk::Field vflip = hflip;
         vflip.key = QStringLiteral("vflip");
-        vflip.label = QStringLiteral("Flip down");
+        vflip.label = tr("Flip down");
         vflip.value = yesNo().at(h.vflip ? 1 : 0);
         sdk::Field palette;
         palette.key = QStringLiteral("palette");
-        palette.label = QStringLiteral("Palette");
+        palette.label = tr("Palette");
         palette.type = sdk::Field::Type::Choice;
-        palette.value = QStringLiteral("SPR %1").arg(h.palette);
-        palette.choices = QStringList{QStringLiteral("SPR 0"), QStringLiteral("SPR 1"), QStringLiteral("SPR 2"), QStringLiteral("SPR 3")};
+        palette.value = tr("SPR %1").arg(h.palette);
+        palette.choices = QStringList{tr("SPR 0"), tr("SPR 1"), tr("SPR 2"), tr("SPR 3")};
         inspection.fields = {pattern, hflip, vflip, palette};
-        inspection.note = QStringLiteral("8x16 sprites: an even pattern pair comes from the sprite table, an odd "
-                                         "one from the background table. Pick a pair in the sheet to put it here.");
+        inspection.note = tr("8x16 sprites: an even pattern pair comes from the sprite table, an odd "
+                             "one from the background table. Pick a pair in the sheet to put it here.");
         inspection.engineTag = QStringLiteral("solomon.animations@1");
-        inspection.engine = {{QStringLiteral("Frame"), hex(record.value(QStringLiteral("cpu_address")).toInt(), 4)},
-                             {QStringLiteral("Flags"), hex(record.value(QStringLiteral("flags")).toInt())}};
+        inspection.engine = {{tr("Frame"), hex(record.value(QStringLiteral("cpu_address")).toInt(), 4)},
+                             {tr("Flags"), hex(record.value(QStringLiteral("flags")).toInt())}};
         return inspection;
     }
-    inspection.kicker = QStringLiteral("Animation");
+    inspection.kicker = tr("Animation");
     inspection.title = title();
     sdk::Field delay;
     delay.key = QStringLiteral("delay");
-    delay.label = QStringLiteral("Delay");
+    delay.label = tr("Delay");
     delay.type = sdk::Field::Type::Integer;
     delay.value = d.value(QStringLiteral("delay")).toInt();
     delay.minimum = 0;
     delay.maximum = 255;
-    delay.hint = QStringLiteral("frames between steps");
+    delay.hint = tr("frames between steps");
     sdk::Field count;
     count.key = QStringLiteral("frames");
     count.label = QStringLiteral("Frames");
@@ -572,13 +572,13 @@ sdk::Inspection SolomonAnimationModel::inspect() const {
         shown.monospace = true;
         inspection.fields << shown;
     }
-    inspection.note = QStringLiteral("The game keeps a frame record per facing: left and right are the same "
-                                     "patterns with the halves swapped and flipped. Actions that show the same "
-                                     "frames, as drawn or mirrored, are one entry; with Mirrors linked an edit "
-                                     "reaches all of them. Select a half to change its pattern, flips and palette.");
+    inspection.note = tr("The game keeps a frame record per facing: left and right are the same "
+                         "patterns with the halves swapped and flipped. Actions that show the same "
+                         "frames, as drawn or mirrored, are one entry; with Mirrors linked an edit "
+                         "reaches all of them. Select a half to change its pattern, flips and palette.");
     inspection.engineTag = QStringLiteral("solomon.animations@1");
-    inspection.engine = {{QStringLiteral("Descriptor"), hex(d.value(QStringLiteral("cpu_address")).toInt(), 4)},
-                         {QStringLiteral("Initial phase"), hex(d.value(QStringLiteral("initial_phase")).toInt())}};
+    inspection.engine = {{tr("Descriptor"), hex(d.value(QStringLiteral("cpu_address")).toInt(), 4)},
+                         {tr("Initial phase"), hex(d.value(QStringLiteral("initial_phase")).toInt())}};
     return inspection;
 }
 
@@ -595,7 +595,7 @@ bool SolomonAnimationModel::setField(const QString& key, const QVariant& value, 
                                      .toInt());
             }
         }
-        return session_->edit(QStringLiteral("Change the speed of %1").arg(title()),
+        return session_->edit(tr("Change the speed of %1").arg(title()),
                               [addresses, delay](SolomonState& s) {
                                   QJsonArray list = s.animations.value(QStringLiteral("descriptors")).toArray();
                                   for (int i = 0; i < list.size(); ++i) {
@@ -616,7 +616,7 @@ bool SolomonAnimationModel::setField(const QString& key, const QVariant& value, 
     }
     if (key == QLatin1String("hflip") || key == QLatin1String("vflip") || key == QLatin1String("palette")) {
         const QString text = value.toString();
-        return editFrame(QStringLiteral("Edit a frame of %1").arg(title()),
+        return editFrame(tr("Edit a frame of %1").arg(title()),
                          [key, text, half](QJsonObject& record) {
                              const int flags = record.value(QStringLiteral("flags")).toInt();
                              Half h = unpack(flags, half);

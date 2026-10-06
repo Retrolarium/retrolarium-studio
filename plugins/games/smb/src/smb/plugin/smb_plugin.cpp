@@ -1,5 +1,6 @@
 #include "smb/plugin/smb_plugin.hpp"
 
+#include "sdk/i18n.hpp"
 #include "sdk/plugin.hpp"
 #include "smb/plugin/smb_session.hpp"
 
@@ -11,7 +12,7 @@ namespace {
 class SmbPlugin final : public sdk::Plugin {
 public:
     QString id() const override { return QStringLiteral("smb1"); }
-    QString displayName() const override { return QStringLiteral("Super Mario Bros."); }
+    QString displayName() const override { return rlTr("smb", "Super Mario Bros."); }
 
     bool canOpen(const sdk::ProjectFile& project) const override {
         const QString mode = project.string(QStringLiteral("project.source_mode"));

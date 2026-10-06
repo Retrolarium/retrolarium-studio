@@ -3,6 +3,7 @@
 #include "nes/editors.hpp"
 #include "nes/palette.hpp"
 #include "nes/sound_effect_model.hpp"
+#include "sdk/i18n.hpp"
 #include "smb/plugin/sound_effects.hpp"
 #include "sdk/plugin.hpp"
 #include "sdk/snapshot_command.hpp"
@@ -33,17 +34,17 @@ namespace {
 
 QJsonObject loadJsonObject(const QString& path) {
     QFile file(path);
-    if (!file.open(QIODevice::ReadOnly)) throw SmbError(QStringLiteral("Cannot read %1.").arg(path).toStdString());
+    if (!file.open(QIODevice::ReadOnly)) throw SmbError(rlTr("smb", "Cannot read %1.").arg(path).toStdString());
     const QJsonDocument doc = QJsonDocument::fromJson(file.readAll());
-    if (!doc.isObject()) throw SmbError(QStringLiteral("%1 is not a JSON object.").arg(path).toStdString());
+    if (!doc.isObject()) throw SmbError(rlTr("smb", "%1 is not a JSON object.").arg(path).toStdString());
     return doc.object();
 }
 
 void saveJsonObject(const QString& path, const QJsonObject& value) {
     QSaveFile file(path);
-    if (!file.open(QIODevice::WriteOnly)) throw SmbError(QStringLiteral("Cannot write %1.").arg(path).toStdString());
+    if (!file.open(QIODevice::WriteOnly)) throw SmbError(rlTr("smb", "Cannot write %1.").arg(path).toStdString());
     file.write(QJsonDocument(value).toJson(QJsonDocument::Indented));
-    if (!file.commit()) throw SmbError(QStringLiteral("Cannot write %1.").arg(path).toStdString());
+    if (!file.commit()) throw SmbError(rlTr("smb", "Cannot write %1.").arg(path).toStdString());
 }
 
 QString tabDocument(const sdk::ProjectFile& project, const QString& codec) {
@@ -101,7 +102,7 @@ QString failureText(const sdk::ProcessResult& result) {
             return lines.at(i).trimmed();
         }
     }
-    return QStringLiteral("exit code %1").arg(result.exitCode);
+    return rlTr("smb", "exit code %1").arg(result.exitCode);
 }
 
 // The emulator command a kit plan describes.
@@ -172,7 +173,7 @@ std::unique_ptr<SmbSession> SmbSession::open(const sdk::ProjectFile& project, QS
         }
     } catch (const std::exception& e) {
         if (error) {
-            *error = QStringLiteral("Cannot open the Super Mario Bros. project: %1").arg(QString::fromUtf8(e.what()));
+            *error = tr("Cannot open the Super Mario Bros. project: %1").arg(QString::fromUtf8(e.what()));
         }
         return nullptr;
     }
@@ -189,8 +190,8 @@ sdk::Profile SmbSession::profile() const {
     };
     const QString revision = document_.revision();
     sdk::Profile profile;
-    profile.name = revision == QLatin1String("smb2_jp_fds") ? QStringLiteral("Super Mario Bros. 2")
-                                                             : QStringLiteral("Super Mario Bros.");
+    profile.name = revision == QLatin1String("smb2_jp_fds") ? tr("Super Mario Bros. 2")
+                                                             : tr("Super Mario Bros.");
     profile.badge = revision.endsWith(QLatin1String("fds")) ? QStringLiteral("FDS") : QStringLiteral("NES");
     profile.platform = profile.badge;
     profile.revision = kRevisions.value(revision, revision.toUpper());
@@ -231,7 +232,7 @@ QVector<sdk::DocumentGroup> SmbSession::documents(const QString& kind) const {
         const QStringList areas = document_.areaNames(levels_);
         for (const QString& type : order) {
             sdk::DocumentGroup group;
-            group.title = displayName(type) + QStringLiteral(" areas");
+            group.title = displayName(type) + tr(" areas");
             for (const QString& area : areas) {
                 if (areaTypeOf(area) != type) {
                     continue;
@@ -251,20 +252,20 @@ QVector<sdk::DocumentGroup> SmbSession::documents(const QString& kind) const {
         }
     } else if (kind == QLatin1String("graphics")) {
         sdk::DocumentGroup group;
-        group.title = QStringLiteral("Pattern tables");
-        group.documents << entry(QStringLiteral("sprites"), QStringLiteral("Sprites"), QStringLiteral("256 tiles"))
-                        << entry(QStringLiteral("background"), QStringLiteral("Background"), QStringLiteral("256 tiles"));
+        group.title = tr("Pattern tables");
+        group.documents << entry(QStringLiteral("sprites"), tr("Sprites"), tr("256 tiles"))
+                        << entry(QStringLiteral("background"), tr("Background"), tr("256 tiles"));
         groups << group;
     } else if (kind == QLatin1String("metatiles")) {
         sdk::DocumentGroup group;
-        group.title = QStringLiteral("Background blocks");
+        group.title = tr("Background blocks");
         const QVector<int> sizes = document_.metatileGroupSizes(art_.metatiles);
         const QJsonArray now = document_.resource(art_.metatiles).value(QStringLiteral("records")).toArray();
         const QJsonArray saved = saved_.resource(art_.metatiles).value(QStringLiteral("records")).toArray();
         int first = 0;
         for (int g = 0; g < sizes.size(); ++g) {
-            sdk::DocumentEntry e = entry(QStringLiteral("group:%1").arg(g), QStringLiteral("Palette %1").arg(g),
-                                         QStringLiteral("%1 blocks").arg(sizes.at(g)));
+            sdk::DocumentEntry e = entry(QStringLiteral("group:%1").arg(g), tr("Palette %1").arg(g),
+                                         tr("%1 blocks").arg(sizes.at(g)));
             for (int i = first; i < first + sizes.at(g) && i < now.size(); ++i) {
                 e.dirty = e.dirty || now.at(i) != saved.at(i);
             }
@@ -274,22 +275,22 @@ QVector<sdk::DocumentGroup> SmbSession::documents(const QString& kind) const {
         groups << group;
     } else if (kind == QLatin1String("palettes")) {
         sdk::DocumentGroup areas;
-        areas.title = QStringLiteral("Area palettes");
+        areas.title = tr("Area palettes");
         for (const QString& name : document_.packetNames(art_.palettes)) {
             areas.documents << entry(QStringLiteral("packet:") + name, displayName(name),
-                                     QStringLiteral("%1 colours").arg(document_.packetValues(art_.palettes, name).size()));
+                                     tr("%1 colours").arg(document_.packetValues(art_.palettes, name).size()));
         }
         groups << areas;
         if (!art_.playerPalette.isEmpty()) {
             sdk::DocumentGroup player;
             player.title = QStringLiteral("Player");
-            player.documents << entry(QStringLiteral("player"), QStringLiteral("Hero, Brother, fire"),
-                                      QStringLiteral("%1 colours").arg(document_.tableValues(art_.playerPalette).size()));
+            player.documents << entry(QStringLiteral("player"), tr("Hero, Brother, fire"),
+                                      tr("%1 colours").arg(document_.tableValues(art_.playerPalette).size()));
             groups << player;
         }
     } else if (kind == QLatin1String("world") && !world_.isEmpty()) {
         sdk::DocumentGroup group;
-        group.title = QStringLiteral("World");
+        group.title = tr("World");
         int steps = 0;
         bool routesDirty = false;
         for (int w = 1; w <= document_.worldCount(world_); ++w) {
@@ -301,11 +302,11 @@ QVector<sdk::DocumentGroup> SmbSession::documents(const QString& kind) const {
                               now.at(s).areaIndex != saved.at(s).areaIndex || now.at(s).alternate != saved.at(s).alternate;
             }
         }
-        sdk::DocumentEntry routes = entry(QStringLiteral("routes"), QStringLiteral("Routes"),
-                                          QStringLiteral("%1 worlds · %2 steps").arg(document_.worldCount(world_)).arg(steps));
+        sdk::DocumentEntry routes = entry(QStringLiteral("routes"), tr("Routes"),
+                                          tr("%1 worlds · %2 steps").arg(document_.worldCount(world_)).arg(steps));
         routes.dirty = routesDirty;
-        sdk::DocumentEntry physics = entry(QStringLiteral("physics"), QStringLiteral("Player physics"),
-                                           QStringLiteral("%1 tables").arg(document_.physicsTables(world_).size()));
+        sdk::DocumentEntry physics = entry(QStringLiteral("physics"), tr("Player physics"),
+                                           tr("%1 tables").arg(document_.physicsTables(world_).size()));
         const QVector<SmbPhysicsTable> nowTables = document_.physicsTables(world_);
         const QVector<SmbPhysicsTable> savedTables = saved_.physicsTables(world_);
         for (int t = 0; t < nowTables.size() && t < savedTables.size(); ++t) {
@@ -313,8 +314,8 @@ QVector<sdk::DocumentGroup> SmbSession::documents(const QString& kind) const {
         }
         group.documents << routes << physics;
         if (!art_.playerFrames.isEmpty()) {
-            sdk::DocumentEntry actions = entry(QStringLiteral("actions"), QStringLiteral("Player actions"),
-                                               QStringLiteral("frames per action"));
+            sdk::DocumentEntry actions = entry(QStringLiteral("actions"), tr("Player actions"),
+                                               tr("frames per action"));
             const QJsonObject now = document_.resource(art_.playerFrames);
             const QJsonObject saved = saved_.resource(art_.playerFrames);
             actions.dirty = now.value(QStringLiteral("frame_offsets")) != saved.value(QStringLiteral("frame_offsets")) ||
@@ -330,11 +331,11 @@ QVector<sdk::DocumentGroup> SmbSession::documents(const QString& kind) const {
         const QJsonArray now = document_.resource(art_.playerFrames).value(QStringLiteral("frames")).toArray();
         const QJsonArray saved = saved_.resource(art_.playerFrames).value(QStringLiteral("frames")).toArray();
         sdk::DocumentGroup big;
-        big.title = QStringLiteral("Big Hero");
+        big.title = tr("Big Hero");
         sdk::DocumentGroup small;
-        small.title = QStringLiteral("Small Hero");
+        small.title = tr("Small Hero");
         sdk::DocumentGroup other;
-        other.title = QStringLiteral("Other");
+        other.title = tr("Other");
         for (const QString& animation : SmbPlayerFramesModel::animations(names)) {
             const QVector<int> frames = SmbPlayerFramesModel::framesOf(names, animation);
             QString label = SmbPlayerFramesModel::animationLabel(animation);
@@ -347,8 +348,8 @@ QVector<sdk::DocumentGroup> SmbSession::documents(const QString& kind) const {
                 label = SmbPlayerFramesModel::animationLabel(animation.mid(6));
             }
             sdk::DocumentEntry e = entry(animation, label,
-                                         frames.size() == 1 ? QStringLiteral("1 frame")
-                                                            : QStringLiteral("%1 frames").arg(frames.size()));
+                                         frames.size() == 1 ? tr("1 frame")
+                                                            : tr("%1 frames").arg(frames.size()));
             for (int f : frames) {
                 e.dirty = e.dirty || now.at(f) != saved.at(f);
             }
@@ -361,7 +362,7 @@ QVector<sdk::DocumentGroup> SmbSession::documents(const QString& kind) const {
         for (const QString& id : document_.resourceIds(QStringLiteral("nes.ppu-screen-packets.v1"))) {
             const SmbScreenSet& set = screenSet(id);
             sdk::DocumentGroup group;
-            group.title = id == QLatin1String("game-screen-packets") ? QStringLiteral("Game screens")
+            group.title = id == QLatin1String("game-screen-packets") ? tr("Game screens")
                                                                      : displayName(QString(id).replace(QLatin1Char('-'), QLatin1Char('_')));
             const SmbScreenSet saved = SmbScreenSet::fromJson(saved_.resource(id));
             for (int s = 0; s < set.screens.size(); ++s) {
@@ -419,18 +420,18 @@ QVector<sdk::DocumentGroup> SmbSession::documents(const QString& kind) const {
             }
             if (!g.documents.isEmpty()) groups << g;
         };
-        group(QStringLiteral("Area music"), area);
-        group(QStringLiteral("Ground theme parts"), ground);
-        group(QStringLiteral("Events"), events);
-        group(QStringLiteral("Other"), other);
+        group(tr("Area music"), area);
+        group(tr("Ground theme parts"), ground);
+        group(tr("Events"), events);
+        group(tr("Other"), other);
         sdk::DocumentGroup effects;
-        effects.title = QStringLiteral("Sound effects");
+        effects.title = tr("Sound effects");
         for (const nes::SoundEffect& effect : soundEffects()) {
-            effects.documents << entry(QStringLiteral("sfx:") + effect.key, effect.title, effect.trigger.section(QStringLiteral(" queue"), 0, 0));
+            effects.documents << entry(QStringLiteral("sfx:") + effect.key, effect.title, effect.trigger.section(tr(" queue"), 0, 0));
         }
         const bool tables = document_.resourceIds(QStringLiteral("smb.sfx-tables.v1")).contains(kSfxTables);
-        sdk::DocumentEntry e = entry(kSfxTables, QStringLiteral("Sound effect tables"),
-                                     tables ? QStringLiteral("81 B") : QStringLiteral("not added yet"));
+        sdk::DocumentEntry e = entry(kSfxTables, tr("Sound effect tables"),
+                                     tables ? QStringLiteral("81 B") : tr("not added yet"));
         e.dirty = tables && saved_.resourceIds(QStringLiteral("smb.sfx-tables.v1")).contains(kSfxTables) &&
                   document_.resource(kSfxTables) != saved_.resource(kSfxTables);
         effects.documents << e;
@@ -438,8 +439,8 @@ QVector<sdk::DocumentGroup> SmbSession::documents(const QString& kind) const {
     } else if (kind == QLatin1String("text")) {
         sdk::DocumentGroup group;
         group.title = QStringLiteral("Text");
-        sdk::DocumentEntry e = entry(QStringLiteral("all"), QStringLiteral("Game text"),
-                                     QStringLiteral("%1 strings").arg(textSlots().size()));
+        sdk::DocumentEntry e = entry(QStringLiteral("all"), tr("Game text"),
+                                     tr("%1 strings").arg(textSlots().size()));
         for (int i = 0; i < textSlots().size(); ++i) {
             e.dirty = e.dirty || text(i) != slotText(saved_, textSlots().at(i));
         }
@@ -447,21 +448,21 @@ QVector<sdk::DocumentGroup> SmbSession::documents(const QString& kind) const {
         groups << group;
     } else if (kind == QLatin1String("demo")) {
         sdk::DocumentGroup group;
-        group.title = QStringLiteral("Title");
+        group.title = tr("Title");
         if (demo_.isEmpty()) {
             // Opening it adds the document from the project's own source.
-            group.documents << entry(QStringLiteral("demo"), QStringLiteral("Title demo"), QStringLiteral("not added yet"));
+            group.documents << entry(QStringLiteral("demo"), tr("Title demo"), tr("not added yet"));
         } else {
-            sdk::DocumentEntry e = entry(QStringLiteral("demo"), QStringLiteral("Title demo"),
-                                         QStringLiteral("%1 steps").arg(demo_.value(QStringLiteral("steps")).toArray().size()));
+            sdk::DocumentEntry e = entry(QStringLiteral("demo"), tr("Title demo"),
+                                         tr("%1 steps").arg(demo_.value(QStringLiteral("steps")).toArray().size()));
             e.dirty = demo_ != savedDemo_;
             group.documents << e;
         }
         groups << group;
     } else if (kind == QLatin1String("playtest")) {
         sdk::DocumentGroup group;
-        group.title = QStringLiteral("Session");
-        group.documents << entry(QStringLiteral("playtest"), QStringLiteral("Build and run"),
+        group.title = tr("Session");
+        group.documents << entry(QStringLiteral("playtest"), tr("Build and run"),
                                  lastBuild_.isEmpty() ? QString() : QStringLiteral("built"));
         groups << group;
     }
@@ -624,8 +625,8 @@ QVector<sdk::Diagnostic> SmbSession::diagnostics() const {
             d.severity = sdk::Severity::Error;
             d.source = QStringLiteral("levels");
             d.kind = QStringLiteral("levels");
-            d.location = QStringLiteral("All levels");
-            d.message = QStringLiteral("The %1 streams of all levels need %2 of %3 bytes.").arg(stream).arg(used).arg(size);
+            d.location = tr("All levels");
+            d.message = tr("The %1 streams of all levels need %2 of %3 bytes.").arg(stream).arg(used).arg(size);
             result << d;
         };
         check(QStringLiteral("object"), pool.objectUsed, pool.objectSize);
@@ -644,7 +645,7 @@ QVector<sdk::Diagnostic> SmbSession::diagnostics() const {
             d.kind = QStringLiteral("levels");
             d.document = name;
             d.location = areaLabel(name);
-            d.message = QStringLiteral("The %1 stream uses %2 of %3 bytes.").arg(stream).arg(used).arg(capacity);
+            d.message = tr("The %1 stream uses %2 of %3 bytes.").arg(stream).arg(used).arg(capacity);
             result << d;
         };
         check(QStringLiteral("object"), area.areaFits(), area.areaBytes(), area.areaCapacity);
@@ -760,11 +761,11 @@ void SmbSession::selectStart(const QString& area) {
 }
 
 QString SmbSession::selectedStart() const {
-    if (demoStart()) return QStringLiteral("Title demo");
+    if (demoStart()) return tr("Title demo");
     if (start_.area.isEmpty()) {
         return {};
     }
-    return QStringLiteral("%1 · column %2").arg(areaLabel(start_.area)).arg(start_.cell.x());
+    return tr("%1 · column %2").arg(areaLabel(start_.area)).arg(start_.cell.x());
 }
 
 QImage SmbSession::areaPreview(const QString& area, int columns, int firstColumn) const {
@@ -843,12 +844,12 @@ void SmbSession::runBuild(std::function<void(bool)> next, bool) {
         next(false);
         return;
     }
-    spec.label = QStringLiteral("Build ROM");
+    spec.label = tr("Build ROM");
     h->runProcess(spec, [this, next](const sdk::ProcessResult& result) {
         if (!result.succeeded()) {
             if (!result.cancelled) {
                 report(sdk::Severity::Error, QStringLiteral("build"),
-                       QStringLiteral("Build failed: %1").arg(failureText(result)));
+                       tr("Build failed: %1").arg(failureText(result)));
             }
             next(false);
             return;
@@ -856,7 +857,7 @@ void SmbSession::runBuild(std::function<void(bool)> next, bool) {
         const QJsonObject json = QJsonDocument::fromJson(result.standardOutput).object();
         const QJsonObject artifact = json.value(QStringLiteral("artifact")).toObject();
         if (json.value(QStringLiteral("status")).toString() != QLatin1String("built")) {
-            report(sdk::Severity::Error, QStringLiteral("build"), QStringLiteral("The kit did not report a built ROM."));
+            report(sdk::Severity::Error, QStringLiteral("build"), tr("The kit did not report a built ROM."));
             next(false);
             return;
         }
@@ -864,7 +865,7 @@ void SmbSession::runBuild(std::function<void(bool)> next, bool) {
                          .arg(QDateTime::currentDateTime().toString(QStringLiteral("HH:mm")),
                               artifact.value(QStringLiteral("path")).toString());
         report(sdk::Severity::Info, QStringLiteral("build"),
-               QStringLiteral("Built %1 (%2 bytes).")
+               tr("Built %1 (%2 bytes).")
                    .arg(artifact.value(QStringLiteral("path")).toString())
                    .arg(artifact.value(QStringLiteral("size")).toInt()));
         emit documentsChanged(QStringLiteral("playtest"));
@@ -887,8 +888,8 @@ void SmbSession::playSelected() {
 }
 
 QString SmbSession::playSelectedLabel() const {
-    if (recordingActive_) return QStringLiteral("Stop recording");
-    return demoStart() ? QStringLiteral("Play demo") : QString();
+    if (recordingActive_) return tr("Stop recording");
+    return demoStart() ? tr("Play demo") : QString();
 }
 
 // ---------------------------------------------------------------- demo
@@ -910,7 +911,7 @@ bool SmbSession::editDemo(const QString& text, const std::function<void(QJsonObj
     if (next == demo_) return true;
     const QJsonArray steps = next.value(QStringLiteral("steps")).toArray();
     if (steps.isEmpty() || steps.size() > demoCapacity()) {
-        if (error) *error = QStringLiteral("The demo holds 1-%1 steps.").arg(demoCapacity());
+        if (error) *error = tr("The demo holds 1-%1 steps.").arg(demoCapacity());
         return false;
     }
     undoStack()->push(new sdk::SnapshotCommand<QJsonObject>(
@@ -950,11 +951,11 @@ void SmbSession::upgradeProject(const QString& kind, const QString& document) {
         report(sdk::Severity::Error, kind, error);
         return;
     }
-    spec.label = QStringLiteral("Add what this kit edits to the project");
+    spec.label = tr("Add what this kit edits to the project");
     h->runProcess(spec, [this, kind, document](const sdk::ProcessResult& result) {
         if (!result.succeeded()) {
             if (!result.cancelled) {
-                report(sdk::Severity::Error, kind, QStringLiteral("Upgrading the project failed: %1").arg(failureText(result)));
+                report(sdk::Severity::Error, kind, tr("Upgrading the project failed: %1").arg(failureText(result)));
             }
             return;
         }
@@ -984,7 +985,7 @@ void SmbSession::upgradeProject(const QString& kind, const QString& document) {
             report(sdk::Severity::Error, kind, QString::fromUtf8(e.what()));
             return;
         }
-        report(sdk::Severity::Info, kind, QStringLiteral("Added the documents and resources this kit edits to the project."));
+        report(sdk::Severity::Info, kind, tr("Added the documents and resources this kit edits to the project."));
         emit contentChanged();
         for (const sdk::Kind& k : kinds()) emit documentsChanged(k.id);
         emit documentRequested(kind, document);
@@ -999,7 +1000,7 @@ void SmbSession::launchDemo(bool record) {
             const QString mame = h->emulatorPath(QStringLiteral("mame"));
             if (mame.isEmpty()) {
                 report(sdk::Severity::Error, QStringLiteral("playtest"),
-                       QStringLiteral("MAME was not found. Set RETROLARIUM_MAME to consoles.exe."));
+                       tr("MAME was not found. Set RETROLARIUM_MAME to consoles.exe."));
                 return;
             }
             QStringList arguments{QStringLiteral("studio"), QStringLiteral("smb-demo-plan"), project_.path(),
@@ -1015,20 +1016,20 @@ void SmbSession::launchDemo(bool record) {
                 report(sdk::Severity::Error, QStringLiteral("playtest"), error);
                 return;
             }
-            plan.label = record ? QStringLiteral("Plan demo recording") : QStringLiteral("Plan title demo");
+            plan.label = record ? tr("Plan demo recording") : tr("Plan title demo");
             h->runProcess(plan, [this, record, recording](const sdk::ProcessResult& result) {
                 sdk::Host* host = this->host();
                 if (!host) return;
                 if (!result.succeeded()) {
                     if (!result.cancelled) {
                         report(sdk::Severity::Error, QStringLiteral("playtest"),
-                               QStringLiteral("Demo plan failed: %1").arg(failureText(result)));
+                               tr("Demo plan failed: %1").arg(failureText(result)));
                     }
                     return;
                 }
                 sdk::ProcessSpec game = specFromPlan(QJsonDocument::fromJson(result.standardOutput).object());
                 if (game.program.isEmpty()) {
-                    report(sdk::Severity::Error, QStringLiteral("playtest"), QStringLiteral("The kit returned no emulator command."));
+                    report(sdk::Severity::Error, QStringLiteral("playtest"), tr("The kit returned no emulator command."));
                     return;
                 }
                 const std::string model = document_.paletteModel(art_.palettes).toStdString();
@@ -1040,15 +1041,15 @@ void SmbSession::launchDemo(bool record) {
                     recordingActive_ = true;
                     emit selectedStartChanged();
                     report(sdk::Severity::Info, QStringLiteral("demo"),
-                           QStringLiteral("Recording: play 1-1 with the controller; it ends when Hero dies, on Start or "
-                                          "on Stop recording."));
+                           tr("Recording: play 1-1 with the controller; it ends when Hero dies, on Start or "
+                              "on Stop recording."));
                 }
-                const QString title = record ? QStringLiteral("Super Mario Bros. · recording the demo")
-                                             : QStringLiteral("Super Mario Bros. · title demo");
+                const QString title = record ? tr("Super Mario Bros. · recording the demo")
+                                             : tr("Super Mario Bros. · title demo");
                 host->launchEmulator(game, title, [this, record, recording](const sdk::ProcessResult& run) {
                     if (run.crashed || (!run.started && !run.error.isEmpty())) {
                         report(sdk::Severity::Error, QStringLiteral("playtest"),
-                               run.error.isEmpty() ? QStringLiteral("The emulator crashed.") : run.error);
+                               run.error.isEmpty() ? tr("The emulator crashed.") : run.error);
                     }
                     if (record) {
                         recordingActive_ = false;
@@ -1064,28 +1065,28 @@ void SmbSession::launchDemo(bool record) {
 void SmbSession::applyRecording(const QString& path) {
     QFile file(path);
     if (!file.open(QIODevice::ReadOnly)) {
-        report(sdk::Severity::Warning, QStringLiteral("demo"), QStringLiteral("Nothing was recorded: the demo did not start."));
+        report(sdk::Severity::Warning, QStringLiteral("demo"), tr("Nothing was recorded: the demo did not start."));
         return;
     }
     const int capacity = demoCapacity();
     const SmbDemoModel::Recording recording = SmbDemoModel::stepsFromRecording(QString::fromUtf8(file.readAll()), capacity);
     if (!recording.pressed) {
         report(sdk::Severity::Warning, QStringLiteral("demo"),
-               QStringLiteral("No buttons were pressed while recording; the demo stays as it was."));
+               tr("No buttons were pressed while recording; the demo stays as it was."));
         return;
     }
     const QJsonArray steps = recording.steps;
     QString error;
-    if (!editDemo(QStringLiteral("Record the title demo"),
+    if (!editDemo(tr("Record the title demo"),
                   [steps](QJsonObject& demo) { demo.insert(QStringLiteral("steps"), steps); }, &error)) {
         report(sdk::Severity::Error, QStringLiteral("demo"), error);
         return;
     }
-    QString message = QStringLiteral("Recorded %1 s of input into the demo's %2 steps.")
+    QString message = tr("Recorded %1 s of input into the demo's %2 steps.")
                           .arg(recording.keptFrames / 60.0, 0, 'f', 1)
                           .arg(steps.size());
     if (recording.droppedFrames > 0) {
-        message += QStringLiteral(" The game's tables hold %1 steps; the last %2 s did not fit.")
+        message += tr(" The game's tables hold %1 steps; the last %2 s did not fit.")
                        .arg(capacity)
                        .arg(recording.droppedFrames / 60.0, 0, 'f', 1);
     }
@@ -1103,7 +1104,7 @@ void SmbSession::launch(bool fromStart) {
             const QString mame = h->emulatorPath(QStringLiteral("mame"));
             if (mame.isEmpty()) {
                 report(sdk::Severity::Error, QStringLiteral("playtest"),
-                       QStringLiteral("MAME was not found. Set RETROLARIUM_MAME to consoles.exe."));
+                       tr("MAME was not found. Set RETROLARIUM_MAME to consoles.exe."));
                 return;
             }
             QStringList arguments;
@@ -1127,10 +1128,10 @@ void SmbSession::launch(bool fromStart) {
                 report(sdk::Severity::Error, QStringLiteral("playtest"), error);
                 return;
             }
-            const QString title = fromStart ? QStringLiteral("Super Mario Bros. · power-on")
-                                            : QStringLiteral("Super Mario Bros. · %1").arg(areaLabel(start.area));
-            plan.label = fromStart ? QStringLiteral("Plan playtest from power-on")
-                                   : QStringLiteral("Plan playtest of %1").arg(areaLabel(start.area));
+            const QString title = fromStart ? tr("Super Mario Bros. · power-on")
+                                            : tr("Super Mario Bros. · %1").arg(areaLabel(start.area));
+            plan.label = fromStart ? tr("Plan playtest from power-on")
+                                   : tr("Plan playtest of %1").arg(areaLabel(start.area));
             h->runProcess(plan, [this, title, fromStart](const sdk::ProcessResult& result) {
                 sdk::Host* host = this->host();
                 if (!host) {
@@ -1139,7 +1140,7 @@ void SmbSession::launch(bool fromStart) {
                 if (!result.succeeded()) {
                     if (!result.cancelled) {
                         report(sdk::Severity::Error, QStringLiteral("playtest"),
-                               QStringLiteral("Playtest plan failed: %1").arg(failureText(result)));
+                               tr("Playtest plan failed: %1").arg(failureText(result)));
                     }
                     return;
                 }
@@ -1162,13 +1163,13 @@ void SmbSession::launch(bool fromStart) {
                 }
                 if (game.program.isEmpty()) {
                     report(sdk::Severity::Error, QStringLiteral("playtest"),
-                           QStringLiteral("The kit returned no emulator command."));
+                           tr("The kit returned no emulator command."));
                     return;
                 }
                 host->launchEmulator(game, title, [this](const sdk::ProcessResult& run) {
                     if (run.crashed || (!run.started && !run.error.isEmpty())) {
                         report(sdk::Severity::Error, QStringLiteral("playtest"),
-                               run.error.isEmpty() ? QStringLiteral("The emulator crashed.") : run.error);
+                               run.error.isEmpty() ? tr("The emulator crashed.") : run.error);
                     }
                 });
             });
