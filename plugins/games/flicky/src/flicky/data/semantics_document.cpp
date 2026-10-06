@@ -247,4 +247,73 @@ void FlickySemanticsDocument::restorePalette(const QString &id)
         setColour(id, index, baseline[index]);
 }
 
+namespace {
+
+QVector<QPoint> titlePoints(const QJsonObject &root, const QString &group, const char *field)
+{
+    QVector<QPoint> result;
+    for (const auto &value : root.value(QStringLiteral("title_layout")).toArray()) {
+        const auto record = value.toObject();
+        if (record.value(QStringLiteral("id")).toString() != group) continue;
+        for (const auto &point : record.value(QLatin1String(field)).toArray()) {
+            const auto pair = point.toArray();
+            result.append(QPoint(pair.at(0).toInt(), pair.at(1).toInt()));
+        }
+    }
+    return result;
+}
+
+} // namespace
+
+bool FlickySemanticsDocument::hasTitleLayout() const
+{
+    return root_.value(QStringLiteral("title_layout")).isArray();
+}
+
+QVector<QPoint> FlickySemanticsDocument::titlePositions(const QString &group) const
+{
+    return titlePoints(root_, group, "positions");
+}
+
+QVector<QPoint> FlickySemanticsDocument::baselineTitlePositions(const QString &group) const
+{
+    return titlePoints(root_, group, "baseline");
+}
+
+void FlickySemanticsDocument::setTitlePosition(const QString &group, int index, QPoint position)
+{
+    if (position.x() < 0 || position.x() > 0x1FF || position.y() < 0 || position.y() > 0x1FF)
+        fail(QStringLiteral("A sprite position is 0-511 in VDP coordinates"));
+    auto layout = root_.value(QStringLiteral("title_layout")).toArray();
+    for (int i = 0; i < layout.size(); ++i) {
+        auto record = layout.at(i).toObject();
+        if (record.value(QStringLiteral("id")).toString() != group) continue;
+        auto positions = record.value(QStringLiteral("positions")).toArray();
+        if (index < 0 || index >= positions.size()) fail(QStringLiteral("No such title sprite"));
+        positions.replace(index, QJsonArray{position.x(), position.y()});
+        record.insert(QStringLiteral("positions"), positions);
+        layout.replace(i, record);
+        root_.insert(QStringLiteral("title_layout"), layout);
+        return;
+    }
+    fail(QStringLiteral("No title sprite group ") + group);
+}
+
+void FlickySemanticsDocument::adoptTitleLayout(const FlickySemanticsDocument &upgraded)
+{
+    if (upgraded.hasTitleLayout())
+        root_.insert(QStringLiteral("title_layout"), upgraded.root_.value(QStringLiteral("title_layout")));
+}
+
+void FlickySemanticsDocument::restoreTitleLayout()
+{
+    auto layout = root_.value(QStringLiteral("title_layout")).toArray();
+    for (int i = 0; i < layout.size(); ++i) {
+        auto record = layout.at(i).toObject();
+        record.insert(QStringLiteral("positions"), record.value(QStringLiteral("baseline")));
+        layout.replace(i, record);
+    }
+    if (!layout.isEmpty()) root_.insert(QStringLiteral("title_layout"), layout);
+}
+
 } // namespace rl::flicky

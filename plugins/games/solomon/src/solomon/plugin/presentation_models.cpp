@@ -309,7 +309,8 @@ QString SolomonDemoModel::startPoint() const {
 int SolomonDemoModel::demoCapacity(const QString& revision) {
     // The tables grow into the filler after them, up to the expansion's
     // wrappers (kit solomon_presentation, demo_end_cpu).
-    return revision == QLatin1String("europe") ? 85 : 93;
+    if (revision == QLatin1String("europe")) return 85;
+    return revision == QLatin1String("japan") ? 51 : 93;
 }
 
 SolomonDemoModel::Recording SolomonDemoModel::stepsFromRecording(const QString& text, int capacity) {

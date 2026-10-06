@@ -166,7 +166,10 @@ sdk::Profile SolomonSession::profile() const {
     profile.name = QStringLiteral("Solomon's Key");
     profile.badge = QStringLiteral("NES");
     profile.platform = QStringLiteral("NES");
-    profile.revision = state_.rooms.revision() == QLatin1String("europe") ? QStringLiteral("E") : QStringLiteral("U");
+    const QString revision = state_.rooms.revision();
+    profile.revision = revision == QLatin1String("europe")  ? QStringLiteral("E")
+                       : revision == QLatin1String("japan") ? QStringLiteral("J")
+                                                            : QStringLiteral("U");
     profile.cpu = QStringLiteral("6502");
     profile.chip = QStringLiteral("2A03");
     profile.codec = QStringLiteral("solomon.rooms@3");

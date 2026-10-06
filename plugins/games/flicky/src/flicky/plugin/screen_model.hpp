@@ -3,13 +3,16 @@
 #include "flicky/render/scene_renderer.hpp"
 #include "sdk/editor_model.hpp"
 
+#include <optional>
+
 namespace rl::flicky {
 
 class FlickySession;
 
 // A front-end screen as the game draws it (title, guide, ending or the
 // credits roll), with its text picked on the screen and edited in the
-// inspector (the strings live in the game text).
+// inspector (the strings live in the game text). On the title the logo
+// pieces and the cast are sprites to drag (the semantics title layout).
 class ScreenModel final : public sdk::TileMapModel {
     Q_OBJECT
 
@@ -31,6 +34,9 @@ public:
     QVector<sdk::MapObject> objects() const override;
     QString selectedObject() const override { return selected_; }
     void selectObject(const QString& id) override;
+    void beginDrag(const QString& id) override;
+    bool dragObject(const QString& id, QPoint topLeftCell) override;
+    void endDrag() override;
 
     // The document ids of the screens, in list order, and their titles.
     static QStringList documentIds();
@@ -40,9 +46,16 @@ public:
     static QStringList textIds(const FlickySession* session, Screen screen);
 
 private:
+    // The title sprite an object id names ("sprite:cast:2"), if any.
+    std::optional<FlickyLevelSceneRenderer::TitleSprite> sprite(const QString& id) const;
+    bool movesSprites() const;
+
     FlickySession* session_;
     Screen screen_;
     QString selected_;
+    std::optional<FlickySemanticsDocument> before_;
+    quint64 beforeRevision_ = 0;
+    QPoint dragOffset_;
 };
 
 }  // namespace rl::flicky

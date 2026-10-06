@@ -72,6 +72,13 @@ private:
     QStringList typeChoices() const;
     sdk::Inspection inspectObject() const;
     bool setObjectField(const QString& key, const QVariant& value, QString* error);
+    // World 3's spawn schedule (world3-schedule): four channels a room, each
+    // shown in its room's top-left corner, the type's sprite with its count
+    // (an inactive channel as a faint slot).
+    QJsonObject scheduleChannel(int slot) const;      // slot = room * 4 + channel
+    QImage scheduleImage(int slot, QRect* pixels) const;
+    sdk::Inspection inspectSchedule() const;
+    bool setScheduleField(const QString& key, const QVariant& value, QString* error);
     bool objectLayer() const { return layer_ == QLatin1String("objects"); }
     QVector<int> cells() const;
     bool commit(const QVector<int>& cells, const QString& text, QString* error);
@@ -88,6 +95,7 @@ private:
     QHash<int, int> stroke_;        // cell -> painted block
     QString layer_ = QStringLiteral("blocks");
     int object_ = -1;               // selected placement
+    int scheduled_ = -1;            // selected World 3 schedule slot
     std::optional<QJsonArray> dragged_;     // the list while a placement is dragged
     mutable QImage base_;
     mutable quint64 baseRevision_ = ~quint64(0);

@@ -78,6 +78,24 @@ QImage DoraemonMapModel::render() const {
         const QImage sprite = objectImage(v.toObject(), &at);
         painter.drawImage(at, sprite);
     }
+    if (world_ == World::Three && objectLayer() && session_->bundle().contains(QStringLiteral("world3-schedule"))) {
+        QFont font = painter.font();
+        font.setPixelSize(10);
+        font.setBold(true);
+        painter.setFont(font);
+        for (int slot = 0; slot < 64 * 4; ++slot) {
+            QRect pixels;
+            const QImage sprite = scheduleImage(slot, &pixels);
+            painter.drawImage(pixels.topLeft(), sprite);
+            const int count = scheduleChannel(slot).value(QStringLiteral("count")).toInt();
+            if (count == 0) continue;
+            const QString badge = QStringLiteral("×%1").arg(count);
+            const QRect box(pixels.right() - 4, pixels.bottom() - 6, painter.fontMetrics().horizontalAdvance(badge) + 4, 11);
+            painter.fillRect(box, QColor(0, 0, 0, 190));
+            painter.setPen(QColor(255, 230, 120));
+            painter.drawText(box, Qt::AlignCenter, badge);
+        }
+    }
     return image;
 }
 
@@ -198,6 +216,24 @@ QVector<sdk::MapObject> DoraemonMapModel::objects() const {
             }
             result << o;
         }
+        if (world_ == World::Three && session_->bundle().contains(QStringLiteral("world3-schedule"))) {
+            for (int slot = 0; slot < 64 * 4; ++slot) {
+                QRect pixels;
+                scheduleImage(slot, &pixels);
+                const QJsonObject channel = scheduleChannel(slot);
+                sdk::MapObject o;
+                o.id = QStringLiteral("sched:%1").arg(slot);
+                o.label = channel.value(QStringLiteral("count")).toInt()
+                              ? QStringLiteral("%1 ×%2").arg(objectName(channel.value(QStringLiteral("type")).toInt()))
+                                    .arg(channel.value(QStringLiteral("count")).toInt())
+                              : QStringLiteral("Room %1 · channel %2 (off)").arg(slot / 4).arg(slot % 4);
+                o.cells = QRect(pixels.left() / 8, pixels.top() / 8, std::max(1, (pixels.width() + 7) / 8),
+                                std::max(1, (pixels.height() + 7) / 8));
+                o.movable = false;
+                o.outlined = channel.value(QStringLiteral("count")).toInt() > 0;
+                result << o;
+            }
+        }
         return result;
     }
     if (world_ == World::Three) {
@@ -224,6 +260,7 @@ QVector<sdk::MapObject> DoraemonMapModel::objects() const {
 }
 
 QString DoraemonMapModel::selectedObject() const {
+    if (objectLayer() && scheduled_ >= 0) return QStringLiteral("sched:%1").arg(scheduled_);
     if (objectLayer()) return object_ >= 0 ? QStringLiteral("obj:%1").arg(object_) : QString();
     return cell_ >= 0 ? QStringLiteral("cell:%1").arg(cell_) : QString();
 }
@@ -231,8 +268,10 @@ QString DoraemonMapModel::selectedObject() const {
 void DoraemonMapModel::selectObject(const QString& id) {
     if (objectLayer()) {
         const int object = id.startsWith(QLatin1String("obj:")) ? id.mid(4).toInt() : -1;
-        if (object != object_) {
+        const int scheduled = id.startsWith(QLatin1String("sched:")) ? id.mid(6).toInt() : -1;
+        if (object != object_ || scheduled != scheduled_) {
             object_ = object;
+            scheduled_ = scheduled;
             emit selectionChanged();
             emit toolsChanged();
         }
@@ -575,6 +614,7 @@ void DoraemonMapModel::endDrag() {
 }
 
 sdk::Inspection DoraemonMapModel::inspectObject() const {
+    if (scheduled_ >= 0) return inspectSchedule();
     sdk::Inspection inspection;
     inspection.engineTag = QStringLiteral("doraemon.world1-placements.v1");
     const QJsonArray list = records();
@@ -585,8 +625,9 @@ sdk::Inspection DoraemonMapModel::inspectObject() const {
             inspection.title = label_;
             inspection.note = QStringLiteral("World 3's thirteen persistent objects: chests, the talisman, the Pass "
                                              "Hoop, the key, the Item Bag and Girl. Drag one to move it, across "
-                                             "rooms too. Creatures come from each room's spawn schedule and have no "
-                                             "place of their own.");
+                                             "rooms too. Creatures come from each room's spawn schedule: its four "
+                                             "channels sit in the room's top-left corner with their counts; pick one "
+                                             "to change it.");
             return inspection;
         }
         const QJsonObject record = list.at(object_).toObject();
@@ -679,7 +720,105 @@ sdk::Inspection DoraemonMapModel::inspectObject() const {
     return inspection;
 }
 
+QJsonObject DoraemonMapModel::scheduleChannel(int slot) const {
+    return session_->resource(QStringLiteral("world3-schedule")).value(QStringLiteral("rooms")).toArray()
+        .at(slot / 4).toObject().value(QStringLiteral("channels")).toArray().at(slot % 4).toObject();
+}
+
+QImage DoraemonMapModel::scheduleImage(int slot, QRect* pixels) const {
+    const int room = slot / 4;
+    const QPoint corner((room % 8) * 256 + 6 + (slot % 4) * 44, (room / 8) * 256 + 6);
+    const QJsonObject channel = scheduleChannel(slot);
+    if (channel.value(QStringLiteral("count")).toInt() == 0) {
+        // An inactive channel: a faint slot to pick and switch on.
+        QImage image(16, 16, QImage::Format_ARGB32);
+        image.fill(Qt::transparent);
+        QPainter painter(&image);
+        painter.setPen(QPen(QColor(255, 255, 255, 90), 1, Qt::DashLine));
+        painter.drawRect(0, 0, 15, 15);
+        painter.drawLine(5, 8, 11, 8);
+        painter.drawLine(8, 5, 8, 11);
+        if (pixels) *pixels = QRect(corner, image.size());
+        return image;
+    }
+    const int type = channel.value(QStringLiteral("type")).toInt();
+    const int preset = areaPreset(session_->bundle(), world_, map_, (room % 8) * kRoomCells, (room / 8) * kRoomCells);
+    QPoint origin;
+    QImage image = metaspriteImage(session_, world_, world3TypeMetasprite(type),
+                                   session_->painter().colours(world_, preset, 4 + (world3TypeFlags(type) & 3)), &origin);
+    if (pixels) *pixels = QRect(corner, image.size());
+    return image;
+}
+
+sdk::Inspection DoraemonMapModel::inspectSchedule() const {
+    sdk::Inspection inspection;
+    inspection.engineTag = QStringLiteral("doraemon.world3-schedule.v1");
+    const QJsonObject channel = scheduleChannel(scheduled_);
+    const int type = channel.value(QStringLiteral("type")).toInt();
+    inspection.kicker = QStringLiteral("Spawn schedule");
+    inspection.title = QStringLiteral("Room %1 · channel %2").arg(scheduled_ / 4).arg(scheduled_ % 4);
+    sdk::Field kind;
+    kind.key = QStringLiteral("type");
+    kind.label = QStringLiteral("Type");
+    kind.type = sdk::Field::Type::Choice;
+    for (int t = 0; t < 16; ++t) kind.choices << QStringLiteral("%1 · %2").arg(nes::hex(t), objectName(t));
+    kind.value = QStringLiteral("%1 · %2").arg(nes::hex(type), objectName(type));
+    sdk::Field count;
+    count.key = QStringLiteral("count");
+    count.label = QStringLiteral("Count");
+    count.type = sdk::Field::Type::Integer;
+    count.minimum = 0;
+    count.maximum = 255;
+    count.value = channel.value(QStringLiteral("count")).toInt();
+    count.hint = QStringLiteral("0: off");
+    sdk::Field delay;
+    delay.key = QStringLiteral("delay");
+    delay.label = QStringLiteral("Delay");
+    delay.type = sdk::Field::Type::Integer;
+    delay.minimum = 0;
+    delay.maximum = 255;
+    delay.value = channel.value(QStringLiteral("delay")).toInt();
+    delay.hint = QStringLiteral("x4 frames");
+    inspection.fields = {kind, count, delay};
+    inspection.note = QStringLiteral("Creatures this room keeps spawning: when the delay runs out (it counts once "
+                                     "every four frames; 0 retries every frame) a free slot gets one more, until the "
+                                     "count is spent. They enter from the screen edge, so the ROM holds no place for "
+                                     "them; the sprite only marks the channel.");
+    return inspection;
+}
+
+bool DoraemonMapModel::setScheduleField(const QString& key, const QVariant& value, QString* error) {
+    const int slot = scheduled_;
+    int number = value.toInt();
+    if (key == QLatin1String("type")) {
+        bool ok = false;
+        number = value.toString().section(QLatin1Char(' '), 0, 0).remove(QLatin1Char('$')).toInt(&ok, 16);
+        if (!ok || number < 0 || number > 15) return false;
+    } else if (key != QLatin1String("count") && key != QLatin1String("delay")) {
+        return false;
+    }
+    number = std::clamp(number, 0, 255);
+    if (scheduleChannel(slot).value(key).toInt() == number) return false;
+    return session_->editBundle(
+        QStringLiteral("Edit room %1's spawn channel %2").arg(slot / 4).arg(slot % 4),
+        [slot, key, number](nes::Bundle& b) {
+            QJsonObject r = b.resource(QStringLiteral("world3-schedule"));
+            QJsonArray rooms = r.value(QStringLiteral("rooms")).toArray();
+            QJsonObject room = rooms.at(slot / 4).toObject();
+            QJsonArray channels = room.value(QStringLiteral("channels")).toArray();
+            QJsonObject channel = channels.at(slot % 4).toObject();
+            channel.insert(key, number);
+            channels.replace(slot % 4, channel);
+            room.insert(QStringLiteral("channels"), channels);
+            rooms.replace(slot / 4, room);
+            r.insert(QStringLiteral("rooms"), rooms);
+            b.setResource(QStringLiteral("world3-schedule"), r);
+        },
+        error);
+}
+
 bool DoraemonMapModel::setObjectField(const QString& key, const QVariant& value, QString* error) {
+    if (scheduled_ >= 0) return setScheduleField(key, value, error);
     QJsonArray list = records();
     if (object_ < 0 || object_ >= list.size()) return false;
     QJsonObject record = list.at(object_).toObject();

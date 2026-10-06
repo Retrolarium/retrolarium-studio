@@ -7,6 +7,8 @@
 
 #include <QHash>
 #include <QImage>
+#include <QPoint>
+#include <QRect>
 #include <QVector>
 
 #include <array>
@@ -67,6 +69,17 @@ public:
         bool doubleHeight = false;
     };
     [[nodiscard]] QVector<ScreenText> screenTexts(Screen screen) const;
+    // The title's sprites: the six logo pieces and the four cast birds, at
+    // their VDP positions (the semantics title layout, or the source tables
+    // in an older project), with their drawn bounds in screen pixels.
+    struct TitleSprite {
+        QString group;          // "statics" or "cast"
+        int index = 0;
+        QString mapping;
+        QPoint position;
+        QRect bounds;
+    };
+    [[nodiscard]] QVector<TitleSprite> titleSprites() const;
     // The 64 CRAM words the game loads for a one-based round.
     [[nodiscard]] std::array<int, 64> paletteForRound(int round) const;
 

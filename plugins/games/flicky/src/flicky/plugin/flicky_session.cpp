@@ -361,6 +361,12 @@ std::unique_ptr<sdk::EditorModel> FlickySession::openEditor(const QString& kind,
         }
         ScreenModel::Screen screen;
         if (ScreenModel::screenOf(document, &screen)) {
+            // The title's sprite positions came with a newer kit.
+            if (screen == ScreenModel::Screen::Title && !semantics().hasTitleLayout() && !titleUpgradeTried_) {
+                titleUpgradeTried_ = true;
+                upgradeProject(kind, document);
+                return nullptr;
+            }
             return std::make_unique<ScreenModel>(this, screen);
         }
     } else if (kind == QLatin1String("tiles")) {
@@ -378,7 +384,7 @@ std::unique_ptr<sdk::EditorModel> FlickySession::openEditor(const QString& kind,
         return std::make_unique<TextModel>(this);
     } else if (kind == QLatin1String("demo")) {
         if (!levels_.hasAttractDemos()) {
-            upgradeDemos();
+            upgradeProject(kind, document);
             return nullptr;
         }
         const int demo = document.startsWith(QLatin1String("demo-")) ? document.mid(5).toInt() - 1 : -1;
@@ -659,6 +665,18 @@ void FlickySession::notifySemantics() {
     emit documentsChanged(QStringLiteral("levels"));
 }
 
+void FlickySession::touchSemantics() {
+    semantics_.revision = semantics_.nextRevision++;
+    notifySemantics();
+}
+
+void FlickySession::commitSemantics(const FlickySemanticsDocument& before, quint64 beforeRevision,
+                                    const QString& text) {
+    undoStack()->push(new SnapshotCommand<FlickySemanticsDocument>(
+        [this](const FlickySemanticsDocument& doc, quint64 revision) { setSemantics(doc, revision); }, before,
+        beforeRevision, *semantics_.doc, semantics_.revision, text));
+}
+
 void FlickySession::setSemantics(const FlickySemanticsDocument& doc, quint64 revision) {
     *semantics_.doc = doc;
     semantics_.revision = revision;
@@ -803,6 +821,11 @@ bool FlickySession::canRevert(const QString& kind, const QString& document) cons
         for (const QString& id : ScreenModel::textIds(this, screen)) {
             if (semantics().textValue(id) != semantics().baselineTextValue(id)) return true;
         }
+        if (screen == ScreenModel::Screen::Title) {
+            for (const QString& group : {QStringLiteral("statics"), QStringLiteral("cast")}) {
+                if (semantics().titlePositions(group) != semantics().baselineTitlePositions(group)) return true;
+            }
+        }
         return false;
     }
     if (kind == QLatin1String("levels")) {
@@ -878,8 +901,9 @@ bool FlickySession::revert(const QString& kind, const QString& document, QString
     if (kind == QLatin1String("screens") && ScreenModel::screenOf(document, &screen)) {
         const QStringList ids = ScreenModel::textIds(this, screen);
         return editSemantics(QStringLiteral("Revert %1").arg(ScreenModel::screenTitle(screen)),
-                             [ids](FlickySemanticsDocument& s) {
+                             [ids, screen](FlickySemanticsDocument& s) {
                                  for (const QString& id : ids) s.restoreText(id);
+                                 if (screen == ScreenModel::Screen::Title) s.restoreTitleLayout();
                              },
                              error);
     }
@@ -1370,7 +1394,7 @@ void FlickySession::stopRecording() {
     }
 }
 
-void FlickySession::upgradeDemos() {
+void FlickySession::upgradeProject(const QString& kind, const QString& document) {
     sdk::Host* h = host();
     if (!h || h->isBusy()) {
         return;
@@ -1379,37 +1403,43 @@ void FlickySession::upgradeDemos() {
     sdk::ProcessSpec spec = h->kitCommand({QStringLiteral("studio"), QStringLiteral("flicky-upgrade"), project_.path()},
                                           project_.directory(), &error);
     if (spec.program.isEmpty()) {
-        report(sdk::Severity::Error, QStringLiteral("demo"), error);
+        report(sdk::Severity::Error, kind, error);
         return;
     }
-    spec.label = QStringLiteral("Add the attract demos");
-    h->runProcess(spec, [this](const sdk::ProcessResult& result) {
+    spec.label = QStringLiteral("Add what this kit edits to the project");
+    h->runProcess(spec, [this, kind, document](const sdk::ProcessResult& result) {
         if (!result.succeeded()) {
             if (!result.cancelled) {
-                report(sdk::Severity::Error, QStringLiteral("demo"),
-                       QStringLiteral("Adding the attract demos failed: %1").arg(failureText(result)));
+                report(sdk::Severity::Error, kind, QStringLiteral("Upgrading the project failed: %1").arg(failureText(result)));
             }
             return;
         }
         try {
-            // The kit adds the section to the saved levels document; unsaved
-            // level edits stay as they are.
+            // The kit adds sections to the saved documents; unsaved edits
+            // stay as they are.
             const FlickyLevelDocument upgraded = FlickyLevelDocument::load(levelsPath_);
-            if (!upgraded.hasAttractDemos()) {
-                report(sdk::Severity::Error, QStringLiteral("demo"), QStringLiteral("The kit added no attract demos."));
-                return;
+            if (!levels_.hasAttractDemos() && upgraded.hasAttractDemos()) {
+                savedLevels_.adoptAttractDemos(upgraded);
+                levels_.adoptAttractDemos(upgraded);
             }
-            savedLevels_.adoptAttractDemos(upgraded);
-            levels_.adoptAttractDemos(upgraded);
+            const FlickySemanticsDocument semantics = FlickySemanticsDocument::load(semantics_.path);
+            if (!semantics_.doc->hasTitleLayout() && semantics.hasTitleLayout()) {
+                semantics_.saved.adoptTitleLayout(semantics);
+                semantics_.doc->adoptTitleLayout(semantics);
+            }
         } catch (const std::exception& e) {
-            report(sdk::Severity::Error, QStringLiteral("demo"), QString::fromUtf8(e.what()));
+            report(sdk::Severity::Error, kind, QString::fromUtf8(e.what()));
             return;
         }
-        report(sdk::Severity::Info, QStringLiteral("demo"),
-               QStringLiteral("Added the four attract demos to level/levels.json."));
+        if (kind == QLatin1String("demo") && !levels_.hasAttractDemos()) {
+            report(sdk::Severity::Error, kind, QStringLiteral("The kit added no attract demos."));
+            return;
+        }
+        report(sdk::Severity::Info, kind, QStringLiteral("Added the documents and data this kit edits to the project."));
         emit contentChanged();
         emit documentsChanged(QStringLiteral("demo"));
-        emit documentRequested(QStringLiteral("demo"), QStringLiteral("demo-1"));
+        emit documentsChanged(QStringLiteral("screens"));
+        emit documentRequested(kind, kind == QLatin1String("demo") ? QStringLiteral("demo-1") : document);
     });
 }
 

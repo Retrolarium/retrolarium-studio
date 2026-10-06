@@ -22,6 +22,7 @@
 #include <QFile>
 #include <QSaveFile>
 #include <QFileInfo>
+#include <QHash>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QUndoStack>
@@ -179,11 +180,20 @@ std::unique_ptr<SmbSession> SmbSession::open(const sdk::ProjectFile& project, QS
 }
 
 sdk::Profile SmbSession::profile() const {
+    // The kit's revision ids, as the version chip shows them.
+    static const QHash<QString, QString> kRevisions{
+        {QStringLiteral("ju"), QStringLiteral("JU")},        {QStringLiteral("pal"), QStringLiteral("E")},
+        {QStringLiteral("pc10"), QStringLiteral("PC10")},    {QStringLiteral("vs_smb"), QStringLiteral("VS")},
+        {QStringLiteral("fds_smb"), QStringLiteral("FDS")},  {QStringLiteral("ann_fds"), QStringLiteral("ANN")},
+        {QStringLiteral("smb2_jp_fds"), QStringLiteral("J")},
+    };
+    const QString revision = document_.revision();
     sdk::Profile profile;
-    profile.name = QStringLiteral("Super Mario Bros.");
-    profile.badge = QStringLiteral("NES");
-    profile.platform = QStringLiteral("NES");
-    profile.revision = document_.revision().toUpper();
+    profile.name = revision == QLatin1String("smb2_jp_fds") ? QStringLiteral("Super Mario Bros. 2")
+                                                             : QStringLiteral("Super Mario Bros.");
+    profile.badge = revision.endsWith(QLatin1String("fds")) ? QStringLiteral("FDS") : QStringLiteral("NES");
+    profile.platform = profile.badge;
+    profile.revision = kRevisions.value(revision, revision.toUpper());
     profile.cpu = QStringLiteral("6502");
     profile.chip = QStringLiteral("2A03");
     profile.codec = QStringLiteral("smb.levels.v1");

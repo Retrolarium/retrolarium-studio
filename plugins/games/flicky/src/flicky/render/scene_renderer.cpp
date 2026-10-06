@@ -662,6 +662,51 @@ int FlickyLevelSceneRenderer::groundWord(
     return table(QStringLiteral("Level_GroundTileData%1").arg(theme)).at(mask);
 }
 
+QVector<FlickyLevelSceneRenderer::TitleSprite> FlickyLevelSceneRenderer::titleSprites() const
+{
+    const QDir source(sourceRoot_);
+    const auto frontEnd = source.filePath(QStringLiteral("src/game/screens/front_end.s"));
+    // In the source, x and y tables follow each other, two words an object.
+    const auto positions = [&](const QString &group, const char *xs, const char *ys) {
+        if (semantics_->hasTitleLayout()) return semantics_->titlePositions(group);
+        const auto words = tableWords(frontEnd, QString::fromLatin1(xs))
+            + tableWords(frontEnd, QString::fromLatin1(ys));
+        QVector<QPoint> result;
+        for (int index = 0; index + 1 < words.size(); index += 2)
+            result.append(QPoint(words.at(index), words.at(index + 1)));
+        return result;
+    };
+    QVector<TitleSprite> result;
+    const auto add = [&](const QString &group, int index, const QString &mapping, QPoint at) {
+        TitleSprite sprite;
+        sprite.group = group;
+        sprite.index = index;
+        sprite.mapping = mapping;
+        sprite.position = at;
+        for (const auto &value : sequences_->mapping(mapping).value(QStringLiteral("pieces")).toArray()) {
+            const auto piece = value.toObject();
+            sprite.bounds |= QRect(at.x() - 128 + integer(piece, "x"), at.y() - 128 + integer(piece, "y"),
+                                   integer(piece, "width") * tileSize, integer(piece, "height") * tileSize);
+        }
+        if (sprite.bounds.isEmpty()) sprite.bounds = QRect(at - QPoint(128, 128), QSize(8, 8));
+        result.append(sprite);
+    };
+    const auto statics = positions(QStringLiteral("statics"), "Title_StaticXTable", "Title_StaticYTable");
+    for (int index = 0; index < 6 && index < statics.size(); ++index)
+        add(QStringLiteral("statics"), index, QStringLiteral("Title_StaticMap%1").arg(index), statics.at(index));
+    // Obj_TitleBird: the first frame of each cast member's animation
+    // (Title_BirdAnimIndexTable picks the pointer table's entry).
+    static const std::array<const char *, 4> birds {{
+        "Player_AnimWalk", "Chirp_AnimIdle", "Tiger_AnimRun", "Lizard_AnimRight"}};
+    const auto cast = positions(QStringLiteral("cast"), "Title_BirdXTable", "Title_BirdYTable");
+    for (int index = 0; index < 4 && index < cast.size(); ++index) {
+        const auto frames = sequences_->animation(QString::fromLatin1(birds[index]))
+            .value(QStringLiteral("frames")).toArray();
+        if (!frames.isEmpty()) add(QStringLiteral("cast"), index, frames.at(0).toString(), cast.at(index));
+    }
+    return result;
+}
+
 void FlickyLevelSceneRenderer::drawMapping(
     QImage &frame, const std::array<int, 64> &palette,
     const QString &id, int x, int y, bool objectFlipped, bool wrapX) const
@@ -1002,10 +1047,6 @@ QImage FlickyLevelSceneRenderer::renderScreen(Screen screen) const
     const QDir source(sourceRoot_);
     const auto frontEnd = source.filePath(QStringLiteral("src/game/screens/front_end.s"));
     const auto tables = source.filePath(QStringLiteral("src/data/tables.s"));
-    const auto pairs = [&](const char *xs, const char *ys) {
-        return tableWords(frontEnd, QString::fromLatin1(xs))
-            + tableWords(frontEnd, QString::fromLatin1(ys));
-    };
 
     if (screen == Screen::Guide) {
         // Guide_Init: round 1's tiles and palette, the cast's door and the
@@ -1080,25 +1121,10 @@ QImage FlickyLevelSceneRenderer::renderScreen(Screen screen) const
         palette[static_cast<std::size_t>(48 + index)] = logo[index] & 0xEEE;
     QImage frame(screenWidth, screenHeight, QImage::Format_RGB32);
     frame.fill(mdColour(palette[0]));
-    // Sprites: x and y tables follow each other, two words an object.
-    const auto statics = pairs("Title_StaticXTable", "Title_StaticYTable");
-    for (int index = 0; index < 6; ++index)
-        drawMapping(frame, palette, QStringLiteral("Title_StaticMap%1").arg(index),
-            statics.value(index * 2) - 128, statics.value(index * 2 + 1) - 128,
-            false, false);
-    // Obj_TitleBird: the first frame of each cast member's animation
-    // (Title_BirdAnimIndexTable picks the pointer table's entry).
-    static const std::array<const char *, 4> birds {{
-        "Player_AnimWalk", "Chirp_AnimIdle", "Tiger_AnimRun", "Lizard_AnimRight"}};
-    const auto birdsAt = pairs("Title_BirdXTable", "Title_BirdYTable");
-    for (int index = 0; index < 4; ++index) {
-        const auto frames = sequences_->animation(QString::fromLatin1(birds[index]))
-            .value(QStringLiteral("frames")).toArray();
-        if (frames.isEmpty()) continue;
-        drawMapping(frame, palette, frames.at(0).toString(),
-            birdsAt.value(index * 2) - 128, birdsAt.value(index * 2 + 1) - 128,
-            false, false);
-    }
+    // The logo pieces and the cast birds.
+    for (const TitleSprite &sprite : titleSprites())
+        drawMapping(frame, palette, sprite.mapping, sprite.position.x() - 128,
+            sprite.position.y() - 128, false, false);
     // Obj_TitleCursor: PUSH START BUTTON, shown in its blink's on phase.
     drawMapping(frame, palette, QStringLiteral("Obj_TitleCursorData"),
         0xF0 - 128, 0x120 - 128, false, false);

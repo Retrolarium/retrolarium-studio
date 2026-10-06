@@ -3,6 +3,7 @@
 #include <QCoreApplication>
 #include <QDir>
 #include <QFileInfo>
+#include <QSettings>
 #include <QStandardPaths>
 
 namespace rl::runtime {
@@ -80,6 +81,10 @@ QString ToolLocator::emulatorPath(const QString& id) {
     const QString configured = qEnvironmentVariable("RETROLARIUM_MAME");
     if (QFileInfo(configured).isFile()) {
         return QFileInfo(configured).canonicalFilePath();
+    }
+    const QString chosen = QSettings().value(QStringLiteral("tools/mame")).toString();
+    if (QFileInfo(chosen).isFile()) {
+        return QFileInfo(chosen).canonicalFilePath();
     }
     const QString bundled =
         QDir(QCoreApplication::applicationDirPath()).filePath(QStringLiteral("mame/consoles.exe"));

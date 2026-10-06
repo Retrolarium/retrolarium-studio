@@ -14,8 +14,11 @@ public:
     QString displayName() const override { return QStringLiteral("Pac-Man"); }
 
     bool canOpen(const sdk::ProjectFile& project) const override {
+        // A preset project, or one the kit generates from the repository's
+        // pacman.rlj for a revision.
+        const QString mode = project.string(QStringLiteral("project.source_mode"));
         return project.string(QStringLiteral("project.profile")) == QLatin1String("pacman.v1") &&
-               project.string(QStringLiteral("project.source_mode")) == QLatin1String("binary-profile");
+               (mode == QLatin1String("binary-profile") || mode == QLatin1String("rom"));
     }
 
     std::unique_ptr<sdk::Session> open(const sdk::ProjectFile& project, QString* error) override {

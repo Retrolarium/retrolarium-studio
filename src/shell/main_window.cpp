@@ -11,6 +11,8 @@
 #include "shell/about_dialog.hpp"
 #include "shell/bottom_panel.hpp"
 #include "shell/inspector_panel.hpp"
+#include "shell/revision_dialog.hpp"
+#include "shell/settings_dialog.hpp"
 #include "shell/side_panels.hpp"
 #include "theme/icons.hpp"
 #include "theme/theme.hpp"
@@ -27,9 +29,13 @@
 #include <QActionGroup>
 #include <QCloseEvent>
 #include <QCoreApplication>
+#include <QDir>
 #include <QFileDialog>
 #include <QFileInfo>
 #include <QHBoxLayout>
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QMenu>
 #include <QMenuBar>
 #include <QPainter>
@@ -64,6 +70,15 @@ QToolButton* toolbarButton(const QString& icon, const QString& tip, QWidget* par
     button->setToolTip(tip);
     button->setCursor(Qt::PointingHandCursor);
     return button;
+}
+
+// What Recent shows: the project's name ("Pac-Man [Japan · v1.0]").
+QString recentLabel(const QString& path) {
+    QString error;
+    const sdk::ProjectFile project = sdk::ProjectFile::load(path, &error);
+    QString name = project.isValid() ? project.string(QStringLiteral("project.name")) : QString();
+    if (name.isEmpty() && project.isValid()) name = project.string(QStringLiteral("game.name"));
+    return name.isEmpty() ? QFileInfo(path).fileName() : name;
 }
 
 sdk::Diagnostic message(sdk::Severity severity, const QString& source, const QString& text,
@@ -201,6 +216,16 @@ void MainWindow::buildMenus() {
     connect(open, &QAction::triggered, this, &MainWindow::chooseProject);
     recentMenu_ = file->addMenu(QStringLiteral("Recent projects"));
     recentMenu_->setFont(menuFont);
+    switchRevisionAction_ = file->addAction(QStringLiteral("Open another version…"));
+    connect(switchRevisionAction_, &QAction::triggered, this, [this] {
+        const QString descriptor = currentDescriptor();
+        if (!descriptor.isEmpty() && confirmDiscard()) openGameRepository(descriptor);
+    });
+    file->addSeparator();
+    patchAction_ = file->addAction(QStringLiteral("Create IPS patch…"));
+    connect(patchAction_, &QAction::triggered, this, &MainWindow::createPatch);
+    resetAction_ = file->addAction(QStringLiteral("Reset version to the original…"));
+    connect(resetAction_, &QAction::triggered, this, &MainWindow::resetRevision);
     file->addSeparator();
     saveAction_ = file->addAction(QStringLiteral("Save all"));
     saveAction_->setShortcut(QKeySequence::Save);
@@ -210,6 +235,13 @@ void MainWindow::buildMenus() {
         if (confirmDiscard()) {
             closeProject();
         }
+    });
+    file->addSeparator();
+    QAction* settings = file->addAction(QStringLiteral("Settings…"));
+    settings->setShortcut(QKeySequence(QStringLiteral("Ctrl+,")));
+    connect(settings, &QAction::triggered, this, [this] {
+        SettingsDialog dialog(this);
+        dialog.exec();
     });
     file->addSeparator();
     QAction* quit = file->addAction(QStringLiteral("Exit"));
@@ -338,7 +370,7 @@ QWidget* MainWindow::buildToolbar() {
         if (!recent.isEmpty()) {
             menu.addSeparator();
             for (const QString& path : recent) {
-                QAction* item = menu.addAction(QFileInfo(path).fileName());
+                QAction* item = menu.addAction(recentLabel(path));
                 item->setToolTip(path);
                 connect(item, &QAction::triggered, this, [this, path] { openProject(path); });
             }
@@ -498,8 +530,8 @@ QWidget* MainWindow::buildWelcome() {
     auto* title = new ui::Label(QStringLiteral("Open a project to start"), ui::Label::Role::Title, column);
     layout->addWidget(title);
     auto* note = new ui::Label(
-        QStringLiteral("Projects are .rlj files kept with a game's disassembly, in its "
-                       "retrolarium folder. Open one with File → Open project or Ctrl+O."),
+        QStringLiteral("A game's disassembly has its .rlj file at the top of its folder: open it, "
+                       "pick the version to edit, and the studio asks for the ROM it needs."),
         ui::Label::Role::Small, column);
     note->setWordWrap(true);
     layout->addWidget(note);
@@ -597,6 +629,10 @@ bool MainWindow::openProjectFile(const QString& path) {
         report(message(sdk::Severity::Error, QStringLiteral("project"), error, QFileInfo(path).fileName()));
         return false;
     }
+    if (project.string(QStringLiteral("schema")) == QLatin1String("retrolarium.game")) {
+        openGameRepository(project.path());
+        return true;
+    }
     sdk::Plugin* plugin = sdk::PluginRegistry::instance().pluginFor(project);
     if (!plugin) {
         report(message(sdk::Severity::Error, QStringLiteral("project"),
@@ -654,6 +690,207 @@ bool MainWindow::openProjectFile(const QString& path) {
     }
     updateDirtyState();
     return true;
+}
+
+namespace {
+
+QString processError(const sdk::ProcessResult& result) {
+    const QString text = QString::fromUtf8(result.standardError).trimmed();
+    return text.isEmpty() ? result.error : text.section(QLatin1Char('\n'), -3);
+}
+
+}  // namespace
+
+void MainWindow::openGameRepository(const QString& descriptor) {
+    const QString name = QFileInfo(descriptor).fileName();
+    if (isBusy()) {
+        report(message(sdk::Severity::Warning, QStringLiteral("project"),
+                       QStringLiteral("Wait for the running task to finish, then open it again."), name));
+        return;
+    }
+    QString error;
+    sdk::ProcessSpec spec = kitCommand({QStringLiteral("studio"), QStringLiteral("revisions"), descriptor},
+                                       QFileInfo(descriptor).absolutePath(), &error);
+    if (spec.program.isEmpty()) {
+        report(message(sdk::Severity::Error, QStringLiteral("project"), error, name));
+        return;
+    }
+    spec.label = QStringLiteral("Read the versions of %1").arg(name);
+    runProcess(spec, [this, descriptor, name](const sdk::ProcessResult& result) {
+        if (!result.succeeded()) {
+            if (!result.cancelled) {
+                report(message(sdk::Severity::Error, QStringLiteral("project"),
+                               QStringLiteral("Reading the game's versions failed: %1").arg(processError(result)), name));
+            }
+            return;
+        }
+        const QJsonObject r = QJsonDocument::fromJson(result.standardOutput).object();
+        QVector<RevisionChoice> choices;
+        for (const QJsonValue& v : r.value(QStringLiteral("revisions")).toArray()) {
+            const QJsonObject o = v.toObject();
+            choices << RevisionChoice{o.value(QStringLiteral("id")).toString(), o.value(QStringLiteral("label")).toString(),
+                                      o.value(QStringLiteral("rom")).toString(),
+                                      o.value(QStringLiteral("rom_status")).toString(),
+                                      o.value(QStringLiteral("edited")).toBool()};
+        }
+        const QJsonObject split = r.value(QStringLiteral("split")).toObject();
+        const QString splitStatus = split.value(QStringLiteral("status")).toString();
+        QString note;
+        if (splitStatus == QLatin1String("needed")) {
+            note = QStringLiteral("The game's files are not split from the ROM yet; that runs when you open a version.");
+        } else if (splitStatus == QLatin1String("unavailable")) {
+            note = QStringLiteral("Building from the game's sources needs the %1 ROM (%2); editing does not.")
+                       .arg(split.value(QStringLiteral("needs")).toString(), split.value(QStringLiteral("rom")).toString());
+        }
+        const QString key = QStringLiteral("gameRevisions/") + QFileInfo(descriptor).absoluteFilePath();
+        RevisionDialog dialog(r.value(QStringLiteral("game")).toObject().value(QStringLiteral("name")).toString(), choices,
+                              QSettings().value(key).toString(), note, this);
+        if (dialog.exec() != QDialog::Accepted || dialog.revision().isEmpty()) return;
+        QSettings().setValue(key, dialog.revision());
+        prepareRevision(descriptor, dialog.revision(), QString());
+    });
+}
+
+void MainWindow::prepareRevision(const QString& descriptor, const QString& revision, const QString& rom) {
+    const QString name = QFileInfo(descriptor).fileName();
+    QStringList arguments{QStringLiteral("studio"), QStringLiteral("prepare"), descriptor, QStringLiteral("--revision"), revision};
+    if (!rom.isEmpty()) arguments << QStringLiteral("--rom") << rom;
+    QString error;
+    sdk::ProcessSpec spec = kitCommand(arguments, QFileInfo(descriptor).absolutePath(), &error);
+    if (spec.program.isEmpty()) {
+        report(message(sdk::Severity::Error, QStringLiteral("project"), error, name));
+        return;
+    }
+    spec.label = QStringLiteral("Get %1 ready").arg(revision);
+    runProcess(spec, [this, descriptor, revision, name](const sdk::ProcessResult& result) {
+        if (!result.succeeded()) {
+            if (!result.cancelled) {
+                report(message(sdk::Severity::Error, QStringLiteral("project"),
+                               QStringLiteral("Getting the game ready failed: %1").arg(processError(result)), name));
+            }
+            return;
+        }
+        const QJsonObject r = QJsonDocument::fromJson(result.standardOutput).object();
+        const QString status = r.value(QStringLiteral("status")).toString();
+        if (status == QLatin1String("ready")) {
+            const QJsonObject split = r.value(QStringLiteral("split")).toObject();
+            if (split.value(QStringLiteral("status")).toString() == QLatin1String("failed")) {
+                report(message(sdk::Severity::Warning, QStringLiteral("project"),
+                               QStringLiteral("The asset split failed; editing works from the ROM, building from "
+                                              "the sources needs it. %1")
+                                   .arg(split.value(QStringLiteral("output")).toString().section(QLatin1Char('\n'), -3)),
+                               name));
+            }
+            openProjectFile(r.value(QStringLiteral("project")).toString());
+            return;
+        }
+        // The revision's ROM is missing, or the file given is another one.
+        frame::MessageDialog ask(QStringLiteral("Choose the ROM"),
+                                 status == QLatin1String("needs-rom") ? QStringLiteral("This version needs its ROM")
+                                                                      : QStringLiteral("That is not this version's ROM"),
+                                 r.value(QStringLiteral("message")).toString() +
+                                     QStringLiteral(" The studio copies it next to the game's files and never changes it."),
+                                 this);
+        ask.addButton(QStringLiteral("Cancel"), 0);
+        ask.addButton(QStringLiteral("Choose ROM…"), 1, true);
+        if (ask.exec() != 1) return;
+        const QString file = QFileDialog::getOpenFileName(
+            this, QStringLiteral("Choose the ROM"), QDir::homePath(),
+            QStringLiteral("ROM images (*.nes *.fds *.bin *.md *.gen *.sfc *.smc);;All files (*)"));
+        if (!file.isEmpty()) prepareRevision(descriptor, revision, file);
+    });
+}
+
+QString MainWindow::currentDescriptor() const {
+    if (!session_ || projectPath_.isEmpty()) return {};
+    // A version's project is <repository>/.retrolarium/<version>/<game>-<version>.rlj.
+    QDir repository = QFileInfo(projectPath_).absoluteDir();
+    if (!repository.cdUp() || repository.dirName() != QLatin1String(".retrolarium") || !repository.cdUp()) return {};
+    QString error;
+    for (const QFileInfo& info : repository.entryInfoList({QStringLiteral("*.rlj")}, QDir::Files)) {
+        const sdk::ProjectFile candidate = sdk::ProjectFile::load(info.absoluteFilePath(), &error);
+        if (candidate.string(QStringLiteral("schema")) == QLatin1String("retrolarium.game")) return info.absoluteFilePath();
+    }
+    return {};
+}
+
+void MainWindow::resetRevision() {
+    const QString descriptor = currentDescriptor();
+    if (descriptor.isEmpty() || isBusy()) return;
+    const QString revision = QFileInfo(projectPath_).absoluteDir().dirName();
+    const sdk::Profile profile = session_->profile();
+    if (!frame::MessageDialog::confirm(
+            this, QStringLiteral("Reset to the original"),
+            QStringLiteral("Discard every edit to %1 (%2)?").arg(profile.name, profile.revision),
+            QStringLiteral("The game's data goes back to how it is in the ROM. Saved and unsaved edits to this "
+                           "version are lost; other versions keep theirs."),
+            QStringLiteral("Discard edits"))) {
+        return;
+    }
+    QString error;
+    sdk::ProcessSpec spec = kitCommand({QStringLiteral("studio"), QStringLiteral("reset"), descriptor,
+                                        QStringLiteral("--revision"), revision},
+                                       QFileInfo(descriptor).absolutePath(), &error);
+    if (spec.program.isEmpty()) {
+        report(message(sdk::Severity::Error, QStringLiteral("project"), error, QFileInfo(descriptor).fileName()));
+        return;
+    }
+    const QString project = projectPath_;
+    // The session's unsaved edits go with the saved ones.
+    closeProject();
+    spec.label = QStringLiteral("Reset %1").arg(revision);
+    runProcess(spec, [this, project, descriptor](const sdk::ProcessResult& result) {
+        if (!result.succeeded()) {
+            if (!result.cancelled) {
+                report(message(sdk::Severity::Error, QStringLiteral("project"),
+                               QStringLiteral("Resetting failed: %1").arg(processError(result)),
+                               QFileInfo(descriptor).fileName()));
+            }
+        }
+        openProjectFile(project);
+    });
+}
+
+void MainWindow::createPatch() {
+    if (!session_ || isBusy()) return;
+    QString error;
+    if (session_->isModified() && !session_->save(&error)) {
+        report(message(sdk::Severity::Error, QStringLiteral("project"), error, QFileInfo(projectPath_).fileName()));
+        return;
+    }
+    QString error2;
+    const sdk::ProjectFile project = sdk::ProjectFile::load(projectPath_, &error2);
+    const QString suggested = QDir(QDir::homePath()).filePath(project.string(QStringLiteral("project.id")) + QStringLiteral(".ips"));
+    const QString output = QFileDialog::getSaveFileName(this, QStringLiteral("Create IPS patch"), suggested,
+                                                        QStringLiteral("IPS patches (*.ips)"));
+    if (output.isEmpty()) return;
+    sdk::ProcessSpec spec = kitCommand({QStringLiteral("studio"), QStringLiteral("patch"), projectPath_,
+                                        QStringLiteral("--output"), output},
+                                       QFileInfo(projectPath_).absolutePath(), &error);
+    if (spec.program.isEmpty()) {
+        report(message(sdk::Severity::Error, QStringLiteral("project"), error, QFileInfo(projectPath_).fileName()));
+        return;
+    }
+    spec.label = QStringLiteral("Create %1").arg(QFileInfo(output).fileName());
+    // Flicky builds its levels with the studio's native writer.
+    const QString writer = toolPath(QStringLiteral("retrolarium-flicky-level-writer"));
+    if (!writer.isEmpty()) spec.environment.insert(QStringLiteral("RETROLARIUM_FLICKY_LEVEL_WRITER"), writer);
+    runProcess(spec, [this, output](const sdk::ProcessResult& result) {
+        if (!result.succeeded()) {
+            if (!result.cancelled) {
+                report(message(sdk::Severity::Error, QStringLiteral("project"),
+                               QStringLiteral("Creating the patch failed: %1").arg(processError(result)),
+                               QFileInfo(output).fileName()));
+            }
+            return;
+        }
+        const QJsonObject r = QJsonDocument::fromJson(result.standardOutput).object();
+        frame::MessageDialog::inform(this, QStringLiteral("Create IPS patch"), QStringLiteral("Patch created"),
+                                     QStringLiteral("%1 changes %2 bytes of the original ROM. Apply it to that ROM "
+                                                    "with any IPS patcher.")
+                                         .arg(QFileInfo(output).fileName())
+                                         .arg(r.value(QStringLiteral("changed_bytes")).toInt()));
+    });
 }
 
 void MainWindow::closeProject() {
@@ -733,7 +970,8 @@ void MainWindow::rebuildRecentMenu() {
     recentMenu_->clear();
     const QStringList recent = QSettings().value(QString::fromLatin1(kRecentKey)).toStringList();
     for (const QString& path : recent) {
-        QAction* item = recentMenu_->addAction(path);
+        QAction* item = recentMenu_->addAction(recentLabel(path));
+        item->setToolTip(path);
         connect(item, &QAction::triggered, this, [this, path] { openProject(path); });
     }
     recentMenu_->setEnabled(!recent.isEmpty());
@@ -838,24 +1076,29 @@ void MainWindow::installEditor() {
         inspector_->setModel(model_.get());
     } else {
         QString label = kind_;
-        sdk::EditorType type = sdk::EditorType::None;
         for (const sdk::Kind& k : session_->kinds()) {
-            if (k.id == kind_) {
-                label = k.label;
-                type = k.editor;
-            }
+            if (k.id == kind_) label = k.label;
         }
-        emptyTitle_->setText(document_.isEmpty() ? QStringLiteral("Nothing to edit")
-                                                 : QStringLiteral("%1 is coming next").arg(label));
-        emptyNote_->setText(
-            document_.isEmpty()
-                ? QStringLiteral("This kind has no documents.")
-                : QStringLiteral("The %1 for this kind is not ported to the new studio yet. "
-                                 "Its documents are listed so the profile can be checked.")
-                      .arg(sdk::editorName(type)));
+        // A plugin that first adds documents or resources to the project
+        // (a kit upgrade) opens nothing yet and asks for the document again
+        // when the kit is done.
+        const bool preparing = !document_.isEmpty() && isBusy();
+        if (document_.isEmpty()) {
+            emptyTitle_->setText(QStringLiteral("Nothing to edit"));
+            emptyNote_->setText(QStringLiteral("This kind has no documents."));
+        } else if (preparing) {
+            emptyTitle_->setText(QStringLiteral("Preparing %1").arg(label));
+            emptyNote_->setText(QStringLiteral("The kit is adding what %1 needs to the project; it opens "
+                                               "when that is done (see Build output).")
+                                    .arg(label));
+        } else {
+            emptyTitle_->setText(QStringLiteral("%1 cannot be opened").arg(label));
+            emptyNote_->setText(QStringLiteral("The project has no data for this document, or the kit could not "
+                                               "add it. Messages says why."));
+        }
         editorStack_->setCurrentWidget(emptyEditor_);
         inspector_->showMessage(label.toUpper(), document_.isEmpty() ? label : document_,
-                                QStringLiteral("No inspector until the editor is ported."));
+                                preparing ? QStringLiteral("Waiting for the kit.") : QString());
     }
     updateToolbarRow();
 }
@@ -911,6 +1154,9 @@ void MainWindow::updateProjectChrome() {
         titleBar()->setTitle(QStringLiteral("Retrolarium Studio"));
         projectButton_->setMinimumWidth(projectButton_->layout()->sizeHint().width());
         closeAction_->setEnabled(false);
+        switchRevisionAction_->setEnabled(false);
+        resetAction_->setEnabled(false);
+        patchAction_->setEnabled(false);
         return;
     }
     const sdk::Profile profile = session_->profile();
@@ -926,6 +1172,13 @@ void MainWindow::updateProjectChrome() {
     setWindowTitle(title + QStringLiteral(" — Retrolarium"));
     titleBar()->setTitle(title, QStringLiteral("Retrolarium"));
     closeAction_->setEnabled(true);
+    switchRevisionAction_->setEnabled(!currentDescriptor().isEmpty());
+    resetAction_->setEnabled(switchRevisionAction_->isEnabled());
+    // An IPS patch needs a ROM base: every project but a source build.
+    QString error;
+    const QString mode = sdk::ProjectFile::load(projectPath_, &error).string(QStringLiteral("project.source_mode"));
+    patchAction_->setEnabled(mode == QLatin1String("rom") || mode == QLatin1String("binary-profile") ||
+                             mode == QLatin1String("flicky-content"));
 }
 
 void MainWindow::updateBreadcrumb() {

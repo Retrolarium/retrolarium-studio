@@ -175,6 +175,10 @@ add_library(studio_shell STATIC
     src/shell/inspector_panel.hpp
     src/shell/main_window.cpp
     src/shell/main_window.hpp
+    src/shell/revision_dialog.cpp
+    src/shell/revision_dialog.hpp
+    src/shell/settings_dialog.cpp
+    src/shell/settings_dialog.hpp
     src/shell/side_panels.cpp
     src/shell/side_panels.hpp
 )

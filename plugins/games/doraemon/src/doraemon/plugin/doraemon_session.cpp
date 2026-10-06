@@ -427,7 +427,7 @@ std::unique_ptr<sdk::EditorModel> DoraemonSession::openEditor(const QString& kin
             for (const MapEntry& m : hierarchyMaps()) {
                 if (document == QStringLiteral("%1/%2").arg(int(m.world)).arg(m.id)) {
                     // Map objects came with a newer kit.
-                    if (m.world != World::Two && !state_.bundle.contains(QStringLiteral("world2-secret-screens"))) {
+                    if (m.world != World::Two && !state_.bundle.contains(QStringLiteral("world3-schedule"))) {
                         upgradeDocuments(kind, document);
                         return nullptr;
                     }
@@ -438,7 +438,7 @@ std::unique_ptr<sdk::EditorModel> DoraemonSession::openEditor(const QString& kin
         if (kind == QLatin1String("levels") && document.startsWith(QLatin1String("route/"))) {
             const int route = document.mid(6).toInt();
             if (route < 0 || route >= kRoutes.size()) return nullptr;
-            if (!state_.bundle.contains(QStringLiteral("world2-secret-screens"))) {
+            if (!state_.bundle.contains(QStringLiteral("world3-schedule"))) {
                 upgradeDocuments(kind, document);
                 return nullptr;
             }

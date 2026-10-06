@@ -88,6 +88,10 @@ public:
     const FlickySemanticsDocument& savedSemantics() const { return semantics_.saved; }
     bool editSemantics(const QString& text,
                        const std::function<void(FlickySemanticsDocument&)>& edit, QString* error);
+    FlickySemanticsDocument& semanticsLive() { return *semantics_.doc; }
+    quint64 semanticsRevision() const { return semantics_.revision; }
+    void touchSemantics();
+    void commitSemantics(const FlickySemanticsDocument& before, quint64 beforeRevision, const QString& text);
 
     const FlickySequencesDocument& sequences() const { return *sequences_.doc; }
     const FlickySequencesDocument& savedSequences() const { return sequences_.saved; }
@@ -179,7 +183,10 @@ private:
     void launchPlanned(const sdk::ProcessSpec& game, int round);
     void launchDemo(int demo, bool record);
     void applyRecording(int demo, const QString& path);
-    void upgradeDemos();
+    // Runs the kit's upgrade (attract demos, the title layout), takes what
+    // it added and opens the document that asked for it.
+    void upgradeProject(const QString& kind, const QString& document);
+    bool titleUpgradeTried_ = false;
     void replaceLevels(const FlickyLevelDocument& levels);
     void setGraphics(const FlickyGraphicsDocument& doc, quint64 revision);
     void setSemantics(const FlickySemanticsDocument& doc, quint64 revision);

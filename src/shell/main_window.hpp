@@ -107,6 +107,16 @@ private:
     void chooseProject();
     void rememberRecent(const QString& path);
     void rebuildRecentMenu();
+    // A game repository's .rlj (schema retrolarium.game): pick a revision,
+    // let the kit ready it (its ROM, the asset split, hack/) and open the
+    // project it generates.
+    void openGameRepository(const QString& descriptor);
+    void prepareRevision(const QString& descriptor, const QString& revision, const QString& rom);
+    // The repository .rlj of a generated revision project, or empty.
+    QString currentDescriptor() const;
+    // Discards the open version's edits through the kit, then reopens it.
+    void resetRevision();
+    void createPatch();
     void updateActions();
     void togglePlaytestPause();
     void showPlaytest();
@@ -181,6 +191,9 @@ private:
     QAction* redoAction_ = nullptr;
     QAction* saveAction_ = nullptr;
     QAction* closeAction_ = nullptr;
+    QAction* switchRevisionAction_ = nullptr;
+    QAction* patchAction_ = nullptr;
+    QAction* resetAction_ = nullptr;
     QAction* buildAction_ = nullptr;
     QAction* playAction_ = nullptr;
     QAction* playSelectedAction_ = nullptr;

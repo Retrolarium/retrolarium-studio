@@ -14,8 +14,9 @@ public:
     QString displayName() const override { return QStringLiteral("Solomon's Key"); }
 
     bool canOpen(const sdk::ProjectFile& project) const override {
+        const QString mode = project.string(QStringLiteral("project.source_mode"));
         return project.string(QStringLiteral("project.profile")) == QLatin1String("solomons-key.v1") &&
-               project.string(QStringLiteral("project.source_mode")) == QLatin1String("binary-profile");
+               (mode == QLatin1String("binary-profile") || mode == QLatin1String("rom"));
     }
 
     std::unique_ptr<sdk::Session> open(const sdk::ProjectFile& project, QString* error) override {

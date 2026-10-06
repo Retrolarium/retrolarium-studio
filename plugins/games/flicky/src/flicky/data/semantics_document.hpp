@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QJsonObject>
+#include <QPoint>
 #include <QString>
 #include <QStringList>
 #include <QVector>
@@ -38,6 +39,16 @@ public:
     [[nodiscard]] int colour(const QString &id, int index) const;
     void setColour(const QString &id, int index, int value);
     void restorePalette(const QString &id);
+
+    // The title sprites' positions (title_layout, added by the kit's import
+    // and upgrade): groups "statics" (the logo) and "cast", VDP coordinates.
+    [[nodiscard]] bool hasTitleLayout() const;
+    [[nodiscard]] QVector<QPoint> titlePositions(const QString &group) const;
+    [[nodiscard]] QVector<QPoint> baselineTitlePositions(const QString &group) const;
+    void setTitlePosition(const QString &group, int index, QPoint position);
+    void restoreTitleLayout();
+    // Takes the title layout a kit upgrade wrote into `upgraded`.
+    void adoptTitleLayout(const FlickySemanticsDocument &upgraded);
 
 private:
     static int recordIndex(const QJsonObject &root, const char *section,

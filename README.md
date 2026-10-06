@@ -4,6 +4,9 @@ The new Retrolarium desktop editor, written from scratch in Qt 5.15 Widgets
 (C++17). It replaces the application in `../retrolarium`, which stays in the
 repository as a reference until its game features are ported as plugins.
 
+Using the studio (projects, the kit, MAME, what each game offers): see
+[docs/user_guide.md](docs/user_guide.md). This README is for developers.
+
 The look follows the Claude Design prototype
 `../retrolarium_design/Retrolarium Studio v4.dc.html` and its Industry design
 system: steel-blue accent, Barlow / Barlow Condensed / IBM Plex Mono, square

@@ -78,8 +78,9 @@ bool LevelsModel::isReadOnly() const {
 
 QString LevelsModel::readOnlyReason() const {
     return isReadOnly()
-               ? QStringLiteral("Bonus rounds are built from the bonus tables, not from a layout. "
-                                "Editing seesaw, tiger and chick placements is not ported yet.")
+               ? QStringLiteral("Bonus rounds are built from the bonus tables, not from a layout. This "
+                                "project's levels document predates the bonus placements: run "
+                                "rltool studio flicky-upgrade on it to move the seesaws, tigers and chicks.")
                : QString();
 }
 
