@@ -69,7 +69,7 @@ QString LevelsModel::makeId(const QString& field, int index) {
 }
 
 QString LevelsModel::title() const {
-    return QStringLiteral("Round ") + two(round_ + 1);
+    return tr("Round ") + two(round_ + 1);
 }
 
 bool LevelsModel::isReadOnly() const {
@@ -78,9 +78,9 @@ bool LevelsModel::isReadOnly() const {
 
 QString LevelsModel::readOnlyReason() const {
     return isReadOnly()
-               ? QStringLiteral("Bonus rounds are built from the bonus tables, not from a layout. This "
-                                "project's levels document predates the bonus placements: run "
-                                "rltool studio flicky-upgrade on it to move the seesaws, tigers and chicks.")
+               ? tr("Bonus rounds are built from the bonus tables, not from a layout. This "
+                    "project's levels document predates the bonus placements: run "
+                    "rltool studio flicky-upgrade on it to move the seesaws, tigers and chicks.")
                : QString();
 }
 
@@ -121,9 +121,9 @@ QVector<sdk::MapLayer> LevelsModel::layers() const {
     if (isReadOnly()) {
         return {};
     }
-    return {{kObjects, QStringLiteral("Objects")},
-            {kLayout, QStringLiteral("Layout")},
-            {kBackground, QStringLiteral("Background")}};
+    return {{kObjects, tr("Objects")},
+            {kLayout, tr("Layout")},
+            {kBackground, tr("Background")}};
 }
 
 QString LevelsModel::currentLayer() const {
@@ -144,15 +144,15 @@ void LevelsModel::setCurrentLayer(const QString& id) {
 
 QVector<sdk::Tool> LevelsModel::tools() const {
     if (isReadOnly()) {
-        return {{QStringLiteral("select"), QStringLiteral("Select"), QStringLiteral("select")}};
+        return {{QStringLiteral("select"), tr("Select"), QStringLiteral("select")}};
     }
     if (session_->levelLayer() == kLayout) {
-        return {{QStringLiteral("paint"), QStringLiteral("Paint collision (right button erases)"),
+        return {{QStringLiteral("paint"), tr("Paint collision (right button erases)"),
                  QStringLiteral("pencil")}};
     }
-    return {{QStringLiteral("select"), QStringLiteral("Select and move"), QStringLiteral("select")},
-            {QStringLiteral("place"), QStringLiteral("Place the library object"), QStringLiteral("place")},
-            {QStringLiteral("remove"), QStringLiteral("Remove objects"), QStringLiteral("erase")}};
+    return {{QStringLiteral("select"), tr("Select and move"), QStringLiteral("select")},
+            {QStringLiteral("place"), tr("Place the library object"), QStringLiteral("place")},
+            {QStringLiteral("remove"), tr("Remove objects"), QStringLiteral("erase")}};
 }
 
 QImage LevelsModel::render() const {
@@ -178,7 +178,7 @@ QVector<sdk::CellBrush> LevelsModel::brushes() const {
     }
     // Solid cells are mostly platforms, already orange in the scene; tinting
     // the empty ones too keeps the two apart.
-    return {{0, QStringLiteral("Empty"), QColor(45, 130, 205, 96)},
+    return {{0, tr("Empty"), QColor(45, 130, 205, 96)},
             {1, QStringLiteral("Solid"), QColor(250, 150, 30, 175)}};
 }
 
@@ -222,7 +222,7 @@ bool LevelsModel::paintCell(QPoint cell, int value) {
 void LevelsModel::endStroke() {
     if (before_ && changed_) {
         session_->commitLevels(*before_, session_->levels(),
-                               QStringLiteral("Paint collision in layout %1")
+                               tr("Paint collision in layout %1")
                                    .arg(two(session_->levels().layoutForRound(round_))));
     }
     before_.reset();
@@ -297,7 +297,7 @@ void LevelsModel::endDrag() {
     if (before_ && changed_) {
         const Ref ref = parseId(selected_);
         session_->commitLevels(*before_, session_->levels(),
-                               QStringLiteral("Move %1").arg(objects::title(ref.field)));
+                               tr("Move %1").arg(objects::title(ref.field)));
     }
     before_.reset();
     changed_ = false;
@@ -307,7 +307,7 @@ bool LevelsModel::placeObject(const QString& libraryItem, QPoint cell, QString* 
     const QString field = libraryItem;
     if (isReadOnly() || !layerFields().contains(field)) {
         if (error) {
-            *error = QStringLiteral("Pick an object from the library first.");
+            *error = tr("Pick an object from the library first.");
         }
         return false;
     }
@@ -318,7 +318,7 @@ bool LevelsModel::placeObject(const QString& libraryItem, QPoint cell, QString* 
     std::function<void(FlickyLevelDocument&)> edit;
     if (objects::isVariable(field)) {
         selectIndex = positions.size();
-        text = QStringLiteral("Add %1").arg(objects::title(field));
+        text = tr("Add %1").arg(objects::title(field));
         edit = [layout, field, cell](FlickyLevelDocument& levels) {
             levels.addObjectPosition(layout, field, cell);
         };
@@ -335,12 +335,12 @@ bool LevelsModel::placeObject(const QString& libraryItem, QPoint cell, QString* 
         }
         if (positions.isEmpty()) {
             if (error) {
-                *error = QStringLiteral("%1 has no placement in this layout.").arg(objects::title(field));
+                *error = tr("%1 has no placement in this layout.").arg(objects::title(field));
             }
             return false;
         }
         selectIndex = nearest;
-        text = QStringLiteral("Move %1").arg(objects::title(field));
+        text = tr("Move %1").arg(objects::title(field));
         edit = [layout, field, nearest, cell](FlickyLevelDocument& levels) {
             levels.setObjectPosition(layout, field, nearest, cell);
         };
@@ -359,7 +359,7 @@ bool LevelsModel::removeObject(const QString& id, QString* error) {
     }
     if (!objects::isVariable(ref.field)) {
         if (error) {
-            *error = QStringLiteral("%1 is a fixed placement: move it instead of removing it.")
+            *error = tr("%1 is a fixed placement: move it instead of removing it.")
                          .arg(objects::title(ref.field));
         }
         return false;
@@ -367,7 +367,7 @@ bool LevelsModel::removeObject(const QString& id, QString* error) {
     const int layout = layoutFor(ref.field);
     const QString field = ref.field;
     const int index = ref.index;
-    if (!session_->editLevels(QStringLiteral("Remove %1").arg(objects::title(field)),
+    if (!session_->editLevels(tr("Remove %1").arg(objects::title(field)),
                               [layout, field, index](FlickyLevelDocument& levels) {
                                   levels.removeObjectPosition(layout, field, index);
                               },
@@ -393,8 +393,8 @@ QVector<sdk::ViewOption> LevelsModel::viewOptions() const {
     }
     sdk::ViewOption collision;
     collision.key = QStringLiteral("collision");
-    collision.label = QStringLiteral("Collision");
-    collision.value = session_->collisionOverlay() ? QStringLiteral("On") : QStringLiteral("Off");
+    collision.label = tr("Collision");
+    collision.value = session_->collisionOverlay() ? QStringLiteral("On") : tr("Off");
     collision.toggle = true;
     return {collision};
 }
@@ -413,7 +413,7 @@ sdk::Budget LevelsModel::budget() const {
         const QPair<int, int> limit = session_->levels().capacityLimits();
         budget.used = used.first;
         budget.capacity = limit.first;
-        budget.text = QStringLiteral("level data %1 / %2 B").arg(used.first).arg(limit.first);
+        budget.text = tr("level data %1 / %2 B").arg(used.first).arg(limit.first);
     } catch (const std::exception& e) {
         budget.text = QString::fromUtf8(e.what());
     }
@@ -425,15 +425,15 @@ sdk::Library LevelsModel::library() const {
     if (isReadOnly() || session_->levelLayer() == kLayout) {
         return library;
     }
-    library.hint = QStringLiteral("drag onto the map");
+    library.hint = tr("drag onto the map");
     for (const QString& field : layerFields()) {
         sdk::LibraryItem item;
         item.id = field;
         item.label = objects::title(field);
         item.icon = session_->placementPreview(field, round_);
         item.hint = objects::isVariable(field)
-                        ? QStringLiteral("%1: drop to add one").arg(item.label)
-                        : QStringLiteral("%1: drop to move the existing one").arg(item.label);
+                        ? tr("%1: drop to add one").arg(item.label)
+                        : tr("%1: drop to move the existing one").arg(item.label);
         library.items.append(item);
     }
     return library;
@@ -453,30 +453,30 @@ sdk::Inspection LevelsModel::inspect() const {
 sdk::Inspection LevelsModel::inspectRound() const {
     const FlickyLevelDocument& levels = session_->levels();
     sdk::Inspection inspection;
-    inspection.kicker = isReadOnly() ? QStringLiteral("Bonus round") : QStringLiteral("Round");
+    inspection.kicker = isReadOnly() ? tr("Bonus round") : tr("Round");
     inspection.title = title();
     inspection.engineTag = QStringLiteral("flicky.levels.v1");
     if (!isReadOnly()) {
         const int layout = levels.layoutForRound(round_);
         sdk::Field layoutField;
         layoutField.key = QStringLiteral("layout");
-        layoutField.label = QStringLiteral("Layout");
+        layoutField.label = tr("Layout");
         layoutField.value = two(layout);
         layoutField.monospace = true;
         sdk::Field shared;
         shared.key = QStringLiteral("shared");
-        shared.label = QStringLiteral("Used by");
-        shared.value = QStringLiteral("rounds ") + roundList(levels.roundsForLayout(layout));
+        shared.label = tr("Used by");
+        shared.value = tr("rounds ") + roundList(levels.roundsForLayout(layout));
         inspection.fields = {layoutField, shared};
-        inspection.note = QStringLiteral("Pick an object on the map, or drag one from the library. "
-                                         "Layouts are shared: edits show in every round listed above.");
+        inspection.note = tr("Pick an object on the map, or drag one from the library. "
+                             "Layouts are shared: edits show in every round listed above.");
         inspection.library = library();
-        inspection.engine = {{QStringLiteral("Record"), QStringLiteral("Level_Data%1").arg(layout)},
-                             {QStringLiteral("Collision"),
-                              QStringLiteral("%1 bytes RLE").arg(levels.encodedCollision(layout).size())},
-                             {QStringLiteral("Level bytes"),
+        inspection.engine = {{tr("Record"), QStringLiteral("Level_Data%1").arg(layout)},
+                             {tr("Collision"),
+                              tr("%1 bytes RLE").arg(levels.encodedCollision(layout).size())},
+                             {tr("Level bytes"),
                               QString::number(levels.encodedLevel(layout).size())},
-                             {QStringLiteral("Special bytes"),
+                             {tr("Special bytes"),
                               QString::number(levels.encodedSpecial(layout).size())}};
     }
     return inspection;
@@ -486,36 +486,36 @@ sdk::Inspection LevelsModel::inspectLayout() const {
     const FlickyLevelDocument& levels = session_->levels();
     const int layout = levels.layoutForRound(round_);
     sdk::Inspection inspection;
-    inspection.kicker = QStringLiteral("Collision layout");
-    inspection.title = QStringLiteral("Layout ") + two(layout);
+    inspection.kicker = tr("Collision layout");
+    inspection.title = tr("Layout ") + two(layout);
     sdk::Field brush;
     brush.key = QStringLiteral("brush");
-    brush.label = QStringLiteral("Brush");
+    brush.label = tr("Brush");
     brush.type = sdk::Field::Type::Choice;
-    brush.choices = QStringList{QStringLiteral("Solid"), QStringLiteral("Empty")};
-    brush.value = brush_ == 1 ? QStringLiteral("Solid") : QStringLiteral("Empty");
+    brush.choices = QStringList{QStringLiteral("Solid"), tr("Empty")};
+    brush.value = brush_ == 1 ? QStringLiteral("Solid") : tr("Empty");
     sdk::Field shared;
     shared.key = QStringLiteral("shared");
-    shared.label = QStringLiteral("Used by");
-    shared.value = QStringLiteral("rounds ") + roundList(levels.roundsForLayout(layout));
+    shared.label = tr("Used by");
+    shared.value = tr("rounds ") + roundList(levels.roundsForLayout(layout));
     int solid = 0;
     for (std::uint8_t value : levels.grid(layout)) {
         solid += value != 0;
     }
     sdk::Field cells;
     cells.key = QStringLiteral("cells");
-    cells.label = QStringLiteral("Solid cells");
+    cells.label = tr("Solid cells");
     cells.value = QString::number(solid);
     cells.monospace = true;
     inspection.fields = {brush, shared, cells};
-    inspection.note = QStringLiteral("Paint with the left button, erase with the right. The top two "
-                                     "rows are generated by the game and cannot be painted.");
+    inspection.note = tr("Paint with the left button, erase with the right. The top two "
+                         "rows are generated by the game and cannot be painted.");
     inspection.engineTag = QStringLiteral("flicky.levels.v1");
     const auto stream = levels.encodedCollision(layout);
-    inspection.engine = {{QStringLiteral("Record"), QStringLiteral("Level_Data%1").arg(layout)},
-                         {QStringLiteral("Encoding"), QStringLiteral("RLE from cell $40")},
-                         {QStringLiteral("Stream"), QStringLiteral("%1 bytes").arg(stream.size())},
-                         {QStringLiteral("Changed"),
+    inspection.engine = {{tr("Record"), QStringLiteral("Level_Data%1").arg(layout)},
+                         {tr("Encoding"), tr("RLE from cell $40")},
+                         {tr("Stream"), tr("%1 bytes").arg(stream.size())},
+                         {tr("Changed"),
                           levels.grid(layout) == levels.baselineGrid(layout) ? QStringLiteral("no")
                                                                              : QStringLiteral("yes")}};
     return inspection;
@@ -527,14 +527,14 @@ sdk::Inspection LevelsModel::inspectObject(const Ref& ref) const {
     const QVector<QPoint> positions = levels.objectPositions(layout, ref.field);
     const QPoint position = ref.index < positions.size() ? positions.at(ref.index) : QPoint();
     sdk::Inspection inspection;
-    inspection.kicker = QStringLiteral("Round object");
+    inspection.kicker = tr("Round object");
     inspection.title = objects::isVariable(ref.field) || positions.size() > 1
                            ? QStringLiteral("%1 #%2").arg(objects::title(ref.field)).arg(ref.index + 1)
                            : objects::title(ref.field);
 
     sdk::Field type;
     type.key = QStringLiteral("type");
-    type.label = QStringLiteral("Type");
+    type.label = tr("Type");
     const QStringList candidates = objects::typeCandidates(ref.field);
     if (candidates.size() > 1) {
         type.type = sdk::Field::Type::Choice;
@@ -546,7 +546,7 @@ sdk::Inspection LevelsModel::inspectObject(const Ref& ref) const {
 
     sdk::Field place;
     place.key = QStringLiteral("position");
-    place.label = QStringLiteral("Position");
+    place.label = tr("Position");
     place.type = sdk::Field::Type::Text;
     place.value = QStringLiteral("%1, %2").arg(position.x()).arg(position.y());
     place.hint = QStringLiteral("cell");
@@ -554,27 +554,27 @@ sdk::Inspection LevelsModel::inspectObject(const Ref& ref) const {
     const QSize footprint = objects::footprint(ref.field);
     sdk::Field size;
     size.key = QStringLiteral("size");
-    size.label = QStringLiteral("Size");
+    size.label = tr("Size");
     size.value = QStringLiteral("%1 × %2").arg(footprint.width()).arg(footprint.height());
     size.hint = QStringLiteral("visible");
 
     sdk::Field shared;
     shared.key = QStringLiteral("shared");
-    shared.label = QStringLiteral("Used by");
-    shared.value = QStringLiteral("rounds ") + roundList(levels.roundsForObjectLayout(layout, ref.field));
+    shared.label = tr("Used by");
+    shared.value = tr("rounds ") + roundList(levels.roundsForObjectLayout(layout, ref.field));
 
     inspection.fields = {type, place, size, shared};
     inspection.note = objects::isVariable(ref.field)
-                          ? QStringLiteral("Drag on the map to move. Delete removes it.")
-                          : QStringLiteral("Drag on the map to move. Every layout has exactly this one.");
+                          ? tr("Drag on the map to move. Delete removes it.")
+                          : tr("Drag on the map to move. Every layout has exactly this one.");
     inspection.library = library();
     inspection.engineTag = QStringLiteral("flicky.levels.v1");
     inspection.engine = {
-        {QStringLiteral("Record"), QStringLiteral("Level_Data%1").arg(layout)},
-        {QStringLiteral("Field"), ref.field},
-        {QStringLiteral("Index"), QStringLiteral("%1 of %2").arg(ref.index + 1).arg(positions.size())},
-        {QStringLiteral("Encoding"), objects::encoding(ref.field)},
-        {QStringLiteral("Table"), FlickyLevelDocument::isSpecialObjectField(ref.field)
+        {tr("Record"), QStringLiteral("Level_Data%1").arg(layout)},
+        {tr("Field"), ref.field},
+        {tr("Index"), tr("%1 of %2").arg(ref.index + 1).arg(positions.size())},
+        {tr("Encoding"), objects::encoding(ref.field)},
+        {tr("Table"), FlickyLevelDocument::isSpecialObjectField(ref.field)
                                       ? QStringLiteral("Level_SpecialTilePointers")
                                       : QStringLiteral("Level_DataPointers")},
     };
@@ -601,13 +601,13 @@ bool LevelsModel::setField(const QString& key, const QVariant& value, QString* e
         if (parts.size() != 2 || !okX || !okY || x < 0 || x >= objects::kMapWidth || y < 0 ||
             y >= objects::kMapHeight) {
             if (error) {
-                *error = QStringLiteral("Position is \"x, y\" with x 0–31 and y 0–27.");
+                *error = tr("Position is \"x, y\" with x 0–31 and y 0–27.");
             }
             return false;
         }
         const QString field = ref.field;
         const int index = ref.index;
-        return session_->editLevels(QStringLiteral("Move %1").arg(objects::title(field)),
+        return session_->editLevels(tr("Move %1").arg(objects::title(field)),
                                     [layout, field, index, x, y](FlickyLevelDocument& levels) {
                                         levels.setObjectPosition(layout, field, index, QPoint(x, y));
                                     },
@@ -633,7 +633,7 @@ bool LevelsModel::setField(const QString& key, const QVariant& value, QString* e
         const QPoint position = positions.at(index);
         const int newIndex = session_->levels().objectPositions(targetLayout, target).size();
         if (!session_->editLevels(
-                QStringLiteral("Change %1 to %2").arg(objects::title(field), objects::title(target)),
+                tr("Change %1 to %2").arg(objects::title(field), objects::title(target)),
                 [=](FlickyLevelDocument& levels) {
                     levels.removeObjectPosition(layout, field, index);
                     levels.addObjectPosition(targetLayout, target, position);
@@ -652,19 +652,19 @@ bool LevelsModel::setField(const QString& key, const QVariant& value, QString* e
 }
 
 QString LevelsModel::startPoint() const {
-    return QStringLiteral("Round ") + two(round_ + 1);
+    return tr("Round ") + two(round_ + 1);
 }
 
 QString LevelsModel::statusText() const {
     if (isReadOnly()) {
-        return QStringLiteral("%1 · bonus round (read only)").arg(title());
+        return tr("%1 · bonus round (read only)").arg(title());
     }
     const Ref ref = parseId(selected_);
     if (ref.isValid()) {
         const auto positions = session_->levels().objectPositions(layoutFor(ref.field), ref.field);
         if (ref.index < positions.size()) {
             const QPoint p = positions.at(ref.index);
-            return QStringLiteral("%1 at %2, %3 · layout %4")
+            return tr("%1 at %2, %3 · layout %4")
                 .arg(objects::title(ref.field))
                 .arg(p.x())
                 .arg(p.y())
@@ -673,7 +673,7 @@ QString LevelsModel::statusText() const {
     }
     const int layout = session_->levels().layoutForRound(round_);
     const int shared = session_->levels().roundsForLayout(layout).size();
-    return QStringLiteral("%1 · layout %2 · shared by %3 round%4")
+    return tr("%1 · layout %2 · shared by %3 round%4")
         .arg(title(), two(layout))
         .arg(shared)
         .arg(shared == 1 ? QString() : QStringLiteral("s"));

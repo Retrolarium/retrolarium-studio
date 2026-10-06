@@ -64,18 +64,18 @@ QSize CastleCellModel::gridSize() const {
 // ---------------------------------------------------------------- view
 
 QVector<sdk::Tool> CastleCellModel::tools() const {
-    return {{QStringLiteral("select"), QStringLiteral("Select a cell"), QStringLiteral("select")},
-            {QStringLiteral("paint"), QStringLiteral("Paint the sheet's pattern into cell halves (right button takes one)"),
+    return {{QStringLiteral("select"), tr("Select a cell"), QStringLiteral("select")},
+            {QStringLiteral("paint"), tr("Paint the sheet's pattern into cell halves (right button takes one)"),
              QStringLiteral("paint")},
-            {QStringLiteral("pick"), QStringLiteral("Take a half's pattern as the brush"), QStringLiteral("pick")}};
+            {QStringLiteral("pick"), tr("Take a half's pattern as the brush"), QStringLiteral("pick")}};
 }
 
 QVector<sdk::ViewOption> CastleCellModel::viewOptions() const {
     sdk::ViewOption palette;
     palette.key = QStringLiteral("palette");
-    palette.label = QStringLiteral("Sheet colours");
-    palette.value = QStringLiteral("BG %1").arg(libraryPalette_);
-    for (int p = 0; p < 4; ++p) palette.choices << QStringLiteral("BG %1").arg(p);
+    palette.label = tr("Sheet colours");
+    palette.value = tr("BG %1").arg(libraryPalette_);
+    for (int p = 0; p < 4; ++p) palette.choices << tr("BG %1").arg(p);
     return {palette};
 }
 
@@ -109,7 +109,7 @@ QImage CastleCellModel::render() const {
 // ---------------------------------------------------------------- cells
 
 QVector<sdk::CellBrush> CastleCellModel::brushes() const {
-    return {{tile_, QStringLiteral("Pattern %1").arg(hex(tile_)), QColor()}};
+    return {{tile_, tr("Pattern %1").arg(hex(tile_)), QColor()}};
 }
 
 void CastleCellModel::setCurrentBrush(int value) {
@@ -163,7 +163,7 @@ bool CastleCellModel::setCellFields(int cell, int left, int right, int palette, 
 bool CastleCellModel::placeObject(const QString& libraryItem, QPoint cell, QString* error) {
     const QPair<int, int> at = cellAt(cell);
     if (!libraryItem.startsWith(QLatin1String("tile:")) || at.first < 0) {
-        if (error) *error = QStringLiteral("Drop a pattern onto a half of a cell.");
+        if (error) *error = tr("Drop a pattern onto a half of a cell.");
         return false;
     }
     const int tile = std::clamp(libraryItem.mid(5).toInt(), 0, 255);
@@ -172,7 +172,7 @@ bool CastleCellModel::placeObject(const QString& libraryItem, QPoint cell, QStri
     const int left = at.second == 0 ? tile : tileOf(at.first, 0);
     const int right = at.second == 1 ? tile : tileOf(at.first, 1);
     return setCellFields(at.first, left, right, paletteOf(at.first),
-                         QStringLiteral("Set a pattern of cell %1").arg(at.first), error);
+                         tr("Set a pattern of cell %1").arg(at.first), error);
 }
 
 void CastleCellModel::beginStroke() {
@@ -204,7 +204,7 @@ void CastleCellModel::endStroke() {
     // Cleared first: the edit redraws from the document.
     pending_.clear();
     QString error;
-    session_->editBundle(QStringLiteral("Paint room cells"),
+    session_->editBundle(tr("Paint room cells"),
                          [pending, id](nes::Bundle& b) {
                              QJsonObject resource = b.resource(id);
                              QJsonArray records = resource.value(QStringLiteral("records")).toArray();
@@ -277,13 +277,13 @@ bool CastleCellModel::setField(const QString& key, const QVariant& value, QStrin
     } else {
         return TileMapModel::setField(key, value, error);
     }
-    return setCellFields(selected_, left, right, palette, QStringLiteral("Edit cell %1").arg(selected_), error);
+    return setCellFields(selected_, left, right, palette, tr("Edit cell %1").arg(selected_), error);
 }
 
 sdk::Library CastleCellModel::sheet() const {
     sdk::Library result;
     result.grid = true;
-    result.hint = QStringLiteral("click: brush · drag onto a half");
+    result.hint = tr("click: brush · drag onto a half");
     const CastlePainter& art = session_->painter();
     for (int tile = 0; tile < 256; ++tile) {
         sdk::LibraryItem item;
@@ -299,29 +299,29 @@ sdk::Inspection CastleCellModel::inspect() const {
     sdk::Inspection inspection;
     inspection.engineTag = QStringLiteral("castle.room-cell-visuals.v1");
     if (selected_ < 0 || selected_ >= count()) {
-        inspection.kicker = QStringLiteral("Room cells");
+        inspection.kicker = tr("Room cells");
         inspection.title = title();
         sdk::Field cells;
         cells.key = QStringLiteral("cells");
-        cells.label = QStringLiteral("Cells");
+        cells.label = tr("Cells");
         cells.value = QStringLiteral("%1 · 16x8").arg(count());
         inspection.fields = {cells};
-        inspection.note = QStringLiteral("Rooms are built from these cells: two background patterns side by side in "
-                                         "one of four palettes. Changing a cell changes every room that uses it. "
-                                         "Pick a pattern in the sheet and paint cell halves, or select a cell.");
+        inspection.note = tr("Rooms are built from these cells: two background patterns side by side in "
+                             "one of four palettes. Changing a cell changes every room that uses it. "
+                             "Pick a pattern in the sheet and paint cell halves, or select a cell.");
         return inspection;
     }
     int rooms = 0;
     for (int r = 0; r < session_->levels().roomCount(); ++r) {
         if (session_->levels().cells(r).contains(selected_)) ++rooms;
     }
-    inspection.kicker = QStringLiteral("Room cell");
+    inspection.kicker = tr("Room cell");
     inspection.title = QStringLiteral("Cell %1").arg(selected_);
     for (int half = 0; half < 2; ++half) {
         const int tile = tileOf(selected_, half);
         sdk::Field f;
         f.key = half == 0 ? QStringLiteral("left") : QStringLiteral("right");
-        f.label = QStringLiteral("%1 pattern").arg(QString::fromLatin1(kHalves[half]));
+        f.label = tr("%1 pattern").arg(QString::fromLatin1(kHalves[half]));
         f.type = sdk::Field::Type::Integer;
         f.value = tile;
         f.minimum = 0;
@@ -332,17 +332,17 @@ sdk::Inspection CastleCellModel::inspect() const {
     }
     sdk::Field palette;
     palette.key = QStringLiteral("palette");
-    palette.label = QStringLiteral("Palette");
+    palette.label = tr("Palette");
     palette.type = sdk::Field::Type::Choice;
     for (int p = 0; p < 4; ++p) {
-        palette.choices << QStringLiteral("BG %1").arg(p);
+        palette.choices << tr("BG %1").arg(p);
         palette.choiceIcons << session_->painter().cell(selected_, p);
     }
-    palette.value = QStringLiteral("BG %1").arg(paletteOf(selected_));
+    palette.value = tr("BG %1").arg(paletteOf(selected_));
     inspection.fields << palette;
     sdk::Field copy;
     copy.key = QStringLiteral("copy");
-    copy.label = QStringLiteral("Copy from");
+    copy.label = tr("Copy from");
     copy.type = sdk::Field::Type::Choice;
     copy.choices << QStringLiteral("—");
     copy.choiceIcons << QImage();
@@ -353,12 +353,12 @@ sdk::Inspection CastleCellModel::inspect() const {
     }
     copy.value = QStringLiteral("—");
     inspection.fields << copy;
-    inspection.note = QStringLiteral("Two background patterns from the second pattern table, coloured by the "
-                                     "palette the room loader writes for this cell (cells the loader skips keep "
-                                     "their neighbours' colours). %1 rooms place it.")
+    inspection.note = tr("Two background patterns from the second pattern table, coloured by the "
+                         "palette the room loader writes for this cell (cells the loader skips keep "
+                         "their neighbours' colours). %1 rooms place it.")
                           .arg(rooms);
-    inspection.engine = {{QStringLiteral("Cell"), QString::number(selected_)},
-                         {QStringLiteral("Patterns"), QStringLiteral("%1 %2").arg(hex(tileOf(selected_, 0)), hex(tileOf(selected_, 1)))}};
+    inspection.engine = {{tr("Cell"), QString::number(selected_)},
+                         {tr("Patterns"), QStringLiteral("%1 %2").arg(hex(tileOf(selected_, 0)), hex(tileOf(selected_, 1)))}};
     return inspection;
 }
 
@@ -366,15 +366,15 @@ sdk::Budget CastleCellModel::budget() const {
     sdk::Budget budget;
     budget.used = count();
     budget.capacity = count();
-    budget.text = QStringLiteral("%1 cells · fixed").arg(count());
+    budget.text = tr("%1 cells · fixed").arg(count());
     return budget;
 }
 
 QString CastleCellModel::statusText() const {
     if (selected_ < 0) {
-        return QStringLiteral("Room cells · %1").arg(count());
+        return tr("Room cells · %1").arg(count());
     }
-    return QStringLiteral("Room cells · cell %1").arg(selected_);
+    return tr("Room cells · cell %1").arg(selected_);
 }
 
 }  // namespace rl::castle

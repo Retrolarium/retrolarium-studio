@@ -24,9 +24,9 @@ DoraemonBlockModel::DoraemonBlockModel(DoraemonSession* session, Kind kind, Worl
 
 QString DoraemonBlockModel::title() const {
     switch (kind_) {
-    case Kind::Small: return QStringLiteral("%1 small blocks").arg(worldLabel(world_));
-    case Kind::Big: return QStringLiteral("%1 big blocks").arg(worldLabel(world_));
-    default: return QStringLiteral("World 2 metatiles");
+    case Kind::Small: return tr("%1 small blocks").arg(worldLabel(world_));
+    case Kind::Big: return tr("%1 big blocks").arg(worldLabel(world_));
+    default: return tr("World 2 metatiles");
     }
 }
 
@@ -109,19 +109,19 @@ QImage DoraemonBlockModel::blockImage(int block) const {
 }
 
 QVector<sdk::Tool> DoraemonBlockModel::tools() const {
-    const QString piece = kind_ == Kind::Big ? QStringLiteral("small block") : QStringLiteral("pattern");
-    return {{QStringLiteral("select"), QStringLiteral("Select a block"), QStringLiteral("select")},
-            {QStringLiteral("paint"), QStringLiteral("Paint the sheet's %1 into quarters (right button takes one)").arg(piece),
+    const QString piece = kind_ == Kind::Big ? tr("small block") : QStringLiteral("pattern");
+    return {{QStringLiteral("select"), tr("Select a block"), QStringLiteral("select")},
+            {QStringLiteral("paint"), tr("Paint the sheet's %1 into quarters (right button takes one)").arg(piece),
              QStringLiteral("paint")},
-            {QStringLiteral("pick"), QStringLiteral("Take a quarter's %1 as the brush").arg(piece), QStringLiteral("pick")}};
+            {QStringLiteral("pick"), tr("Take a quarter's %1 as the brush").arg(piece), QStringLiteral("pick")}};
 }
 
 QVector<sdk::ViewOption> DoraemonBlockModel::viewOptions() const {
     sdk::ViewOption preset;
     preset.key = QStringLiteral("preset");
-    preset.label = QStringLiteral("Colours");
-    for (int p = 0; p < paletteIds(session_->bundle(), world_).size(); ++p) preset.choices << QStringLiteral("Preset %1").arg(p);
-    preset.value = QStringLiteral("Preset %1").arg(preset_);
+    preset.label = tr("Colours");
+    for (int p = 0; p < paletteIds(session_->bundle(), world_).size(); ++p) preset.choices << tr("Preset %1").arg(p);
+    preset.value = tr("Preset %1").arg(preset_);
     return {preset};
 }
 
@@ -144,7 +144,7 @@ QImage DoraemonBlockModel::render() const {
 }
 
 QVector<sdk::CellBrush> DoraemonBlockModel::brushes() const {
-    return {{piece_, (kind_ == Kind::Big ? QStringLiteral("Small block %1") : QStringLiteral("Pattern %1")).arg(nes::hex(piece_)),
+    return {{piece_, (kind_ == Kind::Big ? tr("Small block %1") : tr("Pattern %1")).arg(nes::hex(piece_)),
              QColor()}};
 }
 
@@ -201,7 +201,7 @@ bool DoraemonBlockModel::placeObject(const QString& libraryItem, QPoint cell, QS
     std::array<int, 4> q = quarters(at[0]);
     q[static_cast<std::size_t>(at[1])] = piece_;
     selectObject(QStringLiteral("block:%1").arg(at[0]));
-    return commitQuarters({{at[0], q}}, QStringLiteral("Set a quarter of %1 %2").arg(title()).arg(nes::hex(at[0])), error);
+    return commitQuarters({{at[0], q}}, tr("Set a quarter of %1 %2").arg(title()).arg(nes::hex(at[0])), error);
 }
 
 void DoraemonBlockModel::beginStroke() {
@@ -224,7 +224,7 @@ void DoraemonBlockModel::endStroke() {
     const QHash<int, std::array<int, 4>> painted = stroke_;
     stroke_.clear();
     QString error;
-    if (!commitQuarters(painted, QStringLiteral("Paint %1").arg(title()), &error)) {
+    if (!commitQuarters(painted, tr("Paint %1").arg(title()), &error)) {
         session_->report(sdk::Severity::Error, QStringLiteral("metatiles"), error);
     }
     emit contentChanged();
@@ -263,14 +263,14 @@ bool DoraemonBlockModel::setField(const QString& key, const QVariant& value, QSt
         const int quarter = key.mid(1).toInt();
         std::array<int, 4> q = quarters(block);
         q[static_cast<std::size_t>(std::clamp(quarter, 0, 3))] = std::clamp(value.toInt(), 0, 255);
-        return commitQuarters({{block, q}}, QStringLiteral("Edit %1 %2").arg(title()).arg(nes::hex(block)), error);
+        return commitQuarters({{block, q}}, tr("Edit %1 %2").arg(title()).arg(nes::hex(block)), error);
     }
     const QString id = resourceId();
     if (key == QLatin1String("palette") || key == QLatin1String("properties") || key == QLatin1String("solid")) {
         const int row = value.toString().section(QLatin1Char(' '), 1).toInt();
         const Kind kind = kind_;
         return session_->editBundle(
-            QStringLiteral("Edit %1 %2").arg(title()).arg(nes::hex(block)),
+            tr("Edit %1 %2").arg(title()).arg(nes::hex(block)),
             [id, kind, key, block, row, value](nes::Bundle& b) {
                 QJsonObject r = b.resource(id);
                 if (kind == Kind::Metatile) {
@@ -298,8 +298,8 @@ sdk::Library DoraemonBlockModel::sheet() const {
     sdk::Library result;
     result.grid = true;
     result.columns = 16;
-    result.hint = kind_ == Kind::Big ? QStringLiteral("click: brush · drag a small block onto a quarter")
-                                     : QStringLiteral("click: brush · drag a pattern onto a quarter");
+    result.hint = kind_ == Kind::Big ? tr("click: brush · drag a small block onto a quarter")
+                                     : tr("click: brush · drag a pattern onto a quarter");
     const int count = kind_ == Kind::Big ? session_->resource(resourceId()).value(QStringLiteral("small_blocks")).toArray().size() : 256;
     for (int piece = 0; piece < count; ++piece) {
         sdk::LibraryItem item;
@@ -313,7 +313,7 @@ sdk::Library DoraemonBlockModel::sheet() const {
 
 sdk::Budget DoraemonBlockModel::budget() const {
     sdk::Budget budget;
-    budget.text = QStringLiteral("%1 blocks").arg(count());
+    budget.text = tr("%1 blocks").arg(count());
     return budget;
 }
 
@@ -322,27 +322,27 @@ sdk::Inspection DoraemonBlockModel::inspect() const {
     inspection.engineTag = kind_ == Kind::Metatile ? QStringLiteral("doraemon.world2-metatiles.v1")
                                                    : QStringLiteral("doraemon.hierarchy.v1");
     if (selected_ < 0) {
-        inspection.kicker = QStringLiteral("Metatiles");
+        inspection.kicker = tr("Metatiles");
         inspection.title = title();
         switch (kind_) {
         case Kind::Small:
-            inspection.note = QStringLiteral("16x16 blocks of four background patterns. A block's attribute byte gives "
-                                             "its palette row and property bits (what the player can walk through). "
-                                             "Big blocks are built from these; maps are built from big blocks.");
+            inspection.note = tr("16x16 blocks of four background patterns. A block's attribute byte gives "
+                                 "its palette row and property bits (what the player can walk through). "
+                                 "Big blocks are built from these; maps are built from big blocks.");
             break;
         case Kind::Big:
-            inspection.note = QStringLiteral("32x32 blocks of four small blocks: the cells of the World %1 maps.")
+            inspection.note = tr("32x32 blocks of four small blocks: the cells of the World %1 maps.")
                                   .arg(int(world_));
             break;
         default:
-            inspection.note = QStringLiteral("16x16 metatiles the World 2 screen streams expand their literals into: "
-                                             "four patterns, a palette row and whether the ship collides with it.");
+            inspection.note = tr("16x16 metatiles the World 2 screen streams expand their literals into: "
+                                 "four patterns, a palette row and whether the ship collides with it.");
         }
         return inspection;
     }
     const std::array<int, 4> q = quarters(selected_);
-    inspection.kicker = kind_ == Kind::Big ? QStringLiteral("Big block") : kind_ == Kind::Small ? QStringLiteral("Small block")
-                                                                                                : QStringLiteral("Metatile");
+    inspection.kicker = kind_ == Kind::Big ? tr("Big block") : kind_ == Kind::Small ? tr("Small block")
+                                                                                                : tr("Metatile");
     inspection.title = QStringLiteral("%1 %2").arg(inspection.kicker, nes::hex(selected_));
     for (int i = 0; i < 4; ++i) {
         sdk::Field f;
@@ -364,10 +364,10 @@ sdk::Inspection DoraemonBlockModel::inspect() const {
                             : r.value(QStringLiteral("attributes")).toArray().at(selected_).toObject().value(QStringLiteral("palette")).toInt();
         sdk::Field palette;
         palette.key = QStringLiteral("palette");
-        palette.label = QStringLiteral("Palette");
+        palette.label = tr("Palette");
         palette.type = sdk::Field::Type::Choice;
         for (int p = 0; p < 4; ++p) {
-            palette.choices << QStringLiteral("BG %1").arg(p);
+            palette.choices << tr("BG %1").arg(p);
             const QVector<int> c = session_->painter().colours(world_, preset_, p);
             QImage icon(16, 16, QImage::Format_ARGB32);
             QPainter painter(&icon);
@@ -375,36 +375,36 @@ sdk::Inspection DoraemonBlockModel::inspect() const {
             painter.end();
             palette.choiceIcons << icon;
         }
-        palette.value = QStringLiteral("BG %1").arg(row & 3);
+        palette.value = tr("BG %1").arg(row & 3);
         inspection.fields << palette;
     }
     if (kind_ == Kind::Small) {
         sdk::Field properties;
         properties.key = QStringLiteral("properties");
-        properties.label = QStringLiteral("Properties");
+        properties.label = tr("Properties");
         properties.type = sdk::Field::Type::Integer;
         properties.value = r.value(QStringLiteral("attributes")).toArray().at(selected_).toObject().value(QStringLiteral("properties")).toInt();
         properties.minimum = 0;
         properties.maximum = 63;
-        properties.hint = QStringLiteral("attribute bits 2-7");
+        properties.hint = tr("attribute bits 2-7");
         inspection.fields << properties;
     }
     if (kind_ == Kind::Metatile) {
         sdk::Field solid;
         solid.key = QStringLiteral("solid");
-        solid.label = QStringLiteral("Collision");
+        solid.label = tr("Collision");
         solid.type = sdk::Field::Type::Choice;
-        solid.choices = QStringList{QStringLiteral("Open"), QStringLiteral("Solid")};
-        solid.value = r.value(QStringLiteral("solid")).toArray().at(selected_).toBool() ? QStringLiteral("Solid") : QStringLiteral("Open");
+        solid.choices = QStringList{tr("Open"), QStringLiteral("Solid")};
+        solid.value = r.value(QStringLiteral("solid")).toArray().at(selected_).toBool() ? QStringLiteral("Solid") : tr("Open");
         inspection.fields << solid;
     }
-    inspection.note = QStringLiteral("Every map cell that uses this block changes with it.");
+    inspection.note = tr("Every map cell that uses this block changes with it.");
     return inspection;
 }
 
 QString DoraemonBlockModel::statusText() const {
-    if (selected_ < 0) return QStringLiteral("Metatiles · %1").arg(title());
-    return QStringLiteral("Metatiles · %1 · %2").arg(title(), nes::hex(selected_));
+    if (selected_ < 0) return tr("Metatiles · %1").arg(title());
+    return tr("Metatiles · %1 · %2").arg(title(), nes::hex(selected_));
 }
 
 }  // namespace rl::doraemon

@@ -1,6 +1,7 @@
 #include "flicky/plugin/objects.hpp"
 
 #include "flicky/data/level_document.hpp"
+#include "sdk/i18n.hpp"
 
 namespace rl::flicky::objects {
 
@@ -25,19 +26,19 @@ QStringList backgroundLayerFields() {
 }
 
 QString title(const QString& field) {
-    if (field == QLatin1String("player")) return QStringLiteral("Flicky / start");
-    if (field == QLatin1String("entry_arrow")) return QStringLiteral("Entry arrow");
-    if (field == QLatin1String("cat_door")) return QStringLiteral("Entry door");
-    if (field == QLatin1String("exit_door")) return QStringLiteral("Exit door");
-    if (field == QLatin1String("spawners")) return QStringLiteral("Collectible chicks");
-    if (field == QLatin1String("chicks_a")) return QStringLiteral("Enemy group A");
-    if (field == QLatin1String("chicks_b")) return QStringLiteral("Enemy group B");
+    if (field == QLatin1String("player")) return rlTr("flicky", "Flicky / start");
+    if (field == QLatin1String("entry_arrow")) return rlTr("flicky", "Entry arrow");
+    if (field == QLatin1String("cat_door")) return rlTr("flicky", "Entry door");
+    if (field == QLatin1String("exit_door")) return rlTr("flicky", "Exit door");
+    if (field == QLatin1String("spawners")) return rlTr("flicky", "Collectible chicks");
+    if (field == QLatin1String("chicks_a")) return rlTr("flicky", "Enemy group A");
+    if (field == QLatin1String("chicks_b")) return rlTr("flicky", "Enemy group B");
     if (field.startsWith(QLatin1String("background_group_"))) {
-        return QStringLiteral("Scenery %1").arg(field.right(1));
+        return rlTr("flicky", "Scenery %1").arg(field.right(1));
     }
-    if (field == QLatin1String("flag_7")) return QStringLiteral("Collision flag 7");
-    if (field == QLatin1String("flag_7_6")) return QStringLiteral("Collision flag 7·6");
-    if (field == QLatin1String("flag_5")) return QStringLiteral("Collision flag 5");
+    if (field == QLatin1String("flag_7")) return rlTr("flicky", "Collision flag 7");
+    if (field == QLatin1String("flag_7_6")) return rlTr("flicky", "Collision flag 7·6");
+    if (field == QLatin1String("flag_5")) return rlTr("flicky", "Collision flag 5");
     return field;
 }
 
@@ -78,12 +79,12 @@ QStringList typeCandidates(const QString& field) {
 
 QString encoding(const QString& field) {
     if (isSingle(field)) {
-        return QStringLiteral("2 bytes: x, y");
+        return rlTr("flicky", "2 bytes: x, y");
     }
     if (field == QLatin1String("spawners")) {
-        return QStringLiteral("6 × 2 bytes: x, y");
+        return rlTr("flicky", "6 × 2 bytes: x, y");
     }
-    return QStringLiteral("count + 2 bytes per item");
+    return rlTr("flicky", "count + 2 bytes per item");
 }
 
 }  // namespace rl::flicky::objects

@@ -1,6 +1,7 @@
 #include "flicky/plugin/flicky_plugin.hpp"
 
 #include "flicky/plugin/flicky_session.hpp"
+#include "sdk/i18n.hpp"
 #include "sdk/plugin.hpp"
 
 namespace rl::flicky {
@@ -11,7 +12,7 @@ namespace {
 class FlickyPlugin final : public sdk::Plugin {
 public:
     QString id() const override { return QStringLiteral("flicky"); }
-    QString displayName() const override { return QStringLiteral("Flicky (UE)"); }
+    QString displayName() const override { return rlTr("flicky", "Flicky (UE)"); }
 
     bool canOpen(const sdk::ProjectFile& project) const override {
         return project.string(QStringLiteral("project.profile")) == QLatin1String("flicky-ue.v1") &&

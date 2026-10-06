@@ -1,6 +1,7 @@
 #include "doraemon/plugin/text_model.hpp"
 
 #include "doraemon/plugin/doraemon_session.hpp"
+#include "sdk/i18n.hpp"
 
 #include <QJsonArray>
 #include <QPainter>
@@ -17,12 +18,12 @@ bool allowed(QChar c) {
 }
 
 QString titleLabel(const QString& id) {
-    if (id == QLatin1String("push_start_button")) return QStringLiteral("Title: start prompt");
-    if (id == QLatin1String("hiscore")) return QStringLiteral("Title: high score");
-    if (id == QLatin1String("score")) return QStringLiteral("Title: score");
-    if (id == QLatin1String("hudson_copyright")) return QStringLiteral("Title: Hudson copyright");
-    if (id == QLatin1String("license_copyright")) return QStringLiteral("Title: licence line");
-    return QStringLiteral("Title: %1").arg(id);
+    if (id == QLatin1String("push_start_button")) return rlTr("doraemon", "Title: start prompt");
+    if (id == QLatin1String("hiscore")) return rlTr("doraemon", "Title: high score");
+    if (id == QLatin1String("score")) return rlTr("doraemon", "Title: score");
+    if (id == QLatin1String("hudson_copyright")) return rlTr("doraemon", "Title: Hudson copyright");
+    if (id == QLatin1String("license_copyright")) return rlTr("doraemon", "Title: licence line");
+    return rlTr("doraemon", "Title: %1").arg(id);
 }
 
 }  // namespace
@@ -39,12 +40,12 @@ void DoraemonTextModel::readRows() {
     if (credits_) {
         const QJsonArray credits = d.value(QStringLiteral("ending_credit_rows")).toArray();
         for (int i = 0; i < credits.size(); ++i) {
-            rows_ << Row{QStringLiteral("Row %1").arg(i + 1, 3, 10, QLatin1Char('0')), QStringLiteral("credits"), i, 0,
+            rows_ << Row{tr("Row %1").arg(i + 1, 3, 10, QLatin1Char('0')), QStringLiteral("credits"), i, 0,
                          credits.at(i).toString().size()};
         }
         return;
     }
-    rows_ << Row{QStringLiteral("GAME OVER"), QStringLiteral("game_over"), 0, 0, d.value(QStringLiteral("game_over")).toString().size()};
+    rows_ << Row{tr("GAME OVER"), QStringLiteral("game_over"), 0, 0, d.value(QStringLiteral("game_over")).toString().size()};
     const QJsonArray records = d.value(QStringLiteral("title_records")).toArray();
     for (int i = 0; i < records.size(); ++i) {
         const QJsonObject r = records.at(i).toObject();
@@ -58,14 +59,14 @@ void DoraemonTextModel::readRows() {
         for (int g = 0; g < segments.size(); ++g) {
             const QJsonObject seg = segments.at(g).toObject();
             if (!seg.contains(QStringLiteral("text"))) continue;
-            rows_ << Row{QStringLiteral("World %1 help: %2").arg(s + 1).arg(seg.value(QStringLiteral("id")).toString()),
+            rows_ << Row{tr("World %1 help: %2").arg(s + 1).arg(seg.value(QStringLiteral("id")).toString()),
                          QStringLiteral("help"), s, g, seg.value(QStringLiteral("text")).toString().size()};
         }
     }
 }
 
 QString DoraemonTextModel::title() const {
-    return credits_ ? QStringLiteral("Ending credits") : QStringLiteral("Title, game over and help");
+    return credits_ ? tr("Ending credits") : tr("Title, game over and help");
 }
 
 QString DoraemonTextModel::text(const QJsonObject& d, const Row& row) const {
@@ -83,7 +84,7 @@ QString DoraemonTextModel::text(const QJsonObject& d, const Row& row) const {
 QVector<sdk::TableColumn> DoraemonTextModel::columns() const {
     sdk::TableColumn where;
     where.key = QStringLiteral("where");
-    where.label = credits_ ? QStringLiteral("Row") : QStringLiteral("Where");
+    where.label = credits_ ? tr("Row") : tr("Where");
     where.width = credits_ ? 80 : 220;
     where.muted = true;
     sdk::TableColumn text;
@@ -93,7 +94,7 @@ QVector<sdk::TableColumn> DoraemonTextModel::columns() const {
     text.editable = true;
     sdk::TableColumn places;
     places.key = QStringLiteral("places");
-    places.label = QStringLiteral("Places");
+    places.label = tr("Places");
     places.width = 70;
     places.muted = true;
     return {where, text, places};
@@ -132,12 +133,12 @@ bool DoraemonTextModel::setCell(int row, int column, const QString& value, QStri
     QString t = value.toUpper();
     for (const QChar c : t) {
         if (!allowed(c)) {
-            if (error) *error = QStringLiteral("The game writes A-Z, 0-9, space, '.', '&' and '@' (the copyright sign); not '%1'.").arg(c);
+            if (error) *error = tr("The game writes A-Z, 0-9, space, '.', '&' and '@' (the copyright sign); not '%1'.").arg(c);
             return false;
         }
     }
     if (t.size() > r.width) {
-        if (error) *error = QStringLiteral("%1 keeps %2 places.").arg(r.label).arg(r.width);
+        if (error) *error = tr("%1 keeps %2 places.").arg(r.label).arg(r.width);
         return false;
     }
     // Credits rows are centred (keeping the row's own indent when the new
@@ -175,7 +176,7 @@ bool DoraemonTextModel::setCell(int row, int column, const QString& value, QStri
         rows.replace(r.index, t);
         d.insert(QStringLiteral("ending_credit_rows"), rows);
     }
-    return session_->editText(QStringLiteral("Edit %1").arg(r.label), d, error);
+    return session_->editText(tr("Edit %1").arg(r.label), d, error);
 }
 
 QImage DoraemonTextModel::drawn(const QString& t, const Row& row) const {
@@ -206,7 +207,7 @@ QImage DoraemonTextModel::drawn(const QString& t, const Row& row) const {
 sdk::Inspection DoraemonTextModel::inspect() const {
     sdk::Inspection inspection;
     inspection.engineTag = QStringLiteral("doraemon.text@1");
-    inspection.kicker = credits_ ? QStringLiteral("Ending credits") : QStringLiteral("Text");
+    inspection.kicker = credits_ ? tr("Ending credits") : QStringLiteral("Text");
     if (row_ < 0 || row_ >= rows_.size()) return inspection;
     const Row& r = rows_.at(row_);
     const QString t = text(session_->text(), r);
@@ -215,7 +216,7 @@ sdk::Inspection DoraemonTextModel::inspect() const {
     const QImage line = drawn(t, r);
     inspection.library.grid = true;
     inspection.library.columns = 16;
-    inspection.library.hint = QStringLiteral("as the game draws it (CHR bank 3)");
+    inspection.library.hint = tr("as the game draws it (CHR bank 3)");
     for (int i = 0; i < t.size(); ++i) {
         sdk::LibraryItem item;
         item.id = QStringLiteral("place:%1").arg(i);
@@ -224,10 +225,10 @@ sdk::Inspection DoraemonTextModel::inspect() const {
         inspection.library.items << item;
     }
     inspection.note = credits_
-                          ? QStringLiteral("One of the 380 rows the ending scrolls past, 32 places wide; text is centred. "
-                                           "The game writes A-Z, 0-9, '.', '&' and '@'.")
-                          : QStringLiteral("The text keeps its places; shorter text is padded with blanks. The game "
-                                           "writes A-Z, 0-9, '.', '&' and '@' (the copyright sign).");
+                          ? tr("One of the 380 rows the ending scrolls past, 32 places wide; text is centred. "
+                               "The game writes A-Z, 0-9, '.', '&' and '@'.")
+                          : tr("The text keeps its places; shorter text is padded with blanks. The game "
+                               "writes A-Z, 0-9, '.', '&' and '@' (the copyright sign).");
     return inspection;
 }
 

@@ -70,23 +70,23 @@ QJsonArray CastleDemoModel::steps() const {
 QVector<sdk::TableColumn> CastleDemoModel::columns() const {
     sdk::TableColumn step;
     step.key = QStringLiteral("step");
-    step.label = QStringLiteral("Step");
+    step.label = tr("Step");
     step.width = 70;
     step.muted = true;
     sdk::TableColumn commands;
     commands.key = QStringLiteral("commands");
-    commands.label = QStringLiteral("Commands");
+    commands.label = tr("Commands");
     commands.width = 110;
     commands.monospace = true;
     commands.editable = true;
     sdk::TableColumn buttons;
     buttons.key = QStringLiteral("buttons");
-    buttons.label = QStringLiteral("Buttons held");
+    buttons.label = tr("Buttons held");
     buttons.monospace = true;
     buttons.editable = true;
     sdk::TableColumn at;
     at.key = QStringLiteral("at");
-    at.label = QStringLiteral("Starts at");
+    at.label = tr("Starts at");
     at.width = 120;
     at.muted = true;
     return {step, commands, buttons, at};
@@ -141,7 +141,7 @@ bool CastleDemoModel::setCell(int row, int column, const QString& value, QString
         const int commands = value.trimmed().toInt(&ok);
         const int capacity = session_->demoCapacity();
         if (!ok || commands < 1 || commands > capacity) {
-            if (error) *error = QStringLiteral("A step holds 1-%1 commands of 12 frames.").arg(capacity);
+            if (error) *error = tr("A step holds 1-%1 commands of 12 frames.").arg(capacity);
             return false;
         }
         item.insert(QStringLiteral("commands"), commands);
@@ -149,7 +149,7 @@ bool CastleDemoModel::setCell(int row, int column, const QString& value, QString
         const QStringList words = value.toUpper().split(QRegularExpression(QStringLiteral("[\\s,+]+")), Qt::SkipEmptyParts);
         for (const QString& word : words) {
             if (word != QLatin1String("-") && !buttonNames().contains(word)) {
-                if (error) *error = QStringLiteral("Buttons are A, B, UP, DOWN, LEFT and RIGHT.");
+                if (error) *error = tr("Buttons are A, B, UP, DOWN, LEFT and RIGHT.");
                 return false;
             }
         }
@@ -160,7 +160,7 @@ bool CastleDemoModel::setCell(int row, int column, const QString& value, QString
         item.insert(QStringLiteral("buttons"), held);
     }
     list.replace(row, item);
-    return session_->editDemo(QStringLiteral("Edit demo step %1").arg(row + 1),
+    return session_->editDemo(tr("Edit demo step %1").arg(row + 1),
                               [list](QJsonObject& demo) { demo.insert(QStringLiteral("steps"), list); }, error);
 }
 
@@ -170,7 +170,7 @@ sdk::Budget CastleDemoModel::budget() const {
     sdk::Budget budget;
     budget.used = commands;
     budget.capacity = session_->demoCapacity();
-    budget.text = QStringLiteral("%1 / %2 commands · %3 s").arg(commands).arg(budget.capacity).arg(commands * kCommandFrames / 60);
+    budget.text = tr("%1 / %2 commands · %3 s").arg(commands).arg(budget.capacity).arg(commands * kCommandFrames / 60);
     return budget;
 }
 
@@ -181,31 +181,31 @@ QString CastleDemoModel::startPoint() const {
 QVector<sdk::EditorAction> CastleDemoModel::actions() const {
     sdk::EditorAction loop;
     loop.id = QStringLiteral("loop");
-    loop.label = QStringLiteral("Loop demo");
+    loop.label = tr("Loop demo");
     loop.icon = QStringLiteral("play");
-    loop.tooltip = QStringLiteral("Build and play the demo over and over, as the console plays it after power-on");
+    loop.tooltip = tr("Build and play the demo over and over, as the console plays it after power-on");
     loop.showsPlaytest = true;
     sdk::EditorAction record;
     record.danger = true;
     record.showsPlaytest = true;
     if (session_->recordingActive()) {
         record.id = QStringLiteral("stop");
-        record.label = QStringLiteral("Stop recording");
+        record.label = tr("Stop recording");
         record.icon = QStringLiteral("stop");
-        record.tooltip = QStringLiteral("Finish the recording and keep it as the demo");
+        record.tooltip = tr("Finish the recording and keep it as the demo");
     } else {
         record.id = QStringLiteral("record");
-        record.label = QStringLiteral("Record");
+        record.label = tr("Record");
         record.icon = QStringLiteral("record");
-        record.tooltip = QStringLiteral("Play the demo with your controller; what you play becomes the demo");
-        record.confirmHeading = QStringLiteral("Record a new demo?");
-        record.confirmText = QStringLiteral("You play the first room with your controller for up to %1 s; the game "
-                                            "takes the buttons you hold every 12 frames. When the time is up or you "
-                                            "press Start or Stop recording, what you played replaces the current demo "
-                                            "(%2 steps). Undo brings it back.")
+        record.tooltip = tr("Play the demo with your controller; what you play becomes the demo");
+        record.confirmHeading = tr("Record a new demo?");
+        record.confirmText = tr("You play the first room with your controller for up to %1 s; the game "
+                                "takes the buttons you hold every 12 frames. When the time is up or you "
+                                "press Start or Stop recording, what you played replaces the current demo "
+                                "(%2 steps). Undo brings it back.")
                                  .arg(session_->demoCapacity() * kCommandFrames / 60)
                                  .arg(rowCount());
-        record.confirmAction = QStringLiteral("Record");
+        record.confirmAction = tr("Record");
     }
     return {loop, record};
 }
@@ -218,14 +218,14 @@ void CastleDemoModel::triggerAction(const QString& id) {
 
 sdk::Inspection CastleDemoModel::inspect() const {
     sdk::Inspection inspection;
-    inspection.kicker = QStringLiteral("Title demo");
-    inspection.title = QStringLiteral("Step %1").arg(row_ + 1);
-    inspection.note = QStringLiteral("When the title waits, the game plays this script in place of the controller: "
-                                     "one command every 12 frames, and a step repeats its buttons for its commands. "
-                                     "After the last command the game resets. Loop demo plays it over and over in "
-                                     "the emulator. Record plays it with your controller and keeps the buttons you "
-                                     "hold as each command starts; the script holds %1 commands. Write buttons as "
-                                     "words, e.g. A RIGHT.")
+    inspection.kicker = tr("Title demo");
+    inspection.title = tr("Step %1").arg(row_ + 1);
+    inspection.note = tr("When the title waits, the game plays this script in place of the controller: "
+                         "one command every 12 frames, and a step repeats its buttons for its commands. "
+                         "After the last command the game resets. Loop demo plays it over and over in "
+                         "the emulator. Record plays it with your controller and keeps the buttons you "
+                         "hold as each command starts; the script holds %1 commands. Write buttons as "
+                         "words, e.g. A RIGHT.")
                           .arg(session_->demoCapacity());
     inspection.engineTag = QStringLiteral("castle.demo@1");
     return inspection;

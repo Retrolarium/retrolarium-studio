@@ -73,7 +73,7 @@ QSize CastleRoomModel::gridSize() const {
 }
 
 QVector<sdk::MapLayer> CastleRoomModel::layers() const {
-    return {{QStringLiteral("cells"), QStringLiteral("Cells")}, {QStringLiteral("objects"), QStringLiteral("Objects")}};
+    return {{QStringLiteral("cells"), tr("Cells")}, {QStringLiteral("objects"), tr("Objects")}};
 }
 
 void CastleRoomModel::setCurrentLayer(const QString& id) {
@@ -88,14 +88,14 @@ void CastleRoomModel::setCurrentLayer(const QString& id) {
 
 QVector<sdk::Tool> CastleRoomModel::tools() const {
     if (layer_ == QLatin1String("cells")) {
-        return {{QStringLiteral("paint"), QStringLiteral("Paint the sheet's cell (right button takes one)"),
+        return {{QStringLiteral("paint"), tr("Paint the sheet's cell (right button takes one)"),
                  QStringLiteral("paint")},
-                {QStringLiteral("pick"), QStringLiteral("Take a cell's type as the brush"), QStringLiteral("pick")}};
+                {QStringLiteral("pick"), tr("Take a cell's type as the brush"), QStringLiteral("pick")}};
     }
-    return {{QStringLiteral("select"), QStringLiteral("Select and move objects and the start point"),
+    return {{QStringLiteral("select"), tr("Select and move objects and the start point"),
              QStringLiteral("select")},
-            {QStringLiteral("place"), QStringLiteral("Add the library object"), QStringLiteral("place")},
-            {QStringLiteral("remove"), QStringLiteral("Delete objects"), QStringLiteral("erase")}};
+            {QStringLiteral("place"), tr("Add the library object"), QStringLiteral("place")},
+            {QStringLiteral("remove"), tr("Delete objects"), QStringLiteral("erase")}};
 }
 
 QVector<int> CastleRoomModel::roomCells() const {
@@ -179,7 +179,7 @@ sdk::Library CastleRoomModel::sheet() const {
         }
     }
     library.grid = true;
-    library.hint = QStringLiteral("click: brush · drag onto a cell");
+    library.hint = tr("click: brush · drag onto a cell");
     library.items = cellSheet_;
     return library;
 }
@@ -210,7 +210,7 @@ bool CastleRoomModel::paintCell(QPoint cell, int value) {
     }
     if (!stroking_) {
         const int room = room_;
-        return session_->edit(QStringLiteral("Paint %1").arg(title()),
+        return session_->edit(tr("Paint %1").arg(title()),
                               [room, cell, value](CastleState& s) { s.levels.setCell(room, cell, value); }, nullptr);
     }
     pending_.insert(index, value);
@@ -228,7 +228,7 @@ void CastleRoomModel::endStroke() {
     if (!cells.isEmpty()) {
         const int room = room_;
         const int width = gridSize().width();
-        session_->edit(QStringLiteral("Paint %1").arg(title()),
+        session_->edit(tr("Paint %1").arg(title()),
                        [room, cells, width](CastleState& s) {
                            for (auto it = cells.constBegin(); it != cells.constEnd(); ++it) {
                                s.levels.setCell(room, QPoint(it.key() % width, it.key() / width), it.value());
@@ -243,8 +243,8 @@ void CastleRoomModel::endStroke() {
 
 QString CastleRoomModel::typeLabel(int type) const {
     const int runtime = session_->painter().runtimeType(type);
-    return runtime < 0 ? QStringLiteral("Object %1").arg(hex(type))
-                       : QStringLiteral("Object %1 · runtime %2").arg(hex(type), hex(runtime));
+    return runtime < 0 ? tr("Object %1").arg(hex(type))
+                       : tr("Object %1 · runtime %2").arg(hex(type), hex(runtime));
 }
 
 int CastleRoomModel::objectIndex(const QString& id) const {
@@ -273,7 +273,7 @@ QVector<sdk::MapObject> CastleRoomModel::objects() const {
     if (session_->start().room == room_ + 1) {
         sdk::MapObject start;
         start.id = QStringLiteral("start");
-        start.label = QStringLiteral("Start point");
+        start.label = tr("Start point");
         start.cells = startCells();
         result << start;
     }
@@ -333,7 +333,7 @@ void CastleRoomModel::endDrag() {
     const QVector<CastleObject> moved = *dragged_;
     dragged_.reset();
     if (moved != session_->levels().objects(room_)) {
-        commitObjects(moved, QStringLiteral("Move an object in %1").arg(title()), nullptr);
+        commitObjects(moved, tr("Move an object in %1").arg(title()), nullptr);
     }
     emit contentChanged();
 }
@@ -341,7 +341,7 @@ void CastleRoomModel::endDrag() {
 bool CastleRoomModel::commitObjects(const QVector<CastleObject>& objects, const QString& text, QString* error) {
     if (objects.size() > kMaximumObjects) {
         if (error) {
-            *error = QStringLiteral("A room holds at most %1 objects; the game keeps them in a fixed pool.")
+            *error = tr("A room holds at most %1 objects; the game keeps them in a fixed pool.")
                          .arg(kMaximumObjects);
         }
         return false;
@@ -358,20 +358,20 @@ bool CastleRoomModel::placeObject(const QString& libraryItem, QPoint cell, QStri
             setCurrentLayer(QStringLiteral("cells"));
         }
         if (!paintCell(cell, brush_) && cellValue(cell) != brush_) {
-            if (error) *error = QStringLiteral("Drop a cell inside the room.");
+            if (error) *error = tr("Drop a cell inside the room.");
             return false;
         }
         return true;
     }
     if (!libraryItem.startsWith(QLatin1String("object:"))) {
-        if (error) *error = QStringLiteral("Pick an object in the library first.");
+        if (error) *error = tr("Pick an object in the library first.");
         return false;
     }
     const int type = libraryItem.mid(7).toInt();
     QVector<CastleObject> list = session_->levels().objects(room_);
     list << CastleObject{type, std::clamp(cell.x(), 0, gridSize().width() - 1),
                          std::clamp(cell.y(), 0, gridSize().height() - 1)};
-    if (!commitObjects(list, QStringLiteral("Add %1 to %2").arg(typeLabel(type), title()), error)) {
+    if (!commitObjects(list, tr("Add %1 to %2").arg(typeLabel(type), title()), error)) {
         return false;
     }
     selectObject(QStringLiteral("object:%1").arg(list.size() - 1));
@@ -382,7 +382,7 @@ bool CastleRoomModel::removeObject(const QString& id, QString* error) {
     const int index = objectIndex(id);
     if (index < 0) {
         if (id == QLatin1String("start") && error) {
-            *error = QStringLiteral("The start point stays; drag it where the player should begin.");
+            *error = tr("The start point stays; drag it where the player should begin.");
         }
         return false;
     }
@@ -390,7 +390,7 @@ bool CastleRoomModel::removeObject(const QString& id, QString* error) {
     const QString label = typeLabel(list.at(index).type);
     list.removeAt(index);
     selectObject(QString());
-    return commitObjects(list, QStringLiteral("Delete %1 from %2").arg(label, title()), error);
+    return commitObjects(list, tr("Delete %1 from %2").arg(label, title()), error);
 }
 
 sdk::Library CastleRoomModel::objectLibrary() const {
@@ -404,14 +404,14 @@ sdk::Library CastleRoomModel::objectLibrary() const {
         for (int type = 0; type < session_->levels().encodedTypeCount(); ++type) {
             sdk::LibraryItem item;
             item.id = QStringLiteral("object:%1").arg(type);
-            item.label = QStringLiteral("Object %1").arg(hex(type));
+            item.label = tr("Object %1").arg(hex(type));
             const int runtime = session_->painter().runtimeType(type);
-            item.hint = runtime < 0 ? QString() : QStringLiteral("runtime %1").arg(hex(runtime));
+            item.hint = runtime < 0 ? QString() : tr("runtime %1").arg(hex(runtime));
             item.icon = session_->painter().objectIcon(type);
             objectSheet_ << item;
         }
     }
-    library.hint = QStringLiteral("drag onto the room, or pick and use the Add tool");
+    library.hint = tr("drag onto the room, or pick and use the Add tool");
     library.items = objectSheet_;
     return library;
 }
@@ -430,7 +430,7 @@ sdk::Budget CastleRoomModel::budget() const {
     sdk::Budget budget;
     budget.used = roomObjects().size();
     budget.capacity = kMaximumObjects;
-    budget.text = QStringLiteral("this room %1 / %2 objects · all rooms: stream %3 / %4 B, saved state %5 / %6 B")
+    budget.text = tr("this room %1 / %2 objects · all rooms: stream %3 / %4 B, saved state %5 / %6 B")
                       .arg(roomObjects().size())
                       .arg(kMaximumObjects)
                       .arg(total * 3)
@@ -445,10 +445,10 @@ QString CastleRoomModel::startPoint() const {
 }
 
 QString CastleRoomModel::statusText() const {
-    return QStringLiteral("%1 · %2 objects · %3")
+    return tr("%1 · %2 objects · %3")
         .arg(title())
         .arg(roomObjects().size())
-        .arg(layer_ == QLatin1String("cells") ? QStringLiteral("brush %1").arg(hex(brush_)) : QStringLiteral("objects"));
+        .arg(layer_ == QLatin1String("cells") ? tr("brush %1").arg(hex(brush_)) : QStringLiteral("objects"));
 }
 
 sdk::Inspection CastleRoomModel::inspect() const {
@@ -456,60 +456,60 @@ sdk::Inspection CastleRoomModel::inspect() const {
     const int index = objectIndex(selected_);
     if (index >= 0) {
         const CastleObject object = roomObjects().at(index);
-        inspection.kicker = QStringLiteral("Room object");
+        inspection.kicker = tr("Room object");
         inspection.title = typeLabel(object.type);
         sdk::Field type;
         type.key = QStringLiteral("type");
-        type.label = QStringLiteral("Type");
+        type.label = tr("Type");
         type.type = sdk::Field::Type::Choice;
-        type.value = QStringLiteral("Object %1").arg(hex(object.type));
+        type.value = tr("Object %1").arg(hex(object.type));
         const sdk::Library library = objectLibrary();
         for (const sdk::LibraryItem& item : library.items) {
             type.choices << item.label;
             type.choiceIcons << item.icon;
         }
-        inspection.fields = {type, integer(QStringLiteral("x"), QStringLiteral("Column"), object.x, 0, gridSize().width() - 1,
-                                           QStringLiteral("16 px")),
-                             integer(QStringLiteral("y"), QStringLiteral("Row"), object.y, 0, gridSize().height() - 1,
-                                     QStringLiteral("8 px"))};
-        inspection.note = QStringLiteral("Drag to move it, Delete to remove it. The game keeps one bit per object "
-                                         "in the saved game, so a collected key stays collected.");
+        inspection.fields = {type, integer(QStringLiteral("x"), tr("Column"), object.x, 0, gridSize().width() - 1,
+                                           tr("16 px")),
+                             integer(QStringLiteral("y"), tr("Row"), object.y, 0, gridSize().height() - 1,
+                                     tr("8 px"))};
+        inspection.note = tr("Drag to move it, Delete to remove it. The game keeps one bit per object "
+                             "in the saved game, so a collected key stays collected.");
         inspection.engineTag = QStringLiteral("castle.object-stream.v1");
-        inspection.engine = {{QStringLiteral("Encoded type"), hex(object.type)},
-                             {QStringLiteral("Runtime type"), hex(session_->painter().runtimeType(object.type))},
-                             {QStringLiteral("Record"), QStringLiteral("%1 %2 %3").arg(hex(object.type), hex(object.x), hex(object.y))}};
+        inspection.engine = {{tr("Encoded type"), hex(object.type)},
+                             {tr("Runtime type"), hex(session_->painter().runtimeType(object.type))},
+                             {tr("Record"), QStringLiteral("%1 %2 %3").arg(hex(object.type), hex(object.x), hex(object.y))}};
         inspection.library = objectLibrary();
         return inspection;
     }
     if (selected_ == QLatin1String("start")) {
         const CastleStart start = session_->start();
-        inspection.kicker = QStringLiteral("Start point");
+        inspection.kicker = tr("Start point");
         inspection.title = session_->selectedStart();
         inspection.fields = {integer(QStringLiteral("start_x"), QStringLiteral("X"), start.pixel.x(), 0, 319,
                                      QStringLiteral("px")),
                              integer(QStringLiteral("start_y"), QStringLiteral("Y"), start.pixel.y(), 0, 159,
                                      QStringLiteral("px"))};
-        inspection.note = QStringLiteral("Play from selected (F5) builds the ROM, enters this room through the "
-                                         "game's own room loader and puts the player here.");
+        inspection.note = tr("Play from selected (F5) builds the ROM, enters this room through the "
+                             "game's own room loader and puts the player here.");
         inspection.engineTag = QStringLiteral("castle-point-playtest");
         inspection.library = objectLibrary();
         return inspection;
     }
-    inspection.kicker = QStringLiteral("Room");
+    inspection.kicker = tr("Room");
     inspection.title = title();
     const QVector<int> cells = roomCells();
-    inspection.fields = {readOnly(QStringLiteral("objects"), QStringLiteral("Objects"),
+    inspection.fields = {readOnly(QStringLiteral("objects"), tr("Objects"),
                                   QStringLiteral("%1 / %2").arg(roomObjects().size()).arg(kMaximumObjects)),
                          readOnly(QStringLiteral("brush"), QStringLiteral("Cell brush"), hex(brush_))};
     inspection.note = layer_ == QLatin1String("cells")
-                          ? QStringLiteral("Paint cells with the sheet's pattern; the right button takes a cell. "
-                                           "Each cell is two background tiles; its colours come from the attribute "
-                                           "bytes the room loader writes, so a cell may recolour its neighbours.")
-                          : QStringLiteral("Drag objects from the library onto the room. Drag the start marker "
-                                           "where Play from selected should put the player.");
+                          ? tr("Paint cells with the sheet's pattern; the right button takes a cell. "
+                               "Each cell is two background tiles; its colours come from the attribute "
+                               "bytes the room loader writes, so a cell may recolour its neighbours.")
+                          : tr("Drag objects from the library onto the room. Drag the start marker "
+                               "where Play from selected should put the player.");
     inspection.engineTag = QStringLiteral("castle.prefix-rooms@1");
-    inspection.engine = {{QStringLiteral("Room number"), QString::number(session_->levels().roomNumber(room_))},
-                         {QStringLiteral("Cells"), QStringLiteral("20x20, 16x8 px each")}};
+    inspection.engine = {{tr("Room number"), QString::number(session_->levels().roomNumber(room_))},
+                         {tr("Cells"), tr("20x20, 16x8 px each")}};
     if (layer_ == QLatin1String("objects")) {
         inspection.library = objectLibrary();
     }
@@ -535,7 +535,7 @@ bool CastleRoomModel::setField(const QString& key, const QVariant& value, QStrin
         bool ok = false;
         const int type = text.section(QLatin1Char('$'), 1).left(2).toInt(&ok, 16);
         if (!ok) {
-            if (error) *error = QStringLiteral("Pick a type from the list.");
+            if (error) *error = tr("Pick a type from the list.");
             return false;
         }
         object.type = type;
@@ -546,7 +546,7 @@ bool CastleRoomModel::setField(const QString& key, const QVariant& value, QStrin
     } else {
         return TileMapModel::setField(key, value, error);
     }
-    return commitObjects(list, QStringLiteral("Edit %1 in %2").arg(typeLabel(object.type), title()), error);
+    return commitObjects(list, tr("Edit %1 in %2").arg(typeLabel(object.type), title()), error);
 }
 
 }  // namespace rl::castle

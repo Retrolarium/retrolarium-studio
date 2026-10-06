@@ -57,7 +57,7 @@ QVector<int> CastleTextModel::encode(const QString& text, int size, QString* err
             bool ok = false;
             const int code = close > i ? upper.mid(i + 1, close - i - 1).toInt(&ok, 16) : -1;
             if (!ok || code <= 0 || code > 0xff) {
-                if (error) *error = QStringLiteral("Write a raw code as {XX}, two hex digits.");
+                if (error) *error = tr("Write a raw code as {XX}, two hex digits.");
                 return {};
             }
             codes << code;
@@ -67,12 +67,12 @@ QVector<int> CastleTextModel::encode(const QString& text, int size, QString* err
         } else if (c >= QLatin1Char('A') && c <= QLatin1Char('Z')) {
             codes << kLetterA + (c.unicode() - 'A');
         } else {
-            if (error) *error = QStringLiteral("The menu font has the letters A-Z and the blank only.");
+            if (error) *error = tr("The menu font has the letters A-Z and the blank only.");
             return {};
         }
     }
     if (codes.size() > size - 1) {
-        if (error) *error = QStringLiteral("This word has room for %1 letters.").arg(size - 1);
+        if (error) *error = tr("This word has room for %1 letters.").arg(size - 1);
         return {};
     }
     while (codes.size() < size - 1) codes << kBlank;
@@ -83,17 +83,17 @@ QVector<int> CastleTextModel::encode(const QString& text, int size, QString* err
 QVector<sdk::TableColumn> CastleTextModel::columns() const {
     sdk::TableColumn name;
     name.key = QStringLiteral("name");
-    name.label = QStringLiteral("Name");
+    name.label = tr("Name");
     name.width = 180;
     name.muted = true;
     sdk::TableColumn text;
     text.key = QStringLiteral("text");
-    text.label = QStringLiteral("Game text");
+    text.label = tr("Game text");
     text.monospace = true;
     text.editable = true;
     sdk::TableColumn length;
     length.key = QStringLiteral("length");
-    length.label = QStringLiteral("Length");
+    length.label = tr("Length");
     length.width = 170;
     length.budget = true;
     return {name, text, length};
@@ -151,7 +151,7 @@ bool CastleTextModel::setText(int row, const QString& text, QString* error) {
     const QVector<int> codes = encode(text, values(row).size(), error);
     if (codes.isEmpty()) return false;
     const QString resource = resource_;
-    return session_->editBundle(QStringLiteral("Edit %1").arg(titled(recordId(row))),
+    return session_->editBundle(tr("Edit %1").arg(titled(recordId(row))),
                                 [resource, row, codes](nes::Bundle& b) {
                                     QJsonObject r = b.resource(resource);
                                     QJsonArray list = r.value(QStringLiteral("records")).toArray();
@@ -182,30 +182,30 @@ sdk::Budget CastleTextModel::budget() const {
         budget.used += decode(values(row)).size();
         budget.capacity += values(row).size() - 1;
     }
-    budget.text = QStringLiteral("text %1 / %2 chars").arg(budget.used).arg(budget.capacity);
+    budget.text = tr("text %1 / %2 chars").arg(budget.used).arg(budget.capacity);
     return budget;
 }
 
 sdk::Inspection CastleTextModel::inspect() const {
     sdk::Inspection inspection;
     if (row_ < 0 || row_ >= rowCount()) return inspection;
-    inspection.kicker = QStringLiteral("Menu word");
+    inspection.kicker = tr("Menu word");
     inspection.title = titled(recordId(row_));
     sdk::Field text;
     text.key = QStringLiteral("text");
     text.label = QStringLiteral("Text");
     text.type = sdk::Field::Type::Text;
     text.value = decode(values(row_));
-    text.hint = QStringLiteral("max %1").arg(values(row_).size() - 1);
+    text.hint = tr("max %1").arg(values(row_).size() - 1);
     text.monospace = true;
     inspection.fields = {text};
     inspection.preview = decode(values(row_));
-    inspection.note = QStringLiteral("Each word has a fixed slot ending in 0; shorter words are padded with "
-                                     "blanks. The font has A-Z and the blank; write another code as {XX}.");
+    inspection.note = tr("Each word has a fixed slot ending in 0; shorter words are padded with "
+                         "blanks. The font has A-Z and the blank; write another code as {XX}.");
     QStringList bytes;
     for (int v : values(row_)) bytes << QStringLiteral("%1").arg(v, 2, 16, QLatin1Char('0')).toUpper();
     inspection.engineTag = QStringLiteral("castle.sub-command-text.v1");
-    inspection.engine = {{QStringLiteral("Record"), recordId(row_)}, {QStringLiteral("Bytes"), bytes.join(QLatin1Char(' '))}};
+    inspection.engine = {{tr("Record"), recordId(row_)}, {tr("Bytes"), bytes.join(QLatin1Char(' '))}};
     return inspection;
 }
 
@@ -227,14 +227,14 @@ int CastleSfxModel::width() const {
 QVector<sdk::TableColumn> CastleSfxModel::columns() const {
     sdk::TableColumn name;
     name.key = QStringLiteral("name");
-    name.label = QStringLiteral("Parameter");
+    name.label = tr("Parameter");
     name.width = 260;
     name.muted = true;
     QVector<sdk::TableColumn> result{name};
     for (int i = 0; i < width(); ++i) {
         sdk::TableColumn value;
         value.key = QStringLiteral("v%1").arg(i);
-        value.label = QStringLiteral("Step %1").arg(i + 1);
+        value.label = tr("Step %1").arg(i + 1);
         value.width = 90;
         value.monospace = true;
         value.editable = true;
@@ -273,12 +273,12 @@ bool CastleSfxModel::setCell(int row, int column, const QString& value, QString*
     const int number = value.trimmed().startsWith(QLatin1Char('$')) ? value.trimmed().mid(1).toInt(&ok, 16)
                                                                      : value.trimmed().toInt(&ok);
     if (!ok || number < 0 || number > 255) {
-        if (error) *error = QStringLiteral("A parameter is one byte, 0-255.");
+        if (error) *error = tr("A parameter is one byte, 0-255.");
         return false;
     }
     const QString resource = resource_;
     const int index = column - 1;
-    return session_->editBundle(QStringLiteral("Edit a sound parameter"),
+    return session_->editBundle(tr("Edit a sound parameter"),
                                 [resource, row, index, number](nes::Bundle& b) {
                                     QJsonObject r = b.resource(resource);
                                     QJsonArray list = r.value(QStringLiteral("records")).toArray();
@@ -299,10 +299,10 @@ bool CastleSfxModel::setCell(int row, int column, const QString& value, QString*
 sdk::Inspection CastleSfxModel::inspect() const {
     sdk::Inspection inspection;
     if (row_ < 0 || row_ >= rowCount()) return inspection;
-    inspection.kicker = QStringLiteral("Sound effect");
+    inspection.kicker = tr("Sound effect");
     inspection.title = cell(row_, 0);
-    inspection.note = QStringLiteral("Bytes the sound driver steps through for this effect: pitch periods "
-                                     "(lower is higher) and timings. Each is 0-255.");
+    inspection.note = tr("Bytes the sound driver steps through for this effect: pitch periods "
+                         "(lower is higher) and timings. Each is 0-255.");
     inspection.engineTag = QStringLiteral("castle.sfx-parameters.v1");
     return inspection;
 }
@@ -331,15 +331,15 @@ bool CastlePlaytestModel::isRecording() const {
 
 sdk::Inspection CastlePlaytestModel::inspect() const {
     sdk::Inspection inspection;
-    inspection.kicker = QStringLiteral("Session");
+    inspection.kicker = tr("Session");
     inspection.title = startLabel();
     sdk::Field core;
     core.key = QStringLiteral("core");
-    core.label = QStringLiteral("Core");
+    core.label = tr("Core");
     core.value = coreLabel();
     inspection.fields = {core};
-    inspection.note = QStringLiteral("Play from selected builds the ROM with the kit and enters the room open in "
-                                     "Rooms with the player at the start marker; Play starts from power-on.");
+    inspection.note = tr("Play from selected builds the ROM with the kit and enters the room open in "
+                         "Rooms with the player at the start marker; Play starts from power-on.");
     inspection.engineTag = QStringLiteral("castle-point-playtest");
     return inspection;
 }

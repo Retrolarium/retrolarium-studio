@@ -2,6 +2,7 @@
 
 #include "doraemon/plugin/doraemon_session.hpp"
 #include "nes/editors.hpp"
+#include "sdk/i18n.hpp"
 
 #include <QJsonArray>
 #include <QJsonObject>
@@ -128,11 +129,11 @@ const QVector<DoraemonAnimation>& doraemonAnimations() {
     static const QVector<DoraemonAnimation> kAnimations = [] {
         QVector<DoraemonAnimation> list;
         const World one = World::One;
-        list << make(one, "Doraemon", QStringLiteral("Walk down"), run(0x00, 4), 5)
-             << make(one, "Doraemon", QStringLiteral("Walk up"), run(0x04, 4), 5)
-             << make(one, "Doraemon", QStringLiteral("Walk left"), run(0x08, 4), 5)
-             << make(one, "Doraemon", QStringLiteral("Walk right"), run(0x0C, 4), 5)
-             << make(one, "Doraemon", QStringLiteral("Hurt"), run(0x10, 2), 4);
+        list << make(one, "Doraemon", rlTr("doraemon", "Walk down"), run(0x00, 4), 5)
+             << make(one, "Doraemon", rlTr("doraemon", "Walk up"), run(0x04, 4), 5)
+             << make(one, "Doraemon", rlTr("doraemon", "Walk left"), run(0x08, 4), 5)
+             << make(one, "Doraemon", rlTr("doraemon", "Walk right"), run(0x0C, 4), 5)
+             << make(one, "Doraemon", rlTr("doraemon", "Hurt"), run(0x10, 2), 4);
         struct Enemy {
             int base;
             const char* name;
@@ -156,7 +157,7 @@ const QVector<DoraemonAnimation>& doraemonAnimations() {
                               {0x34, "Rapid-Fire Drink", 1}, {0x16, "Shrink Light", 1}, {0x14, "Programmer's face", 1},
                               {0x28, "Gold Bar", 1},       {0x17, "Diamond", 0},       {0x35, "Invulnerability", 3}};
         for (const Item& item : items) list << make(one, "Items", QString::fromLatin1(item.name), {item.index}, 8, item.palette);
-        list << make(one, "Frames", QStringLiteral("World 1 · all frames"), run(0, 115), 15);
+        list << make(one, "Frames", rlTr("doraemon", "World 1 · all frames"), run(0, 115), 15);
 
         const World two = World::Two;
         struct Foe {
@@ -170,18 +171,18 @@ const QVector<DoraemonAnimation>& doraemonAnimations() {
                                 {"W2Enemy12", {38, 39}},       {"Big Robot Ship", {40, 41, 42, 44, 45, 46}},
                                 {"Centaurus", {48, 49, 50, 52, 53, 54}}, {"Robot Ship", {56, 57}}};
         for (const Foe& foe : foes) list << make(two, "Enemies", QString::fromLatin1(foe.name), foe.frames);
-        list << make(two, "Frames", QStringLiteral("World 2 · all frames"), run(0, 58), 15);
+        list << make(two, "Frames", rlTr("doraemon", "World 2 · all frames"), run(0, 58), 15);
 
         const World three = World::Three;
-        list << make(three, "Doraemon", QStringLiteral("Swim (one way)"), run(0x00, 3), 8)
-             << make(three, "Doraemon", QStringLiteral("Swim (other way)"), run(0x03, 3), 8);
+        list << make(three, "Doraemon", rlTr("doraemon", "Swim (one way)"), run(0x00, 3), 8)
+             << make(three, "Doraemon", rlTr("doraemon", "Swim (other way)"), run(0x03, 3), 8);
         // Entity types $00-$1F: metasprite base and render flags ($8ED5, $8EF5).
         for (int t = 0; t < 32; ++t) {
-            list << make(three, "Creatures", QStringLiteral("Type %1").arg(nes::hex(t)),
+            list << make(three, "Creatures", rlTr("doraemon", "Type %1").arg(nes::hex(t)),
                          run(world3TypeMetasprite(t), std::min(4, 0xBC - world3TypeMetasprite(t))), 8,
                          world3TypeFlags(t) & 3);
         }
-        list << make(three, "Frames", QStringLiteral("World 3 · all frames"), run(0, 188), 15);
+        list << make(three, "Frames", rlTr("doraemon", "World 3 · all frames"), run(0, 188), 15);
         return list;
     }();
     return kAnimations;
@@ -325,7 +326,7 @@ QVector<sdk::CompositionPiece> DoraemonAnimationModel::pieces() const {
     for (const Placed& p : placed()) {
         sdk::CompositionPiece piece;
         piece.id = QStringLiteral("p:%1").arg(p.piece);
-        piece.label = QStringLiteral("Sprite %1 · %2").arg(p.piece + 1).arg(nes::hex(p.tile));
+        piece.label = tr("Sprite %1 · %2").arg(p.piece + 1).arg(nes::hex(p.tile));
         piece.pixels = QRect(origin() + QPoint(p.x, p.y), QSize(8, 8));
         // Mirrored aliases and World 2's fixed grid do not move.
         piece.movable = animation().world != World::Two && flip <= 0;
@@ -353,11 +354,11 @@ QVector<sdk::CompositionFrame> DoraemonAnimationModel::frames() const {
         const int i = animation().frames.at(f);
         sdk::CompositionFrame frame;
         frame.id = QString::number(f);
-        frame.label = QStringLiteral("Frame %1").arg(nes::hex(i));
+        frame.label = tr("Frame %1").arg(nes::hex(i));
         const QJsonObject entry = entries.at(i).toObject();
         frame.detail = entry.contains(QStringLiteral("alias"))
-                           ? QStringLiteral("mirrors %1").arg(nes::hex(entry.value(QStringLiteral("alias")).toInt()))
-                           : QStringLiteral("%1 ticks").arg(animation().ticks);
+                           ? tr("mirrors %1").arg(nes::hex(entry.value(QStringLiteral("alias")).toInt()))
+                           : tr("%1 ticks").arg(animation().ticks);
         result << frame;
     }
     return result;
@@ -381,19 +382,19 @@ QVector<sdk::ViewOption> DoraemonAnimationModel::viewOptions() const {
     sdk::ViewOption colours;
     colours.key = QStringLiteral("preset");
     if (animation().world == World::Two) {
-        colours.label = QStringLiteral("Chapter");
-        for (int c = 0; c < 3; ++c) colours.choices << QStringLiteral("Chapter %1").arg(c + 1);
-        colours.value = QStringLiteral("Chapter %1").arg(preset_ + 1);
+        colours.label = tr("Chapter");
+        for (int c = 0; c < 3; ++c) colours.choices << tr("Chapter %1").arg(c + 1);
+        colours.value = tr("Chapter %1").arg(preset_ + 1);
         return {colours};
     }
-    colours.label = QStringLiteral("Colours");
-    for (int p = 0; p < paletteIds(session_->bundle(), animation().world).size(); ++p) colours.choices << QStringLiteral("Preset %1").arg(p);
-    colours.value = QStringLiteral("Preset %1").arg(preset_);
+    colours.label = tr("Colours");
+    for (int p = 0; p < paletteIds(session_->bundle(), animation().world).size(); ++p) colours.choices << tr("Preset %1").arg(p);
+    colours.value = tr("Preset %1").arg(preset_);
     sdk::ViewOption palette;
     palette.key = QStringLiteral("palette");
-    palette.label = QStringLiteral("Palette");
-    for (int p = 0; p < 4; ++p) palette.choices << QStringLiteral("SPR %1").arg(p);
-    palette.value = QStringLiteral("SPR %1").arg(palette_);
+    palette.label = tr("Palette");
+    for (int p = 0; p < 4; ++p) palette.choices << tr("SPR %1").arg(p);
+    palette.value = tr("SPR %1").arg(palette_);
     return {colours, palette};
 }
 
@@ -486,7 +487,7 @@ void DoraemonAnimationModel::endDrag() {
         if (p.piece != piece) continue;
         QString error;
         editPiece(piece, at.y() | (p.flipY ? 0x80 : 0), at.x() | (p.flipX ? 0x80 : 0), p.tile,
-                  QStringLiteral("Move a sprite of %1").arg(title()), &error);
+                  tr("Move a sprite of %1").arg(title()), &error);
     }
     emit contentChanged();
 }
@@ -494,7 +495,7 @@ void DoraemonAnimationModel::endDrag() {
 bool DoraemonAnimationModel::dropItem(const QString& libraryItem, const QString& piece, QString* error) {
     const int k = piece.startsWith(QLatin1String("p:")) ? piece.mid(2).toInt() : -1;
     if (!libraryItem.startsWith(QLatin1String("tile:")) || k < 0) {
-        if (error) *error = QStringLiteral("Drop a sprite pattern onto a sprite.");
+        if (error) *error = tr("Drop a sprite pattern onto a sprite.");
         return false;
     }
     selectPiece(piece);
@@ -512,7 +513,7 @@ bool DoraemonAnimationModel::setField(const QString& key, const QVariant& value,
         }
     }
     if (!found) return false;
-    const QString text = QStringLiteral("Edit a sprite of %1").arg(title());
+    const QString text = tr("Edit a sprite of %1").arg(title());
     if (animation().world == World::Two) {
         const QJsonObject r = session_->resource(metaspriteId(World::Two));
         int descriptor = r.value(QStringLiteral("descriptors")).toArray().at(index()).toInt();
@@ -533,7 +534,7 @@ bool DoraemonAnimationModel::setField(const QString& key, const QVariant& value,
     int flipMode = -1;
     if (recordOf(index(), &flipMode) < 0) return false;
     if (flipMode > 0) {
-        if (error) *error = QStringLiteral("This frame mirrors another; edit that frame.");
+        if (error) *error = tr("This frame mirrors another; edit that frame.");
         return false;
     }
     int x = p.x;
@@ -558,7 +559,7 @@ sdk::Library DoraemonAnimationModel::sheet() const {
     sdk::Library result;
     result.grid = true;
     result.columns = 16;
-    result.hint = QStringLiteral("drag a pattern onto a sprite");
+    result.hint = tr("drag a pattern onto a sprite");
     const QVector<QVector<int>> palettes = spritePalettes();
     int palette = animation().world == World::Two ? 0 : palette_;
     for (const Placed& p : placed()) {
@@ -587,35 +588,35 @@ sdk::Inspection DoraemonAnimationModel::inspect() const {
     int flip = -1;
     const int record = two ? index() : recordOf(index(), &flip);
     if (selected_ < 0) {
-        inspection.kicker = QStringLiteral("Animation");
+        inspection.kicker = tr("Animation");
         inspection.title = title();
         sdk::Field frame;
         frame.key = QStringLiteral("frame");
-        frame.label = QStringLiteral("Shown");
-        frame.value = two ? QStringLiteral("metasprite %1").arg(index())
-                          : flip > 0 ? QStringLiteral("index %1 · record %2 mirrored %3").arg(nes::hex(index())).arg(record).arg(QString::fromLatin1(kFlips[flip]).toLower())
-                                     : QStringLiteral("index %1 · record %2").arg(nes::hex(index())).arg(record);
+        frame.label = tr("Shown");
+        frame.value = two ? tr("metasprite %1").arg(index())
+                          : flip > 0 ? tr("index %1 · record %2 mirrored %3").arg(nes::hex(index())).arg(record).arg(QString::fromLatin1(kFlips[flip]).toLower())
+                                     : tr("index %1 · record %2").arg(nes::hex(index())).arg(record);
         inspection.fields = {frame};
-        inspection.note = two ? QStringLiteral("A World 2 metasprite is four sprites in a 2x2 square: four patterns, a "
-                                               "palette and per-sprite attributes shared by records with the same base. "
-                                               "Tile 0 leaves a sprite out. Chapter picks the chapter's sprite colours.")
-                              : QStringLiteral("Frames are records of 8x8 sprites at offsets from the actor's position; "
-                                               "select a sprite to change its pattern, place or flips, drag it, or drop a "
-                                               "pattern on it. Records are shared by every index that draws them; a "
-                                               "mirrored frame is edited through its source. The catalog keeps its size. "
-                                               "The game gives each actor its palette; Colours and Palette choose the one "
-                                               "shown.");
+        inspection.note = two ? tr("A World 2 metasprite is four sprites in a 2x2 square: four patterns, a "
+                                   "palette and per-sprite attributes shared by records with the same base. "
+                                   "Tile 0 leaves a sprite out. Chapter picks the chapter's sprite colours.")
+                              : tr("Frames are records of 8x8 sprites at offsets from the actor's position; "
+                                   "select a sprite to change its pattern, place or flips, drag it, or drop a "
+                                   "pattern on it. Records are shared by every index that draws them; a "
+                                   "mirrored frame is edited through its source. The catalog keeps its size. "
+                                   "The game gives each actor its palette; Colours and Palette choose the one "
+                                   "shown.");
         return inspection;
     }
     Placed p;
     for (const Placed& candidate : placed()) {
         if (candidate.piece == selected_) p = candidate;
     }
-    inspection.kicker = QStringLiteral("Sprite");
-    inspection.title = QStringLiteral("%1 · sprite %2").arg(frames().value(frame_).label).arg(selected_ + 1);
+    inspection.kicker = tr("Sprite");
+    inspection.title = tr("%1 · sprite %2").arg(frames().value(frame_).label).arg(selected_ + 1);
     sdk::Field tile;
     tile.key = QStringLiteral("tile");
-    tile.label = QStringLiteral("Pattern");
+    tile.label = tr("Pattern");
     tile.type = sdk::Field::Type::Integer;
     tile.value = p.tile;
     tile.minimum = 0;
@@ -624,30 +625,30 @@ sdk::Inspection DoraemonAnimationModel::inspect() const {
     tile.monospace = true;
     sdk::Field flips;
     flips.key = QStringLiteral("flip");
-    flips.label = QStringLiteral("Flip");
+    flips.label = tr("Flip");
     flips.type = sdk::Field::Type::Choice;
     for (const char* f : kFlips) flips.choices << QString::fromLatin1(f);
     flips.value = flips.choices.at((p.flipX ? 1 : 0) | (p.flipY ? 2 : 0));
     if (two) {
         sdk::Field palette;
         palette.key = QStringLiteral("palette");
-        palette.label = QStringLiteral("Palette");
+        palette.label = tr("Palette");
         palette.type = sdk::Field::Type::Choice;
-        for (int k = 0; k < 4; ++k) palette.choices << QStringLiteral("SPR %1").arg(k);
-        palette.value = QStringLiteral("SPR %1").arg(p.palette);
-        palette.hint = QStringLiteral("the whole metasprite");
+        for (int k = 0; k < 4; ++k) palette.choices << tr("SPR %1").arg(k);
+        palette.value = tr("SPR %1").arg(p.palette);
+        palette.hint = tr("the whole metasprite");
         const QJsonObject r = session_->resource(metaspriteId(World::Two));
         const int descriptor = r.value(QStringLiteral("descriptors")).toArray().at(index()).toInt();
         const int attribute = r.value(QStringLiteral("attributes")).toArray().at(((descriptor >> 2) & 0x0F) * 4 + p.piece).toInt();
         sdk::Field priority;
         priority.key = QStringLiteral("priority");
-        priority.label = QStringLiteral("Priority");
+        priority.label = tr("Priority");
         priority.type = sdk::Field::Type::Choice;
-        priority.choices = QStringList{QStringLiteral("In front"), QStringLiteral("Behind the background")};
+        priority.choices = QStringList{tr("In front"), QStringLiteral("Behind the background")};
         priority.value = priority.choices.at((attribute & 0x20) ? 1 : 0);
         inspection.fields = {tile, palette, flips, priority};
-        inspection.note = QStringLiteral("The flip and priority belong to attribute group %1, shared by every metasprite "
-                                         "with that base.").arg((descriptor >> 2) & 0x0F);
+        inspection.note = tr("The flip and priority belong to attribute group %1, shared by every metasprite "
+                             "with that base.").arg((descriptor >> 2) & 0x0F);
         return inspection;
     }
     sdk::Field x;
@@ -665,18 +666,18 @@ sdk::Inspection DoraemonAnimationModel::inspect() const {
         x.type = sdk::Field::Type::ReadOnly;
         y.type = sdk::Field::Type::ReadOnly;
         flips.type = sdk::Field::Type::ReadOnly;
-        inspection.note = QStringLiteral("This frame mirrors index %1; edit that frame.")
+        inspection.note = tr("This frame mirrors index %1; edit that frame.")
                               .arg(nes::hex(session_->resource(metaspriteId(animation().world)).value(QStringLiteral("entries")).toArray()
                                                 .at(index()).toObject().value(QStringLiteral("alias")).toInt()));
     } else {
-        inspection.note = QStringLiteral("Offsets are pixels from the actor's position (0-127).");
+        inspection.note = tr("Offsets are pixels from the actor's position (0-127).");
     }
     inspection.fields = {tile, x, y, flips};
     return inspection;
 }
 
 QString DoraemonAnimationModel::statusText() const {
-    return QStringLiteral("Animations · %1 · %2").arg(title(), frames().value(frame_).label);
+    return tr("Animations · %1 · %2").arg(title(), frames().value(frame_).label);
 }
 
 }  // namespace rl::doraemon

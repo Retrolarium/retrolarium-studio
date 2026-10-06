@@ -2,6 +2,7 @@
 
 #include "castle/plugin/castle_session.hpp"
 #include "nes/editors.hpp"
+#include "sdk/i18n.hpp"
 
 #include <QJsonArray>
 #include <QPainter>
@@ -33,9 +34,9 @@ const QStringList& ids() {
 }
 
 QString label(const QString& id) {
-    if (id == QLatin1String("completion")) return QStringLiteral("Ending");
-    if (id == QLatin1String("title")) return QStringLiteral("Title");
-    if (id == QLatin1String("castle-map")) return QStringLiteral("Castle map");
+    if (id == QLatin1String("completion")) return rlTr("castle", "Ending");
+    if (id == QLatin1String("title")) return rlTr("castle", "Title");
+    if (id == QLatin1String("castle-map")) return rlTr("castle", "Castle map");
     return id;
 }
 
@@ -97,7 +98,7 @@ QJsonArray withPalette(QJsonArray attributes, int cell, int palette) {
 
 QImage tile(const CastleSession* session, const QJsonObject& screen, int tile, int palette) {
     const nes::Bundle& bundle = session->bundle();
-    const QString chr = QStringLiteral("chr-bank-%1").arg(screen.value(QStringLiteral("chr_bank")).toInt());
+    const QString chr = rlTr("castle", "chr-bank-%1").arg(screen.value(QStringLiteral("chr_bank")).toInt());
     const QString id = screen.value(QStringLiteral("id")).toString();
     const QVector<int> colours = bundle.tableValues(QStringLiteral("screen-palettes")).mid(paletteFirst(id), 16);
     const QString model = bundle.paletteModel(QStringLiteral("screen-palettes"));
@@ -143,7 +144,7 @@ QString CastleScreenModel::title() const {
 }
 
 QVector<sdk::MapLayer> CastleScreenModel::layers() const {
-    return {{QStringLiteral("tiles"), QStringLiteral("Tiles")}, {QStringLiteral("palettes"), QStringLiteral("Palettes")}};
+    return {{QStringLiteral("tiles"), tr("Tiles")}, {QStringLiteral("palettes"), tr("Palettes")}};
 }
 
 void CastleScreenModel::setCurrentLayer(const QString& id) {
@@ -156,12 +157,12 @@ void CastleScreenModel::setCurrentLayer(const QString& id) {
 }
 
 QVector<sdk::Tool> CastleScreenModel::tools() const {
-    return {{QStringLiteral("select"), QStringLiteral("Select a cell"), QStringLiteral("select")},
+    return {{QStringLiteral("select"), tr("Select a cell"), QStringLiteral("select")},
             {QStringLiteral("paint"),
-             layer_ == QLatin1String("tiles") ? QStringLiteral("Paint the sheet's tile (right button takes one)")
-                                              : QStringLiteral("Paint a palette onto 16x16 blocks"),
+             layer_ == QLatin1String("tiles") ? tr("Paint the sheet's tile (right button takes one)")
+                                              : tr("Paint a palette onto 16x16 blocks"),
              QStringLiteral("paint")},
-            {QStringLiteral("pick"), QStringLiteral("Take a cell's tile or palette as the brush"), QStringLiteral("pick")}};
+            {QStringLiteral("pick"), tr("Take a cell's tile or palette as the brush"), QStringLiteral("pick")}};
 }
 
 QImage CastleScreenModel::render() const {
@@ -173,10 +174,10 @@ QVector<sdk::CellBrush> CastleScreenModel::brushes() const {
         static const QColor kColors[4] = {QColor(255, 196, 0, 70), QColor(0, 200, 255, 70), QColor(255, 64, 160, 70),
                                           QColor(120, 255, 90, 70)};
         QVector<sdk::CellBrush> result;
-        for (int p = 0; p < 4; ++p) result << sdk::CellBrush{p, QStringLiteral("BG %1").arg(p), kColors[p]};
+        for (int p = 0; p < 4; ++p) result << sdk::CellBrush{p, tr("BG %1").arg(p), kColors[p]};
         return result;
     }
-    return {{kBlank, QStringLiteral("Blank"), QColor()}, {tile_, QStringLiteral("Tile %1").arg(hex(tile_)), QColor()}};
+    return {{kBlank, tr("Blank"), QColor()}, {tile_, tr("Tile %1").arg(hex(tile_)), QColor()}};
 }
 
 int CastleScreenModel::currentBrush() const {
@@ -233,7 +234,7 @@ bool CastleScreenModel::placeObject(const QString& libraryItem, QPoint cell, QSt
     tiles.replace(cell.y() * kWidth + cell.x(), value);
     s.insert(QStringLiteral("tiles"), tiles);
     selectObject(QStringLiteral("cell:%1").arg(cell.y() * kWidth + cell.x()));
-    return commit(s, QStringLiteral("Set a tile in %1").arg(title()), error);
+    return commit(s, tr("Set a tile in %1").arg(title()), error);
 }
 
 void CastleScreenModel::beginStroke() {
@@ -270,7 +271,7 @@ void CastleScreenModel::endStroke() {
         return;
     }
     QString error;
-    commit(painted, QStringLiteral("Paint %1 in %2")
+    commit(painted, tr("Paint %1 in %2")
                         .arg(layer_ == QLatin1String("palettes") ? QStringLiteral("palettes") : QStringLiteral("tiles"),
                              title()),
            &error);
@@ -316,7 +317,7 @@ bool CastleScreenModel::setField(const QString& key, const QVariant& value, QStr
     } else {
         return TileMapModel::setField(key, value, error);
     }
-    return commit(s, QStringLiteral("Edit a cell of %1").arg(title()), error);
+    return commit(s, tr("Edit a cell of %1").arg(title()), error);
 }
 
 sdk::Library CastleScreenModel::sheet() const {
@@ -339,7 +340,7 @@ sdk::Library CastleScreenModel::sheet() const {
     }
     sdk::Library result;
     result.grid = true;
-    result.hint = QStringLiteral("click: brush · drag onto a cell");
+    result.hint = tr("click: brush · drag onto a cell");
     result.items = library_;
     return result;
 }
@@ -350,35 +351,35 @@ sdk::Inspection CastleScreenModel::inspect() const {
     sdk::Inspection inspection;
     inspection.engineTag = QStringLiteral("castle.screens@1");
     if (cell_ < 0) {
-        inspection.kicker = QStringLiteral("Screen");
+        inspection.kicker = tr("Screen");
         inspection.title = title();
         sdk::Field source;
         source.key = QStringLiteral("source");
-        source.label = QStringLiteral("Name table");
-        source.value = QStringLiteral("CHR bank 3 · page %1").arg(hex(s.value(QStringLiteral("page")).toInt()));
+        source.label = tr("Name table");
+        source.value = tr("CHR bank 3 · page %1").arg(hex(s.value(QStringLiteral("page")).toInt()));
         source.monospace = true;
         sdk::Field patterns;
         patterns.key = QStringLiteral("patterns");
-        patterns.label = QStringLiteral("Patterns");
-        patterns.value = QStringLiteral("chr-bank-%1 · table 1").arg(s.value(QStringLiteral("chr_bank")).toInt());
+        patterns.label = tr("Patterns");
+        patterns.value = tr("chr-bank-%1 · table 1").arg(s.value(QStringLiteral("chr_bank")).toInt());
         patterns.monospace = true;
         inspection.fields = {source, patterns};
-        inspection.note = QStringLiteral("The game copies this whole name table to the screen. Paint tiles from the "
-                                         "sheet, or switch to Palettes to colour 16x16 blocks; the colours are the "
-                                         "%1 screen palette.")
+        inspection.note = tr("The game copies this whole name table to the screen. Paint tiles from the "
+                             "sheet, or switch to Palettes to colour 16x16 blocks; the colours are the "
+                             "%1 screen palette.")
                               .arg(title().toLower());
-        if (id == QLatin1String("completion")) inspection.note += QStringLiteral(" Its lines of text are also in Text.");
+        if (id == QLatin1String("completion")) inspection.note += tr(" Its lines of text are also in Text.");
         if (id == QLatin1String("castle-map")) {
-            inspection.note += QStringLiteral(" The game draws the visited rooms over it while it shows.");
+            inspection.note += tr(" The game draws the visited rooms over it while it shows.");
         }
         return inspection;
     }
     const QJsonArray tiles = s.value(QStringLiteral("tiles")).toArray();
-    inspection.kicker = QStringLiteral("Name table cell");
+    inspection.kicker = tr("Name table cell");
     inspection.title = QStringLiteral("Cell %1, %2").arg(cell_ % kWidth).arg(cell_ / kWidth);
     sdk::Field tile;
     tile.key = QStringLiteral("tile");
-    tile.label = QStringLiteral("Tile");
+    tile.label = tr("Tile");
     tile.type = sdk::Field::Type::Integer;
     tile.value = tiles.at(cell_).toInt();
     tile.minimum = 0;
@@ -388,15 +389,15 @@ sdk::Inspection CastleScreenModel::inspect() const {
     tile.monospace = true;
     sdk::Field palette;
     palette.key = QStringLiteral("palette");
-    palette.label = QStringLiteral("Palette");
+    palette.label = tr("Palette");
     palette.type = sdk::Field::Type::Integer;
     palette.value = screens::paletteOf(s.value(QStringLiteral("attributes")).toArray(), cell_);
     palette.minimum = 0;
     palette.maximum = 3;
-    palette.hint = QStringLiteral("16x16 block");
+    palette.hint = tr("16x16 block");
     inspection.fields = {tile, palette};
-    inspection.note = QStringLiteral("Pick a tile in the sheet and paint, or type its number. Palettes are set per "
-                                     "16x16 block by the attribute table.");
+    inspection.note = tr("Pick a tile in the sheet and paint, or type its number. Palettes are set per "
+                         "16x16 block by the attribute table.");
     return inspection;
 }
 
@@ -404,13 +405,13 @@ sdk::Budget CastleScreenModel::budget() const {
     sdk::Budget budget;
     budget.used = 1024;
     budget.capacity = 1024;
-    budget.text = QStringLiteral("name table 960 tiles + 64 attribute bytes · fixed");
+    budget.text = tr("name table 960 tiles + 64 attribute bytes · fixed");
     return budget;
 }
 
 QString CastleScreenModel::statusText() const {
-    if (cell_ < 0) return QStringLiteral("%1 · 32x30 tiles").arg(title());
-    return QStringLiteral("%1 · cell %2, %3").arg(title()).arg(cell_ % kWidth).arg(cell_ / kWidth);
+    if (cell_ < 0) return tr("%1 · 32x30 tiles").arg(title());
+    return tr("%1 · cell %2, %3").arg(title()).arg(cell_ % kWidth).arg(cell_ / kWidth);
 }
 
 // ---------------------------------------------------------------- text
@@ -465,7 +466,7 @@ QString CastleScreenTextModel::text(const QJsonObject& document, int row) const 
 QVector<sdk::TableColumn> CastleScreenTextModel::columns() const {
     sdk::TableColumn where;
     where.key = QStringLiteral("where");
-    where.label = QStringLiteral("Where");
+    where.label = tr("Where");
     where.width = 160;
     where.muted = true;
     sdk::TableColumn text;
@@ -475,7 +476,7 @@ QVector<sdk::TableColumn> CastleScreenTextModel::columns() const {
     text.editable = true;
     sdk::TableColumn length;
     length.key = QStringLiteral("length");
-    length.label = QStringLiteral("Length");
+    length.label = tr("Length");
     length.width = 140;
     length.budget = true;
     return {where, text, length};
@@ -488,8 +489,8 @@ int CastleScreenTextModel::rowCount() const {
 QString CastleScreenTextModel::cell(int row, int column) const {
     if (row < 0 || row >= rowCount()) return {};
     if (column == 0) {
-        return row == lines_.size() ? QStringLiteral("GAME OVER message")
-                                    : QStringLiteral("Ending · row %1").arg(lines_.at(row).row);
+        return row == lines_.size() ? tr("GAME OVER message")
+                                    : tr("Ending · row %1").arg(lines_.at(row).row);
     }
     return text(session_->screensDocument(), row);
 }
@@ -522,14 +523,14 @@ bool CastleScreenTextModel::setCell(int row, int column, const QString& value, Q
     if (column != 1 || row < 0 || row >= rowCount()) return TableModel::setCell(row, column, value, error);
     const int width = maxLength(row, column);
     if (value.size() > width) {
-        if (error) *error = QStringLiteral("This line has room for %1 characters.").arg(width);
+        if (error) *error = tr("This line has room for %1 characters.").arg(width);
         return false;
     }
     QVector<int> codes;
     for (const QChar c : value) {
         const int code = screens::code(c);
         if (code < 0) {
-            if (error) *error = QStringLiteral("The font has A-Z, 0-9, space and , . / © ♥ ✦ (type * for ✦).");
+            if (error) *error = tr("The font has A-Z, 0-9, space and , . / © ♥ ✦ (type * for ✦).");
             return false;
         }
         codes << code;
@@ -550,7 +551,7 @@ bool CastleScreenTextModel::setCell(int row, int column, const QString& value, Q
         list.replace(0, screen);
         document.insert(QStringLiteral("screens"), list);
     }
-    return session_->editScreens(QStringLiteral("Edit %1").arg(cell(row, 0)), document, error);
+    return session_->editScreens(tr("Edit %1").arg(cell(row, 0)), document, error);
 }
 
 sdk::Inspection CastleScreenTextModel::inspect() const {
@@ -559,11 +560,11 @@ sdk::Inspection CastleScreenTextModel::inspect() const {
     inspection.kicker = QStringLiteral("Text");
     inspection.title = cell(row_, 0);
     inspection.note = row_ == lines_.size()
-                          ? QStringLiteral("The message the game writes over the room when the last life is lost. It "
-                                           "keeps its nine places; shorter text is padded with blanks.")
-                          : QStringLiteral("A line of the ending's credits, kept to its place on the name table; it may "
-                                           "run over the blanks after it. The kana and the pictures around it are "
-                                           "tiles: edit them in Screens.");
+                          ? tr("The message the game writes over the room when the last life is lost. It "
+                               "keeps its nine places; shorter text is padded with blanks.")
+                          : tr("A line of the ending's credits, kept to its place on the name table; it may "
+                               "run over the blanks after it. The kana and the pictures around it are "
+                               "tiles: edit them in Screens.");
     return inspection;
 }
 

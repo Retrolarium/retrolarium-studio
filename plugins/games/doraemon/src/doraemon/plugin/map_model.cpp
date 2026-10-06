@@ -3,6 +3,7 @@
 #include "doraemon/plugin/animation_model.hpp"
 #include "doraemon/plugin/doraemon_session.hpp"
 #include "nes/editors.hpp"
+#include "sdk/i18n.hpp"
 
 #include <QJsonArray>
 #include <QJsonObject>
@@ -46,11 +47,11 @@ int DoraemonMapModel::presetAt(int cell) const {
 
 QVector<sdk::Tool> DoraemonMapModel::tools() const {
     if (objectLayer()) {
-        return {{QStringLiteral("select"), QStringLiteral("Select and move objects"), QStringLiteral("select")}};
+        return {{QStringLiteral("select"), tr("Select and move objects"), QStringLiteral("select")}};
     }
-    return {{QStringLiteral("select"), QStringLiteral("Select a block"), QStringLiteral("select")},
-            {QStringLiteral("paint"), QStringLiteral("Paint the sheet's big block (right button takes one)"), QStringLiteral("paint")},
-            {QStringLiteral("pick"), QStringLiteral("Take a cell's big block as the brush"), QStringLiteral("pick")}};
+    return {{QStringLiteral("select"), tr("Select a block"), QStringLiteral("select")},
+            {QStringLiteral("paint"), tr("Paint the sheet's big block (right button takes one)"), QStringLiteral("paint")},
+            {QStringLiteral("pick"), tr("Take a cell's big block as the brush"), QStringLiteral("pick")}};
 }
 
 QImage DoraemonMapModel::render() const {
@@ -100,7 +101,7 @@ QImage DoraemonMapModel::render() const {
 }
 
 QVector<sdk::CellBrush> DoraemonMapModel::brushes() const {
-    return {{block_, QStringLiteral("Big block %1").arg(nes::hex(block_)), QColor()}};
+    return {{block_, tr("Big block %1").arg(nes::hex(block_)), QColor()}};
 }
 
 void DoraemonMapModel::setCurrentBrush(int value) {
@@ -165,7 +166,7 @@ bool DoraemonMapModel::placeObject(const QString& libraryItem, QPoint cell, QStr
     QVector<int> next = cells();
     next[cell.y() * width_ + cell.x()] = block_;
     selectObject(QStringLiteral("cell:%1").arg(cell.y() * width_ + cell.x()));
-    return commit(next, QStringLiteral("Set a big block of %1").arg(label_), error);
+    return commit(next, tr("Set a big block of %1").arg(label_), error);
 }
 
 void DoraemonMapModel::beginStroke() {
@@ -186,7 +187,7 @@ void DoraemonMapModel::endStroke() {
     const QVector<int> next = cells();
     stroke_.clear();
     QString error;
-    if (!commit(next, QStringLiteral("Paint %1").arg(label_), &error)) {
+    if (!commit(next, tr("Paint %1").arg(label_), &error)) {
         session_->report(sdk::Severity::Error, QStringLiteral("levels"), error);
     }
     emit contentChanged();
@@ -226,7 +227,7 @@ QVector<sdk::MapObject> DoraemonMapModel::objects() const {
                 o.label = channel.value(QStringLiteral("count")).toInt()
                               ? QStringLiteral("%1 ×%2").arg(objectName(channel.value(QStringLiteral("type")).toInt()))
                                     .arg(channel.value(QStringLiteral("count")).toInt())
-                              : QStringLiteral("Room %1 · channel %2 (off)").arg(slot / 4).arg(slot % 4);
+                              : tr("Room %1 · channel %2 (off)").arg(slot / 4).arg(slot % 4);
                 o.cells = QRect(pixels.left() / 8, pixels.top() / 8, std::max(1, (pixels.width() + 7) / 8),
                                 std::max(1, (pixels.height() + 7) / 8));
                 o.movable = false;
@@ -240,7 +241,7 @@ QVector<sdk::MapObject> DoraemonMapModel::objects() const {
         for (int room = 0; room < (width_ / kRoomCells) * (height_ / kRoomCells); ++room) {
             sdk::MapObject o;
             o.id = QStringLiteral("room:%1").arg(room);
-            o.label = QStringLiteral("Room %1 · colours %2").arg(room).arg(presetAt((room / 8) * kRoomCells * width_ + (room % 8) * kRoomCells));
+            o.label = tr("Room %1 · colours %2").arg(room).arg(presetAt((room / 8) * kRoomCells * width_ + (room % 8) * kRoomCells));
             o.cells = QRect((room % 8) * kRoomCells, (room / 8) * kRoomCells, kRoomCells, kRoomCells);
             o.movable = false;
             o.outlined = false;
@@ -303,13 +304,13 @@ bool DoraemonMapModel::setField(const QString& key, const QVariant& value, QStri
     if (key == QLatin1String("block")) {
         QVector<int> next = cells();
         next[cell_] = std::clamp(value.toInt(), 0, 255);
-        return commit(next, QStringLiteral("Set a big block of %1").arg(label_), error);
+        return commit(next, tr("Set a big block of %1").arg(label_), error);
     }
     if (key == QLatin1String("colours") && world_ == World::Three) {
         const int room = ((cell_ / width_) / kRoomCells) * 8 + (cell_ % width_) / kRoomCells;
         const int preset = value.toString().section(QLatin1Char(' '), 1).toInt();
         return session_->editBundle(
-            QStringLiteral("Colour room %1").arg(room),
+            tr("Colour room %1").arg(room),
             [room, preset](nes::Bundle& b) {
                 QJsonObject r = b.resource(ids::kRoomSelectors);
                 QJsonArray selectors = r.value(QStringLiteral("selectors")).toArray();
@@ -327,7 +328,7 @@ sdk::Library DoraemonMapModel::sheet() const {
     if (objectLayer()) return result;
     result.grid = true;
     result.columns = 16;
-    result.hint = QStringLiteral("click: brush · drag onto the map");
+    result.hint = tr("click: brush · drag onto the map");
     // In the colours of the selected cell's area.
     const int preset = presetAt(std::max(cell_, 0));
     for (int block = 0; block < 256; ++block) {
@@ -342,7 +343,7 @@ sdk::Library DoraemonMapModel::sheet() const {
 
 sdk::Budget DoraemonMapModel::budget() const {
     sdk::Budget budget;
-    budget.text = QStringLiteral("%1 × %2 big blocks · %3 × %4 px").arg(width_).arg(height_).arg(width_ * 32).arg(height_ * 32);
+    budget.text = tr("%1 × %2 big blocks · %3 × %4 px").arg(width_).arg(height_).arg(width_ * 32).arg(height_ * 32);
     return budget;
 }
 
@@ -354,21 +355,21 @@ sdk::Inspection DoraemonMapModel::inspect() const {
         inspection.kicker = worldLabel(world_);
         inspection.title = label_;
         inspection.note = world_ == World::Three
-                              ? QStringLiteral("The underwater map: 8x8 rooms of 256x256 pixels, each in the colour "
-                                               "preset its room selector names. Paint 32x32 big blocks from the sheet; "
-                                               "select a cell to change its room's colours. Big and small blocks are "
-                                               "edited in Metatiles.")
-                              : QStringLiteral("A World 1 map of 32x32 big blocks, drawn in the colours the game gives "
-                                               "each area. Paint big blocks from the sheet; edit the blocks themselves "
-                                               "in Metatiles.");
+                              ? tr("The underwater map: 8x8 rooms of 256x256 pixels, each in the colour "
+                                   "preset its room selector names. Paint 32x32 big blocks from the sheet; "
+                                   "select a cell to change its room's colours. Big and small blocks are "
+                                   "edited in Metatiles.")
+                              : tr("A World 1 map of 32x32 big blocks, drawn in the colours the game gives "
+                                   "each area. Paint big blocks from the sheet; edit the blocks themselves "
+                                   "in Metatiles.");
         return inspection;
     }
     const int block = cells().value(cell_);
-    inspection.kicker = QStringLiteral("Map cell");
-    inspection.title = QStringLiteral("%1 · column %2, row %3").arg(label_).arg(cell_ % width_).arg(cell_ / width_);
+    inspection.kicker = tr("Map cell");
+    inspection.title = tr("%1 · column %2, row %3").arg(label_).arg(cell_ % width_).arg(cell_ / width_);
     sdk::Field field;
     field.key = QStringLiteral("block");
-    field.label = QStringLiteral("Big block");
+    field.label = tr("Big block");
     field.type = sdk::Field::Type::Integer;
     field.value = block;
     field.minimum = 0;
@@ -377,23 +378,23 @@ sdk::Inspection DoraemonMapModel::inspect() const {
     field.monospace = true;
     sdk::Field colours;
     colours.key = QStringLiteral("colours");
-    colours.label = world_ == World::Three ? QStringLiteral("Room colours") : QStringLiteral("Area colours");
-    colours.value = QStringLiteral("Preset %1").arg(presetAt(cell_));
+    colours.label = world_ == World::Three ? tr("Room colours") : tr("Area colours");
+    colours.value = tr("Preset %1").arg(presetAt(cell_));
     if (world_ == World::Three) {
         colours.type = sdk::Field::Type::Choice;
         const int presets = paletteIds(session_->bundle(), world_).size();
         for (int p = 0; p < presets; ++p) {
-            colours.choices << QStringLiteral("Preset %1").arg(p);
+            colours.choices << tr("Preset %1").arg(p);
             colours.choiceIcons << session_->painter().bigBlock(world_, block, p);
         }
         const int room = ((cell_ / width_) / kRoomCells) * 8 + (cell_ % width_) / kRoomCells;
-        colours.hint = QStringLiteral("room %1").arg(room);
+        colours.hint = tr("room %1").arg(room);
     }
     inspection.fields = {field, colours};
     inspection.note = world_ == World::Three
-                          ? QStringLiteral("Every block of a room shares the room's colour preset.")
-                          : QStringLiteral("The game picks the area's colours: the city's cross-marked north and each "
-                                           "underground room have their own preset.");
+                          ? tr("Every block of a room shares the room's colour preset.")
+                          : tr("The game picks the area's colours: the city's cross-marked north and each "
+                               "underground room have their own preset.");
     return inspection;
 }
 
@@ -415,12 +416,12 @@ const char* const kDescriptorNames[13] = {"Manhole",          "Warp Door", "Stop
                                           "Invulnerability"};
 
 QString enemyName(int metasprite) {
-    static const QHash<int, QString> kNames{{0x3E, QStringLiteral("W1Enemy3E")}, {0x4C, QStringLiteral("W1Enemy4C")},
-                                            {0x54, QStringLiteral("Nezumi")},   {0x56, QStringLiteral("W1Enemy56")},
-                                            {0x58, QStringLiteral("W1Enemy58")},    {0x5C, QStringLiteral("W1Enemy5C")},
-                                            {0x60, QStringLiteral("W1Enemy60")},   {0x64, QStringLiteral("W1Enemy64")},
-                                            {0x6C, QStringLiteral("W1Enemy6C")}, {0x70, QStringLiteral("W1Enemy70")}};
-    return kNames.value(metasprite, QStringLiteral("Enemy"));
+    static const QHash<int, QString> kNames{{0x3E, rlTr("doraemon", "W1Enemy3E")}, {0x4C, rlTr("doraemon", "W1Enemy4C")},
+                                            {0x54, rlTr("doraemon", "Nezumi")},   {0x56, rlTr("doraemon", "W1Enemy56")},
+                                            {0x58, rlTr("doraemon", "W1Enemy58")},    {0x5C, rlTr("doraemon", "W1Enemy5C")},
+                                            {0x60, rlTr("doraemon", "W1Enemy60")},   {0x64, rlTr("doraemon", "W1Enemy64")},
+                                            {0x6C, rlTr("doraemon", "W1Enemy6C")}, {0x70, rlTr("doraemon", "W1Enemy70")}};
+    return kNames.value(metasprite, rlTr("doraemon", "Enemy"));
 }
 
 }  // namespace
@@ -460,7 +461,7 @@ QString DoraemonMapModel::objectName(int type) const {
     }
     if (isDescriptor(type)) {
         const int index = type & 0x0f;
-        return index < 13 ? QString::fromLatin1(kDescriptorNames[index]) : QStringLiteral("Object");
+        return index < 13 ? QString::fromLatin1(kDescriptorNames[index]) : tr("Object");
     }
     const QJsonArray metasprites = session_->resource(QStringLiteral("world1-enemy-properties"))
                                        .value(QStringLiteral("metasprites")).toArray();
@@ -533,7 +534,7 @@ QImage DoraemonMapModel::objectImage(const QJsonObject& record, QPoint* topLeft)
 
 QVector<sdk::MapLayer> DoraemonMapModel::layers() const {
     if (world_ != World::One && world_ != World::Three) return {};
-    return {{QStringLiteral("blocks"), QStringLiteral("Blocks")}, {QStringLiteral("objects"), QStringLiteral("Objects")}};
+    return {{QStringLiteral("blocks"), tr("Blocks")}, {QStringLiteral("objects"), tr("Objects")}};
 }
 
 void DoraemonMapModel::setCurrentLayer(const QString& id) {
@@ -607,7 +608,7 @@ void DoraemonMapModel::endDrag() {
     dragged_.reset();
     if (next == records()) return;
     QString error;
-    if (!commitRecords(next, QStringLiteral("Move %1").arg(objectName(next.at(std::max(object_, 0)).toObject().value(QStringLiteral("type")).toInt())), &error)) {
+    if (!commitRecords(next, tr("Move %1").arg(objectName(next.at(std::max(object_, 0)).toObject().value(QStringLiteral("type")).toInt())), &error)) {
         session_->report(sdk::Severity::Error, QStringLiteral("levels"), error);
     }
     emit contentChanged();
@@ -621,28 +622,28 @@ sdk::Inspection DoraemonMapModel::inspectObject() const {
     if (world_ == World::Three) {
         inspection.engineTag = QStringLiteral("doraemon.world3-registry.v1");
         if (object_ < 0 || object_ >= list.size()) {
-            inspection.kicker = QStringLiteral("Objects");
+            inspection.kicker = tr("Objects");
             inspection.title = label_;
-            inspection.note = QStringLiteral("World 3's thirteen persistent objects: chests, the talisman, the Pass "
-                                             "Hoop, the key, the Item Bag and Girl. Drag one to move it, across "
-                                             "rooms too. Creatures come from each room's spawn schedule: its four "
-                                             "channels sit in the room's top-left corner with their counts; pick one "
-                                             "to change it.");
+            inspection.note = tr("World 3's thirteen persistent objects: chests, the talisman, the Pass "
+                                 "Hoop, the key, the Item Bag and Girl. Drag one to move it, across "
+                                 "rooms too. Creatures come from each room's spawn schedule: its four "
+                                 "channels sit in the room's top-left corner with their counts; pick one "
+                                 "to change it.");
             return inspection;
         }
         const QJsonObject record = list.at(object_).toObject();
         const int type = record.value(QStringLiteral("type")).toInt();
-        inspection.kicker = QStringLiteral("Persistent object");
+        inspection.kicker = tr("Persistent object");
         inspection.title = QStringLiteral("%1 · %2").arg(objectName(type)).arg(object_);
         sdk::Field kind;
         kind.key = QStringLiteral("type");
-        kind.label = QStringLiteral("Type");
+        kind.label = tr("Type");
         kind.type = sdk::Field::Type::Choice;
         kind.choices = typeChoices();
         kind.value = QStringLiteral("%1 · %2").arg(nes::hex(type), objectName(type));
         sdk::Field room;
         room.key = QStringLiteral("room");
-        room.label = QStringLiteral("Room");
+        room.label = tr("Room");
         room.type = sdk::Field::Type::Integer;
         room.value = record.value(QStringLiteral("room")).toInt();
         room.minimum = 0;
@@ -654,36 +655,36 @@ sdk::Inspection DoraemonMapModel::inspectObject() const {
         x.value = record.value(QStringLiteral("x")).toInt();
         x.minimum = 0;
         x.maximum = 255;
-        x.hint = QStringLiteral("px in the room");
+        x.hint = tr("px in the room");
         sdk::Field y = x;
         y.key = QStringLiteral("y");
         y.label = QStringLiteral("Y");
         y.value = record.value(QStringLiteral("y")).toInt();
         inspection.fields = {kind, room, x, y};
-        inspection.note = object_ < 4 ? QStringLiteral("The game shuffles the types of objects 0-3 at the start, so this "
-                                                       "place gets one of the four.")
-                        : object_ < 12 ? QStringLiteral("The game shuffles the types of objects 4-11 at the start.")
-                                       : QStringLiteral("This object keeps its type.");
-        inspection.engine = {{QStringLiteral("Record"), QString::number(object_)},
-                             {QStringLiteral("State"), QString::number(record.value(QStringLiteral("state")).toInt())}};
+        inspection.note = object_ < 4 ? tr("The game shuffles the types of objects 0-3 at the start, so this "
+                                           "place gets one of the four.")
+                        : object_ < 12 ? tr("The game shuffles the types of objects 4-11 at the start.")
+                                       : tr("This object keeps its type.");
+        inspection.engine = {{tr("Record"), QString::number(object_)},
+                             {tr("State"), QString::number(record.value(QStringLiteral("state")).toInt())}};
         return inspection;
     }
     if (object_ < 0 || object_ >= list.size()) {
-        inspection.kicker = QStringLiteral("Objects");
+        inspection.kicker = tr("Objects");
         inspection.title = label_;
-        inspection.note = QStringLiteral("Select an object to change its type or drag it on the map; positions snap to the "
-                                         "game's 8x8 cells. Translucent objects are hidden until Doraemon shoots them. The "
-                                         "list keeps its count: an object's place in it is the bit that remembers it was "
-                                         "collected.");
+        inspection.note = tr("Select an object to change its type or drag it on the map; positions snap to the "
+                             "game's 8x8 cells. Translucent objects are hidden until Doraemon shoots them. The "
+                             "list keeps its count: an object's place in it is the bit that remembers it was "
+                             "collected.");
         return inspection;
     }
     const QJsonObject record = list.at(object_).toObject();
     const int type = record.value(QStringLiteral("type")).toInt();
-    inspection.kicker = isDescriptor(type) ? QStringLiteral("Object") : QStringLiteral("Enemy");
+    inspection.kicker = isDescriptor(type) ? tr("Object") : tr("Enemy");
     inspection.title = QStringLiteral("%1 · %2").arg(objectName(type)).arg(object_);
     sdk::Field kind;
     kind.key = QStringLiteral("type");
-    kind.label = QStringLiteral("Type");
+    kind.label = tr("Type");
     kind.type = sdk::Field::Type::Choice;
     kind.choices = typeChoices();
     kind.value = QStringLiteral("%1 · %2").arg(nes::hex(type & 0xBF), objectName(type));
@@ -694,7 +695,7 @@ sdk::Inspection DoraemonMapModel::inspectObject() const {
     x.value = record.value(QStringLiteral("x")).toInt();
     x.minimum = 1;
     x.maximum = 255;
-    x.hint = QStringLiteral("8 px cells");
+    x.hint = tr("8 px cells");
     sdk::Field y = x;
     y.key = QStringLiteral("y");
     y.label = QStringLiteral("Y");
@@ -704,19 +705,19 @@ sdk::Inspection DoraemonMapModel::inspectObject() const {
     if (isDescriptor(type)) {
         sdk::Field hidden;
         hidden.key = QStringLiteral("hidden");
-        hidden.label = QStringLiteral("Hidden until shot");
+        hidden.label = tr("Hidden until shot");
         hidden.type = sdk::Field::Type::Choice;
-        hidden.choices = QStringList{QStringLiteral("No"), QStringLiteral("Yes")};
-        hidden.value = (type & 0x40) ? QStringLiteral("Yes") : QStringLiteral("No");
+        hidden.choices = QStringList{tr("No"), QStringLiteral("Yes")};
+        hidden.value = (type & 0x40) ? QStringLiteral("Yes") : tr("No");
         inspection.fields << hidden;
     }
     inspection.note = map_ == QLatin1String("city") && object_ >= kAlwaysScanned
-                          ? QStringLiteral("The game scans the city's objects after the first %1 in order of X, so this "
-                                           "one stays between its neighbours' columns.").arg(kAlwaysScanned)
-                          : QStringLiteral("Enemies take their sprite, colours and health from the enemy table; objects "
-                                           "from their descriptor.");
-    inspection.engine = {{QStringLiteral("Record"), QString::number(object_)},
-                         {QStringLiteral("Type byte"), nes::hex(type)}};
+                          ? tr("The game scans the city's objects after the first %1 in order of X, so this "
+                               "one stays between its neighbours' columns.").arg(kAlwaysScanned)
+                          : tr("Enemies take their sprite, colours and health from the enemy table; objects "
+                               "from their descriptor.");
+    inspection.engine = {{tr("Record"), QString::number(object_)},
+                         {tr("Type byte"), nes::hex(type)}};
     return inspection;
 }
 
@@ -755,35 +756,35 @@ sdk::Inspection DoraemonMapModel::inspectSchedule() const {
     inspection.engineTag = QStringLiteral("doraemon.world3-schedule.v1");
     const QJsonObject channel = scheduleChannel(scheduled_);
     const int type = channel.value(QStringLiteral("type")).toInt();
-    inspection.kicker = QStringLiteral("Spawn schedule");
-    inspection.title = QStringLiteral("Room %1 · channel %2").arg(scheduled_ / 4).arg(scheduled_ % 4);
+    inspection.kicker = tr("Spawn schedule");
+    inspection.title = tr("Room %1 · channel %2").arg(scheduled_ / 4).arg(scheduled_ % 4);
     sdk::Field kind;
     kind.key = QStringLiteral("type");
-    kind.label = QStringLiteral("Type");
+    kind.label = tr("Type");
     kind.type = sdk::Field::Type::Choice;
     for (int t = 0; t < 16; ++t) kind.choices << QStringLiteral("%1 · %2").arg(nes::hex(t), objectName(t));
     kind.value = QStringLiteral("%1 · %2").arg(nes::hex(type), objectName(type));
     sdk::Field count;
     count.key = QStringLiteral("count");
-    count.label = QStringLiteral("Count");
+    count.label = tr("Count");
     count.type = sdk::Field::Type::Integer;
     count.minimum = 0;
     count.maximum = 255;
     count.value = channel.value(QStringLiteral("count")).toInt();
-    count.hint = QStringLiteral("0: off");
+    count.hint = tr("0: off");
     sdk::Field delay;
     delay.key = QStringLiteral("delay");
-    delay.label = QStringLiteral("Delay");
+    delay.label = tr("Delay");
     delay.type = sdk::Field::Type::Integer;
     delay.minimum = 0;
     delay.maximum = 255;
     delay.value = channel.value(QStringLiteral("delay")).toInt();
-    delay.hint = QStringLiteral("x4 frames");
+    delay.hint = tr("x4 frames");
     inspection.fields = {kind, count, delay};
-    inspection.note = QStringLiteral("Creatures this room keeps spawning: when the delay runs out (it counts once "
-                                     "every four frames; 0 retries every frame) a free slot gets one more, until the "
-                                     "count is spent. They enter from the screen edge, so the ROM holds no place for "
-                                     "them; the sprite only marks the channel.");
+    inspection.note = tr("Creatures this room keeps spawning: when the delay runs out (it counts once "
+                         "every four frames; 0 retries every frame) a free slot gets one more, until the "
+                         "count is spent. They enter from the screen edge, so the ROM holds no place for "
+                         "them; the sprite only marks the channel.");
     return inspection;
 }
 
@@ -800,7 +801,7 @@ bool DoraemonMapModel::setScheduleField(const QString& key, const QVariant& valu
     number = std::clamp(number, 0, 255);
     if (scheduleChannel(slot).value(key).toInt() == number) return false;
     return session_->editBundle(
-        QStringLiteral("Edit room %1's spawn channel %2").arg(slot / 4).arg(slot % 4),
+        tr("Edit room %1's spawn channel %2").arg(slot / 4).arg(slot % 4),
         [slot, key, number](nes::Bundle& b) {
             QJsonObject r = b.resource(QStringLiteral("world3-schedule"));
             QJsonArray rooms = r.value(QStringLiteral("rooms")).toArray();
@@ -837,7 +838,7 @@ bool DoraemonMapModel::setObjectField(const QString& key, const QVariant& value,
             return false;
         }
         list.replace(object_, record);
-        return commitRecords(list, QStringLiteral("Edit %1").arg(objectName(record.value(QStringLiteral("type")).toInt())), error);
+        return commitRecords(list, tr("Edit %1").arg(objectName(record.value(QStringLiteral("type")).toInt())), error);
     }
     if (key == QLatin1String("type")) {
         bool ok = false;
@@ -858,11 +859,11 @@ bool DoraemonMapModel::setObjectField(const QString& key, const QVariant& value,
         QVector<int> tail;
         for (int i = kAlwaysScanned; i < list.size(); ++i) tail << list.at(i).toObject().value(QStringLiteral("x")).toInt();
         if (!std::is_sorted(tail.begin(), tail.end())) {
-            if (error) *error = QStringLiteral("The city's objects after the first %1 stay ordered by X.").arg(kAlwaysScanned);
+            if (error) *error = tr("The city's objects after the first %1 stay ordered by X.").arg(kAlwaysScanned);
             return false;
         }
     }
-    return commitRecords(list, QStringLiteral("Edit %1").arg(objectName(record.value(QStringLiteral("type")).toInt())), error);
+    return commitRecords(list, tr("Edit %1").arg(objectName(record.value(QStringLiteral("type")).toInt())), error);
 }
 
 QString DoraemonMapModel::statusText() const {

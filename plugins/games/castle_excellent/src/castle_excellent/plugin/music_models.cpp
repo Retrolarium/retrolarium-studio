@@ -163,7 +163,7 @@ void CastleMusicModel::endEdit() {
     const QJsonObject next = draft_;
     if (next != session_->music()) {
         QString error;
-        if (!session_->editMusic(QStringLiteral("Edit a note of %1").arg(title()), next, &error)) {
+        if (!session_->editMusic(tr("Edit a note of %1").arg(title()), next, &error)) {
             report(session_, error);
         }
     }
@@ -190,7 +190,7 @@ bool CastleMusicModel::setField(const QString& key, const QVariant& value, QStri
     }
     sets.replace(track_, set);
     next.insert(QStringLiteral("track_sets"), sets);
-    return session_->editMusic(QStringLiteral("Edit %1").arg(title()), next, error);
+    return session_->editMusic(tr("Edit %1").arg(title()), next, error);
 }
 
 void CastleMusicModel::preview() {
@@ -203,7 +203,7 @@ void CastleMusicModel::preview() {
     QSaveFile file(document);
     if (!file.open(QIODevice::WriteOnly) ||
         file.write(QJsonDocument(session_->music()).toJson(QJsonDocument::Compact)) < 0 || !file.commit()) {
-        report(session_, QStringLiteral("Cannot write %1.").arg(document));
+        report(session_, tr("Cannot write %1.").arg(document));
         return;
     }
     QStringList arguments{QStringLiteral("audio"), QStringLiteral("render-castle-wav"), document,
@@ -216,13 +216,13 @@ void CastleMusicModel::preview() {
         report(session_, error);
         return;
     }
-    spec.label = QStringLiteral("Render %1").arg(title());
+    spec.label = tr("Render %1").arg(title());
     const QString label = title();
     CastleSession* session = session_;
     host->runProcess(spec, [host, session, wav, label](const sdk::ProcessResult& result) {
         if (!result.succeeded() || !QFileInfo(wav).isFile()) {
             if (!result.cancelled) {
-                report(session, QStringLiteral("Rendering %1 failed: %2")
+                report(session, tr("Rendering %1 failed: %2")
                                     .arg(label, QString::fromUtf8(result.standardError).trimmed().section(QLatin1Char('\n'), -1)));
             }
             return;
@@ -249,12 +249,12 @@ sdk::Budget CastleMusicModel::budget() const {
     sdk::Budget budget;
     budget.used = CastleMusic::usedBytes(m);
     budget.capacity = m.value(QStringLiteral("capacity_bytes")).toInt();
-    budget.text = QStringLiteral("MML %1 / %2 bytes").arg(budget.used).arg(budget.capacity);
+    budget.text = tr("MML %1 / %2 bytes").arg(budget.used).arg(budget.capacity);
     return budget;
 }
 
 QString CastleMusicModel::statusText() const {
-    return QStringLiteral("Music · %1").arg(title());
+    return tr("Music · %1").arg(title());
 }
 
 sdk::Inspection CastleMusicModel::inspect() const {
@@ -265,35 +265,35 @@ sdk::Inspection CastleMusicModel::inspect() const {
     if (!selected_.isEmpty() && find(selected_, &channel, &index)) {
         const CastleMusicNote note = traced().at(channel).at(index);
         const QString text = streamText(music(), note.stream);
-        inspection.kicker = QStringLiteral("%1 note").arg(QString::fromLatin1(kChannelLabels[channel]));
-        inspection.title = note.pitch < 0 ? QStringLiteral("Rest") : pitchName(note.pitch);
+        inspection.kicker = tr("%1 note").arg(QString::fromLatin1(kChannelLabels[channel]));
+        inspection.title = note.pitch < 0 ? tr("Rest") : pitchName(note.pitch);
         sdk::Field at;
         at.key = QStringLiteral("at");
-        at.label = QStringLiteral("Starts");
-        at.value = QStringLiteral("frame %1 · %2 s").arg(note.start).arg(note.start / 60.0, 0, 'f', 2);
+        at.label = tr("Starts");
+        at.value = tr("frame %1 · %2 s").arg(note.start).arg(note.start / 60.0, 0, 'f', 2);
         at.monospace = true;
         sdk::Field length;
         length.key = QStringLiteral("length");
-        length.label = QStringLiteral("Length");
-        length.value = QStringLiteral("%1 frames").arg(note.length);
+        length.label = tr("Length");
+        length.value = tr("%1 frames").arg(note.length);
         length.monospace = true;
         sdk::Field mml;
         mml.key = QStringLiteral("mml");
         mml.label = QStringLiteral("MML");
-        mml.value = QStringLiteral("%1 · \"%2\" at %3")
+        mml.value = tr("%1 · \"%2\" at %3")
                         .arg(streamId(music(), note.stream), text.mid(note.position, note.span))
                         .arg(note.position);
         mml.monospace = true;
         inspection.fields = {at, length, mml};
-        inspection.note = QStringLiteral("Drag the note up or down to change its pitch: the letter changes in the "
-                                         "stream's MML, wrapped in octave commands when it leaves its octave (four "
-                                         "more bytes of the shared arena). Every track set and repeat that plays "
-                                         "this stream changes with it. Lengths and new notes are edited as text "
-                                         "in MML streams.");
+        inspection.note = tr("Drag the note up or down to change its pitch: the letter changes in the "
+                             "stream's MML, wrapped in octave commands when it leaves its octave (four "
+                             "more bytes of the shared arena). Every track set and repeat that plays "
+                             "this stream changes with it. Lengths and new notes are edited as text "
+                             "in MML streams.");
         return inspection;
     }
     const QJsonObject set = trackSet();
-    inspection.kicker = QStringLiteral("Track set");
+    inspection.kicker = tr("Track set");
     inspection.title = title();
     QStringList choices{QStringLiteral("—")};
     for (const QJsonValue& v : session_->music().value(QStringLiteral("streams")).toArray()) {
@@ -314,18 +314,18 @@ sdk::Inspection CastleMusicModel::inspect() const {
         const int value = parameters.at(c).toInt();
         sdk::Field f;
         f.key = QStringLiteral("parameter%1").arg(c);
-        f.label = QStringLiteral("%1 duty/volume").arg(QString::fromLatin1(kChannelLabels[c]));
+        f.label = tr("%1 duty/volume").arg(QString::fromLatin1(kChannelLabels[c]));
         f.type = sdk::Field::Type::Integer;
         f.value = value;
         f.minimum = 0;
         f.maximum = 255;
-        f.hint = QStringLiteral("duty %1 · vol %2").arg((value >> 6) & 3).arg(value & 15);
+        f.hint = tr("duty %1 · vol %2").arg((value >> 6) & 3).arg(value & 15);
         f.monospace = true;
         inspection.fields << f;
     }
-    inspection.note = QStringLiteral("A track set starts three MML streams on the APU's pulses and triangle; the "
-                                     "pulse bytes are their $4000/$4004 values (duty in the top bits, volume in "
-                                     "the low four). Listen renders it with the kit, unsaved edits included.");
+    inspection.note = tr("A track set starts three MML streams on the APU's pulses and triangle; the "
+                         "pulse bytes are their $4000/$4004 values (duty in the top bits, volume in "
+                         "the low four). Listen renders it with the kit, unsaved edits included.");
     return inspection;
 }
 
@@ -368,7 +368,7 @@ const QVector<CastleMusicNote>& CastleSequenceModel::traced() const {
 }
 
 QString CastleSequenceModel::title() const {
-    return QStringLiteral("Sequence %1").arg(stream_, 2, 10, QLatin1Char('0'));
+    return tr("Sequence %1").arg(stream_, 2, 10, QLatin1Char('0'));
 }
 
 QVector<sdk::SequencerChannel> CastleSequenceModel::channels() const {
@@ -436,7 +436,7 @@ void CastleSequenceModel::endEdit() {
     const QJsonObject next = draft_;
     if (next != session_->music()) {
         QString error;
-        if (!session_->editMusic(QStringLiteral("Edit a note of %1").arg(title()), next, &error)) report(session_, error);
+        if (!session_->editMusic(tr("Edit a note of %1").arg(title()), next, &error)) report(session_, error);
     }
     emit contentChanged();
 }
@@ -461,7 +461,7 @@ bool CastleSequenceModel::setField(const QString& key, const QVariant& value, QS
         if (error) *error = QString::fromUtf8(e.what());
         return false;
     }
-    return session_->editMusic(QStringLiteral("Edit %1").arg(title()), next, error);
+    return session_->editMusic(tr("Edit %1").arg(title()), next, error);
 }
 
 void CastleSequenceModel::preview() {
@@ -474,7 +474,7 @@ void CastleSequenceModel::preview() {
     QSaveFile file(document);
     if (!file.open(QIODevice::WriteOnly) ||
         file.write(QJsonDocument(solo(session_->music())).toJson(QJsonDocument::Compact)) < 0 || !file.commit()) {
-        report(session_, QStringLiteral("Cannot write %1.").arg(document));
+        report(session_, tr("Cannot write %1.").arg(document));
         return;
     }
     QString error;
@@ -486,12 +486,12 @@ void CastleSequenceModel::preview() {
         report(session_, error);
         return;
     }
-    spec.label = QStringLiteral("Render %1").arg(title());
+    spec.label = tr("Render %1").arg(title());
     CastleSession* session = session_;
     const QString label = title();
     host->runProcess(spec, [host, session, wav, label](const sdk::ProcessResult& result) {
         if (!result.succeeded() || !QFileInfo(wav).isFile()) {
-            if (!result.cancelled) report(session, QStringLiteral("Rendering %1 failed.").arg(label));
+            if (!result.cancelled) report(session, tr("Rendering %1 failed.").arg(label));
             return;
         }
         host->playAudio(wav);
@@ -516,7 +516,7 @@ sdk::Budget CastleSequenceModel::budget() const {
     sdk::Budget budget;
     budget.used = CastleMusic::usedBytes(m);
     budget.capacity = m.value(QStringLiteral("capacity_bytes")).toInt();
-    budget.text = QStringLiteral("this %1 B · all sequences %2 / %3 bytes")
+    budget.text = tr("this %1 B · all sequences %2 / %3 bytes")
                       .arg(streamText(m, stream_).size() + 3)
                       .arg(budget.used)
                       .arg(budget.capacity);
@@ -524,7 +524,7 @@ sdk::Budget CastleSequenceModel::budget() const {
 }
 
 QString CastleSequenceModel::statusText() const {
-    return QStringLiteral("Sound · %1").arg(title());
+    return tr("Sound · %1").arg(title());
 }
 
 sdk::Inspection CastleSequenceModel::inspect() const {
@@ -534,24 +534,24 @@ sdk::Inspection CastleSequenceModel::inspect() const {
     const int index = selected_.isEmpty() ? -1 : selected_.toInt();
     if (index >= 0 && index < traced().size()) {
         const CastleMusicNote note = traced().at(index);
-        inspection.kicker = QStringLiteral("Note");
-        inspection.title = note.pitch < 0 ? QStringLiteral("Rest") : pitchName(note.pitch);
+        inspection.kicker = tr("Note");
+        inspection.title = note.pitch < 0 ? tr("Rest") : pitchName(note.pitch);
         sdk::Field at;
         at.key = QStringLiteral("at");
-        at.label = QStringLiteral("Starts");
-        at.value = QStringLiteral("frame %1 · %2 frames long").arg(note.start).arg(note.length);
+        at.label = tr("Starts");
+        at.value = tr("frame %1 · %2 frames long").arg(note.start).arg(note.length);
         at.monospace = true;
         sdk::Field mml;
         mml.key = QStringLiteral("token");
         mml.label = QStringLiteral("MML");
-        mml.value = QStringLiteral("\"%1\" at %2").arg(streamText(m, stream_).mid(note.position, note.span)).arg(note.position);
+        mml.value = tr("\"%1\" at %2").arg(streamText(m, stream_).mid(note.position, note.span)).arg(note.position);
         mml.monospace = true;
         inspection.fields = {at, mml};
-        inspection.note = QStringLiteral("Drag the note up or down to change its pitch. Select empty space to edit "
-                                         "the whole sequence as text.");
+        inspection.note = tr("Drag the note up or down to change its pitch. Select empty space to edit "
+                             "the whole sequence as text.");
         return inspection;
     }
-    inspection.kicker = QStringLiteral("Sequence");
+    inspection.kicker = tr("Sequence");
     inspection.title = title();
     sdk::Field text;
     text.key = QStringLiteral("mml");
@@ -561,7 +561,7 @@ sdk::Inspection CastleSequenceModel::inspect() const {
     text.monospace = true;
     sdk::Field then;
     then.key = QStringLiteral("then");
-    then.label = QStringLiteral("Then");
+    then.label = tr("Then");
     then.type = sdk::Field::Type::Choice;
     then.choices << QStringLiteral("stop");
     for (const QJsonValue& v : m.value(QStringLiteral("streams")).toArray()) then.choices << v.toObject().value(QStringLiteral("id")).toString();
@@ -580,13 +580,13 @@ sdk::Inspection CastleSequenceModel::inspect() const {
     }
     sdk::Field played;
     played.key = QStringLiteral("played");
-    played.label = QStringLiteral("Played by");
-    played.value = users.isEmpty() ? QStringLiteral("only after another sequence") : users.join(QStringLiteral(", "));
+    played.label = tr("Played by");
+    played.value = users.isEmpty() ? tr("only after another sequence") : users.join(QStringLiteral(", "));
     inspection.fields = {text, then, played};
-    inspection.note = QStringLiteral("The sequence as the engine reads it: notes c d e f g a b (+ sharp, - flat), r "
-                                     "a rest, then a length (@ 8 4 2 1, shortest first) and a dot; o0-o9 the "
-                                     "octave, l the default length, t0-t9 the tempo of all three voices. Then is "
-                                     "what plays when it ends. All sequences share a fixed arena.");
+    inspection.note = tr("The sequence as the engine reads it: notes c d e f g a b (+ sharp, - flat), r "
+                         "a rest, then a length (@ 8 4 2 1, shortest first) and a dot; o0-o9 the "
+                         "octave, l the default length, t0-t9 the tempo of all three voices. Then is "
+                         "what plays when it ends. All sequences share a fixed arena.");
     return inspection;
 }
 
@@ -599,13 +599,13 @@ CastleStreamsModel::CastleStreamsModel(CastleSession* session) : TableModel(sess
 QVector<sdk::TableColumn> CastleStreamsModel::columns() const {
     sdk::TableColumn id;
     id.key = QStringLiteral("id");
-    id.label = QStringLiteral("Stream");
+    id.label = tr("Stream");
     id.width = 110;
     id.monospace = true;
     id.muted = true;
     sdk::TableColumn bytes;
     bytes.key = QStringLiteral("bytes");
-    bytes.label = QStringLiteral("Bytes");
+    bytes.label = tr("Bytes");
     bytes.width = 70;
     bytes.monospace = true;
     bytes.muted = true;
@@ -616,7 +616,7 @@ QVector<sdk::TableColumn> CastleStreamsModel::columns() const {
     text.editable = true;
     sdk::TableColumn restart;
     restart.key = QStringLiteral("restart");
-    restart.label = QStringLiteral("Then");
+    restart.label = tr("Then");
     restart.width = 120;
     restart.monospace = true;
     restart.editable = true;
@@ -681,7 +681,7 @@ bool CastleStreamsModel::setCell(int row, int column, const QString& value, QStr
         if (error) *error = QString::fromUtf8(e.what());
         return false;
     }
-    return session_->editMusic(QStringLiteral("Edit %1").arg(cell(row, 0)), next, error);
+    return session_->editMusic(tr("Edit %1").arg(cell(row, 0)), next, error);
 }
 
 sdk::Budget CastleStreamsModel::budget() const {
@@ -689,14 +689,14 @@ sdk::Budget CastleStreamsModel::budget() const {
     sdk::Budget budget;
     budget.used = CastleMusic::usedBytes(m);
     budget.capacity = m.value(QStringLiteral("capacity_bytes")).toInt();
-    budget.text = QStringLiteral("%1 / %2 bytes · %3 free").arg(budget.used).arg(budget.capacity).arg(budget.capacity - budget.used);
+    budget.text = tr("%1 / %2 bytes · %3 free").arg(budget.used).arg(budget.capacity).arg(budget.capacity - budget.used);
     return budget;
 }
 
 sdk::Inspection CastleStreamsModel::inspect() const {
     sdk::Inspection inspection;
     inspection.engineTag = QStringLiteral("castle.mml-music.v1");
-    inspection.kicker = QStringLiteral("MML stream");
+    inspection.kicker = tr("MML stream");
     inspection.title = cell(row_, 0);
     QStringList users;
     const QString id = cell(row_, 0);
@@ -712,14 +712,14 @@ sdk::Inspection CastleStreamsModel::inspect() const {
     }
     sdk::Field used;
     used.key = QStringLiteral("used");
-    used.label = QStringLiteral("Played by");
-    used.value = users.isEmpty() ? QStringLiteral("restarts only") : users.join(QStringLiteral(", "));
+    used.label = tr("Played by");
+    used.value = users.isEmpty() ? tr("restarts only") : users.join(QStringLiteral(", "));
     inspection.fields = {used};
-    inspection.note = QStringLiteral("Notes are c d e f g a b, + or - after a note for sharp or flat, r for a "
-                                     "rest; a length (@ 8 4 2 1, shortest first) and a dot may follow. o0-o9 sets "
-                                     "the octave, l the default length, t0-t9 the tempo of all three channels, v a "
-                                     "volume the engine skips. Then names the stream played next, or stop. All 21 "
-                                     "streams share the arena; the budget shows what is left.");
+    inspection.note = tr("Notes are c d e f g a b, + or - after a note for sharp or flat, r for a "
+                         "rest; a length (@ 8 4 2 1, shortest first) and a dot may follow. o0-o9 sets "
+                         "the octave, l the default length, t0-t9 the tempo of all three channels, v a "
+                         "volume the engine skips. Then names the stream played next, or stop. All 21 "
+                         "streams share the arena; the budget shows what is left.");
     return inspection;
 }
 

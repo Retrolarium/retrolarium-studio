@@ -1,6 +1,7 @@
 #include "doraemon/render/painter.hpp"
 
 #include "nes/palette.hpp"
+#include "sdk/i18n.hpp"
 
 #include <QJsonArray>
 #include <QPainter>
@@ -10,7 +11,7 @@
 namespace rl::doraemon {
 
 QString worldLabel(World world) {
-    return QStringLiteral("World %1").arg(int(world));
+    return rlTr("doraemon", "World %1").arg(int(world));
 }
 
 QString hierarchyId(World world) {
@@ -18,7 +19,7 @@ QString hierarchyId(World world) {
 }
 
 QString chrId(World world) {
-    return QStringLiteral("chr-bank-%1").arg(int(world) - 1);
+    return rlTr("doraemon", "chr-bank-%1").arg(int(world) - 1);
 }
 
 QStringList paletteIds(const nes::Bundle& bundle, World world) {

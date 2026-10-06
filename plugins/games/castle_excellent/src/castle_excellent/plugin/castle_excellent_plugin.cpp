@@ -1,6 +1,7 @@
 #include "castle/plugin/castle_plugin.hpp"
 
 #include "castle/plugin/castle_session.hpp"
+#include "sdk/i18n.hpp"
 #include "sdk/plugin.hpp"
 
 namespace rl::castle {
@@ -11,7 +12,7 @@ namespace {
 class CastlePlugin final : public sdk::Plugin {
 public:
     QString id() const override { return QStringLiteral("castle-excellent"); }
-    QString displayName() const override { return QStringLiteral("Castle Excellent"); }
+    QString displayName() const override { return rlTr("castle", "Castle Excellent"); }
 
     bool canOpen(const sdk::ProjectFile& project) const override {
         const QString mode = project.string(QStringLiteral("project.source_mode"));

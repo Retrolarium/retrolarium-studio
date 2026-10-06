@@ -68,13 +68,13 @@ QJsonArray FlickyDemoModel::steps() const {
 }
 
 QString FlickyDemoModel::title() const {
-    return QStringLiteral("Demo %1").arg(demo_ + 1);
+    return tr("Demo %1").arg(demo_ + 1);
 }
 
 QVector<sdk::TableColumn> FlickyDemoModel::columns() const {
     sdk::TableColumn index;
     index.key = QStringLiteral("step");
-    index.label = QStringLiteral("Step");
+    index.label = tr("Step");
     index.width = 70;
     index.muted = true;
     sdk::TableColumn frames;
@@ -85,12 +85,12 @@ QVector<sdk::TableColumn> FlickyDemoModel::columns() const {
     frames.editable = true;
     sdk::TableColumn buttons;
     buttons.key = QStringLiteral("buttons");
-    buttons.label = QStringLiteral("Buttons held");
+    buttons.label = tr("Buttons held");
     buttons.monospace = true;
     buttons.editable = true;
     sdk::TableColumn at;
     at.key = QStringLiteral("at");
-    at.label = QStringLiteral("Starts at");
+    at.label = tr("Starts at");
     at.width = 120;
     at.muted = true;
     return {index, frames, buttons, at};
@@ -144,7 +144,7 @@ bool FlickyDemoModel::setCell(int row, int column, const QString& value, QString
         bool ok = false;
         const int frames = value.trimmed().toInt(&ok);
         if (!ok || frames < 1 || frames > 256) {
-            if (error) *error = QStringLiteral("A step lasts 1-256 frames.");
+            if (error) *error = tr("A step lasts 1-256 frames.");
             return false;
         }
         item.insert(QStringLiteral("frames"), frames);
@@ -152,7 +152,7 @@ bool FlickyDemoModel::setCell(int row, int column, const QString& value, QString
         const QStringList words = value.toUpper().split(QRegularExpression(QStringLiteral("[\\s,+]+")), Qt::SkipEmptyParts);
         for (const QString& word : words) {
             if (word != QLatin1String("-") && !FlickyLevelDocument::demoButtons().contains(word)) {
-                if (error) *error = QStringLiteral("Buttons are A, B, C, START, UP, DOWN, LEFT and RIGHT.");
+                if (error) *error = tr("Buttons are A, B, C, START, UP, DOWN, LEFT and RIGHT.");
                 return false;
             }
         }
@@ -163,7 +163,7 @@ bool FlickyDemoModel::setCell(int row, int column, const QString& value, QString
         item.insert(QStringLiteral("buttons"), held);
     }
     list.replace(row, item);
-    return session_->editDemo(demo_, QStringLiteral("Edit demo %1 step %2").arg(demo_ + 1).arg(row + 1), list, error);
+    return session_->editDemo(demo_, tr("Edit demo %1 step %2").arg(demo_ + 1).arg(row + 1), list, error);
 }
 
 sdk::Budget FlickyDemoModel::budget() const {
@@ -173,7 +173,7 @@ sdk::Budget FlickyDemoModel::budget() const {
     sdk::Budget budget;
     budget.used = levels.attractDemoBytes();
     budget.capacity = levels.attractDemoCapacity();
-    budget.text = QStringLiteral("%1 steps, %2 s · all demos %3 / %4 bytes")
+    budget.text = tr("%1 steps, %2 s · all demos %3 / %4 bytes")
                       .arg(rowCount())
                       .arg(frames / 60)
                       .arg(budget.used)
@@ -188,31 +188,31 @@ QString FlickyDemoModel::startPoint() const {
 QVector<sdk::EditorAction> FlickyDemoModel::actions() const {
     sdk::EditorAction loop;
     loop.id = QStringLiteral("loop");
-    loop.label = QStringLiteral("Loop demo");
+    loop.label = tr("Loop demo");
     loop.icon = QStringLiteral("play");
-    loop.tooltip = QStringLiteral("Build and play the demo over and over, as the console plays it after the title");
+    loop.tooltip = tr("Build and play the demo over and over, as the console plays it after the title");
     loop.showsPlaytest = true;
     sdk::EditorAction record;
     record.danger = true;
     record.showsPlaytest = true;
     if (session_->recordingActive()) {
         record.id = QStringLiteral("stop");
-        record.label = QStringLiteral("Stop recording");
+        record.label = tr("Stop recording");
         record.icon = QStringLiteral("stop");
-        record.tooltip = QStringLiteral("Finish the recording and keep it as the demo");
+        record.tooltip = tr("Finish the recording and keep it as the demo");
     } else {
         const int round = session_->levels().attractDemo(demo_).value(QStringLiteral("round")).toInt();
         record.id = QStringLiteral("record");
-        record.label = QStringLiteral("Record");
+        record.label = tr("Record");
         record.icon = QStringLiteral("record");
-        record.tooltip = QStringLiteral("Play the demo with your controller; what you play becomes the demo");
-        record.confirmHeading = QStringLiteral("Record a new demo %1?").arg(demo_ + 1);
-        record.confirmText = QStringLiteral("You play round %1 with your controller. When the bird is caught, you "
-                                            "press Start or Stop recording, what you played replaces the current "
-                                            "demo (%2 steps). Undo brings it back.")
+        record.tooltip = tr("Play the demo with your controller; what you play becomes the demo");
+        record.confirmHeading = tr("Record a new demo %1?").arg(demo_ + 1);
+        record.confirmText = tr("You play round %1 with your controller. When the bird is caught, you "
+                                "press Start or Stop recording, what you played replaces the current "
+                                "demo (%2 steps). Undo brings it back.")
                                  .arg(round)
                                  .arg(rowCount());
-        record.confirmAction = QStringLiteral("Record");
+        record.confirmAction = tr("Record");
     }
     return {loop, record};
 }
@@ -226,14 +226,14 @@ void FlickyDemoModel::triggerAction(const QString& id) {
 sdk::Inspection FlickyDemoModel::inspect() const {
     const int round = session_->levels().attractDemo(demo_).value(QStringLiteral("round")).toInt();
     sdk::Inspection inspection;
-    inspection.kicker = QStringLiteral("Attract demo %1 · Round %2").arg(demo_ + 1).arg(round, 2, 10, QLatin1Char('0'));
-    inspection.title = QStringLiteral("Step %1").arg(row_ + 1);
-    inspection.note = QStringLiteral("After the title the game plays its four demos in turn; this one plays "
-                                     "round %1 with these steps, each holding its buttons for its frames (256 "
-                                     "at most). Loop demo plays it over and over in the emulator. Record plays "
-                                     "round %1 with your controller and keeps what you play when the bird is "
-                                     "caught, you press Start or Stop recording. The four demos share %2 bytes, "
-                                     "two per step. Write buttons as words, e.g. A RIGHT.")
+    inspection.kicker = tr("Attract demo %1 · Round %2").arg(demo_ + 1).arg(round, 2, 10, QLatin1Char('0'));
+    inspection.title = tr("Step %1").arg(row_ + 1);
+    inspection.note = tr("After the title the game plays its four demos in turn; this one plays "
+                         "round %1 with these steps, each holding its buttons for its frames (256 "
+                         "at most). Loop demo plays it over and over in the emulator. Record plays "
+                         "round %1 with your controller and keeps what you play when the bird is "
+                         "caught, you press Start or Stop recording. The four demos share %2 bytes, "
+                         "two per step. Write buttons as words, e.g. A RIGHT.")
                           .arg(round)
                           .arg(session_->levels().attractDemoCapacity());
     inspection.engineTag = QStringLiteral("flicky.attract-demos");

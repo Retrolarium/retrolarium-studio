@@ -1,6 +1,7 @@
 #include "castle/plugin/sprite_model.hpp"
 
 #include "castle/plugin/castle_session.hpp"
+#include "sdk/i18n.hpp"
 
 #include <QJsonArray>
 #include <QJsonObject>
@@ -35,8 +36,8 @@ constexpr int kObjectFrames[][2] = {
 constexpr int kSheetColumns = 24;   // sprites per row, with a gap after each frame
 
 const QStringList& flipNames() {
-    static const QStringList kNames{QStringLiteral("None"), QStringLiteral("Horizontal"), QStringLiteral("Vertical"),
-                                    QStringLiteral("Both")};
+    static const QStringList kNames{QStringLiteral("None"), rlTr("castle", "Horizontal"), rlTr("castle", "Vertical"),
+                                    rlTr("castle", "Both")};
     return kNames;
 }
 
@@ -115,30 +116,30 @@ QSize CastleSpriteModel::gridSize() const {
 
 QString CastleSpriteModel::frameLabel(int frame) const {
     const Frame& f = frames_.at(frame);
-    if (f.player) return QStringLiteral("Player %1").arg(f.first / 2 + 1);
-    if (!f.referenced) return QStringLiteral("Unused %1").arg(f.first);
+    if (f.player) return tr("Player %1").arg(f.first / 2 + 1);
+    if (!f.referenced) return tr("Unused %1").arg(f.first);
     QStringList types;
     for (const CastleObjectPreview& preview : session_->levels().objectPreviews()) {
         if (preview.descriptorOffset == f.first * 2) types << hex(preview.runtimeType);
     }
-    return types.isEmpty() ? QStringLiteral("Frame %1").arg(f.first) : QStringLiteral("Object %1").arg(types.join(QLatin1Char(' ')));
+    return types.isEmpty() ? tr("Frame %1").arg(f.first) : tr("Object %1").arg(types.join(QLatin1Char(' ')));
 }
 
 // ---------------------------------------------------------------- view
 
 QVector<sdk::Tool> CastleSpriteModel::tools() const {
-    return {{QStringLiteral("select"), QStringLiteral("Select a frame"), QStringLiteral("select")},
-            {QStringLiteral("paint"), QStringLiteral("Paint the sheet's pattern pair into sprites (right button takes one)"),
+    return {{QStringLiteral("select"), tr("Select a frame"), QStringLiteral("select")},
+            {QStringLiteral("paint"), tr("Paint the sheet's pattern pair into sprites (right button takes one)"),
              QStringLiteral("paint")},
-            {QStringLiteral("pick"), QStringLiteral("Take a sprite's pattern pair as the brush"), QStringLiteral("pick")}};
+            {QStringLiteral("pick"), tr("Take a sprite's pattern pair as the brush"), QStringLiteral("pick")}};
 }
 
 QVector<sdk::ViewOption> CastleSpriteModel::viewOptions() const {
     sdk::ViewOption palette;
     palette.key = QStringLiteral("palette");
-    palette.label = QStringLiteral("Sheet colours");
-    palette.value = QStringLiteral("SPR %1").arg(libraryPalette_);
-    for (int p = 0; p < 4; ++p) palette.choices << QStringLiteral("SPR %1").arg(p);
+    palette.label = tr("Sheet colours");
+    palette.value = tr("SPR %1").arg(libraryPalette_);
+    for (int p = 0; p < 4; ++p) palette.choices << tr("SPR %1").arg(p);
     return {palette};
 }
 
@@ -170,7 +171,7 @@ QImage CastleSpriteModel::render() const {
 // ---------------------------------------------------------------- cells
 
 QVector<sdk::CellBrush> CastleSpriteModel::brushes() const {
-    return {{tile_, QStringLiteral("Pattern pair %1").arg(hex(tile_)), QColor()}};
+    return {{tile_, tr("Pattern pair %1").arg(hex(tile_)), QColor()}};
 }
 
 void CastleSpriteModel::setCurrentBrush(int value) {
@@ -223,12 +224,12 @@ bool CastleSpriteModel::setDescriptors(const QHash<int, QPair<int, int>>& values
 bool CastleSpriteModel::placeObject(const QString& libraryItem, QPoint cell, QString* error) {
     const int d = descriptorAt(cell);
     if (!libraryItem.startsWith(QLatin1String("tile:")) || d < 0) {
-        if (error) *error = QStringLiteral("Drop a pattern pair onto a sprite.");
+        if (error) *error = tr("Drop a pattern pair onto a sprite.");
         return false;
     }
     const int tile = std::clamp(libraryItem.mid(5).toInt(), 0, 255);
     setCurrentLibraryItem(libraryItem);
-    return setDescriptors({{d, qMakePair(tile, attributesOf(d))}}, QStringLiteral("Set the patterns of sprite %1").arg(d),
+    return setDescriptors({{d, qMakePair(tile, attributesOf(d))}}, tr("Set the patterns of sprite %1").arg(d),
                           error);
 }
 
@@ -255,7 +256,7 @@ void CastleSpriteModel::endStroke() {
     // Cleared first: the edit redraws from the document.
     pending_.clear();
     QString error;
-    setDescriptors(values, QStringLiteral("Paint sprites"), &error);
+    setDescriptors(values, tr("Paint sprites"), &error);
 }
 
 // ---------------------------------------------------------------- objects
@@ -310,7 +311,7 @@ bool CastleSpriteModel::setField(const QString& key, const QVariant& value, QStr
     }
     default: return TileMapModel::setField(key, value, error);
     }
-    return setDescriptors({{d, qMakePair(tile, attributes)}}, QStringLiteral("Edit sprite %1").arg(d), error);
+    return setDescriptors({{d, qMakePair(tile, attributes)}}, tr("Edit sprite %1").arg(d), error);
 }
 
 sdk::Library CastleSpriteModel::sheet() const {
@@ -318,7 +319,7 @@ sdk::Library CastleSpriteModel::sheet() const {
     result.grid = true;
     result.columns = 16;
     result.cell = QSize(1, 2);
-    result.hint = QStringLiteral("click: brush · drag onto a sprite");
+    result.hint = tr("click: brush · drag onto a sprite");
     const CastlePainter& art = session_->painter();
     // 8x16 pairs: even numbers from the first pattern table, odd from the second.
     for (int table = 0; table < 2; ++table) {
@@ -343,26 +344,26 @@ sdk::Inspection CastleSpriteModel::inspect() const {
     sdk::Inspection inspection;
     inspection.engineTag = QStringLiteral("castle.metasprite-descriptors.v1");
     if (selected_ < 0 || selected_ >= frames_.size()) {
-        inspection.kicker = QStringLiteral("Sprites");
+        inspection.kicker = tr("Sprites");
         inspection.title = title();
         sdk::Field sprites;
         sprites.key = QStringLiteral("sprites");
-        sprites.label = QStringLiteral("Sprites");
+        sprites.label = tr("Sprites");
         sprites.value = QStringLiteral("%1 · 8x16").arg(count());
         inspection.fields = {sprites};
-        inspection.note = QStringLiteral("The player's and the objects' frames, each a row of 8x16 sprites: a pattern "
-                                         "pair (even from the first pattern table, odd from the second) and its "
-                                         "attributes. Paint a pattern pair from the sheet into a sprite, or select a "
-                                         "frame to set palettes and flips.");
+        inspection.note = tr("The player's and the objects' frames, each a row of 8x16 sprites: a pattern "
+                             "pair (even from the first pattern table, odd from the second) and its "
+                             "attributes. Paint a pattern pair from the sheet into a sprite, or select a "
+                             "frame to set palettes and flips.");
         return inspection;
     }
     const Frame& frame = frames_.at(selected_);
-    inspection.kicker = frame.player ? QStringLiteral("Player frame") : QStringLiteral("Object frame");
+    inspection.kicker = frame.player ? tr("Player frame") : tr("Object frame");
     inspection.title = frameLabel(selected_);
     for (int i = 0; i < frame.count; ++i) {
         const int d = frame.first + i;
         const int attributes = attributesOf(d);
-        const QString which = frame.count > 1 ? QStringLiteral("Sprite %1 ").arg(i + 1) : QString();
+        const QString which = frame.count > 1 ? tr("Sprite %1 ").arg(i + 1) : QString();
         sdk::Field tile;
         tile.key = QStringLiteral("t%1").arg(i);
         tile.label = which + QStringLiteral("patterns");
@@ -377,10 +378,10 @@ sdk::Inspection CastleSpriteModel::inspect() const {
         palette.label = which + QStringLiteral("palette");
         palette.type = sdk::Field::Type::Choice;
         for (int p = 0; p < 4; ++p) {
-            palette.choices << QStringLiteral("SPR %1").arg(p);
+            palette.choices << tr("SPR %1").arg(p);
             palette.choiceIcons << session_->painter().sprite(CastleSprite{tileOf(d), (attributes & ~3) | p, 0, 0});
         }
-        palette.value = QStringLiteral("SPR %1").arg(attributes & 3);
+        palette.value = tr("SPR %1").arg(attributes & 3);
         sdk::Field flip;
         flip.key = QStringLiteral("f%1").arg(i);
         flip.label = which + QStringLiteral("flip");
@@ -390,13 +391,13 @@ sdk::Inspection CastleSpriteModel::inspect() const {
         inspection.fields << tile << palette << flip;
     }
     inspection.note = frame.player
-                          ? QStringLiteral("A frame of the player, two sprites side by side. Every animation that "
-                                           "shows it changes with it.")
+                          ? tr("A frame of the player, two sprites side by side. Every animation that "
+                               "shows it changes with it.")
                       : frame.referenced
-                          ? QStringLiteral("A frame the objects' code draws, its sprites 8 pixels apart. Every object "
-                                           "and animation step that shows it changes with it.")
-                          : QStringLiteral("A sprite no frame of the game's code draws.");
-    inspection.engine = {{QStringLiteral("Descriptors"),
+                          ? tr("A frame the objects' code draws, its sprites 8 pixels apart. Every object "
+                               "and animation step that shows it changes with it.")
+                          : tr("A sprite no frame of the game's code draws.");
+    inspection.engine = {{tr("Descriptors"),
                           QStringLiteral("%1-%2").arg(frame.first).arg(frame.first + frame.count - 1)},
                          {QStringLiteral("CPU"), QStringLiteral("$%1").arg(0xB4B6 + frame.first * 2, 4, 16, QLatin1Char('0')).toUpper()}};
     return inspection;
@@ -406,12 +407,12 @@ sdk::Budget CastleSpriteModel::budget() const {
     sdk::Budget budget;
     budget.used = count();
     budget.capacity = count();
-    budget.text = QStringLiteral("%1 sprites in %2 frames · fixed").arg(count()).arg(frames_.size());
+    budget.text = tr("%1 sprites in %2 frames · fixed").arg(count()).arg(frames_.size());
     return budget;
 }
 
 QString CastleSpriteModel::statusText() const {
-    return selected_ < 0 ? QStringLiteral("Sprites · %1").arg(count()) : QStringLiteral("Sprites · %1").arg(frameLabel(selected_));
+    return selected_ < 0 ? tr("Sprites · %1").arg(count()) : tr("Sprites · %1").arg(frameLabel(selected_));
 }
 
 }  // namespace rl::castle

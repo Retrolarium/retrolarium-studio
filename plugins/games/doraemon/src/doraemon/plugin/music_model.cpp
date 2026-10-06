@@ -35,7 +35,7 @@ QString DoraemonMusicModel::trackTitle(int driver, int track) {
         {"Underwater - Upper Rooms", "Underwater - Middle Rooms", "Mid-Boss Formation", "Mid-Boss Alternate Mix",
          "Underwater - Lower Rooms", "Underwater - Final Room", "Chapter Clear", "Player Defeat"},
         {"Title Screen", "Ending - Opening", "Ending - Credits", "Game Over", nullptr, nullptr, nullptr, nullptr}};
-    if (driver < 0 || driver > 3 || track < 0 || track > 7 || !kTitles[driver][track]) return QStringLiteral("Track %1").arg(track + 1);
+    if (driver < 0 || driver > 3 || track < 0 || track > 7 || !kTitles[driver][track]) return tr("Track %1").arg(track + 1);
     return QString::fromLatin1(kTitles[driver][track]);
 }
 
@@ -135,13 +135,13 @@ void DoraemonMusicModel::selectNote(const QString& id) {
 bool DoraemonMusicModel::shiftEvent(int address, int semitones, const QString& label, QString* error) {
     const Location at = locate(address);
     if (at.segment < 0 || !at.text.startsWith(QLatin1String("event $"))) {
-        if (error) *error = QStringLiteral("This note is not an event byte of the stream.");
+        if (error) *error = tr("This note is not an event byte of the stream.");
         return false;
     }
     const int value = at.text.mid(7).toInt(nullptr, 16);
     const int next = value + semitones;
     if (value == 0 || next < 1 || next > 0x7f) {
-        if (error) *error = QStringLiteral("A note event is $01-$7F.");
+        if (error) *error = tr("A note event is $01-$7F.");
         return false;
     }
     QJsonObject music = session_->music();
@@ -182,7 +182,7 @@ void DoraemonMusicModel::endEdit() {
     dragShift_ = 0;
     if (!id.isEmpty() && shift != 0) {
         QString error;
-        if (!shiftEvent(eventAt(id).value(QStringLiteral("address")).toInt(), shift, QStringLiteral("Edit a note of %1").arg(title()), &error)) {
+        if (!shiftEvent(eventAt(id).value(QStringLiteral("address")).toInt(), shift, tr("Edit a note of %1").arg(title()), &error)) {
             session_->report(sdk::Severity::Error, QStringLiteral("sound"), error);
         }
     }
@@ -195,7 +195,7 @@ bool DoraemonMusicModel::setField(const QString& key, const QVariant& value, QSt
     const Location at = locate(address);
     if (!at.text.startsWith(QLatin1String("event $"))) return false;
     const int old = at.text.mid(7).toInt(nullptr, 16);
-    return shiftEvent(address, std::clamp(value.toInt(), 1, 0x7f) - old, QStringLiteral("Edit a note of %1").arg(title()), error);
+    return shiftEvent(address, std::clamp(value.toInt(), 1, 0x7f) - old, tr("Edit a note of %1").arg(title()), error);
 }
 
 void DoraemonMusicModel::preview() {
@@ -222,12 +222,12 @@ void DoraemonMusicModel::preview() {
         session_->report(sdk::Severity::Error, QStringLiteral("sound"), error);
         return;
     }
-    spec.label = QStringLiteral("Render %1").arg(title());
+    spec.label = tr("Render %1").arg(title());
     DoraemonSession* session = session_;
     const QString label = title();
     host->runProcess(spec, [host, session, wav, label](const sdk::ProcessResult& result) {
         if (!result.succeeded() || !QFileInfo(wav).isFile()) {
-            if (!result.cancelled) session->report(sdk::Severity::Error, QStringLiteral("sound"), QStringLiteral("Rendering %1 failed.").arg(label));
+            if (!result.cancelled) session->report(sdk::Severity::Error, QStringLiteral("sound"), tr("Rendering %1 failed.").arg(label));
             return;
         }
         host->playAudio(wav);
@@ -250,7 +250,7 @@ void DoraemonMusicModel::setPreviewLoops(bool loop) {
 sdk::Budget DoraemonMusicModel::budget() const {
     const QJsonObject driver = session_->music().value(QStringLiteral("drivers")).toArray().at(driver_).toObject();
     sdk::Budget budget;
-    budget.text = QStringLiteral("%1 · %2 stream bytes, each note keeps its byte")
+    budget.text = tr("%1 · %2 stream bytes, each note keeps its byte")
                       .arg(driver.value(QStringLiteral("name")).toString())
                       .arg(driver.value(QStringLiteral("metrics")).toObject().value(QStringLiteral("reachable_bytes")).toInt());
     return budget;
@@ -261,49 +261,49 @@ sdk::Inspection DoraemonMusicModel::inspect() const {
     inspection.engineTag = QStringLiteral("doraemon.music@1");
     const QJsonObject e = selected_.isEmpty() ? QJsonObject() : eventAt(selected_);
     if (e.isEmpty()) {
-        inspection.kicker = QStringLiteral("Track");
+        inspection.kicker = tr("Track");
         inspection.title = title();
         inspection.note = trace().isEmpty()
-                              ? QStringLiteral("Tracing the track…")
-                              : QStringLiteral("The track's four channels as the driver plays them, for 40 seconds. Drag a "
-                                               "pulse or triangle note up or down to change its event byte: every pass "
-                                               "of a loop that plays the byte follows. Listen renders the current "
-                                               "document; muted channels stay silent.");
+                              ? tr("Tracing the track…")
+                              : tr("The track's four channels as the driver plays them, for 40 seconds. Drag a "
+                                   "pulse or triangle note up or down to change its event byte: every pass "
+                                   "of a loop that plays the byte follows. Listen renders the current "
+                                   "document; muted channels stay silent.");
         return inspection;
     }
     const int address = e.value(QStringLiteral("address")).toInt();
     const Location at = locate(address);
     inspection.kicker = QString::fromLatin1(kChannels[selected_.section(QLatin1Char(':'), 0, 0).toInt() & 3]);
-    inspection.title = QStringLiteral("Frame %1").arg(e.value(QStringLiteral("start")).toInt());
+    inspection.title = tr("Frame %1").arg(e.value(QStringLiteral("start")).toInt());
     sdk::Field event;
     event.key = QStringLiteral("event");
-    event.label = QStringLiteral("Stream");
-    event.value = QStringLiteral("%1 at $%2").arg(at.text, QString::number(address, 16).rightJustified(4, QLatin1Char('0')).toUpper());
+    event.label = tr("Stream");
+    event.value = tr("%1 at $%2").arg(at.text, QString::number(address, 16).rightJustified(4, QLatin1Char('0')).toUpper());
     event.monospace = true;
     inspection.fields = {event};
     if (at.text.startsWith(QLatin1String("event $")) && at.text != QLatin1String("event $00")) {
         sdk::Field value;
         value.key = QStringLiteral("value");
-        value.label = QStringLiteral("Value");
+        value.label = tr("Value");
         value.type = sdk::Field::Type::Integer;
         value.value = at.text.mid(7).toInt(nullptr, 16);
         value.minimum = 1;
         value.maximum = 0x7f;
-        value.hint = QStringLiteral("semitones on tonal channels");
+        value.hint = tr("semitones on tonal channels");
         value.monospace = true;
         inspection.fields << value;
     }
     sdk::Field length;
     length.key = QStringLiteral("length");
-    length.label = QStringLiteral("Length");
-    length.value = QStringLiteral("%1 frames").arg(e.value(QStringLiteral("length")).toInt());
+    length.label = tr("Length");
+    length.value = tr("%1 frames").arg(e.value(QStringLiteral("length")).toInt());
     inspection.fields << length;
-    inspection.note = QStringLiteral("Durations are shared codes of the stream; notes keep their place.");
+    inspection.note = tr("Durations are shared codes of the stream; notes keep their place.");
     return inspection;
 }
 
 QString DoraemonMusicModel::statusText() const {
-    return QStringLiteral("Sound · %1").arg(title());
+    return tr("Sound · %1").arg(title());
 }
 
 }  // namespace rl::doraemon

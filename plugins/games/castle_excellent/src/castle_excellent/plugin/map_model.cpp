@@ -23,7 +23,7 @@ QSize CastleMapModel::cellSize() const {
 QVector<sdk::ViewOption> CastleMapModel::viewOptions() const {
     sdk::ViewOption scale;
     scale.key = QStringLiteral("scale");
-    scale.label = QStringLiteral("Scale");
+    scale.label = tr("Scale");
     scale.value = divisor_ == 1 ? QStringLiteral("1") : QStringLiteral("1/%1").arg(divisor_);
     scale.choices = QStringList{QStringLiteral("1/4"), QStringLiteral("1/2"), QStringLiteral("1")};
     return {scale};
@@ -48,7 +48,7 @@ int CastleMapModel::roomIndex(int number) const {
 }
 
 QVector<sdk::Tool> CastleMapModel::tools() const {
-    return {{QStringLiteral("select"), QStringLiteral("Select a room"), QStringLiteral("select")}};
+    return {{QStringLiteral("select"), tr("Select a room"), QStringLiteral("select")}};
 }
 
 QImage CastleMapModel::render() const {
@@ -126,9 +126,9 @@ QString CastleMapModel::startPoint() const {
 QVector<sdk::EditorAction> CastleMapModel::actions() const {
     sdk::EditorAction open;
     open.id = QStringLiteral("open");
-    open.label = selected_ > 0 ? QStringLiteral("Open %1").arg(roomLabel(selected_)) : QStringLiteral("Open room");
+    open.label = selected_ > 0 ? tr("Open %1").arg(roomLabel(selected_)) : tr("Open room");
     open.icon = QStringLiteral("levels");
-    open.tooltip = QStringLiteral("Edit the selected room's cells and objects");
+    open.tooltip = tr("Edit the selected room's cells and objects");
     return {open};
 }
 
@@ -144,46 +144,46 @@ sdk::Inspection CastleMapModel::inspect() const {
     inspection.engineTag = QStringLiteral("castle.prefix-rooms@1");
     const int index = roomIndex(selected_);
     if (index < 0) {
-        inspection.kicker = QStringLiteral("Castle");
+        inspection.kicker = tr("Castle");
         inspection.title = title();
-        inspection.note = QStringLiteral("All 100 rooms where the game puts them: ten to a row, the room above is ten "
-                                         "less, the room below ten more. Select a room to start Play from selected "
-                                         "there; Open room edits it.");
+        inspection.note = tr("All 100 rooms where the game puts them: ten to a row, the room above is ten "
+                             "less, the room below ten more. Select a room to start Play from selected "
+                             "there; Open room edits it.");
         return inspection;
     }
     const CastleLevels& levels = session_->levels();
-    inspection.kicker = QStringLiteral("Castle map");
+    inspection.kicker = tr("Castle map");
     inspection.title = roomLabel(selected_);
     const auto neighbour = [this](int number) {
         return number >= 1 && number <= kColumns * kRows && roomIndex(number) >= 0 ? roomLabel(number) : QStringLiteral("—");
     };
     sdk::Field place;
     place.key = QStringLiteral("place");
-    place.label = QStringLiteral("Grid");
-    place.value = QStringLiteral("column %1, row %2").arg((selected_ - 1) % kColumns + 1).arg((selected_ - 1) / kColumns + 1);
+    place.label = tr("Grid");
+    place.value = tr("column %1, row %2").arg((selected_ - 1) % kColumns + 1).arg((selected_ - 1) / kColumns + 1);
     sdk::Field objects;
     objects.key = QStringLiteral("objects");
-    objects.label = QStringLiteral("Objects");
+    objects.label = tr("Objects");
     objects.value = QString::number(levels.objects(index).size());
     sdk::Field above;
     above.key = QStringLiteral("above");
-    above.label = QStringLiteral("Above / below");
+    above.label = tr("Above / below");
     above.value = QStringLiteral("%1 / %2").arg(neighbour(selected_ - kColumns), neighbour(selected_ + kColumns));
     sdk::Field sides;
     sides.key = QStringLiteral("sides");
-    sides.label = QStringLiteral("Left / right");
+    sides.label = tr("Left / right");
     sides.value = QStringLiteral("%1 / %2")
                       .arg((selected_ - 1) % kColumns > 0 ? neighbour(selected_ - 1) : QStringLiteral("—"),
                            (selected_ - 1) % kColumns < kColumns - 1 ? neighbour(selected_ + 1) : QStringLiteral("—"));
     inspection.fields = {place, objects, above, sides};
-    inspection.note = QStringLiteral("Play from selected starts in this room at the player's start point. Open room "
-                                     "edits its cells and objects. Horizontal exits follow the grid except where the "
-                                     "game's edge tables mark a castle wall.");
+    inspection.note = tr("Play from selected starts in this room at the player's start point. Open room "
+                         "edits its cells and objects. Horizontal exits follow the grid except where the "
+                         "game's edge tables mark a castle wall.");
     return inspection;
 }
 
 QString CastleMapModel::statusText() const {
-    return selected_ > 0 ? QStringLiteral("Castle map · %1").arg(roomLabel(selected_)) : QStringLiteral("Castle map");
+    return selected_ > 0 ? tr("Castle map · %1").arg(roomLabel(selected_)) : tr("Castle map");
 }
 
 }  // namespace rl::castle

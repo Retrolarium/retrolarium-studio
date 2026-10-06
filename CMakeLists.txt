@@ -19,7 +19,7 @@ if(MINGW)
     add_link_options(-static $<$<CONFIG:Release>:-s>)
 endif()
 
-find_package(Qt5 5.15 REQUIRED COMPONENTS Core Gui Widgets Svg)
+find_package(Qt5 5.15 REQUIRED COMPONENTS Core Gui Widgets Svg LinguistTools)
 
 function(studio_enable_warnings target)
     if(MSVC)
@@ -103,6 +103,7 @@ studio_enable_warnings(studio_ui)
 add_library(studio_sdk STATIC
     src/sdk/editor_model.cpp
     src/sdk/editor_model.hpp
+    src/sdk/i18n.hpp
     src/sdk/plugin.cpp
     src/sdk/plugin.hpp
     src/sdk/project_file.cpp
@@ -181,6 +182,7 @@ add_library(studio_shell STATIC
     src/shell/settings_dialog.hpp
     src/shell/side_panels.cpp
     src/shell/side_panels.hpp
+    src/shell/value_names.cpp
 )
 target_link_libraries(studio_shell PUBLIC studio_editors studio_gallery studio_runtime studio_sdk studio_ui)
 studio_enable_warnings(studio_shell)
@@ -224,6 +226,28 @@ if(WIN32)
     configure_file(resources/version.rc.in ${CMAKE_CURRENT_BINARY_DIR}/version.rc @ONLY)
     target_sources(retrolarium-studio PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/version.rc)
 endif()
+# Interface translations: resources/i18n holds the .ts files (refreshed with
+# tools/update-translations.ps1); the build compiles them and embeds them
+# with Qt's own translation of its dialogs.
+set(studio_languages ru)
+set(studio_ts)
+foreach(language IN LISTS studio_languages)
+    list(APPEND studio_ts ${CMAKE_CURRENT_SOURCE_DIR}/resources/i18n/retrolarium_studio_${language}.ts)
+endforeach()
+qt5_add_translation(studio_qm ${studio_ts})
+get_target_property(qt_qmake Qt5::qmake IMPORTED_LOCATION)
+get_filename_component(qt_translations "${qt_qmake}/../../translations" ABSOLUTE)
+set(i18n_qrc ${CMAKE_CURRENT_BINARY_DIR}/i18n.qrc)
+set(i18n_files "")
+foreach(language IN LISTS studio_languages)
+    string(APPEND i18n_files
+           "        <file alias=\"retrolarium_studio_${language}.qm\">${CMAKE_CURRENT_BINARY_DIR}/retrolarium_studio_${language}.qm</file>\n"
+           "        <file alias=\"qtbase_${language}.qm\">${qt_translations}/qtbase_${language}.qm</file>\n")
+endforeach()
+file(WRITE ${i18n_qrc} "<!DOCTYPE RCC>\n<RCC version=\"1.0\">\n    <qresource prefix=\"/i18n\">\n${i18n_files}    </qresource>\n</RCC>\n")
+set_source_files_properties(${i18n_qrc} PROPERTIES SKIP_AUTORCC ON)
+qt5_add_resources(i18n_sources ${i18n_qrc})
+target_sources(retrolarium-studio PRIVATE ${studio_qm} ${i18n_sources})
 target_link_libraries(retrolarium-studio PRIVATE studio_shell studio_builtin_plugins)
 studio_enable_warnings(retrolarium-studio)
 install(TARGETS retrolarium-studio RUNTIME DESTINATION .)

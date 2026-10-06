@@ -3,6 +3,7 @@
 #include "flicky/plugin/flicky_session.hpp"
 #include "megadrive/compression.hpp"
 #include "megadrive/vdp.hpp"
+#include "sdk/i18n.hpp"
 
 #include <QVector>
 
@@ -17,7 +18,7 @@ const QString kSegaScreen = QStringLiteral("SEGA screen");
 constexpr int kSegaTilemapCapacity = 10;  // bytes of Enigma stream in the ROM
 
 QString roundLine(int line) {
-    return QStringLiteral("Round 01 · line %1").arg(line);
+    return rlTr("flicky", "Round 01 · line %1").arg(line);
 }
 
 QString hex(int value, int digits) {
@@ -175,7 +176,7 @@ bool TileBankModel::setPixel(QPoint pixel, int pen) {
 void TileBankModel::endStroke() {
     if (before_ && changed_) {
         session_->commitGraphics(*before_, beforeRevision_,
-                                 QStringLiteral("Paint %1 tile %2").arg(asset_, hex(tile_, 3)));
+                                 tr("Paint %1 tile %2").arg(asset_, hex(tile_, 3)));
     }
     before_.reset();
     changed_ = false;
@@ -203,7 +204,7 @@ bool TileBankModel::fill(QPoint pixel, int pen, QString* error) {
     }
     const QString asset = asset_;
     const int tile = tile_;
-    return session_->editGraphics(QStringLiteral("Fill %1 tile %2").arg(asset, hex(tile, 3)),
+    return session_->editGraphics(tr("Fill %1 tile %2").arg(asset, hex(tile, 3)),
                                   [asset, tile, region, pen](FlickyGraphicsDocument& g) {
                                       for (const QPoint& p : region) {
                                           g.setPixel(asset, tile, p.x(), p.y(), pen);
@@ -218,7 +219,7 @@ QVector<sdk::ViewOption> TileBankModel::viewOptions() const {
     }
     sdk::ViewOption palette;
     palette.key = QStringLiteral("palette");
-    palette.label = QStringLiteral("Palette");
+    palette.label = tr("Palette");
     palette.value = currentPalette();
     palette.choices = paletteChoices();
     return {palette};
@@ -234,42 +235,42 @@ void TileBankModel::setViewOption(const QString& key, const QString& value) {
 
 sdk::Inspection TileBankModel::inspect() const {
     sdk::Inspection inspection;
-    inspection.kicker = QStringLiteral("Tile");
-    inspection.title = QStringLiteral("Tile %1").arg(hex(tile_, 3));
+    inspection.kicker = tr("Tile");
+    inspection.title = tr("Tile %1").arg(hex(tile_, 3));
     sdk::Field bank;
     bank.key = QStringLiteral("bank");
-    bank.label = QStringLiteral("Bank");
+    bank.label = tr("Bank");
     bank.value = asset_;
     sdk::Field format;
     format.key = QStringLiteral("format");
-    format.label = QStringLiteral("Format");
-    format.value = font_ ? QStringLiteral("1bpp · 8 B") : QStringLiteral("4bpp · 32 B");
+    format.label = tr("Format");
+    format.value = font_ ? tr("1bpp · 8 B") : tr("4bpp · 32 B");
     sdk::Field index;
     index.key = QStringLiteral("index");
-    index.label = QStringLiteral("Index");
-    index.value = QStringLiteral("%1 of %2").arg(tile_).arg(tileCount());
+    index.label = tr("Index");
+    index.value = tr("%1 of %2").arg(tile_).arg(tileCount());
     index.monospace = true;
     sdk::Field pen;
     pen.key = QStringLiteral("pen");
-    pen.label = QStringLiteral("Pen");
+    pen.label = tr("Pen");
     pen.value = QString::number(pen_, 16).toUpper();
     pen.monospace = true;
     inspection.fields = {bank, format, index, pen};
-    inspection.note = font_ ? QStringLiteral("Fonts have two pens: background and ink.")
-                            : QStringLiteral("Colors are a preview only: tiles store pen indices. "
-                                             "Pick the palette to judge them by under View.");
+    inspection.note = font_ ? tr("Fonts have two pens: background and ink.")
+                            : tr("Colors are a preview only: tiles store pen indices. "
+                                 "Pick the palette to judge them by under View.");
     const int base = vramBase(asset_);
     inspection.engineTag = QStringLiteral("flicky.graphics.v1");
-    inspection.engine = {{QStringLiteral("Asset"), asset_},
+    inspection.engine = {{tr("Asset"), asset_},
                          {QStringLiteral("VRAM"), base >= 0 ? hex(base + tile_, 3) : QStringLiteral("—")},
-                         {QStringLiteral("Changed"), isTileDirty(tile_) ? QStringLiteral("since save")
+                         {tr("Changed"), isTileDirty(tile_) ? tr("since save")
                                                                          : QStringLiteral("no")},
-                         {QStringLiteral("Source"), QStringLiteral("graphics/graphics.json")}};
+                         {tr("Source"), QStringLiteral("graphics/graphics.json")}};
     return inspection;
 }
 
 QString TileBankModel::statusText() const {
-    return QStringLiteral("%1 · tile %2 · pen %3").arg(asset_, hex(tile_, 3)).arg(pen_);
+    return tr("%1 · tile %2 · pen %3").arg(asset_, hex(tile_, 3)).arg(pen_);
 }
 
 // ---------------------------------------------------------------- SEGA tilemap
@@ -279,7 +280,7 @@ SegaTilemapModel::SegaTilemapModel(FlickySession* session) : TileMapModel(sessio
 }
 
 QVector<sdk::Tool> SegaTilemapModel::tools() const {
-    return {{QStringLiteral("select"), QStringLiteral("Select a cell"), QStringLiteral("select")}};
+    return {{QStringLiteral("select"), tr("Select a cell"), QStringLiteral("select")}};
 }
 
 QImage SegaTilemapModel::render() const {
@@ -322,7 +323,7 @@ sdk::Budget SegaTilemapModel::budget() const {
     try {
         budget.used = static_cast<qint64>(megadrive::enigmaCompressedSize(words));
         budget.capacity = kSegaTilemapCapacity;
-        budget.text = QStringLiteral("enigma %1 / %2 B").arg(budget.used).arg(budget.capacity);
+        budget.text = tr("enigma %1 / %2 B").arg(budget.used).arg(budget.capacity);
     } catch (const std::exception& e) {
         budget.text = QString::fromUtf8(e.what());
     }
@@ -331,7 +332,7 @@ sdk::Budget SegaTilemapModel::budget() const {
 
 bool SegaTilemapModel::setWord(int word, QString* error) {
     const int cell = cell_;
-    return session_->editGraphics(QStringLiteral("Edit SEGA cell %1").arg(cell),
+    return session_->editGraphics(tr("Edit SEGA cell %1").arg(cell),
                                   [cell, word](FlickyGraphicsDocument& g) { g.setSegaTilemapWord(cell, word); },
                                   error);
 }
@@ -340,57 +341,57 @@ sdk::Inspection SegaTilemapModel::inspect() const {
     const int word = session_->graphics().segaTilemapWord(cell_);
     const megadrive::TileWord tile = megadrive::decodeTileWord(word);
     sdk::Inspection inspection;
-    inspection.kicker = QStringLiteral("Name table cell");
+    inspection.kicker = tr("Name table cell");
     inspection.title = QStringLiteral("Cell %1 · %2, %3").arg(cell_).arg(cell_ % 12).arg(cell_ / 12);
     sdk::Field wordField;
     wordField.key = QStringLiteral("word");
-    wordField.label = QStringLiteral("Word");
+    wordField.label = tr("Word");
     wordField.type = sdk::Field::Type::Text;
     wordField.value = hex(word, 4);
     wordField.monospace = true;
     sdk::Field pattern;
     pattern.key = QStringLiteral("pattern");
-    pattern.label = QStringLiteral("Pattern");
+    pattern.label = tr("Pattern");
     pattern.type = sdk::Field::Type::Integer;
     pattern.minimum = 0;
     pattern.maximum = 0x7FF;
     pattern.value = tile.pattern;
     pattern.hint = QStringLiteral("sega_tiles");
-    const QStringList yesNo{QStringLiteral("No"), QStringLiteral("Yes")};
+    const QStringList yesNo{tr("No"), QStringLiteral("Yes")};
     sdk::Field line;
     line.key = QStringLiteral("palette");
-    line.label = QStringLiteral("Palette line");
+    line.label = tr("Palette line");
     line.type = sdk::Field::Type::Choice;
     line.choices = QStringList{QStringLiteral("0"), QStringLiteral("1"), QStringLiteral("2"), QStringLiteral("3")};
     line.value = QString::number(tile.palette);
     sdk::Field hflip;
     hflip.key = QStringLiteral("hflip");
-    hflip.label = QStringLiteral("X flip");
+    hflip.label = tr("X flip");
     hflip.type = sdk::Field::Type::Choice;
     hflip.choices = yesNo;
     hflip.value = tile.hflip ? yesNo.at(1) : yesNo.at(0);
     sdk::Field vflip = hflip;
     vflip.key = QStringLiteral("vflip");
-    vflip.label = QStringLiteral("Y flip");
+    vflip.label = tr("Y flip");
     vflip.value = tile.vflip ? yesNo.at(1) : yesNo.at(0);
     sdk::Field priority = hflip;
     priority.key = QStringLiteral("priority");
-    priority.label = QStringLiteral("Priority");
+    priority.label = tr("Priority");
     priority.value = tile.priority ? yesNo.at(1) : yesNo.at(0);
     inspection.fields = {wordField, pattern, line, hflip, vflip, priority};
     const sdk::Budget size = budget();
     inspection.note = size.used > size.capacity
-                          ? QStringLiteral("The map compresses to %1 bytes; the ROM keeps %2. Undo or "
-                                           "simplify the map before building.")
+                          ? tr("The map compresses to %1 bytes; the ROM keeps %2. Undo or "
+                               "simplify the map before building.")
                                 .arg(size.used)
                                 .arg(size.capacity)
-                          : QStringLiteral("Pick a cell on the map. The map is stored Enigma-compressed "
-                                           "in %1 bytes.")
+                          : tr("Pick a cell on the map. The map is stored Enigma-compressed "
+                               "in %1 bytes.")
                                 .arg(size.capacity);
     inspection.engineTag = QStringLiteral("flicky.graphics.v1");
-    inspection.engine = {{QStringLiteral("Asset"), QStringLiteral("sega_tilemap")},
-                         {QStringLiteral("Encoding"), QStringLiteral("Enigma, 12 × 4 words")},
-                         {QStringLiteral("Saved word"), hex(session_->savedGraphics().segaTilemapWord(cell_), 4)}};
+    inspection.engine = {{tr("Asset"), QStringLiteral("sega_tilemap")},
+                         {tr("Encoding"), tr("Enigma, 12 × 4 words")},
+                         {tr("Saved word"), hex(session_->savedGraphics().segaTilemapWord(cell_), 4)}};
     return inspection;
 }
 
@@ -402,7 +403,7 @@ bool SegaTilemapModel::setField(const QString& key, const QVariant& value, QStri
         bool ok = false;
         const int word = text.toInt(&ok, 16);
         if (!ok || word < 0 || word > 0xFFFF) {
-            if (error) *error = QStringLiteral("A word is four hex digits, e.g. $0121.");
+            if (error) *error = tr("A word is four hex digits, e.g. $0121.");
             return false;
         }
         return setWord(word, error);
@@ -424,7 +425,7 @@ bool SegaTilemapModel::setField(const QString& key, const QVariant& value, QStri
 }
 
 QString SegaTilemapModel::statusText() const {
-    return QStringLiteral("SEGA screen · cell %1 · %2")
+    return tr("SEGA screen · cell %1 · %2")
         .arg(cell_)
         .arg(hex(session_->graphics().segaTilemapWord(cell_), 4));
 }
@@ -455,11 +456,11 @@ void SegaPaletteModel::setCurrentEntry(QPoint entry) {
 }
 
 QString SegaPaletteModel::pickerTitle() const {
-    return QStringLiteral("9-bit RGB · 0–7 per channel");
+    return tr("9-bit RGB · 0–7 per channel");
 }
 
 QStringList SegaPaletteModel::channelNames() const {
-    return {QStringLiteral("Red"), QStringLiteral("Green"), QStringLiteral("Blue")};
+    return {tr("Red"), tr("Green"), tr("Blue")};
 }
 
 QVector<int> SegaPaletteModel::currentChannels() const {
@@ -476,7 +477,7 @@ bool SegaPaletteModel::setChannel(int channel, int level, QString* error) {
     const FlickyCompactPaletteEntry e = session_->graphics().segaPaletteEntry(entry_);
     const int word = megadrive::cramWord(rgb[0], rgb[1], rgb[2]);
     const int entry = entry_;
-    return session_->editGraphics(QStringLiteral("Edit SEGA color %1").arg(entry),
+    return session_->editGraphics(tr("Edit SEGA color %1").arg(entry),
                                   [entry, e, word](FlickyGraphicsDocument& g) {
                                       g.setSegaPaletteEntry(entry, e.index, word);
                                   },
@@ -486,7 +487,7 @@ bool SegaPaletteModel::setChannel(int channel, int level, QString* error) {
 QVector<sdk::PaletteSample> SegaPaletteModel::samples() const {
     sdk::PaletteSample sample;
     sample.label = QStringLiteral("SEGA");
-    sample.caption = QStringLiteral("SEGA screen");
+    sample.caption = tr("SEGA screen");
     sample.image = session_->segaScreen();
     return {sample};
 }
@@ -494,11 +495,11 @@ QVector<sdk::PaletteSample> SegaPaletteModel::samples() const {
 sdk::Inspection SegaPaletteModel::inspect() const {
     const FlickyCompactPaletteEntry e = session_->graphics().segaPaletteEntry(entry_);
     sdk::Inspection inspection;
-    inspection.kicker = QStringLiteral("Color");
-    inspection.title = QStringLiteral("Entry %1").arg(entry_);
+    inspection.kicker = tr("Color");
+    inspection.title = tr("Entry %1").arg(entry_);
     sdk::Field cram;
     cram.key = QStringLiteral("cram");
-    cram.label = QStringLiteral("CRAM slot");
+    cram.label = tr("CRAM slot");
     cram.type = sdk::Field::Type::Integer;
     cram.minimum = 0;
     cram.maximum = 63;
@@ -506,7 +507,7 @@ sdk::Inspection SegaPaletteModel::inspect() const {
     cram.hint = QStringLiteral("0–63");
     sdk::Field value;
     value.key = QStringLiteral("value");
-    value.label = QStringLiteral("Value");
+    value.label = tr("Value");
     value.value = hex(e.colour, 3);
     value.monospace = true;
     const QVector<int> rgb = currentChannels();
@@ -516,12 +517,12 @@ sdk::Inspection SegaPaletteModel::inspect() const {
     channels.value = QStringLiteral("%1 %2 %3").arg(rgb.value(0)).arg(rgb.value(1)).arg(rgb.value(2));
     channels.monospace = true;
     inspection.fields = {cram, value, channels};
-    inspection.note = QStringLiteral("The SEGA screen loads only these ten colors; each names the CRAM "
-                                     "slot it fills.");
+    inspection.note = tr("The SEGA screen loads only these ten colors; each names the CRAM "
+                         "slot it fills.");
     inspection.engineTag = QStringLiteral("flicky.graphics.v1");
-    inspection.engine = {{QStringLiteral("Asset"), QStringLiteral("sega_palette")},
-                         {QStringLiteral("Encoding"), QStringLiteral("index, colour pairs")},
-                         {QStringLiteral("Last"), e.last ? QStringLiteral("yes") : QStringLiteral("no")}};
+    inspection.engine = {{tr("Asset"), QStringLiteral("sega_palette")},
+                         {tr("Encoding"), tr("index, colour pairs")},
+                         {tr("Last"), e.last ? QStringLiteral("yes") : QStringLiteral("no")}};
     return inspection;
 }
 
@@ -532,7 +533,7 @@ bool SegaPaletteModel::setField(const QString& key, const QVariant& value, QStri
     const FlickyCompactPaletteEntry e = session_->graphics().segaPaletteEntry(entry_);
     const int entry = entry_;
     const int index = value.toInt();
-    return session_->editGraphics(QStringLiteral("Move SEGA color %1 to slot %2").arg(entry).arg(index),
+    return session_->editGraphics(tr("Move SEGA color %1 to slot %2").arg(entry).arg(index),
                                   [entry, e, index](FlickyGraphicsDocument& g) {
                                       g.setSegaPaletteEntry(entry, index, e.colour);
                                   },
@@ -541,7 +542,7 @@ bool SegaPaletteModel::setField(const QString& key, const QVariant& value, QStri
 
 QString SegaPaletteModel::statusText() const {
     const FlickyCompactPaletteEntry e = session_->graphics().segaPaletteEntry(entry_);
-    return QStringLiteral("SEGA palette · entry %1 · CRAM %2 · %3")
+    return tr("SEGA palette · entry %1 · CRAM %2 · %3")
         .arg(entry_)
         .arg(e.index)
         .arg(hex(e.colour, 3));

@@ -2,6 +2,7 @@
 
 #include "doraemon/plugin/doraemon_session.hpp"
 #include "nes/editors.hpp"
+#include "sdk/i18n.hpp"
 
 #include <QJsonArray>
 #include <QPainter>
@@ -37,9 +38,9 @@ const QStringList& screenIds() {
 }
 
 QString screenLabel(const QString& id) {
-    if (id == QLatin1String("title")) return QStringLiteral("Title");
-    if (id == QLatin1String("ending")) return QStringLiteral("Ending opening");
-    return QStringLiteral("World %1 help").arg(id.right(1));
+    if (id == QLatin1String("title")) return rlTr("doraemon", "Title");
+    if (id == QLatin1String("ending")) return rlTr("doraemon", "Ending opening");
+    return rlTr("doraemon", "World %1 help").arg(id.right(1));
 }
 
 QString paletteOf(const QString& id) {
@@ -206,9 +207,9 @@ QJsonObject DoraemonScreenModel::text() const {
 }
 
 QVector<sdk::Tool> DoraemonScreenModel::tools() const {
-    return {{QStringLiteral("select"), QStringLiteral("Select a cell"), QStringLiteral("select")},
-            {QStringLiteral("paint"), QStringLiteral("Paint the sheet's tile (right button takes one)"), QStringLiteral("paint")},
-            {QStringLiteral("pick"), QStringLiteral("Take a cell's tile as the brush"), QStringLiteral("pick")}};
+    return {{QStringLiteral("select"), tr("Select a cell"), QStringLiteral("select")},
+            {QStringLiteral("paint"), tr("Paint the sheet's tile (right button takes one)"), QStringLiteral("paint")},
+            {QStringLiteral("pick"), tr("Take a cell's tile as the brush"), QStringLiteral("pick")}};
 }
 
 QImage DoraemonScreenModel::render() const {
@@ -266,9 +267,9 @@ QString DoraemonScreenModel::lockReason(QPoint cell) const {
     shell::cells(text(), screen_, &sources);
     const auto found = sources.constFind(cell.y() * 32 + cell.x());
     if (found != sources.constEnd() && found->kind.endsWith(QLatin1String("-text"))) {
-        return QStringLiteral("A letter of the screen's text: edit it in Text.");
+        return tr("A letter of the screen's text: edit it in Text.");
     }
-    return QStringLiteral("The code fills this cell with blank tile $7F.");
+    return tr("The code fills this cell with blank tile $7F.");
 }
 
 bool DoraemonScreenModel::setCell(int cell, int value, const QString& label, QString* error) {
@@ -286,7 +287,7 @@ bool DoraemonScreenModel::placeObject(const QString& libraryItem, QPoint cell, Q
     if (!libraryItem.startsWith(QLatin1String("tile:")) || !isCellEditable(cell)) return false;
     setCurrentLibraryItem(libraryItem);
     selectObject(QStringLiteral("cell:%1").arg(cell.y() * 32 + cell.x()));
-    return setCell(cell.y() * 32 + cell.x(), tile_, QStringLiteral("Set a tile of the %1").arg(title().toLower()), error);
+    return setCell(cell.y() * 32 + cell.x(), tile_, tr("Set a tile of the %1").arg(title().toLower()), error);
 }
 
 void DoraemonScreenModel::beginStroke() {
@@ -314,7 +315,7 @@ void DoraemonScreenModel::endStroke() {
     strokeChanged_ = false;
     if (changed) {
         QString error;
-        if (!session_->editText(QStringLiteral("Paint the %1").arg(title().toLower()), painted, &error)) {
+        if (!session_->editText(tr("Paint the %1").arg(title().toLower()), painted, &error)) {
             session_->report(sdk::Severity::Error, QStringLiteral("screens"), error);
         }
     }
@@ -349,14 +350,14 @@ void DoraemonScreenModel::selectObject(const QString& id) {
 
 bool DoraemonScreenModel::setField(const QString& key, const QVariant& value, QString* error) {
     if (cell_ < 0 || key != QLatin1String("tile")) return TileMapModel::setField(key, value, error);
-    return setCell(cell_, std::clamp(value.toInt(), 0, 255), QStringLiteral("Set a tile of the %1").arg(title().toLower()), error);
+    return setCell(cell_, std::clamp(value.toInt(), 0, 255), tr("Set a tile of the %1").arg(title().toLower()), error);
 }
 
 sdk::Library DoraemonScreenModel::sheet() const {
     sdk::Library result;
     result.grid = true;
     result.columns = 16;
-    result.hint = QStringLiteral("click: brush · drag onto a cell");
+    result.hint = tr("click: brush · drag onto a cell");
     // In the colours of the selected cell's palette row, or the first.
     int row = 0;
     if (cell_ >= 0) {
@@ -383,25 +384,25 @@ sdk::Inspection DoraemonScreenModel::inspect() const {
     sdk::Inspection inspection;
     inspection.engineTag = QStringLiteral("doraemon.text@1");
     if (cell_ < 0) {
-        inspection.kicker = QStringLiteral("Screen");
+        inspection.kicker = tr("Screen");
         inspection.title = title();
         inspection.note = screen_ == QLatin1String("title")
-                              ? QStringLiteral("The title as its PPU records draw it over the blank fill: the logo and "
-                                               "picture records can be painted; the text is edited in Text.")
+                              ? tr("The title as its PPU records draw it over the blank fill: the logo and "
+                                   "picture records can be painted; the text is edited in Text.")
                           : screen_ == QLatin1String("ending")
-                              ? QStringLiteral("The picture the ending opens with, drawn from CHR bank 3's first "
-                                               "pattern table: a whole name table, every tile editable.")
-                              : QStringLiteral("The item help shown before the chapter and in the attract mode: a whole "
-                                               "name table; the item names are edited in Text.");
+                              ? tr("The picture the ending opens with, drawn from CHR bank 3's first "
+                                   "pattern table: a whole name table, every tile editable.")
+                              : tr("The item help shown before the chapter and in the attract mode: a whole "
+                                   "name table; the item names are edited in Text.");
         return inspection;
     }
     const QPoint cell(cell_ % 32, cell_ / 32);
     const int value = cellValue(cell);
-    inspection.kicker = QStringLiteral("Cell");
-    inspection.title = QStringLiteral("Column %1, row %2").arg(cell.x()).arg(cell.y());
+    inspection.kicker = tr("Cell");
+    inspection.title = tr("Column %1, row %2").arg(cell.x()).arg(cell.y());
     sdk::Field tile;
     tile.key = QStringLiteral("tile");
-    tile.label = QStringLiteral("Tile");
+    tile.label = tr("Tile");
     tile.value = value;
     tile.hint = nes::hex(value);
     tile.monospace = true;
@@ -409,7 +410,7 @@ sdk::Inspection DoraemonScreenModel::inspect() const {
         tile.type = sdk::Field::Type::Integer;
         tile.minimum = 0;
         tile.maximum = 255;
-        inspection.note = QStringLiteral("A tile of CHR bank 3's background table.");
+        inspection.note = tr("A tile of CHR bank 3's background table.");
     } else {
         inspection.note = lockReason(cell);
     }
@@ -418,8 +419,8 @@ sdk::Inspection DoraemonScreenModel::inspect() const {
 }
 
 QString DoraemonScreenModel::statusText() const {
-    if (cell_ < 0) return QStringLiteral("Screens · %1").arg(title());
-    return QStringLiteral("Screens · %1 · %2, %3").arg(title()).arg(cell_ % 32).arg(cell_ / 32);
+    if (cell_ < 0) return tr("Screens · %1").arg(title());
+    return tr("Screens · %1 · %2, %3").arg(title()).arg(cell_ % 32).arg(cell_ / 32);
 }
 
 }  // namespace rl::doraemon

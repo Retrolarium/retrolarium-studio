@@ -2,6 +2,7 @@
 
 #include "castle/plugin/castle_session.hpp"
 #include "nes/editors.hpp"
+#include "sdk/i18n.hpp"
 
 #include <QJsonArray>
 #include <QJsonObject>
@@ -38,22 +39,22 @@ CastleAnimation player(const char* id, const char* label, std::initializer_list<
 
 QString typeName(int type) {
     switch (type) {
-    case 0x81: return QStringLiteral("Fairy");
-    case 0x84: return QStringLiteral("Fighter");
-    case 0x85: return QStringLiteral("Bishop");
-    case 0x87: return QStringLiteral("Knight");
-    case 0x88: return QStringLiteral("Witch");
-    case 0x89: return QStringLiteral("Flame");
-    case 0x8e: return QStringLiteral("Lift control block");
-    case 0xa0: return QStringLiteral("Witch summon");
-    case 0xa1: return QStringLiteral("Small lift");
-    case 0xa2: return QStringLiteral("Large lift");
-    case 0xa3: return QStringLiteral("Flying block");
-    case 0xa4: return QStringLiteral("Linked lift (left)");
-    case 0xa5: return QStringLiteral("Linked lift (right)");
-    case 0xa6: return QStringLiteral("Knight arrow");
-    case 0xa8: return QStringLiteral("Vanishing object");
-    case 0xa9: return QStringLiteral("Collected item");
+    case 0x81: return rlTr("castle", "Fairy");
+    case 0x84: return rlTr("castle", "Fighter");
+    case 0x85: return rlTr("castle", "Bishop");
+    case 0x87: return rlTr("castle", "Knight");
+    case 0x88: return rlTr("castle", "Witch");
+    case 0x89: return rlTr("castle", "Flame");
+    case 0x8e: return rlTr("castle", "Lift control block");
+    case 0xa0: return rlTr("castle", "Witch summon");
+    case 0xa1: return rlTr("castle", "Small lift");
+    case 0xa2: return rlTr("castle", "Large lift");
+    case 0xa3: return rlTr("castle", "Flying block");
+    case 0xa4: return rlTr("castle", "Linked lift (left)");
+    case 0xa5: return rlTr("castle", "Linked lift (right)");
+    case 0xa6: return rlTr("castle", "Knight arrow");
+    case 0xa8: return rlTr("castle", "Vanishing object");
+    case 0xa9: return rlTr("castle", "Collected item");
     default: return {};
     }
 }
@@ -62,10 +63,10 @@ CastleAnimation object(int type, std::initializer_list<int> firsts, int sprites 
     CastleAnimation a;
     a.id = QStringLiteral("object:%1").arg(type, 2, 16, QLatin1Char('0'));
     const QString name = typeName(type);
-    a.label = name.isEmpty() ? QStringLiteral("Object %1").arg(nes::hex(type))
+    a.label = name.isEmpty() ? rlTr("castle", "Object %1").arg(nes::hex(type))
                              : QStringLiteral("%1 · %2").arg(name, nes::hex(type));
-    a.group = type == 0x81 || (type >= 0x84 && type <= 0x89) || type == 0xa0 || type == 0xa6 ? QStringLiteral("Enemies")
-                                                                             : QStringLiteral("Objects");
+    a.group = type == 0x81 || (type >= 0x84 && type <= 0x89) || type == 0xa0 || type == 0xa6 ? rlTr("castle", "Enemies")
+                                                                             : rlTr("castle", "Objects");
     for (int first : firsts) a.frames << frame(first, sprites);
     return a;
 }
@@ -165,7 +166,7 @@ QVector<sdk::CompositionPiece> CastleAnimationModel::pieces() const {
     for (int i = 0; i < f.offsets.size(); ++i) {
         sdk::CompositionPiece piece;
         piece.id = QStringLiteral("d:%1").arg(f.first + i);
-        piece.label = QStringLiteral("Sprite %1 · %2").arg(f.first + i).arg(nes::hex(tileOf(f.first + i)));
+        piece.label = tr("Sprite %1 · %2").arg(f.first + i).arg(nes::hex(tileOf(f.first + i)));
         piece.pixels = QRect(origin() + QPoint(f.offsets.at(i), 0), QSize(8, 16));
         piece.movable = false;
         result << piece;
@@ -191,8 +192,8 @@ QVector<sdk::CompositionFrame> CastleAnimationModel::frames() const {
     for (int i = 0; i < list.size(); ++i) {
         sdk::CompositionFrame f;
         f.id = QString::number(i);
-        f.label = QStringLiteral("Frame %1").arg(i + 1);
-        f.detail = QStringLiteral("sprites %1-%2 · %3 ticks")
+        f.label = tr("Frame %1").arg(i + 1);
+        f.detail = tr("sprites %1-%2 · %3 ticks")
                        .arg(list.at(i).first)
                        .arg(list.at(i).first + list.at(i).offsets.size() - 1)
                        .arg(list.at(i).ticks);
@@ -216,7 +217,7 @@ int CastleAnimationModel::frameDurationMs(int frame) const {
 
 bool CastleAnimationModel::setDescriptor(int descriptor, int tile, int attributes, QString* error) {
     const QString id = session_->art().descriptors;
-    return session_->editBundle(QStringLiteral("Edit sprite %1").arg(descriptor),
+    return session_->editBundle(tr("Edit sprite %1").arg(descriptor),
                                 [id, descriptor, tile, attributes](nes::Bundle& b) {
                                     QJsonObject resource = b.resource(id);
                                     QJsonArray list = resource.value(QStringLiteral("descriptors")).toArray();
@@ -233,7 +234,7 @@ bool CastleAnimationModel::setDescriptor(int descriptor, int tile, int attribute
 bool CastleAnimationModel::dropItem(const QString& libraryItem, const QString& piece, QString* error) {
     const int descriptor = piece.startsWith(QLatin1String("d:")) ? piece.mid(2).toInt() : -1;
     if (!libraryItem.startsWith(QLatin1String("tile:")) || descriptor < 0) {
-        if (error) *error = QStringLiteral("Drop a pattern pair onto a sprite.");
+        if (error) *error = tr("Drop a pattern pair onto a sprite.");
         return false;
     }
     selectPiece(piece);
@@ -249,8 +250,8 @@ bool CastleAnimationModel::setField(const QString& key, const QVariant& value, Q
     } else if (key == QLatin1String("palette")) {
         attributes = (attributes & ~3) | std::clamp(value.toString().section(QLatin1Char(' '), 1).toInt(), 0, 3);
     } else if (key == QLatin1String("flip")) {
-        static const QStringList kFlips{QStringLiteral("None"), QStringLiteral("Horizontal"), QStringLiteral("Vertical"),
-                                        QStringLiteral("Both")};
+        static const QStringList kFlips{QStringLiteral("None"), tr("Horizontal"), tr("Vertical"),
+                                        tr("Both")};
         const int flip = std::max(0, int(kFlips.indexOf(value.toString())));
         attributes = (attributes & ~0xc0) | ((flip & 1) ? 0x40 : 0) | ((flip & 2) ? 0x80 : 0);
     } else {
@@ -264,7 +265,7 @@ sdk::Library CastleAnimationModel::sheet() const {
     result.grid = true;
     result.columns = 16;
     result.cell = QSize(1, 2);
-    result.hint = QStringLiteral("drag a pattern pair onto a sprite");
+    result.hint = tr("drag a pattern pair onto a sprite");
     const int palette = selected_ >= 0 ? attributesOf(selected_) & 3 : 0;
     const CastlePainter& art = session_->painter();
     for (int table = 0; table < 2; ++table) {
@@ -289,8 +290,8 @@ sdk::Inspection CastleAnimationModel::inspect() const {
     sdk::Inspection inspection;
     inspection.engineTag = QStringLiteral("castle.metasprite-descriptors.v1");
     if (selected_ < 0) {
-        inspection.kicker = animation().group == QLatin1String("Player") ? QStringLiteral("Player animation")
-                                                                         : QStringLiteral("Object frames");
+        inspection.kicker = animation().group == QLatin1String("Player") ? tr("Player animation")
+                                                                         : tr("Object frames");
         inspection.title = title();
         sdk::Field count;
         count.key = QStringLiteral("frames");
@@ -298,51 +299,51 @@ sdk::Inspection CastleAnimationModel::inspect() const {
         count.value = QString::number(animation().frames.size());
         inspection.fields = {count};
         inspection.note = animation().group == QLatin1String("Player")
-                              ? QStringLiteral("The frames the game shows the player in, as its frame selection steps "
-                                               "them. Select a sprite to change its patterns, palette or flip, or drop a "
-                                               "pattern pair from the sheet on it.")
-                              : QStringLiteral("The frames this object's sprite selector chooses between (by direction "
-                                               "and the frame counter), played here one after another. Select a sprite "
-                                               "to edit it. Frames share sprites with other objects where the game does.");
+                              ? tr("The frames the game shows the player in, as its frame selection steps "
+                                   "them. Select a sprite to change its patterns, palette or flip, or drop a "
+                                   "pattern pair from the sheet on it.")
+                              : tr("The frames this object's sprite selector chooses between (by direction "
+                                   "and the frame counter), played here one after another. Select a sprite "
+                                   "to edit it. Frames share sprites with other objects where the game does.");
         return inspection;
     }
     const int attributes = attributesOf(selected_);
-    inspection.kicker = QStringLiteral("Sprite");
-    inspection.title = QStringLiteral("Sprite %1").arg(selected_);
+    inspection.kicker = tr("Sprite");
+    inspection.title = tr("Sprite %1").arg(selected_);
     sdk::Field tile;
     tile.key = QStringLiteral("tile");
-    tile.label = QStringLiteral("Patterns");
+    tile.label = tr("Patterns");
     tile.type = sdk::Field::Type::Integer;
     tile.value = tileOf(selected_);
     tile.minimum = 0;
     tile.maximum = 255;
-    tile.hint = QStringLiteral("%1 · table %2").arg(nes::hex(tileOf(selected_))).arg(tileOf(selected_) & 1);
+    tile.hint = tr("%1 · table %2").arg(nes::hex(tileOf(selected_))).arg(tileOf(selected_) & 1);
     tile.monospace = true;
     sdk::Field palette;
     palette.key = QStringLiteral("palette");
-    palette.label = QStringLiteral("Palette");
+    palette.label = tr("Palette");
     palette.type = sdk::Field::Type::Choice;
     for (int p = 0; p < 4; ++p) {
-        palette.choices << QStringLiteral("SPR %1").arg(p);
+        palette.choices << tr("SPR %1").arg(p);
         palette.choiceIcons << session_->painter().sprite(CastleSprite{tileOf(selected_), (attributes & ~3) | p, 0, 0});
     }
-    palette.value = QStringLiteral("SPR %1").arg(attributes & 3);
+    palette.value = tr("SPR %1").arg(attributes & 3);
     sdk::Field flip;
     flip.key = QStringLiteral("flip");
-    flip.label = QStringLiteral("Flip");
+    flip.label = tr("Flip");
     flip.type = sdk::Field::Type::Choice;
-    flip.choices = QStringList{QStringLiteral("None"), QStringLiteral("Horizontal"), QStringLiteral("Vertical"),
-                               QStringLiteral("Both")};
+    flip.choices = QStringList{QStringLiteral("None"), tr("Horizontal"), tr("Vertical"),
+                               tr("Both")};
     flip.value = flip.choices.at(((attributes & 0x40) ? 1 : 0) | ((attributes & 0x80) ? 2 : 0));
     inspection.fields = {tile, palette, flip};
-    inspection.note = QStringLiteral("An 8x16 sprite: a pattern pair (even from the first pattern table, odd from the "
-                                     "second) and its attributes. Every frame and object that draws this sprite "
-                                     "changes with it.");
+    inspection.note = tr("An 8x16 sprite: a pattern pair (even from the first pattern table, odd from the "
+                         "second) and its attributes. Every frame and object that draws this sprite "
+                         "changes with it.");
     return inspection;
 }
 
 QString CastleAnimationModel::statusText() const {
-    return QStringLiteral("Animations · %1 · frame %2").arg(title()).arg(frame_ + 1);
+    return tr("Animations · %1 · frame %2").arg(title()).arg(frame_ + 1);
 }
 
 }  // namespace rl::castle

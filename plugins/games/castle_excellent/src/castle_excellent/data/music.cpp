@@ -1,6 +1,7 @@
 #include "castle/data/music.hpp"
 
 #include "castle/data/levels.hpp"
+#include "sdk/i18n.hpp"
 
 #include <QJsonArray>
 #include <QSet>
@@ -205,23 +206,23 @@ QVector<QVector<CastleMusicNote>> CastleMusic::trace(const QJsonObject& music, i
 }
 
 QString CastleMusic::checkText(const QString& text) {
-    if (text.isEmpty()) return QStringLiteral("A stream needs at least one command.");
+    if (text.isEmpty()) return rlTr("castle", "A stream needs at least one command.");
     const QByteArray data = text.toLatin1();
-    if (QString::fromLatin1(data) != text) return QStringLiteral("MML is plain ASCII.");
+    if (QString::fromLatin1(data) != text) return rlTr("castle", "MML is plain ASCII.");
     for (int i = 0; i < data.size();) {
         const char c = data.at(i++);
         if (c == 'o' || c == 't' || c == 'l' || c == 'v') {
-            if (i >= data.size()) return QStringLiteral("'%1' needs an argument.").arg(QLatin1Char(c));
+            if (i >= data.size()) return rlTr("castle", "'%1' needs an argument.").arg(QLatin1Char(c));
             const char a = data.at(i++);
             if ((c == 'o' || c == 't') && !(a >= '0' && a <= '9'))
-                return QStringLiteral("'%1' takes a digit.").arg(QLatin1Char(c));
-            if (c == 'l' && defaultLengthIndex(a) < 0) return QStringLiteral("'l' takes @, 8, 4, 2 or 1.");
+                return rlTr("castle", "'%1' takes a digit.").arg(QLatin1Char(c));
+            if (c == 'l' && defaultLengthIndex(a) < 0) return rlTr("castle", "'l' takes @, 8, 4, 2 or 1.");
             if (c == 'v' && !((a >= '0' && a <= '9') || (a >= 'a' && a <= 'f')))
-                return QStringLiteral("'v' takes 0-9 or a-f.");
+                return rlTr("castle", "'v' takes 0-9 or a-f.");
             continue;
         }
         if (noteIndex(c) < 0 && c != 'r') {
-            return QStringLiteral("'%1' at %2 is not MML (notes a-g, r, o l t v commands).")
+            return rlTr("castle", "'%1' at %2 is not MML (notes a-g, r, o l t v commands).")
                 .arg(QLatin1Char(c))
                 .arg(i - 1);
         }
@@ -253,7 +254,7 @@ QJsonObject CastleMusic::withText(const QJsonObject& music, int stream, const QS
     const int used = usedBytes(next);
     const int capacity = next.value(QStringLiteral("capacity_bytes")).toInt();
     if (used > capacity) {
-        throw CastleError(QStringLiteral("The music would take %1 of %2 bytes; shorten a stream by %3 first.")
+        throw CastleError(rlTr("castle", "The music would take %1 of %2 bytes; shorten a stream by %3 first.")
                               .arg(used)
                               .arg(capacity)
                               .arg(used - capacity)

@@ -1,5 +1,7 @@
 #include "castle/data/levels.hpp"
 
+#include "sdk/i18n.hpp"
+
 #include <QFile>
 #include <QJsonArray>
 #include <QJsonDocument>
@@ -29,17 +31,17 @@ QVector<int> ints(const QJsonValue& value) {
 CastleLevels CastleLevels::load(const QString& path) {
     QFile file(path);
     if (!file.open(QIODevice::ReadOnly)) {
-        fail(QStringLiteral("Cannot read %1: %2").arg(path, file.errorString()));
+        fail(rlTr("castle", "Cannot read %1: %2").arg(path, file.errorString()));
     }
     QJsonParseError error;
     const QJsonDocument json = QJsonDocument::fromJson(file.readAll(), &error);
     if (!json.isObject()) {
-        fail(QStringLiteral("%1 is not a JSON document: %2").arg(path, error.errorString()));
+        fail(rlTr("castle", "%1 is not a JSON document: %2").arg(path, error.errorString()));
     }
     CastleLevels levels;
     levels.root_ = json.object();
     if (levels.root_.value(QStringLiteral("schema")).toString() != QLatin1String("retrolarium.castle-levels")) {
-        fail(QStringLiteral("%1 is not a Castle rooms document.").arg(path));
+        fail(rlTr("castle", "%1 is not a Castle rooms document.").arg(path));
     }
     levels.width_ = levels.root_.value(QStringLiteral("width")).toInt(20);
     levels.height_ = levels.root_.value(QStringLiteral("height")).toInt(20);
@@ -49,11 +51,11 @@ CastleLevels CastleLevels::load(const QString& path) {
 void CastleLevels::save(const QString& path) const {
     QSaveFile file(path);
     if (!file.open(QIODevice::WriteOnly)) {
-        fail(QStringLiteral("Cannot write %1: %2").arg(path, file.errorString()));
+        fail(rlTr("castle", "Cannot write %1: %2").arg(path, file.errorString()));
     }
     file.write(QJsonDocument(root_).toJson(QJsonDocument::Indented));
     if (!file.commit()) {
-        fail(QStringLiteral("Cannot write %1: %2").arg(path, file.errorString()));
+        fail(rlTr("castle", "Cannot write %1: %2").arg(path, file.errorString()));
     }
 }
 
@@ -68,7 +70,7 @@ QString CastleLevels::revision() const {
 QJsonObject CastleLevels::room(int index) const {
     const QJsonArray rooms = root_.value(QStringLiteral("rooms")).toArray();
     if (index < 0 || index >= rooms.size()) {
-        fail(QStringLiteral("There is no room %1.").arg(index + 1));
+        fail(rlTr("castle", "There is no room %1.").arg(index + 1));
     }
     return rooms.at(index).toObject();
 }
@@ -95,10 +97,10 @@ QVector<int> CastleLevels::cells(int index) const {
 
 void CastleLevels::setCell(int index, QPoint cell, int value) {
     if (cell.x() < 0 || cell.y() < 0 || cell.x() >= width_ || cell.y() >= height_) {
-        fail(QStringLiteral("The cell is outside the room."));
+        fail(rlTr("castle", "The cell is outside the room."));
     }
     if (value < 0 || value >= std::max(1, renderingCellCount())) {
-        fail(QStringLiteral("There is no cell type %1.").arg(value));
+        fail(rlTr("castle", "There is no cell type %1.").arg(value));
     }
     QJsonObject r = room(index);
     QJsonArray rows = r.value(QStringLiteral("cells")).toArray();
@@ -123,10 +125,10 @@ void CastleLevels::setObjects(int index, const QVector<CastleObject>& objects) {
     QJsonArray array;
     for (const CastleObject& o : objects) {
         if (o.x < 0 || o.y < 0 || o.x >= width_ || o.y >= height_) {
-            fail(QStringLiteral("An object would stand outside the room."));
+            fail(rlTr("castle", "An object would stand outside the room."));
         }
         if (o.type < 0 || o.type >= encodedTypeCount()) {
-            fail(QStringLiteral("There is no object type %1.").arg(o.type));
+            fail(rlTr("castle", "There is no object type %1.").arg(o.type));
         }
         QJsonObject json;
         json.insert(QStringLiteral("encoded_type"), o.type);

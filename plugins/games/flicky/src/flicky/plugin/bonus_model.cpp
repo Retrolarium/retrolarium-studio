@@ -2,6 +2,7 @@
 
 #include "flicky/plugin/flicky_session.hpp"
 #include "flicky/plugin/objects.hpp"
+#include "sdk/i18n.hpp"
 
 #include <QJsonArray>
 #include <QPainter>
@@ -25,9 +26,9 @@ QString hex(int value) {
 }
 
 QString placementTitle(const QString& id) {
-    if (id == QLatin1String("seesaw")) return QStringLiteral("Seesaw");
-    if (id == QLatin1String("tiger")) return QStringLiteral("Tiger");
-    return QStringLiteral("Chick spawn");
+    if (id == QLatin1String("seesaw")) return rlTr("flicky", "Seesaw");
+    if (id == QLatin1String("tiger")) return rlTr("flicky", "Tiger");
+    return rlTr("flicky", "Chick spawn");
 }
 
 // The animations whose first frame shows each actor, for its bounds.
@@ -75,7 +76,7 @@ BonusRoundModel::Actor BonusRoundModel::parseId(const QString& id) {
 }
 
 QString BonusRoundModel::title() const {
-    return QStringLiteral("Round ") + two(round_ + 1);
+    return tr("Round ") + two(round_ + 1);
 }
 
 QSize BonusRoundModel::gridSize() const {
@@ -83,7 +84,7 @@ QSize BonusRoundModel::gridSize() const {
 }
 
 QVector<sdk::Tool> BonusRoundModel::tools() const {
-    return {{QStringLiteral("select"), QStringLiteral("Select and move"), QStringLiteral("select")}};
+    return {{QStringLiteral("select"), tr("Select and move"), QStringLiteral("select")}};
 }
 
 QImage BonusRoundModel::render() const {
@@ -179,7 +180,7 @@ bool BonusRoundModel::place(const Actor& actor, int worldX, int worldY, QString*
         session_->setLevelsLive(next);
         return true;
     }
-    return session_->editLevels(QStringLiteral("Move %1").arg(placementTitle(actor.placement)), edit, error);
+    return session_->editLevels(tr("Move %1").arg(placementTitle(actor.placement)), edit, error);
 }
 
 void BonusRoundModel::beginDrag(const QString& id) {
@@ -216,7 +217,7 @@ void BonusRoundModel::endDrag() {
         const QJsonObject now = session_->levels().bonusPlacement(actor.placement);
         if (was != now) {
             session_->commitLevels(*before_, session_->levels(),
-                                   QStringLiteral("Move %1").arg(placementTitle(actor.placement)));
+                                   tr("Move %1").arg(placementTitle(actor.placement)));
         }
     }
     before_.reset();
@@ -225,7 +226,7 @@ void BonusRoundModel::endDrag() {
 QVector<sdk::ViewOption> BonusRoundModel::viewOptions() const {
     sdk::ViewOption phase;
     phase.key = QStringLiteral("phase");
-    phase.label = QStringLiteral("Frame");
+    phase.label = tr("Frame");
     phase.value = QString::number(session_->bonusPhase());
     phase.choices = QStringList{QStringLiteral("11"), QStringLiteral("17"), QStringLiteral("30"),
                                 QStringLiteral("60"), QStringLiteral("120"), QStringLiteral("240"),
@@ -246,29 +247,29 @@ sdk::Inspection BonusRoundModel::inspect() const {
     inspection.engineTag = QStringLiteral("flicky.levels.v1");
     const Actor actor = parseId(selected_);
     if (!actor.isValid()) {
-        inspection.kicker = QStringLiteral("Bonus round");
+        inspection.kicker = tr("Bonus round");
         inspection.title = title();
         sdk::Field phase;
         phase.key = QStringLiteral("phase");
-        phase.label = QStringLiteral("Frame");
+        phase.label = tr("Frame");
         phase.type = sdk::Field::Type::Integer;
         phase.minimum = 1;
         phase.maximum = 600;
         phase.value = session_->bonusPhase();
         phase.hint = QStringLiteral("1–600");
         inspection.fields = {phase};
-        inspection.note = QStringLiteral("The scene is simulated frame by frame after the round becomes "
-                                         "ready, without player input. Pick a seesaw, tiger or the chick "
-                                         "spawn to move it; every bonus round shares these placements.");
-        inspection.engine = {{QStringLiteral("Source"), QStringLiteral("game/bonus/objects.s")},
-                             {QStringLiteral("Changed"), session_->bonusPlacementsDirty() ? QStringLiteral("since save")
+        inspection.note = tr("The scene is simulated frame by frame after the round becomes "
+                             "ready, without player input. Pick a seesaw, tiger or the chick "
+                             "spawn to move it; every bonus round shares these placements.");
+        inspection.engine = {{tr("Source"), QStringLiteral("game/bonus/objects.s")},
+                             {tr("Changed"), session_->bonusPlacementsDirty() ? tr("since save")
                                                                                          : QStringLiteral("no")}};
         return inspection;
     }
     const QJsonObject p = session_->levels().bonusPlacement(actor.placement);
     const int x = p.value(QStringLiteral("x")).toArray().at(actor.side).toInt();
     const int y = p.value(QStringLiteral("y")).toInt();
-    inspection.kicker = QStringLiteral("Bonus actor");
+    inspection.kicker = tr("Bonus actor");
     inspection.title = QStringLiteral("%1 · %2").arg(placementTitle(actor.placement), sideName(p, actor.side));
     sdk::Field fx;
     fx.key = QStringLiteral("x");
@@ -283,16 +284,16 @@ sdk::Inspection BonusRoundModel::inspect() const {
     fy.value = hex(y);
     sdk::Field screen;
     screen.key = QStringLiteral("screen");
-    screen.label = QStringLiteral("On screen");
-    screen.value = QStringLiteral("%1, %2 px").arg(x - kWorldMin).arg(y - kWorldMin);
+    screen.label = tr("On screen");
+    screen.value = tr("%1, %2 px").arg(x - kWorldMin).arg(y - kWorldMin);
     screen.monospace = true;
     inspection.fields = {fx, fy, screen};
-    inspection.note = QStringLiteral("X is set per side; Y is shared by both sides. Coordinates are "
-                                     "sprite space: $080 is the screen's left or top edge.");
+    inspection.note = tr("X is set per side; Y is shared by both sides. Coordinates are "
+                         "sprite space: $080 is the screen's left or top edge.");
     const QJsonArray baselineX = p.value(QStringLiteral("baseline_x")).toArray();
-    inspection.engine = {{QStringLiteral("Placement"), actor.placement},
-                         {QStringLiteral("Source"), p.value(QStringLiteral("source")).toString()},
-                         {QStringLiteral("Original"), QStringLiteral("%1, %2")
+    inspection.engine = {{tr("Placement"), actor.placement},
+                         {tr("Source"), p.value(QStringLiteral("source")).toString()},
+                         {tr("Original"), QStringLiteral("%1, %2")
                                                           .arg(hex(baselineX.at(actor.side).toInt()),
                                                                hex(p.value(QStringLiteral("baseline_y")).toInt()))}};
     return inspection;
@@ -310,7 +311,7 @@ bool BonusRoundModel::setField(const QString& key, const QVariant& value, QStrin
     bool ok = false;
     const int world = parseWorld(value.toString(), &ok);
     if (!ok || world < kWorldMin || world > kWorldMax) {
-        if (error) *error = QStringLiteral("Use $080–$17F (or 128–383).");
+        if (error) *error = tr("Use $080–$17F (or 128–383).");
         return false;
     }
     const QJsonObject p = session_->levels().bonusPlacement(actor.placement);
@@ -320,16 +321,16 @@ bool BonusRoundModel::setField(const QString& key, const QVariant& value, QStrin
 }
 
 QString BonusRoundModel::startPoint() const {
-    return QStringLiteral("Round ") + two(round_ + 1);
+    return tr("Round ") + two(round_ + 1);
 }
 
 QString BonusRoundModel::statusText() const {
     const Actor actor = parseId(selected_);
     if (!actor.isValid()) {
-        return QStringLiteral("%1 · bonus round · frame %2").arg(title()).arg(session_->bonusPhase());
+        return tr("%1 · bonus round · frame %2").arg(title()).arg(session_->bonusPhase());
     }
     const QPoint a = anchor(actor);
-    return QStringLiteral("%1 at %2, %3 px · frame %4")
+    return tr("%1 at %2, %3 px · frame %4")
         .arg(placementTitle(actor.placement))
         .arg(a.x())
         .arg(a.y())
