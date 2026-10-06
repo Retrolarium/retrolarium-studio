@@ -389,6 +389,7 @@ QWidget* EmulatorView::createToolbar(QWidget* parent) {
         b->setFont(theme::font(theme::TextRole::Body, 12.0));
         b->setEnabled(enabled);
         b->setFocusPolicy(Qt::NoFocus);  // a click keeps the keyboard with the game
+        b->setMinimumWidth(b->sizeHint().width());  // a narrow pane squeezes the status, not the labels
         return b;
     };
     // One label in every state, so the buttons after it never move.
@@ -421,7 +422,7 @@ QWidget* EmulatorView::createToolbar(QWidget* parent) {
     auto* separator = new ui::Divider(Qt::Vertical, ui::Divider::Strength::Line, bar);
     separator->setFixedHeight(18);
     layout->addWidget(separator, 0, Qt::AlignVCenter);
-    layout->addWidget(new ui::Label(QStringLiteral("View"), ui::Label::Role::Caps, bar));
+    layout->addWidget(new ui::Label(tr("View"), ui::Label::Role::Caps, bar));
     for (const sdk::ViewOption& option : emulator_->viewOptions()) {
         auto* chip = new ui::ViewChip(option.label, option.value, bar);
         const QString key = option.key;

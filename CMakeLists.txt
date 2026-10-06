@@ -252,6 +252,29 @@ target_link_libraries(retrolarium-studio PRIVATE studio_shell studio_builtin_plu
 studio_enable_warnings(retrolarium-studio)
 install(TARGETS retrolarium-studio RUNTIME DESTINATION .)
 
+# The setup program (installer/): an installer in the studio's frame and
+# widgets that carries the package folder after itself and, copied into the
+# installation, uninstalls it. tools/package-win.ps1 attaches the payload.
+if(WIN32)
+    set(SETUP_MANIFEST "${CMAKE_CURRENT_SOURCE_DIR}/installer/win32/retrolarium-setup.manifest")
+    configure_file(installer/win32/retrolarium-setup.rc.in ${CMAKE_CURRENT_BINARY_DIR}/retrolarium-setup.rc @ONLY)
+    add_executable(retrolarium-setup WIN32
+        installer/src/installer_package.cpp
+        installer/src/installer_package.hpp
+        installer/src/main.cpp
+        installer/src/setup_operations.cpp
+        installer/src/setup_operations.hpp
+        installer/src/setup_window.cpp
+        installer/src/setup_window.hpp
+        ${CMAKE_CURRENT_BINARY_DIR}/retrolarium-setup.rc
+    )
+    target_include_directories(retrolarium-setup PRIVATE installer/src)
+    target_compile_definitions(retrolarium-setup PRIVATE UNICODE _UNICODE _WIN32_WINNT=0x0601)
+    target_link_libraries(retrolarium-setup PRIVATE studio_ui advapi32 ole32 shell32 uuid)
+    studio_enable_warnings(retrolarium-setup)
+    install(TARGETS retrolarium-setup RUNTIME DESTINATION .)
+endif()
+
 get_property(studio_tests GLOBAL PROPERTY STUDIO_TESTS)
 string(REGEX REPLACE ",\n$" "\n" studio_tests "${studio_tests}")
 file(GENERATE OUTPUT ${CMAKE_BINARY_DIR}/tests.json CONTENT "[\n${studio_tests}]\n")

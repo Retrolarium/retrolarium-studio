@@ -389,7 +389,7 @@ QWidget* SequencerEditor::createToolbar(QWidget* parent) {
         separator->setFixedHeight(18);
         layout->addWidget(separator, 0, Qt::AlignVCenter);
     }
-    layout->addWidget(new ui::Label(QStringLiteral("View"), ui::Label::Role::Caps, bar));
+    layout->addWidget(new ui::Label(tr("View"), ui::Label::Role::Caps, bar));
     for (const sdk::ViewOption& option : sequencer_->viewOptions()) {
         auto* chip = new ui::ViewChip(option.label, option.value, bar);
         const QString key = option.key;

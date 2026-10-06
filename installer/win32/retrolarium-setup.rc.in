@@ -1,8 +1,8 @@
-// Windows file properties of retrolarium-studio.exe; filled in by CMake from
-// the project version.
+// Windows resources of the setup program; filled in by CMake.
 #include <winver.h>
 
 IDI_ICON1 ICON "@BRAND_ICO@"
+1 24 "@SETUP_MANIFEST@"
 
 VS_VERSION_INFO VERSIONINFO
 FILEVERSION     @PROJECT_VERSION_MAJOR@,@PROJECT_VERSION_MINOR@,@PROJECT_VERSION_PATCH@,0
@@ -18,10 +18,10 @@ BEGIN
         BLOCK "040904B0"
         BEGIN
             VALUE "CompanyName",      "Retrolarium"
-            VALUE "FileDescription",  "Retrolarium Studio"
+            VALUE "FileDescription",  "Retrolarium Studio Setup"
             VALUE "FileVersion",      "@PROJECT_VERSION@"
-            VALUE "InternalName",     "retrolarium-studio"
-            VALUE "OriginalFilename", "retrolarium-studio.exe"
+            VALUE "InternalName",     "retrolarium-setup"
+            VALUE "OriginalFilename", "retrolarium-setup.exe"
             VALUE "ProductName",      "Retrolarium Studio"
             VALUE "ProductVersion",   "@PROJECT_VERSION@"
         END

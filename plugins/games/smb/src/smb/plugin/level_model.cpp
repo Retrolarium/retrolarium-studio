@@ -685,7 +685,7 @@ QVector<sdk::ViewOption> SmbLevelModel::viewOptions() const {
     lighting.key = QStringLiteral("lighting");
     lighting.label = tr("Lighting");
     lighting.value = session_->lighting();
-    lighting.choices = QStringList{tr("Auto"), QStringLiteral("Day"), QStringLiteral("Night")};
+    lighting.choices = QStringList{QStringLiteral("Auto"), QStringLiteral("Day"), QStringLiteral("Night")};
     return {lighting};
 }
 

@@ -24,6 +24,8 @@ namespace {
     QT_TRANSLATE_NOOP("Values", "No"),
     QT_TRANSLATE_NOOP("Values", "On"),
     QT_TRANSLATE_NOOP("Values", "Off"),
+    QT_TRANSLATE_NOOP("Values", "Auto"),
+    QT_TRANSLATE_NOOP("Values", "Expanded"),
     QT_TRANSLATE_NOOP("Values", "None"),
     QT_TRANSLATE_NOOP("Values", "Set"),
     QT_TRANSLATE_NOOP("Values", "Day"),

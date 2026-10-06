@@ -442,7 +442,7 @@ QWidget* PaletteEditor::createToolbar(QWidget* parent) {
         layout->addWidget(new ui::Label(palette_->isReadOnly() ? tr("Read only") : hint,
                                         ui::Label::Role::Small, bar));
     } else {
-        layout->addWidget(new ui::Label(QStringLiteral("View"), ui::Label::Role::Caps, bar));
+        layout->addWidget(new ui::Label(tr("View"), ui::Label::Role::Caps, bar));
     }
     for (const sdk::ViewOption& option : options) {
         auto* chip = new ui::ViewChip(option.label, option.value, bar);

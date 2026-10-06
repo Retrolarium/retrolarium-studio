@@ -500,7 +500,7 @@ sdk::Inspection CastleRoomModel::inspect() const {
     const QVector<int> cells = roomCells();
     inspection.fields = {readOnly(QStringLiteral("objects"), tr("Objects"),
                                   QStringLiteral("%1 / %2").arg(roomObjects().size()).arg(kMaximumObjects)),
-                         readOnly(QStringLiteral("brush"), QStringLiteral("Cell brush"), hex(brush_))};
+                         readOnly(QStringLiteral("brush"), tr("Cell brush"), hex(brush_))};
     inspection.note = layer_ == QLatin1String("cells")
                           ? tr("Paint cells with the sheet's pattern; the right button takes a cell. "
                                "Each cell is two background tiles; its colours come from the attribute "

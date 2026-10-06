@@ -47,6 +47,7 @@ int main(int argc, char* argv[]) {
 
     // The interface language: the studio's own text, then Qt's dialogs.
     const QString language = rl::shell::SettingsDialog::language();
+    rl::theme::setCyrillicInterface(language == QLatin1String("ru"));
     QTranslator studioTranslator;
     QTranslator qtTranslator;
     if (language != QLatin1String("en") &&

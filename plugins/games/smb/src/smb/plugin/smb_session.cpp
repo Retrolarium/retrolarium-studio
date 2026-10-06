@@ -142,6 +142,11 @@ std::unique_ptr<SmbSession> SmbSession::open(const sdk::ProjectFile& project, QS
         };
         session->levels_ = first("smb.levels.v1");
         session->world_ = first("smb.world.v1");
+        for (const QString& id : d.resourceIds(QStringLiteral("smb.levels.v1"))) {
+            const QString world = d.resource(id).value(QStringLiteral("world_resource")).toString();
+            session->banks_ << CourseBank{id, world.isEmpty() ? session->world_ : world};
+        }
+        if (!session->banks_.isEmpty()) session->world_ = session->banks_.first().world;
         session->music_ = first("smb.apu-music.v1");
         session->art_.chr = first("nes.chr-2bpp.v1");
         session->art_.metatiles = first("nes.metatile-2x2.v1");
@@ -229,25 +234,33 @@ QVector<sdk::DocumentGroup> SmbSession::documents(const QString& kind) const {
     if (kind == QLatin1String("levels")) {
         const QStringList order{QStringLiteral("ground"), QStringLiteral("underground"), QStringLiteral("water"),
                                 QStringLiteral("castle")};
-        const QStringList areas = document_.areaNames(levels_);
-        for (const QString& type : order) {
-            sdk::DocumentGroup group;
-            group.title = displayName(type) + tr(" areas");
-            for (const QString& area : areas) {
-                if (areaTypeOf(area) != type) {
-                    continue;
-                }
-                const QPair<int, int> course = levelOf(area);
-                sdk::DocumentEntry e = entry(area, areaLabel(area),
-                                             course.first > 0 ? QStringLiteral("%1-%2").arg(course.first).arg(course.second)
-                                                              : QString());
-                e.dirty = document_.area(levels_, area).objects != saved_.area(levels_, area).objects ||
-                          document_.area(levels_, area).enemies != saved_.area(levels_, area).enemies ||
-                          document_.area(levels_, area).header != saved_.area(levels_, area).header;
-                group.documents << e;
+        for (const CourseBank& bank : banks_) {
+            const QStringList areas = document_.areaNames(bank.levels);
+            if (multipleBanks()) {
+                // The bank heads its area groups.
+                sdk::DocumentGroup heading;
+                heading.title = bankLabel(bank.levels);
+                groups << heading;
             }
-            if (!group.documents.isEmpty()) {
-                groups << group;
+            for (const QString& type : order) {
+                sdk::DocumentGroup group;
+                group.title = displayName(type) + tr(" areas");
+                for (const QString& area : areas) {
+                    if (areaTypeOf(area) != type) {
+                        continue;
+                    }
+                    const QPair<int, int> course = levelOf(area, bank.levels, bank.world);
+                    sdk::DocumentEntry e =
+                        entry(bankDocument(bank.levels, area), areaLabel(area),
+                              course.first > 0 ? QStringLiteral("%1-%2").arg(course.first).arg(course.second) : QString());
+                    const SmbArea now = document_.area(bank.levels, area);
+                    const SmbArea saved = saved_.area(bank.levels, area);
+                    e.dirty = now.objects != saved.objects || now.enemies != saved.enemies || now.header != saved.header;
+                    group.documents << e;
+                }
+                if (!group.documents.isEmpty()) {
+                    groups << group;
+                }
             }
         }
     } else if (kind == QLatin1String("graphics")) {
@@ -290,29 +303,38 @@ QVector<sdk::DocumentGroup> SmbSession::documents(const QString& kind) const {
         }
     } else if (kind == QLatin1String("world") && !world_.isEmpty()) {
         sdk::DocumentGroup group;
-        group.title = tr("World");
-        int steps = 0;
-        bool routesDirty = false;
-        for (int w = 1; w <= document_.worldCount(world_); ++w) {
-            const QVector<SmbRoute> now = document_.routes(world_, w);
-            const QVector<SmbRoute> saved = saved_.routes(world_, w);
-            steps += now.size();
-            for (int s = 0; s < now.size() && s < saved.size(); ++s) {
-                routesDirty = routesDirty || now.at(s).areaType != saved.at(s).areaType ||
-                              now.at(s).areaIndex != saved.at(s).areaIndex || now.at(s).alternate != saved.at(s).alternate;
+        for (const CourseBank& bank : banks_) {
+            if (bank.world.isEmpty()) continue;
+            group.title = multipleBanks() ? bankLabel(bank.levels) : tr("World");
+            int steps = 0;
+            bool routesDirty = false;
+            for (int w = 1; w <= document_.worldCount(bank.world); ++w) {
+                const QVector<SmbRoute> now = document_.routes(bank.world, w);
+                const QVector<SmbRoute> saved = saved_.routes(bank.world, w);
+                steps += now.size();
+                for (int s = 0; s < now.size() && s < saved.size(); ++s) {
+                    routesDirty = routesDirty || now.at(s).areaType != saved.at(s).areaType ||
+                                  now.at(s).areaIndex != saved.at(s).areaIndex ||
+                                  now.at(s).alternate != saved.at(s).alternate;
+                }
+            }
+            sdk::DocumentEntry routes =
+                entry(bankDocument(bank.levels, QStringLiteral("routes")), tr("Routes"),
+                      tr("%1 worlds · %2 steps").arg(document_.worldCount(bank.world)).arg(steps));
+            routes.dirty = routesDirty;
+            sdk::DocumentEntry physics = entry(bankDocument(bank.levels, QStringLiteral("physics")), tr("Player physics"),
+                                               tr("%1 tables").arg(document_.physicsTables(bank.world).size()));
+            const QVector<SmbPhysicsTable> nowTables = document_.physicsTables(bank.world);
+            const QVector<SmbPhysicsTable> savedTables = saved_.physicsTables(bank.world);
+            for (int t = 0; t < nowTables.size() && t < savedTables.size(); ++t) {
+                physics.dirty = physics.dirty || nowTables.at(t).values != savedTables.at(t).values;
+            }
+            group.documents << routes << physics;
+            if (&bank != &banks_.constLast()) {
+                groups << group;
+                group = sdk::DocumentGroup();
             }
         }
-        sdk::DocumentEntry routes = entry(QStringLiteral("routes"), tr("Routes"),
-                                          tr("%1 worlds · %2 steps").arg(document_.worldCount(world_)).arg(steps));
-        routes.dirty = routesDirty;
-        sdk::DocumentEntry physics = entry(QStringLiteral("physics"), tr("Player physics"),
-                                           tr("%1 tables").arg(document_.physicsTables(world_).size()));
-        const QVector<SmbPhysicsTable> nowTables = document_.physicsTables(world_);
-        const QVector<SmbPhysicsTable> savedTables = saved_.physicsTables(world_);
-        for (int t = 0; t < nowTables.size() && t < savedTables.size(); ++t) {
-            physics.dirty = physics.dirty || nowTables.at(t).values != savedTables.at(t).values;
-        }
-        group.documents << routes << physics;
         if (!art_.playerFrames.isEmpty()) {
             sdk::DocumentEntry actions = entry(QStringLiteral("actions"), tr("Player actions"),
                                                tr("frames per action"));
@@ -471,9 +493,15 @@ QVector<sdk::DocumentGroup> SmbSession::documents(const QString& kind) const {
 
 std::unique_ptr<sdk::EditorModel> SmbSession::openEditor(const QString& kind, const QString& document) {
     try {
-        if (kind == QLatin1String("levels") && document_.areaNames(levels_).contains(document)) {
-            selectStart(document);
-            return std::make_unique<SmbLevelModel>(this, document);
+        if (kind == QLatin1String("levels")) {
+            const QString bank = document.contains(QLatin1Char('/')) ? document.section(QLatin1Char('/'), 0, 0) : levels_;
+            const QString area = document.section(QLatin1Char('/'), -1);
+            if (document_.resourceIds(QStringLiteral("smb.levels.v1")).contains(bank) &&
+                document_.areaNames(bank).contains(area)) {
+                useBank(bank);
+                selectStart(area);
+                return std::make_unique<SmbLevelModel>(this, area);
+            }
         }
         if (kind == QLatin1String("graphics") &&
             (document == QLatin1String("sprites") || document == QLatin1String("background"))) {
@@ -504,10 +532,12 @@ std::unique_ptr<sdk::EditorModel> SmbSession::openEditor(const QString& kind, co
             }
         }
         if (kind == QLatin1String("world") && !world_.isEmpty()) {
-            if (document == QLatin1String("routes")) {
+            if (document.contains(QLatin1Char('/'))) useBank(document.section(QLatin1Char('/'), 0, 0));
+            const QString view = document.section(QLatin1Char('/'), -1);
+            if (view == QLatin1String("routes")) {
                 return std::make_unique<SmbRoutesModel>(this);
             }
-            if (document == QLatin1String("physics")) {
+            if (view == QLatin1String("physics")) {
                 return std::make_unique<SmbPhysicsModel>(this);
             }
             if (document == QLatin1String("actions") && !art_.playerFrames.isEmpty()) {
@@ -699,14 +729,39 @@ QString SmbSession::text(int slot) const {
 
 // ---------------------------------------------------------------- start point
 
+void SmbSession::useBank(const QString& levels) {
+    for (const CourseBank& bank : banks_) {
+        if (bank.levels == levels) {
+            levels_ = bank.levels;
+            world_ = bank.world;
+        }
+    }
+}
+
+QString SmbSession::bankLabel(const QString& levels) const {
+    const QString kind = levels.section(QLatin1Char('-'), -1);
+    if (kind == QLatin1String("normal")) return tr("Main courses");
+    if (kind == QLatin1String("extended")) return tr("Extra courses");
+    if (kind == QLatin1String("hard")) return tr("Hard courses");
+    return displayName(levels);
+}
+
+QString SmbSession::bankDocument(const QString& levels, const QString& document) const {
+    return multipleBanks() ? levels + QLatin1Char('/') + document : document;
+}
+
 QPair<int, int> SmbSession::courseOf(const QString& area) const {
-    if (world_.isEmpty()) {
+    return courseOf(area, levels_, world_);
+}
+
+QPair<int, int> SmbSession::courseOf(const QString& area, const QString& levels, const QString& world) const {
+    if (world.isEmpty()) {
         return {0, 0};
     }
-    const int type = document_.areaTypes(levels_).indexOf(areaTypeOf(area));
+    const int type = document_.areaTypes(levels).indexOf(areaTypeOf(area));
     const int index = area.section(QLatin1Char('_'), -1).toInt() - 1;
-    for (int w = 1; w <= document_.worldCount(world_); ++w) {
-        const QVector<SmbRoute> routes = document_.routes(world_, w);
+    for (int w = 1; w <= document_.worldCount(world); ++w) {
+        const QVector<SmbRoute> routes = document_.routes(world, w);
         for (int c = 0; c < routes.size(); ++c) {
             if (routes.at(c).areaType == type && routes.at(c).areaIndex == index) {
                 return {w, c + 1};
@@ -717,16 +772,20 @@ QPair<int, int> SmbSession::courseOf(const QString& area) const {
 }
 
 QPair<int, int> SmbSession::levelOf(const QString& area) const {
-    const QPair<int, int> course = courseOf(area);
+    return levelOf(area, levels_, world_);
+}
+
+QPair<int, int> SmbSession::levelOf(const QString& area, const QString& levels, const QString& world) const {
+    const QPair<int, int> course = courseOf(area, levels, world);
     if (course.first <= 0) {
         return course;
     }
-    const QStringList types = document_.areaTypes(levels_);
-    const QVector<SmbRoute> routes = document_.routes(world_, course.first);
+    const QStringList types = document_.areaTypes(levels);
+    const QVector<SmbRoute> routes = document_.routes(world, course.first);
     int level = 1;
     for (int c = 0; c + 1 < course.second && c < routes.size(); ++c) {
         const QString name = QStringLiteral("%1_%2").arg(types.value(routes.at(c).areaType)).arg(routes.at(c).areaIndex + 1);
-        const int entrance = document_.area(levels_, name).header.value(1);
+        const int entrance = document_.area(levels, name).header.value(1);
         if (entrance != 6 && entrance != 7) {
             ++level;
         }

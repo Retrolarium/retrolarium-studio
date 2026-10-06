@@ -42,6 +42,7 @@
 #include <QPainter>
 #include <QPushButton>
 #include <QSettings>
+#include <QStandardPaths>
 #include <QStackedWidget>
 #include <QTimer>
 #include <QToolButton>
@@ -54,6 +55,9 @@ namespace {
 
 constexpr int kMaxRecent = 8;
 const char* kRecentKey = "recentProjects";
+// The game repositories (.rlj descriptors) opened so far: Open ROM looks
+// in them before it downloads one.
+const char* kRepositoriesKey = "gameRepositories";
 
 QFrame* surface(const char* name, QWidget* parent) {
     auto* frame = new QFrame(parent);
@@ -210,11 +214,14 @@ void MainWindow::buildMenus() {
     QMenuBar* bar = menus();
     const QFont menuFont = theme::font(theme::TextRole::Body, theme::size::kMenu);
 
-    QMenu* file = bar->addMenu(QStringLiteral("File"));
+    QMenu* file = bar->addMenu(tr("File"));
     file->setFont(menuFont);
     QAction* open = file->addAction(tr("Open project…"));
     open->setShortcut(QKeySequence::Open);
     connect(open, &QAction::triggered, this, &MainWindow::chooseProject);
+    QAction* openRom = file->addAction(tr("Open ROM…"));
+    openRom->setShortcut(QKeySequence(QStringLiteral("Ctrl+Shift+O")));
+    connect(openRom, &QAction::triggered, this, &MainWindow::openRom);
     recentMenu_ = file->addMenu(tr("Recent projects"));
     recentMenu_->setFont(menuFont);
     switchRevisionAction_ = file->addAction(tr("Open another version…"));
@@ -239,7 +246,7 @@ void MainWindow::buildMenus() {
     });
     file->addSeparator();
     QAction* settings = file->addAction(tr("Settings…"));
-    settings->setShortcut(QKeySequence(tr("Ctrl+,")));
+    settings->setShortcut(QKeySequence(QStringLiteral("Ctrl+,")));
     connect(settings, &QAction::triggered, this, [this] {
         SettingsDialog dialog(this);
         dialog.exec();
@@ -254,7 +261,7 @@ void MainWindow::buildMenus() {
     undoAction_ = edit->addAction(tr("Undo"));
     undoAction_->setShortcut(QKeySequence::Undo);
     redoAction_ = edit->addAction(tr("Redo"));
-    redoAction_->setShortcuts({QKeySequence::Redo, QKeySequence(tr("Ctrl+Shift+Z"))});
+    redoAction_->setShortcuts({QKeySequence::Redo, QKeySequence(QStringLiteral("Ctrl+Shift+Z"))});
     connect(undoAction_, &QAction::triggered, this, [this] {
         if (session_) session_->undoStack()->undo();
     });
@@ -262,7 +269,7 @@ void MainWindow::buildMenus() {
         if (session_) session_->undoStack()->redo();
     });
 
-    QMenu* view = bar->addMenu(QStringLiteral("View"));
+    QMenu* view = bar->addMenu(tr("View"));
     view->setFont(menuFont);
     QAction* dark = view->addAction(tr("Dark theme"));
     QAction* light = view->addAction(tr("Light theme"));
@@ -278,23 +285,23 @@ void MainWindow::buildMenus() {
         (mode == theme::Mode::Dark ? dark : light)->setChecked(true);
     });
     QAction* toggleTheme = view->addAction(tr("Toggle theme"));
-    toggleTheme->setShortcut(QKeySequence(tr("Ctrl+Shift+L")));
+    toggleTheme->setShortcut(QKeySequence(QStringLiteral("Ctrl+Shift+L")));
     connect(toggleTheme, &QAction::triggered, this, [] { theme::Theme::instance().toggle(); });
     view->addSeparator();
     QAction* panel = view->addAction(tr("Messages panel"));
-    panel->setShortcut(QKeySequence(tr("Ctrl+J")));
+    panel->setShortcut(QKeySequence(QStringLiteral("Ctrl+J")));
     connect(panel, &QAction::triggered, this, [this] { bottom_->setExpanded(!bottom_->isExpanded()); });
 
     // The toolbar's buttons, in the same order.
     QMenu* build = bar->addMenu(tr("Run"));
     build->setFont(menuFont);
     buildAction_ = build->addAction(tr("Build"));
-    buildAction_->setShortcut(QKeySequence(tr("Ctrl+B")));
+    buildAction_->setShortcut(QKeySequence(QStringLiteral("Ctrl+B")));
     connect(buildAction_, &QAction::triggered, this, [this] {
         if (session_ && session_->canBuild() && !isBusy()) session_->build();
     });
     playAction_ = build->addAction(tr("Play"));
-    playAction_->setShortcut(QKeySequence(tr("Ctrl+F5")));
+    playAction_->setShortcut(QKeySequence(QStringLiteral("Ctrl+F5")));
     connect(playAction_, &QAction::triggered, this, [this] {
         if (session_ && session_->canPlay() && !isBusy()) {
             showPlaytest();
@@ -316,7 +323,7 @@ void MainWindow::buildMenus() {
     pauseGameAction_->setShortcut(QKeySequence(Qt::Key_Pause));
     connect(pauseGameAction_, &QAction::triggered, this, &MainWindow::togglePlaytestPause);
     stopGameAction_ = build->addAction(tr("Stop"));
-    stopGameAction_->setShortcut(QKeySequence(tr("Shift+F5")));
+    stopGameAction_->setShortcut(QKeySequence(QStringLiteral("Shift+F5")));
     connect(stopGameAction_, &QAction::triggered, this, [this] { emulator_->stop(); });
     pauseGameAction_->setEnabled(false);
     stopGameAction_->setEnabled(false);
@@ -528,19 +535,26 @@ QWidget* MainWindow::buildWelcome() {
     layout->addWidget(new ui::BrandMark(64, column));
     layout->addSpacing(14);
     layout->addWidget(new ui::Label(tr("Retrolarium Studio"), ui::Label::Role::Caps, column));
-    auto* title = new ui::Label(tr("Open a project to start"), ui::Label::Role::Title, column);
+    auto* title = new ui::Label(tr("Open a game to start"), ui::Label::Role::Title, column);
     layout->addWidget(title);
     auto* note = new ui::Label(
-        tr("A game's disassembly has its .rlj file at the top of its folder: open it, "
-           "pick the version to edit, and the studio asks for the ROM it needs."),
+        tr("Open your ROM: the studio finds its game, downloads the game's files the first time and opens "
+           "that version. A disassembly on disk opens from the .rlj file at the top of its folder."),
         ui::Label::Role::Small, column);
     note->setWordWrap(true);
     layout->addWidget(note);
     layout->addSpacing(8);
     auto* buttons = new QHBoxLayout;
     buttons->setSpacing(10);
-    auto* open = new ui::PrimaryButton(tr("Open project…"), QStringLiteral("folder"), column);
-    connect(open, &QAbstractButton::clicked, this, &MainWindow::chooseProject);
+    // Opening a ROM is the way in for most people; a disassembly on disk
+    // opens as a project.
+    auto* rom = new ui::PrimaryButton(tr("Open ROM…"), QStringLiteral("folder"), column);
+    connect(rom, &QAbstractButton::clicked, this, &MainWindow::openRom);
+    buttons->addWidget(rom);
+    auto* open = new QPushButton(tr("Open project…"), column);
+    open->setProperty("size", QStringLiteral("large"));
+    open->setFont(theme::font(theme::TextRole::Body, 12.5));
+    connect(open, &QPushButton::clicked, this, &MainWindow::chooseProject);
     buttons->addWidget(open);
     for (const auto& plugin : sdk::PluginRegistry::instance().plugins()) {
         for (const sdk::ProjectAction& action : plugin->projectActions()) {
@@ -575,7 +589,7 @@ QWidget* MainWindow::buildStatusBar() {
     statusSummary_->setProperty("variant", QStringLiteral("flat"));
     statusSummary_->setFont(theme::font(theme::TextRole::Body, theme::size::kStatus));
     statusSummary_->setCursor(Qt::PointingHandCursor);
-    statusSummary_->setStyleSheet(tr("padding: 0 4px; min-height: 18px;"));
+    statusSummary_->setStyleSheet(QStringLiteral("padding: 0 4px; min-height: 18px;"));
     connect(statusSummary_, &QPushButton::clicked, this, [this] { bottom_->showMessages(); });
     row->addWidget(statusSummary_);
     statusRight_ = new ui::Label(QString(), ui::Label::Role::Mono, bar);
@@ -743,12 +757,80 @@ void MainWindow::openGameRepository(const QString& descriptor) {
             note = tr("Building from the game's sources needs the %1 ROM (%2); editing does not.")
                        .arg(split.value(QStringLiteral("needs")).toString(), split.value(QStringLiteral("rom")).toString());
         }
+        rememberRepository(descriptor);
         const QString key = QStringLiteral("gameRevisions/") + QFileInfo(descriptor).absoluteFilePath();
         RevisionDialog dialog(r.value(QStringLiteral("game")).toObject().value(QStringLiteral("name")).toString(), choices,
                               QSettings().value(key).toString(), note, this);
         if (dialog.exec() != QDialog::Accepted || dialog.revision().isEmpty()) return;
         QSettings().setValue(key, dialog.revision());
         prepareRevision(descriptor, dialog.revision(), QString());
+    });
+}
+
+void MainWindow::rememberRepository(const QString& descriptor) {
+    QSettings settings;
+    QStringList known = settings.value(QString::fromLatin1(kRepositoriesKey)).toStringList();
+    const QString path = QFileInfo(descriptor).absoluteFilePath();
+    if (!known.contains(path)) {
+        known << path;
+        settings.setValue(QString::fromLatin1(kRepositoriesKey), known);
+    }
+}
+
+void MainWindow::openRom() {
+    if (isBusy() || !confirmDiscard()) return;
+    const QString rom = QFileDialog::getOpenFileName(
+        this, tr("Open ROM"), QDir::homePath(),
+        tr("ROM images (*.nes *.fds *.bin *.md *.gen *.sfc *.smc);;All files (*)"));
+    if (rom.isEmpty()) return;
+    // Downloaded games go where the user finds them: their edits live there.
+    const QString games =
+        QDir(QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation)).filePath(QStringLiteral("Retrolarium"));
+    QStringList arguments{QStringLiteral("studio"), QStringLiteral("open-rom"), rom, QStringLiteral("--games"), games};
+    for (const QString& known : QSettings().value(QString::fromLatin1(kRepositoriesKey)).toStringList()) {
+        if (QFileInfo(known).isFile()) arguments << QStringLiteral("--known") << known;
+    }
+    QString error;
+    sdk::ProcessSpec spec = kitCommand(arguments, QFileInfo(rom).absolutePath(), &error);
+    const QString name = QFileInfo(rom).fileName();
+    if (spec.program.isEmpty()) {
+        report(message(sdk::Severity::Error, QStringLiteral("project"), error, name));
+        return;
+    }
+    spec.label = tr("Open %1").arg(name);
+    runProcess(spec, [this, name](const sdk::ProcessResult& result) {
+        if (!result.succeeded()) {
+            if (!result.cancelled) {
+                frame::MessageDialog::inform(this, tr("Open ROM"), tr("The game could not be opened"),
+                                             tr("Getting its files failed: %1").arg(processError(result)));
+            }
+            return;
+        }
+        const QJsonObject r = QJsonDocument::fromJson(result.standardOutput).object();
+        const QString status = r.value(QStringLiteral("status")).toString();
+        if (status == QLatin1String("ready")) {
+            const QString descriptor = r.value(QStringLiteral("descriptor")).toString();
+            rememberRepository(descriptor);
+            QSettings().setValue(QStringLiteral("gameRevisions/") + QFileInfo(descriptor).absoluteFilePath(),
+                                 r.value(QStringLiteral("revision")).toString());
+            if (r.value(QStringLiteral("downloaded")).toBool()) {
+                report(message(sdk::Severity::Info, QStringLiteral("project"),
+                               tr("Downloaded the game's files into %1.")
+                                   .arg(QDir::toNativeSeparators(QFileInfo(descriptor).absolutePath())),
+                               name));
+            }
+            openProjectFile(r.value(QStringLiteral("project")).toString());
+        } else if (status == QLatin1String("unsupported")) {
+            frame::MessageDialog::inform(this, tr("Open ROM"), tr("This game is not supported yet"),
+                                         tr("%1 is a game the studio recognises, but it cannot edit it yet.")
+                                             .arg(r.value(QStringLiteral("name")).toString()));
+        } else {
+            frame::MessageDialog::inform(
+                this, tr("Open ROM"), tr("The studio does not know this ROM"),
+                tr("%1 is not a version of a game the studio supports, or it was changed (a hack, a translation "
+                   "or a damaged dump). Choose the original ROM.")
+                    .arg(name));
+        }
     });
 }
 

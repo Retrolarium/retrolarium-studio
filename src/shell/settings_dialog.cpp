@@ -65,7 +65,7 @@ QString SettingsDialog::language() {
     return QStringLiteral("en");
 }
 
-SettingsDialog::SettingsDialog(QWidget* parent) : StudioDialog(QStringLiteral("Settings"), parent) {
+SettingsDialog::SettingsDialog(QWidget* parent) : StudioDialog(tr("Settings"), parent) {
     setWindowFlag(Qt::MSWindowsFixedSizeDialogHint, true);
     layout()->setSizeConstraint(QLayout::SetFixedSize);
 

@@ -111,6 +111,10 @@ private:
     // let the kit ready it (its ROM, the asset split, hack/) and open the
     // project it generates.
     void openGameRepository(const QString& descriptor);
+    // Open ROM: the kit finds the ROM's game, downloads its repository when
+    // none is on disk yet, and readies the version the ROM is.
+    void openRom();
+    void rememberRepository(const QString& descriptor);
     void prepareRevision(const QString& descriptor, const QString& revision, const QString& rom);
     // The repository .rlj of a generated revision project, or empty.
     QString currentDescriptor() const;

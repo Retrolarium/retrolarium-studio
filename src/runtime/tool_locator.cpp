@@ -14,6 +14,11 @@ namespace {
 constexpr int kParentDepth = 6;
 
 QString python() {
+    // The installed studio carries its own Python.
+    const QString bundled = QDir(QCoreApplication::applicationDirPath()).filePath(QStringLiteral("python/python.exe"));
+    if (QFileInfo(bundled).isFile()) {
+        return bundled;
+    }
     for (const char* name : {"python", "python3", "py"}) {
         const QString found = QStandardPaths::findExecutable(QString::fromLatin1(name));
         if (!found.isEmpty()) {
@@ -46,6 +51,9 @@ sdk::ProcessSpec ToolLocator::kitCommand(const QStringList& arguments, const QSt
     sdk::ProcessSpec spec;
     spec.workingDirectory = workingDirectory;
     QString kit = qEnvironmentVariable("RETROLARIUM_KIT");
+    if (!QFileInfo(kit).isFile()) {
+        kit = QDir(QCoreApplication::applicationDirPath()).filePath(QStringLiteral("kit/rltool.py"));
+    }
     if (!QFileInfo(kit).isFile()) {
         kit = findInParents(QStringLiteral("retrolarium_kit/rltool.py"));
     }

@@ -41,7 +41,7 @@ QGridLayout* keyTable(const QVector<QPair<QString, QString>>& rows, QWidget* par
 
 }  // namespace
 
-AboutDialog::AboutDialog(QWidget* parent) : StudioDialog(QStringLiteral("About"), parent) {
+AboutDialog::AboutDialog(QWidget* parent) : StudioDialog(tr("About"), parent) {
     setWindowFlag(Qt::MSWindowsFixedSizeDialogHint, true);
     layout()->setSizeConstraint(QLayout::SetFixedSize);
 
@@ -99,16 +99,16 @@ AboutDialog::AboutDialog(QWidget* parent) : StudioDialog(QStringLiteral("About")
 
     content->addSpacing(10);
     content->addWidget(new ui::Label(tr("Shortcuts"), ui::Label::Role::Caps, body()));
-    content->addLayout(keyTable({{tr("Ctrl+O"), tr("Open a project")},
-                                 {tr("Ctrl+S"), tr("Save all")},
-                                 {tr("Ctrl+Z  Ctrl+Y"), tr("Undo, redo")},
-                                 {tr("Ctrl+B"), tr("Build the ROM")},
-                                 {tr("Ctrl+F5"), tr("Play from power-on")},
+    content->addLayout(keyTable({{QStringLiteral("Ctrl+O"), tr("Open a project")},
+                                 {QStringLiteral("Ctrl+S"), tr("Save all")},
+                                 {QStringLiteral("Ctrl+Z  Ctrl+Y"), tr("Undo, redo")},
+                                 {QStringLiteral("Ctrl+B"), tr("Build the ROM")},
+                                 {QStringLiteral("Ctrl+F5"), tr("Play from power-on")},
                                  {QStringLiteral("F5"), tr("Play from selected")},
                                  {tr("Pause"), tr("Pause or resume the game")},
-                                 {tr("Shift+F5"), tr("Stop the game")},
-                                 {tr("Ctrl+J"), tr("Messages panel")},
-                                 {tr("Ctrl+Shift+L"), tr("Light or dark theme")}},
+                                 {QStringLiteral("Shift+F5"), tr("Stop the game")},
+                                 {QStringLiteral("Ctrl+J"), tr("Messages panel")},
+                                 {QStringLiteral("Ctrl+Shift+L"), tr("Light or dark theme")}},
                                 body()));
 
     content->addSpacing(10);

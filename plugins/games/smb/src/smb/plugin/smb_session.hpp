@@ -73,8 +73,12 @@ public:
     // a painter palette key: "ground+day_snow".
     QString paletteKey(const QString& area) const;
     const SmbLevelPainter& painter() const { return *painter_; }
+    // The course bank the views show: a levels resource and the world that
+    // routes it. Super Mario Bros. 2 and All Night Nippon keep two banks;
+    // the views follow the bank of the document opened last.
     QString levels() const { return levels_; }
     QString world() const { return world_; }
+    bool multipleBanks() const { return banks_.size() > 1; }
     QString palettes() const { return art_.palettes; }
     QString playerPalette() const { return art_.playerPalette; }
     QString chr() const { return art_.chr; }
@@ -106,6 +110,7 @@ public:
     // x-2 level (an auto-walk entrance) shares the number of the level it
     // leads to.
     QPair<int, int> levelOf(const QString& area) const;
+    QPair<int, int> levelOf(const QString& area, const QString& levels, const QString& world) const;
 
     // Background palette packet for an area type, and its night state.
     bool night(const QString& area) const;
@@ -117,7 +122,18 @@ signals:
     void startChanged();
 
 private:
+    struct CourseBank {
+        QString levels;
+        QString world;
+    };
+
     SmbSession() = default;
+    QPair<int, int> courseOf(const QString& area, const QString& levels, const QString& world) const;
+    // Makes `levels` and its world the bank the views show.
+    void useBank(const QString& levels);
+    QString bankLabel(const QString& levels) const;
+    // A document id names its bank only when there are several.
+    QString bankDocument(const QString& levels, const QString& document) const;
     void setDocument(const SmbResourceDocument& document, quint64 revision);
     void report(sdk::Severity severity, const QString& source, const QString& message);
     void runBuild(std::function<void(bool)> next, bool force);
@@ -136,6 +152,7 @@ private:
     quint64 revision_ = 0;
     quint64 savedRevision_ = 0;
     quint64 nextRevision_ = 1;
+    QVector<CourseBank> banks_;
     QString levels_;
     QString world_;
     QString music_;

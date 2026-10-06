@@ -31,7 +31,7 @@ QString statusText(const RevisionChoice& revision) {
 
 RevisionDialog::RevisionDialog(const QString& game, const QVector<RevisionChoice>& revisions, const QString& selected,
                                const QString& note, QWidget* parent)
-    : StudioDialog(QStringLiteral("Open %1").arg(game), parent), revisions_(revisions) {
+    : StudioDialog(tr("Open %1").arg(game), parent), revisions_(revisions) {
     setWindowFlag(Qt::MSWindowsFixedSizeDialogHint, true);
     layout()->setSizeConstraint(QLayout::SetFixedSize);
 

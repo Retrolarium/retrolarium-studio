@@ -673,10 +673,8 @@ QString LevelsModel::statusText() const {
     }
     const int layout = session_->levels().layoutForRound(round_);
     const int shared = session_->levels().roundsForLayout(layout).size();
-    return tr("%1 · layout %2 · shared by %3 round%4")
-        .arg(title(), two(layout))
-        .arg(shared)
-        .arg(shared == 1 ? QString() : QStringLiteral("s"));
+    return shared == 1 ? tr("%1 · layout %2 · used by 1 round").arg(title(), two(layout))
+                       : tr("%1 · layout %2 · shared by %3 rounds").arg(title(), two(layout), QString::number(shared));
 }
 
 }  // namespace rl::flicky

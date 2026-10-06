@@ -19,6 +19,10 @@ enum class TextRole {
 
 // Registers the bundled fonts. Call once after QApplication exists.
 void loadFonts();
+// A Russian interface sets its text in IBM Plex Sans (Barlow has no
+// Cyrillic). Call before the theme is installed, or set the application
+// font again after it.
+void setCyrillicInterface(bool cyrillic);
 
 // True when every bundled family registered; false means fallbacks are used.
 bool fontsLoaded();

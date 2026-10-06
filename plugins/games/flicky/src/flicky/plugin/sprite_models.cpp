@@ -333,7 +333,7 @@ QVector<sdk::CompositionFrame> AnimationModel::frames() const {
         sdk::CompositionFrame frame;
         frame.id = value.toString();
         frame.label = value.toString();
-        frame.detail = tr("%1 tick%2").arg(delay + 1).arg(delay == 0 ? QString() : QStringLiteral("s"));
+        frame.detail = delay == 0 ? tr("1 tick") : tr("%1 ticks").arg(delay + 1);
         result.append(frame);
     }
     return result;

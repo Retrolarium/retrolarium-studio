@@ -221,11 +221,10 @@ QString BottomPanel::summary() const {
         errors += d.severity == sdk::Severity::Error;
         warnings += d.severity == sdk::Severity::Warning;
     }
-    return tr("%1 error%2 · %3 warning%4")
-        .arg(errors)
-        .arg(errors == 1 ? QString() : QStringLiteral("s"))
-        .arg(warnings)
-        .arg(warnings == 1 ? QString() : QStringLiteral("s"));
+    // Whole phrases per count, so a translation can word each its own way.
+    return QStringLiteral("%1 · %2")
+        .arg(errors == 1 ? tr("1 error") : tr("%1 errors").arg(errors),
+             warnings == 1 ? tr("1 warning") : tr("%1 warnings").arg(warnings));
 }
 
 void BottomPanel::setDiagnostics(const QVector<sdk::Diagnostic>& diagnostics) {

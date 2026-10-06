@@ -1,19 +1,25 @@
 # Retrolarium Studio: user guide
 
 Retrolarium Studio edits a game's content (levels, graphics, palettes,
-text, music and sound effects, demos) and plays the result in MAME. Every
-game's disassembly has a `.rlj` file at the top of its folder; opening it
-asks which version of the game to edit and then needs only your copy of
-that version's ROM.
+text, music and sound effects, demos) and plays the result in MAME. Open
+your ROM and the studio finds its game; every game's disassembly also has
+a `.rlj` file at the top of its folder that opens it, asking which version
+of the game to edit.
 
 ## What you need
+
+The installed studio (or its zip, unpacked anywhere) carries everything:
+the Retrolarium Kit, a private Python to run it and MAME. You add only your
+ROMs, and for Famicom Disk System games the console's BIOS. Developers
+running the studio from a checkout need:
 
 - **Retrolarium Studio** (`retrolarium-studio.exe`, Windows).
 - **Retrolarium Kit**, which reads and writes the project and builds the ROM.
   The studio looks for it in this order: the `RETROLARIUM_KIT` environment
-  variable (`rltool` or `rltool.py`), a `retrolarium_kit/rltool.py` up to six
-  folders above the studio or the current folder, then `rltool` on `PATH`.
-  `rltool.py` needs Python on `PATH`.
+  variable (`rltool` or `rltool.py`), `kit/rltool.py` next to the studio, a
+  `retrolarium_kit/rltool.py` up to six folders above the studio or the
+  current folder, then `rltool` on `PATH`. `rltool.py` runs with
+  `python/python.exe` next to the studio, else Python on `PATH`.
 - **MAME** (`consoles.exe`) for Play, Playtest, demos and some previews:
   `RETROLARIUM_MAME`, the one chosen in File → Settings, or
   `mame/consoles.exe` next to the studio. Famicom Disk System games also
@@ -24,6 +30,17 @@ When something is missing, the Messages panel says what and where it looked.
 
 ## Opening a game
 
+The simplest way is File → Open ROM… (Ctrl+Shift+O, or the first button on
+the start screen): choose your ROM and the studio finds its game and
+version. The first time, it downloads the game's disassembly as an archive
+from the RetrolariumLab organisation on GitHub (no Git needed) into
+`Documents\Retrolarium\<repository>`; later it reuses that folder, or any
+disassembly whose `.rlj` you opened before. A ROM the studio does not know
+(a hack, a translation, a bad dump) or a game it cannot edit yet is named
+as such. For a test archive, set `RETROLARIUM_GAMES_SOURCE` to a URL or path
+with `{repository}` in it.
+
+A disassembly already on disk opens the same way through its `.rlj`.
 Open the game's `.rlj` (for example `super_mario_bros.rlj` at the top of the
 disassembly) with File → Open project (Ctrl+O). The studio lists the
 versions the disassembly knows (Super Mario Bros.: Japan/USA, Europe,
@@ -110,3 +127,18 @@ Playtest view; Pause and Stop are in the toolbar.
   and the kit could not add it; Messages and Build output show the kit's
   error.
 - **A build fails**: Build output has the kit's log and Messages its error.
+
+## Building the package and the installer
+
+`tools\build-win.ps1` builds the studio and its setup program;
+`tools\package-win.ps1` then assembles `build\package\RetrolariumStudio`
+(the studio, the kit, a Python taken from the CPython that `python` runs,
+trimmed and isolated, and MAME from `mame_testing\mame`), its zip, and
+`RetrolariumStudio-<version>-setup.exe`: the installer (`installer/`, in the
+studio's own frame and style) with that folder attached and checked file by
+file. Setup asks for its language (the studio then starts in it), installs
+for the current user without administrator rights, keeps the Disk System
+BIOS and MAME's settings across updates, adds Start menu (and optionally
+desktop) shortcuts, an Installed Apps entry and the `.rlj` association, and
+copies itself into the installation as `Uninstall.exe`, which removes all of
+that again; your games in `Documents\Retrolarium` stay unless you ask.

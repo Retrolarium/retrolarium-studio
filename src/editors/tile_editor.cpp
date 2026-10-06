@@ -379,7 +379,7 @@ QWidget* TileEditor::createToolbar(QWidget* parent) {
     layout->addWidget(separator, 0, Qt::AlignVCenter);
     const QVector<sdk::ViewOption> options = tiles_->viewOptions();
     if (!options.isEmpty()) {
-        layout->addWidget(new ui::Label(QStringLiteral("View"), ui::Label::Role::Caps, bar));
+        layout->addWidget(new ui::Label(tr("View"), ui::Label::Role::Caps, bar));
     }
     for (const sdk::ViewOption& option : options) {
         auto* chip = new ui::ViewChip(option.label, option.value, bar);

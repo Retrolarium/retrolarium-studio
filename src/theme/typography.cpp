@@ -24,6 +24,13 @@ Face gFaces[] = {
     {":/fonts/IBMPlexMono-Regular.ttf", {}},
     {":/fonts/IBMPlexMono-Medium.ttf", {}},
     {":/fonts/IBMPlexMono-SemiBold.ttf", {}},
+    // Barlow has no Cyrillic: a Russian interface sets in IBM Plex Sans, and
+    // Barlow borrows its Cyrillic letters from it everywhere else.
+    {":/fonts/IBMPlexSans-Regular.ttf", {}},
+    {":/fonts/IBMPlexSans-Medium.ttf", {}},
+    {":/fonts/IBMPlexSans-SemiBold.ttf", {}},
+    {":/fonts/IBMPlexSansCondensed-Medium.ttf", {}},
+    {":/fonts/IBMPlexSansCondensed-SemiBold.ttf", {}},
 };
 
 enum FaceIndex {
@@ -35,9 +42,17 @@ enum FaceIndex {
     kMono,
     kMonoMedium,
     kMonoSemiBold,
+    kSans,
+    kSansMedium,
+    kSansSemiBold,
+    kSansCondensedMedium,
+    kSansCondensedSemiBold,
 };
 
 bool gLoaded = false;
+bool gCyrillic = false;
+// Plex Sans is wider than Barlow; this keeps a line close to its Latin length.
+constexpr double kPlexScale = 0.94;
 
 QString familyOr(FaceIndex index, const char* fallback) {
     const QString& family = gFaces[index].family;
@@ -56,6 +71,19 @@ void loadFonts() {
         all = all && !face.family.isEmpty();
     }
     gLoaded = all;
+    // Cyrillic text in a Barlow face falls back to the matching Plex face.
+    const QPair<FaceIndex, FaceIndex> fallbacks[] = {
+        {kBarlow, kSans}, {kBarlowMedium, kSansMedium}, {kBarlowSemiBold, kSansSemiBold},
+        {kCondensedMedium, kSansCondensedMedium}, {kCondensedSemiBold, kSansCondensedSemiBold}};
+    for (const auto& [barlow, plex] : fallbacks) {
+        if (!gFaces[barlow].family.isEmpty() && !gFaces[plex].family.isEmpty()) {
+            QFont::insertSubstitution(gFaces[barlow].family, gFaces[plex].family);
+        }
+    }
+}
+
+void setCyrillicInterface(bool cyrillic) {
+    gCyrillic = cyrillic;
 }
 
 bool fontsLoaded() {
@@ -78,21 +106,23 @@ void setLetterSpacingEm(QFont& font, double em) {
 
 QFont font(TextRole role, double cssPixels) {
     QFont result;
+    const bool plex = gCyrillic && role != TextRole::Mono && role != TextRole::MonoMedium &&
+                      role != TextRole::MonoSemiBold;
     switch (role) {
     case TextRole::Body:
-        result = QFont(familyOr(kBarlow, "Segoe UI"));
+        result = QFont(familyOr(plex ? kSans : kBarlow, "Segoe UI"));
         result.setWeight(QFont::Normal);
         break;
     case TextRole::BodyMedium:
-        result = QFont(familyOr(kBarlowMedium, "Segoe UI"));
+        result = QFont(familyOr(plex ? kSansMedium : kBarlowMedium, "Segoe UI"));
         result.setWeight(QFont::Medium);
         break;
     case TextRole::Heading:
-        result = QFont(familyOr(kCondensedSemiBold, "Segoe UI Semibold"));
+        result = QFont(familyOr(plex ? kSansCondensedSemiBold : kCondensedSemiBold, "Segoe UI Semibold"));
         result.setWeight(QFont::DemiBold);
         break;
     case TextRole::Caps:
-        result = QFont(familyOr(kCondensedSemiBold, "Segoe UI Semibold"));
+        result = QFont(familyOr(plex ? kSansCondensedSemiBold : kCondensedSemiBold, "Segoe UI Semibold"));
         result.setWeight(QFont::DemiBold);
         result.setCapitalization(QFont::AllUppercase);
         setLetterSpacingEm(result, 0.08);
@@ -118,7 +148,7 @@ QFont font(TextRole role, double cssPixels) {
     }
     // The prototype is specified in CSS pixels at 96 dpi; points keep the
     // fractional sizes and scale with the display like the rest of the UI.
-    result.setPointSizeF(cssPixels * 0.75);
+    result.setPointSizeF(cssPixels * 0.75 * (plex ? kPlexScale : 1.0));
     result.setHintingPreference(QFont::PreferVerticalHinting);
     return result;
 }
