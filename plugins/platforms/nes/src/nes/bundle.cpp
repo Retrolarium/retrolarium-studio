@@ -1,5 +1,7 @@
 #include "nes/bundle.hpp"
 
+#include "sdk/i18n.hpp"
+
 #include <QFile>
 #include <QJsonArray>
 #include <QJsonDocument>
@@ -28,19 +30,19 @@ QVector<int> intsOf(const QJsonValue& value) {
 Bundle Bundle::load(const QString& path) {
     QFile file(path);
     if (!file.open(QIODevice::ReadOnly)) {
-        fail(QStringLiteral("Cannot read %1: %2").arg(path, file.errorString()));
+        fail(rlTr("nes", "Cannot read %1: %2").arg(path, file.errorString()));
     }
     QJsonParseError error;
     const QJsonDocument json = QJsonDocument::fromJson(file.readAll(), &error);
     if (json.isNull() || !json.isObject()) {
-        fail(QStringLiteral("%1 is not a JSON document: %2").arg(path, error.errorString()));
+        fail(rlTr("nes", "%1 is not a JSON document: %2").arg(path, error.errorString()));
     }
     return fromJson(json.object());
 }
 
 Bundle Bundle::fromJson(const QJsonObject& root) {
     if (!root.value(QStringLiteral("resources")).isArray()) {
-        fail(QStringLiteral("The document has no resources."));
+        fail(rlTr("nes", "The document has no resources."));
     }
     Bundle bundle;
     bundle.root_ = root;
@@ -50,11 +52,11 @@ Bundle Bundle::fromJson(const QJsonObject& root) {
 void Bundle::save(const QString& path) const {
     QSaveFile file(path);
     if (!file.open(QIODevice::WriteOnly)) {
-        fail(QStringLiteral("Cannot write %1: %2").arg(path, file.errorString()));
+        fail(rlTr("nes", "Cannot write %1: %2").arg(path, file.errorString()));
     }
     file.write(QJsonDocument(root_).toJson(QJsonDocument::Indented));
     if (!file.commit()) {
-        fail(QStringLiteral("Cannot write %1: %2").arg(path, file.errorString()));
+        fail(rlTr("nes", "Cannot write %1: %2").arg(path, file.errorString()));
     }
 }
 
@@ -90,7 +92,7 @@ QStringList Bundle::resourceIds(const QString& codec) const {
 QJsonObject Bundle::resource(const QString& id) const {
     const int index = indexOf(id);
     if (index < 0) {
-        fail(QStringLiteral("The project has no resource %1.").arg(id));
+        fail(rlTr("nes", "The project has no resource %1.").arg(id));
     }
     return root_.value(QStringLiteral("resources")).toArray().at(index).toObject();
 }
@@ -98,7 +100,7 @@ QJsonObject Bundle::resource(const QString& id) const {
 void Bundle::setResource(const QString& id, const QJsonObject& resource) {
     const int index = indexOf(id);
     if (index < 0) {
-        fail(QStringLiteral("The project has no resource %1.").arg(id));
+        fail(rlTr("nes", "The project has no resource %1.").arg(id));
     }
     QJsonArray resources = root_.value(QStringLiteral("resources")).toArray();
     resources.replace(index, resource);
@@ -112,7 +114,7 @@ int Bundle::tileCount(const QString& id) const {
 QVector<quint8> Bundle::tilePixels(const QString& id, int tile) const {
     const QJsonArray tiles = resource(id).value(QStringLiteral("tiles")).toArray();
     if (tile < 0 || tile >= tiles.size()) {
-        fail(QStringLiteral("%1 has no tile %2.").arg(id).arg(tile));
+        fail(rlTr("nes", "%1 has no tile %2.").arg(id).arg(tile));
     }
     QVector<quint8> pixels;
     pixels.reserve(64);
@@ -146,7 +148,7 @@ void Bundle::setTilePixels(const QString& id, int tile, const QVector<quint8>& p
     QJsonObject r = resource(id);
     QJsonArray tiles = r.value(QStringLiteral("tiles")).toArray();
     if (tile < 0 || tile >= tiles.size() || pixels.size() != 64) {
-        fail(QStringLiteral("%1 has no tile %2.").arg(id).arg(tile));
+        fail(rlTr("nes", "%1 has no tile %2.").arg(id).arg(tile));
     }
     QJsonArray rows;
     for (int y = 0; y < 8; ++y) {
@@ -169,10 +171,10 @@ void Bundle::setTableValue(const QString& id, int index, int value) {
     QJsonObject r = resource(id);
     QJsonArray values = r.value(QStringLiteral("values")).toArray();
     if (index < 0 || index >= values.size()) {
-        fail(QStringLiteral("%1 has no entry %2.").arg(id).arg(index));
+        fail(rlTr("nes", "%1 has no entry %2.").arg(id).arg(index));
     }
     if (value < 0 || value > 63) {
-        fail(QStringLiteral("An NES colour is $00-$3F."));
+        fail(rlTr("nes", "An NES colour is $00-$3F."));
     }
     values.replace(index, value);
     r.insert(QStringLiteral("values"), values);

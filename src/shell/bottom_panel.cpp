@@ -1,5 +1,6 @@
 #include "shell/bottom_panel.hpp"
 
+#include "sdk/i18n.hpp"
 #include "theme/icons.hpp"
 #include "theme/paint.hpp"
 #include "theme/theme.hpp"
@@ -55,13 +56,13 @@ private:
 QString severityName(sdk::Severity severity) {
     switch (severity) {
     case sdk::Severity::Error:
-        return QStringLiteral("Error");
+        return rlTr("studio", "Error");
     case sdk::Severity::Warning:
-        return QStringLiteral("Warning");
+        return rlTr("studio", "Warning");
     case sdk::Severity::Info:
         break;
     }
-    return QStringLiteral("Info");
+    return rlTr("studio", "Info");
 }
 
 class MessageRow final : public QWidget {
@@ -145,12 +146,12 @@ BottomPanel::BottomPanel(QWidget* parent) : QFrame(parent) {
     chevron_->setAutoRaise(true);
     chevron_->setFixedSize(20, 20);
     chevron_->setIconSize(QSize(10, 10));
-    chevron_->setToolTip(QStringLiteral("Show or hide the panel (Ctrl+J)"));
+    chevron_->setToolTip(tr("Show or hide the panel (Ctrl+J)"));
     connect(chevron_, &QToolButton::clicked, this, [this] { setExpanded(!expanded_); });
     stripLayout->addWidget(chevron_);
     tabs_ = new ui::PanelTabs(strip);
-    tabs_->addTab(QStringLiteral("Messages"), QStringLiteral("0"));
-    tabs_->addTab(QStringLiteral("Build output"));
+    tabs_->addTab(tr("Messages"), QStringLiteral("0"));
+    tabs_->addTab(tr("Build output"));
     stripLayout->addWidget(tabs_);
     stripLayout->addStretch(1);
     summary_ = new ui::Label(QString(), ui::Label::Role::Small, strip);
@@ -220,7 +221,7 @@ QString BottomPanel::summary() const {
         errors += d.severity == sdk::Severity::Error;
         warnings += d.severity == sdk::Severity::Warning;
     }
-    return QStringLiteral("%1 error%2 · %3 warning%4")
+    return tr("%1 error%2 · %3 warning%4")
         .arg(errors)
         .arg(errors == 1 ? QString() : QStringLiteral("s"))
         .arg(warnings)

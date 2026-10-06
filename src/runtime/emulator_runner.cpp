@@ -596,7 +596,7 @@ bool EmulatorRunner::writeControl(const sdk::ProcessSpec& spec, const QString& g
     }
     for (const QString& value : values) {
         if (value.contains(QLatin1String("]==]"))) {
-            *error = QStringLiteral("a path or setting cannot be quoted for Lua");
+            *error = tr("a path or setting cannot be quoted for Lua");
             return false;
         }
     }
@@ -624,7 +624,7 @@ QString EmulatorRunner::stageCart(const QString& source, QString* error) {
                                               .arg(++cartSerial_)
                                               .arg(QFileInfo(source).suffix()));
     if (!QFile::copy(source, path)) {
-        *error = QStringLiteral("could not copy %1").arg(source);
+        *error = tr("could not copy %1").arg(source);
         return {};
     }
     return path;
@@ -642,7 +642,7 @@ void EmulatorRunner::start(const sdk::ProcessSpec& requested, const QString& tit
     stopNow();
     if (!surface_) {
         sdk::ProcessResult result;
-        result.error = QStringLiteral("The Playtest view is not open.");
+        result.error = tr("The Playtest view is not open.");
         if (finished) {
             finished(result);
         }
@@ -674,7 +674,7 @@ void EmulatorRunner::start(const sdk::ProcessSpec& requested, const QString& tit
         QString error;
         cart_ = stage_->isValid() ? stageCart(launch.cart, &error) : QString();
         if (cart_.isEmpty()) {
-            append(QStringLiteral("Hot reload is off: %1").arg(error.isEmpty() ? stage_->errorString() : error));
+            append(tr("Hot reload is off: %1").arg(error.isEmpty() ? stage_->errorString() : error));
         }
         arguments.replaceInStrings(QStringLiteral("@CART@"), cart_.isEmpty() ? launch.cart : luaPath(cart_));
     }
@@ -699,7 +699,7 @@ void EmulatorRunner::start(const sdk::ProcessSpec& requested, const QString& tit
         // A game that reports when it is up gets a fast, hidden start.
         fastStart_ = !readyFile_.isEmpty();
     } else {
-        append(QStringLiteral("Fast start and hot reload are off: %1")
+        append(tr("Fast start and hot reload are off: %1")
                    .arg(error.isEmpty() ? stage_->errorString() : error));
         cart_.clear();
         if (!launch.gameScript.isEmpty()) {
@@ -735,8 +735,8 @@ void EmulatorRunner::start(const sdk::ProcessSpec& requested, const QString& tit
                 result.exitCode = code;
                 result.cancelled = stopping_;
                 result.crashed = status == QProcess::CrashExit && !stopping_;
-                append(stopping_ ? QStringLiteral("Stopped.")
-                                 : QStringLiteral("Exited with code %1.").arg(code));
+                append(stopping_ ? tr("Stopped.")
+                                 : tr("Exited with code %1.").arg(code));
                 process_->deleteLater();
                 process_ = nullptr;
                 paused_ = false;
@@ -761,7 +761,7 @@ void EmulatorRunner::start(const sdk::ProcessSpec& requested, const QString& tit
             return;
         }
         sdk::ProcessResult result;
-        result.error = QStringLiteral("The emulator could not start: %1").arg(process_->errorString());
+        result.error = tr("The emulator could not start: %1").arg(process_->errorString());
         append(result.error);
         process_->deleteLater();
         process_ = nullptr;
@@ -776,7 +776,7 @@ void EmulatorRunner::start(const sdk::ProcessSpec& requested, const QString& tit
             finished(result);
         }
     });
-    append(QStringLiteral("Starting %1").arg(title_));
+    append(tr("Starting %1").arg(title_));
     phase_ = Phase::Starting;
     startupChecks_ = 0;
     process_->start();
@@ -798,13 +798,13 @@ bool EmulatorRunner::reload(const sdk::ProcessSpec& requested, const QString& ca
     const QString previous = cart_;
     const QString next = stageCart(cartSource, &error);
     if (next.isEmpty()) {
-        append(QStringLiteral("Hot reload failed: %1; restarting.").arg(error));
+        append(tr("Hot reload failed: %1; restarting.").arg(error));
         return false;
     }
     cart_ = next;
     if (!writeControl(spec, gameScript, &error)) {
         cart_ = previous;
-        append(QStringLiteral("Hot reload failed: %1; restarting.").arg(error));
+        append(tr("Hot reload failed: %1; restarting.").arg(error));
         return false;
     }
     if (paused_) {
@@ -823,7 +823,7 @@ bool EmulatorRunner::reload(const sdk::ProcessSpec& requested, const QString& ca
     const QString command = stage_->filePath(QStringLiteral("command.txt"));
     QFile file(command + QStringLiteral(".tmp"));
     if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
-        append(QStringLiteral("Hot reload failed: %1; restarting.").arg(file.errorString()));
+        append(tr("Hot reload failed: %1; restarting.").arg(file.errorString()));
         return false;
     }
     file.write(luaPath(cart_).toUtf8() + '\n');
@@ -831,7 +831,7 @@ bool EmulatorRunner::reload(const sdk::ProcessSpec& requested, const QString& ca
     QFile::remove(command);
     QFile::rename(file.fileName(), command);
     finished_ = std::move(finished);
-    append(QStringLiteral("Reloading %1").arg(title_));
+    append(tr("Reloading %1").arg(title_));
     phase_ = Phase::Starting;
     startupChecks_ = 0;
     startupTimer_->start();
@@ -850,7 +850,7 @@ void EmulatorRunner::acknowledgeWarnings(const sdk::ProcessSpec& spec) {
     const QVector<mame::Feature> features = mame::warnedFeatures(spec.program, system, &error);
     if (features.isEmpty()) {
         if (!error.isEmpty()) {
-            append(QStringLiteral("MAME warning check: %1").arg(error));
+            append(tr("MAME warning check: %1").arg(error));
         }
         return;
     }
@@ -862,10 +862,10 @@ void EmulatorRunner::acknowledgeWarnings(const sdk::ProcessSpec& spec) {
         names << QStringLiteral("%1 %2").arg(feature.status, feature.type);
     }
     if (mame::acknowledgeWarnings(configDirectory, system, features, &error)) {
-        append(QStringLiteral("MAME's known-problems screen for %1 (%2) is marked as seen; emulation is unchanged.")
+        append(tr("MAME's known-problems screen for %1 (%2) is marked as seen; emulation is unchanged.")
                    .arg(system, names.join(QStringLiteral(", "))));
     } else {
-        append(QStringLiteral("MAME warning setup: %1").arg(error));
+        append(tr("MAME warning setup: %1").arg(error));
     }
 }
 
@@ -933,7 +933,7 @@ bool EmulatorRunner::togglePause() {
     }
     pausedPicture_ = frame;
     paused_ = !paused_;
-    append(paused_ ? QStringLiteral("Paused.") : QStringLiteral("Resumed."));
+    append(paused_ ? tr("Paused.") : tr("Resumed."));
     emit stateChanged();
     return true;
 #else
@@ -1046,7 +1046,7 @@ QImage EmulatorRunner::picture() const {
 QString EmulatorRunner::saveScreenshot(const QString& directory, QString* error) {
     if (!process_ || !surface_) {
         if (error) {
-            *error = QStringLiteral("Nothing is running.");
+            *error = tr("Nothing is running.");
         }
         return {};
     }
@@ -1062,11 +1062,11 @@ QString EmulatorRunner::saveScreenshot(const QString& directory, QString* error)
                  QDateTime::currentDateTime().toString(QStringLiteral("yyyyMMdd-HHmmss"))));
     if (image.isNull() || !image.save(path, "PNG")) {
         if (error) {
-            *error = QStringLiteral("Could not save the screenshot to %1.").arg(path);
+            *error = tr("Could not save the screenshot to %1.").arg(path);
         }
         return {};
     }
-    append(QStringLiteral("Screenshot saved to %1").arg(path));
+    append(tr("Screenshot saved to %1").arg(path));
     return path;
 }
 

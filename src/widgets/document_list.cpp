@@ -1,5 +1,6 @@
 #include "widgets/document_list.hpp"
 
+#include "sdk/i18n.hpp"
 #include "theme/theme.hpp"
 #include "theme/typography.hpp"
 
@@ -100,7 +101,7 @@ void DocumentList::clear() {
 }
 
 void DocumentList::addGroup(const QString& title) {
-    auto* item = new QStandardItem(title);
+    auto* item = new QStandardItem(rlValue(title));
     item->setData(true, DocumentRole::IsGroup);
     item->setFlags(Qt::ItemIsEnabled);
     model_->appendRow(item);

@@ -1,5 +1,7 @@
 #include "runtime/tool_locator.hpp"
 
+#include "sdk/i18n.hpp"
+
 #include <QCoreApplication>
 #include <QDir>
 #include <QFileInfo>
@@ -52,7 +54,7 @@ sdk::ProcessSpec ToolLocator::kitCommand(const QStringList& arguments, const QSt
     }
     if (kit.isEmpty()) {
         if (error) {
-            *error = QStringLiteral("Retrolarium Kit not found. Install retrolarium-kit, or set "
+            *error = rlTr("studio", "Retrolarium Kit not found. Install retrolarium-kit, or set "
                                     "RETROLARIUM_KIT to rltool or rltool.py.");
         }
         return spec;
@@ -61,7 +63,7 @@ sdk::ProcessSpec ToolLocator::kitCommand(const QStringList& arguments, const QSt
         const QString interpreter = python();
         if (interpreter.isEmpty()) {
             if (error) {
-                *error = QStringLiteral("Python is needed to run %1 but is not on PATH.").arg(kit);
+                *error = rlTr("studio", "Python is needed to run %1 but is not on PATH.").arg(kit);
             }
             return spec;
         }

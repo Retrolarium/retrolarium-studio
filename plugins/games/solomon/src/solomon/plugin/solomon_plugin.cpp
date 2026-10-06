@@ -1,5 +1,6 @@
 #include "solomon/plugin/solomon_plugin.hpp"
 
+#include "sdk/i18n.hpp"
 #include "sdk/plugin.hpp"
 #include "solomon/plugin/solomon_session.hpp"
 
@@ -11,7 +12,7 @@ namespace {
 class SolomonPlugin final : public sdk::Plugin {
 public:
     QString id() const override { return QStringLiteral("solomons-key"); }
-    QString displayName() const override { return QStringLiteral("Solomon's Key"); }
+    QString displayName() const override { return rlTr("solomon", "Solomon's Key"); }
 
     bool canOpen(const sdk::ProjectFile& project) const override {
         const QString mode = project.string(QStringLiteral("project.source_mode"));

@@ -1,6 +1,7 @@
 #include "editors/table_editor.hpp"
 
 #include "sdk/editor_model.hpp"
+#include "sdk/i18n.hpp"
 #include "theme/theme.hpp"
 #include "theme/typography.hpp"
 #include "widgets/label.hpp"
@@ -171,7 +172,7 @@ QWidget* TableDelegate::createEditor(QWidget* parent, const QStyleOptionViewItem
         // A list, not typing: open it at once and commit on a pick.
         auto* combo = new QComboBox(parent);
         combo->setFont(theme::font(theme::TextRole::Body, 12.5));
-        combo->addItems(choices);
+        for (const QString& choice : choices) combo->addItem(rlValue(choice), choice);
         const QVector<QImage> icons = model_->cellChoiceIcons(index.row(), index.column());
         bool anyIcon = false;
         for (int i = 0; i < choices.size() && i < icons.size(); ++i) {
@@ -204,7 +205,7 @@ QWidget* TableDelegate::createEditor(QWidget* parent, const QStyleOptionViewItem
 
 void TableDelegate::setEditorData(QWidget* editor, const QModelIndex& index) const {
     if (auto* combo = qobject_cast<QComboBox*>(editor)) {
-        const int current = combo->findText(index.data(Qt::EditRole).toString());
+        const int current = combo->findData(index.data(Qt::EditRole).toString());
         combo->setCurrentIndex(std::max(0, current));
         return;
     }
@@ -213,7 +214,7 @@ void TableDelegate::setEditorData(QWidget* editor, const QModelIndex& index) con
 
 void TableDelegate::setModelData(QWidget* editor, QAbstractItemModel* model, const QModelIndex& index) const {
     if (auto* combo = qobject_cast<QComboBox*>(editor)) {
-        model->setData(index, combo->currentText(), Qt::EditRole);
+        model->setData(index, combo->currentData(), Qt::EditRole);
         return;
     }
     QStyledItemDelegate::setModelData(editor, model, index);
@@ -298,9 +299,9 @@ QWidget* TableEditor::createToolbar(QWidget* parent) {
     layout->setContentsMargins(0, 0, 0, 0);
     layout->setSpacing(8);
     auto* hint = new ui::Label(table_->isReadOnly()
-                                   ? QStringLiteral("Read only")
-                                   : QStringLiteral("Double-click or start typing to edit a cell. "
-                                                    "Enter commits, Esc cancels."),
+                                   ? tr("Read only")
+                                   : tr("Double-click or start typing to edit a cell. "
+                                        "Enter commits, Esc cancels."),
                                ui::Label::Role::Small, bar);
     layout->addWidget(hint);
     layout->addStretch(1);

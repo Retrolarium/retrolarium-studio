@@ -1,6 +1,7 @@
 #include "solomon/plugin/room_model.hpp"
 
 #include "nes/editors.hpp"
+#include "sdk/i18n.hpp"
 #include "solomon/data/names.hpp"
 #include "solomon/plugin/solomon_session.hpp"
 
@@ -58,17 +59,17 @@ int hexOf(const QString& text) {
 }
 
 QString metadataLabel(const QString& key) {
-    if (key == QLatin1String("door")) return QStringLiteral("Door");
-    if (key == QLatin1String("key")) return QStringLiteral("Key");
-    if (key == QLatin1String("mirror_1")) return QStringLiteral("Spawn Mirror 1");
-    if (key == QLatin1String("mirror_2")) return QStringLiteral("Spawn Mirror 2");
-    if (key == QLatin1String("player_start")) return QStringLiteral("Wizard · start");
+    if (key == QLatin1String("door")) return rlTr("solomon", "Door");
+    if (key == QLatin1String("key")) return rlTr("solomon", "Key");
+    if (key == QLatin1String("mirror_1")) return rlTr("solomon", "Spawn Mirror 1");
+    if (key == QLatin1String("mirror_2")) return rlTr("solomon", "Spawn Mirror 2");
+    if (key == QLatin1String("player_start")) return rlTr("solomon", "Wizard · start");
     return key;
 }
 
 const QStringList& hidings() {
-    static const QStringList kHidings{QStringLiteral("In the open"), QStringLiteral("Hidden"),
-                                      QStringLiteral("In a brown block")};
+    static const QStringList kHidings{rlTr("solomon", "In the open"), rlTr("solomon", "Hidden"),
+                                      rlTr("solomon", "In a brown block")};
     return kHidings;
 }
 
@@ -98,9 +99,9 @@ QString SolomonRoomModel::title() const {
 }
 
 QVector<sdk::MapLayer> SolomonRoomModel::layers() const {
-    return {{QStringLiteral("blocks"), QStringLiteral("Blocks")},
-            {QStringLiteral("items"), QStringLiteral("Items")},
-            {QStringLiteral("enemies"), QStringLiteral("Enemies")}};
+    return {{QStringLiteral("blocks"), tr("Blocks")},
+            {QStringLiteral("items"), tr("Items")},
+            {QStringLiteral("enemies"), tr("Enemies")}};
 }
 
 void SolomonRoomModel::setCurrentLayer(const QString& id) {
@@ -116,12 +117,12 @@ void SolomonRoomModel::setCurrentLayer(const QString& id) {
 
 QVector<sdk::Tool> SolomonRoomModel::tools() const {
     if (layer_ == QLatin1String("blocks")) {
-        return {{QStringLiteral("paint"), QStringLiteral("Paint blocks (right button takes a cell)"), QStringLiteral("paint")},
-                {QStringLiteral("pick"), QStringLiteral("Take a cell's blocks as the brush"), QStringLiteral("pick")}};
+        return {{QStringLiteral("paint"), tr("Paint blocks (right button takes a cell)"), QStringLiteral("paint")},
+                {QStringLiteral("pick"), tr("Take a cell's blocks as the brush"), QStringLiteral("pick")}};
     }
-    return {{QStringLiteral("select"), QStringLiteral("Select and move"), QStringLiteral("select")},
-            {QStringLiteral("place"), QStringLiteral("Add the library item"), QStringLiteral("place")},
-            {QStringLiteral("remove"), QStringLiteral("Delete"), QStringLiteral("erase")}};
+    return {{QStringLiteral("select"), tr("Select and move"), QStringLiteral("select")},
+            {QStringLiteral("place"), tr("Add the library item"), QStringLiteral("place")},
+            {QStringLiteral("remove"), tr("Delete"), QStringLiteral("erase")}};
 }
 
 QImage SolomonRoomModel::render() const {
@@ -132,7 +133,7 @@ QImage SolomonRoomModel::render() const {
 
 QVector<sdk::CellBrush> SolomonRoomModel::brushes() const {
     if (layer_ != QLatin1String("blocks")) return {};
-    return {{0, QStringLiteral("Empty"), QColor()}, {brush_, QStringLiteral("Brush"), QColor()}};
+    return {{0, tr("Empty"), QColor()}, {brush_, tr("Brush"), QColor()}};
 }
 
 void SolomonRoomModel::setCurrentBrush(int value) {
@@ -160,7 +161,7 @@ bool SolomonRoomModel::paintCell(QPoint cell, int value) {
         SolomonRooms next = session_->rooms();
         next.setBlock(room_, cell, false, value & 1);
         next.setBlock(room_, cell, true, value & 2);
-        return commit(next, QStringLiteral("Paint blocks in %1").arg(title()), nullptr);
+        return commit(next, tr("Paint blocks in %1").arg(title()), nullptr);
     }
     draft_->setBlock(room_, cell, false, value & 1);
     draft_->setBlock(room_, cell, true, value & 2);
@@ -172,7 +173,7 @@ void SolomonRoomModel::endStroke() {
     if (!draft_) return;
     const SolomonRooms next = *draft_;
     draft_.reset();
-    if (next != session_->rooms()) commit(next, QStringLiteral("Paint blocks in %1").arg(title()), nullptr);
+    if (next != session_->rooms()) commit(next, tr("Paint blocks in %1").arg(title()), nullptr);
     emit contentChanged();
 }
 
@@ -222,7 +223,7 @@ sdk::Library SolomonRoomModel::itemLibrary() const {
     }
     sdk::Library library;
     library.grid = true;
-    library.hint = QStringLiteral("click: pick · drag onto the room");
+    library.hint = tr("click: pick · drag onto the room");
     library.items = items_;
     return library;
 }
@@ -242,7 +243,7 @@ sdk::Library SolomonRoomModel::enemyLibrary() const {
     }
     sdk::Library library;
     library.grid = true;
-    library.hint = QStringLiteral("click: pick · drag onto the room");
+    library.hint = tr("click: pick · drag onto the room");
     library.items = enemies_;
     return library;
 }
@@ -252,7 +253,7 @@ sdk::Library SolomonRoomModel::sheet() const {
     if (layer_ == QLatin1String("enemies")) return enemyLibrary();
     sdk::Library library;
     library.grid = true;
-    library.hint = QStringLiteral("click: brush · drag onto a cell");
+    library.hint = tr("click: brush · drag onto a cell");
     const SolomonPainter& p = session_->painter();
     const auto add = [&](int value, const QString& label, QImage icon) {
         sdk::LibraryItem item;
@@ -261,16 +262,16 @@ sdk::Library SolomonRoomModel::sheet() const {
         item.icon = icon;
         library.items << item;
     };
-    add(0, QStringLiteral("Empty"), p.patternIcon(kEmptyPattern, bank(), group()));
-    add(1, QStringLiteral("Brown block (breakable)"), p.patternIcon(kBrownPattern, bank(), group()));
-    add(2, QStringLiteral("White block (solid)"), p.patternIcon(kWhitePattern, bank(), group()));
+    add(0, tr("Empty"), p.patternIcon(kEmptyPattern, bank(), group()));
+    add(1, tr("Brown block (breakable)"), p.patternIcon(kBrownPattern, bank(), group()));
+    add(2, tr("White block (solid)"), p.patternIcon(kWhitePattern, bank(), group()));
     QImage both = p.patternIcon(kBrownPattern, bank(), group());
     {
         QPainter painter(&both);
         painter.setOpacity(0.5);
         painter.drawImage(0, 0, p.patternIcon(kWhitePattern, bank(), group(), true));
     }
-    add(3, QStringLiteral("White over brown"), both);
+    add(3, tr("White over brown"), both);
     return library;
 }
 
@@ -304,7 +305,7 @@ QVector<sdk::MapObject> SolomonRoomModel::objects() const {
                 }
             } else if (kind == QLatin1String("constellation")) {
                 add(QStringLiteral("constellation:%1").arg(c),
-                    QStringLiteral("Constellation · %1").arg(constellationName(command.value(QStringLiteral("opcode")).toInt())),
+                    tr("Constellation · %1").arg(constellationName(command.value(QStringLiteral("opcode")).toInt())),
                     QRect(point(command.value(QStringLiteral("position"))), QSize(3, 2)));
             }
         }
@@ -386,7 +387,7 @@ void SolomonRoomModel::endDrag() {
     if (!draft_) return;
     const SolomonRooms next = *draft_;
     draft_.reset();
-    if (next != session_->rooms()) commit(next, QStringLiteral("Move %1 in %2").arg(objectLabel(selected_), title()), nullptr);
+    if (next != session_->rooms()) commit(next, tr("Move %1 in %2").arg(objectLabel(selected_), title()), nullptr);
     emit contentChanged();
 }
 
@@ -415,12 +416,12 @@ bool SolomonRoomModel::placeObject(const QString& libraryItem, QPoint cell, QStr
         const int type = libraryItem.mid(6).toInt();
         QVector<SolomonEnemy> enemies = next.enemies(room_);
         if (enemies.size() >= kMaximumEnemies) {
-            if (error) *error = QStringLiteral("A room holds at most %1 enemies.").arg(kMaximumEnemies);
+            if (error) *error = tr("A room holds at most %1 enemies.").arg(kMaximumEnemies);
             return false;
         }
         enemies << SolomonEnemy{type, cell};
         next.setEnemies(room_, enemies);
-        if (!commit(next, QStringLiteral("Add %1 to %2").arg(enemyName(type), title()), error)) return false;
+        if (!commit(next, tr("Add %1 to %2").arg(enemyName(type), title()), error)) return false;
         setCurrentLayer(QStringLiteral("enemies"));
         selectObject(QStringLiteral("enemy:%1").arg(enemies.size() - 1));
         return true;
@@ -436,12 +437,12 @@ bool SolomonRoomModel::placeObject(const QString& libraryItem, QPoint cell, QStr
         const int at = std::max(0, int(commands.size()) - 1);
         commands.insert(at, command);
         next.setItemCommands(room_, commands);
-        if (!commit(next, QStringLiteral("Add %1 to %2").arg(itemName(type), title()), error)) return false;
+        if (!commit(next, tr("Add %1 to %2").arg(itemName(type), title()), error)) return false;
         setCurrentLayer(QStringLiteral("items"));
         selectObject(QStringLiteral("item:%1").arg(at));
         return true;
     }
-    if (error) *error = QStringLiteral("Pick something in the library first.");
+    if (error) *error = tr("Pick something in the library first.");
     return false;
 }
 
@@ -481,20 +482,20 @@ bool SolomonRoomModel::removeObject(const QString& id, QString* error) {
     } else {
         if (error) {
             *error = id.startsWith(QLatin1String("constellation"))
-                         ? QStringLiteral("The constellation ends the room's item list; move it instead.")
-                         : QStringLiteral("%1 stays in the room; move it instead.").arg(objectLabel(id));
+                         ? tr("The constellation ends the room's item list; move it instead.")
+                         : tr("%1 stays in the room; move it instead.").arg(objectLabel(id));
         }
         return false;
     }
     selectObject(QString());
-    return commit(next, QStringLiteral("Delete %1 from %2").arg(objectLabel(id), title()), error);
+    return commit(next, tr("Delete %1 from %2").arg(objectLabel(id), title()), error);
 }
 
 QString SolomonRoomModel::objectLabel(const QString& id) const {
     for (const sdk::MapObject& o : objects()) {
         if (o.id == id) return o.label;
     }
-    return id.startsWith(QLatin1String("meta:")) ? metadataLabel(id.mid(5)) : QStringLiteral("an object");
+    return id.startsWith(QLatin1String("meta:")) ? metadataLabel(id.mid(5)) : tr("an object");
 }
 
 // ---------------------------------------------------------------- inspector
@@ -506,7 +507,7 @@ sdk::Budget SolomonRoomModel::budget() const {
         const int capacity = expandedDataBytes(r.revision());
         budget.used = r.itemBytes() + r.enemyBytes();
         budget.capacity = capacity;
-        budget.text = QStringLiteral("this room: items %1 / %2 B, enemies %3 / %4 · expanded ROM: %5 / %6 B")
+        budget.text = tr("this room: items %1 / %2 B, enemies %3 / %4 · expanded ROM: %5 / %6 B")
                           .arg(SolomonRooms::itemStreamBytes(r.itemCommands(room_)))
                           .arg(kExpandedStreamLimit)
                           .arg(r.enemies(room_).size())
@@ -517,7 +518,7 @@ sdk::Budget SolomonRoomModel::budget() const {
     }
     budget.used = r.itemBytes();
     budget.capacity = kItemArenaBytes;
-    budget.text = QStringLiteral("this room: items %1 B, enemies %2 / %3 · all rooms: items %4 / %5 B, enemies %6 / %7 B")
+    budget.text = tr("this room: items %1 B, enemies %2 / %3 · all rooms: items %4 / %5 B, enemies %6 / %7 B")
                       .arg(SolomonRooms::itemStreamBytes(r.itemCommands(room_)))
                       .arg(r.enemies(room_).size())
                       .arg(kMaximumEnemies)
@@ -533,7 +534,7 @@ QString SolomonRoomModel::startPoint() const {
 }
 
 QString SolomonRoomModel::statusText() const {
-    return QStringLiteral("%1 · CHR bank %2 · palette group %3").arg(title()).arg(bank()).arg(group());
+    return tr("%1 · CHR bank %2 · palette group %3").arg(title()).arg(bank()).arg(group());
 }
 
 sdk::Inspection SolomonRoomModel::inspect() const {
@@ -543,7 +544,7 @@ sdk::Inspection SolomonRoomModel::inspect() const {
     if (parts.first() == QLatin1String("item") || parts.first() == QLatin1String("repeat")) {
         const QJsonObject command = r.itemCommands(room_).at(parts.value(1).toInt()).toObject();
         const int type = command.value(QStringLiteral("type")).toInt();
-        inspection.kicker = parts.first() == QLatin1String("repeat") ? QStringLiteral("Repeated item") : QStringLiteral("Item");
+        inspection.kicker = parts.first() == QLatin1String("repeat") ? tr("Repeated item") : tr("Item");
         inspection.title = itemName(type);
         QStringList choices;
         QVector<QImage> icons;
@@ -552,16 +553,16 @@ sdk::Inspection SolomonRoomModel::inspect() const {
             icons << item.icon;
         }
         const int hiding = type >= 0xc0 ? 0 : (type & 0x80) ? 2 : (type & 0x40) ? 1 : 0;
-        inspection.fields = {choice(QStringLiteral("type"), QStringLiteral("Item"),
+        inspection.fields = {choice(QStringLiteral("type"), tr("Item"),
                                     QStringLiteral("%1 · %2").arg(hex(type & 0x3f), itemName(type)), choices, icons),
-                             choice(QStringLiteral("hiding"), QStringLiteral("Where"), hidings().at(hiding), hidings())};
+                             choice(QStringLiteral("hiding"), tr("Where"), hidings().at(hiding), hidings())};
         inspection.note = parts.first() == QLatin1String("repeat")
-                              ? QStringLiteral("One of several copies the item list places with one command; they "
-                                               "share the item. Delete one and the rest stay.")
-                              : QStringLiteral("Hidden items appear when Wizard finds them; an item in a brown block "
-                                               "shows when the block breaks.");
+                              ? tr("One of several copies the item list places with one command; they "
+                                   "share the item. Delete one and the rest stay.")
+                              : tr("Hidden items appear when Wizard finds them; an item in a brown block "
+                                   "shows when the block breaks.");
         inspection.engineTag = QStringLiteral("solomon.rooms@3");
-        inspection.engine = {{QStringLiteral("Type byte"), hex(type)}};
+        inspection.engine = {{tr("Type byte"), hex(type)}};
         inspection.library = sdk::Library();
         return inspection;
     }
@@ -569,7 +570,7 @@ sdk::Inspection SolomonRoomModel::inspect() const {
         const QVector<SolomonEnemy> enemies = r.enemies(room_);
         const int i = parts.value(1).toInt();
         if (i >= 0 && i < enemies.size()) {
-            inspection.kicker = QStringLiteral("Enemy");
+            inspection.kicker = tr("Enemy");
             inspection.title = enemyName(enemies.at(i).type);
             QStringList choices;
             QVector<QImage> icons;
@@ -577,24 +578,24 @@ sdk::Inspection SolomonRoomModel::inspect() const {
                 choices << item.label;
                 icons << item.icon;
             }
-            inspection.fields = {choice(QStringLiteral("enemy"), QStringLiteral("Type"),
+            inspection.fields = {choice(QStringLiteral("enemy"), tr("Type"),
                                         QStringLiteral("%1 · %2").arg(hex(enemies.at(i).type), enemyName(enemies.at(i).type)),
                                         choices, icons)};
-            inspection.note = QStringLiteral("The type byte holds the enemy, the way it faces and its speed; each "
-                                             "choice names all three. A room holds at most 17 enemies.");
-            inspection.engine = {{QStringLiteral("Type byte"), hex(enemies.at(i).type)}};
+            inspection.note = tr("The type byte holds the enemy, the way it faces and its speed; each "
+                                 "choice names all three. A room holds at most 17 enemies.");
+            inspection.engine = {{tr("Type byte"), hex(enemies.at(i).type)}};
             inspection.engineTag = QStringLiteral("solomon.rooms@3");
             return inspection;
         }
     }
     if (parts.first() == QLatin1String("meta")) {
         const QString key = parts.value(1);
-        inspection.kicker = QStringLiteral("Room fixture");
+        inspection.kicker = tr("Room fixture");
         inspection.title = metadataLabel(key);
         const QJsonObject metadata = r.metadata(room_);
         if (key == QLatin1String("key")) {
             const int status = metadata.value(QStringLiteral("status_rate_raw")).toInt();
-            inspection.fields = {choice(QStringLiteral("key_status"), QStringLiteral("Where"),
+            inspection.fields = {choice(QStringLiteral("key_status"), tr("Where"),
                                         hidings().at(status >= 0x80 ? 1 : status >= 0x40 ? 2 : 0), hidings())};
         } else if (key.startsWith(QLatin1String("mirror_"))) {
             const int set = metadata.value(key + QStringLiteral("_enemy_set")).toInt();
@@ -605,35 +606,35 @@ sdk::Inspection SolomonRoomModel::inspect() const {
                 QStringList names;
                 for (int type : all.at(i).types) names << enemyName(type).section(QLatin1Char(' '), 0, 0);
                 names.removeDuplicates();
-                sets << QStringLiteral("Set %1 · %2").arg(i).arg(names.join(QStringLiteral(", ")));
+                sets << tr("Set %1 · %2").arg(i).arg(names.join(QStringLiteral(", ")));
             }
             QStringList schedules;
-            for (int i = 0; i < r.schedules().size(); ++i) schedules << QStringLiteral("Schedule %1").arg(i);
-            inspection.fields = {choice(QStringLiteral("enemy_set"), QStringLiteral("Drops"), sets.value(set), sets),
-                                 choice(QStringLiteral("schedule"), QStringLiteral("When"), schedules.value(schedule), schedules)};
+            for (int i = 0; i < r.schedules().size(); ++i) schedules << tr("Schedule %1").arg(i);
+            inspection.fields = {choice(QStringLiteral("enemy_set"), tr("Drops"), sets.value(set), sets),
+                                 choice(QStringLiteral("schedule"), tr("When"), schedules.value(schedule), schedules)};
         }
         inspection.note = key == QLatin1String("player_start")
-                              ? QStringLiteral("Where Wizard appears; she faces the room's middle.")
+                              ? tr("Where Wizard appears; she faces the room's middle.")
                           : key.startsWith(QLatin1String("mirror_"))
-                              ? QStringLiteral("A Spawn Mirror drops the enemies of its set in turn, when its drop "
-                                               "schedule says. Sets and schedules are shared by all rooms; edit them "
-                                               "in Mirrors.")
-                              : QStringLiteral("Drag it to move it. Every room has one door, one key and its mirrors.");
+                              ? tr("A Spawn Mirror drops the enemies of its set in turn, when its drop "
+                                   "schedule says. Sets and schedules are shared by all rooms; edit them "
+                                   "in Mirrors.")
+                              : tr("Drag it to move it. Every room has one door, one key and its mirrors.");
         inspection.engineTag = QStringLiteral("solomon.rooms@3");
         return inspection;
     }
     if (parts.first() == QLatin1String("constellation")) {
         const int opcode = r.itemCommands(room_).at(parts.value(1).toInt()).toObject().value(QStringLiteral("opcode")).toInt();
-        inspection.kicker = QStringLiteral("Constellation");
+        inspection.kicker = tr("Constellation");
         inspection.title = constellationName(opcode);
         QStringList names;
         for (int k = 0; k < 4; ++k) names << constellationName((opcode & ~3) | k);
-        inspection.fields = {choice(QStringLiteral("constellation"), QStringLiteral("Sign"), constellationName(opcode), names)};
-        inspection.note = QStringLiteral("The constellation sign ends the room's item list; each tileset has four. "
-                                         "Drag it to move it; the room inspector removes it.");
+        inspection.fields = {choice(QStringLiteral("constellation"), tr("Sign"), constellationName(opcode), names)};
+        inspection.note = tr("The constellation sign ends the room's item list; each tileset has four. "
+                             "Drag it to move it; the room inspector removes it.");
         return inspection;
     }
-    inspection.kicker = QStringLiteral("Room");
+    inspection.kicker = tr("Room");
     inspection.title = title();
     const QJsonArray commands = r.itemCommands(room_);
     const QJsonObject last = commands.isEmpty() ? QJsonObject() : commands.last().toObject();
@@ -642,24 +643,24 @@ sdk::Inspection SolomonRoomModel::inspect() const {
     const QString sign = last.value(QStringLiteral("kind")).toString() == QLatin1String("constellation")
                              ? constellationName(last.value(QStringLiteral("opcode")).toInt())
                              : QStringLiteral("None");
-    inspection.fields = {choice(QStringLiteral("bank"), QStringLiteral("Tileset"), QString::number(bank()),
+    inspection.fields = {choice(QStringLiteral("bank"), tr("Tileset"), QString::number(bank()),
                                 {QStringLiteral("0"), QStringLiteral("1"), QStringLiteral("2"), QStringLiteral("3")}),
-                         integer(QStringLiteral("time_rate"), QStringLiteral("Timer speed"),
+                         integer(QStringLiteral("time_rate"), tr("Timer speed"),
                                  r.metadata(room_).value(QStringLiteral("status_rate_raw")).toInt() & 0x0f, 0, 15),
-                         integer(QStringLiteral("spawn_lifetime"), QStringLiteral("Hornhead lifetime"),
-                                 r.spawnLifetime(room_), 0, 255, QStringLiteral("also Saramandor")),
-                         choice(QStringLiteral("room_constellation"), QStringLiteral("Constellation"), sign, signs),
+                         integer(QStringLiteral("spawn_lifetime"), tr("Hornhead lifetime"),
+                                 r.spawnLifetime(room_), 0, 255, tr("also Saramandor")),
+                         choice(QStringLiteral("room_constellation"), tr("Constellation"), sign, signs),
                          choice(QStringLiteral("rom_layout"), QStringLiteral("ROM"),
-                                r.expanded() ? QStringLiteral("Expanded") : QStringLiteral("Original"),
-                                {QStringLiteral("Original"), QStringLiteral("Expanded")})};
+                                r.expanded() ? QStringLiteral("Expanded") : tr("Original"),
+                                {tr("Original"), QStringLiteral("Expanded")})};
     inspection.note = layer_ == QLatin1String("blocks")
-                          ? QStringLiteral("Brown blocks break and can be made by Wizard; white blocks are solid. "
-                                           "The right button takes a cell's blocks as the brush.")
-                          : QStringLiteral("Drag items and enemies from the sheet onto the room. The door, key, "
-                                           "mirrors and Wizard's start are moved, not deleted.");
+                          ? tr("Brown blocks break and can be made by Wizard; white blocks are solid. "
+                               "The right button takes a cell's blocks as the brush.")
+                          : tr("Drag items and enemies from the sheet onto the room. The door, key, "
+                               "mirrors and Wizard's start are moved, not deleted.");
     inspection.engineTag = QStringLiteral("solomon.rooms@3");
-    inspection.engine = {{QStringLiteral("Palette group"), QString::number(group())},
-                         {QStringLiteral("Item list"), QStringLiteral("%1 bytes").arg(SolomonRooms::itemStreamBytes(r.itemCommands(room_)))}};
+    inspection.engine = {{tr("Palette group"), QString::number(group())},
+                         {tr("Item list"), tr("%1 bytes").arg(SolomonRooms::itemStreamBytes(r.itemCommands(room_)))}};
     return inspection;
 }
 
@@ -683,13 +684,13 @@ bool SolomonRoomModel::setField(const QString& key, const QVariant& value, QStri
         }
         type = identity | flags;
         if (type < 1 || type >= 0xc0) {
-            if (error) *error = QStringLiteral("That item cannot be stored that way.");
+            if (error) *error = tr("That item cannot be stored that way.");
             return false;
         }
         command.insert(QStringLiteral("type"), type);
         commands.replace(c, command);
         next.setItemCommands(room_, commands);
-        return commit(next, QStringLiteral("Edit an item in %1").arg(title()), error);
+        return commit(next, tr("Edit an item in %1").arg(title()), error);
     }
     if (key == QLatin1String("enemy")) {
         QVector<SolomonEnemy> enemies = next.enemies(room_);
@@ -698,7 +699,7 @@ bool SolomonRoomModel::setField(const QString& key, const QVariant& value, QStri
         if (i < 0 || i >= enemies.size() || type < 0) return false;
         enemies[i].type = type;
         next.setEnemies(room_, enemies);
-        return commit(next, QStringLiteral("Edit an enemy in %1").arg(title()), error);
+        return commit(next, tr("Edit an enemy in %1").arg(title()), error);
     }
     if (key == QLatin1String("rom_layout")) {
         const bool expanded = value.toString().startsWith(QLatin1String("Expanded"));
@@ -708,7 +709,7 @@ bool SolomonRoomModel::setField(const QString& key, const QVariant& value, QStri
             if (error) *error = overflow;
             return false;
         }
-        return session_->edit(expanded ? QStringLiteral("Expand the ROM") : QStringLiteral("Return to the original ROM"),
+        return session_->edit(expanded ? tr("Expand the ROM") : tr("Return to the original ROM"),
                               [next](SolomonState& s) { s.rooms = next; }, error);
     }
     if (key == QLatin1String("key_status") || key == QLatin1String("time_rate")) {
@@ -722,8 +723,8 @@ bool SolomonRoomModel::setField(const QString& key, const QVariant& value, QStri
         }
         metadata.insert(QStringLiteral("status_rate_raw"), status);
         next.setMetadata(room_, metadata);
-        return commit(next, key == QLatin1String("key_status") ? QStringLiteral("Edit the key of %1").arg(title())
-                                                               : QStringLiteral("Edit the timer of %1").arg(title()),
+        return commit(next, key == QLatin1String("key_status") ? tr("Edit the key of %1").arg(title())
+                                                               : tr("Edit the timer of %1").arg(title()),
                       error);
     }
     if (key == QLatin1String("enemy_set") || key == QLatin1String("schedule")) {
@@ -736,7 +737,7 @@ bool SolomonRoomModel::setField(const QString& key, const QVariant& value, QStri
         metadata.insert(mirror + (key == QLatin1String("enemy_set") ? QStringLiteral("_enemy_set") : QStringLiteral("_schedule")),
                         index);
         next.setMetadata(room_, metadata);
-        return commit(next, QStringLiteral("Edit a mirror of %1").arg(title()), error);
+        return commit(next, tr("Edit a mirror of %1").arg(title()), error);
     }
     if (key == QLatin1String("constellation") || key == QLatin1String("room_constellation")) {
         // The item list ends in a plain end opcode or in a constellation;
@@ -753,7 +754,7 @@ bool SolomonRoomModel::setField(const QString& key, const QVariant& value, QStri
             last = end;
         } else {
             if (tileset > 2) {
-                if (error) *error = QStringLiteral("Rooms on tileset 3 have no constellation.");
+                if (error) *error = tr("Rooms on tileset 3 have no constellation.");
                 return false;
             }
             int opcode = -1;
@@ -770,7 +771,7 @@ bool SolomonRoomModel::setField(const QString& key, const QVariant& value, QStri
         }
         commands.replace(commands.size() - 1, last);
         next.setItemCommands(room_, commands);
-        return commit(next, QStringLiteral("Change the constellation of %1").arg(title()), error);
+        return commit(next, tr("Change the constellation of %1").arg(title()), error);
     }
     if (key == QLatin1String("spawn_lifetime")) {
         QJsonObject root = next.root();
@@ -781,7 +782,7 @@ bool SolomonRoomModel::setField(const QString& key, const QVariant& value, QStri
         room.insert(QStringLiteral("enemy_stream"), stream);
         list.replace(room_, room);
         root.insert(QStringLiteral("rooms"), list);
-        return commit(SolomonRooms(root), QStringLiteral("Edit %1").arg(title()), error);
+        return commit(SolomonRooms(root), tr("Edit %1").arg(title()), error);
     }
     if (key == QLatin1String("bank")) {
         // Bits 2-3 of the opcode that ends the item list.
@@ -793,7 +794,7 @@ bool SolomonRoomModel::setField(const QString& key, const QVariant& value, QStri
             if (kind != QLatin1String("end") && kind != QLatin1String("constellation")) continue;
             int opcode = command.value(QStringLiteral("opcode")).toInt();
             if (kind == QLatin1String("constellation") && bank > 2) {
-                if (error) *error = QStringLiteral("Tileset 3 has no constellations; remove the constellation first.");
+                if (error) *error = tr("Tileset 3 has no constellations; remove the constellation first.");
                 return false;
             }
             if (opcode == 0) opcode = 0xe0;
@@ -802,7 +803,7 @@ bool SolomonRoomModel::setField(const QString& key, const QVariant& value, QStri
             break;
         }
         next.setItemCommands(room_, commands);
-        return commit(next, QStringLiteral("Change the patterns of %1").arg(title()), error);
+        return commit(next, tr("Change the patterns of %1").arg(title()), error);
     }
     return TileMapModel::setField(key, value, error);
 }
@@ -818,8 +819,8 @@ SolomonPlaytestModel::SolomonPlaytestModel(SolomonSession* session) : EmulatorMo
 }
 
 QString SolomonPlaytestModel::coreLabel() const {
-    return session_->rooms().revision() == QLatin1String("europe") ? QStringLiteral("MAME · nespal")
-                                                                   : QStringLiteral("MAME · nes");
+    return session_->rooms().revision() == QLatin1String("europe") ? tr("MAME · nespal")
+                                                                   : tr("MAME · nes");
 }
 
 QString SolomonPlaytestModel::startLabel() const {
@@ -836,10 +837,10 @@ bool SolomonPlaytestModel::isRecording() const {
 
 sdk::Inspection SolomonPlaytestModel::inspect() const {
     sdk::Inspection inspection;
-    inspection.kicker = QStringLiteral("Session");
+    inspection.kicker = tr("Session");
     inspection.title = startLabel();
-    inspection.note = QStringLiteral("Play from selected builds the ROM with the kit and enters the room open in "
-                                     "Rooms through the game's own room loader; Play starts from power-on.");
+    inspection.note = tr("Play from selected builds the ROM with the kit and enters the room open in "
+                         "Rooms through the game's own room loader; Play starts from power-on.");
     inspection.engineTag = QStringLiteral("solomon-point-playtest");
     return inspection;
 }

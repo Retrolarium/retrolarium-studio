@@ -124,7 +124,7 @@ void ChrTileModel::endStroke() {
     }
     stroking_ = false;
     if (pending_ != unitPixels(tile_)) {
-        writeTile(pending_, QStringLiteral("Paint tile %1").arg(hex(tile_)), nullptr);
+        writeTile(pending_, tr("Paint tile %1").arg(hex(tile_)), nullptr);
     }
     emit contentChanged();
 }
@@ -149,13 +149,13 @@ bool ChrTileModel::fill(QPoint pixel, int pen, QString* error) {
         stack << QPoint(p.x() + 1, p.y()) << QPoint(p.x() - 1, p.y()) << QPoint(p.x(), p.y() + 1)
               << QPoint(p.x(), p.y() - 1);
     }
-    return writeTile(pixels, QStringLiteral("Fill tile %1").arg(hex(tile_)), error);
+    return writeTile(pixels, tr("Fill tile %1").arg(hex(tile_)), error);
 }
 
 QVector<sdk::ViewOption> ChrTileModel::viewOptions() const {
     sdk::ViewOption palette;
     palette.key = QStringLiteral("palette");
-    palette.label = QStringLiteral("Palette");
+    palette.label = tr("Palette");
     palette.value = palette_;
     for (const PreviewPalette& p : owner_->previewPalettes(resource_, sprites_)) {
         palette.choices << p.name;
@@ -180,33 +180,33 @@ void ChrTileModel::setViewOption(const QString& key, const QString& value) {
 }
 
 QString ChrTileModel::statusText() const {
-    if (height_ == 16) return QStringLiteral("%1 · pair %2").arg(title_, hex((chrTile(tile_) - first_) & 0xff));
-    return QStringLiteral("%1 · tile %2").arg(title_, hex(tile_));
+    if (height_ == 16) return tr("%1 · pair %2").arg(title_, hex((chrTile(tile_) - first_) & 0xff));
+    return tr("%1 · tile %2").arg(title_, hex(tile_));
 }
 
 sdk::Inspection ChrTileModel::inspect() const {
     sdk::Inspection inspection;
-    inspection.kicker = height_ == 16 ? QStringLiteral("8x16 sprite pair")
-                        : sprites_    ? QStringLiteral("Sprite tile")
-                                      : QStringLiteral("Background tile");
-    inspection.title = height_ == 16 ? QStringLiteral("Tiles %1-%2").arg(hex(chrTile(tile_) & 0xff), hex((chrTile(tile_) + 1) & 0xff))
+    inspection.kicker = height_ == 16 ? tr("8x16 sprite pair")
+                        : sprites_    ? tr("Sprite tile")
+                                      : tr("Background tile");
+    inspection.title = height_ == 16 ? tr("Tiles %1-%2").arg(hex(chrTile(tile_) & 0xff), hex((chrTile(tile_) + 1) & 0xff))
                                      : hex(tile_);
     sdk::Field address;
     address.key = QStringLiteral("address");
-    address.label = QStringLiteral("CHR address");
+    address.label = tr("CHR address");
     address.value = hex(chrTile(tile_) * 16, 4);
     address.monospace = true;
     sdk::Field palette;
     palette.key = QStringLiteral("palette");
-    palette.label = QStringLiteral("Preview palette");
+    palette.label = tr("Preview palette");
     palette.value = palette_;
     inspection.fields = {address, palette};
-    inspection.note = QStringLiteral("2bpp patterns: four pens, pen 0 transparent. The preview palette only "
-                                     "colours the editor; tiles carry no palette of their own.");
+    inspection.note = tr("2bpp patterns: four pens, pen 0 transparent. The preview palette only "
+                         "colours the editor; tiles carry no palette of their own.");
     inspection.engineTag = QStringLiteral("nes.chr-2bpp.v1");
-    inspection.engine = {{QStringLiteral("Resource"), resource_},
-                         {QStringLiteral("Tile index"), QString::number(first_ + tile_)},
-                         {QStringLiteral("Bytes"), QStringLiteral("16 per tile, two bit planes")}};
+    inspection.engine = {{tr("Resource"), resource_},
+                         {tr("Tile index"), QString::number(first_ + tile_)},
+                         {tr("Bytes"), tr("16 per tile, two bit planes")}};
     return inspection;
 }
 
@@ -229,7 +229,7 @@ QVector<int> PaletteTableModel::values() const {
 
 QString PaletteTableModel::rowLabel(int row) const {
     const QStringList labels = owner_->paletteRowLabels(key_);
-    return row < labels.size() ? labels.at(row) : QStringLiteral("Palette %1").arg(row);
+    return row < labels.size() ? labels.at(row) : tr("Palette %1").arg(row);
 }
 
 QVector<sdk::PaletteRow> PaletteTableModel::rows() const {
@@ -279,7 +279,7 @@ int PaletteTableModel::currentGamutIndex() const {
 bool PaletteTableModel::assignGamut(int index, QString* error) {
     const QString resource = resource_;
     const int entry = flatEntry();
-    return owner_->editBundle(QStringLiteral("Set %1 colour %2").arg(title_).arg(entry),
+    return owner_->editBundle(tr("Set %1 colour %2").arg(title_).arg(entry),
                               [resource, entry, index](Bundle& b) { b.setTableValue(resource, entry, index); }, error);
 }
 
@@ -288,25 +288,25 @@ QVector<sdk::PaletteSample> PaletteTableModel::samples() const {
 }
 
 QString PaletteTableModel::statusText() const {
-    return QStringLiteral("%1 · %2, colour %3").arg(title_, rowLabel(entry_.y())).arg(entry_.x());
+    return tr("%1 · %2, colour %3").arg(title_, rowLabel(entry_.y())).arg(entry_.x());
 }
 
 sdk::Inspection PaletteTableModel::inspect() const {
     sdk::Inspection inspection;
-    inspection.kicker = QStringLiteral("Palette entry");
-    inspection.title = QStringLiteral("%1 · colour %2").arg(rowLabel(entry_.y())).arg(entry_.x());
+    inspection.kicker = tr("Palette entry");
+    inspection.title = tr("%1 · colour %2").arg(rowLabel(entry_.y())).arg(entry_.x());
     const int value = currentGamutIndex();
     sdk::Field field;
     field.key = QStringLiteral("value");
-    field.label = QStringLiteral("Colour");
+    field.label = tr("Colour");
     field.value = value < 0 ? QString() : hex(value);
     field.monospace = true;
     inspection.fields = {field};
-    inspection.note = QStringLiteral("Pick a colour from the NES palette. Colour 0 of every row shows the "
-                                     "backdrop.");
+    inspection.note = tr("Pick a colour from the NES palette. Colour 0 of every row shows the "
+                         "backdrop.");
     inspection.engineTag = QStringLiteral("nes.palette-table.v1");
-    inspection.engine = {{QStringLiteral("Resource"), resource_},
-                         {QStringLiteral("Entry"), QString::number(flatEntry())}};
+    inspection.engine = {{tr("Resource"), resource_},
+                         {tr("Entry"), QString::number(flatEntry())}};
     return inspection;
 }
 

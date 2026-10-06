@@ -14,7 +14,7 @@ bool Session::canRevert(const QString&, const QString&) const {
 
 bool Session::revert(const QString&, const QString&, QString* error) {
     if (error) {
-        *error = QStringLiteral("This document cannot be reverted.");
+        *error = tr("This document cannot be reverted.");
     }
     return false;
 }

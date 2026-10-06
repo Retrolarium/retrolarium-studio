@@ -1,5 +1,6 @@
 #include "shell/side_panels.hpp"
 
+#include "sdk/i18n.hpp"
 #include "theme/icons.hpp"
 #include "theme/typography.hpp"
 #include "widgets/document_list.hpp"
@@ -36,7 +37,7 @@ void KindRail::setKinds(const QVector<sdk::Kind>& kinds) {
     buttons_.clear();
     ids_.clear();
     for (const sdk::Kind& kind : kinds) {
-        auto* button = new ui::RailButton(kind.icon, kind.label, this);
+        auto* button = new ui::RailButton(kind.icon, rlValue(kind.label), this);
         button->setAutoExclusive(false);
         group_->addButton(button, buttons_.size());
         layout_->insertWidget(buttons_.size(), button);
@@ -73,7 +74,7 @@ DocumentPanel::DocumentPanel(QWidget* parent) : QFrame(parent) {
     auto* filterLayout = new QVBoxLayout(filterBox);
     filterLayout->setContentsMargins(8, 8, 8, 8);
     filter_ = new QLineEdit(filterBox);
-    filter_->setPlaceholderText(QStringLiteral("Filter"));
+    filter_->setPlaceholderText(tr("Filter"));
     filter_->setFont(theme::font(theme::TextRole::Body, 12.0));
     filter_->setFixedHeight(26);
     filter_->setClearButtonEnabled(true);

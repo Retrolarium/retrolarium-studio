@@ -1,6 +1,7 @@
 #include "nes/sound_effect_model.hpp"
 
 #include "nes/editors.hpp"
+#include "sdk/i18n.hpp"
 #include "sdk/plugin.hpp"
 #include "sdk/session.hpp"
 
@@ -60,7 +61,7 @@ private:
 }  // namespace
 
 bool SoundEffectData::setTableValue(const QString&, int, int, const QString&, QString* error) {
-    if (error) *error = QStringLiteral("This effect's data is not editable here.");
+    if (error) *error = rlTr("nes", "This effect's data is not editable here.");
     return false;
 }
 
@@ -132,7 +133,7 @@ void SoundEffectModel::requestTrace() {
         report(error);
         return;
     }
-    spec.label = QStringLiteral("Trace %1").arg(effect_.title);
+    spec.label = tr("Trace %1").arg(effect_.title);
     tracing_ = true;
     const QJsonObject state = data_ ? data_->state() : QJsonObject();
     QPointer<SoundEffectModel> self(this);
@@ -140,12 +141,12 @@ void SoundEffectModel::requestTrace() {
         if (!self) return;
         self->tracing_ = false;
         if (!result.succeeded()) {
-            if (!result.cancelled) self->report(QStringLiteral("Tracing %1 failed.").arg(self->effect_.title));
+            if (!result.cancelled) self->report(tr("Tracing %1 failed.").arg(self->effect_.title));
             return;
         }
         QFile file(output);
         if (!file.open(QIODevice::ReadOnly)) {
-            self->report(QStringLiteral("Cannot read %1.").arg(output));
+            self->report(tr("Cannot read %1.").arg(output));
             return;
         }
         const bool first = self->trace_.isEmpty();
@@ -218,7 +219,7 @@ bool SoundEffectModel::setSourceValue(const QJsonObject& source, int value, QStr
     const QString table = source.value(QStringLiteral("table")).toString();
     const int index = source.value(QStringLiteral("index")).toInt();
     if (value == source.value(QStringLiteral("value")).toInt()) return false;
-    return data_->setTableValue(table, index, value, QStringLiteral("Edit %1 (%2[%3])").arg(effect_.title, table).arg(index), error);
+    return data_->setTableValue(table, index, value, tr("Edit %1 (%2[%3])").arg(effect_.title, table).arg(index), error);
 }
 
 QVector<sdk::SequencerChannel> SoundEffectModel::channels() const {
@@ -229,7 +230,7 @@ QVector<sdk::SequencerChannel> SoundEffectModel::channels() const {
         channel.id = QString::number(c);
         channel.label = QString::fromLatin1(kChannels[c]);
         const int count = lanes.at(c).toObject().value(QStringLiteral("notes")).toArray().size();
-        channel.detail = count ? QStringLiteral("%1 notes").arg(count) : QStringLiteral("unused");
+        channel.detail = count ? tr("%1 notes").arg(count) : QStringLiteral("unused");
         channel.color = kColours[c];
         channel.muted = muted_.contains(c);
         result << channel;
@@ -311,24 +312,24 @@ void SoundEffectModel::endEdit() {
 }
 
 QString SoundEffectModel::readOnlyReason() const {
-    return QStringLiteral("Sound effects are code in this game: the notes show what its driver plays.");
+    return tr("Sound effects are code in this game: the notes show what its driver plays.");
 }
 
 sdk::Inspection SoundEffectModel::inspect() const {
     sdk::Inspection inspection;
-    inspection.kicker = QStringLiteral("Sound effect");
+    inspection.kicker = tr("Sound effect");
     inspection.title = effect_.title;
     inspection.engineTag = effect_.key;
     sdk::Field trigger;
     trigger.key = QStringLiteral("trigger");
-    trigger.label = QStringLiteral("Started by");
+    trigger.label = tr("Started by");
     trigger.value = effect_.trigger;
     sdk::Field length;
     length.key = QStringLiteral("length");
-    length.label = QStringLiteral("Length");
+    length.label = tr("Length");
     const int frames = trace_.value(QStringLiteral("frames")).toInt();
-    length.value = trace_.isEmpty() ? QStringLiteral("tracing…")
-                                    : QStringLiteral("%1 frames · %2 s").arg(frames).arg(frames / kFrameRate, 0, 'f', 2);
+    length.value = trace_.isEmpty() ? tr("tracing…")
+                                    : tr("%1 frames · %2 s").arg(frames).arg(frames / kFrameRate, 0, 'f', 2);
     inspection.fields = {trigger, length};
     if (!selected_.isEmpty()) {
         const int channel = std::clamp(selected_.section(QLatin1Char(':'), 0, 0).toInt(), 0, 3);
@@ -336,7 +337,7 @@ sdk::Inspection SoundEffectModel::inspect() const {
         sdk::Field note;
         note.key = QStringLiteral("note");
         note.label = QString::fromLatin1(kChannels[channel]);
-        note.value = QStringLiteral("%1 · frame %2 · %3 frames")
+        note.value = tr("%1 · frame %2 · %3 frames")
                          .arg(pitchName(n.value(QStringLiteral("pitch")).toInt()))
                          .arg(n.value(QStringLiteral("start")).toInt())
                          .arg(n.value(QStringLiteral("length")).toInt());
@@ -347,7 +348,7 @@ sdk::Inspection SoundEffectModel::inspect() const {
             // The table byte behind the note, as one of the pitches it can play.
             sdk::Field value;
             value.key = QStringLiteral("value");
-            value.label = QStringLiteral("Table byte");
+            value.label = tr("Table byte");
             value.type = sdk::Field::Type::Choice;
             value.hint = QStringLiteral("%1[%2]").arg(source.value(QStringLiteral("table")).toString())
                              .arg(source.value(QStringLiteral("index")).toInt());
@@ -357,7 +358,7 @@ sdk::Inspection SoundEffectModel::inspect() const {
                 const QJsonObject choice = v.toObject();
                 const int byte = noise ? (current & 0xF0) | choice.value(QStringLiteral("value")).toInt()
                                        : choice.value(QStringLiteral("value")).toInt();
-                const QString label = noise ? QStringLiteral("%1 · period %2").arg(hex(byte)).arg(byte & 0x0F)
+                const QString label = noise ? tr("%1 · period %2").arg(hex(byte)).arg(byte & 0x0F)
                                             : QStringLiteral("%1 · %2").arg(hex(byte), pitchName(choice.value(QStringLiteral("pitch")).toInt()));
                 value.choices << label;
                 if (byte == current) value.value = label;
@@ -366,11 +367,11 @@ sdk::Inspection SoundEffectModel::inspect() const {
             inspection.fields << value;
         }
     }
-    inspection.note = QStringLiteral("Played through the game's own sound code: the kit runs the effect's routines "
-                                     "frame by frame and records the APU registers. One tick is one frame.");
+    inspection.note = tr("Played through the game's own sound code: the kit runs the effect's routines "
+                         "frame by frame and records the APU registers. One tick is one frame.");
     if (hasTables()) {
-        inspection.note += QStringLiteral(" Notes set from a table byte move up or down to the pitches the table can "
-                                          "hold; that byte changes for every place the effect reads it.");
+        inspection.note += tr(" Notes set from a table byte move up or down to the pitches the table can "
+                              "hold; that byte changes for every place the effect reads it.");
     }
     if (!effect_.note.isEmpty()) inspection.note += QLatin1Char(' ') + effect_.note;
     return inspection;
@@ -385,7 +386,7 @@ bool SoundEffectModel::setField(const QString& key, const QVariant& value, QStri
 }
 
 QString SoundEffectModel::statusText() const {
-    return QStringLiteral("Sound effect · %1").arg(effect_.title);
+    return tr("Sound effect · %1").arg(effect_.title);
 }
 
 void SoundEffectModel::preview() {
@@ -409,11 +410,11 @@ void SoundEffectModel::preview() {
         report(error);
         return;
     }
-    spec.label = QStringLiteral("Render %1").arg(effect_.title);
+    spec.label = tr("Render %1").arg(effect_.title);
     QPointer<SoundEffectModel> self(this);
     host->runProcess(spec, [self, host, wav](const sdk::ProcessResult& result) {
         if (!result.succeeded() || !QFileInfo(wav).isFile()) {
-            if (self && !result.cancelled) self->report(QStringLiteral("Rendering %1 failed.").arg(self->effect_.title));
+            if (self && !result.cancelled) self->report(tr("Rendering %1 failed.").arg(self->effect_.title));
             return;
         }
         host->playAudio(wav);

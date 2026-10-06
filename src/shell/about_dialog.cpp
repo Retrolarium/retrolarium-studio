@@ -55,8 +55,8 @@ AboutDialog::AboutDialog(QWidget* parent) : StudioDialog(QStringLiteral("About")
     heading->addWidget(new ui::BrandMark(48, body()), 0, Qt::AlignTop);
     auto* names = new QVBoxLayout;
     names->setSpacing(4);
-    names->addWidget(new ui::Label(QStringLiteral("Retrolarium Studio"), ui::Label::Role::Title, body()));
-    auto* version = new ui::Label(QStringLiteral("Version %1 · Qt %2").arg(QCoreApplication::applicationVersion(),
+    names->addWidget(new ui::Label(tr("Retrolarium Studio"), ui::Label::Role::Title, body()));
+    auto* version = new ui::Label(tr("Version %1 · Qt %2").arg(QCoreApplication::applicationVersion(),
                                                                          QString::fromLatin1(qVersion())),
                                   ui::Label::Role::Mono, body());
     version->setTone(QStringLiteral("faint"));
@@ -66,66 +66,66 @@ AboutDialog::AboutDialog(QWidget* parent) : StudioDialog(QStringLiteral("About")
     content->addLayout(heading);
     content->addSpacing(6);
 
-    auto* intro = paragraph(QStringLiteral("A studio for changing classic console games from their disassemblies: "
-                                           "levels, worlds, tiles and blocks, palettes, sprites and animations, "
-                                           "screens, text and music, each in an editor that shows it the way the "
-                                           "game does and keeps it within what the ROM can hold."),
+    auto* intro = paragraph(tr("A studio for changing classic console games from their disassemblies: "
+                               "levels, worlds, tiles and blocks, palettes, sprites and animations, "
+                               "screens, text and music, each in an editor that shows it the way the "
+                               "game does and keeps it within what the ROM can hold."),
                             body());
     intro->setFixedWidth(500);
     content->addWidget(intro);
 
     content->addSpacing(10);
-    content->addWidget(new ui::Label(QStringLiteral("Games"), ui::Label::Role::Caps, body()));
+    content->addWidget(new ui::Label(tr("Games"), ui::Label::Role::Caps, body()));
     QStringList games;
     for (const auto& plugin : sdk::PluginRegistry::instance().plugins()) {
         games << plugin->displayName();
     }
-    auto* gameList = paragraph(games.isEmpty() ? QStringLiteral("No game plugins are built in.")
+    auto* gameList = paragraph(games.isEmpty() ? tr("No game plugins are built in.")
                                                : games.join(QStringLiteral(" · ")),
                                body());
     gameList->setTone(QStringLiteral("text"));
     content->addWidget(gameList);
 
     content->addSpacing(10);
-    content->addWidget(new ui::Label(QStringLiteral("From an edit to the game"), ui::Label::Role::Caps, body()));
-    auto* loop = paragraph(QStringLiteral("Every change is one undo step and stays in the project's documents until "
-                                          "you save. Build hands them to Retrolarium Kit, which writes a new ROM; "
-                                          "Play runs it from power-on, Play from selected right where "
-                                          "you set the start, inside the studio in MAME. A game that is already "
-                                          "running reloads into the new build without restarting the emulator."),
+    content->addWidget(new ui::Label(tr("From an edit to the game"), ui::Label::Role::Caps, body()));
+    auto* loop = paragraph(tr("Every change is one undo step and stays in the project's documents until "
+                              "you save. Build hands them to Retrolarium Kit, which writes a new ROM; "
+                              "Play runs it from power-on, Play from selected right where "
+                              "you set the start, inside the studio in MAME. A game that is already "
+                              "running reloads into the new build without restarting the emulator."),
                            body());
     loop->setFixedWidth(500);
     content->addWidget(loop);
 
     content->addSpacing(10);
-    content->addWidget(new ui::Label(QStringLiteral("Shortcuts"), ui::Label::Role::Caps, body()));
-    content->addLayout(keyTable({{QStringLiteral("Ctrl+O"), QStringLiteral("Open a project")},
-                                 {QStringLiteral("Ctrl+S"), QStringLiteral("Save all")},
-                                 {QStringLiteral("Ctrl+Z  Ctrl+Y"), QStringLiteral("Undo, redo")},
-                                 {QStringLiteral("Ctrl+B"), QStringLiteral("Build the ROM")},
-                                 {QStringLiteral("Ctrl+F5"), QStringLiteral("Play from power-on")},
-                                 {QStringLiteral("F5"), QStringLiteral("Play from selected")},
-                                 {QStringLiteral("Pause"), QStringLiteral("Pause or resume the game")},
-                                 {QStringLiteral("Shift+F5"), QStringLiteral("Stop the game")},
-                                 {QStringLiteral("Ctrl+J"), QStringLiteral("Messages panel")},
-                                 {QStringLiteral("Ctrl+Shift+L"), QStringLiteral("Light or dark theme")}},
+    content->addWidget(new ui::Label(tr("Shortcuts"), ui::Label::Role::Caps, body()));
+    content->addLayout(keyTable({{tr("Ctrl+O"), tr("Open a project")},
+                                 {tr("Ctrl+S"), tr("Save all")},
+                                 {tr("Ctrl+Z  Ctrl+Y"), tr("Undo, redo")},
+                                 {tr("Ctrl+B"), tr("Build the ROM")},
+                                 {tr("Ctrl+F5"), tr("Play from power-on")},
+                                 {QStringLiteral("F5"), tr("Play from selected")},
+                                 {tr("Pause"), tr("Pause or resume the game")},
+                                 {tr("Shift+F5"), tr("Stop the game")},
+                                 {tr("Ctrl+J"), tr("Messages panel")},
+                                 {tr("Ctrl+Shift+L"), tr("Light or dark theme")}},
                                 body()));
 
     content->addSpacing(10);
-    content->addWidget(new ui::Label(QStringLiteral("Playing"), ui::Label::Role::Caps, body()));
-    content->addLayout(keyTable({{QStringLiteral("Arrows"), QStringLiteral("D-pad")},
-                                 {QStringLiteral("Z  X"), QStringLiteral("B and A (run, jump)")},
-                                 {QStringLiteral("Enter"), QStringLiteral("Start")},
-                                 {QStringLiteral("Right Shift"), QStringLiteral("Select")}},
+    content->addWidget(new ui::Label(tr("Playing"), ui::Label::Role::Caps, body()));
+    content->addLayout(keyTable({{tr("Arrows"), tr("D-pad")},
+                                 {QStringLiteral("Z  X"), tr("B and A (run, jump)")},
+                                 {tr("Enter"), tr("Start")},
+                                 {tr("Right Shift"), tr("Select")}},
                                 body()));
-    auto* pad = new ui::Label(QStringLiteral("A game pad works too. Click the picture to give it the keyboard."),
+    auto* pad = new ui::Label(tr("A game pad works too. Click the picture to give it the keyboard."),
                               ui::Label::Role::Small, body());
     content->addWidget(pad);
 
     content->addSpacing(16);
     auto* buttons = new QHBoxLayout;
     buttons->addStretch(1);
-    auto* close = new ui::PrimaryButton(QStringLiteral("Close"), QString(), body());
+    auto* close = new ui::PrimaryButton(tr("Close"), QString(), body());
     connect(close, &QAbstractButton::clicked, this, &QDialog::accept);
     buttons->addWidget(close);
     content->addLayout(buttons);

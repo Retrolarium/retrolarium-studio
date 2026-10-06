@@ -110,7 +110,7 @@ void MessageDialog::inform(QWidget* parent, const QString& title, const QString&
 bool MessageDialog::confirm(QWidget* parent, const QString& title, const QString& heading,
                             const QString& text, const QString& action) {
     MessageDialog dialog(title, heading, text, parent);
-    dialog.addButton(QStringLiteral("Cancel"), 0);
+    dialog.addButton(tr("Cancel"), 0);
     dialog.addButton(action, 1, true);
     dialog.setCancelResult(0);
     return dialog.exec() == 1;

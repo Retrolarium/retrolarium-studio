@@ -382,7 +382,7 @@ void MapCanvas::paintEvent(QPaintEvent*) {
             painter.fillRect(QRect(x, map.top() - 24, 1, 16), QColor(255, 255, 255, 90));
             painter.setPen(theme::canvas::kPageLabel);
             painter.drawText(QRect(x + 5, map.top() - 24, 80, 16), Qt::AlignVCenter,
-                             QStringLiteral("Page %1").arg(page));
+                             tr("Page %1").arg(page));
         }
     }
 
@@ -585,7 +585,7 @@ QWidget* TileMapEditor::createToolbar(QWidget* parent) {
             chip->setCheckable(true);
             chip->setChecked(option.value == QLatin1String("On"));
             connect(chip, &QAbstractButton::toggled, this, [this, chip, key](bool on) {
-                chip->setValue(on ? QStringLiteral("On") : QStringLiteral("Off"));
+                chip->setValue(on ? QStringLiteral("On") : tr("Off"));
                 map_->setViewOption(key, chip->value());
             });
         } else if (!option.choices.isEmpty()) {
@@ -596,12 +596,12 @@ QWidget* TileMapEditor::createToolbar(QWidget* parent) {
         layout->addWidget(chip);
     }
 
-    auto* gridChip = new ui::ViewChip(QStringLiteral("Grid"),
-                                      gridVisible() ? QStringLiteral("On") : QStringLiteral("Off"), bar);
+    auto* gridChip = new ui::ViewChip(tr("Grid"),
+                                      gridVisible() ? QStringLiteral("On") : tr("Off"), bar);
     gridChip->setCheckable(true);
     gridChip->setChecked(gridVisible());
     connect(gridChip, &QAbstractButton::toggled, this, [this, gridChip](bool on) {
-        gridChip->setValue(on ? QStringLiteral("On") : QStringLiteral("Off"));
+        gridChip->setValue(on ? QStringLiteral("On") : tr("Off"));
         setGridVisible(on);
     });
     layout->addWidget(gridChip);
@@ -610,7 +610,7 @@ QWidget* TileMapEditor::createToolbar(QWidget* parent) {
     for (int step : kZoomSteps) {
         zooms << zoomLabel(step);
     }
-    auto* zoomChip = new ui::ViewChip(QStringLiteral("Zoom"), zoomLabel(zoom()), bar);
+    auto* zoomChip = new ui::ViewChip(tr("Zoom"), zoomLabel(zoom()), bar);
     zoomChip->setChoices(zooms);
     connect(zoomChip, &ui::ViewChip::valueChosen, this, [this](const QString& value) {
         for (int step : kZoomSteps) {

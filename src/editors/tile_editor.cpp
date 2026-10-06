@@ -337,7 +337,7 @@ TileEditor::TileEditor(sdk::TileModel* model, QWidget* parent)
     rightLayout->addWidget(canvas_);
     rightLayout->addWidget(pens_);
     auto* hint = new ui::Label(
-        QStringLiteral("Right-click picks the pen under the cursor. Arrow keys move through the atlas."),
+        tr("Right-click picks the pen under the cursor. Arrow keys move through the atlas."),
         ui::Label::Role::Meta, right);
     hint->setWordWrap(true);
     hint->setMaximumWidth(PenRow::kWidth);

@@ -1,5 +1,7 @@
 #include "sdk/editor_model.hpp"
 
+#include "sdk/i18n.hpp"
+
 namespace rl::sdk {
 
 QString editorName(EditorType type) {
@@ -21,14 +23,14 @@ QString editorName(EditorType type) {
     case EditorType::None:
         break;
     }
-    return QStringLiteral("Editor");
+    return rlTr("studio", "Editor");
 }
 
 EditorModel::~EditorModel() = default;
 
 bool EditorModel::setField(const QString&, const QVariant&, QString* error) {
     if (error) {
-        *error = QStringLiteral("This field cannot be edited.");
+        *error = tr("This field cannot be edited.");
     }
     return false;
 }
@@ -43,13 +45,13 @@ int TileMapModel::cellValue(QPoint) const {
 }
 bool CompositionModel::dropItem(const QString&, const QString&, QString* error) {
     if (error) {
-        *error = QStringLiteral("Nothing can be dropped here.");
+        *error = tr("Nothing can be dropped here.");
     }
     return false;
 }
 
 QString TileMapModel::lockReason(QPoint) const {
-    return QStringLiteral("This cell cannot be painted.");
+    return tr("This cell cannot be painted.");
 }
 
 bool TileMapModel::isCellEditable(QPoint) const {
@@ -68,13 +70,13 @@ bool TileMapModel::dragObject(const QString&, QPoint) {
 void TileMapModel::endDrag() {}
 bool TileMapModel::placeObject(const QString&, QPoint, QString* error) {
     if (error) {
-        *error = QStringLiteral("Objects cannot be placed here.");
+        *error = tr("Objects cannot be placed here.");
     }
     return false;
 }
 bool TileMapModel::removeObject(const QString&, QString* error) {
     if (error) {
-        *error = QStringLiteral("Objects cannot be removed here.");
+        *error = tr("Objects cannot be removed here.");
     }
     return false;
 }
@@ -83,9 +85,9 @@ bool TileModel::isTileDirty(int) const {
     return false;
 }
 QVector<Tool> TileModel::tools() const {
-    return {{QStringLiteral("pencil"), QStringLiteral("Pencil"), QStringLiteral("pencil")},
-            {QStringLiteral("fill"), QStringLiteral("Fill"), QStringLiteral("fill")},
-            {QStringLiteral("pick"), QStringLiteral("Pick a pen"), QStringLiteral("pick")}};
+    return {{QStringLiteral("pencil"), tr("Pencil"), QStringLiteral("pencil")},
+            {QStringLiteral("fill"), tr("Fill"), QStringLiteral("fill")},
+            {QStringLiteral("pick"), tr("Pick a pen"), QStringLiteral("pick")}};
 }
 void TileModel::beginStroke() {}
 bool TileModel::setPixel(QPoint, int) {
@@ -94,20 +96,20 @@ bool TileModel::setPixel(QPoint, int) {
 void TileModel::endStroke() {}
 bool TileModel::fill(QPoint, int, QString* error) {
     if (error) {
-        *error = QStringLiteral("This bank cannot be filled.");
+        *error = tr("This bank cannot be filled.");
     }
     return false;
 }
 
 bool PaletteModel::assignGamut(int, QString* error) {
     if (error) {
-        *error = QStringLiteral("This palette has no gamut.");
+        *error = tr("This palette has no gamut.");
     }
     return false;
 }
 bool PaletteModel::setChannel(int, int, QString* error) {
     if (error) {
-        *error = QStringLiteral("This palette has no channels.");
+        *error = tr("This palette has no channels.");
     }
     return false;
 }
@@ -131,7 +133,7 @@ QVector<QImage> TableModel::cellChoiceIcons(int, int) const {
 
 bool TableModel::setCell(int, int, const QString&, QString* error) {
     if (error) {
-        *error = QStringLiteral("This cell cannot be edited.");
+        *error = tr("This cell cannot be edited.");
     }
     return false;
 }
@@ -151,7 +153,7 @@ int CompositionModel::frameDurationMs(int) const {
 }
 bool CompositionModel::moveFrame(int, int, QString* error) {
     if (error) {
-        *error = QStringLiteral("Frames cannot be reordered here.");
+        *error = tr("Frames cannot be reordered here.");
     }
     return false;
 }
@@ -160,7 +162,7 @@ void SequencerModel::setChannelMuted(int, bool) {}
 QString SequencerModel::pitchName(int pitch) const {
     static const char* names[] = {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"};
     if (pitch < 0) {
-        return QStringLiteral("Rest");
+        return tr("Rest");
     }
     return QStringLiteral("%1%2").arg(QString::fromLatin1(names[pitch % 12])).arg(pitch / 12);
 }

@@ -1,6 +1,7 @@
 #include "solomon/plugin/solomon_session.hpp"
 
 #include "nes/palette.hpp"
+#include "sdk/i18n.hpp"
 #include "sdk/plugin.hpp"
 #include "sdk/snapshot_command.hpp"
 #include "solomon/plugin/animation_model.hpp"
@@ -60,7 +61,7 @@ QString failureText(const sdk::ProcessResult& result) {
             return lines.at(i).trimmed();
         }
     }
-    return QStringLiteral("exit code %1").arg(result.exitCode);
+    return rlTr("solomon", "exit code %1").arg(result.exitCode);
 }
 
 sdk::ProcessSpec specFromPlan(const QJsonObject& json) {
@@ -80,13 +81,13 @@ sdk::ProcessSpec specFromPlan(const QJsonObject& json) {
 // Rooms 1-48 come in twelve worlds of four; 49-53 are the bonus, princess
 // and other special rooms.
 QString worldOf(int room) {
-    return room < 48 ? QStringLiteral("World %1").arg(room / 4 + 1) : QStringLiteral("Special rooms");
+    return room < 48 ? rlTr("solomon", "World %1").arg(room / 4 + 1) : rlTr("solomon", "Special rooms");
 }
 
 }  // namespace
 
 QString roomLabel(int room) {
-    return QStringLiteral("Room %1").arg(room);
+    return rlTr("solomon", "Room %1").arg(room);
 }
 
 // ---------------------------------------------------------------- opening
@@ -150,11 +151,11 @@ std::unique_ptr<SolomonSession> SolomonSession::open(const sdk::ProjectFile& pro
             }
             if (!steps.isEmpty()) s.presentation.insert(QStringLiteral("demo_steps"), steps);
         };
-        session->edit(QStringLiteral("Shorten a 255-frame demo step to 254"), clamp, nullptr);
+        session->edit(tr("Shorten a 255-frame demo step to 254"), clamp, nullptr);
         session->painter();
     } catch (const std::exception& e) {
         if (error) {
-            *error = QStringLiteral("Cannot open the Solomon's Key project: %1").arg(QString::fromUtf8(e.what()));
+            *error = tr("Cannot open the Solomon's Key project: %1").arg(QString::fromUtf8(e.what()));
         }
         return nullptr;
     }
@@ -163,7 +164,7 @@ std::unique_ptr<SolomonSession> SolomonSession::open(const sdk::ProjectFile& pro
 
 sdk::Profile SolomonSession::profile() const {
     sdk::Profile profile;
-    profile.name = QStringLiteral("Solomon's Key");
+    profile.name = tr("Solomon's Key");
     profile.badge = QStringLiteral("NES");
     profile.platform = QStringLiteral("NES");
     const QString revision = state_.rooms.revision();
@@ -209,21 +210,21 @@ QVector<sdk::DocumentGroup> SolomonSession::listDocuments(const QString& kind) c
             }
             const int enemies = state_.rooms.enemies(r).size();
             groups.last().documents << entry(QString::number(r + 1), roomLabel(state_.rooms.roomNumber(r)),
-                                             enemies ? QStringLiteral("%1 enemies").arg(enemies) : QString(),
+                                             enemies ? tr("%1 enemies").arg(enemies) : QString(),
                                              now.at(r) != saved.at(r));
         }
         sdk::DocumentGroup group;
-        group.title = QStringLiteral("Spawn Mirrors");
-        group.documents << entry(QStringLiteral("sets"), QStringLiteral("Enemy sets"),
+        group.title = tr("Spawn Mirrors");
+        group.documents << entry(QStringLiteral("sets"), tr("Enemy sets"),
                                  QStringLiteral("%1 / %2 B").arg(state_.rooms.mirrorSetBytes()).arg(state_.rooms.mirrorSetCapacity()),
                                  state_.rooms.mirrorSets() != saved_.rooms.mirrorSets())
-                        << entry(QStringLiteral("schedules"), QStringLiteral("Drop schedules"),
+                        << entry(QStringLiteral("schedules"), tr("Drop schedules"),
                                  QStringLiteral("%1").arg(state_.rooms.schedules().size()),
                                  state_.rooms.schedules() != saved_.rooms.schedules());
         groups << group;
     } else if (kind == QLatin1String("screens") && !state_.presentation.isEmpty()) {
         sdk::DocumentGroup group;
-        group.title = QStringLiteral("Title screen");
+        group.title = tr("Title screen");
         const QJsonArray now = state_.presentation.value(QStringLiteral("streams")).toArray();
         const QJsonArray saved = saved_.presentation.value(QStringLiteral("streams")).toArray();
         group.documents << entry(QStringLiteral("0"), SolomonTitleModel::layerName(0), QStringLiteral("155 B"), now.at(0) != saved.at(0))
@@ -242,11 +243,11 @@ QVector<sdk::DocumentGroup> SolomonSession::listDocuments(const QString& kind) c
         sdk::DocumentGroup group;
         group.title = QStringLiteral("Text");
         if (state_.text.isEmpty()) {
-            group.documents << entry(QStringLiteral("upgrade"), QStringLiteral("Add screen text to this project"),
+            group.documents << entry(QStringLiteral("upgrade"), tr("Add screen text to this project"),
                                      QStringLiteral("kit"));
         } else {
-            group.documents << entry(QStringLiteral("all"), QStringLiteral("All text"),
-                                     QStringLiteral("%1 lines").arg(state_.text.strings().size()),
+            group.documents << entry(QStringLiteral("all"), tr("All text"),
+                                     tr("%1 lines").arg(state_.text.strings().size()),
                                      !(state_.text == saved_.text));
         }
         groups << group;
@@ -269,9 +270,9 @@ QVector<sdk::DocumentGroup> SolomonSession::listDocuments(const QString& kind) c
         }
     } else if (kind == QLatin1String("demo") && !state_.presentation.isEmpty()) {
         sdk::DocumentGroup group;
-        group.title = QStringLiteral("Title");
-        group.documents << entry(QStringLiteral("demo"), QStringLiteral("Attract demo"),
-                                 QStringLiteral("%1 steps").arg(state_.presentation.value(QStringLiteral("demo_steps")).toArray().size()),
+        group.title = tr("Title");
+        group.documents << entry(QStringLiteral("demo"), tr("Attract demo"),
+                                 tr("%1 steps").arg(state_.presentation.value(QStringLiteral("demo_steps")).toArray().size()),
                                  state_.presentation.value(QStringLiteral("demo_steps")) !=
                                      saved_.presentation.value(QStringLiteral("demo_steps")));
         groups << group;
@@ -296,8 +297,8 @@ QVector<sdk::DocumentGroup> SolomonSession::listDocuments(const QString& kind) c
             const int first = family.members.first().action;
             groups.last().documents << entry(QStringLiteral("%1:%2").arg(family.group).arg(first),
                                              SolomonAnimationModel::familyLabel(family),
-                                             family.frames == 1 ? QStringLiteral("1 frame")
-                                                                : QStringLiteral("%1 frames").arg(family.frames),
+                                             family.frames == 1 ? tr("1 frame")
+                                                                : tr("%1 frames").arg(family.frames),
                                              dirty);
         }
     } else if (kind == QLatin1String("graphics")) {
@@ -311,19 +312,19 @@ QVector<sdk::DocumentGroup> SolomonSession::listDocuments(const QString& kind) c
                 for (int t = half * 256; changed && t < std::min(count, half * 256 + 256) && !dirty; ++t) {
                     dirty = state_.graphics.tilePixels(id, t) != saved_.graphics.tilePixels(id, t);
                 }
-                group.documents << entry(QStringLiteral("%1/%2").arg(id).arg(half), QStringLiteral("Pattern table %1").arg(half),
+                group.documents << entry(QStringLiteral("%1/%2").arg(id).arg(half), tr("Pattern table %1").arg(half),
                                          half == 0 ? QStringLiteral("sprites") : QStringLiteral("rooms"), dirty);
             }
             // The 8x16 pairs sprite halves are drawn from, in either table.
             for (int half = 0; half * 256 < count; ++half) {
                 group.documents << entry(QStringLiteral("%1/pairs%2").arg(id).arg(half),
-                                         QStringLiteral("Sprite pairs · table %1").arg(half), QStringLiteral("8x16"), false);
+                                         tr("Sprite pairs · table %1").arg(half), QStringLiteral("8x16"), false);
             }
             groups << group;
         }
     } else if (kind == QLatin1String("palettes")) {
         sdk::DocumentGroup rooms;
-        rooms.title = QStringLiteral("Rooms");
+        rooms.title = tr("Rooms");
         const QVector<int> nowTemplate = state_.graphics.tableValues(QStringLiteral("room-palettes"));
         const QVector<int> savedTemplate = saved_.graphics.tableValues(QStringLiteral("room-palettes"));
         for (int g = 0; g < SolomonRoomPaletteModel::kGroups; ++g) {
@@ -335,30 +336,30 @@ QVector<sdk::DocumentGroup> SolomonSession::listDocuments(const QString& kind) c
         groups << rooms;
         if (!state_.text.isEmpty()) {
             sdk::DocumentGroup screens;
-            screens.title = QStringLiteral("Screens");
+            screens.title = tr("Screens");
             for (int program : {1, 5, 13}) {
                 screens.documents << entry(QStringLiteral("static:%1").arg(program),
-                                           SolomonStaticPaletteModel::programLabel(program), QStringLiteral("16 colours"),
+                                           SolomonStaticPaletteModel::programLabel(program), tr("16 colours"),
                                            state_.text.palette(program) != saved_.text.palette(program));
             }
             groups << screens;
         }
         sdk::DocumentGroup group;
-        group.title = QStringLiteral("Other");
+        group.title = tr("Other");
         for (const QString& id : state_.graphics.resourceIds(QStringLiteral("nes.palette-table.v1"))) {
             if (id == QLatin1String("room-palettes")) continue;
             group.documents << entry(id,
-                                     id == QLatin1String("room-palettes") ? QStringLiteral("Rooms")
-                                     : id == QLatin1String("ending-fade") ? QStringLiteral("Ending fade")
+                                     id == QLatin1String("room-palettes") ? tr("Rooms")
+                                     : id == QLatin1String("ending-fade") ? tr("Ending fade")
                                                                           : id,
-                                     QStringLiteral("%1 colours").arg(state_.graphics.tableValues(id).size()),
+                                     tr("%1 colours").arg(state_.graphics.tableValues(id).size()),
                                      state_.graphics.tableValues(id) != saved_.graphics.tableValues(id));
         }
         groups << group;
     } else if (kind == QLatin1String("playtest")) {
         sdk::DocumentGroup group;
-        group.title = QStringLiteral("Session");
-        group.documents << entry(QStringLiteral("playtest"), QStringLiteral("Build and run"),
+        group.title = tr("Session");
+        group.documents << entry(QStringLiteral("playtest"), tr("Build and run"),
                                  lastBuild_.isEmpty() ? QString() : QStringLiteral("built"));
         groups << group;
     }
@@ -420,7 +421,7 @@ std::unique_ptr<sdk::EditorModel> SolomonSession::openEditor(const QString& kind
                 half * 256 < state_.graphics.tileCount(id)) {
                 return std::make_unique<nes::ChrTileModel>(
                     this, id, half * 256, std::min(256, state_.graphics.tileCount(id) - half * 256),
-                    QStringLiteral("%1 · pairs of table %2").arg(id).arg(half), true, 16);
+                    tr("%1 · pairs of table %2").arg(id).arg(half), true, 16);
             }
         }
         if (kind == QLatin1String("graphics")) {
@@ -430,7 +431,7 @@ std::unique_ptr<sdk::EditorModel> SolomonSession::openEditor(const QString& kind
                 half * 256 < state_.graphics.tileCount(id)) {
                 return std::make_unique<nes::ChrTileModel>(
                     this, id, half * 256, std::min(256, state_.graphics.tileCount(id) - half * 256),
-                    QStringLiteral("%1 · table %2").arg(id).arg(half), half == 0);
+                    tr("%1 · table %2").arg(id).arg(half), half == 0);
             }
         }
         if (kind == QLatin1String("palettes") && document.startsWith(QLatin1String("group:"))) {
@@ -440,8 +441,8 @@ std::unique_ptr<sdk::EditorModel> SolomonSession::openEditor(const QString& kind
         if (kind == QLatin1String("palettes") &&
             state_.graphics.resourceIds(QStringLiteral("nes.palette-table.v1")).contains(document)) {
             return std::make_unique<nes::PaletteTableModel>(
-                this, document, document == QLatin1String("room-palettes") ? QStringLiteral("Room palettes")
-                                                                           : QStringLiteral("Ending fade"));
+                this, document, document == QLatin1String("room-palettes") ? tr("Room palettes")
+                                                                           : tr("Ending fade"));
         }
         if (kind == QLatin1String("playtest")) {
             return std::make_unique<SolomonPlaytestModel>(this);
@@ -550,8 +551,8 @@ QVector<sdk::Diagnostic> SolomonSession::diagnostics() const {
         d.severity = sdk::Severity::Error;
         d.source = QStringLiteral("rooms");
         d.kind = QStringLiteral("rooms");
-        d.location = QStringLiteral("All rooms");
-        d.message = QStringLiteral("The %1 streams of all rooms need %2 of %3 bytes.").arg(stream).arg(used).arg(capacity);
+        d.location = tr("All rooms");
+        d.message = tr("The %1 streams of all rooms need %2 of %3 bytes.").arg(stream).arg(used).arg(capacity);
         result << d;
     };
     const QString textOverflow = state_.text.isEmpty() ? QString() : state_.text.overflow();
@@ -570,7 +571,7 @@ QVector<sdk::Diagnostic> SolomonSession::diagnostics() const {
         d.severity = sdk::Severity::Error;
         d.source = QStringLiteral("rooms");
         d.kind = QStringLiteral("rooms");
-        d.location = QStringLiteral("All rooms");
+        d.location = tr("All rooms");
         d.message = overflow;
         result << d;
     }
@@ -605,12 +606,12 @@ void SolomonSession::attachDemoEditor(bool attach) {
 }
 
 QString SolomonSession::playSelectedLabel() const {
-    if (recordingActive_) return QStringLiteral("Stop recording");
-    return demoStart() ? QStringLiteral("Play demo") : QString();
+    if (recordingActive_) return tr("Stop recording");
+    return demoStart() ? tr("Play demo") : QString();
 }
 
 QString SolomonSession::selectedStart() const {
-    if (demoStart()) return QStringLiteral("Attract demo");
+    if (demoStart()) return tr("Attract demo");
     return roomLabel(startRoom_);
 }
 
@@ -623,7 +624,7 @@ QVector<nes::PreviewPalette> SolomonSession::previewPalettes(const QString&, boo
         const int at = (sprites ? 16 : 0) + p * 4;
         if (at + 4 <= values.size()) {
             result << nes::PreviewPalette{
-                QStringLiteral("Room %1 %2").arg(sprites ? QStringLiteral("SPR") : QStringLiteral("BG")).arg(p),
+                tr("Room %1 %2").arg(sprites ? QStringLiteral("SPR") : QStringLiteral("BG")).arg(p),
                 values.mid(at, 4)};
         }
     }
@@ -635,8 +636,8 @@ QStringList SolomonSession::paletteRowLabels(const QString& table) const {
     const int rows = state_.graphics.tableValues(table).size() / 4;
     for (int r = 0; r < rows; ++r) {
         labels << (table == QLatin1String("room-palettes")
-                       ? (r < 4 ? QStringLiteral("BG %1").arg(r) : QStringLiteral("SPR %1").arg(r - 4))
-                       : QStringLiteral("Step %1").arg(r));
+                       ? (r < 4 ? tr("BG %1").arg(r) : tr("SPR %1").arg(r - 4))
+                       : tr("Step %1").arg(r));
     }
     return labels;
 }
@@ -648,7 +649,7 @@ QVector<sdk::PaletteSample> SolomonSession::paletteSamples(const QString& table)
     }
     sdk::PaletteSample sample;
     sample.label = roomLabel(startRoom_);
-    sample.caption = QStringLiteral("%1, as the game draws it; colour 1 of each row is the world's own").arg(
+    sample.caption = tr("%1, as the game draws it; colour 1 of each row is the world's own").arg(
         roomLabel(startRoom_));
     sample.image = painter().room(startRoom_ - 1);
     result << sample;
@@ -691,12 +692,12 @@ void SolomonSession::runBuild(std::function<void(bool)> next) {
         next(false);
         return;
     }
-    spec.label = QStringLiteral("Build ROM");
+    spec.label = tr("Build ROM");
     h->runProcess(spec, [this, next](const sdk::ProcessResult& result) {
         if (!result.succeeded()) {
             if (!result.cancelled) {
                 report(sdk::Severity::Error, QStringLiteral("build"),
-                       QStringLiteral("Build failed: %1").arg(failureText(result)));
+                       tr("Build failed: %1").arg(failureText(result)));
             }
             next(false);
             return;
@@ -704,14 +705,14 @@ void SolomonSession::runBuild(std::function<void(bool)> next) {
         const QJsonObject json = QJsonDocument::fromJson(result.standardOutput).object();
         const QJsonObject artifact = json.value(QStringLiteral("artifact")).toObject();
         if (json.value(QStringLiteral("status")).toString() != QLatin1String("built")) {
-            report(sdk::Severity::Error, QStringLiteral("build"), QStringLiteral("The kit did not report a built ROM."));
+            report(sdk::Severity::Error, QStringLiteral("build"), tr("The kit did not report a built ROM."));
             next(false);
             return;
         }
         lastBuild_ = QDateTime::currentDateTime().toString(QStringLiteral("HH:mm"));
         documents_.remove(QStringLiteral("playtest"));
         report(sdk::Severity::Info, QStringLiteral("build"),
-               QStringLiteral("Built %1 (%2 bytes).")
+               tr("Built %1 (%2 bytes).")
                    .arg(artifact.value(QStringLiteral("path")).toString())
                    .arg(artifact.value(QStringLiteral("size")).toInt()));
         emit documentsChanged(QStringLiteral("playtest"));
@@ -729,12 +730,12 @@ void SolomonSession::upgradeText() {
         report(sdk::Severity::Error, QStringLiteral("text"), error);
         return;
     }
-    spec.label = QStringLiteral("Add screen text");
+    spec.label = tr("Add screen text");
     h->runProcess(spec, [this](const sdk::ProcessResult& result) {
         if (!result.succeeded()) {
             if (!result.cancelled) {
                 report(sdk::Severity::Error, QStringLiteral("text"),
-                       QStringLiteral("Adding the screen text failed: %1").arg(failureText(result)));
+                       tr("Adding the screen text failed: %1").arg(failureText(result)));
             }
             return;
         }
@@ -742,7 +743,7 @@ void SolomonSession::upgradeText() {
         const sdk::ProjectFile reloaded = sdk::ProjectFile::load(project_.path(), &loadError);
         const QString text = reloaded.path().isEmpty() ? QString() : tabDocument(reloaded, QStringLiteral("solomon.text@1"));
         if (text.isEmpty()) {
-            report(sdk::Severity::Error, QStringLiteral("text"), QStringLiteral("The kit added no text document. %1").arg(loadError));
+            report(sdk::Severity::Error, QStringLiteral("text"), tr("The kit added no text document. %1").arg(loadError));
             return;
         }
         project_ = reloaded;
@@ -758,7 +759,7 @@ void SolomonSession::upgradeText() {
             return;
         }
         report(sdk::Severity::Info, QStringLiteral("text"),
-               QStringLiteral("Added documents/text.json: the screen text and static palettes."));
+               tr("Added documents/text.json: the screen text and static palettes."));
         emit contentChanged();
         for (const QString& kind : {QStringLiteral("text"), QStringLiteral("screens"), QStringLiteral("palettes")}) {
             emit documentsChanged(kind);
@@ -790,7 +791,7 @@ void SolomonSession::launchDemo(bool record) {
         const QString mame = h->emulatorPath(QStringLiteral("mame"));
         if (mame.isEmpty()) {
             report(sdk::Severity::Error, QStringLiteral("playtest"),
-                   QStringLiteral("MAME was not found. Set RETROLARIUM_MAME to consoles.exe."));
+                   tr("MAME was not found. Set RETROLARIUM_MAME to consoles.exe."));
             return;
         }
         QStringList arguments{QStringLiteral("studio"), QStringLiteral("solomon-demo-plan"), project_.path(),
@@ -806,20 +807,20 @@ void SolomonSession::launchDemo(bool record) {
             report(sdk::Severity::Error, QStringLiteral("playtest"), error);
             return;
         }
-        plan.label = record ? QStringLiteral("Plan demo recording") : QStringLiteral("Plan attract demo");
+        plan.label = record ? tr("Plan demo recording") : tr("Plan attract demo");
         h->runProcess(plan, [this, record, recording](const sdk::ProcessResult& result) {
             sdk::Host* host = this->host();
             if (!host) return;
             if (!result.succeeded()) {
                 if (!result.cancelled) {
                     report(sdk::Severity::Error, QStringLiteral("playtest"),
-                           QStringLiteral("Demo plan failed: %1").arg(failureText(result)));
+                           tr("Demo plan failed: %1").arg(failureText(result)));
                 }
                 return;
             }
             sdk::ProcessSpec game = specFromPlan(QJsonDocument::fromJson(result.standardOutput).object());
             if (game.program.isEmpty()) {
-                report(sdk::Severity::Error, QStringLiteral("playtest"), QStringLiteral("The kit returned no emulator command."));
+                report(sdk::Severity::Error, QStringLiteral("playtest"), tr("The kit returned no emulator command."));
                 return;
             }
             for (int i = 0; i < 64; ++i) game.palette << nes::masterColor(i);
@@ -830,14 +831,14 @@ void SolomonSession::launchDemo(bool record) {
                 recordingActive_ = true;
                 emit selectedStartChanged();
                 report(sdk::Severity::Info, QStringLiteral("demo"),
-                       QStringLiteral("Recording: play the demo room with the controller; press Start or Stop to finish."));
+                       tr("Recording: play the demo room with the controller; press Start or Stop to finish."));
             }
-            const QString title = record ? QStringLiteral("Solomon's Key · recording the demo")
-                                         : QStringLiteral("Solomon's Key · attract demo");
+            const QString title = record ? tr("Solomon's Key · recording the demo")
+                                         : tr("Solomon's Key · attract demo");
             host->launchEmulator(game, title, [this, record, recording](const sdk::ProcessResult& run) {
                 if (run.crashed || (!run.started && !run.error.isEmpty())) {
                     report(sdk::Severity::Error, QStringLiteral("playtest"),
-                           run.error.isEmpty() ? QStringLiteral("The emulator crashed.") : run.error);
+                           run.error.isEmpty() ? tr("The emulator crashed.") : run.error);
                 }
                 if (record) {
                     recordingActive_ = false;
@@ -852,7 +853,7 @@ void SolomonSession::launchDemo(bool record) {
 void SolomonSession::applyRecording(const QString& path) {
     QFile file(path);
     if (!file.open(QIODevice::ReadOnly)) {
-        report(sdk::Severity::Warning, QStringLiteral("demo"), QStringLiteral("Nothing was recorded: the demo did not start."));
+        report(sdk::Severity::Warning, QStringLiteral("demo"), tr("Nothing was recorded: the demo did not start."));
         return;
     }
     const int capacity = SolomonDemoModel::demoCapacity(state_.rooms.revision());
@@ -860,21 +861,21 @@ void SolomonSession::applyRecording(const QString& path) {
         SolomonDemoModel::stepsFromRecording(QString::fromUtf8(file.readAll()), capacity);
     if (!recording.pressed) {
         report(sdk::Severity::Warning, QStringLiteral("demo"),
-               QStringLiteral("No buttons were pressed while recording; the demo stays as it was."));
+               tr("No buttons were pressed while recording; the demo stays as it was."));
         return;
     }
     const QJsonArray steps = recording.steps;
     QString error;
-    if (!edit(QStringLiteral("Record the attract demo"),
+    if (!edit(tr("Record the attract demo"),
               [steps](SolomonState& s) { s.presentation.insert(QStringLiteral("demo_steps"), steps); }, &error)) {
         report(sdk::Severity::Error, QStringLiteral("demo"), error);
         return;
     }
-    QString message = QStringLiteral("Recorded %1 s of input into the demo's %2 steps.")
+    QString message = tr("Recorded %1 s of input into the demo's %2 steps.")
                           .arg(recording.keptFrames / 60.0, 0, 'f', 1)
                           .arg(steps.size());
     if (recording.droppedFrames > 0) {
-        message += QStringLiteral(" The demo holds %1 steps; the last %2 s did not fit.")
+        message += tr(" The demo holds %1 steps; the last %2 s did not fit.")
                        .arg(capacity)
                        .arg(recording.droppedFrames / 60.0, 0, 'f', 1);
     }
@@ -891,7 +892,7 @@ void SolomonSession::launch(bool fromStart) {
         const QString mame = h->emulatorPath(QStringLiteral("mame"));
         if (mame.isEmpty()) {
             report(sdk::Severity::Error, QStringLiteral("playtest"),
-                   QStringLiteral("MAME was not found. Set RETROLARIUM_MAME to consoles.exe."));
+                   tr("MAME was not found. Set RETROLARIUM_MAME to consoles.exe."));
             return;
         }
         QStringList arguments;
@@ -910,10 +911,10 @@ void SolomonSession::launch(bool fromStart) {
             report(sdk::Severity::Error, QStringLiteral("playtest"), error);
             return;
         }
-        const QString title = fromStart ? QStringLiteral("Solomon's Key · power-on")
-                                        : QStringLiteral("Solomon's Key · %1").arg(roomLabel(room));
-        plan.label = fromStart ? QStringLiteral("Plan playtest from power-on")
-                               : QStringLiteral("Plan playtest of %1").arg(roomLabel(room));
+        const QString title = fromStart ? tr("Solomon's Key · power-on")
+                                        : tr("Solomon's Key · %1").arg(roomLabel(room));
+        plan.label = fromStart ? tr("Plan playtest from power-on")
+                               : tr("Plan playtest of %1").arg(roomLabel(room));
         h->runProcess(plan, [this, title, fromStart](const sdk::ProcessResult& result) {
             sdk::Host* host = this->host();
             if (!host) {
@@ -922,13 +923,13 @@ void SolomonSession::launch(bool fromStart) {
             if (!result.succeeded()) {
                 if (!result.cancelled) {
                     report(sdk::Severity::Error, QStringLiteral("playtest"),
-                           QStringLiteral("Playtest plan failed: %1").arg(failureText(result)));
+                           tr("Playtest plan failed: %1").arg(failureText(result)));
                 }
                 return;
             }
             sdk::ProcessSpec game = specFromPlan(QJsonDocument::fromJson(result.standardOutput).object());
             if (game.program.isEmpty()) {
-                report(sdk::Severity::Error, QStringLiteral("playtest"), QStringLiteral("The kit returned no emulator command."));
+                report(sdk::Severity::Error, QStringLiteral("playtest"), tr("The kit returned no emulator command."));
                 return;
             }
             for (int i = 0; i < 64; ++i) {
@@ -942,7 +943,7 @@ void SolomonSession::launch(bool fromStart) {
             host->launchEmulator(game, title, [this](const sdk::ProcessResult& run) {
                 if (run.crashed || (!run.started && !run.error.isEmpty())) {
                     report(sdk::Severity::Error, QStringLiteral("playtest"),
-                           run.error.isEmpty() ? QStringLiteral("The emulator crashed.") : run.error);
+                           run.error.isEmpty() ? tr("The emulator crashed.") : run.error);
                 }
             });
         });

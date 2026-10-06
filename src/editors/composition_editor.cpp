@@ -399,7 +399,7 @@ void CompositionEditor::rebuildFrames() {
             static_cast<FrameCard*>(cards_.at(i))->setCurrent(i == current);
         }
         play_->setIcon(theme::icon(playing_ ? QStringLiteral("pause") : QStringLiteral("play"), theme::IconTone::Text));
-        play_->setToolTip(playing_ ? QStringLiteral("Pause") : QStringLiteral("Play the animation"));
+        play_->setToolTip(playing_ ? tr("Pause") : tr("Play the animation"));
         return;
     }
     stripSignature_ = signature;
@@ -420,7 +420,7 @@ void CompositionEditor::rebuildFrames() {
     play->setIcon(theme::icon(playing_ ? QStringLiteral("pause") : QStringLiteral("play"), theme::IconTone::Text));
     play->setIconSize(QSize(12, 12));
     play->setFixedSize(28, 28);
-    play->setToolTip(playing_ ? QStringLiteral("Pause") : QStringLiteral("Play the animation"));
+    play->setToolTip(playing_ ? tr("Pause") : tr("Play the animation"));
     play->setProperty("variant", QStringLiteral("outlined"));
     connect(play, &QToolButton::clicked, this, [this] { setPlaying(!playing_); });
     stripLayout_->addWidget(play);
@@ -479,8 +479,8 @@ QWidget* CompositionEditor::createToolbar(QWidget* parent) {
             button->setEnabled(!composition_->isReadOnly());
             return button;
         };
-        layout->addWidget(move(QStringLiteral("← Earlier"), -1));
-        layout->addWidget(move(QStringLiteral("Later →"), 1));
+        layout->addWidget(move(tr("← Earlier"), -1));
+        layout->addWidget(move(tr("Later →"), 1));
         auto* separator = new ui::Divider(Qt::Vertical, ui::Divider::Strength::Line, bar);
         separator->setFixedHeight(18);
         layout->addWidget(separator, 0, Qt::AlignVCenter);
@@ -494,14 +494,14 @@ QWidget* CompositionEditor::createToolbar(QWidget* parent) {
                 [this, key](const QString& value) { composition_->setViewOption(key, value); });
         layout->addWidget(chip);
     }
-    const QString fit = QStringLiteral("Fit");
+    const QString fit = tr("Fit");
     QStringList zooms{fit};
     for (int z = kMinZoom; z <= kMaxZoom; ++z) {
         zooms << QStringLiteral("%1×").arg(z);
     }
-    const QString current = canvas_->isFitting() ? QStringLiteral("Fit · %1×").arg(canvas_->zoom())
+    const QString current = canvas_->isFitting() ? tr("Fit · %1×").arg(canvas_->zoom())
                                                  : QStringLiteral("%1×").arg(canvas_->zoom());
-    auto* zoom = new ui::ViewChip(QStringLiteral("Zoom"), current, bar);
+    auto* zoom = new ui::ViewChip(tr("Zoom"), current, bar);
     zoom->setChoices(zooms);
     connect(zoom, &ui::ViewChip::valueChosen, this, [this, fit](const QString& value) {
         if (value == fit) {
@@ -516,10 +516,10 @@ QWidget* CompositionEditor::createToolbar(QWidget* parent) {
     const bool movable = std::any_of(pieces.begin(), pieces.end(), [](const sdk::CompositionPiece& p) { return p.movable; });
     QString hint;
     if (movable) {
-        hint = QStringLiteral("Drag pieces, or nudge them with the arrow keys");
+        hint = tr("Drag pieces, or nudge them with the arrow keys");
     } else if (!pieces.isEmpty()) {
-        hint = composition_->sheet().items.isEmpty() ? QStringLiteral("Select a piece to edit it")
-                                                     : QStringLiteral("Select a piece, or drop a pattern on it");
+        hint = composition_->sheet().items.isEmpty() ? tr("Select a piece to edit it")
+                                                     : tr("Select a piece, or drop a pattern on it");
     }
     layout->addWidget(new ui::Label(hint, ui::Label::Role::Small, bar));
     return bar;

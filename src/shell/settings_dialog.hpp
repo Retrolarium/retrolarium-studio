@@ -22,6 +22,10 @@ public:
     static constexpr const char* kLanguageKey = "ui/language";
     static constexpr const char* kMameKey = "tools/mame";
 
+    // The interface language: the one chosen here, else the system's when
+    // the studio has it, else English.
+    static QString language();
+
 private:
     void chooseMame();
     void chooseBios();

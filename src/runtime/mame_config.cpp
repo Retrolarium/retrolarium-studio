@@ -1,5 +1,7 @@
 #include "runtime/mame_config.hpp"
 
+#include "sdk/i18n.hpp"
+
 #include <QDateTime>
 #include <QDir>
 #include <QFile>
@@ -49,7 +51,7 @@ QVector<Feature> warnedFeatures(const QString& program, const QString& system, Q
     if (!process.waitForFinished(kListTimeoutMs) || process.exitCode() != 0) {
         process.kill();
         if (error) {
-            *error = QStringLiteral("MAME did not describe %1").arg(system);
+            *error = rlTr("studio", "MAME did not describe %1").arg(system);
         }
         return {};
     }
@@ -149,13 +151,13 @@ bool acknowledgeWarnings(const QString& configDirectory, const QString& system, 
     }
     if (in.hasError() || !wroteSystem) {
         if (error) {
-            *error = QStringLiteral("%1 is not a MAME configuration I can update").arg(QDir::toNativeSeparators(path));
+            *error = rlTr("studio", "%1 is not a MAME configuration I can update").arg(QDir::toNativeSeparators(path));
         }
         return false;
     }
     if (!QDir().mkpath(configDirectory)) {
         if (error) {
-            *error = QStringLiteral("Cannot create %1").arg(QDir::toNativeSeparators(configDirectory));
+            *error = rlTr("studio", "Cannot create %1").arg(QDir::toNativeSeparators(configDirectory));
         }
         return false;
     }

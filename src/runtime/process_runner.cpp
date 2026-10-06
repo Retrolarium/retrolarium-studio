@@ -31,7 +31,7 @@ bool ProcessRunner::run(const sdk::ProcessSpec& spec,
                         std::function<void(const sdk::ProcessResult&)> done) {
     if (process_) {
         sdk::ProcessResult busy;
-        busy.error = QStringLiteral("Another task is still running.");
+        busy.error = tr("Another task is still running.");
         if (done) {
             done(busy);
         }
@@ -73,13 +73,13 @@ bool ProcessRunner::run(const sdk::ProcessSpec& spec,
     connect(process_, &QProcess::errorOccurred, this, [this](QProcess::ProcessError error) {
         if (error == QProcess::FailedToStart) {
             sdk::ProcessResult result;
-            result.error = QStringLiteral("%1 could not start: %2").arg(spec_.program, process_->errorString());
+            result.error = tr("%1 could not start: %2").arg(spec_.program, process_->errorString());
             complete(result);
         }
     });
     QTimer::singleShot(kTimeoutMs, process_, [this] {
         if (process_) {
-            emit outputLine(QStringLiteral("Timed out after %1 minutes.").arg(kTimeoutMs / 60000));
+            emit outputLine(tr("Timed out after %1 minutes.").arg(kTimeoutMs / 60000));
             cancel();
         }
     });

@@ -8,6 +8,7 @@
 #include "runtime/process_runner.hpp"
 #include "runtime/tool_locator.hpp"
 #include "sdk/editor_model.hpp"
+#include "sdk/i18n.hpp"
 #include "shell/about_dialog.hpp"
 #include "shell/bottom_panel.hpp"
 #include "shell/inspector_panel.hpp"
@@ -109,8 +110,8 @@ MainWindow::MainWindow(QWidget* parent) : StudioWindow(parent) {
     processes_ = new runtime::ProcessRunner(this);
     emulator_ = new runtime::EmulatorRunner(this);
     audio_ = new runtime::AudioPlayer(this);
-    setWindowTitle(QStringLiteral("Retrolarium"));
-    titleBar()->setTitle(QStringLiteral("Retrolarium Studio"));
+    setWindowTitle(tr("Retrolarium"));
+    titleBar()->setTitle(tr("Retrolarium Studio"));
     setMinimumSize(1280, 780);
     buildMenus();
 
@@ -174,13 +175,13 @@ MainWindow::MainWindow(QWidget* parent) : StudioWindow(parent) {
     connect(processes_, &runtime::ProcessRunner::finished, this,
             [this](const QString& label, const sdk::ProcessResult& result) {
                 if (result.succeeded()) {
-                    log(QStringLiteral("  %1 finished.").arg(label));
+                    log(tr("  %1 finished.").arg(label));
                 } else if (result.cancelled) {
-                    log(QStringLiteral("  %1 cancelled.").arg(label));
+                    log(tr("  %1 cancelled.").arg(label));
                 } else if (!result.started) {
                     log(QStringLiteral("  %1").arg(result.error));
                 } else {
-                    log(QStringLiteral("  %1 failed with exit code %2.").arg(label).arg(result.exitCode));
+                    log(tr("  %1 failed with exit code %2.").arg(label).arg(result.exitCode));
                 }
                 updateActions();
             });
@@ -211,49 +212,49 @@ void MainWindow::buildMenus() {
 
     QMenu* file = bar->addMenu(QStringLiteral("File"));
     file->setFont(menuFont);
-    QAction* open = file->addAction(QStringLiteral("Open project…"));
+    QAction* open = file->addAction(tr("Open project…"));
     open->setShortcut(QKeySequence::Open);
     connect(open, &QAction::triggered, this, &MainWindow::chooseProject);
-    recentMenu_ = file->addMenu(QStringLiteral("Recent projects"));
+    recentMenu_ = file->addMenu(tr("Recent projects"));
     recentMenu_->setFont(menuFont);
-    switchRevisionAction_ = file->addAction(QStringLiteral("Open another version…"));
+    switchRevisionAction_ = file->addAction(tr("Open another version…"));
     connect(switchRevisionAction_, &QAction::triggered, this, [this] {
         const QString descriptor = currentDescriptor();
         if (!descriptor.isEmpty() && confirmDiscard()) openGameRepository(descriptor);
     });
     file->addSeparator();
-    patchAction_ = file->addAction(QStringLiteral("Create IPS patch…"));
+    patchAction_ = file->addAction(tr("Create IPS patch…"));
     connect(patchAction_, &QAction::triggered, this, &MainWindow::createPatch);
-    resetAction_ = file->addAction(QStringLiteral("Reset version to the original…"));
+    resetAction_ = file->addAction(tr("Reset version to the original…"));
     connect(resetAction_, &QAction::triggered, this, &MainWindow::resetRevision);
     file->addSeparator();
-    saveAction_ = file->addAction(QStringLiteral("Save all"));
+    saveAction_ = file->addAction(tr("Save all"));
     saveAction_->setShortcut(QKeySequence::Save);
     connect(saveAction_, &QAction::triggered, this, &MainWindow::saveAll);
-    closeAction_ = file->addAction(QStringLiteral("Close project"));
+    closeAction_ = file->addAction(tr("Close project"));
     connect(closeAction_, &QAction::triggered, this, [this] {
         if (confirmDiscard()) {
             closeProject();
         }
     });
     file->addSeparator();
-    QAction* settings = file->addAction(QStringLiteral("Settings…"));
-    settings->setShortcut(QKeySequence(QStringLiteral("Ctrl+,")));
+    QAction* settings = file->addAction(tr("Settings…"));
+    settings->setShortcut(QKeySequence(tr("Ctrl+,")));
     connect(settings, &QAction::triggered, this, [this] {
         SettingsDialog dialog(this);
         dialog.exec();
     });
     file->addSeparator();
-    QAction* quit = file->addAction(QStringLiteral("Exit"));
+    QAction* quit = file->addAction(tr("Exit"));
     quit->setShortcut(QKeySequence::Quit);
     connect(quit, &QAction::triggered, this, &QWidget::close);
 
-    QMenu* edit = bar->addMenu(QStringLiteral("Edit"));
+    QMenu* edit = bar->addMenu(tr("Edit"));
     edit->setFont(menuFont);
-    undoAction_ = edit->addAction(QStringLiteral("Undo"));
+    undoAction_ = edit->addAction(tr("Undo"));
     undoAction_->setShortcut(QKeySequence::Undo);
-    redoAction_ = edit->addAction(QStringLiteral("Redo"));
-    redoAction_->setShortcuts({QKeySequence::Redo, QKeySequence(QStringLiteral("Ctrl+Shift+Z"))});
+    redoAction_ = edit->addAction(tr("Redo"));
+    redoAction_->setShortcuts({QKeySequence::Redo, QKeySequence(tr("Ctrl+Shift+Z"))});
     connect(undoAction_, &QAction::triggered, this, [this] {
         if (session_) session_->undoStack()->undo();
     });
@@ -263,8 +264,8 @@ void MainWindow::buildMenus() {
 
     QMenu* view = bar->addMenu(QStringLiteral("View"));
     view->setFont(menuFont);
-    QAction* dark = view->addAction(QStringLiteral("Dark theme"));
-    QAction* light = view->addAction(QStringLiteral("Light theme"));
+    QAction* dark = view->addAction(tr("Dark theme"));
+    QAction* light = view->addAction(tr("Light theme"));
     dark->setCheckable(true);
     light->setCheckable(true);
     auto* themes = new QActionGroup(view);
@@ -276,31 +277,31 @@ void MainWindow::buildMenus() {
     connect(&theme::Theme::instance(), &theme::Theme::changed, view, [dark, light](theme::Mode mode) {
         (mode == theme::Mode::Dark ? dark : light)->setChecked(true);
     });
-    QAction* toggleTheme = view->addAction(QStringLiteral("Toggle theme"));
-    toggleTheme->setShortcut(QKeySequence(QStringLiteral("Ctrl+Shift+L")));
+    QAction* toggleTheme = view->addAction(tr("Toggle theme"));
+    toggleTheme->setShortcut(QKeySequence(tr("Ctrl+Shift+L")));
     connect(toggleTheme, &QAction::triggered, this, [] { theme::Theme::instance().toggle(); });
     view->addSeparator();
-    QAction* panel = view->addAction(QStringLiteral("Messages panel"));
-    panel->setShortcut(QKeySequence(QStringLiteral("Ctrl+J")));
+    QAction* panel = view->addAction(tr("Messages panel"));
+    panel->setShortcut(QKeySequence(tr("Ctrl+J")));
     connect(panel, &QAction::triggered, this, [this] { bottom_->setExpanded(!bottom_->isExpanded()); });
 
     // The toolbar's buttons, in the same order.
-    QMenu* build = bar->addMenu(QStringLiteral("Run"));
+    QMenu* build = bar->addMenu(tr("Run"));
     build->setFont(menuFont);
-    buildAction_ = build->addAction(QStringLiteral("Build"));
-    buildAction_->setShortcut(QKeySequence(QStringLiteral("Ctrl+B")));
+    buildAction_ = build->addAction(tr("Build"));
+    buildAction_->setShortcut(QKeySequence(tr("Ctrl+B")));
     connect(buildAction_, &QAction::triggered, this, [this] {
         if (session_ && session_->canBuild() && !isBusy()) session_->build();
     });
-    playAction_ = build->addAction(QStringLiteral("Play"));
-    playAction_->setShortcut(QKeySequence(QStringLiteral("Ctrl+F5")));
+    playAction_ = build->addAction(tr("Play"));
+    playAction_->setShortcut(QKeySequence(tr("Ctrl+F5")));
     connect(playAction_, &QAction::triggered, this, [this] {
         if (session_ && session_->canPlay() && !isBusy()) {
             showPlaytest();
             session_->play();
         }
     });
-    playSelectedAction_ = build->addAction(QStringLiteral("Play from selected"));
+    playSelectedAction_ = build->addAction(tr("Play from selected"));
     playSelectedAction_->setShortcut(QKeySequence(QStringLiteral("F5")));
     connect(playSelectedAction_, &QAction::triggered, this, [this] {
         if (session_ && session_->canPlay() && !session_->selectedStart().isEmpty() && !isBusy()) {
@@ -311,18 +312,18 @@ void MainWindow::buildMenus() {
         }
     });
     build->addSeparator();
-    pauseGameAction_ = build->addAction(QStringLiteral("Pause"));
+    pauseGameAction_ = build->addAction(tr("Pause"));
     pauseGameAction_->setShortcut(QKeySequence(Qt::Key_Pause));
     connect(pauseGameAction_, &QAction::triggered, this, &MainWindow::togglePlaytestPause);
-    stopGameAction_ = build->addAction(QStringLiteral("Stop"));
-    stopGameAction_->setShortcut(QKeySequence(QStringLiteral("Shift+F5")));
+    stopGameAction_ = build->addAction(tr("Stop"));
+    stopGameAction_->setShortcut(QKeySequence(tr("Shift+F5")));
     connect(stopGameAction_, &QAction::triggered, this, [this] { emulator_->stop(); });
     pauseGameAction_->setEnabled(false);
     stopGameAction_->setEnabled(false);
 
-    QMenu* help = bar->addMenu(QStringLiteral("Help"));
+    QMenu* help = bar->addMenu(tr("Help"));
     help->setFont(menuFont);
-    QAction* about = help->addAction(QStringLiteral("About Retrolarium Studio"));
+    QAction* about = help->addAction(tr("About Retrolarium Studio"));
     connect(about, &QAction::triggered, this, [this] {
         AboutDialog dialog(this);
         dialog.exec();
@@ -340,12 +341,12 @@ QWidget* MainWindow::buildToolbar() {
     projectButton_ = new QPushButton(bar);
     projectButton_->setFixedHeight(32);
     projectButton_->setCursor(Qt::PointingHandCursor);
-    projectButton_->setToolTip(QStringLiteral("Switch project"));
+    projectButton_->setToolTip(tr("Switch project"));
     auto* projectLayout = new QHBoxLayout(projectButton_);
     projectLayout->setContentsMargins(6, 0, 10, 0);
     projectLayout->setSpacing(10);
     platformBadge_ = new ui::Badge(QStringLiteral("—"), ui::Badge::Kind::Platform, projectButton_);
-    projectName_ = new ui::Label(QStringLiteral("No project"), ui::Label::Role::Project, projectButton_);
+    projectName_ = new ui::Label(tr("No project"), ui::Label::Role::Project, projectButton_);
     revisionBadge_ = new ui::Badge(QString(), ui::Badge::Kind::Tag, projectButton_);
     auto* chevron = new QLabel(projectButton_);
     auto setChevron = [chevron] {
@@ -364,7 +365,7 @@ QWidget* MainWindow::buildToolbar() {
     connect(projectButton_, &QPushButton::clicked, this, [this] {
         QMenu menu(this);
         menu.setFont(theme::font(theme::TextRole::Body, theme::size::kMenu));
-        QAction* open = menu.addAction(QStringLiteral("Open project…"));
+        QAction* open = menu.addAction(tr("Open project…"));
         connect(open, &QAction::triggered, this, &MainWindow::chooseProject);
         const QStringList recent = QSettings().value(QString::fromLatin1(kRecentKey)).toStringList();
         if (!recent.isEmpty()) {
@@ -391,10 +392,10 @@ QWidget* MainWindow::buildToolbar() {
 
     auto* actions = new QHBoxLayout;
     actions->setSpacing(2);
-    undoButton_ = toolbarButton(QStringLiteral("undo"), QStringLiteral("Undo (Ctrl+Z)"), bar);
-    redoButton_ = toolbarButton(QStringLiteral("redo"), QStringLiteral("Redo (Ctrl+Y)"), bar);
-    saveButton_ = toolbarButton(QStringLiteral("save"), QStringLiteral("Save all (Ctrl+S)"), bar);
-    revertButton_ = toolbarButton(QStringLiteral("revert"), QStringLiteral("Revert document to original"), bar);
+    undoButton_ = toolbarButton(QStringLiteral("undo"), tr("Undo (Ctrl+Z)"), bar);
+    redoButton_ = toolbarButton(QStringLiteral("redo"), tr("Redo (Ctrl+Y)"), bar);
+    saveButton_ = toolbarButton(QStringLiteral("save"), tr("Save all (Ctrl+S)"), bar);
+    revertButton_ = toolbarButton(QStringLiteral("revert"), tr("Revert document to original"), bar);
     connect(undoButton_, &QToolButton::clicked, undoAction_, &QAction::trigger);
     connect(redoButton_, &QToolButton::clicked, redoAction_, &QAction::trigger);
     connect(saveButton_, &QToolButton::clicked, this, &MainWindow::saveAll);
@@ -408,10 +409,10 @@ QWidget* MainWindow::buildToolbar() {
     separator->setFixedHeight(18);
     actions->addWidget(separator, 0, Qt::AlignVCenter);
     actions->addSpacing(6);
-    buildButton_ = new QPushButton(QStringLiteral("Build"), bar);
+    buildButton_ = new QPushButton(tr("Build"), bar);
     buildButton_->setProperty("size", QStringLiteral("large"));
     buildButton_->setFont(theme::font(theme::TextRole::Body, 12.5));
-    buildButton_->setToolTip(QStringLiteral("Build the ROM (Ctrl+B)"));
+    buildButton_->setToolTip(tr("Build the ROM (Ctrl+B)"));
     connect(buildButton_, &QPushButton::clicked, this, [this] {
         if (isBusy()) {
             cancel();
@@ -421,22 +422,22 @@ QWidget* MainWindow::buildToolbar() {
     });
     actions->addWidget(buildButton_);
     actions->addSpacing(4);
-    playButton_ = new QPushButton(QStringLiteral("Play"), bar);
+    playButton_ = new QPushButton(tr("Play"), bar);
     playButton_->setProperty("size", QStringLiteral("large"));
     playButton_->setFont(theme::font(theme::TextRole::Body, 12.5));
     playButton_->setIcon(theme::icon(QStringLiteral("play")));
     playButton_->setIconSize(QSize(11, 11));
-    playButton_->setToolTip(QStringLiteral("Save, build and play from power-on (Ctrl+F5)"));
+    playButton_->setToolTip(tr("Save, build and play from power-on (Ctrl+F5)"));
     connect(playButton_, &QPushButton::clicked, playAction_, &QAction::trigger);
     actions->addWidget(playButton_);
     actions->addSpacing(4);
-    playSelectedButton_ = new ui::PrimaryButton(QStringLiteral("Play from selected"), QStringLiteral("play"), bar);
+    playSelectedButton_ = new ui::PrimaryButton(tr("Play from selected"), QStringLiteral("play"), bar);
     connect(playSelectedButton_, &QAbstractButton::clicked, playSelectedAction_, &QAction::trigger);
     actions->addWidget(playSelectedButton_);
     // The running game's controls; live only while the emulator runs.
     actions->addSpacing(2);
-    pauseButton_ = toolbarButton(QStringLiteral("pause"), QStringLiteral("Pause the playtest (Pause)"), bar);
-    stopButton_ = toolbarButton(QStringLiteral("stop"), QStringLiteral("Stop the playtest (Shift+F5)"), bar);
+    pauseButton_ = toolbarButton(QStringLiteral("pause"), tr("Pause the playtest (Pause)"), bar);
+    stopButton_ = toolbarButton(QStringLiteral("stop"), tr("Stop the playtest (Shift+F5)"), bar);
     connect(pauseButton_, &QToolButton::clicked, this, &MainWindow::togglePlaytestPause);
     connect(stopButton_, &QToolButton::clicked, stopGameAction_, &QAction::trigger);
     pauseButton_->setEnabled(false);
@@ -468,7 +469,7 @@ QWidget* MainWindow::buildCenter() {
     slash->setTone(QStringLiteral("faint"));
     crumbDocument_ = new ui::Label(QString(), ui::Label::Role::Body, crumb);
     crumbDocument_->setFont(theme::font(theme::TextRole::BodyMedium, theme::size::kBody));
-    crumbEdited_ = new ui::Label(QStringLiteral("● edited"), ui::Label::Role::Meta, crumb);
+    crumbEdited_ = new ui::Label(tr("● edited"), ui::Label::Role::Meta, crumb);
     crumbEdited_->setTone(QStringLiteral("accent"));
     crumbEditor_ = new ui::Badge(QString(), ui::Badge::Kind::Code, crumb);
     budgetText_ = new ui::Label(QString(), ui::Label::Role::Mono, crumb);
@@ -526,19 +527,19 @@ QWidget* MainWindow::buildWelcome() {
     layout->setSpacing(10);
     layout->addWidget(new ui::BrandMark(64, column));
     layout->addSpacing(14);
-    layout->addWidget(new ui::Label(QStringLiteral("Retrolarium Studio"), ui::Label::Role::Caps, column));
-    auto* title = new ui::Label(QStringLiteral("Open a project to start"), ui::Label::Role::Title, column);
+    layout->addWidget(new ui::Label(tr("Retrolarium Studio"), ui::Label::Role::Caps, column));
+    auto* title = new ui::Label(tr("Open a project to start"), ui::Label::Role::Title, column);
     layout->addWidget(title);
     auto* note = new ui::Label(
-        QStringLiteral("A game's disassembly has its .rlj file at the top of its folder: open it, "
-                       "pick the version to edit, and the studio asks for the ROM it needs."),
+        tr("A game's disassembly has its .rlj file at the top of its folder: open it, "
+           "pick the version to edit, and the studio asks for the ROM it needs."),
         ui::Label::Role::Small, column);
     note->setWordWrap(true);
     layout->addWidget(note);
     layout->addSpacing(8);
     auto* buttons = new QHBoxLayout;
     buttons->setSpacing(10);
-    auto* open = new ui::PrimaryButton(QStringLiteral("Open project…"), QStringLiteral("folder"), column);
+    auto* open = new ui::PrimaryButton(tr("Open project…"), QStringLiteral("folder"), column);
     connect(open, &QAbstractButton::clicked, this, &MainWindow::chooseProject);
     buttons->addWidget(open);
     for (const auto& plugin : sdk::PluginRegistry::instance().plugins()) {
@@ -574,7 +575,7 @@ QWidget* MainWindow::buildStatusBar() {
     statusSummary_->setProperty("variant", QStringLiteral("flat"));
     statusSummary_->setFont(theme::font(theme::TextRole::Body, theme::size::kStatus));
     statusSummary_->setCursor(Qt::PointingHandCursor);
-    statusSummary_->setStyleSheet(QStringLiteral("padding: 0 4px; min-height: 18px;"));
+    statusSummary_->setStyleSheet(tr("padding: 0 4px; min-height: 18px;"));
     connect(statusSummary_, &QPushButton::clicked, this, [this] { bottom_->showMessages(); });
     row->addWidget(statusSummary_);
     statusRight_ = new ui::Label(QString(), ui::Label::Role::Mono, bar);
@@ -615,8 +616,8 @@ void MainWindow::chooseProject() {
     }
     const QString start = projectPath_.isEmpty() ? QString() : QFileInfo(projectPath_).absolutePath();
     const QString path = QFileDialog::getOpenFileName(
-        this, QStringLiteral("Open project"), start,
-        QStringLiteral("Retrolarium projects (*.rlj);;All files (*)"));
+        this, tr("Open project"), start,
+        tr("Retrolarium projects (*.rlj);;All files (*)"));
     if (!path.isEmpty()) {
         openProjectFile(path);
     }
@@ -636,7 +637,7 @@ bool MainWindow::openProjectFile(const QString& path) {
     sdk::Plugin* plugin = sdk::PluginRegistry::instance().pluginFor(project);
     if (!plugin) {
         report(message(sdk::Severity::Error, QStringLiteral("project"),
-                QStringLiteral("No plugin opens profile '%1' (%2).")
+                tr("No plugin opens profile '%1' (%2).")
                     .arg(project.string(QStringLiteral("project.profile")),
                          project.string(QStringLiteral("project.platform"))),
                 QFileInfo(path).fileName()));
@@ -705,7 +706,7 @@ void MainWindow::openGameRepository(const QString& descriptor) {
     const QString name = QFileInfo(descriptor).fileName();
     if (isBusy()) {
         report(message(sdk::Severity::Warning, QStringLiteral("project"),
-                       QStringLiteral("Wait for the running task to finish, then open it again."), name));
+                       tr("Wait for the running task to finish, then open it again."), name));
         return;
     }
     QString error;
@@ -715,12 +716,12 @@ void MainWindow::openGameRepository(const QString& descriptor) {
         report(message(sdk::Severity::Error, QStringLiteral("project"), error, name));
         return;
     }
-    spec.label = QStringLiteral("Read the versions of %1").arg(name);
+    spec.label = tr("Read the versions of %1").arg(name);
     runProcess(spec, [this, descriptor, name](const sdk::ProcessResult& result) {
         if (!result.succeeded()) {
             if (!result.cancelled) {
                 report(message(sdk::Severity::Error, QStringLiteral("project"),
-                               QStringLiteral("Reading the game's versions failed: %1").arg(processError(result)), name));
+                               tr("Reading the game's versions failed: %1").arg(processError(result)), name));
             }
             return;
         }
@@ -737,9 +738,9 @@ void MainWindow::openGameRepository(const QString& descriptor) {
         const QString splitStatus = split.value(QStringLiteral("status")).toString();
         QString note;
         if (splitStatus == QLatin1String("needed")) {
-            note = QStringLiteral("The game's files are not split from the ROM yet; that runs when you open a version.");
+            note = tr("The game's files are not split from the ROM yet; that runs when you open a version.");
         } else if (splitStatus == QLatin1String("unavailable")) {
-            note = QStringLiteral("Building from the game's sources needs the %1 ROM (%2); editing does not.")
+            note = tr("Building from the game's sources needs the %1 ROM (%2); editing does not.")
                        .arg(split.value(QStringLiteral("needs")).toString(), split.value(QStringLiteral("rom")).toString());
         }
         const QString key = QStringLiteral("gameRevisions/") + QFileInfo(descriptor).absoluteFilePath();
@@ -761,12 +762,12 @@ void MainWindow::prepareRevision(const QString& descriptor, const QString& revis
         report(message(sdk::Severity::Error, QStringLiteral("project"), error, name));
         return;
     }
-    spec.label = QStringLiteral("Get %1 ready").arg(revision);
+    spec.label = tr("Get %1 ready").arg(revision);
     runProcess(spec, [this, descriptor, revision, name](const sdk::ProcessResult& result) {
         if (!result.succeeded()) {
             if (!result.cancelled) {
                 report(message(sdk::Severity::Error, QStringLiteral("project"),
-                               QStringLiteral("Getting the game ready failed: %1").arg(processError(result)), name));
+                               tr("Getting the game ready failed: %1").arg(processError(result)), name));
             }
             return;
         }
@@ -776,8 +777,8 @@ void MainWindow::prepareRevision(const QString& descriptor, const QString& revis
             const QJsonObject split = r.value(QStringLiteral("split")).toObject();
             if (split.value(QStringLiteral("status")).toString() == QLatin1String("failed")) {
                 report(message(sdk::Severity::Warning, QStringLiteral("project"),
-                               QStringLiteral("The asset split failed; editing works from the ROM, building from "
-                                              "the sources needs it. %1")
+                               tr("The asset split failed; editing works from the ROM, building from "
+                                  "the sources needs it. %1")
                                    .arg(split.value(QStringLiteral("output")).toString().section(QLatin1Char('\n'), -3)),
                                name));
             }
@@ -785,18 +786,18 @@ void MainWindow::prepareRevision(const QString& descriptor, const QString& revis
             return;
         }
         // The revision's ROM is missing, or the file given is another one.
-        frame::MessageDialog ask(QStringLiteral("Choose the ROM"),
-                                 status == QLatin1String("needs-rom") ? QStringLiteral("This version needs its ROM")
-                                                                      : QStringLiteral("That is not this version's ROM"),
+        frame::MessageDialog ask(tr("Choose the ROM"),
+                                 status == QLatin1String("needs-rom") ? tr("This version needs its ROM")
+                                                                      : tr("That is not this version's ROM"),
                                  r.value(QStringLiteral("message")).toString() +
-                                     QStringLiteral(" The studio copies it next to the game's files and never changes it."),
+                                     tr(" The studio copies it next to the game's files and never changes it."),
                                  this);
-        ask.addButton(QStringLiteral("Cancel"), 0);
-        ask.addButton(QStringLiteral("Choose ROM…"), 1, true);
+        ask.addButton(tr("Cancel"), 0);
+        ask.addButton(tr("Choose ROM…"), 1, true);
         if (ask.exec() != 1) return;
         const QString file = QFileDialog::getOpenFileName(
-            this, QStringLiteral("Choose the ROM"), QDir::homePath(),
-            QStringLiteral("ROM images (*.nes *.fds *.bin *.md *.gen *.sfc *.smc);;All files (*)"));
+            this, tr("Choose the ROM"), QDir::homePath(),
+            tr("ROM images (*.nes *.fds *.bin *.md *.gen *.sfc *.smc);;All files (*)"));
         if (!file.isEmpty()) prepareRevision(descriptor, revision, file);
     });
 }
@@ -820,11 +821,11 @@ void MainWindow::resetRevision() {
     const QString revision = QFileInfo(projectPath_).absoluteDir().dirName();
     const sdk::Profile profile = session_->profile();
     if (!frame::MessageDialog::confirm(
-            this, QStringLiteral("Reset to the original"),
-            QStringLiteral("Discard every edit to %1 (%2)?").arg(profile.name, profile.revision),
-            QStringLiteral("The game's data goes back to how it is in the ROM. Saved and unsaved edits to this "
-                           "version are lost; other versions keep theirs."),
-            QStringLiteral("Discard edits"))) {
+            this, tr("Reset to the original"),
+            tr("Discard every edit to %1 (%2)?").arg(profile.name, profile.revision),
+            tr("The game's data goes back to how it is in the ROM. Saved and unsaved edits to this "
+               "version are lost; other versions keep theirs."),
+            tr("Discard edits"))) {
         return;
     }
     QString error;
@@ -838,12 +839,12 @@ void MainWindow::resetRevision() {
     const QString project = projectPath_;
     // The session's unsaved edits go with the saved ones.
     closeProject();
-    spec.label = QStringLiteral("Reset %1").arg(revision);
+    spec.label = tr("Reset %1").arg(revision);
     runProcess(spec, [this, project, descriptor](const sdk::ProcessResult& result) {
         if (!result.succeeded()) {
             if (!result.cancelled) {
                 report(message(sdk::Severity::Error, QStringLiteral("project"),
-                               QStringLiteral("Resetting failed: %1").arg(processError(result)),
+                               tr("Resetting failed: %1").arg(processError(result)),
                                QFileInfo(descriptor).fileName()));
             }
         }
@@ -861,8 +862,8 @@ void MainWindow::createPatch() {
     QString error2;
     const sdk::ProjectFile project = sdk::ProjectFile::load(projectPath_, &error2);
     const QString suggested = QDir(QDir::homePath()).filePath(project.string(QStringLiteral("project.id")) + QStringLiteral(".ips"));
-    const QString output = QFileDialog::getSaveFileName(this, QStringLiteral("Create IPS patch"), suggested,
-                                                        QStringLiteral("IPS patches (*.ips)"));
+    const QString output = QFileDialog::getSaveFileName(this, tr("Create IPS patch"), suggested,
+                                                        tr("IPS patches (*.ips)"));
     if (output.isEmpty()) return;
     sdk::ProcessSpec spec = kitCommand({QStringLiteral("studio"), QStringLiteral("patch"), projectPath_,
                                         QStringLiteral("--output"), output},
@@ -871,7 +872,7 @@ void MainWindow::createPatch() {
         report(message(sdk::Severity::Error, QStringLiteral("project"), error, QFileInfo(projectPath_).fileName()));
         return;
     }
-    spec.label = QStringLiteral("Create %1").arg(QFileInfo(output).fileName());
+    spec.label = tr("Create %1").arg(QFileInfo(output).fileName());
     // Flicky builds its levels with the studio's native writer.
     const QString writer = toolPath(QStringLiteral("retrolarium-flicky-level-writer"));
     if (!writer.isEmpty()) spec.environment.insert(QStringLiteral("RETROLARIUM_FLICKY_LEVEL_WRITER"), writer);
@@ -879,15 +880,15 @@ void MainWindow::createPatch() {
         if (!result.succeeded()) {
             if (!result.cancelled) {
                 report(message(sdk::Severity::Error, QStringLiteral("project"),
-                               QStringLiteral("Creating the patch failed: %1").arg(processError(result)),
+                               tr("Creating the patch failed: %1").arg(processError(result)),
                                QFileInfo(output).fileName()));
             }
             return;
         }
         const QJsonObject r = QJsonDocument::fromJson(result.standardOutput).object();
-        frame::MessageDialog::inform(this, QStringLiteral("Create IPS patch"), QStringLiteral("Patch created"),
-                                     QStringLiteral("%1 changes %2 bytes of the original ROM. Apply it to that ROM "
-                                                    "with any IPS patcher.")
+        frame::MessageDialog::inform(this, tr("Create IPS patch"), tr("Patch created"),
+                                     tr("%1 changes %2 bytes of the original ROM. Apply it to that ROM "
+                                        "with any IPS patcher.")
                                          .arg(QFileInfo(output).fileName())
                                          .arg(r.value(QStringLiteral("changed_bytes")).toInt()));
     });
@@ -923,14 +924,14 @@ bool MainWindow::confirmDiscard() {
         return true;
     }
     enum Answer { Cancel, Discard, Save };
-    frame::MessageDialog box(QStringLiteral("Unsaved changes"),
-                             QStringLiteral("Save changes to %1?").arg(session_->profile().name),
-                             QStringLiteral("The project has edits that are not saved. Closing without "
-                                            "saving loses them."),
+    frame::MessageDialog box(tr("Unsaved changes"),
+                             tr("Save changes to %1?").arg(session_->profile().name),
+                             tr("The project has edits that are not saved. Closing without "
+                                "saving loses them."),
                              this);
-    box.addButton(QStringLiteral("Don't save"), Discard);
-    box.addButton(QStringLiteral("Cancel"), Cancel);
-    box.addButton(QStringLiteral("Save"), Save, true);
+    box.addButton(tr("Don't save"), Discard);
+    box.addButton(tr("Cancel"), Cancel);
+    box.addButton(tr("Save"), Save, true);
     box.setCancelResult(Cancel);
     const int answer = box.exec();
     if (answer == Cancel) {
@@ -999,7 +1000,7 @@ void MainWindow::selectKind(const QString& kind) {
     QString label = kind;
     for (const sdk::Kind& k : session_->kinds()) {
         if (k.id == kind) {
-            label = k.label;
+            label = rlValue(k.label);
         }
     }
     documents_->setTitle(label);
@@ -1077,28 +1078,28 @@ void MainWindow::installEditor() {
     } else {
         QString label = kind_;
         for (const sdk::Kind& k : session_->kinds()) {
-            if (k.id == kind_) label = k.label;
+            if (k.id == kind_) label = rlValue(k.label);
         }
         // A plugin that first adds documents or resources to the project
         // (a kit upgrade) opens nothing yet and asks for the document again
         // when the kit is done.
         const bool preparing = !document_.isEmpty() && isBusy();
         if (document_.isEmpty()) {
-            emptyTitle_->setText(QStringLiteral("Nothing to edit"));
-            emptyNote_->setText(QStringLiteral("This kind has no documents."));
+            emptyTitle_->setText(tr("Nothing to edit"));
+            emptyNote_->setText(tr("This kind has no documents."));
         } else if (preparing) {
-            emptyTitle_->setText(QStringLiteral("Preparing %1").arg(label));
-            emptyNote_->setText(QStringLiteral("The kit is adding what %1 needs to the project; it opens "
-                                               "when that is done (see Build output).")
+            emptyTitle_->setText(tr("Preparing %1").arg(label));
+            emptyNote_->setText(tr("The kit is adding what %1 needs to the project; it opens "
+                                   "when that is done (see Build output).")
                                     .arg(label));
         } else {
-            emptyTitle_->setText(QStringLiteral("%1 cannot be opened").arg(label));
-            emptyNote_->setText(QStringLiteral("The project has no data for this document, or the kit could not "
-                                               "add it. Messages says why."));
+            emptyTitle_->setText(tr("%1 cannot be opened").arg(label));
+            emptyNote_->setText(tr("The project has no data for this document, or the kit could not "
+                                   "add it. Messages says why."));
         }
         editorStack_->setCurrentWidget(emptyEditor_);
         inspector_->showMessage(label.toUpper(), document_.isEmpty() ? label : document_,
-                                preparing ? QStringLiteral("Waiting for the kit.") : QString());
+                                preparing ? tr("Waiting for the kit.") : QString());
     }
     updateToolbarRow();
 }
@@ -1118,8 +1119,8 @@ void MainWindow::updateToolbarRow() {
         // Where "Play from selected" starts, when this document sets it.
         const QString start = model_ ? model_->startPoint() : QString();
         if (!start.isEmpty()) {
-            auto* chip = new ui::ViewChip(QStringLiteral("Start point"), start, toolbarContent_);
-            chip->setToolTip(QStringLiteral("Play from selected (F5) starts here"));
+            auto* chip = new ui::ViewChip(tr("Start point"), start, toolbarContent_);
+            chip->setToolTip(tr("Play from selected (F5) starts here"));
             row->addWidget(chip);
         }
         for (const sdk::EditorAction& action : model_ ? model_->actions() : QVector<sdk::EditorAction>()) {
@@ -1148,10 +1149,10 @@ void MainWindow::updateToolbarRow() {
 void MainWindow::updateProjectChrome() {
     if (!session_) {
         platformBadge_->setText(QStringLiteral("—"));
-        projectName_->setText(QStringLiteral("No project"));
+        projectName_->setText(tr("No project"));
         revisionBadge_->hide();
-        setWindowTitle(QStringLiteral("Retrolarium"));
-        titleBar()->setTitle(QStringLiteral("Retrolarium Studio"));
+        setWindowTitle(tr("Retrolarium"));
+        titleBar()->setTitle(tr("Retrolarium Studio"));
         projectButton_->setMinimumWidth(projectButton_->layout()->sizeHint().width());
         closeAction_->setEnabled(false);
         switchRevisionAction_->setEnabled(false);
@@ -1169,8 +1170,8 @@ void MainWindow::updateProjectChrome() {
                               ? QStringLiteral("%1 [%2]").arg(profile.name, profile.platform)
                               : QStringLiteral("%1 (%2) [%3]").arg(profile.name, profile.revision,
                                                                    profile.platform);
-    setWindowTitle(title + QStringLiteral(" — Retrolarium"));
-    titleBar()->setTitle(title, QStringLiteral("Retrolarium"));
+    setWindowTitle(title + tr(" — Retrolarium"));
+    titleBar()->setTitle(title, tr("Retrolarium"));
     closeAction_->setEnabled(true);
     switchRevisionAction_->setEnabled(!currentDescriptor().isEmpty());
     resetAction_->setEnabled(switchRevisionAction_->isEnabled());
@@ -1188,7 +1189,7 @@ void MainWindow::updateBreadcrumb() {
     QString kindLabel = kind_;
     for (const sdk::Kind& k : session_->kinds()) {
         if (k.id == kind_) {
-            kindLabel = k.label;
+            kindLabel = rlValue(k.label);
         }
     }
     crumbKind_->setText(kindLabel);
@@ -1237,11 +1238,11 @@ void MainWindow::updateDirtyState() {
     undoButton_->setEnabled(undoAction_->isEnabled());
     redoButton_->setEnabled(redoAction_->isEnabled());
     undoButton_->setToolTip(undo && undo->canUndo()
-                                ? QStringLiteral("Undo %1 (Ctrl+Z)").arg(undo->undoText())
-                                : QStringLiteral("Undo (Ctrl+Z)"));
+                                ? tr("Undo %1 (Ctrl+Z)").arg(undo->undoText())
+                                : tr("Undo (Ctrl+Z)"));
     redoButton_->setToolTip(undo && undo->canRedo()
-                                ? QStringLiteral("Redo %1 (Ctrl+Y)").arg(undo->redoText())
-                                : QStringLiteral("Redo (Ctrl+Y)"));
+                                ? tr("Redo %1 (Ctrl+Y)").arg(undo->redoText())
+                                : tr("Redo (Ctrl+Y)"));
     const bool modified = open && session_->isModified();
     saveAction_->setEnabled(modified);
     saveButton_->setEnabled(modified);
@@ -1262,14 +1263,14 @@ void MainWindow::updateDirtyState() {
     }
     updateActions();
     dirtyIndicator_->setVisible(modified);
-    dirtyLabel_->setText(dirty == 1 ? QStringLiteral("1 unsaved document")
-                                    : QStringLiteral("%1 unsaved documents").arg(dirty));
+    dirtyLabel_->setText(dirty == 1 ? tr("1 unsaved document")
+                                    : tr("%1 unsaved documents").arg(dirty));
     updateBreadcrumb();
 }
 
 void MainWindow::updateStatus(const QString& transient) {
     if (!session_) {
-        statusLeft_->setText(QStringLiteral("No project open"));
+        statusLeft_->setText(tr("No project open"));
         statusRight_->clear();
         return;
     }
@@ -1279,7 +1280,7 @@ void MainWindow::updateStatus(const QString& transient) {
     }
     statusLeft_->setText(left);
     const sdk::Profile profile = session_->profile();
-    statusRight_->setText(QStringLiteral("%1 · %2 · undo %3")
+    statusRight_->setText(tr("%1 · %2 · undo %3")
                               .arg(profile.platform, profile.cpu)
                               .arg(session_->undoStack()->index()));
 }
@@ -1298,7 +1299,7 @@ void MainWindow::saveAll() {
     }
     QString error;
     if (session_->save(&error)) {
-        updateStatus(QStringLiteral("Saved"));
+        updateStatus(tr("Saved"));
     } else {
         report(message(sdk::Severity::Error, QStringLiteral("save"), error, QString()));
     }
@@ -1311,9 +1312,9 @@ void MainWindow::revertDocument() {
         return;
     }
     if (!frame::MessageDialog::confirm(
-            this, QStringLiteral("Revert document"), QStringLiteral("Revert %1?").arg(crumbDocument_->text()),
-            QStringLiteral("It returns to the state it had when the project was created. This can be undone."),
-            QStringLiteral("Revert"))) {
+            this, tr("Revert document"), tr("Revert %1?").arg(crumbDocument_->text()),
+            tr("It returns to the state it had when the project was created. This can be undone."),
+            tr("Revert"))) {
         return;
     }
     QString error;
@@ -1380,7 +1381,7 @@ void MainWindow::launchEmulator(const sdk::ProcessSpec& spec, const QString& tit
     const QString kind = emulatorKind();
     if (kind.isEmpty()) {
         sdk::ProcessResult result;
-        result.error = QStringLiteral("This project has no Playtest view.");
+        result.error = tr("This project has no Playtest view.");
         if (finished) {
             finished(result);
         }
@@ -1420,16 +1421,16 @@ void MainWindow::updateActions() {
     const QString label = canPlay ? session_->playSelectedLabel() : QString();
     playSelectedAction_->setEnabled(!start.isEmpty() && !busy);
     playSelectedAction_->setText(!label.isEmpty() ? label
-                                 : start.isEmpty() ? QStringLiteral("Play from selected")
-                                                   : QStringLiteral("Play from %1").arg(start));
-    playSelectedButton_->setText(label.isEmpty() ? QStringLiteral("Play from selected") : label);
+                                 : start.isEmpty() ? tr("Play from selected")
+                                                   : tr("Play from %1").arg(start));
+    playSelectedButton_->setText(label.isEmpty() ? tr("Play from selected") : label);
     buildButton_->setEnabled(canBuild || busy);
-    buildButton_->setText(busy ? QStringLiteral("Cancel") : QStringLiteral("Build"));
+    buildButton_->setText(busy ? tr("Cancel") : tr("Build"));
     playButton_->setEnabled(canPlay && !busy);
     playSelectedButton_->setEnabled(!start.isEmpty() && !busy);
     playSelectedButton_->setToolTip(start.isEmpty()
-                                        ? QStringLiteral("Pick a start point in an editor (F5)")
-                                        : QStringLiteral("Save, build and play from %1 (F5)").arg(start));
+                                        ? tr("Pick a start point in an editor (F5)")
+                                        : tr("Save, build and play from %1 (F5)").arg(start));
 
     using Phase = runtime::EmulatorRunner::Phase;
     const Phase phase = emulator_->phase();
@@ -1437,11 +1438,11 @@ void MainWindow::updateActions() {
     const bool live = running || phase == Phase::Starting;
     const bool paused = emulator_->isPaused();
     pauseGameAction_->setEnabled(running);
-    pauseGameAction_->setText(paused ? QStringLiteral("Resume") : QStringLiteral("Pause"));
+    pauseGameAction_->setText(paused ? tr("Resume") : tr("Pause"));
     pauseButton_->setEnabled(running);
     pauseButton_->setIcon(theme::icon(paused ? QStringLiteral("play") : QStringLiteral("pause")));
-    pauseButton_->setToolTip(paused ? QStringLiteral("Resume the playtest (Pause)")
-                                    : QStringLiteral("Pause the playtest (Pause)"));
+    pauseButton_->setToolTip(paused ? tr("Resume the playtest (Pause)")
+                                    : tr("Pause the playtest (Pause)"));
     stopGameAction_->setEnabled(live);
     stopButton_->setEnabled(live);
 }
@@ -1449,7 +1450,7 @@ void MainWindow::updateActions() {
 void MainWindow::togglePlaytestPause() {
     if (emulator_->phase() == runtime::EmulatorRunner::Phase::Running && !emulator_->togglePause()) {
         report(message(sdk::Severity::Warning, QStringLiteral("playtest"),
-                       QStringLiteral("The emulator could not be paused."), QString()));
+                       tr("The emulator could not be paused."), QString()));
     }
 }
 

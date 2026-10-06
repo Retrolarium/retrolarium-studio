@@ -75,10 +75,10 @@ QString SolomonSoundModel::programLabel(int program) {
 }
 
 QVector<QPair<QString, QVector<int>>> SolomonSoundModel::programGroups() {
-    return {{QStringLiteral("Music loops"), {1, 2, 4, 16, 19}},
-            {QStringLiteral("Musical cues"), {5, 6, 15, 20, 22}},
-            {QStringLiteral("Sound effects"), {7, 8, 9, 10, 11, 13, 17, 18, 21, 23, 25, 26}},
-            {QStringLiteral("Engine controls"), {3, 12, 14, 24}}};
+    return {{tr("Music loops"), {1, 2, 4, 16, 19}},
+            {tr("Musical cues"), {5, 6, 15, 20, 22}},
+            {tr("Sound effects"), {7, 8, 9, 10, 11, 13, 17, 18, 21, 23, 25, 26}},
+            {tr("Engine controls"), {3, 12, 14, 24}}};
 }
 
 QHash<int, QVector<SolomonNote>> SolomonSoundModel::trace(const QJsonObject& audio, int program, int frames) {
@@ -202,7 +202,7 @@ QVector<sdk::SequencerChannel> SolomonSoundModel::channels() const {
         sdk::SequencerChannel channel;
         channel.id = QString::number(number);
         channel.label = QString::fromLatin1(kVoiceLabels[(number >> 1) & 3]);
-        channel.detail = QStringLiteral("virtual %1 · %2").arg(number).arg(c.value(QStringLiteral("stream")).toString());
+        channel.detail = tr("virtual %1 · %2").arg(number).arg(c.value(QStringLiteral("stream")).toString());
         channel.color = kVoiceColors[(number >> 1) & 3];
         channel.muted = mutedVoices_.contains(voiceOf(number));
         result << channel;
@@ -298,7 +298,7 @@ void SolomonSoundModel::endEdit() {
     editing_ = false;
     const QJsonObject next = draft_;
     if (next != session_->state().audio) {
-        session_->edit(QStringLiteral("Edit a note of %1").arg(programLabel(program_)),
+        session_->edit(tr("Edit a note of %1").arg(programLabel(program_)),
                        [next](SolomonState& s) { s.audio = next; }, nullptr);
     }
     emit contentChanged();
@@ -335,7 +335,7 @@ void SolomonSoundModel::preview() {
         host->report(d);
         return;
     }
-    spec.label = QStringLiteral("Render %1").arg(programLabel(program_));
+    spec.label = tr("Render %1").arg(programLabel(program_));
     const QString label = programLabel(program_);
     host->runProcess(spec, [host, wav, label](const sdk::ProcessResult& result) {
         if (!result.succeeded() || !QFileInfo(wav).isFile()) {
@@ -343,7 +343,7 @@ void SolomonSoundModel::preview() {
                 sdk::Diagnostic d;
                 d.severity = sdk::Severity::Error;
                 d.source = QStringLiteral("sound");
-                d.message = QStringLiteral("Rendering %1 failed: %2")
+                d.message = tr("Rendering %1 failed: %2")
                                 .arg(label, QString::fromUtf8(result.standardError).trimmed().section(QLatin1Char('\n'), -1));
                 host->report(d);
             }
@@ -370,7 +370,7 @@ sdk::Budget SolomonSoundModel::budget() const {
     int notes = 0;
     for (const auto& list : traced()) notes += list.size();
     sdk::Budget budget;
-    budget.text = QStringLiteral("%1 notes in the first %2 s · stream bytes fixed").arg(notes).arg(kTraceFrames / 60);
+    budget.text = tr("%1 notes in the first %2 s · stream bytes fixed").arg(notes).arg(kTraceFrames / 60);
     return budget;
 }
 
@@ -384,33 +384,33 @@ sdk::Inspection SolomonSoundModel::inspect() const {
     int index = 0;
     if (!selected_.isEmpty() && find(selected_, &number, &index)) {
         const SolomonNote note = traced().value(number).at(index);
-        inspection.kicker = QStringLiteral("Note");
-        inspection.title = number >= kPitchedLimit ? QStringLiteral("Noise %1").arg(nes::hex(note.token))
+        inspection.kicker = tr("Note");
+        inspection.title = number >= kPitchedLimit ? tr("Noise %1").arg(nes::hex(note.token))
                                                    : pitchName(pitchOf(number, note.token));
         sdk::Field at;
         at.key = QStringLiteral("at");
-        at.label = QStringLiteral("Starts");
-        at.value = QStringLiteral("frame %1 · %2 s").arg(note.start).arg(note.start / 60.0, 0, 'f', 2);
+        at.label = tr("Starts");
+        at.value = tr("frame %1 · %2 s").arg(note.start).arg(note.start / 60.0, 0, 'f', 2);
         at.monospace = true;
         sdk::Field length;
         length.key = QStringLiteral("length");
-        length.label = QStringLiteral("Length");
-        length.value = QStringLiteral("%1 frames").arg(note.length);
+        length.label = tr("Length");
+        length.value = tr("%1 frames").arg(note.length);
         length.monospace = true;
         inspection.fields = {at, length};
-        inspection.note = QStringLiteral("Drag the note up or down to change its pitch. The byte lives in shared "
-                                         "stream storage: every repeat, loop and call that plays this command "
-                                         "changes with it.");
+        inspection.note = tr("Drag the note up or down to change its pitch. The byte lives in shared "
+                             "stream storage: every repeat, loop and call that plays this command "
+                             "changes with it.");
         inspection.engineTag = QStringLiteral("solomon.audio@1");
-        inspection.engine = {{QStringLiteral("Command"), QString::number(note.command)},
-                             {QStringLiteral("Note byte"), nes::hex(note.token)}};
+        inspection.engine = {{tr("Command"), QString::number(note.command)},
+                             {tr("Note byte"), nes::hex(note.token)}};
         return inspection;
     }
-    inspection.kicker = QStringLiteral("Audio program");
+    inspection.kicker = tr("Audio program");
     inspection.title = programLabel(program_);
-    inspection.note = QStringLiteral("The sound engine runs up to eight virtual channels; each pair shares an APU "
-                                     "voice and the first of a pair wins while it plays. Listen renders the "
-                                     "program with the kit, unsaved edits included.");
+    inspection.note = tr("The sound engine runs up to eight virtual channels; each pair shares an APU "
+                         "voice and the first of a pair wins while it plays. Listen renders the "
+                         "program with the kit, unsaved edits included.");
     inspection.engineTag = QStringLiteral("solomon.audio@1");
     return inspection;
 }

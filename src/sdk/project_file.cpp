@@ -1,5 +1,7 @@
 #include "sdk/project_file.hpp"
 
+#include "sdk/i18n.hpp"
+
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
@@ -67,13 +69,13 @@ private:
 
     [[noreturn]] void fail(const QString& message) const {
         const int line = text_.leftRef(pos_).count(QLatin1Char('\n')) + 1;
-        throw ParseError(QStringLiteral("line %1: %2").arg(line).arg(message).toStdString());
+        throw ParseError(rlTr("studio", "line %1: %2").arg(line).arg(message).toStdString());
     }
 
     void expect(QChar c) {
         skipSpaces();
         if (peek() != c) {
-            fail(QStringLiteral("expected '%1'").arg(c));
+            fail(rlTr("studio", "expected '%1'").arg(c));
         }
         ++pos_;
     }
@@ -126,7 +128,7 @@ private:
             ++pos_;
         }
         if (!atEnd() && peek() != QLatin1Char('\n')) {
-            fail(QStringLiteral("unexpected text after value"));
+            fail(rlTr("studio", "unexpected text after value"));
         }
         if (!atEnd()) {
             ++pos_;
@@ -151,7 +153,7 @@ private:
             }
         }
         if (pos_ == start) {
-            fail(QStringLiteral("expected a key"));
+            fail(rlTr("studio", "expected a key"));
         }
         return text_.mid(start, pos_ - start);
     }
@@ -172,7 +174,7 @@ private:
         QString result;
         while (true) {
             if (atEnd() || peek() == QLatin1Char('\n')) {
-                fail(QStringLiteral("unterminated string"));
+                fail(rlTr("studio", "unterminated string"));
             }
             const QChar c = text_.at(pos_++);
             if (c == QLatin1Char('"')) {
@@ -183,7 +185,7 @@ private:
                 continue;
             }
             if (atEnd()) {
-                fail(QStringLiteral("unterminated escape"));
+                fail(rlTr("studio", "unterminated escape"));
             }
             const QChar e = text_.at(pos_++);
             switch (e.unicode()) {
@@ -200,14 +202,14 @@ private:
                 bool ok = false;
                 const uint code = text_.mid(pos_, digits).toUInt(&ok, 16);
                 if (!ok) {
-                    fail(QStringLiteral("bad unicode escape"));
+                    fail(rlTr("studio", "bad unicode escape"));
                 }
                 pos_ += digits;
                 result.append(QString::fromUcs4(&code, 1));
                 break;
             }
             default:
-                fail(QStringLiteral("unknown escape \\%1").arg(e));
+                fail(rlTr("studio", "unknown escape \\%1").arg(e));
             }
         }
     }
@@ -217,12 +219,12 @@ private:
         const int start = pos_;
         while (!atEnd() && peek() != QLatin1Char('\'')) {
             if (peek() == QLatin1Char('\n')) {
-                fail(QStringLiteral("unterminated string"));
+                fail(rlTr("studio", "unterminated string"));
             }
             ++pos_;
         }
         if (atEnd()) {
-            fail(QStringLiteral("unterminated string"));
+            fail(rlTr("studio", "unterminated string"));
         }
         const QString result = text_.mid(start, pos_ - start);
         ++pos_;
@@ -234,7 +236,7 @@ private:
         const QChar c = peek();
         if (c == QLatin1Char('"')) {
             if (peekAt(1) == QLatin1Char('"') && peekAt(2) == QLatin1Char('"')) {
-                fail(QStringLiteral("multi-line strings are not supported"));
+                fail(rlTr("studio", "multi-line strings are not supported"));
             }
             return readBasicString();
         }
@@ -252,14 +254,14 @@ private:
                     ++pos_;
                     skipArrayFiller();
                 } else if (peek() != QLatin1Char(']')) {
-                    fail(QStringLiteral("expected ',' or ']' in array"));
+                    fail(rlTr("studio", "expected ',' or ']' in array"));
                 }
             }
             ++pos_;
             return items;
         }
         if (c == QLatin1Char('{')) {
-            fail(QStringLiteral("inline tables are not supported"));
+            fail(rlTr("studio", "inline tables are not supported"));
         }
         const int start = pos_;
         while (!atEnd()) {
@@ -290,7 +292,7 @@ private:
         if (ok) {
             return real;
         }
-        fail(QStringLiteral("unsupported value '%1'").arg(token));
+        fail(rlTr("studio", "unsupported value '%1'").arg(token));
     }
 
     // Tables are built as shared nodes and converted to QVariantMap at the
@@ -318,7 +320,7 @@ private:
             } else if (entry.table) {
                 current = entry.table.get();
             } else if (entry.scalar.isValid()) {
-                fail(QStringLiteral("'%1' is not a table").arg(path.mid(0, i + 1).join('.')));
+                fail(rlTr("studio", "'%1' is not a table").arg(path.mid(0, i + 1).join('.')));
             } else {
                 entry.table = std::make_shared<Table>();
                 current = entry.table.get();
@@ -333,7 +335,7 @@ private:
         Table* parent = descend(path, path.size() - 1);
         Entry& entry = parent->entries[path.last()];
         if (entry.table || entry.scalar.isValid()) {
-            fail(QStringLiteral("'%1' redefined as an array of tables").arg(path.join('.')));
+            fail(rlTr("studio", "'%1' redefined as an array of tables").arg(path.join('.')));
         }
         entry.isArray = true;
         entry.array.push_back(std::make_shared<Table>());
@@ -342,7 +344,7 @@ private:
     void assign(QVariantMap&, const QStringList& path, const QVariant& value, int) {
         Table* parent = descend(path, path.size() - 1);
         if (parent->entries.contains(path.last())) {
-            fail(QStringLiteral("duplicate key '%1'").arg(path.join('.')));
+            fail(rlTr("studio", "duplicate key '%1'").arg(path.join('.')));
         }
         parent->entries[path.last()].scalar = value;
     }
@@ -389,7 +391,7 @@ ProjectFile ProjectFile::load(const QString& path, QString* error) {
     QFile file(path);
     if (!file.open(QIODevice::ReadOnly)) {
         if (error) {
-            *error = QStringLiteral("Cannot open %1: %2").arg(path, file.errorString());
+            *error = rlTr("studio", "Cannot open %1: %2").arg(path, file.errorString());
         }
         return {};
     }

@@ -5,12 +5,15 @@
 #include "theme/theme.hpp"
 #include "theme/typography.hpp"
 
+#include "shell/settings_dialog.hpp"
+
 #include <QApplication>
 #include <QCommandLineParser>
 #include <QFile>
 #include <QScreen>
 #include <QStyle>
 #include <QTimer>
+#include <QTranslator>
 
 #include <memory>
 
@@ -41,6 +44,18 @@ int main(int argc, char* argv[]) {
     QApplication::setApplicationName(QStringLiteral("Retrolarium Studio"));
     QApplication::setOrganizationName(QStringLiteral("Retrolarium"));
     QApplication::setApplicationVersion(QStringLiteral(RETROLARIUM_STUDIO_VERSION));
+
+    // The interface language: the studio's own text, then Qt's dialogs.
+    const QString language = rl::shell::SettingsDialog::language();
+    QTranslator studioTranslator;
+    QTranslator qtTranslator;
+    if (language != QLatin1String("en") &&
+        studioTranslator.load(QStringLiteral(":/i18n/retrolarium_studio_%1").arg(language))) {
+        QApplication::installTranslator(&studioTranslator);
+        if (qtTranslator.load(QStringLiteral(":/i18n/qtbase_%1").arg(language))) {
+            QApplication::installTranslator(&qtTranslator);
+        }
+    }
 
     QCommandLineParser parser;
     parser.setApplicationDescription(QStringLiteral("Retrolarium Studio"));

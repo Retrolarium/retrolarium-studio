@@ -1,5 +1,6 @@
 #include "widgets/property_grid.hpp"
 
+#include "sdk/i18n.hpp"
 #include "theme/theme.hpp"
 #include "theme/typography.hpp"
 #include "widgets/label.hpp"
@@ -107,7 +108,8 @@ QComboBox* PropertyGrid::addChoice(const QString& key, const QStringList& choice
     combo->setSizeAdjustPolicy(QComboBox::AdjustToMinimumContentsLengthWithIcon);
     combo->setMinimumContentsLength(8);
     combo->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
-    combo->addItems(choices);
+    // Shown translated; the item data keeps the choice as the model gave it.
+    for (const QString& choice : choices) combo->addItem(rlValue(choice), choice);
     // Pixel-art previews, scaled by whole steps so they stay crisp.
     bool anyIcon = false;
     for (int i = 0; i < choices.size() && i < icons.size(); ++i) {

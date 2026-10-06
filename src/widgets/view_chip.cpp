@@ -1,5 +1,6 @@
 #include "widgets/view_chip.hpp"
 
+#include "sdk/i18n.hpp"
 #include "theme/paint.hpp"
 #include "theme/theme.hpp"
 #include "theme/typography.hpp"
@@ -56,20 +57,21 @@ void ViewChip::setChoices(const QStringList& choices) {
 void ViewChip::showChoices() {
     QMenu menu(this);
     for (const QString& choice : choices_) {
-        QAction* action = menu.addAction(choice);
+        QAction* action = menu.addAction(rlValue(choice));
+        action->setData(choice);
         action->setCheckable(true);
         action->setChecked(choice == value_);
     }
     QAction* picked = menu.exec(mapToGlobal(QPoint(0, height() + 2)));
-    if (picked && picked->text() != value_) {
-        setValue(picked->text());
+    if (picked && picked->data().toString() != value_) {
+        setValue(picked->data().toString());
         emit valueChosen(value_);
     }
 }
 
 QSize ViewChip::sizeHint() const {
     const int width = kPaddingX * 2 + QFontMetrics(keyFont()).horizontalAdvance(key_) + kGap +
-                      QFontMetrics(valueFont()).horizontalAdvance(value_);
+                      QFontMetrics(valueFont()).horizontalAdvance(rlValue(value_));
     return QSize(width, kHeight);
 }
 
@@ -108,7 +110,7 @@ void ViewChip::paintEvent(QPaintEvent*) {
     painter.setFont(vf);
     painter.setPen(isChecked() || !isCheckable() ? t.text : t.muted);
     painter.drawText(QRect(kPaddingX + keyWidth + kGap, 0, box.width(), box.height()),
-                     Qt::AlignVCenter, value_);
+                     Qt::AlignVCenter, rlValue(value_));
 }
 
 }  // namespace rl::ui

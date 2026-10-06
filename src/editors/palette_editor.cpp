@@ -323,8 +323,8 @@ void PaletteEditor::rebuild() {
     pickerLayout->setContentsMargins(0, 0, 0, 0);
     pickerLayout->setSpacing(8);
     pickerLayout->addWidget(sectionTitle(palette_->pickerTitle(),
-                                         palette_->isReadOnly() ? QStringLiteral("read only")
-                                                                : QStringLiteral("click to assign to the selected entry"),
+                                         palette_->isReadOnly() ? tr("read only")
+                                                                : tr("click to assign to the selected entry"),
                                          picker));
     if (palette_->picker() == sdk::PaletteModel::Picker::Gamut) {
         auto* grid = new QGridLayout;
@@ -394,9 +394,9 @@ void PaletteEditor::rebuild() {
         shown = std::max(shown, 0);
         sample_ = samples.at(shown).label;
 
-        right_->addWidget(sectionTitle(QStringLiteral("Where it's used"),
-                                       rows.size() > 1 ? QStringLiteral("follows the selected row")
-                                                       : QStringLiteral("drawn with this palette, live"),
+        right_->addWidget(sectionTitle(tr("Where it's used"),
+                                       rows.size() > 1 ? tr("follows the selected row")
+                                                       : tr("drawn with this palette, live"),
                                        rightParent));
         if (samples.size() > 1) {
             auto* tabs = new ui::SegmentedControl(rightParent);
@@ -437,9 +437,9 @@ QWidget* PaletteEditor::createToolbar(QWidget* parent) {
     const QVector<sdk::ViewOption> options = palette_->viewOptions();
     if (options.isEmpty()) {
         const QString hint = palette_->picker() == sdk::PaletteModel::Picker::Gamut
-                                 ? QStringLiteral("Pick a swatch, then a colour of the palette below.")
-                                 : QStringLiteral("Pick a swatch, then a level on each channel.");
-        layout->addWidget(new ui::Label(palette_->isReadOnly() ? QStringLiteral("Read only") : hint,
+                                 ? tr("Pick a swatch, then a colour of the palette below.")
+                                 : tr("Pick a swatch, then a level on each channel.");
+        layout->addWidget(new ui::Label(palette_->isReadOnly() ? tr("Read only") : hint,
                                         ui::Label::Role::Small, bar));
     } else {
         layout->addWidget(new ui::Label(QStringLiteral("View"), ui::Label::Role::Caps, bar));

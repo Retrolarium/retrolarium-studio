@@ -1,5 +1,6 @@
 #include "shell/revision_dialog.hpp"
 
+#include "sdk/i18n.hpp"
 #include "theme/typography.hpp"
 #include "widgets/label.hpp"
 #include "widgets/primary_button.hpp"
@@ -18,11 +19,11 @@ namespace {
 
 QString statusText(const RevisionChoice& revision) {
     QString text = revision.romStatus == QLatin1String("ok")
-                       ? QStringLiteral("ROM ready")
+                       ? rlTr("studio", "ROM ready")
                        : revision.romStatus == QLatin1String("missing")
-                             ? QStringLiteral("You will be asked for its ROM")
-                             : QStringLiteral("Its ROM file differs: choose the ROM again");
-    if (revision.edited) text += QStringLiteral(" · edited");
+                             ? rlTr("studio", "You will be asked for its ROM")
+                             : rlTr("studio", "Its ROM file differs: choose the ROM again");
+    if (revision.edited) text += rlTr("studio", " · edited");
     return text;
 }
 
@@ -38,7 +39,7 @@ RevisionDialog::RevisionDialog(const QString& game, const QVector<RevisionChoice
     content->setContentsMargins(24, 20, 20, 18);
     content->setSpacing(10);
     content->addWidget(new ui::Label(game, ui::Label::Role::Title, body()));
-    auto* intro = new ui::Label(QStringLiteral("Which version do you want to edit? Each one keeps its own edits."),
+    auto* intro = new ui::Label(tr("Which version do you want to edit? Each one keeps its own edits."),
                                 ui::Label::Role::Body, body());
     intro->setTone(QStringLiteral("muted"));
     intro->setWordWrap(true);
@@ -71,13 +72,13 @@ RevisionDialog::RevisionDialog(const QString& game, const QVector<RevisionChoice
     auto* buttons = new QHBoxLayout;
     buttons->setSpacing(8);
     buttons->addStretch(1);
-    auto* cancel = new QPushButton(QStringLiteral("Cancel"), body());
+    auto* cancel = new QPushButton(tr("Cancel"), body());
     cancel->setAutoDefault(false);
     cancel->setFont(theme::font(theme::TextRole::Body, 13.0));
     cancel->setMinimumWidth(84);
     connect(cancel, &QPushButton::clicked, this, &QDialog::reject);
     buttons->addWidget(cancel);
-    auto* open = new ui::PrimaryButton(QStringLiteral("Open"), QString(), body());
+    auto* open = new ui::PrimaryButton(tr("Open"), QString(), body());
     connect(open, &QAbstractButton::clicked, this, &QDialog::accept);
     for (const auto key : {Qt::Key_Return, Qt::Key_Enter}) {
         connect(new QShortcut(QKeySequence(key), this), &QShortcut::activated, open, &QAbstractButton::click);

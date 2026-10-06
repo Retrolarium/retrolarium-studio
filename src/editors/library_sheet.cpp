@@ -180,7 +180,7 @@ SheetPane::SheetPane(sdk::EditorModel* model, QWidget* parent)
     layout->setContentsMargins(16, 14, 16, 14);
     layout->setSpacing(10);
     auto* header = new QHBoxLayout;
-    header->addWidget(new ui::Label(QStringLiteral("Patterns"), ui::Label::Role::Caps, this));
+    header->addWidget(new ui::Label(tr("Patterns"), ui::Label::Role::Caps, this));
     header->addStretch(1);
     hint_ = new ui::Label(QString(), ui::Label::Role::Meta, this);
     header->addWidget(hint_);

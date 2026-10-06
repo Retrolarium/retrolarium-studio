@@ -3,6 +3,7 @@
 #include "editors/library_sheet.hpp"
 #include "editors/mime.hpp"
 #include "sdk/editor_model.hpp"
+#include "sdk/i18n.hpp"
 #include "theme/paint.hpp"
 #include "theme/theme.hpp"
 #include "theme/typography.hpp"
@@ -293,10 +294,13 @@ void InspectorPanel::rebuild() {
                                                    std::max(0, field.choices.indexOf(field.value.toString())),
                                                    field.choiceIcons);
                 connect(combo, QOverload<int>::of(&QComboBox::activated), this,
-                        [combo, apply](int) { apply(combo->currentText()); });
+                        [combo, apply](int) { apply(combo->currentData()); });
                 continue;
             }
-            ui::PropertyField* edit = grid->addField(field.label, field.value.toString(), field.hint);
+            ui::PropertyField* edit = grid->addField(
+                field.label, field.type == sdk::Field::Type::Choice ? rlValue(field.value.toString())
+                                                                    : field.value.toString(),
+                field.hint);
             edit->setMonospace(field.monospace);
             const bool editable = !readOnly && (field.type == sdk::Field::Type::Text ||
                                                 field.type == sdk::Field::Type::Integer);
@@ -340,7 +344,7 @@ void InspectorPanel::rebuild() {
         QVBoxLayout* lib = nullptr;
         QWidget* libBox = block(content_, QMargins(14, 12, 14, 16), 8, &lib);
         auto* header = new QHBoxLayout;
-        header->addWidget(new ui::Label(QStringLiteral("Library"), ui::Label::Role::Caps, libBox));
+        header->addWidget(new ui::Label(tr("Library"), ui::Label::Role::Caps, libBox));
         header->addStretch(1);
         if (!inspection.library.hint.isEmpty()) {
             header->addWidget(new ui::Label(inspection.library.hint, ui::Label::Role::Meta, libBox));
@@ -386,7 +390,7 @@ void InspectorPanel::rebuild() {
         for (const sdk::EngineRow& row : inspection.engine) {
             table->addRow(row.key, row.value);
         }
-        auto* section = new ui::CollapsibleSection(QStringLiteral("Engine data"), table, content_);
+        auto* section = new ui::CollapsibleSection(tr("Engine data"), table, content_);
         section->setTag(inspection.engineTag);
         section->setExpanded(engineExpanded_);
         connect(section, &ui::CollapsibleSection::expandedChanged, this,

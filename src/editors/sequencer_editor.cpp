@@ -370,18 +370,18 @@ QWidget* SequencerEditor::createToolbar(QWidget* parent) {
     layout->setContentsMargins(0, 0, 0, 0);
     layout->setSpacing(8);
     if (sequencer_->canPreview()) {
-        auto* listen = new QPushButton(QStringLiteral("▶  Listen"), bar);
+        auto* listen = new QPushButton(tr("▶  Listen"), bar);
         listen->setFont(theme::font(theme::TextRole::Body, 12.0));
-        listen->setToolTip(QStringLiteral("Render the unmuted channels and play them"));
+        listen->setToolTip(tr("Render the unmuted channels and play them"));
         connect(listen, &QPushButton::clicked, this, [this] { sequencer_->preview(); });
         layout->addWidget(listen);
-        auto* stop = new QPushButton(QStringLiteral("■  Stop"), bar);
+        auto* stop = new QPushButton(tr("■  Stop"), bar);
         stop->setFont(theme::font(theme::TextRole::Body, 12.0));
         connect(stop, &QPushButton::clicked, this, [this] { sequencer_->stopPreview(); });
         layout->addWidget(stop);
-        auto* loop = new QCheckBox(QStringLiteral("Loop"), bar);
+        auto* loop = new QCheckBox(tr("Loop"), bar);
         loop->setFont(theme::font(theme::TextRole::Body, 12.0));
-        loop->setToolTip(QStringLiteral("Play the part over and over until Stop"));
+        loop->setToolTip(tr("Play the part over and over until Stop"));
         loop->setChecked(sequencer_->previewLoops());
         connect(loop, &QCheckBox::toggled, this, [this](bool checked) { sequencer_->setPreviewLoops(checked); });
         layout->addWidget(loop);
@@ -398,15 +398,15 @@ QWidget* SequencerEditor::createToolbar(QWidget* parent) {
                 [this, key](const QString& value) { sequencer_->setViewOption(key, value); });
         layout->addWidget(chip);
     }
-    auto* zoom = new ui::ViewChip(QStringLiteral("Zoom"), QStringLiteral("%1 px/tick").arg(roll_->pixelsPerTick()), bar);
-    zoom->setChoices({QStringLiteral("1 px/tick"), QStringLiteral("2 px/tick"), QStringLiteral("4 px/tick"),
-                      QStringLiteral("8 px/tick"), QStringLiteral("16 px/tick")});
+    auto* zoom = new ui::ViewChip(tr("Zoom"), tr("%1 px/tick").arg(roll_->pixelsPerTick()), bar);
+    zoom->setChoices({tr("1 px/tick"), tr("2 px/tick"), tr("4 px/tick"),
+                      tr("8 px/tick"), tr("16 px/tick")});
     connect(zoom, &ui::ViewChip::valueChosen, this,
             [this](const QString& value) { roll_->setPixelsPerTick(value.section(QLatin1Char(' '), 0, 0).toInt()); });
     layout->addWidget(zoom);
     layout->addStretch(1);
     const QString hint = sequencer_->isReadOnly() ? sequencer_->readOnlyReason()
-                                                  : QStringLiteral("Drag a note up or down; Shift-drag changes its length");
+                                                  : tr("Drag a note up or down; Shift-drag changes its length");
     layout->addWidget(new ui::Label(hint, ui::Label::Role::Small, bar));
     return bar;
 }
