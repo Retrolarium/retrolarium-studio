@@ -76,7 +76,7 @@ BonusRoundModel::Actor BonusRoundModel::parseId(const QString& id) {
 }
 
 QString BonusRoundModel::title() const {
-    return tr("Round ") + two(round_ + 1);
+    return tr("Round %1").arg(two(round_ + 1));
 }
 
 QSize BonusRoundModel::gridSize() const {
@@ -321,7 +321,7 @@ bool BonusRoundModel::setField(const QString& key, const QVariant& value, QStrin
 }
 
 QString BonusRoundModel::startPoint() const {
-    return tr("Round ") + two(round_ + 1);
+    return tr("Round %1").arg(two(round_ + 1));
 }
 
 QString BonusRoundModel::statusText() const {

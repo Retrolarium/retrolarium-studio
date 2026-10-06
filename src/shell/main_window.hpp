@@ -90,6 +90,10 @@ private:
 
     void closeProject();
     bool confirmDiscard();
+    // The session and undo position the user last chose to discard: asking
+    // again before closing it would only repeat the question.
+    const sdk::Session* discardedSession_ = nullptr;
+    int discardedIndex_ = -1;
     void selectKind(const QString& kind);
     void selectDocument(const QString& document);
     void installEditor();

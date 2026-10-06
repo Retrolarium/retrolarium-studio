@@ -556,10 +556,14 @@ void EmulatorRunner::writeKeys() {
     file.write(keys.join(QLatin1Char(' ')).toUtf8());
     file.close();
     // MoveFileEx replaces the file in one step; the script reads it each frame.
+    // A replace that meets the script's read fails with a sharing violation:
+    // try again, or a released key would stay held in the game.
 #ifdef Q_OS_WIN
-    MoveFileExW(reinterpret_cast<const wchar_t*>(QDir::toNativeSeparators(file.fileName()).utf16()),
-                reinterpret_cast<const wchar_t*>(QDir::toNativeSeparators(path).utf16()),
-                MOVEFILE_REPLACE_EXISTING);
+    const auto from = reinterpret_cast<const wchar_t*>(QDir::toNativeSeparators(file.fileName()).utf16());
+    const auto to = reinterpret_cast<const wchar_t*>(QDir::toNativeSeparators(path).utf16());
+    for (int attempt = 0; attempt < 20 && !MoveFileExW(from, to, MOVEFILE_REPLACE_EXISTING); ++attempt) {
+        Sleep(1);
+    }
 #else
     QFile::remove(path);
     QFile::rename(file.fileName(), path);
@@ -702,6 +706,11 @@ void EmulatorRunner::start(const sdk::ProcessSpec& requested, const QString& tit
         append(tr("Fast start and hot reload are off: %1")
                    .arg(error.isEmpty() ? stage_->errorString() : error));
         cart_.clear();
+        // Without the control script nothing writes the staged ready file:
+        // waiting for it would only hold the view in Starting.
+        if (stage_->isValid() && readyFile_.startsWith(stage_->path())) {
+            readyFile_.clear();
+        }
         if (!launch.gameScript.isEmpty()) {
             arguments << QStringLiteral("-autoboot_delay") << QStringLiteral("0")
                       << QStringLiteral("-autoboot_script") << launch.gameScript;
@@ -830,7 +839,16 @@ bool EmulatorRunner::reload(const sdk::ProcessSpec& requested, const QString& ca
     file.close();
     QFile::remove(command);
     QFile::rename(file.fileName(), command);
+    // The run the reload replaces ends here, as if stopped: whoever started
+    // it (a recording waiting for its end) hears about it.
+    auto replaced = std::move(finished_);
     finished_ = std::move(finished);
+    if (replaced) {
+        sdk::ProcessResult result;
+        result.started = true;
+        result.cancelled = true;
+        replaced(result);
+    }
     append(tr("Reloading %1").arg(title_));
     phase_ = Phase::Starting;
     startupChecks_ = 0;
@@ -900,6 +918,29 @@ void EmulatorRunner::stopNow() {
     if (!process_->waitForFinished(1500)) {
         process_->kill();
         process_->waitForFinished(1500);
+    }
+    if (process_) {
+        // It outlived both waits: let it go, so the next launch neither
+        // inherits it nor gets its exit later.
+        QProcess* stale = process_;
+        stale->disconnect(this);
+        stale->deleteLater();
+        process_ = nullptr;
+        paused_ = false;
+        startupTimer_->stop();
+        phase_ = Phase::Idle;
+        stage_.reset();
+        cart_.clear();
+        keys_.clear();
+        auto finished = std::move(finished_);
+        finished_ = {};
+        emit stateChanged();
+        if (finished) {
+            sdk::ProcessResult result;
+            result.started = true;
+            result.cancelled = true;
+            finished(result);
+        }
     }
 }
 

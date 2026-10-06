@@ -21,7 +21,7 @@ class CastleSpriteModel final : public sdk::TileMapModel {
 public:
     explicit CastleSpriteModel(CastleSession* session);
 
-    QString title() const override { return QStringLiteral("Sprites"); }
+    QString title() const override { return tr("Sprites"); }
     sdk::Budget budget() const override;
     sdk::Inspection inspect() const override;
     bool setField(const QString& key, const QVariant& value, QString* error) override;
@@ -63,6 +63,7 @@ public:
     };
 
 private:
+    static int paletteNumber(const QString& label);
     int count() const;
     int descriptorAt(QPoint cell) const;
     int tileOf(int descriptor) const;

@@ -106,10 +106,17 @@ void TableAdapter::reload() {
 TableDelegate::TableDelegate(sdk::TableModel* model, QObject* parent)
     : QStyledItemDelegate(parent), model_(model) {}
 
+const QVector<sdk::TableColumn>& TableDelegate::columns() const {
+    if (columns_.isEmpty()) {
+        columns_ = model_->columns();
+    }
+    return columns_;
+}
+
 void TableDelegate::paint(QPainter* painter, const QStyleOptionViewItem& option,
                           const QModelIndex& index) const {
     const theme::Tokens& t = theme::current();
-    const QVector<sdk::TableColumn> columns = model_->columns();
+    const QVector<sdk::TableColumn>& columns = this->columns();
     if (index.column() >= columns.size()) {
         return;
     }
@@ -149,8 +156,10 @@ void TableDelegate::paint(QPainter* painter, const QStyleOptionViewItem& option,
         painter->restore();
         return;
     }
-    // A pick-from-list cell shows a chevron, like the drop-down it opens.
-    if (column.editable && !model_->cellChoices(index.row(), index.column()).isEmpty()) {
+    // A pick-from-list cell shows a chevron, like the drop-down it opens,
+    // and its value as the list names it.
+    const bool choices = column.editable && !model_->cellChoices(index.row(), index.column()).isEmpty();
+    if (choices) {
         painter->setPen(selected ? t.accentInk : t.muted);
         painter->setFont(theme::font(theme::TextRole::Body, 11.0));
         painter->drawText(QRect(content.right() - 12, r.top(), 12, r.height()), Qt::AlignCenter,
@@ -159,8 +168,8 @@ void TableDelegate::paint(QPainter* painter, const QStyleOptionViewItem& option,
     }
     painter->setFont(cellFont(column));
     painter->setPen(selected ? t.accentInk : column.muted ? t.muted : t.text);
-    const QString text = painter->fontMetrics().elidedText(index.data().toString(), Qt::ElideRight,
-                                                           content.width());
+    const QString value = choices ? rlValue(index.data().toString()) : index.data().toString();
+    const QString text = painter->fontMetrics().elidedText(value, Qt::ElideRight, content.width());
     painter->drawText(content, Qt::AlignVCenter | Qt::AlignLeft, text);
     painter->restore();
 }
@@ -233,7 +242,8 @@ TableEditor::TableEditor(sdk::TableModel* model, QWidget* parent)
     auto* layout = new QVBoxLayout(this);
     layout->setContentsMargins(0, 0, 0, 0);
     view_->setModel(adapter_);
-    view_->setItemDelegate(new TableDelegate(model, view_));
+    delegate_ = new TableDelegate(model, view_);
+    view_->setItemDelegate(delegate_);
     view_->setSelectionBehavior(QAbstractItemView::SelectRows);
     view_->setSelectionMode(QAbstractItemView::SingleSelection);
     view_->setEditTriggers(QAbstractItemView::DoubleClicked | QAbstractItemView::EditKeyPressed |
@@ -249,6 +259,8 @@ TableEditor::TableEditor(sdk::TableModel* model, QWidget* parent)
     view_->horizontalHeader()->setSectionsClickable(false);
     layout->addWidget(view_);
     applyColumnWidths();
+    shownRows_ = adapter_->rowCount();
+    shownColumns_ = adapter_->columnCount();
 
     connect(adapter_, &TableAdapter::editRejected, this, &EditorView::actionFailed);
     connect(view_->selectionModel(), &QItemSelectionModel::currentRowChanged, this,
@@ -260,9 +272,23 @@ TableEditor::TableEditor(sdk::TableModel* model, QWidget* parent)
     connect(table_, &sdk::EditorModel::contentChanged, this, [this] {
         // Keep the selection and any open editor's row across a refresh.
         syncing_ = true;
-        emit adapter_->dataChanged(adapter_->index(0, 0),
-                                   adapter_->index(adapter_->rowCount() - 1,
-                                                   adapter_->columnCount() - 1));
+        delegate_->invalidate();
+        const int rows = adapter_->rowCount();
+        const int columns = adapter_->columnCount();
+        if (rows != shownRows_ || columns != shownColumns_) {
+            adapter_->reload();
+            if (columns != shownColumns_) {
+                applyColumnWidths();
+            }
+            shownRows_ = rows;
+            shownColumns_ = columns;
+            const int row = table_->currentRow();
+            if (row >= 0 && row < rows) {
+                view_->selectRow(row);
+            }
+        } else if (rows > 0 && columns > 0) {
+            emit adapter_->dataChanged(adapter_->index(0, 0), adapter_->index(rows - 1, columns - 1));
+        }
         syncing_ = false;
     });
     connect(table_, &sdk::EditorModel::toolsChanged, this, &EditorView::toolbarChanged);

@@ -4,6 +4,8 @@
 
 #include <QJsonObject>
 
+#include <algorithm>
+
 namespace rl::pacman {
 
 namespace {
@@ -50,7 +52,7 @@ QVector<sdk::TableColumn> PacmanDemoModel::columns() const {
     direction.editable = true;
     sdk::TableColumn frames;
     frames.key = QStringLiteral("frames");
-    frames.label = QStringLiteral("Frames");
+    frames.label = tr("Frames");
     frames.width = 130;
     frames.monospace = true;
     frames.editable = true;
@@ -214,10 +216,13 @@ void PacmanDemoModel::triggerAction(const QString& id) {
                              tr("The demo holds %1 steps.").arg(capacity()));
             return;
         }
-        QJsonObject item = list.at(row_).toObject();
+        if (list.isEmpty()) return;
+        // After the current step, or the last when the selection is stale.
+        const int row = std::clamp(row_, 0, int(list.size()) - 1);
+        QJsonObject item = list.at(row).toObject();
         item.insert(QStringLiteral("frames"), 32);
-        list.insert(row_ + 1, item);
-        if (commit(tr("Add a demo step"), list)) setCurrentRow(row_ + 1);
+        list.insert(row + 1, item);
+        if (commit(tr("Add a demo step"), list)) setCurrentRow(row + 1);
     } else if (id == QLatin1String("remove")) {
         QJsonArray list = steps();
         if (row_ <= 0 || row_ >= list.size()) return;

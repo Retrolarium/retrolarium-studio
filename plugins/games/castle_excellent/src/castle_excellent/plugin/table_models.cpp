@@ -125,14 +125,20 @@ QString CastleTextModel::cell(int row, int column) const {
 sdk::Budget CastleTextModel::cellBudget(int row, int) const {
     sdk::Budget budget;
     if (row >= 0 && row < rowCount()) {
-        budget.used = decode(values(row)).size();
+        // In bytes: a {XX} code is one.
+        const QString text = decode(values(row));
+        budget.used = text.size() - 3 * text.count(QLatin1Char('{'));
         budget.capacity = values(row).size() - 1;
     }
     return budget;
 }
 
 int CastleTextModel::maxLength(int row, int) const {
-    return row >= 0 && row < rowCount() ? values(row).size() - 1 : -1;
+    if (row < 0 || row >= rowCount()) return -1;
+    // A limit in characters would cut a {XX} code apart: encode checks the
+    // bytes of such a word instead.
+    if (decode(values(row)).contains(QLatin1Char('{'))) return -1;
+    return values(row).size() - 1;
 }
 
 bool CastleTextModel::isRowDirty(int row) const {
@@ -193,7 +199,7 @@ sdk::Inspection CastleTextModel::inspect() const {
     inspection.title = titled(recordId(row_));
     sdk::Field text;
     text.key = QStringLiteral("text");
-    text.label = QStringLiteral("Text");
+    text.label = tr("Text");
     text.type = sdk::Field::Type::Text;
     text.value = decode(values(row_));
     text.hint = tr("max %1").arg(values(row_).size() - 1);

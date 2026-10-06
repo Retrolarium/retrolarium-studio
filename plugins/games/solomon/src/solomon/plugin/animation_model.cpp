@@ -202,8 +202,10 @@ QString SolomonAnimationModel::familyLabel(const AnimationFamily& family) {
     for (int i = 0; i < family.members.size() && i < 3; ++i) names << hex(family.members.at(i).action);
     QString list = names.join(QStringLiteral(", "));
     if (family.members.size() > 3) list += QStringLiteral(" +%1").arg(family.members.size() - 3);
-    const QString name = actionLabel(family.group, first.action);
-    if (!name.startsWith(QLatin1String("Action "))) return QStringLiteral("%1 · %2").arg(name.section(QLatin1Char(','), 0, 0), list);
+    // Only Wizard's standing poses have names; the rest are numbered.
+    if (family.group == 0 && (first.action == 0x16 || first.action == 0x17)) {
+        return QStringLiteral("%1 · %2").arg(actionLabel(family.group, first.action).section(QLatin1Char(','), 0, 0), list);
+    }
     return tr("Actions %1").arg(list);
 }
 
@@ -217,8 +219,8 @@ QString SolomonAnimationModel::groupLabel(int group) {
 QString SolomonAnimationModel::actionLabel(int group, int action) {
     if (group == 0 && action == 0x16) return tr("Standing, right");
     if (group == 0 && action == 0x17) return tr("Standing, left");
-    if (group >= 6 && action >= 0x18 && action <= 0x1b) return QStringLiteral("Action %1 (shown first)").arg(hex(action));
-    return QStringLiteral("Action %1").arg(hex(action));
+    if (group >= 6 && action >= 0x18 && action <= 0x1b) return tr("Action %1 (shown first)").arg(hex(action));
+    return tr("Action %1").arg(hex(action));
 }
 
 QVector<int> SolomonAnimationModel::cycle(const QJsonObject& animations, int group, int action, int variant) {
@@ -552,7 +554,7 @@ sdk::Inspection SolomonAnimationModel::inspect() const {
     delay.hint = tr("frames between steps");
     sdk::Field count;
     count.key = QStringLiteral("frames");
-    count.label = QStringLiteral("Frames");
+    count.label = tr("Frames");
     count.value = QString::number(frameList().size());
     count.monospace = true;
     inspection.fields = {delay, count};

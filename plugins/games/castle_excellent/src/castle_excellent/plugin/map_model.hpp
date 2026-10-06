@@ -18,7 +18,7 @@ class CastleMapModel final : public sdk::TileMapModel {
 public:
     explicit CastleMapModel(CastleSession* session);
 
-    QString title() const override { return QStringLiteral("Castle map"); }
+    QString title() const override { return tr("Castle map"); }
     sdk::Inspection inspect() const override;
     QString statusText() const override;
     QString startPoint() const override;

@@ -87,6 +87,12 @@ bool hasLength(const SmbAreaObject& object) {
     return object.row == 12;
 }
 
+// The bits of the low nibble that hold the size: a pipe's top bit says
+// whether it can be entered, so its size is three bits.
+int lengthMask(const SmbAreaObject& object) {
+    return object.row <= 11 && ((object.control >> 4) & 7) == 7 ? 7 : 15;
+}
+
 // A new object of a kind: rows, columns and other sized objects start three
 // cells long.
 SmbAreaObject newObject(const SmbObjectKind& kind, int column, int row) {
@@ -332,7 +338,29 @@ bool SmbLevelModel::roomFor(const SmbArea& edited, QString* error) const {
     return true;
 }
 
-bool SmbLevelModel::commitArea(const SmbArea& edited, const QString& text, QString* error) {
+bool SmbLevelModel::commitArea(const SmbArea& requested, const QString& text, QString* error) {
+    SmbArea edited = requested;
+    if (!pool(&edited).pooled) {
+        // A stream that fills its space exactly ends on the next one's first
+        // byte (an implicit terminator). Shorter, it needs its own terminator,
+        // which then fits; grown back to the full space, it shares again as
+        // the saved ROM did.
+        const SmbResourceDocument& saved = session_->saved();
+        const bool known = saved.areaNames(session_->levels()).contains(edited.name);
+        const SmbArea original = known ? saved.area(session_->levels(), edited.name) : SmbArea{};
+        if (edited.areaImplicitTerminator && edited.areaBytes() <= edited.areaCapacity) {
+            edited.areaImplicitTerminator = false;
+        } else if (!edited.areaImplicitTerminator && original.areaImplicitTerminator &&
+                   edited.areaBytes() == edited.areaCapacity + 1) {
+            edited.areaImplicitTerminator = true;
+        }
+        if (edited.enemyImplicitTerminator && edited.enemyBytes() <= edited.enemyCapacity) {
+            edited.enemyImplicitTerminator = false;
+        } else if (!edited.enemyImplicitTerminator && original.enemyImplicitTerminator &&
+                   edited.enemyBytes() == edited.enemyCapacity + 1) {
+            edited.enemyImplicitTerminator = true;
+        }
+    }
     if (!roomFor(edited, error)) {
         return false;
     }
@@ -529,17 +557,18 @@ bool SmbLevelModel::setField(const QString& key, const QVariant& value, QString*
         SmbAreaObject& record = next.objects[o];
         if (key == QLatin1String("kind")) {
             const int cls = objectClass(record);
-            const int length = hasLength(record) ? (record.control & 15) : 0;
+            const int length = hasLength(record) ? (record.control & lengthMask(record)) : 0;
             for (const SmbObjectKind& kind : objectCatalog()) {
                 if (kind.row == cls && kind.name == value.toString()) {
                     record.control = kind.control;
                     if (hasLength(record)) {
-                        record.control |= length;
+                        record.control |= length & lengthMask(record);
                     }
                 }
             }
         } else if (key == QLatin1String("length") && hasLength(record)) {
-            record.control = (record.control & ~15) | (std::clamp(value.toInt(), 1, 16) - 1);
+            const int mask = lengthMask(record);
+            record.control = (record.control & ~mask) | (std::clamp(value.toInt(), 1, mask + 1) - 1);
         } else if (key == QLatin1String("row") && record.row <= 11) {
             record.row = std::clamp(value.toInt(), 0, 11);
         } else {
@@ -732,8 +761,9 @@ sdk::Inspection SmbLevelModel::inspect() const {
             inspection.fields << kind;
         }
         if (hasLength(record)) {
-            inspection.fields << integer(QStringLiteral("length"), tr("Size"), (record.control & 15) + 1,
-                                         1, 16, QStringLiteral("cells"));
+            inspection.fields << integer(QStringLiteral("length"), tr("Size"),
+                                         (record.control & lengthMask(record)) + 1, 1, lengthMask(record) + 1,
+                                         QStringLiteral("cells"));
         }
         if (record.row <= 11) {
             inspection.fields << integer(QStringLiteral("row"), tr("Row"), record.row, 0, 11);

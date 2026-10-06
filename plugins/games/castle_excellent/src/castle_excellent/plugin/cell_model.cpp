@@ -79,9 +79,17 @@ QVector<sdk::ViewOption> CastleCellModel::viewOptions() const {
     return {palette};
 }
 
+int CastleCellModel::paletteNumber(const QString& label) {
+    // The whole label: a translation may place the number anywhere.
+    for (int p = 0; p < 4; ++p) {
+        if (label == tr("BG %1").arg(p)) return p;
+    }
+    return 0;
+}
+
 void CastleCellModel::setViewOption(const QString& key, const QString& value) {
     if (key == QLatin1String("palette")) {
-        libraryPalette_ = std::clamp(value.section(QLatin1Char(' '), 1).toInt(), 0, 3);
+        libraryPalette_ = paletteNumber(value);
         emit contentChanged();
         emit selectionChanged();
     }
@@ -264,7 +272,7 @@ bool CastleCellModel::setField(const QString& key, const QVariant& value, QStrin
     } else if (key == QLatin1String("right")) {
         right = std::clamp(value.toInt(), 0, 255);
     } else if (key == QLatin1String("palette")) {
-        palette = std::clamp(value.toString().section(QLatin1Char(' '), 1).toInt(), 0, 3);
+        palette = paletteNumber(value.toString());
         libraryPalette_ = palette;
     } else if (key == QLatin1String("copy")) {
         const int source = value.toString().section(QLatin1Char(' '), 1).toInt();
@@ -316,7 +324,7 @@ sdk::Inspection CastleCellModel::inspect() const {
         if (session_->levels().cells(r).contains(selected_)) ++rooms;
     }
     inspection.kicker = tr("Room cell");
-    inspection.title = QStringLiteral("Cell %1").arg(selected_);
+    inspection.title = tr("Cell %1").arg(selected_);
     for (int half = 0; half < 2; ++half) {
         const int tile = tileOf(selected_, half);
         sdk::Field f;

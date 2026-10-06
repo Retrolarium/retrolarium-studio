@@ -17,7 +17,7 @@ class SmbRoutesModel final : public sdk::TableModel {
 public:
     explicit SmbRoutesModel(SmbSession* session);
 
-    QString title() const override { return QStringLiteral("World routes"); }
+    QString title() const override { return tr("World routes"); }
     sdk::Inspection inspect() const override;
     bool setField(const QString& key, const QVariant& value, QString* error) override;
     QString statusText() const override;
@@ -52,7 +52,7 @@ class SmbPhysicsModel final : public sdk::TableModel {
 public:
     explicit SmbPhysicsModel(SmbSession* session);
 
-    QString title() const override { return QStringLiteral("Player physics"); }
+    QString title() const override { return tr("Player physics"); }
     sdk::Inspection inspect() const override;
     bool setField(const QString& key, const QVariant& value, QString* error) override;
     QString statusText() const override;

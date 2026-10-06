@@ -48,6 +48,8 @@ int SegmentedControl::addSegment(const QString& text, const QString& id) {
     button->setToolButtonStyle(Qt::ToolButtonTextOnly);
     button->setFont(theme::font(theme::TextRole::Body, 12.0));
     button->setFixedHeight(26);
+    // Labels stay whole: a crowded toolbar narrows its chips instead.
+    button->setMinimumWidth(button->sizeHint().width());
     return buttons_.size() - 1;
 }
 
@@ -93,7 +95,18 @@ void SegmentedControl::setCurrentIndex(int index) {
 }
 
 void SegmentedControl::setCurrentId(const QString& id) {
-    setCurrentIndex(ids_.indexOf(id));
+    const int index = ids_.indexOf(id);
+    if (index < 0) {
+        // Nothing the control offers is current: show no segment chosen
+        // rather than the first one.
+        if (QAbstractButton* checked = group_->checkedButton()) {
+            group_->setExclusive(false);
+            checked->setChecked(false);
+            group_->setExclusive(true);
+        }
+        return;
+    }
+    setCurrentIndex(index);
 }
 
 void SegmentedControl::paintEvent(QPaintEvent*) {

@@ -50,6 +50,8 @@ QVector<Feature> warnedFeatures(const QString& program, const QString& system, Q
     process.start();
     if (!process.waitForFinished(kListTimeoutMs) || process.exitCode() != 0) {
         process.kill();
+        // Remembered too: asking again would block every launch as long.
+        cache.insert(key, {});
         if (error) {
             *error = rlTr("studio", "MAME did not describe %1").arg(system);
         }
@@ -79,7 +81,8 @@ QVector<Feature> warnedFeatures(const QString& program, const QString& system, Q
             --depth;
         }
     }
-    if (xml.hasError() && features.isEmpty() && !xml.atEnd()) {
+    if (xml.hasError()) {
+        cache.insert(key, {});
         if (error) {
             *error = xml.errorString();
         }

@@ -30,15 +30,17 @@ class BundleData final : public SoundEffectData {
 public:
     BundleData(BundleOwner* owner, QStringList resources) : owner_(owner), resources_(std::move(resources)) {}
 
+    // Called from signal handlers: a resource the bundle lacks (resource()
+    // throws for it) counts as empty rather than escaping into Qt.
     QJsonObject state() const override {
         QJsonObject state;
-        for (const QString& id : resources_) state.insert(id, owner_->bundle().resource(id));
+        for (const QString& id : resources_) state.insert(id, resourceOf(owner_->bundle(), id));
         return state;
     }
 
     bool edited() const override {
         for (const QString& id : resources_) {
-            if (owner_->bundle().resource(id) != owner_->savedBundle().resource(id)) return true;
+            if (resourceOf(owner_->bundle(), id) != resourceOf(owner_->savedBundle(), id)) return true;
         }
         return false;
     }
@@ -54,6 +56,10 @@ public:
     }
 
 private:
+    static QJsonObject resourceOf(const Bundle& bundle, const QString& id) {
+        return bundle.contains(id) ? bundle.resource(id) : QJsonObject();
+    }
+
     BundleOwner* owner_;
     QStringList resources_;
 };
@@ -230,7 +236,7 @@ QVector<sdk::SequencerChannel> SoundEffectModel::channels() const {
         channel.id = QString::number(c);
         channel.label = QString::fromLatin1(kChannels[c]);
         const int count = lanes.at(c).toObject().value(QStringLiteral("notes")).toArray().size();
-        channel.detail = count ? tr("%1 notes").arg(count) : QStringLiteral("unused");
+        channel.detail = count ? tr("%n notes", nullptr, count) : tr("unused");
         channel.color = kColours[c];
         channel.muted = muted_.contains(c);
         result << channel;

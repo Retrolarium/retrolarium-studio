@@ -13,7 +13,7 @@ class PlaytestModel final : public sdk::EmulatorModel {
 public:
     explicit PlaytestModel(FlickySession* session);
 
-    QString title() const override { return QStringLiteral("Build and run"); }
+    QString title() const override { return tr("Build and run"); }
     sdk::Inspection inspect() const override;
     QVector<sdk::ViewOption> viewOptions() const override;
     void setViewOption(const QString& key, const QString& value) override;

@@ -63,7 +63,8 @@ const QStringList& playerNames() {
 
 SmbTileModel::SmbTileModel(SmbSession* session, bool background)
     : TileModel(session), session_(session), background_(background) {
-    palette_ = background_ ? tr("Ground BG 0") : tr("Hero");
+    // A label paletteChoices offers, so penColors finds its packet.
+    palette_ = background_ ? packetLabel(QStringLiteral("ground"), 0) : playerNames().first();
     connect(session_, &SmbSession::documentChanged, this, &sdk::EditorModel::contentChanged);
 }
 
@@ -79,13 +80,15 @@ QStringList SmbTileModel::paletteChoices() const {
         }
     }
     for (const QString& packet : areaPackets()) {
-        for (int p = 0; p < 4; ++p) {
-            choices << QStringLiteral("%1 %2 %3").arg(titled(packet), background_ ? QStringLiteral("BG")
-                                                                                   : QStringLiteral("SPR"))
-                           .arg(p);
-        }
+        for (int p = 0; p < 4; ++p) choices << packetLabel(packet, p);
     }
     return choices;
+}
+
+QString SmbTileModel::packetLabel(const QString& packet, int palette) const {
+    return QStringLiteral("%1 %2 %3")
+        .arg(titled(packet), background_ ? QStringLiteral("BG") : QStringLiteral("SPR"))
+        .arg(palette);
 }
 
 QVector<QColor> SmbTileModel::penColors() const {
@@ -95,10 +98,15 @@ QVector<QColor> SmbTileModel::penColors() const {
     if (player >= 0) {
         values = d.tableValues(session_->playerPalette()).mid(player * 4, 4);
     } else {
-        const QString packet = palette_.section(QLatin1Char(' '), 0, 0).toLower();
-        const int p = palette_.section(QLatin1Char(' '), -1).toInt();
-        const QVector<int> all = d.packetValues(session_->palettes(), packet);
-        values = all.mid((background_ ? 0 : 16) + p * 4, 4);
+        // The packet and palette the label was made from (a packet name may
+        // hold spaces once titled).
+        for (const QString& packet : areaPackets()) {
+            for (int p = 0; p < 4 && values.isEmpty(); ++p) {
+                if (packetLabel(packet, p) == palette_) {
+                    values = d.packetValues(session_->palettes(), packet).mid((background_ ? 0 : 16) + p * 4, 4);
+                }
+            }
+        }
     }
     QVector<QColor> colors;
     for (int i = 0; i < 4; ++i) {

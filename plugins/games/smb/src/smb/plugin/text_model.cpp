@@ -130,11 +130,11 @@ sdk::Inspection SmbTextModel::inspect() const {
     }
     const SmbTextSlot& slot = session_->textSlots().at(row_);
     const QString value = session_->text(row_);
-    inspection.kicker = slot.screen.isEmpty() ? QStringLiteral("Text field") : tr("Screen text");
+    inspection.kicker = slot.screen.isEmpty() ? tr("Text field") : tr("Screen text");
     inspection.title = slot.label;
     sdk::Field text;
     text.key = QStringLiteral("text");
-    text.label = QStringLiteral("Text");
+    text.label = tr("Text");
     text.type = sdk::Field::Type::Text;
     text.value = value;
     const bool grows = slot.maxWidth != slot.width;

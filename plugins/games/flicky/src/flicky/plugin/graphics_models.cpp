@@ -99,8 +99,12 @@ QVector<QColor> TileBankModel::penColors() const {
     } else {
         // Exceptions must not leave a model: they would cross Qt's event loop.
         try {
-            if (palette.startsWith(roundLine(0).chopped(1))) {
-                const int line = palette.right(1).toInt();
+            // Matched whole: a translation may place the line number anywhere.
+            int line = -1;
+            for (int l = 0; l < 4; ++l) {
+                if (palette == roundLine(l)) line = l;
+            }
+            if (line >= 0) {
                 const auto cram = session_->renderer().paletteForRound(1);
                 words = QVector<int>(cram.begin() + line * 16, cram.begin() + line * 16 + 16);
             } else if (palette != kIndexColours) {
@@ -183,6 +187,7 @@ void TileBankModel::endStroke() {
 }
 
 bool TileBankModel::fill(QPoint pixel, int pen, QString* error) {
+    if (pixel.x() < 0 || pixel.y() < 0 || pixel.x() > 7 || pixel.y() > 7) return false;
     const megadrive::Tile pixels = session_->graphics().tile(asset_, tile_);
     const int target = pixels[static_cast<std::size_t>(pixel.y() * 8 + pixel.x())];
     if (target == pen) {
@@ -292,7 +297,7 @@ QVector<sdk::MapObject> SegaTilemapModel::objects() const {
     for (int cell = 0; cell < 48; ++cell) {
         sdk::MapObject object;
         object.id = QStringLiteral("cell:%1").arg(cell);
-        object.label = QStringLiteral("Cell %1").arg(cell);
+        object.label = tr("Cell %1").arg(cell);
         object.cells = QRect(cell % 12, cell / 12, 1, 1);
         object.movable = false;
         object.outlined = false;
@@ -342,7 +347,7 @@ sdk::Inspection SegaTilemapModel::inspect() const {
     const megadrive::TileWord tile = megadrive::decodeTileWord(word);
     sdk::Inspection inspection;
     inspection.kicker = tr("Name table cell");
-    inspection.title = QStringLiteral("Cell %1 · %2, %3").arg(cell_).arg(cell_ % 12).arg(cell_ / 12);
+    inspection.title = tr("Cell %1 · %2, %3").arg(cell_).arg(cell_ % 12).arg(cell_ / 12);
     sdk::Field wordField;
     wordField.key = QStringLiteral("word");
     wordField.label = tr("Word");

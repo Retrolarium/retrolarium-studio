@@ -5,6 +5,8 @@
 
 #include <QPainter>
 
+#include <algorithm>
+
 namespace rl::flicky {
 
 namespace {
@@ -204,8 +206,9 @@ sdk::Inspection ScreenModel::inspect() const {
         x.key = QStringLiteral("x");
         x.label = QStringLiteral("X");
         x.type = sdk::Field::Type::Integer;
-        x.minimum = 0;
-        x.maximum = 0x1FF;
+        // The VDP's nine-bit position, shown from the screen's left edge.
+        x.minimum = -128;
+        x.maximum = 0x1FF - 128;
         x.value = s->position.x() - 128;
         x.hint = QStringLiteral("px");
         sdk::Field y = x;
@@ -232,7 +235,7 @@ sdk::Inspection ScreenModel::inspect() const {
     inspection.title = label(selected_);
     sdk::Field text;
     text.key = QStringLiteral("text");
-    text.label = QStringLiteral("Text");
+    text.label = tr("Text");
     text.type = sdk::Field::Type::Text;
     text.value = s.textValue(selected_);
     text.hint = QStringLiteral("%1 / %2").arg(s.textValue(selected_).size()).arg(s.textCapacity(selected_));
@@ -270,8 +273,8 @@ sdk::Inspection ScreenModel::inspect() const {
 bool ScreenModel::setField(const QString& key, const QVariant& value, QString* error) {
     if (const auto s = sprite(selected_); s && (key == QLatin1String("x") || key == QLatin1String("y"))) {
         QPoint position = s->position;
-        if (key == QLatin1String("x")) position.setX(value.toInt() + 128);
-        else position.setY(value.toInt() + 128);
+        if (key == QLatin1String("x")) position.setX(std::clamp(value.toInt() + 128, 0, 0x1FF));
+        else position.setY(std::clamp(value.toInt() + 128, 0, 0x1FF));
         const QString group = s->group;
         const int index = s->index;
         return session_->editSemantics(tr("Move %1").arg(spriteLabel(group, index)),

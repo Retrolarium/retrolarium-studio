@@ -90,7 +90,7 @@ class SolomonPlaytestModel final : public sdk::EmulatorModel {
 public:
     explicit SolomonPlaytestModel(SolomonSession* session);
 
-    QString title() const override { return QStringLiteral("Build and run"); }
+    QString title() const override { return tr("Build and run"); }
     sdk::Inspection inspect() const override;
     QSize screenSize() const override { return {256, 240}; }
     QString coreLabel() const override;

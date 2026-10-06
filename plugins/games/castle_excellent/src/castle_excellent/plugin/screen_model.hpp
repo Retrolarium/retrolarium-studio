@@ -99,7 +99,7 @@ class CastleScreenTextModel final : public sdk::TableModel {
 public:
     explicit CastleScreenTextModel(CastleSession* session);
 
-    QString title() const override { return QStringLiteral("Ending & messages"); }
+    QString title() const override { return tr("Ending & messages"); }
     sdk::Inspection inspect() const override;
 
     QVector<sdk::TableColumn> columns() const override;

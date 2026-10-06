@@ -114,7 +114,7 @@ QVector<nes::SoundEffect> soundEffects() {
             {QStringLiteral("castle:3"), rlTr("castle", "Item collected"),
              rlTr("castle", "Start routine $C272"), tuned},
             {QStringLiteral("castle:4"), rlTr("castle", "Flame"), rlTr("castle", "Start routine $C29A"), tuned},
-            {QStringLiteral("castle:5"), QStringLiteral("Cell opens"),
+            {QStringLiteral("castle:5"), rlTr("castle", "Cell opens"),
              rlTr("castle", "Start routine $C2BD"), QString()}};
 }
 
@@ -151,7 +151,7 @@ std::unique_ptr<CastleSession> CastleSession::open(const sdk::ProjectFile& proje
         }
         session->saved_ = session->state_;
         const nes::Bundle& g = session->state_.graphics;
-        session->art_.chr = tr("chr-bank-%1").arg(session->state_.levels.chrBank());
+        session->art_.chr = QStringLiteral("chr-bank-%1").arg(session->state_.levels.chrBank());
         if (!g.contains(session->art_.chr)) {
             session->art_.chr = first(g, "nes.chr-2bpp.v1");
         }
@@ -278,7 +278,7 @@ QVector<sdk::DocumentGroup> CastleSession::documents(const QString& kind) const 
             if (id == QLatin1String("screen-palettes")) continue;
             const bool dirty = state_.graphics.tableValues(id) != saved_.graphics.tableValues(id);
             group.documents << entry(id, id == QLatin1String("room-palettes") ? tr("Rooms") : id,
-                                     tr("%1 colours").arg(state_.graphics.tableValues(id).size()), dirty);
+                                     tr("%n colours", nullptr, state_.graphics.tableValues(id).size()), dirty);
         }
         groups << group;
         if (state_.graphics.contains(QStringLiteral("screen-palettes"))) {
@@ -369,7 +369,7 @@ QVector<sdk::DocumentGroup> CastleSession::documents(const QString& kind) const 
             group.documents << entry(QStringLiteral("demo"), tr("Title demo"), tr("not added yet"));
         } else {
             group.documents << entry(QStringLiteral("demo"), tr("Title demo"),
-                                     tr("%1 steps").arg(state_.demo.value(QStringLiteral("steps")).toArray().size()),
+                                     tr("%n steps", nullptr, state_.demo.value(QStringLiteral("steps")).toArray().size()),
                                      state_.demo != saved_.demo);
         }
         groups << group;

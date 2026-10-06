@@ -51,7 +51,7 @@ const SolomonPainter::Bank& SolomonPainter::bank(int index) const {
     auto found = banks_.find(index);
     if (found == banks_.end()) {
         Bank b;
-        const QString id = rlTr("solomon", "chr-bank-%1").arg(index);
+        const QString id = QStringLiteral("chr-bank-%1").arg(index);
         if (state_->graphics.contains(id)) {
             b.pixels = state_->graphics.allPixels(id);
         }

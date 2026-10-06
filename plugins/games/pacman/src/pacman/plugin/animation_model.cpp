@@ -198,7 +198,7 @@ QVector<sdk::CompositionFrame> PacmanAnimationModel::frames() const {
         f.id = QString::number(i);
         f.label = list.at(i).alternate ? tr("Alt %1").arg(list.at(i).index)
                                        : tr("Frame %1").arg(list.at(i).index);
-        f.detail = tr("%1 ticks").arg(list.at(i).ticks);
+        f.detail = tr("%n ticks", nullptr, list.at(i).ticks);
         result << f;
     }
     return result;
@@ -325,7 +325,7 @@ sdk::Inspection PacmanAnimationModel::inspect() const {
         inspection.title = title();
         sdk::Field count;
         count.key = QStringLiteral("frames");
-        count.label = QStringLiteral("Frames");
+        count.label = tr("Frames");
         count.value = QString::number(animation().frames.size());
         sdk::Field shown;
         shown.key = QStringLiteral("frame");

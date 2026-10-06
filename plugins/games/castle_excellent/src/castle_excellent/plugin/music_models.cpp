@@ -275,7 +275,7 @@ sdk::Inspection CastleMusicModel::inspect() const {
         sdk::Field length;
         length.key = QStringLiteral("length");
         length.label = tr("Length");
-        length.value = tr("%1 frames").arg(note.length);
+        length.value = tr("%n frames", nullptr, note.length);
         length.monospace = true;
         sdk::Field mml;
         mml.key = QStringLiteral("mml");

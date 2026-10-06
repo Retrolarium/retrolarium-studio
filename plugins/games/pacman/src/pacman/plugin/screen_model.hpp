@@ -92,7 +92,7 @@ class PacmanTextModel final : public sdk::TableModel {
 public:
     explicit PacmanTextModel(PacmanSession* session);
 
-    QString title() const override { return QStringLiteral("Game text"); }
+    QString title() const override { return tr("Game text"); }
     sdk::Inspection inspect() const override;
 
     QVector<sdk::TableColumn> columns() const override;

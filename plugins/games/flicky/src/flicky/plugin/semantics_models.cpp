@@ -309,7 +309,7 @@ sdk::Inspection TextModel::inspect() const {
     inspection.title = id;
     sdk::Field text;
     text.key = QStringLiteral("text");
-    text.label = QStringLiteral("Text");
+    text.label = tr("Text");
     text.type = sdk::Field::Type::Text;
     text.value = value;
     text.hint = tr("max %1").arg(capacity);
@@ -331,7 +331,7 @@ sdk::Inspection TextModel::inspect() const {
     }
     inspection.engineTag = QStringLiteral("flicky.semantics.v1");
     inspection.engine = {{tr("Id"), id},
-                         {tr("Capacity"), tr("%1 bytes").arg(capacity)},
+                         {tr("Capacity"), tr("%n bytes", nullptr, capacity)},
                          {tr("Saved"), session_->savedSemantics().textValue(id)},
                          {tr("At open"), session_->semantics().baselineTextValue(id)}};
     return inspection;

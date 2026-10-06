@@ -143,9 +143,17 @@ QVector<sdk::ViewOption> CastleSpriteModel::viewOptions() const {
     return {palette};
 }
 
+int CastleSpriteModel::paletteNumber(const QString& label) {
+    // The whole label: a translation may place the number anywhere.
+    for (int p = 0; p < 4; ++p) {
+        if (label == tr("SPR %1").arg(p)) return p;
+    }
+    return 0;
+}
+
 void CastleSpriteModel::setViewOption(const QString& key, const QString& value) {
     if (key == QLatin1String("palette")) {
-        libraryPalette_ = std::clamp(value.section(QLatin1Char(' '), 1).toInt(), 0, 3);
+        libraryPalette_ = paletteNumber(value);
         emit contentChanged();
         emit selectionChanged();
     }
@@ -302,7 +310,7 @@ bool CastleSpriteModel::setField(const QString& key, const QVariant& value, QStr
     switch (key.at(0).toLatin1()) {
     case 't': tile = std::clamp(value.toInt(), 0, 255); break;
     case 'p':
-        attributes = (attributes & ~3) | std::clamp(value.toString().section(QLatin1Char(' '), 1).toInt(), 0, 3);
+        attributes = (attributes & ~3) | paletteNumber(value.toString());
         break;
     case 'f': {
         const int flip = std::max(0, flipNames().indexOf(value.toString()));

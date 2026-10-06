@@ -15,7 +15,7 @@ class CastleTextModel final : public sdk::TableModel {
 public:
     CastleTextModel(CastleSession* session, const QString& resource);
 
-    QString title() const override { return QStringLiteral("Menu text"); }
+    QString title() const override { return tr("Menu text"); }
     sdk::Budget budget() const override;
     sdk::Inspection inspect() const override;
     bool setField(const QString& key, const QVariant& value, QString* error) override;
@@ -55,7 +55,7 @@ class CastleSfxModel final : public sdk::TableModel {
 public:
     CastleSfxModel(CastleSession* session, const QString& resource);
 
-    QString title() const override { return QStringLiteral("Sound effect parameters"); }
+    QString title() const override { return tr("Sound effect parameters"); }
     sdk::Inspection inspect() const override;
 
     QVector<sdk::TableColumn> columns() const override;
@@ -81,7 +81,7 @@ class CastlePlaytestModel final : public sdk::EmulatorModel {
 public:
     explicit CastlePlaytestModel(CastleSession* session);
 
-    QString title() const override { return QStringLiteral("Build and run"); }
+    QString title() const override { return tr("Build and run"); }
     sdk::Inspection inspect() const override;
     QSize screenSize() const override { return {256, 240}; }
     QString coreLabel() const override { return QStringLiteral("MAME · nes"); }

@@ -59,7 +59,11 @@ protected:
 
 private:
     sdk::TileModel* model_;
+    void renderNow();
+
     QImage image_;  // all tiles at 1x, 16 per row
+    // A stroke changes the bank once per pixel: rebuild once after them.
+    bool renderPending_ = false;
 };
 
 // The selected tile as a grid of large pixels.

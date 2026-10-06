@@ -248,7 +248,12 @@ bool CastleAnimationModel::setField(const QString& key, const QVariant& value, Q
     if (key == QLatin1String("tile")) {
         tile = std::clamp(value.toInt(), 0, 255);
     } else if (key == QLatin1String("palette")) {
-        attributes = (attributes & ~3) | std::clamp(value.toString().section(QLatin1Char(' '), 1).toInt(), 0, 3);
+        // The whole label: a translation may place the number anywhere.
+        int palette = 0;
+        for (int p = 0; p < 4; ++p) {
+            if (value.toString() == tr("SPR %1").arg(p)) palette = p;
+        }
+        attributes = (attributes & ~3) | palette;
     } else if (key == QLatin1String("flip")) {
         static const QStringList kFlips{QStringLiteral("None"), tr("Horizontal"), tr("Vertical"),
                                         tr("Both")};
@@ -295,7 +300,7 @@ sdk::Inspection CastleAnimationModel::inspect() const {
         inspection.title = title();
         sdk::Field count;
         count.key = QStringLiteral("frames");
-        count.label = QStringLiteral("Frames");
+        count.label = tr("Frames");
         count.value = QString::number(animation().frames.size());
         inspection.fields = {count};
         inspection.note = animation().group == QLatin1String("Player")

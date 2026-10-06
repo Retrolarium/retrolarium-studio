@@ -340,3 +340,14 @@ About; `theme/brand.hpp` hands them out for the current theme.
 `resources/fonts` bundles Barlow, Barlow Condensed and IBM Plex Mono from
 [google/fonts](https://github.com/google/fonts) under the SIL Open Font
 License 1.1 (`OFL-*.txt`).
+
+## License
+
+Retrolarium Studio is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by the
+Free Software Foundation, either version 3 of the License, or (at your
+option) any later version (`GPL-3.0-or-later`, text in `LICENSE`). It comes
+without any warranty.
+
+The Windows package carries other components under their own licenses;
+`THIRD-PARTY.md` lists them and where their texts are in the package.

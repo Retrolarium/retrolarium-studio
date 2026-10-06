@@ -374,7 +374,10 @@ sdk::Library DoraemonScreenModel::sheet() const {
         sdk::LibraryItem item;
         item.id = QStringLiteral("tile:%1").arg(tile);
         item.label = nes::hex(tile);
-        item.icon = session_->painter().shellTile(tile, colours, shell::patternTable(screen_));
+        // The selected cell's row: the help screens' top rows draw from the other table.
+        item.icon = session_->painter().shellTile(tile, colours,
+                                                  cell_ >= 0 ? shell::patternTable(screen_, cell_ / 32)
+                                                             : shell::patternTable(screen_));
         result.items << item;
     }
     return result;

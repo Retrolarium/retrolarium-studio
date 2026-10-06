@@ -353,6 +353,9 @@ bool SolomonRoomModel::moveTo(SolomonRooms& r, const QString& id, QPoint cell) c
     const int c = parts.value(1).toInt();
     if (c < 0 || c >= commands.size()) return false;
     QJsonObject command = commands.at(c).toObject();
+    // A selection from before an edit may name another command now: the
+    // list's terminator among them.
+    if (command.value(QStringLiteral("kind")).toString() != parts.first()) return false;
     if (parts.first() == QLatin1String("repeat")) {
         QJsonArray positions = command.value(QStringLiteral("positions")).toArray();
         const int p = parts.value(2).toInt();
@@ -460,11 +463,16 @@ bool SolomonRoomModel::removeObject(const QString& id, QString* error) {
         const int c = parts.value(1).toInt();
         if (c < 0 || c >= commands.size()) return false;
         QJsonObject command = commands.at(c).toObject();
+        // A selection from before an edit may name another command now: the
+        // list's terminator among them.
+        if (command.value(QStringLiteral("kind")).toString() != parts.first()) return false;
         if (parts.first() == QLatin1String("item")) {
             commands.removeAt(c);
         } else {
             QJsonArray positions = command.value(QStringLiteral("positions")).toArray();
-            positions.removeAt(parts.value(2).toInt());
+            const int p = parts.value(2).toInt();
+            if (p < 0 || p >= positions.size()) return false;
+            positions.removeAt(p);
             if (positions.size() == 1) {
                 // One left: a plain item.
                 QJsonObject item;
@@ -660,7 +668,7 @@ sdk::Inspection SolomonRoomModel::inspect() const {
                                "mirrors and Wizard's start are moved, not deleted.");
     inspection.engineTag = QStringLiteral("solomon.rooms@3");
     inspection.engine = {{tr("Palette group"), QString::number(group())},
-                         {tr("Item list"), tr("%1 bytes").arg(SolomonRooms::itemStreamBytes(r.itemCommands(room_)))}};
+                         {tr("Item list"), tr("%n bytes", nullptr, SolomonRooms::itemStreamBytes(r.itemCommands(room_)))}};
     return inspection;
 }
 

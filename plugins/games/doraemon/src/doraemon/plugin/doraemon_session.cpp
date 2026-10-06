@@ -310,14 +310,14 @@ QVector<sdk::DocumentGroup> DoraemonSession::documents(const QString& kind) cons
                     }
                     group(worldLabel(World::Two)).documents
                         << entry(QStringLiteral("route/%1").arg(r), kRoutes.at(r),
-                                 panels.isEmpty() ? QString() : tr("%1 screens").arg(panels.size()), routeDirty);
+                                 panels.isEmpty() ? QString() : tr("%n screens", nullptr, panels.size()), routeDirty);
                 }
             }
         }
     } else if (kind == QLatin1String("graphics")) {
         static const char* const kBanks[4] = {"World 1", "World 2", "World 3", "Title and ending"};
         for (int bank = 0; bank < 4; ++bank) {
-            const QString id = tr("chr-bank-%1").arg(bank);
+            const QString id = QStringLiteral("chr-bank-%1").arg(bank);
             if (!state_.bundle.contains(id)) continue;
             sdk::DocumentGroup& g = group(tr("Bank %1 · %2").arg(bank).arg(QLatin1String(kBanks[bank])));
             for (int half = 0; half < 2; ++half) {
@@ -349,7 +349,7 @@ QVector<sdk::DocumentGroup> DoraemonSession::documents(const QString& kind) cons
             for (const QString& id : paletteIds(state_.bundle, w)) {
                 group(worldLabel(w)).documents
                     << entry(id, tr("Preset %1").arg(presetOf(id).second),
-                             tr("%1 colours").arg(state_.bundle.tableValues(id).size()),
+                             tr("%n colours", nullptr, state_.bundle.tableValues(id).size()),
                              state_.bundle.tableValues(id) != saved_.bundle.tableValues(id));
             }
         }
@@ -413,7 +413,7 @@ QVector<sdk::DocumentGroup> DoraemonSession::documents(const QString& kind) cons
         group(tr("Attract mode")).documents
             << entry(QStringLiteral("world1"), tr("World 1 demo"),
                      state_.demo.isEmpty() ? tr("not added yet")
-                                           : tr("%1 steps").arg(state_.demo.value(QStringLiteral("steps")).toArray().size()),
+                                           : tr("%n steps", nullptr, state_.demo.value(QStringLiteral("steps")).toArray().size()),
                      !state_.demo.isEmpty() && state_.demo != saved_.demo);
     } else if (kind == QLatin1String("playtest")) {
         group(tr("Session")).documents
@@ -825,6 +825,8 @@ void DoraemonSession::upgradeDocuments(const QString& kind, const QString& docum
             report(sdk::Severity::Error, kind, QString::fromUtf8(e.what()));
             return;
         }
+        // A new revision: the room painter and the music hash are kept per revision.
+        revision_ = nextRevision_++;
         report(sdk::Severity::Info, kind, tr("Added the documents and resources this kit edits to the project."));
         emit contentChanged();
         for (const sdk::Kind& k : kinds()) emit documentsChanged(k.id);

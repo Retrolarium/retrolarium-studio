@@ -15,7 +15,7 @@ class SmbTextModel final : public sdk::TableModel {
 public:
     explicit SmbTextModel(SmbSession* session);
 
-    QString title() const override { return QStringLiteral("Game text"); }
+    QString title() const override { return tr("Game text"); }
     sdk::Budget budget() const override;
     sdk::Inspection inspect() const override;
     bool setField(const QString& key, const QVariant& value, QString* error) override;

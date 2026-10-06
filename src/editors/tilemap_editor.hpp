@@ -86,6 +86,10 @@ private:
     QString objectAt(QPoint cell) const;
     void paintLine(QPoint from, QPoint to, int value);
     void updateCursor();
+    // The widget area a hover outline at `cell` covers.
+    QRect hoverRect(QPoint cell) const;
+    void setHoverCell(QPoint cell);
+    void renderNow();
 
     sdk::TileMapModel* model_;
     QImage image_;
@@ -96,7 +100,10 @@ private:
     QString tool_ = QStringLiteral("select");
 
     QPoint hoverCell_{-1, -1};
+    // A stroke paints many cells, each a contentChanged: render once after them.
+    bool renderPending_ = false;
     bool painting_ = false;
+    Qt::MouseButton paintButton_ = Qt::NoButton;
     int paintValue_ = 0;
     QPoint lastPaintCell_;
     QString dragging_;

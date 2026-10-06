@@ -95,7 +95,7 @@ class EnvelopeModel final : public sdk::TableModel {
 public:
     explicit EnvelopeModel(FlickySession* session);
 
-    QString title() const override { return QStringLiteral("Priority & envelopes"); }
+    QString title() const override { return tr("Priority & envelopes"); }
     sdk::Inspection inspect() const override;
     QString statusText() const override;
 

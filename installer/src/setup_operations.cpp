@@ -36,6 +36,9 @@ const QString kSettingsKey = QStringLiteral("Software\\Retrolarium\\Retrolarium 
 const QString kProjectType = QStringLiteral("Retrolarium.Project");
 // What the studio writes in the user's MAME beside it: kept across updates.
 const QStringList kKeptPaths{QStringLiteral("mame/roms"), QStringLiteral("mame/cfg"), QStringLiteral("mame/nvram")};
+// The installation's own top-level entries, one name per line: updating and
+// uninstalling remove only these and leave anything else the user put there.
+const QString kInstallListName = QStringLiteral("installed-files.txt");
 
 QString nativePath(const QString& path) {
     return QDir::toNativeSeparators(QDir::cleanPath(path));
@@ -74,6 +77,68 @@ QString shellFolder(int csidl) {
 bool inside(const QString& path, const QString& directory) {
     const QString root = QDir::cleanPath(QDir(directory).absolutePath()) + QLatin1Char('/');
     return QDir::cleanPath(QDir::fromNativeSeparators(path)).startsWith(root, Qt::CaseInsensitive);
+}
+
+// Deletes `path` and, for a directory, what is in it. A junction or symbolic
+// link is removed itself, never followed: QDir::removeRecursively would empty
+// the folder it points to.
+bool removeTree(const QString& path) {
+    const std::wstring wide = nativePath(path).toStdWString();
+    const DWORD attributes = GetFileAttributesW(wide.c_str());
+    if (attributes == INVALID_FILE_ATTRIBUTES) return GetLastError() == ERROR_FILE_NOT_FOUND;
+    if (attributes & FILE_ATTRIBUTE_READONLY) SetFileAttributesW(wide.c_str(), attributes & ~FILE_ATTRIBUTE_READONLY);
+    if (!(attributes & FILE_ATTRIBUTE_DIRECTORY)) return DeleteFileW(wide.c_str()) != 0;
+    bool removed = true;
+    if (!(attributes & FILE_ATTRIBUTE_REPARSE_POINT)) {
+        const QFileInfoList entries =
+            QDir(path).entryInfoList(QDir::AllEntries | QDir::Hidden | QDir::System | QDir::NoDotAndDotDot);
+        for (const QFileInfo& entry : entries) removed = removeTree(entry.absoluteFilePath()) && removed;
+    }
+    return RemoveDirectoryW(wide.c_str()) != 0 && removed;
+}
+
+QStringList topLevelEntries(const QString& directory) {
+    return QDir(directory).entryList(QDir::AllEntries | QDir::Hidden | QDir::System | QDir::NoDotAndDotDot);
+}
+
+// The names an installation lists as its own; empty when it has no list
+// (made before setup wrote one).
+QStringList installList(const QString& directory) {
+    QFile file(QDir(directory).filePath(kInstallListName));
+    if (!file.open(QIODevice::ReadOnly)) return {};
+    QStringList names;
+    for (const QByteArray& line : file.readAll().split('\n')) {
+        const QString name = QString::fromUtf8(line).trimmed();
+        // One plain name each: nothing that reaches outside the directory.
+        if (name.isEmpty() || name == QLatin1String(".") || name == QLatin1String("..") ||
+            name.contains(QLatin1Char('/')) || name.contains(QLatin1Char('\\')) || name.contains(QLatin1Char(':'))) {
+            continue;
+        }
+        names << name;
+    }
+    return names;
+}
+
+bool writeInstallList(const QString& directory, const PayloadManifest& manifest) {
+    QStringList names{kUninstallerName, kInstallListName};
+    for (const PayloadEntry& entry : manifest.files) {
+        const QString name = entry.path.section(QLatin1Char('/'), 0, 0);
+        if (!names.contains(name, Qt::CaseInsensitive)) names << name;
+    }
+    QFile file(QDir(directory).filePath(kInstallListName));
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate)) return false;
+    const QByteArray text = names.join(QLatin1Char('\n')).toUtf8() + '\n';
+    return file.write(text) == text.size();
+}
+
+bool listed(const QStringList& names, const QString& name) {
+    return names.contains(name, Qt::CaseInsensitive);
+}
+
+// Windows' Installed Apps entry names another installation that still exists.
+bool registeredElsewhere(const QString& directory) {
+    const QString registered = installedDirectory();
+    return !registered.isEmpty() && QDir(registered).exists() && !sameFile(registered, directory);
 }
 
 bool createShortcut(const QString& shortcutPath, const QString& target, const QString& arguments,
@@ -119,9 +184,9 @@ QString startMenuDirectory() {
 void removeShortcuts() {
     const QString menu = startMenuDirectory();
     if (!menu.isEmpty()) {
-        // Both languages' names, so a reinstall in the other one leaves none behind.
-        for (const QString& name : {kProduct + QStringLiteral(".lnk"), QStringLiteral("Uninstall Retrolarium Studio.lnk"),
-                                    QStringLiteral("Удалить Retrolarium Studio.lnk")}) {
+        // The folder is the studio's own: every shortcut in it goes, so one
+        // named in another setup language leaves none behind.
+        for (const QString& name : QDir(menu).entryList({QStringLiteral("*.lnk")}, QDir::Files | QDir::Hidden)) {
             QFile::remove(QDir(menu).filePath(name));
         }
         QDir().rmdir(menu);
@@ -161,6 +226,10 @@ bool registerInstallation(const QString& directory, const QString& version, quin
 }
 
 void unregisterInstallation(const QString& directory) {
+    if (registeredElsewhere(directory)) {
+        // An earlier installation elsewhere: Windows knows the current one.
+        return;
+    }
     deleteKey(kUninstallKey);
     // The association goes only when it still opens this installation.
     const QString command = registryString(kProjectTypeKey + QStringLiteral("\\shell\\open\\command"), QString());
@@ -222,7 +291,9 @@ QString desktopShortcutPath() {
 }
 
 QString gamesDirectory() {
-    return QDir(shellFolder(CSIDL_PERSONAL)).filePath(QStringLiteral("Retrolarium"));
+    // Never a relative path: removing the games would start from the current directory.
+    const QString documents = shellFolder(CSIDL_PERSONAL);
+    return documents.isEmpty() ? QString() : QDir(documents).filePath(QStringLiteral("Retrolarium"));
 }
 
 QStringList runningPrograms(const QString& directory) {
@@ -255,7 +326,9 @@ QStringList runningPrograms(const QString& directory) {
 bool replaceableDirectory(const QString& directory) {
     const QDir dir(directory);
     if (!dir.exists() || dir.isEmpty(QDir::AllEntries | QDir::Hidden | QDir::NoDotAndDotDot)) return true;
-    return QFile::exists(dir.filePath(kStudioName)) && QFile::exists(dir.filePath(kUninstallerName));
+    // Either program is enough: repairing is for an installation missing one.
+    return !dir.isRoot() && (QFile::exists(dir.filePath(kInstallListName)) || QFile::exists(dir.filePath(kStudioName)) ||
+                             QFile::exists(dir.filePath(kUninstallerName)));
 }
 
 bool install(const Request& request, const Progress& progress, QString* error) {
@@ -265,7 +338,7 @@ bool install(const Request& request, const Progress& progress, QString* error) {
         if (error) *error = rlTr("setup", "Retrolarium Studio is still running. Close it and try again.");
         return false;
     }
-    if (!replaceableDirectory(target)) {
+    if (QDir(target).isRoot() || !replaceableDirectory(target)) {
         if (error) *error = rlTr("setup", "%1 holds other files. Choose an empty folder.").arg(nativePath(target));
         return false;
     }
@@ -291,12 +364,27 @@ bool install(const Request& request, const Progress& progress, QString* error) {
                                     QDir(staging.path()).filePath(kUninstallerName), error)) {
         return false;
     }
+    if (!writeInstallList(staging.path(), request.manifest)) {
+        if (error) *error = rlTr("setup", "Could not move the new files into place.");
+        return false;
+    }
+    const QStringList ours = installList(staging.path());
     quint64 bytes = request.manifest.stubSize;
     for (const PayloadEntry& entry : request.manifest.files) bytes += entry.size;
 
     if (progress) progress(80, rlTr("setup", "Replacing the earlier version"));
     const bool update = QDir(target).exists();
     const QString previous = target + QStringLiteral(".previous-%1").arg(GetCurrentProcessId());
+    // What the user put in the old installation moves into the new one: the
+    // old list says what was the studio's; without one, whatever the new
+    // version does not ship stays.
+    QStringList carried;
+    if (update) {
+        const QStringList old = installList(target);
+        for (const QString& name : topLevelEntries(target)) {
+            if (!listed(ours, name) && !listed(old, name)) carried << name;
+        }
+    }
     if (update) {
         keepUserFiles(target, staging.path());
         if (!QDir().rename(target, previous)) {
@@ -306,13 +394,13 @@ bool install(const Request& request, const Progress& progress, QString* error) {
     }
     staging.setAutoRemove(false);
     if (!QDir().rename(staging.path(), target)) {
-        QDir(staging.path()).removeRecursively();
+        removeTree(staging.path());
         if (update) QDir().rename(previous, target);
         if (error) *error = rlTr("setup", "Could not move the new files into place.");
         return false;
     }
     auto rollback = [&] {
-        QDir(target).removeRecursively();
+        removeTree(target);
         if (update) QDir().rename(previous, target);
     };
 
@@ -338,7 +426,14 @@ bool install(const Request& request, const Progress& progress, QString* error) {
     QSettings studioSettings(writable(kSettingsKey), QSettings::NativeFormat);
     studioSettings.setValue(QStringLiteral("ui/language"), language());
 
-    if (update) QDir(previous).removeRecursively();
+    if (update) {
+        bool kept = true;
+        for (const QString& name : carried) {
+            kept = QDir().rename(QDir(previous).filePath(name), QDir(target).filePath(name)) && kept;
+        }
+        // Something of the user's that could not move stays in the old folder.
+        if (kept) removeTree(previous);
+    }
     if (progress) progress(100, rlTr("setup", "Retrolarium Studio is installed"));
     return true;
 }
@@ -349,13 +444,26 @@ bool uninstall(const Request& request, const Progress& progress, QString* error,
         if (error) *error = rlTr("setup", "Retrolarium Studio is still running. Close it and try again.");
         return false;
     }
+    // Only an installation's own files are removed; a folder without its
+    // list must at least hold one of its programs.
+    QStringList ours = installList(directory);
+    const bool hasList = !ours.isEmpty();
+    if (request.installDirectory.trimmed().isEmpty() || QDir(directory).isRoot() ||
+        (!hasList && !QFile::exists(QDir(directory).filePath(kStudioName)) &&
+         !QFile::exists(QDir(directory).filePath(kUninstallerName)))) {
+        if (error) *error = rlTr("setup", "Could not find the installed studio.");
+        return false;
+    }
+    if (!hasList) ours = topLevelEntries(directory);
     if (progress) progress(10, rlTr("setup", "Removing shortcuts"));
-    removeShortcuts();
+    // Shortcuts and the Windows entry belong to the installation Windows
+    // knows; an older copy elsewhere leaves them alone.
+    if (!registeredElsewhere(directory)) removeShortcuts();
     unregisterInstallation(directory);
 
     const QString self = QCoreApplication::applicationFilePath();
     const QFileInfoList entries =
-        QDir(directory).entryInfoList(QDir::AllEntries | QDir::Hidden | QDir::NoDotAndDotDot);
+        QDir(directory).entryInfoList(QDir::AllEntries | QDir::Hidden | QDir::System | QDir::NoDotAndDotDot);
     QStringList left;
     for (int i = 0; i < entries.size(); ++i) {
         const QFileInfo& entry = entries.at(i);
@@ -363,9 +471,7 @@ bool uninstall(const Request& request, const Progress& progress, QString* error,
             progress(20 + i * 60 / qMax(1, entries.size()), rlTr("setup", "Removing %1").arg(entry.fileName()));
         }
         if (sameFile(entry.absoluteFilePath(), self)) continue;
-        const bool removed = entry.isDir() ? QDir(entry.absoluteFilePath()).removeRecursively()
-                                           : QFile::remove(entry.absoluteFilePath());
-        if (!removed) left << entry.fileName();
+        if (!listed(ours, entry.fileName()) || !removeTree(entry.absoluteFilePath())) left << entry.fileName();
     }
     if (!left.isEmpty() && warning) {
         *warning = rlTr("setup", "Some files stayed in %1: %2. Delete them by hand.")
@@ -373,7 +479,7 @@ bool uninstall(const Request& request, const Progress& progress, QString* error,
     }
     if (request.removeUserData) {
         if (progress) progress(90, rlTr("setup", "Removing your games and settings"));
-        QDir(gamesDirectory()).removeRecursively();
+        if (!gamesDirectory().isEmpty()) removeTree(gamesDirectory());
         deleteKey(kSettingsKey);
         // And the organisation's key, while nothing else is under it.
         RegDeleteKeyW(HKEY_CURRENT_USER, L"Software\\Retrolarium");

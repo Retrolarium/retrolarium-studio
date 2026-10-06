@@ -20,7 +20,7 @@ public:
     explicit DoraemonDemoModel(DoraemonSession* session);
     ~DoraemonDemoModel() override;
 
-    QString title() const override { return QStringLiteral("World 1 demo"); }
+    QString title() const override { return tr("World 1 demo"); }
     sdk::Budget budget() const override;
     sdk::Inspection inspect() const override;
     QString startPoint() const override;

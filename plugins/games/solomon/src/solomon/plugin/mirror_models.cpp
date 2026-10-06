@@ -57,7 +57,7 @@ QString mirrorUsers(const SolomonSession* session, const QString& field, int ind
         }
         if (!mirrors.isEmpty()) users << QString::number(rooms.roomNumber(r));
     }
-    return users.isEmpty() ? rlTr("solomon", "no room") : rlTr("solomon", "rooms ") + users.join(QStringLiteral(", "));
+    return users.isEmpty() ? rlTr("solomon", "no room") : rlTr("solomon", "rooms %1").arg(users.join(QStringLiteral(", ")));
 }
 
 // ---------------------------------------------------------------- enemy sets
@@ -69,7 +69,7 @@ SolomonMirrorSetsModel::SolomonMirrorSetsModel(SolomonSession* session) : TableM
 QVector<sdk::TableColumn> SolomonMirrorSetsModel::columns() const {
     sdk::TableColumn set;
     set.key = QStringLiteral("set");
-    set.label = QStringLiteral("Set");
+    set.label = tr("Set");
     set.width = 60;
     set.muted = true;
     sdk::TableColumn types;

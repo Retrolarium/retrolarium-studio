@@ -14,7 +14,7 @@ class SolomonMirrorSetsModel final : public sdk::TableModel {
 public:
     explicit SolomonMirrorSetsModel(SolomonSession* session);
 
-    QString title() const override { return QStringLiteral("Mirror enemy sets"); }
+    QString title() const override { return tr("Mirror enemy sets"); }
     sdk::Budget budget() const override;
     sdk::Inspection inspect() const override;
 
@@ -38,7 +38,7 @@ class SolomonSchedulesModel final : public sdk::TableModel {
 public:
     explicit SolomonSchedulesModel(SolomonSession* session);
 
-    QString title() const override { return QStringLiteral("Mirror drop schedules"); }
+    QString title() const override { return tr("Mirror drop schedules"); }
     sdk::Inspection inspect() const override;
 
     QVector<sdk::TableColumn> columns() const override;

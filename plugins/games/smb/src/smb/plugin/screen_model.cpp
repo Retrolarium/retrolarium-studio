@@ -347,7 +347,7 @@ QString SmbScreenModel::writeLabel(int c) const {
         text = set().encoding.decode(codes).trimmed();
     }
     const QString shape = command.repeat ? tr("%1x same").arg(command.length)
-                                         : tr("%1 tiles").arg(command.length);
+                                         : tr("%n tiles", nullptr, command.length);
     return text.isEmpty() || text.contains(QLatin1Char('?')) ? tr("write %1 · %2").arg(c + 1).arg(shape)
                                                               : QStringLiteral("\"%1\"").arg(text);
 }
@@ -463,7 +463,12 @@ bool SmbScreenModel::setField(const QString& key, const QVariant& value, QString
         return editSet(tr("Edit text in %1").arg(title()),
                        [fieldKey, value](SmbScreenSet& s) {
                            for (const SmbScreenTextField& field : s.textFields) {
-                               if (field.key == fieldKey) s.setText(field, value.toString());
+                               if (field.key == fieldKey) {
+                                   // A copy: a text that grows replaces the set, fields and all.
+                                   const SmbScreenTextField target = field;
+                                   s.setText(target, value.toString());
+                                   break;
+                               }
                            }
                        },
                        error);
@@ -572,7 +577,7 @@ sdk::Inspection SmbScreenModel::inspect() const {
                              "the Patterns sheet and paint, or switch to Palettes to colour 16x16 blocks.");
         inspection.engine = {{tr("Resource"), resource_},
                              {tr("Name table"), hex(s.base, 4)},
-                             {tr("Capacity"), tr("%1 bytes").arg(s.capacity)}};
+                             {tr("Capacity"), tr("%n bytes", nullptr, s.capacity)}};
         return inspection;
     }
     const int x = cell_ % s.width;
@@ -580,7 +585,7 @@ sdk::Inspection SmbScreenModel::inspect() const {
     const QPoint writer = s.tileWriter(cell_);
     const QPoint attributeWriter = s.attributeWriter(s.attributeIndexOf(cell_));
     inspection.kicker = tr("Name table cell");
-    inspection.title = QStringLiteral("Cell %1, %2").arg(x).arg(y);
+    inspection.title = tr("Cell %1, %2").arg(x).arg(y);
     sdk::Field tile;
     tile.key = QStringLiteral("tile");
     tile.label = tr("Tile");
@@ -681,7 +686,7 @@ sdk::Inspection SmbScreenModel::inspectWrites() const {
     length.key = QStringLiteral("length");
     length.label = tr("Length");
     length.value = command.repeat ? tr("%1 cells, one tile repeated").arg(command.length)
-                                  : tr("%1 cells").arg(command.length);
+                                  : tr("%n cells", nullptr, command.length);
     sdk::Field bytes;
     bytes.key = QStringLiteral("bytes");
     bytes.label = tr("Bytes");

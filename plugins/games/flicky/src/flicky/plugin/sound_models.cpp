@@ -12,6 +12,7 @@
 #include <QSaveFile>
 
 #include <algorithm>
+#include <iterator>
 
 namespace rl::flicky {
 
@@ -551,10 +552,10 @@ bool FmVoiceModel::setCell(int row, int column, const QString& value, QString* e
     const int op = row % 4;
     bool ok = false;
     const int number = value.trimmed().toInt(&ok);
-    const int maximum = column < 4 ? kVoiceParameters[column - 2].maximum : kOperatorParameters[column - 4].maximum;
-    if (column < 2 || (column < 4 && op != 0)) {
+    if (column < 2 || (column < 4 && op != 0) || column >= 4 + int(std::size(kOperatorParameters))) {
         return TableModel::setCell(row, column, value, error);
     }
+    const int maximum = column < 4 ? kVoiceParameters[column - 2].maximum : kOperatorParameters[column - 4].maximum;
     if (!ok || number < 0 || number > maximum) {
         if (error) *error = tr("Use 0–%1.").arg(maximum);
         return false;

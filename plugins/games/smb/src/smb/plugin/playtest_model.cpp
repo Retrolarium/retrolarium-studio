@@ -27,25 +27,25 @@ void SmbPlaytestModel::play() {
 sdk::Inspection SmbPlaytestModel::inspect() const {
     const SmbStart start = session_->start();
     sdk::Inspection inspection;
-    inspection.kicker = QStringLiteral("Session");
+    inspection.kicker = tr("Session");
     inspection.title = startLabel();
     sdk::Field course;
     course.key = QStringLiteral("course");
-    course.label = QStringLiteral("Plays as");
-    course.value = QStringLiteral("World %1-%2").arg(start.world).arg(start.level);
+    course.label = tr("Plays as");
+    course.value = tr("World %1-%2").arg(start.world).arg(start.level);
     sdk::Field cell;
     cell.key = QStringLiteral("cell");
-    cell.label = QStringLiteral("Hero at");
-    cell.value = QStringLiteral("column %1, row %2").arg(start.cell.x()).arg(start.cell.y());
+    cell.label = tr("Hero at");
+    cell.value = tr("column %1, row %2").arg(start.cell.x()).arg(start.cell.y());
     cell.monospace = true;
     sdk::Field core;
     core.key = QStringLiteral("core");
-    core.label = QStringLiteral("Core");
+    core.label = tr("Core");
     core.value = coreLabel();
     inspection.fields = {course, cell, core};
-    inspection.note = QStringLiteral("Play from selected builds the ROM with the kit and starts MAME with Hero "
-                                     "where the level editor puts him; Play starts from power-on. Drag Hero "
-                                     "in Levels to move the start point.");
+    inspection.note = tr("Play from selected builds the ROM with the kit and starts MAME with Hero "
+                         "where the level editor puts him; Play starts from power-on. Drag Hero "
+                         "in Levels to move the start point.");
     inspection.engineTag = QStringLiteral("smb-point-playtest");
     return inspection;
 }

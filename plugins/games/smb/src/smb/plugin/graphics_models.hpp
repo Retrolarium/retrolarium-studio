@@ -38,6 +38,7 @@ public:
 private:
     int base() const { return background_ ? 256 : 0; }
     QStringList paletteChoices() const;
+    QString packetLabel(const QString& packet, int palette) const;
     bool writeTile(const QVector<quint8>& pixels, const QString& text, QString* error);
 
     SmbSession* session_;
@@ -87,7 +88,7 @@ class SmbPlayerPaletteModel final : public sdk::PaletteModel {
 public:
     explicit SmbPlayerPaletteModel(SmbSession* session);
 
-    QString title() const override { return QStringLiteral("Player palettes"); }
+    QString title() const override { return tr("Player palettes"); }
     sdk::Inspection inspect() const override;
     QString statusText() const override;
 

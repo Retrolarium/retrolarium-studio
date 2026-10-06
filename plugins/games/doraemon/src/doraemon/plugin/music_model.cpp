@@ -296,7 +296,7 @@ sdk::Inspection DoraemonMusicModel::inspect() const {
     sdk::Field length;
     length.key = QStringLiteral("length");
     length.label = tr("Length");
-    length.value = tr("%1 frames").arg(e.value(QStringLiteral("length")).toInt());
+    length.value = tr("%n frames", nullptr, e.value(QStringLiteral("length")).toInt());
     inspection.fields << length;
     inspection.note = tr("Durations are shared codes of the stream; notes keep their place.");
     return inspection;

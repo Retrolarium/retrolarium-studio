@@ -28,15 +28,16 @@ qint64 wavDuration(const QString& path) {
     const QByteArray head = file.read(4096);
     if (head.size() < 12 || !head.startsWith("RIFF") || head.mid(8, 4) != "WAVE") return 0;
     quint32 byteRate = 0;
-    for (int at = 12; at + 8 <= head.size();) {
-        const QByteArray id = head.mid(at, 4);
-        const quint32 size = le32(head, at + 4);
-        if (id == "fmt " && at + 16 <= head.size()) {
-            byteRate = le32(head, at + 16);
+    for (qint64 at = 12; at + 8 <= head.size();) {
+        const QByteArray id = head.mid(int(at), 4);
+        const quint32 size = le32(head, int(at) + 4);
+        if (id == "fmt " && at + 20 <= head.size()) {
+            byteRate = le32(head, int(at) + 16);
         } else if (id == "data") {
             return byteRate ? qint64(size) * 1000 / byteRate : 0;
         }
-        at += 8 + int(size + (size & 1));
+        // 64-bit, so a damaged chunk size ends the scan instead of looping.
+        at += 8 + qint64(size) + (size & 1);
     }
     return 0;
 }

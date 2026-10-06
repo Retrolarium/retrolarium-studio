@@ -14,6 +14,15 @@ namespace rl::doraemon {
 
 namespace {
 
+// The number in a label made from `pattern` (a translated "BG %1"),
+// matched whole: a translation may place the number anywhere. -1 for none.
+int labelNumber(const QString& label, const QString& pattern, int count) {
+    for (int n = 0; n < count; ++n) {
+        if (label == pattern.arg(n)) return n;
+    }
+    return -1;
+}
+
 QVector<int> run(int first, int count) {
     QVector<int> frames;
     for (int i = 0; i < count; ++i) frames << first + i;
@@ -358,7 +367,7 @@ QVector<sdk::CompositionFrame> DoraemonAnimationModel::frames() const {
         const QJsonObject entry = entries.at(i).toObject();
         frame.detail = entry.contains(QStringLiteral("alias"))
                            ? tr("mirrors %1").arg(nes::hex(entry.value(QStringLiteral("alias")).toInt()))
-                           : tr("%1 ticks").arg(animation().ticks);
+                           : tr("%n ticks", nullptr, animation().ticks);
         result << frame;
     }
     return result;
@@ -399,10 +408,18 @@ QVector<sdk::ViewOption> DoraemonAnimationModel::viewOptions() const {
 }
 
 void DoraemonAnimationModel::setViewOption(const QString& key, const QString& value) {
-    const int n = value.section(QLatin1Char(' '), 1).toInt();
-    if (key == QLatin1String("preset")) preset_ = animation().world == World::Two ? std::clamp(n - 1, 0, 2) : std::max(0, n);
-    else if (key == QLatin1String("palette")) palette_ = std::clamp(n, 0, 3);
-    else return;
+    const bool chapters = animation().world == World::Two;
+    if (key == QLatin1String("preset")) {
+        const int n = labelNumber(value, chapters ? tr("Chapter %1") : tr("Preset %1"), 64);
+        if (n < 0) return;
+        preset_ = chapters ? std::clamp(n - 1, 0, 2) : n;
+    } else if (key == QLatin1String("palette")) {
+        const int n = labelNumber(value, tr("SPR %1"), 4);
+        if (n < 0) return;
+        palette_ = n;
+    } else {
+        return;
+    }
     emit toolsChanged();
     emit contentChanged();
 }
@@ -520,7 +537,7 @@ bool DoraemonAnimationModel::setField(const QString& key, const QVariant& value,
         int attribute = r.value(QStringLiteral("attributes")).toArray().at(((descriptor >> 2) & 0x0F) * 4 + p.piece).toInt();
         int tile = p.tile;
         if (key == QLatin1String("tile")) tile = std::clamp(value.toInt(), 0, 255);
-        else if (key == QLatin1String("palette")) descriptor = (descriptor & ~3) | std::clamp(value.toString().section(QLatin1Char(' '), 1).toInt(), 0, 3);
+        else if (key == QLatin1String("palette")) descriptor = (descriptor & ~3) | std::max(0, labelNumber(value.toString(), tr("SPR %1"), 4));
         else if (key == QLatin1String("flip")) {
             const int flip = std::max(0, QStringList{kFlips[0], kFlips[1], kFlips[2], kFlips[3]}.indexOf(value.toString()));
             attribute = (attribute & ~0xc0) | ((flip & 1) ? 0x40 : 0) | ((flip & 2) ? 0x80 : 0);

@@ -311,9 +311,11 @@ void InspectorPanel::rebuild() {
             if (editable) {
                 const QString original = field.value.toString();
                 connect(edit, &QLineEdit::editingFinished, this, [edit, original, apply, field] {
-                    if (edit->text() == original) {
+                    // Return and the focus leaving both finish the edit: apply it once.
+                    if (!edit->isModified() || edit->text() == original) {
                         return;
                     }
+                    edit->setModified(false);
                     apply(field.type == sdk::Field::Type::Integer ? QVariant(edit->text().toInt())
                                                                   : QVariant(edit->text()));
                 });

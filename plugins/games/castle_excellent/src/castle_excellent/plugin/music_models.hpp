@@ -132,7 +132,7 @@ class CastleStreamsModel final : public sdk::TableModel {
 public:
     explicit CastleStreamsModel(CastleSession* session);
 
-    QString title() const override { return QStringLiteral("MML streams"); }
+    QString title() const override { return tr("MML streams"); }
     sdk::Budget budget() const override;
     sdk::Inspection inspect() const override;
 

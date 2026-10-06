@@ -1,15 +1,12 @@
 #pragma once
 
 #include "editors/editor_view.hpp"
+#include "sdk/editor_model.hpp"
 
 #include <QAbstractTableModel>
 #include <QStyledItemDelegate>
 
 class QTableView;
-
-namespace rl::sdk {
-class TableModel;
-}
 
 namespace rl::editors {
 
@@ -52,8 +49,14 @@ public:
     void setEditorData(QWidget* editor, const QModelIndex& index) const override;
     void setModelData(QWidget* editor, QAbstractItemModel* model, const QModelIndex& index) const override;
 
+    // The model's columns change only with its content: kept between paints.
+    void invalidate() { columns_.clear(); }
+
 private:
+    const QVector<sdk::TableColumn>& columns() const;
+
     sdk::TableModel* model_;
+    mutable QVector<sdk::TableColumn> columns_;
 };
 
 // Universal table editor for text, routes and headers.
@@ -71,7 +74,12 @@ private:
     sdk::TableModel* table_;
     TableAdapter* adapter_;
     QTableView* view_;
+    TableDelegate* delegate_ = nullptr;
     bool syncing_ = false;
+    // The shape the view was last given: a model that grows or shrinks
+    // (a recorded demo) needs a reset, not a dataChanged.
+    int shownRows_ = 0;
+    int shownColumns_ = 0;
 };
 
 }  // namespace rl::editors

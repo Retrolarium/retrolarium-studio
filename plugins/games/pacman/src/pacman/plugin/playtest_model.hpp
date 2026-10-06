@@ -14,7 +14,7 @@ class PacmanPlaytestModel final : public sdk::EmulatorModel {
 public:
     explicit PacmanPlaytestModel(PacmanSession* session);
 
-    QString title() const override { return QStringLiteral("Build and run"); }
+    QString title() const override { return tr("Build and run"); }
     sdk::Inspection inspect() const override;
     bool setField(const QString& key, const QVariant& value, QString* error) override;
     QSize screenSize() const override { return {256, 240}; }

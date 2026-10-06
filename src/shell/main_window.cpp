@@ -41,6 +41,8 @@
 #include <QMenuBar>
 #include <QPainter>
 #include <QPushButton>
+#include <QScrollArea>
+#include <QScrollBar>
 #include <QSettings>
 #include <QStandardPaths>
 #include <QStackedWidget>
@@ -48,6 +50,7 @@
 #include <QToolButton>
 #include <QUndoStack>
 #include <QVBoxLayout>
+#include <QWheelEvent>
 
 namespace rl::shell {
 
@@ -105,6 +108,28 @@ protected:
     void paintEvent(QPaintEvent*) override {
         QPainter painter(this);
         painter.fillRect(rect(), theme::current().accent);
+    }
+};
+
+// The editor toolbar's row: as wide as the row allows, never narrower than
+// its controls need; past that it scrolls sideways with the wheel and shows
+// no bar, so the row keeps its height.
+class ToolbarScroller final : public QScrollArea {
+public:
+    explicit ToolbarScroller(QWidget* parent) : QScrollArea(parent) {
+        setFrameShape(QFrame::NoFrame);
+        setWidgetResizable(true);
+        setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+        setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+        setStyleSheet(QStringLiteral("QScrollArea, QScrollArea > QWidget > QWidget { background: transparent; }"));
+    }
+
+protected:
+    void wheelEvent(QWheelEvent* event) override {
+        const QPoint delta = event->angleDelta();
+        QScrollBar* bar = horizontalScrollBar();
+        bar->setValue(bar->value() - (delta.x() != 0 ? delta.x() : delta.y()) / 2);
+        event->accept();
     }
 };
 
@@ -182,7 +207,7 @@ MainWindow::MainWindow(QWidget* parent) : StudioWindow(parent) {
                     log(tr("  %1 finished.").arg(label));
                 } else if (result.cancelled) {
                     log(tr("  %1 cancelled.").arg(label));
-                } else if (!result.started) {
+                } else if (!result.error.isEmpty()) {
                     log(QStringLiteral("  %1").arg(result.error));
                 } else {
                     log(tr("  %1 failed with exit code %2.").arg(label).arg(result.exitCode));
@@ -195,6 +220,11 @@ MainWindow::MainWindow(QWidget* parent) : StudioWindow(parent) {
 }
 
 MainWindow::~MainWindow() {
+    // The runners outlive this destructor (they are children); a task they
+    // stop on the way out must not call back into a window half gone.
+    processes_->disconnect(this);
+    emulator_->disconnect(this);
+    processes_->abandon();
     // Views hold raw pointers to the model, the model to the session.
     releaseEditor();
     session_.reset();
@@ -662,6 +692,11 @@ bool MainWindow::openProjectFile(const QString& path) {
         report(message(sdk::Severity::Error, plugin->id(), error, QFileInfo(path).fileName()));
         return false;
     }
+    // Open ROM and version changes reach here after a download or a dialog,
+    // with the current project still editable all the while.
+    if (!confirmDiscard()) {
+        return false;
+    }
 
     closeProject();
     session_ = std::move(session);
@@ -710,6 +745,9 @@ bool MainWindow::openProjectFile(const QString& path) {
 namespace {
 
 QString processError(const sdk::ProcessResult& result) {
+    // A run that started and still carries an error was stopped by the
+    // runner (a timeout); its stderr is only what it printed so far.
+    if (result.started && !result.error.isEmpty()) return result.error;
     const QString text = QString::fromUtf8(result.standardError).trimmed();
     return text.isEmpty() ? result.error : text.section(QLatin1Char('\n'), -3);
 }
@@ -978,13 +1016,13 @@ void MainWindow::createPatch() {
 
 void MainWindow::closeProject() {
     inspector_->showMessage(QString(), QString(), QString());
-    if (processes_->isBusy()) {
-        processes_->cancel();
-    }
+    // A running task's callback belongs to the session about to go.
+    processes_->abandon();
     emulator_->stopNow();
     audio_->stop();
     releaseEditor();
     session_.reset();
+    discardedSession_ = nullptr;
     projectPath_.clear();
     kind_.clear();
     document_.clear();
@@ -1003,6 +1041,10 @@ void MainWindow::closeProject() {
 
 bool MainWindow::confirmDiscard() {
     if (!session_ || !session_->isModified()) {
+        return true;
+    }
+    const int index = session_->undoStack()->index();
+    if (discardedSession_ == session_.get() && discardedIndex_ == index) {
         return true;
     }
     enum Answer { Cancel, Discard, Save };
@@ -1025,16 +1067,28 @@ bool MainWindow::confirmDiscard() {
             report(message(sdk::Severity::Error, QStringLiteral("save"), error, QString()));
             return false;
         }
+    } else {
+        discardedSession_ = session_.get();
+        discardedIndex_ = index;
     }
     return true;
 }
 
 void MainWindow::closeEvent(QCloseEvent* event) {
-    if (confirmDiscard()) {
-        event->accept();
-    } else {
+    if (!confirmDiscard()) {
         event->ignore();
+        return;
     }
+    // A kit task may be writing the game's folder (preparing or resetting a
+    // version): stopping it halfway is the user's call.
+    if (isBusy() && !frame::MessageDialog::confirm(this, tr("Exit"), tr("A task is still running"),
+                                                   tr("Exiting now stops it before it finishes."), tr("Exit"))) {
+        event->ignore();
+        return;
+    }
+    processes_->abandon();
+    emulator_->stopNow();
+    event->accept();
 }
 
 void MainWindow::rememberRecent(const QString& path) {
@@ -1193,20 +1247,24 @@ void MainWindow::updateToolbarRow() {
         toolbarContent_ = nullptr;
     }
     if (editor_) {
-        toolbarContent_ = new QWidget(toolbarRow_);
-        auto* row = new QHBoxLayout(toolbarContent_);
+        // A toolbar wider than the row (long translations, a narrow window)
+        // scrolls with the wheel instead of squeezing its controls together.
+        auto* scroller = new ToolbarScroller(toolbarRow_);
+        toolbarContent_ = scroller;
+        auto* content = new QWidget;
+        auto* row = new QHBoxLayout(content);
         row->setContentsMargins(0, 0, 0, 0);
         row->setSpacing(12);
-        row->addWidget(editor_->createToolbar(toolbarContent_), 1);
+        row->addWidget(editor_->createToolbar(content), 1);
         // Where "Play from selected" starts, when this document sets it.
         const QString start = model_ ? model_->startPoint() : QString();
         if (!start.isEmpty()) {
-            auto* chip = new ui::ViewChip(tr("Start point"), start, toolbarContent_);
+            auto* chip = new ui::ViewChip(tr("Start point"), start, content);
             chip->setToolTip(tr("Play from selected (F5) starts here"));
             row->addWidget(chip);
         }
         for (const sdk::EditorAction& action : model_ ? model_->actions() : QVector<sdk::EditorAction>()) {
-            auto* button = new ui::PrimaryButton(action.label, action.icon, toolbarContent_);
+            auto* button = new ui::PrimaryButton(action.label, action.icon, content);
             button->setDanger(action.danger);
             button->setToolTip(action.tooltip);
             connect(button, &QAbstractButton::clicked, this, [this, action] {
@@ -1221,6 +1279,7 @@ void MainWindow::updateToolbarRow() {
             });
             row->addWidget(button);
         }
+        scroller->setWidget(content);
         toolbarRowLayout_->addWidget(toolbarContent_);
     }
     toolbarRow_->setVisible(editor_ != nullptr);
@@ -1345,8 +1404,7 @@ void MainWindow::updateDirtyState() {
     }
     updateActions();
     dirtyIndicator_->setVisible(modified);
-    dirtyLabel_->setText(dirty == 1 ? tr("1 unsaved document")
-                                    : tr("%1 unsaved documents").arg(dirty));
+    dirtyLabel_->setText(tr("%n unsaved documents", nullptr, dirty));
     updateBreadcrumb();
 }
 

@@ -247,7 +247,17 @@ FlickySoundDocument::Parsed FlickySoundDocument::parse(const QString &source)
             sequenceIds.insert(track.sequence);
     }
     parsed.sequenceOrder = sequenceIds.values();
-    parsed.voiceOrder = voiceIds.values();
+    // The banks are the source's ...Voices labels, not the ones the headers
+    // name: two headers may share a bank once one is pointed at another's.
+    QSet<QString> banks;
+    for (auto it = parsed.blocks.constBegin(); it != parsed.blocks.constEnd(); ++it) {
+        if (it.key().endsWith(QStringLiteral("Voices"))) banks.insert(it.key());
+    }
+    for (const auto &id : voiceIds) {
+        if (!banks.contains(id))
+            fail(QStringLiteral("unknown Flicky sound voice bank: ") + id);
+    }
+    parsed.voiceOrder = banks.values();
     std::sort(parsed.sequenceOrder.begin(), parsed.sequenceOrder.end());
     std::sort(parsed.voiceOrder.begin(), parsed.voiceOrder.end());
     if (parsed.sequenceOrder.size() != 52 || parsed.voiceOrder.size() != 14)

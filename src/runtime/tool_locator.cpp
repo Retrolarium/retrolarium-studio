@@ -30,17 +30,17 @@ QString python() {
 }  // namespace
 
 QString ToolLocator::findInParents(const QString& relative) {
-    QStringList roots{QCoreApplication::applicationDirPath(), QDir::currentPath()};
-    for (const QString& root : roots) {
-        QDir directory(root);
-        for (int depth = 0; depth <= kParentDepth; ++depth) {
-            const QString candidate = directory.filePath(relative);
-            if (QFileInfo(candidate).isFile()) {
-                return QFileInfo(candidate).canonicalFilePath();
-            }
-            if (!directory.cdUp()) {
-                break;
-            }
+    // Only above the studio's own folder (a build inside the source tree),
+    // never the current folder: a studio started there by a file association
+    // must not run a kit or an emulator someone left in it.
+    QDir directory(QCoreApplication::applicationDirPath());
+    for (int depth = 0; depth <= kParentDepth; ++depth) {
+        const QString candidate = directory.filePath(relative);
+        if (QFileInfo(candidate).isFile()) {
+            return QFileInfo(candidate).canonicalFilePath();
+        }
+        if (!directory.cdUp()) {
+            break;
         }
     }
     return {};

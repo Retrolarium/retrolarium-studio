@@ -20,7 +20,8 @@ constexpr int kTitleTable = 0x100;
 const int kPreviewPalette[4] = {0x0f, 0x11, 0x21, 0x30};
 
 const QStringList& buttonNames() {
-    static const QStringList kNames{QStringLiteral("A"),  QStringLiteral("B"),    rlTr("solomon", "SELECT"),
+    // The demo document's names: never translated.
+    static const QStringList kNames{QStringLiteral("A"),  QStringLiteral("B"),    QStringLiteral("SELECT"),
                                     QStringLiteral("START"), QStringLiteral("UP"), QStringLiteral("DOWN"),
                                     QStringLiteral("LEFT"),  QStringLiteral("RIGHT")};
     return kNames;
@@ -129,7 +130,7 @@ const QImage& SolomonTitleModel::tile(int value, bool faint) const {
     if (found != tiles_.constEnd()) return *found;
     QImage image(8, 8, QImage::Format_ARGB32);
     const nes::Bundle& g = session_->bundle();
-    const QString chr = tr("chr-bank-%1").arg(kTitleBank);
+    const QString chr = QStringLiteral("chr-bank-%1").arg(kTitleBank);
     const QVector<quint8> pixels = g.contains(chr) ? g.tilePixels(chr, kTitleTable + (value & 0xff)) : QVector<quint8>(64, 0);
     for (int y = 0; y < 8; ++y) {
         for (int x = 0; x < 8; ++x) {
@@ -399,7 +400,7 @@ QVector<sdk::TableColumn> SolomonDemoModel::columns() const {
     step.muted = true;
     sdk::TableColumn frames;
     frames.key = QStringLiteral("frames");
-    frames.label = QStringLiteral("Frames");
+    frames.label = tr("Frames");
     frames.width = 100;
     frames.monospace = true;
     frames.editable = true;

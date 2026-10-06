@@ -82,6 +82,7 @@ if __name__ == "__main__":
 $runtime = Join-Path $package "python"
 New-Item -ItemType Directory -Force -Path $runtime | Out-Null
 $dll = Get-ChildItem -LiteralPath $Python -Filter "python3*.dll" | Where-Object { $_.Name -ne "python3.dll" } | Select-Object -First 1
+if (-not $dll) { throw "No python3x.dll in $Python" }
 foreach ($file in @("python.exe", "pythonw.exe", "python3.dll", $dll.Name, "vcruntime140.dll", "vcruntime140_1.dll", "LICENSE.txt")) {
     $source = Join-Path $Python $file
     if (Test-Path -LiteralPath $source) { Copy-Item -LiteralPath $source -Destination $runtime }
@@ -102,6 +103,26 @@ foreach ($file in @("COPYING", "README.md")) {
     if (Test-Path -LiteralPath $source) { Copy-Item -LiteralPath $source -Destination $emulator }
 }
 
+# Licenses: the studio's own and those of what the package carries
+# (THIRD-PARTY.md says which text covers what).
+Copy-Item -LiteralPath (Join-Path $projectRoot "LICENSE") -Destination (Join-Path $package "LICENSE.txt")
+Copy-Item -LiteralPath (Join-Path $projectRoot "THIRD-PARTY.md") -Destination $package
+$licenses = Join-Path $package "licenses"
+New-Item -ItemType Directory -Force -Path $licenses | Out-Null
+$core = Join-Path $repositoryRoot "retrolarium_core\third_party"
+foreach ($pair in @(
+        @((Join-Path $projectRoot "resources\fonts\OFL-Barlow.txt"), "OFL-Barlow.txt"),
+        @((Join-Path $projectRoot "resources\fonts\OFL-IBMPlex.txt"), "OFL-IBMPlex.txt"),
+        @((Join-Path $core "toml11\LICENSE"), "toml11-MIT.txt"),
+        @((Join-Path $core "nlohmann\LICENSE.MIT"), "nlohmann-json-MIT.txt"),
+        @((Join-Path $projectRoot "resources\licenses\Qt-LGPL-3.0.txt"), "Qt-LGPL-3.0.txt"))) {
+    if (Test-Path -LiteralPath $pair[0] -PathType Leaf) {
+        Copy-Item -LiteralPath $pair[0] -Destination (Join-Path $licenses $pair[1])
+    } else {
+        Write-Warning "Missing license text $($pair[0]): the package is not ready to publish"
+    }
+}
+
 # A smoke check: the private Python runs the kit.
 $check = & (Join-Path $runtime "python.exe") (Join-Path $kit "rltool.py") --help 2>&1
 if ($LASTEXITCODE -ne 0) {
@@ -109,10 +130,14 @@ if ($LASTEXITCODE -ne 0) {
 }
 Get-ChildItem -LiteralPath $kit -Recurse -Directory -Filter "__pycache__" | Remove-Item -Recurse -Force
 
-$version = (Select-String -LiteralPath (Join-Path $projectRoot "CMakeLists.txt") -Pattern "VERSION (\d+\.\d+\.\d+)").Matches[0].Groups[1].Value
+# project(VERSION ...), the one place the version is set; not cmake_minimum_required's.
+$cmake = Get-Content -LiteralPath (Join-Path $projectRoot "CMakeLists.txt") -Raw
+$match = [regex]::Match($cmake, "project\([^)]*?VERSION\s+(\d+\.\d+\.\d+)", "Singleline")
+if (-not $match.Success) { throw "No project(VERSION) in CMakeLists.txt" }
+$version = $match.Groups[1].Value
 $zip = Join-Path $Out "RetrolariumStudio-$version-win64.zip"
 if (Test-Path -LiteralPath $zip) { Remove-Item -LiteralPath $zip -Force }
-Compress-Archive -Path $package -DestinationPath $zip -CompressionLevel Optimal
+Compress-Archive -LiteralPath $package -DestinationPath $zip -CompressionLevel Optimal
 $size = [math]::Round((Get-Item -LiteralPath $zip).Length / 1MB, 1)
 Write-Host "Packaged: $package"
 Write-Host "Archive: $zip ($size MB)"

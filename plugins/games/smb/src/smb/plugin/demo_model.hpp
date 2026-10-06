@@ -30,7 +30,7 @@ public:
     };
     static Recording stepsFromRecording(const QString& text, int capacity);
 
-    QString title() const override { return QStringLiteral("Title demo"); }
+    QString title() const override { return tr("Title demo"); }
     sdk::Budget budget() const override;
     sdk::Inspection inspect() const override;
     QString startPoint() const override;

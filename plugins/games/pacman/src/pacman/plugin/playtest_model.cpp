@@ -28,11 +28,11 @@ bool PacmanPlaytestModel::setField(const QString& key, const QVariant& value, QS
 
 sdk::Inspection PacmanPlaytestModel::inspect() const {
     sdk::Inspection inspection;
-    inspection.kicker = QStringLiteral("Session");
+    inspection.kicker = tr("Session");
     inspection.title = startLabel();
     sdk::Field round;
     round.key = QStringLiteral("round");
-    round.label = QStringLiteral("Start round");
+    round.label = tr("Start round");
     round.type = sdk::Field::Type::Integer;
     round.value = session_->startRound();
     round.minimum = 1;
@@ -40,12 +40,12 @@ sdk::Inspection PacmanPlaytestModel::inspect() const {
     round.hint = QStringLiteral("1-23");
     sdk::Field core;
     core.key = QStringLiteral("core");
-    core.label = QStringLiteral("Core");
+    core.label = tr("Core");
     core.value = coreLabel();
     inspection.fields = {round, core};
-    inspection.note = QStringLiteral("Play from selected builds the ROM with the kit and starts a one-player game at "
-                                     "the start round, past the title (the game stops counting rounds at 23). Play "
-                                     "starts from power-on.");
+    inspection.note = tr("Play from selected builds the ROM with the kit and starts a one-player game at "
+                         "the start round, past the title (the game stops counting rounds at 23). Play "
+                         "starts from power-on.");
     inspection.engineTag = QStringLiteral("pacman-round-playtest");
     return inspection;
 }

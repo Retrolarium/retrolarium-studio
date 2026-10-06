@@ -229,7 +229,8 @@ endif()
 # Interface translations: resources/i18n holds the .ts files (refreshed with
 # tools/update-translations.ps1); the build compiles them and embeds them
 # with Qt's own translation of its dialogs.
-set(studio_languages pt_BR es zh_CN ja fr de it pl ru)
+# English holds only the plural forms of counted text (lupdate -pluralonly).
+set(studio_languages en pt_BR es zh_CN ja fr de it pl ru)
 set(studio_ts)
 foreach(language IN LISTS studio_languages)
     list(APPEND studio_ts ${CMAKE_CURRENT_SOURCE_DIR}/resources/i18n/retrolarium_studio_${language}.ts)

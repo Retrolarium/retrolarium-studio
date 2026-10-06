@@ -401,7 +401,7 @@ QVector<sdk::TableColumn> PacmanTextModel::columns() const {
     where.muted = true;
     sdk::TableColumn text;
     text.key = QStringLiteral("text");
-    text.label = QStringLiteral("Text");
+    text.label = tr("Text");
     text.monospace = true;
     text.editable = true;
     sdk::TableColumn length;
@@ -445,7 +445,11 @@ QString PacmanTextModel::cell(int row, int column) const {
 
 int PacmanTextModel::maxLength(int row, int column) const {
     if (column != 1) return -1;
-    return fields(session_->resource(ids::kScreens)).at(row).toObject().value(QStringLiteral("width")).toInt();
+    const QJsonObject collection = session_->resource(ids::kScreens);
+    // A limit in characters would cut a {XX} code apart: setting the text
+    // checks the bytes of such a field instead.
+    if (text(collection, row).contains(QLatin1Char('{'))) return -1;
+    return fields(collection).at(row).toObject().value(QStringLiteral("width")).toInt();
 }
 
 bool PacmanTextModel::isRowDirty(int row) const {
@@ -507,7 +511,7 @@ bool PacmanTextModel::setCell(int row, int column, const QString& value, QString
 sdk::Inspection PacmanTextModel::inspect() const {
     sdk::Inspection inspection;
     inspection.engineTag = QStringLiteral("pacman.screen-collection.v1");
-    inspection.kicker = QStringLiteral("Text");
+    inspection.kicker = tr("Text");
     inspection.title = cell(row_, 0);
     inspection.preview = cell(row_, 1);
     inspection.note = tr("The text keeps its places on the screen; shorter text is padded with spaces. "

@@ -105,7 +105,7 @@ public:
     // How many steps the demo tables may hold for a revision.
     static int demoCapacity(const QString& revision);
 
-    QString title() const override { return QStringLiteral("Attract demo"); }
+    QString title() const override { return tr("Attract demo"); }
     sdk::Budget budget() const override;
     sdk::Inspection inspect() const override;
     QString startPoint() const override;

@@ -103,7 +103,7 @@ void MessageDialog::reject() {
 void MessageDialog::inform(QWidget* parent, const QString& title, const QString& heading,
                            const QString& text) {
     MessageDialog dialog(title, heading, text, parent);
-    dialog.addButton(QStringLiteral("OK"), 1, true);
+    dialog.addButton(tr("OK"), 1, true);
     dialog.exec();
 }
 

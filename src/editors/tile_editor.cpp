@@ -14,6 +14,7 @@
 #include <QPainter>
 #include <QScrollArea>
 #include <QScrollBar>
+#include <QTimer>
 #include <QVBoxLayout>
 
 #include <algorithm>
@@ -40,10 +41,21 @@ TileAtlas::TileAtlas(sdk::TileModel* model, QWidget* parent) : QWidget(parent), 
     connect(model_, &sdk::EditorModel::contentChanged, this, &TileAtlas::refresh);
     connect(model_, &sdk::EditorModel::selectionChanged, this, qOverload<>(&QWidget::update));
     connect(model_, &sdk::EditorModel::toolsChanged, this, &TileAtlas::refresh);
-    refresh();
+    renderNow();
 }
 
 void TileAtlas::refresh() {
+    if (renderPending_) {
+        return;
+    }
+    renderPending_ = true;
+    QTimer::singleShot(0, this, [this] {
+        renderPending_ = false;
+        renderNow();
+    });
+}
+
+void TileAtlas::renderNow() {
     const int count = model_->tileCount();
     const QSize size = model_->tileSize();
     const int rows = std::max(1, (count + kColumns - 1) / kColumns);
@@ -119,6 +131,9 @@ void TileAtlas::keyPressEvent(QKeyEvent* event) {
     case Qt::Key_Down: step = kColumns; break;
     default:
         QWidget::keyPressEvent(event);
+        return;
+    }
+    if (model_->tileCount() <= 0) {
         return;
     }
     const int tile = std::clamp(model_->currentTile() + step, 0, model_->tileCount() - 1);
@@ -208,7 +223,8 @@ void PixelCanvas::paintLine(QPoint from, QPoint to) {
 
 void PixelCanvas::mousePressEvent(QMouseEvent* event) {
     const QPoint p = pixelAt(event->pos());
-    if (p.x() < 0) {
+    // A second button during a stroke would end it early.
+    if (p.x() < 0 || painting_) {
         return;
     }
     const QVector<quint8> pixels = model_->tilePixels(model_->currentTile());
@@ -247,8 +263,8 @@ void PixelCanvas::mouseMoveEvent(QMouseEvent* event) {
     }
 }
 
-void PixelCanvas::mouseReleaseEvent(QMouseEvent*) {
-    if (painting_) {
+void PixelCanvas::mouseReleaseEvent(QMouseEvent* event) {
+    if (painting_ && event->button() == Qt::LeftButton) {
         painting_ = false;
         model_->endStroke();
     }

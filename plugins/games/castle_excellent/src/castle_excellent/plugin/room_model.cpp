@@ -167,7 +167,7 @@ sdk::Library CastleRoomModel::sheet() const {
         for (int type = 0; type < session_->painter().cellTypeCount(); ++type) {
             sdk::LibraryItem item;
             item.id = QStringLiteral("cell:%1").arg(type);
-            item.label = QStringLiteral("Cell %1").arg(hex(type));
+            item.label = tr("Cell %1").arg(hex(type));
             // Square, as the sheet draws: the 16x8 cell over a second copy.
             QImage icon(16, 16, QImage::Format_RGB32);
             const QImage cell = session_->painter().cellIcon(type);

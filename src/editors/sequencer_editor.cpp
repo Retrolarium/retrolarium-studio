@@ -1,6 +1,7 @@
 #include "editors/sequencer_editor.hpp"
 
 #include "sdk/editor_model.hpp"
+#include "sdk/i18n.hpp"
 #include "theme/icons.hpp"
 #include "theme/paint.hpp"
 #include "theme/theme.hpp"
@@ -15,6 +16,7 @@
 #include <QPainter>
 #include <QPointer>
 #include <QPushButton>
+#include <QRegularExpression>
 #include <QScrollArea>
 #include <QScrollBar>
 #include <QVBoxLayout>
@@ -233,7 +235,7 @@ void PianoRoll::paintEvent(QPaintEvent* event) {
     }
     painter.setPen(QColor(255, 255, 255, 110));
     painter.drawText(QRect(left, rows * kRowHeight, kKeyWidth - 5, 14), Qt::AlignRight | Qt::AlignVCenter,
-                     QStringLiteral("rest"));
+                     rlTr("studio", "rest"));
 }
 
 void PianoRoll::mousePressEvent(QMouseEvent* event) {
@@ -402,7 +404,11 @@ QWidget* SequencerEditor::createToolbar(QWidget* parent) {
     zoom->setChoices({tr("1 px/tick"), tr("2 px/tick"), tr("4 px/tick"),
                       tr("8 px/tick"), tr("16 px/tick")});
     connect(zoom, &ui::ViewChip::valueChosen, this,
-            [this](const QString& value) { roll_->setPixelsPerTick(value.section(QLatin1Char(' '), 0, 0).toInt()); });
+            [this](const QString& value) {
+                // The number wherever a translation puts it in the label.
+                const QRegularExpressionMatch number = QRegularExpression(QStringLiteral("\\d+")).match(value);
+                if (number.hasMatch()) roll_->setPixelsPerTick(number.captured().toInt());
+            });
     layout->addWidget(zoom);
     layout->addStretch(1);
     const QString hint = sequencer_->isReadOnly() ? sequencer_->readOnlyReason()

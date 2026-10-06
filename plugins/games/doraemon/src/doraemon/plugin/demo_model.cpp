@@ -78,7 +78,7 @@ QVector<sdk::TableColumn> DoraemonDemoModel::columns() const {
     buttons.editable = true;
     sdk::TableColumn frames;
     frames.key = QStringLiteral("frames");
-    frames.label = QStringLiteral("Frames");
+    frames.label = tr("Frames");
     frames.width = 110;
     frames.monospace = true;
     frames.editable = true;
@@ -112,12 +112,14 @@ QString DoraemonDemoModel::cell(int row, int column) const {
 
 QStringList DoraemonDemoModel::cellChoices(int, int column) const {
     if (column != 1) return {};
-    // The usual holds; any other combination can be typed.
-    return {QStringLiteral("none"), tr("Up"), QStringLiteral("Down"), tr("Left"),
-            tr("Right"), QStringLiteral("A"), QStringLiteral("B"), tr("B+Up"),
-            tr("B+Down"), tr("B+Left"), tr("B+Right"), tr("A+Left"),
-            tr("A+Right"), tr("Up+Left"), tr("Up+Right"),
-            tr("Down+Left"), tr("Down+Right")};
+    // The usual holds; any other combination can be typed. In English: the
+    // value comes back to parseButtons, and the shell shows it translated.
+    return {QStringLiteral("none"),      QStringLiteral("Up"),       QStringLiteral("Down"),
+            QStringLiteral("Left"),      QStringLiteral("Right"),    QStringLiteral("A"),
+            QStringLiteral("B"),         QStringLiteral("B+Up"),     QStringLiteral("B+Down"),
+            QStringLiteral("B+Left"),    QStringLiteral("B+Right"),  QStringLiteral("A+Left"),
+            QStringLiteral("A+Right"),   QStringLiteral("Up+Left"),  QStringLiteral("Up+Right"),
+            QStringLiteral("Down+Left"), QStringLiteral("Down+Right")};
 }
 
 bool DoraemonDemoModel::isRowDirty(int row) const {

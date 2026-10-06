@@ -28,6 +28,12 @@ running the studio from a checkout need:
 
 When something is missing, the Messages panel says what and where it looked.
 
+The interface speaks English, Brazilian Portuguese, Spanish, simplified
+Chinese, Japanese, French, German, Italian, Polish and Russian. It follows
+the system's language until you pick one in File → Settings; the change
+shows at the next start. Names from the games themselves (areas, enemies,
+versions) stay as the disassembly writes them.
+
 ## Opening a game
 
 The simplest way is File → Open ROM… (Ctrl+Shift+O, or the first button on

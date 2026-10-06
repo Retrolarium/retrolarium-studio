@@ -7,6 +7,7 @@
 #include <QDir>
 #include <QFileInfo>
 #include <QJsonDocument>
+#include <QRegularExpression>
 
 #include <algorithm>
 #include <map>
@@ -45,6 +46,12 @@ bool sounds(SmbMusicEvent::Kind kind) {
     return kind == SmbMusicEvent::Kind::Note || kind == SmbMusicEvent::Kind::Rest || kind == SmbMusicEvent::Kind::Beat;
 }
 
+// The length-table entry a length choice names: its last number, wherever a
+// translation puts the words around it.
+int entryOf(const QString& choice) {
+    const QRegularExpressionMatch match = QRegularExpression(QStringLiteral("(\\d+)\\D*$")).match(choice);
+    return match.hasMatch() ? match.captured(1).toInt() : 0;
+}
 }  // namespace
 
 SmbMusicModel::SmbMusicModel(SmbSession* session, const QString& header)
@@ -304,8 +311,8 @@ bool SmbMusicModel::setField(const QString& key, const QVariant& value, QString*
                          [channelId, offset, period](SmbMusic& m) { m.setNotePeriod(channelId, offset, period); }, error);
     }
     if (key == QLatin1String("length")) {
-        // "20 ticks (entry 2)"
-        const int index = value.toString().section(tr("entry "), 1).section(QLatin1Char(')'), 0, 0).toInt();
+        // "20 ticks (entry 2)", in any language: the entry is the last number.
+        const int index = entryOf(value.toString());
         return editMusic(tr("Set a note length of %1").arg(header_),
                          [channelId, offset, index](SmbMusic& m) { m.setEventLength(channelId, offset, index); }, error);
     }
@@ -322,7 +329,7 @@ bool SmbMusicModel::setField(const QString& key, const QVariant& value, QString*
             if (error) *error = tr("No length byte starts this run.");
             return false;
         }
-        const int index = value.toString().section(tr("entry "), 1).section(QLatin1Char(')'), 0, 0).toInt();
+        const int index = entryOf(value.toString());
         return editMusic(tr("Set a run length of %1").arg(header_),
                          [channelId, lengthOffset, index](SmbMusic& m) { m.setEventLength(channelId, lengthOffset, index); },
                          error);
@@ -405,7 +412,7 @@ sdk::Inspection SmbMusicModel::inspect() const {
         length.choices = lengthChoices;
         length.value = lengthChoices.value(event.lengthIndex);
     } else {
-        length.value = tr("%1 ticks").arg(event.duration);
+        length.value = tr("%n ticks", nullptr, event.duration);
         length.monospace = true;
     }
     inspection.fields << start;

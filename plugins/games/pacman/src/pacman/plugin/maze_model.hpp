@@ -20,7 +20,7 @@ class PacmanMazeModel final : public sdk::TileMapModel {
 public:
     explicit PacmanMazeModel(PacmanSession* session);
 
-    QString title() const override { return QStringLiteral("Maze"); }
+    QString title() const override { return tr("Maze"); }
     sdk::Budget budget() const override;
     sdk::Inspection inspect() const override;
     bool setField(const QString& key, const QVariant& value, QString* error) override;

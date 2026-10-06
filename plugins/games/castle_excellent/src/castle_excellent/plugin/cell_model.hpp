@@ -21,7 +21,7 @@ class CastleCellModel final : public sdk::TileMapModel {
 public:
     explicit CastleCellModel(CastleSession* session);
 
-    QString title() const override { return QStringLiteral("Room cells"); }
+    QString title() const override { return tr("Room cells"); }
     sdk::Budget budget() const override;
     sdk::Inspection inspect() const override;
     bool setField(const QString& key, const QVariant& value, QString* error) override;
@@ -60,6 +60,7 @@ private:
     QPair<int, int> cellAt(QPoint at) const;
     int tileOf(int cell, int half) const;
     int paletteOf(int cell) const;
+    static int paletteNumber(const QString& label);
     bool setCellFields(int cell, int left, int right, int palette, const QString& text, QString* error);
 
     CastleSession* session_;

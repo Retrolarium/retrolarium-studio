@@ -89,7 +89,7 @@ QVector<sdk::TableColumn> DoraemonTextModel::columns() const {
     where.muted = true;
     sdk::TableColumn text;
     text.key = QStringLiteral("text");
-    text.label = QStringLiteral("Text");
+    text.label = tr("Text");
     text.monospace = true;
     text.editable = true;
     sdk::TableColumn places;

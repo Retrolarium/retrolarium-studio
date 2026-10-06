@@ -172,8 +172,10 @@ QRect CompositionCanvas::toScreen(const QRect& pixels) const {
 
 QString CompositionCanvas::pieceAt(const QPoint& pos) const {
     const QRect image = imageRect();
-    const QPoint local(view_.left() + (pos.x() - image.left()) / zoom_,
-                       view_.top() + (pos.y() - image.top()) / zoom_);
+    // Floor, not truncation: a point left of or above the picture is outside it.
+    const auto floorDiv = [](int value, int by) { return value >= 0 ? value / by : -((-value + by - 1) / by); };
+    const QPoint local(view_.left() + floorDiv(pos.x() - image.left(), zoom_),
+                       view_.top() + floorDiv(pos.y() - image.top(), zoom_));
     const QVector<sdk::CompositionPiece> pieces = model_->pieces();
     const QString selected = model_->selectedPiece();
     // Prefer the selected piece, then the topmost (last drawn).

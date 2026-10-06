@@ -74,7 +74,7 @@ class SmbPlayerActionsModel final : public sdk::TableModel {
 public:
     explicit SmbPlayerActionsModel(SmbSession* session);
 
-    QString title() const override { return QStringLiteral("Player actions"); }
+    QString title() const override { return tr("Player actions"); }
     sdk::Inspection inspect() const override;
     bool setField(const QString& key, const QVariant& value, QString* error) override;
     QString statusText() const override;

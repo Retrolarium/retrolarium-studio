@@ -20,7 +20,7 @@ public:
     explicit PacmanDemoModel(PacmanSession* session);
     ~PacmanDemoModel() override;
 
-    QString title() const override { return QStringLiteral("Attract demo"); }
+    QString title() const override { return tr("Attract demo"); }
     sdk::Budget budget() const override;
     sdk::Inspection inspect() const override;
     QString startPoint() const override;

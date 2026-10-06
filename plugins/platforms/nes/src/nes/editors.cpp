@@ -72,6 +72,7 @@ bool ChrTileModel::isTileDirty(int tile) const {
 }
 
 void ChrTileModel::setCurrentTile(int tile) {
+    if (count_ <= 0) return;
     tile = std::clamp(tile, 0, count_ - 1);
     if (tile != tile_) {
         tile_ = tile;

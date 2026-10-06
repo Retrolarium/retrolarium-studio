@@ -278,7 +278,7 @@ QVector<sdk::DocumentGroup> SmbSession::documents(const QString& kind) const {
         int first = 0;
         for (int g = 0; g < sizes.size(); ++g) {
             sdk::DocumentEntry e = entry(QStringLiteral("group:%1").arg(g), tr("Palette %1").arg(g),
-                                         tr("%1 blocks").arg(sizes.at(g)));
+                                         tr("%n blocks", nullptr, sizes.at(g)));
             for (int i = first; i < first + sizes.at(g) && i < now.size(); ++i) {
                 e.dirty = e.dirty || now.at(i) != saved.at(i);
             }
@@ -298,7 +298,7 @@ QVector<sdk::DocumentGroup> SmbSession::documents(const QString& kind) const {
             sdk::DocumentGroup player;
             player.title = QStringLiteral("Player");
             player.documents << entry(QStringLiteral("player"), tr("Hero, Brother, fire"),
-                                      tr("%1 colours").arg(document_.tableValues(art_.playerPalette).size()));
+                                      tr("%n colours", nullptr, document_.tableValues(art_.playerPalette).size()));
             groups << player;
         }
     } else if (kind == QLatin1String("world") && !world_.isEmpty()) {
@@ -323,7 +323,7 @@ QVector<sdk::DocumentGroup> SmbSession::documents(const QString& kind) const {
                       tr("%1 worlds · %2 steps").arg(document_.worldCount(bank.world)).arg(steps));
             routes.dirty = routesDirty;
             sdk::DocumentEntry physics = entry(bankDocument(bank.levels, QStringLiteral("physics")), tr("Player physics"),
-                                               tr("%1 tables").arg(document_.physicsTables(bank.world).size()));
+                                               tr("%n tables", nullptr, document_.physicsTables(bank.world).size()));
             const QVector<SmbPhysicsTable> nowTables = document_.physicsTables(bank.world);
             const QVector<SmbPhysicsTable> savedTables = saved_.physicsTables(bank.world);
             for (int t = 0; t < nowTables.size() && t < savedTables.size(); ++t) {
@@ -370,8 +370,7 @@ QVector<sdk::DocumentGroup> SmbSession::documents(const QString& kind) const {
                 label = SmbPlayerFramesModel::animationLabel(animation.mid(6));
             }
             sdk::DocumentEntry e = entry(animation, label,
-                                         frames.size() == 1 ? tr("1 frame")
-                                                            : tr("%1 frames").arg(frames.size()));
+                                         tr("%n frames", nullptr, frames.size()));
             for (int f : frames) {
                 e.dirty = e.dirty || now.at(f) != saved.at(f);
             }
@@ -466,7 +465,7 @@ QVector<sdk::DocumentGroup> SmbSession::documents(const QString& kind) const {
         sdk::DocumentGroup group;
         group.title = QStringLiteral("Text");
         sdk::DocumentEntry e = entry(QStringLiteral("all"), tr("Game text"),
-                                     tr("%1 strings").arg(textSlots().size()));
+                                     tr("%n strings", nullptr, textSlots().size()));
         for (int i = 0; i < textSlots().size(); ++i) {
             e.dirty = e.dirty || text(i) != slotText(saved_, textSlots().at(i));
         }
@@ -480,7 +479,7 @@ QVector<sdk::DocumentGroup> SmbSession::documents(const QString& kind) const {
             group.documents << entry(QStringLiteral("demo"), tr("Title demo"), tr("not added yet"));
         } else {
             sdk::DocumentEntry e = entry(QStringLiteral("demo"), tr("Title demo"),
-                                         tr("%1 steps").arg(demo_.value(QStringLiteral("steps")).toArray().size()));
+                                         tr("%n steps", nullptr, demo_.value(QStringLiteral("steps")).toArray().size()));
             e.dirty = demo_ != savedDemo_;
             group.documents << e;
         }
@@ -1041,8 +1040,11 @@ void SmbSession::upgradeProject(const QString& kind, const QString& document) {
             const SmbResourceDocument bundle = SmbResourceDocument::load(documentPath_);
             if (bundle.root() != document_.root()) {
                 undoStack()->clear();
-                document_ = saved_ = bundle;
-                revision_ = savedRevision_ = nextRevision_++;
+                saved_ = bundle;
+                savedRevision_ = nextRevision_;
+                // Through setDocument: the painter's cache and the open
+                // editors follow the new resources.
+                setDocument(bundle, nextRevision_++);
             }
         } catch (const std::exception& e) {
             report(sdk::Severity::Error, kind, QString::fromUtf8(e.what()));

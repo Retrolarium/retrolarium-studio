@@ -71,13 +71,46 @@ MapCanvas::MapCanvas(sdk::TileMapModel* model, QWidget* parent) : QWidget(parent
     connect(model_, &sdk::EditorModel::selectionChanged, this, qOverload<>(&QWidget::update));
     connect(model_, &sdk::EditorModel::toolsChanged, this, &MapCanvas::refresh);
     connect(&theme::Theme::instance(), &theme::Theme::changed, this, qOverload<>(&QWidget::update));
-    refresh();
+    renderNow();
 }
 
 void MapCanvas::refresh() {
+    if (renderPending_) {
+        return;
+    }
+    renderPending_ = true;
+    QTimer::singleShot(0, this, [this] {
+        renderPending_ = false;
+        renderNow();
+    });
+}
+
+void MapCanvas::renderNow() {
     image_ = model_->render();
     setMinimumSize(sizeHint());
     update();
+}
+
+QRect MapCanvas::hoverRect(QPoint cell) const {
+    const QRect map = mapRect();
+    const int cw = std::max(1, scaled(model_->cellSize().width()));
+    const int ch = std::max(1, scaled(model_->cellSize().height()));
+    return QRect(map.left() + cell.x() * cw, map.top() + cell.y() * ch, cw, ch).adjusted(-3, -3, 3, 3);
+}
+
+void MapCanvas::setHoverCell(QPoint cell) {
+    if (cell == hoverCell_) {
+        return;
+    }
+    // Only the two outlines change: repainting a large zoomed map for them
+    // made hovering lag.
+    if (insideMap(hoverCell_)) {
+        update(hoverRect(hoverCell_));
+    }
+    hoverCell_ = cell;
+    if (insideMap(hoverCell_)) {
+        update(hoverRect(hoverCell_));
+    }
 }
 
 void MapCanvas::setZoom(int zoom) {
@@ -177,6 +210,11 @@ void MapCanvas::paintLine(QPoint from, QPoint to, int value) {
 
 void MapCanvas::mousePressEvent(QMouseEvent* event) {
     setFocus();
+    // A second button during a stroke or a drag would restart it and lose
+    // what was painted so far.
+    if (painting_ || !dragging_.isEmpty()) {
+        return;
+    }
     const QPoint cell = cellAt(event->pos());
     if (!insideMap(cell) || model_->isReadOnly()) {
         if (insideMap(cell) && tool_ == QLatin1String("select")) {
@@ -205,6 +243,7 @@ void MapCanvas::mousePressEvent(QMouseEvent* event) {
                           ? brushes.first().value
                           : model_->currentBrush();
         painting_ = true;
+        paintButton_ = event->button();
         lastPaintCell_ = cell;
         model_->beginStroke();
         paintLine(cell, cell, paintValue_);
@@ -247,10 +286,7 @@ void MapCanvas::mousePressEvent(QMouseEvent* event) {
 
 void MapCanvas::mouseMoveEvent(QMouseEvent* event) {
     const QPoint cell = cellAt(event->pos());
-    if (cell != hoverCell_) {
-        hoverCell_ = cell;
-        update();
-    }
+    setHoverCell(cell);
     if (painting_ && insideMap(cell) && cell != lastPaintCell_) {
         paintLine(lastPaintCell_, cell, paintValue_);
         lastPaintCell_ = cell;
@@ -259,9 +295,14 @@ void MapCanvas::mouseMoveEvent(QMouseEvent* event) {
     }
 }
 
-void MapCanvas::mouseReleaseEvent(QMouseEvent*) {
+void MapCanvas::mouseReleaseEvent(QMouseEvent* event) {
     if (painting_) {
+        // Only the button that began the stroke ends it.
+        if (event->button() != paintButton_) {
+            return;
+        }
         painting_ = false;
+        paintButton_ = Qt::NoButton;
         model_->endStroke();
     }
     if (!dragging_.isEmpty()) {
@@ -271,8 +312,7 @@ void MapCanvas::mouseReleaseEvent(QMouseEvent*) {
 }
 
 void MapCanvas::leaveEvent(QEvent*) {
-    hoverCell_ = QPoint(-1, -1);
-    update();
+    setHoverCell(QPoint(-1, -1));
 }
 
 void MapCanvas::wheelEvent(QWheelEvent* event) {
@@ -307,8 +347,7 @@ void MapCanvas::dragEnterEvent(QDragEnterEvent* event) {
 }
 
 void MapCanvas::dragMoveEvent(QDragMoveEvent* event) {
-    hoverCell_ = cellAt(event->pos());
-    update();
+    setHoverCell(cellAt(event->pos()));
     if (insideMap(hoverCell_)) {
         event->acceptProposedAction();
     } else {
@@ -326,11 +365,13 @@ void MapCanvas::dropEvent(QDropEvent* event) {
     event->acceptProposedAction();
 }
 
-void MapCanvas::paintEvent(QPaintEvent*) {
+void MapCanvas::paintEvent(QPaintEvent* event) {
     const theme::Tokens& t = theme::current();
     QPainter painter(this);
-    painter.fillRect(rect(), t.canvas);
-    paint::dotGrid(painter, rect(), 16, theme::canvas::kGridDot);
+    // Everything per pixel or per cell is limited to the area being repainted.
+    const QRect dirty = event->rect();
+    painter.fillRect(dirty, t.canvas);
+    paint::dotGrid(painter, dirty, 16, theme::canvas::kGridDot);
 
     const QRect map = mapRect();
     const int cw = std::max(1, scaled(model_->cellSize().width()));
@@ -344,8 +385,13 @@ void MapCanvas::paintEvent(QPaintEvent*) {
     // Cell overlay (collision and similar layers).
     if (model_->showsCellOverlay()) {
         const QVector<sdk::CellBrush> brushes = model_->brushes();
-        for (int y = 0; y < grid.height(); ++y) {
-            for (int x = 0; x < grid.width(); ++x) {
+        const QRect cells = dirty.intersected(map);
+        const int x0 = std::max(0, (cells.left() - map.left()) / cw);
+        const int y0 = std::max(0, (cells.top() - map.top()) / ch);
+        const int x1 = std::min(grid.width() - 1, (cells.right() - map.left()) / cw);
+        const int y1 = std::min(grid.height() - 1, (cells.bottom() - map.top()) / ch);
+        for (int y = y0; !cells.isEmpty() && y <= y1; ++y) {
+            for (int x = x0; x <= x1; ++x) {
                 const int value = model_->cellValue(QPoint(x, y));
                 for (const sdk::CellBrush& brush : brushes) {
                     if (brush.value == value && brush.overlay.isValid()) {
@@ -585,7 +631,7 @@ QWidget* TileMapEditor::createToolbar(QWidget* parent) {
             chip->setCheckable(true);
             chip->setChecked(option.value == QLatin1String("On"));
             connect(chip, &QAbstractButton::toggled, this, [this, chip, key](bool on) {
-                chip->setValue(on ? QStringLiteral("On") : tr("Off"));
+                chip->setValue(on ? QStringLiteral("On") : QStringLiteral("Off"));
                 map_->setViewOption(key, chip->value());
             });
         } else if (!option.choices.isEmpty()) {
@@ -597,11 +643,11 @@ QWidget* TileMapEditor::createToolbar(QWidget* parent) {
     }
 
     auto* gridChip = new ui::ViewChip(tr("Grid"),
-                                      gridVisible() ? QStringLiteral("On") : tr("Off"), bar);
+                                      gridVisible() ? QStringLiteral("On") : QStringLiteral("Off"), bar);
     gridChip->setCheckable(true);
     gridChip->setChecked(gridVisible());
     connect(gridChip, &QAbstractButton::toggled, this, [this, gridChip](bool on) {
-        gridChip->setValue(on ? QStringLiteral("On") : tr("Off"));
+        gridChip->setValue(on ? QStringLiteral("On") : QStringLiteral("Off"));
         setGridVisible(on);
     });
     layout->addWidget(gridChip);

@@ -69,7 +69,7 @@ QString LevelsModel::makeId(const QString& field, int index) {
 }
 
 QString LevelsModel::title() const {
-    return tr("Round ") + two(round_ + 1);
+    return tr("Round %1").arg(two(round_ + 1));
 }
 
 bool LevelsModel::isReadOnly() const {
@@ -466,7 +466,7 @@ sdk::Inspection LevelsModel::inspectRound() const {
         sdk::Field shared;
         shared.key = QStringLiteral("shared");
         shared.label = tr("Used by");
-        shared.value = tr("rounds ") + roundList(levels.roundsForLayout(layout));
+        shared.value = tr("rounds %1").arg(roundList(levels.roundsForLayout(layout)));
         inspection.fields = {layoutField, shared};
         inspection.note = tr("Pick an object on the map, or drag one from the library. "
                              "Layouts are shared: edits show in every round listed above.");
@@ -487,7 +487,7 @@ sdk::Inspection LevelsModel::inspectLayout() const {
     const int layout = levels.layoutForRound(round_);
     sdk::Inspection inspection;
     inspection.kicker = tr("Collision layout");
-    inspection.title = tr("Layout ") + two(layout);
+    inspection.title = tr("Layout %1").arg(two(layout));
     sdk::Field brush;
     brush.key = QStringLiteral("brush");
     brush.label = tr("Brush");
@@ -497,7 +497,7 @@ sdk::Inspection LevelsModel::inspectLayout() const {
     sdk::Field shared;
     shared.key = QStringLiteral("shared");
     shared.label = tr("Used by");
-    shared.value = tr("rounds ") + roundList(levels.roundsForLayout(layout));
+    shared.value = tr("rounds %1").arg(roundList(levels.roundsForLayout(layout)));
     int solid = 0;
     for (std::uint8_t value : levels.grid(layout)) {
         solid += value != 0;
@@ -514,7 +514,7 @@ sdk::Inspection LevelsModel::inspectLayout() const {
     const auto stream = levels.encodedCollision(layout);
     inspection.engine = {{tr("Record"), QStringLiteral("Level_Data%1").arg(layout)},
                          {tr("Encoding"), tr("RLE from cell $40")},
-                         {tr("Stream"), tr("%1 bytes").arg(stream.size())},
+                         {tr("Stream"), tr("%n bytes", nullptr, stream.size())},
                          {tr("Changed"),
                           levels.grid(layout) == levels.baselineGrid(layout) ? QStringLiteral("no")
                                                                              : QStringLiteral("yes")}};
@@ -561,7 +561,7 @@ sdk::Inspection LevelsModel::inspectObject(const Ref& ref) const {
     sdk::Field shared;
     shared.key = QStringLiteral("shared");
     shared.label = tr("Used by");
-    shared.value = tr("rounds ") + roundList(levels.roundsForObjectLayout(layout, ref.field));
+    shared.value = tr("rounds %1").arg(roundList(levels.roundsForObjectLayout(layout, ref.field)));
 
     inspection.fields = {type, place, size, shared};
     inspection.note = objects::isVariable(ref.field)
@@ -652,7 +652,7 @@ bool LevelsModel::setField(const QString& key, const QVariant& value, QString* e
 }
 
 QString LevelsModel::startPoint() const {
-    return tr("Round ") + two(round_ + 1);
+    return tr("Round %1").arg(two(round_ + 1));
 }
 
 QString LevelsModel::statusText() const {

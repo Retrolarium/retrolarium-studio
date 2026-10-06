@@ -19,7 +19,7 @@ QString hierarchyId(World world) {
 }
 
 QString chrId(World world) {
-    return rlTr("doraemon", "chr-bank-%1").arg(int(world) - 1);
+    return QStringLiteral("chr-bank-%1").arg(int(world) - 1);
 }
 
 QStringList paletteIds(const nes::Bundle& bundle, World world) {

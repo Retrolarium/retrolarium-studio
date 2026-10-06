@@ -395,7 +395,7 @@ sdk::Inspection SolomonSoundModel::inspect() const {
         sdk::Field length;
         length.key = QStringLiteral("length");
         length.label = tr("Length");
-        length.value = tr("%1 frames").arg(note.length);
+        length.value = tr("%n frames", nullptr, note.length);
         length.monospace = true;
         inspection.fields = {at, length};
         inspection.note = tr("Drag the note up or down to change its pitch. The byte lives in shared "

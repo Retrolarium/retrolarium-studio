@@ -9,6 +9,8 @@
 #include <QMenu>
 #include <QPainter>
 
+#include <algorithm>
+
 namespace rl::ui {
 
 namespace {
@@ -27,7 +29,9 @@ QFont valueFont() {
 
 ViewChip::ViewChip(const QString& key, const QString& value, QWidget* parent)
     : QAbstractButton(parent), key_(key), value_(value) {
-    setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+    // A crowded toolbar narrows the chips before anything else: their
+    // values elide, while tools and layers keep their full labels.
+    setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Fixed);
     setCursor(Qt::PointingHandCursor);
     setFocusPolicy(Qt::TabFocus);
     connect(this, &QAbstractButton::clicked, this, [this] {
@@ -76,7 +80,13 @@ QSize ViewChip::sizeHint() const {
 }
 
 QSize ViewChip::minimumSizeHint() const {
-    return sizeHint();
+    // Squeezed, the key and the value each keep a couple of letters.
+    const QFontMetrics key(keyFont());
+    const QFontMetrics value(valueFont());
+    const QString stub = QStringLiteral("Wm…");
+    const int width = kPaddingX * 2 + std::min(key.horizontalAdvance(key_), key.horizontalAdvance(stub)) + kGap +
+                      std::min(value.horizontalAdvance(rlValue(value_)), value.horizontalAdvance(stub));
+    return QSize(width, kHeight);
 }
 
 void ViewChip::enterEvent(QEvent* event) {
@@ -103,14 +113,23 @@ void ViewChip::paintEvent(QPaintEvent*) {
 
     const QFont kf = keyFont();
     const QFont vf = valueFont();
-    const int keyWidth = QFontMetrics(kf).horizontalAdvance(key_);
+    // When the chip is narrower than its text, the value keeps at least half
+    // of the room and both elide.
+    const QString value = rlValue(value_);
+    const int room = std::max(0, box.width() - kPaddingX * 2 - kGap);
+    const int fullKey = QFontMetrics(kf).horizontalAdvance(key_);
+    const int fullValue = QFontMetrics(vf).horizontalAdvance(value);
+    const int valueWidth = std::min(fullValue, std::max(room - fullKey, room / 2));
+    const int keyWidth = std::min(fullKey, room - valueWidth);
     painter.setFont(kf);
     painter.setPen(t.muted);
-    painter.drawText(QRect(kPaddingX, 0, keyWidth + 1, box.height()), Qt::AlignVCenter, key_);
+    painter.drawText(QRect(kPaddingX, 0, keyWidth + 1, box.height()), Qt::AlignVCenter,
+                     QFontMetrics(kf).elidedText(key_, Qt::ElideRight, keyWidth + 1));
     painter.setFont(vf);
     painter.setPen(isChecked() || !isCheckable() ? t.text : t.muted);
-    painter.drawText(QRect(kPaddingX + keyWidth + kGap, 0, box.width(), box.height()),
-                     Qt::AlignVCenter, rlValue(value_));
+    const int valueLeft = kPaddingX + keyWidth + kGap;
+    painter.drawText(QRect(valueLeft, 0, valueWidth + 1, box.height()), Qt::AlignVCenter,
+                     QFontMetrics(vf).elidedText(value, Qt::ElideRight, valueWidth + 1));
 }
 
 }  // namespace rl::ui

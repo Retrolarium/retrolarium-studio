@@ -28,7 +28,7 @@ class SmbSfxTablesModel final : public sdk::TableModel {
 public:
     explicit SmbSfxTablesModel(SmbSession* session);
 
-    QString title() const override { return QStringLiteral("Sound effect tables"); }
+    QString title() const override { return tr("Sound effect tables"); }
     sdk::Inspection inspect() const override;
     sdk::Budget budget() const override;
 

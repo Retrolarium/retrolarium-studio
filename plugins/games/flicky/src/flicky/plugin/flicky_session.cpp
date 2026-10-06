@@ -198,7 +198,7 @@ QVector<sdk::DocumentGroup> FlickySession::documents(const QString& kind) const 
         for (int first = 0; first < objects::kRounds; first += 8) {
             sdk::DocumentGroup rounds = group(tr("Rounds %1–%2").arg(first + 1).arg(first + 8));
             for (int round = first; round < first + 8; ++round) {
-                rounds.documents.append(entry(roundId(round), tr("Round ") + two(round + 1),
+                rounds.documents.append(entry(roundId(round), tr("Round %1").arg(two(round + 1)),
                                               objects::isBonusRound(round)
                                                   ? QStringLiteral("bonus")
                                                   : QStringLiteral("L") + two(levels_.layoutForRound(round)),
@@ -290,7 +290,7 @@ QVector<sdk::DocumentGroup> FlickySession::documents(const QString& kind) const 
     } else if (kind == QLatin1String("text")) {
         groups.append(group(tr("All game text"),
                             {entry(QStringLiteral("game-text"), tr("Game text"),
-                                   tr("%1 strings").arg(semantics().textIds().size()),
+                                   tr("%n strings", nullptr, semantics().textIds().size()),
                                    !sameText(semantics(), semantics_.saved))}));
     } else if (kind == QLatin1String("demo")) {
         sdk::DocumentGroup demos = group(tr("Attract demos"));
@@ -304,7 +304,7 @@ QVector<sdk::DocumentGroup> FlickySession::documents(const QString& kind) const 
                 const int round = levels_.attractDemo(demo).value(QStringLiteral("round")).toInt();
                 demos.documents.append(entry(QStringLiteral("demo-%1").arg(demo + 1),
                                              tr("Demo %1 · Round %2").arg(demo + 1).arg(two(round)),
-                                             tr("%1 steps").arg(steps.size()),
+                                             tr("%n steps", nullptr, steps.size()),
                                              savedLevels_.hasAttractDemos() &&
                                                  steps != savedLevels_.attractDemoSteps(demo)));
             }
@@ -330,12 +330,12 @@ QVector<sdk::DocumentGroup> FlickySession::documents(const QString& kind) const 
         sdk::DocumentGroup voices = group(tr("FM voices"));
         for (const QString& id : sound().voiceBankIds()) {
             voices.documents.append(entry(QStringLiteral("voice:") + id, id,
-                                          tr("%1 voices").arg(sound().voiceCount(id)),
+                                          tr("%n voices", nullptr, sound().voiceCount(id)),
                                           sound().blockText(id) != sound_.saved.blockText(id)));
         }
         sdk::DocumentGroup data = group(tr("Sound data"));
         data.documents.append(entry(QStringLiteral("envelopes"), tr("Priority & envelopes"),
-                                    tr("%1 bytes").arg(sound().priorityEnvelopeBytes().size()),
+                                    tr("%n bytes", nullptr, sound().priorityEnvelopeBytes().size()),
                                     sound().priorityEnvelopeBytes() != sound_.saved.priorityEnvelopeBytes()));
         groups << songs << effects << voices << data;
     } else if (kind == QLatin1String("playtest")) {
@@ -679,7 +679,14 @@ void FlickySession::commitSemantics(const FlickySemanticsDocument& before, quint
 }
 
 void FlickySession::setSemantics(const FlickySemanticsDocument& doc, quint64 revision) {
-    *semantics_.doc = doc;
+    if (!doc.hasTitleLayout() && semantics_.doc->hasTitleLayout()) {
+        // Snapshots from before the kit added the title layout keep it.
+        FlickySemanticsDocument next = doc;
+        next.adoptTitleLayout(*semantics_.doc);
+        *semantics_.doc = next;
+    } else {
+        *semantics_.doc = doc;
+    }
     semantics_.revision = revision;
     notifySemantics();
 }
@@ -759,56 +766,45 @@ bool FlickySession::save(QString* error) {
     for (int layout = 0; layout < objects::kLayouts && !levelsDirty; ++layout) {
         levelsDirty = isLayoutDirty(layout);
     }
-    try {
-        if (levelsDirty) {
-            levels_.save(levelsPath_);
+    // Each document on its own: one that cannot be written (a level over
+    // its capacity) leaves the others saved, and only itself unsaved.
+    bool ok = true;
+    const auto write = [&](bool dirty, const QString& path, const std::function<void()>& save) {
+        if (!dirty) return true;
+        try {
+            save();
+            return true;
+        } catch (const std::exception& e) {
+            if (ok) failed(path, e);
+            ok = false;
+            return false;
         }
-    } catch (const std::exception& e) {
-        return failed(levelsPath_, e);
+    };
+    if (write(levelsDirty, levelsPath_, [&] { levels_.save(levelsPath_); })) {
+        savedLevels_ = levels_;
     }
-    try {
-        if (graphics_.isDirty()) {
-            graphics_.doc->save(graphics_.path);
-        }
-    } catch (const std::exception& e) {
-        return failed(graphics_.path, e);
+    if (write(graphics_.isDirty(), graphics_.path, [&] { graphics_.doc->save(graphics_.path); })) {
+        graphics_.saved = *graphics_.doc;
+        graphics_.savedRevision = graphics_.revision;
     }
-    try {
-        if (semantics_.isDirty()) {
-            semantics_.doc->save(semantics_.path);
-        }
-    } catch (const std::exception& e) {
-        return failed(semantics_.path, e);
+    if (write(semantics_.isDirty(), semantics_.path, [&] { semantics_.doc->save(semantics_.path); })) {
+        semantics_.saved = *semantics_.doc;
+        semantics_.savedRevision = semantics_.revision;
     }
-    try {
-        if (sequences_.isDirty()) {
-            sequences_.doc->save(sequences_.path);
-        }
-    } catch (const std::exception& e) {
-        return failed(sequences_.path, e);
+    if (write(sequences_.isDirty(), sequences_.path, [&] { sequences_.doc->save(sequences_.path); })) {
+        sequences_.saved = *sequences_.doc;
+        sequences_.savedRevision = sequences_.revision;
     }
-    try {
-        if (sound_.isDirty()) {
-            sound_.doc->save(sound_.path);
-        }
-    } catch (const std::exception& e) {
-        return failed(sound_.path, e);
+    if (write(sound_.isDirty(), sound_.path, [&] { sound_.doc->save(sound_.path); })) {
+        sound_.saved = *sound_.doc;
+        sound_.savedRevision = sound_.revision;
     }
-    savedLevels_ = levels_;
-    graphics_.saved = *graphics_.doc;
-    graphics_.savedRevision = graphics_.revision;
-    semantics_.saved = *semantics_.doc;
-    semantics_.savedRevision = semantics_.revision;
-    sequences_.saved = *sequences_.doc;
-    sequences_.savedRevision = sequences_.revision;
-    sound_.saved = *sound_.doc;
-    sound_.savedRevision = sound_.revision;
     dirtyTilesRevision_ = ~quint64(0);
-    undoStack()->setClean();
+    if (ok) undoStack()->setClean();
     for (const sdk::Kind& k : kinds()) {
         emit documentsChanged(k.id);
     }
-    return true;
+    return ok;
 }
 
 bool FlickySession::canRevert(const QString& kind, const QString& document) const {
@@ -1032,7 +1028,7 @@ QString FlickySession::selectedStart() const {
     if (demoStart()) {
         return tr("Demo %1").arg(demo_ + 1);
     }
-    return tr("Round ") + two(playRound_ + 1);
+    return tr("Round %1").arg(two(playRound_ + 1));
 }
 
 void FlickySession::setPlayRound(int round) {

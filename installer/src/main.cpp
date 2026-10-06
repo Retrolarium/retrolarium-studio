@@ -19,9 +19,18 @@
 #include <QTextStream>
 #include <QTranslator>
 
+#include <windows.h>
+#include <shellapi.h>
+
 int main(int argc, char* argv[]) {
+    // From Windows' wide command line: argv is in the ANSI code page, which
+    // cannot hold every folder name.
     QStringList arguments;
-    for (int i = 0; i < argc; ++i) arguments << QString::fromLocal8Bit(argv[i]);
+    int count = 0;
+    if (wchar_t** wide = CommandLineToArgvW(GetCommandLineW(), &count)) {
+        for (int i = 0; i < count; ++i) arguments << QString::fromWCharArray(wide[i]);
+        LocalFree(wide);
+    }
 
     const int create = arguments.indexOf(QStringLiteral("--create-package"));
     if (create >= 0) {
@@ -68,11 +77,9 @@ int main(int argc, char* argv[]) {
     const auto use = [&](const QString& code) {
         QApplication::removeTranslator(&studioTranslator);
         QApplication::removeTranslator(&qtTranslator);
-        const bool translated = code != QLatin1String("en")
-                                && studioTranslator.load(QStringLiteral(":/i18n/retrolarium_studio_%1").arg(code));
-        if (translated) {
+        if (studioTranslator.load(QStringLiteral(":/i18n/retrolarium_studio_%1").arg(code))) {
             QApplication::installTranslator(&studioTranslator);
-            if (qtTranslator.load(QStringLiteral(":/i18n/qtbase_%1").arg(code))) {
+            if (code != QLatin1String("en") && qtTranslator.load(QStringLiteral(":/i18n/qtbase_%1").arg(code))) {
                 QApplication::installTranslator(&qtTranslator);
             }
         }

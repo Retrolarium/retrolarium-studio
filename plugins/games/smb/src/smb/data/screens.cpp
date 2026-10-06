@@ -629,7 +629,10 @@ void setSlotText(SmbResourceDocument& document, const SmbTextSlot& slot, const Q
     SmbScreenSet set = SmbScreenSet::fromJson(resource);
     for (const SmbScreenTextField& field : set.textFields) {
         if (field.key == slot.key) {
-            set.setText(field, text);
+            // A copy: a text that grows replaces the set, fields and all.
+            const SmbScreenTextField target = field;
+            set.setText(target, text);
+            break;
         }
     }
     document.setResource(slot.resource, set.toJson(resource));

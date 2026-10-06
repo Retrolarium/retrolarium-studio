@@ -203,7 +203,7 @@ QVector<sdk::DocumentGroup> PacmanSession::documents(const QString& kind) const 
         sdk::DocumentGroup group;
         group.title = tr("Palettes");
         for (const QString& id : state_.bundle.resourceIds(kPaletteCodec)) {
-            group.documents << entry(id, paletteLabel(id), tr("%1 colours").arg(state_.bundle.tableValues(id).size()),
+            group.documents << entry(id, paletteLabel(id), tr("%n colours", nullptr, state_.bundle.tableValues(id).size()),
                                      state_.bundle.tableValues(id) != saved_.bundle.tableValues(id));
         }
         groups << group;
@@ -245,7 +245,7 @@ QVector<sdk::DocumentGroup> PacmanSession::documents(const QString& kind) const 
         sdk::DocumentGroup group;
         group.title = QStringLiteral("Text");
         group.documents << entry(QStringLiteral("text"), tr("Game text"),
-                                 tr("%1 lines").arg(state_.bundle.resource(ids::kScreens).value(QStringLiteral("text_fields")).toArray().size()),
+                                 tr("%n lines", nullptr, state_.bundle.resource(ids::kScreens).value(QStringLiteral("text_fields")).toArray().size()),
                                  changed(ids::kScreens));
         groups << group;
     } else if (kind == QLatin1String("sound")) {
@@ -280,7 +280,7 @@ QVector<sdk::DocumentGroup> PacmanSession::documents(const QString& kind) const 
         group.documents << entry(QStringLiteral("demo"), tr("Attract demo"),
                                  state_.demo.isEmpty()
                                      ? tr("not added yet")
-                                     : tr("%1 steps").arg(state_.demo.value(QStringLiteral("steps")).toArray().size()),
+                                     : tr("%n steps", nullptr, state_.demo.value(QStringLiteral("steps")).toArray().size()),
                                  !state_.demo.isEmpty() && state_.demo != saved_.demo);
         groups << group;
     } else if (kind == QLatin1String("playtest")) {
@@ -470,7 +470,7 @@ QVector<nes::PreviewPalette> PacmanSession::previewPalettes(const QString&, bool
         const QVector<int> values = state_.bundle.tableValues(table);
         for (int p = 0; p < count; ++p) {
             if ((first + p) * 4 + 4 <= values.size()) {
-                result << nes::PreviewPalette{name.arg(p), values.mid((first + p) * 4, 4)};
+                result << nes::PreviewPalette{count == 1 ? name : name.arg(p), values.mid((first + p) * 4, 4)};
             }
         }
     };

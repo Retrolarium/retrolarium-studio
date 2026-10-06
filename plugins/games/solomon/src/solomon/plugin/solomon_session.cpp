@@ -210,7 +210,7 @@ QVector<sdk::DocumentGroup> SolomonSession::listDocuments(const QString& kind) c
             }
             const int enemies = state_.rooms.enemies(r).size();
             groups.last().documents << entry(QString::number(r + 1), roomLabel(state_.rooms.roomNumber(r)),
-                                             enemies ? tr("%1 enemies").arg(enemies) : QString(),
+                                             enemies ? tr("%n enemies", nullptr, enemies) : QString(),
                                              now.at(r) != saved.at(r));
         }
         sdk::DocumentGroup group;
@@ -232,7 +232,7 @@ QVector<sdk::DocumentGroup> SolomonSession::listDocuments(const QString& kind) c
         groups << group;
         if (!state_.text.isEmpty()) {
             sdk::DocumentGroup text;
-            text.title = QStringLiteral("Text screens");
+            text.title = tr("Text screens");
             const bool dirty = !(state_.text == saved_.text);
             for (const TextScreen& screen : textScreens()) {
                 text.documents << entry(QStringLiteral("text:%1").arg(screen.id), screen.label, QString(), dirty);
@@ -247,7 +247,7 @@ QVector<sdk::DocumentGroup> SolomonSession::listDocuments(const QString& kind) c
                                      QStringLiteral("kit"));
         } else {
             group.documents << entry(QStringLiteral("all"), tr("All text"),
-                                     tr("%1 lines").arg(state_.text.strings().size()),
+                                     tr("%n lines", nullptr, state_.text.strings().size()),
                                      !(state_.text == saved_.text));
         }
         groups << group;
@@ -272,7 +272,7 @@ QVector<sdk::DocumentGroup> SolomonSession::listDocuments(const QString& kind) c
         sdk::DocumentGroup group;
         group.title = tr("Title");
         group.documents << entry(QStringLiteral("demo"), tr("Attract demo"),
-                                 tr("%1 steps").arg(state_.presentation.value(QStringLiteral("demo_steps")).toArray().size()),
+                                 tr("%n steps", nullptr, state_.presentation.value(QStringLiteral("demo_steps")).toArray().size()),
                                  state_.presentation.value(QStringLiteral("demo_steps")) !=
                                      saved_.presentation.value(QStringLiteral("demo_steps")));
         groups << group;
@@ -297,8 +297,7 @@ QVector<sdk::DocumentGroup> SolomonSession::listDocuments(const QString& kind) c
             const int first = family.members.first().action;
             groups.last().documents << entry(QStringLiteral("%1:%2").arg(family.group).arg(first),
                                              SolomonAnimationModel::familyLabel(family),
-                                             family.frames == 1 ? tr("1 frame")
-                                                                : tr("%1 frames").arg(family.frames),
+                                             tr("%n frames", nullptr, family.frames),
                                              dirty);
         }
     } else if (kind == QLatin1String("graphics")) {
@@ -352,7 +351,7 @@ QVector<sdk::DocumentGroup> SolomonSession::listDocuments(const QString& kind) c
                                      id == QLatin1String("room-palettes") ? tr("Rooms")
                                      : id == QLatin1String("ending-fade") ? tr("Ending fade")
                                                                           : id,
-                                     tr("%1 colours").arg(state_.graphics.tableValues(id).size()),
+                                     tr("%n colours", nullptr, state_.graphics.tableValues(id).size()),
                                      state_.graphics.tableValues(id) != saved_.graphics.tableValues(id));
         }
         groups << group;
@@ -471,7 +470,11 @@ const QVector<AnimationFamily>& SolomonSession::animationFamilies() const {
     return families_;
 }
 
-void SolomonSession::setState(const SolomonState& state, quint64 revision) {
+void SolomonSession::setState(const SolomonState& incoming, quint64 revision) {
+    // Snapshots from before the text was added keep it: undoing past the
+    // upgrade must not save an empty text.json.
+    SolomonState state = incoming;
+    if (state.text.isEmpty() && !state_.text.isEmpty()) state.text = state_.text;
     // Only the kinds whose documents changed list again.
     QStringList changed;
     if (!(state.rooms == state_.rooms)) changed << QStringLiteral("rooms");
@@ -754,6 +757,8 @@ void SolomonSession::upgradeText() {
             state_.text = loaded;
             saved_.text = loaded;
             documents_.clear();
+            // A new revision: what the session caches per revision sees the text.
+            revision_ = nextRevision_++;
         } catch (const std::exception& e) {
             report(sdk::Severity::Error, QStringLiteral("text"), QString::fromUtf8(e.what()));
             return;

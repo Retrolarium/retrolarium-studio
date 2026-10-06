@@ -98,7 +98,7 @@ QJsonArray withPalette(QJsonArray attributes, int cell, int palette) {
 
 QImage tile(const CastleSession* session, const QJsonObject& screen, int tile, int palette) {
     const nes::Bundle& bundle = session->bundle();
-    const QString chr = rlTr("castle", "chr-bank-%1").arg(screen.value(QStringLiteral("chr_bank")).toInt());
+    const QString chr = QStringLiteral("chr-bank-%1").arg(screen.value(QStringLiteral("chr_bank")).toInt());
     const QString id = screen.value(QStringLiteral("id")).toString();
     const QVector<int> colours = bundle.tableValues(QStringLiteral("screen-palettes")).mid(paletteFirst(id), 16);
     const QString model = bundle.paletteModel(QStringLiteral("screen-palettes"));
@@ -376,7 +376,7 @@ sdk::Inspection CastleScreenModel::inspect() const {
     }
     const QJsonArray tiles = s.value(QStringLiteral("tiles")).toArray();
     inspection.kicker = tr("Name table cell");
-    inspection.title = QStringLiteral("Cell %1, %2").arg(cell_ % kWidth).arg(cell_ / kWidth);
+    inspection.title = tr("Cell %1, %2").arg(cell_ % kWidth).arg(cell_ / kWidth);
     sdk::Field tile;
     tile.key = QStringLiteral("tile");
     tile.label = tr("Tile");
@@ -471,7 +471,7 @@ QVector<sdk::TableColumn> CastleScreenTextModel::columns() const {
     where.muted = true;
     sdk::TableColumn text;
     text.key = QStringLiteral("text");
-    text.label = QStringLiteral("Text");
+    text.label = tr("Text");
     text.monospace = true;
     text.editable = true;
     sdk::TableColumn length;
@@ -557,7 +557,7 @@ bool CastleScreenTextModel::setCell(int row, int column, const QString& value, Q
 sdk::Inspection CastleScreenTextModel::inspect() const {
     sdk::Inspection inspection;
     inspection.engineTag = QStringLiteral("castle.screens@1");
-    inspection.kicker = QStringLiteral("Text");
+    inspection.kicker = tr("Text");
     inspection.title = cell(row_, 0);
     inspection.note = row_ == lines_.size()
                           ? tr("The message the game writes over the room when the last life is lost. It "

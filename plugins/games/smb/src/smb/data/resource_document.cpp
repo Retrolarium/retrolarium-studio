@@ -282,6 +282,13 @@ void SmbResourceDocument::setArea(const QString& levels, const SmbArea& area) {
             enemies.append(record);
         }
         a.insert(QStringLiteral("enemies"), enemies);
+        // Documents that name the terminators keep them in step with the streams.
+        if (a.contains(QStringLiteral("area_implicit_terminator"))) {
+            a.insert(QStringLiteral("area_implicit_terminator"), area.areaImplicitTerminator);
+        }
+        if (a.contains(QStringLiteral("enemy_implicit_terminator"))) {
+            a.insert(QStringLiteral("enemy_implicit_terminator"), area.enemyImplicitTerminator);
+        }
         areas.replace(i, a);
         resource.insert(QStringLiteral("areas"), areas);
         setResource(levels, resource);

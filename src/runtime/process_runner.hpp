@@ -24,6 +24,10 @@ public:
     // cannot start. Returns false (and calls `done`) when busy.
     bool run(const sdk::ProcessSpec& spec, std::function<void(const sdk::ProcessResult&)> done);
     void cancel();
+    // Stops the program now and drops `done` without calling it: for the
+    // owner of the callback going away (a project closing, the studio
+    // exiting). Build output still logs the cancel.
+    void abandon();
 
     // Ten minutes, like the kit's own longest steps.
     static constexpr int kTimeoutMs = 10 * 60 * 1000;
@@ -44,6 +48,7 @@ private:
     QByteArray err_;
     QByteArray pendingLine_;
     bool cancelled_ = false;
+    bool timedOut_ = false;
 };
 
 // Quotes a command line for display in Build output.

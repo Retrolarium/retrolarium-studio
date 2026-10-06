@@ -5,6 +5,8 @@
 #include "theme/theme.hpp"
 #include "theme/typography.hpp"
 
+#include "frame/studio_dialog.hpp"
+#include "sdk/i18n.hpp"
 #include "shell/settings_dialog.hpp"
 
 #include <QApplication>
@@ -15,9 +17,45 @@
 #include <QTimer>
 #include <QTranslator>
 
+#include <exception>
 #include <memory>
 
 namespace {
+
+// A safety net for an exception a plugin's model lets out of a slot or an
+// event handler: unwinding through Qt's event loop would end the studio with
+// every unsaved edit. It is reported once, so the user can save and restart.
+class StudioApplication final : public QApplication {
+public:
+    using QApplication::QApplication;
+
+    bool notify(QObject* receiver, QEvent* event) override {
+        try {
+            return QApplication::notify(receiver, event);
+        } catch (const std::exception& e) {
+            report(QString::fromUtf8(e.what()));
+        } catch (...) {
+            report(QString());
+        }
+        return false;
+    }
+
+private:
+    void report(const QString& what) {
+        qCritical("Unhandled exception: %s", qUtf8Printable(what));
+        if (reported_) return;
+        reported_ = true;
+        // Not from inside the handler that threw (a paint, a mouse move).
+        QTimer::singleShot(0, this, [what] {
+            rl::frame::MessageDialog::inform(QApplication::activeWindow(), rlTr("studio", "Internal error"),
+                                             rlTr("studio", "Something went wrong inside the studio"),
+                                             rlTr("studio", "Save your work and restart the studio. Details: %1")
+                                                 .arg(what.isEmpty() ? rlTr("studio", "unknown error") : what));
+        });
+    }
+
+    bool reported_ = false;
+};
 
 QSize parseSize(const QString& text, const QSize& fallback) {
     const QStringList parts = text.split(QLatin1Char('x'));
@@ -40,7 +78,7 @@ int main(int argc, char* argv[]) {
         Qt::HighDpiScaleFactorRoundingPolicy::PassThrough);
     Q_INIT_RESOURCE(studio);
 
-    QApplication app(argc, argv);
+    StudioApplication app(argc, argv);
     QApplication::setApplicationName(QStringLiteral("Retrolarium Studio"));
     QApplication::setOrganizationName(QStringLiteral("Retrolarium"));
     QApplication::setApplicationVersion(QStringLiteral(RETROLARIUM_STUDIO_VERSION));
@@ -50,10 +88,11 @@ int main(int argc, char* argv[]) {
     rl::theme::setInterfaceLanguage(language);
     QTranslator studioTranslator;
     QTranslator qtTranslator;
-    if (language != QLatin1String("en") &&
-        studioTranslator.load(QStringLiteral(":/i18n/retrolarium_studio_%1").arg(language))) {
+    // English loads its file too: it holds the plural forms of counted text.
+    if (studioTranslator.load(QStringLiteral(":/i18n/retrolarium_studio_%1").arg(language))) {
         QApplication::installTranslator(&studioTranslator);
-        if (qtTranslator.load(QStringLiteral(":/i18n/qtbase_%1").arg(language))) {
+        if (language != QLatin1String("en") &&
+            qtTranslator.load(QStringLiteral(":/i18n/qtbase_%1").arg(language))) {
             QApplication::installTranslator(&qtTranslator);
         }
     }

@@ -14,7 +14,7 @@ class SmbPlaytestModel final : public sdk::EmulatorModel {
 public:
     explicit SmbPlaytestModel(SmbSession* session);
 
-    QString title() const override { return QStringLiteral("Build and run"); }
+    QString title() const override { return tr("Build and run"); }
     sdk::Inspection inspect() const override;
 
     QSize screenSize() const override { return {256, 240}; }

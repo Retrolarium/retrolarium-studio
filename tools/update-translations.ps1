@@ -18,7 +18,9 @@ $existing = Get-ChildItem -LiteralPath (Join-Path $projectRoot "resources\i18n")
     ForEach-Object { $_.BaseName -replace "^retrolarium_studio_", "" }
 foreach ($language in @($existing) + $Add | Sort-Object -Unique) {
     $ts = "retrolarium_studio_$language.ts"
-    $script = "cd /studio && /usr/local/Qt-5.15/bin/lupdate -tr-function-alias translate+=rlTr " +
+    # English is the source text: its file holds only the plural forms.
+    $pluralOnly = if ($language -eq "en") { "-pluralonly " } else { "" }
+    $script = "cd /studio && /usr/local/Qt-5.15/bin/lupdate -tr-function-alias translate+=rlTr $pluralOnly" +
               "-locations none -no-obsolete -target-language $language src plugins installer/src " +
               "-ts resources/i18n/$ts"
     docker run --rm --entrypoint sh --mount "type=bind,source=$mount,target=/studio" $Image -c $script

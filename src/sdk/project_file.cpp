@@ -244,6 +244,11 @@ private:
             return readLiteralString();
         }
         if (c == QLatin1Char('[')) {
+            // Bounded, so a crafted file cannot exhaust the stack.
+            if (depth_ >= kMaxArrayDepth) {
+                fail(rlTr("studio", "arrays are nested too deeply"));
+            }
+            ++depth_;
             ++pos_;
             QVariantList items;
             skipArrayFiller();
@@ -258,6 +263,7 @@ private:
                 }
             }
             ++pos_;
+            --depth_;
             return items;
         }
         if (c == QLatin1Char('{')) {
@@ -370,8 +376,11 @@ private:
 
     TablePtr root_ = std::make_shared<Table>();
 
+    static constexpr int kMaxArrayDepth = 64;
+
     const QString& text_;
     int pos_ = 0;
+    int depth_ = 0;
 };
 
 QVariant lookup(const QVariantMap& root, const QString& dottedKey) {

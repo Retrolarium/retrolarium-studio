@@ -43,6 +43,7 @@ bool ProcessRunner::run(const sdk::ProcessSpec& spec,
     err_.clear();
     pendingLine_.clear();
     cancelled_ = false;
+    timedOut_ = false;
 
     process_ = new QProcess(this);
     process_->setProgram(spec.program);
@@ -67,7 +68,11 @@ bool ProcessRunner::run(const sdk::ProcessSpec& spec,
                 result.started = true;
                 result.exitCode = code;
                 result.crashed = status == QProcess::CrashExit && !cancelled_;
-                result.cancelled = cancelled_;
+                result.cancelled = cancelled_ && !timedOut_;
+                if (timedOut_) {
+                    // A timeout is a failure the caller reports, not a cancel it ignores.
+                    result.error = tr("Timed out after %1 minutes.").arg(kTimeoutMs / 60000);
+                }
                 complete(result);
             });
     connect(process_, &QProcess::errorOccurred, this, [this](QProcess::ProcessError error) {
@@ -80,6 +85,7 @@ bool ProcessRunner::run(const sdk::ProcessSpec& spec,
     QTimer::singleShot(kTimeoutMs, process_, [this] {
         if (process_) {
             emit outputLine(tr("Timed out after %1 minutes.").arg(kTimeoutMs / 60000));
+            timedOut_ = true;
             cancel();
         }
     });
@@ -100,6 +106,25 @@ void ProcessRunner::cancel() {
             process_->kill();
         }
     });
+}
+
+void ProcessRunner::abandon() {
+    if (!process_) {
+        return;
+    }
+    done_ = {};
+    cancelled_ = true;
+    timedOut_ = false;
+    process_->kill();
+    // finished arrives from within the wait and completes the run; a
+    // process that outlives it is let go here.
+    process_->waitForFinished(2000);
+    if (process_) {
+        sdk::ProcessResult result;
+        result.started = true;
+        result.cancelled = true;
+        complete(result);
+    }
 }
 
 void ProcessRunner::drain(bool flush) {

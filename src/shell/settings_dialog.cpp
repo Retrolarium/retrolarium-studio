@@ -14,6 +14,7 @@
 #include <QHBoxLayout>
 #include <QLocale>
 #include <QProcess>
+#include <QProcessEnvironment>
 #include <QPushButton>
 #include <QSettings>
 #include <QVBoxLayout>
@@ -160,12 +161,19 @@ void SettingsDialog::chooseBios() {
     if (!spec.program.isEmpty()) {
         QProcess process;
         process.setWorkingDirectory(spec.workingDirectory);
+        QProcessEnvironment environment = QProcessEnvironment::systemEnvironment();
+        environment.insert(QStringLiteral("PYTHONIOENCODING"), QStringLiteral("utf-8"));
+        process.setProcessEnvironment(environment);
         process.start(spec.program, spec.arguments);
-        if (!process.waitForFinished(30000)) {
+        if (!process.waitForStarted(10000)) {
+            error = process.errorString();
+        } else if (!process.waitForFinished(30000)) {
+            process.kill();
             error = tr("The kit did not answer.");
         } else if (process.exitStatus() != QProcess::NormalExit || process.exitCode() != 0) {
             error = QString::fromUtf8(process.readAllStandardError()).trimmed();
             if (error.startsWith(QLatin1String("error: "))) error = error.mid(7);
+            if (error.isEmpty()) error = tr("exit code %1").arg(process.exitCode());
         }
     }
     if (!error.isEmpty()) {

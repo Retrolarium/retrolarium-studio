@@ -21,6 +21,7 @@
 #include <QPointer>
 #include <QPushButton>
 #include <QRadioButton>
+#include <QRegularExpression>
 #include <QShortcut>
 #include <QStackedWidget>
 #include <QThread>
@@ -143,10 +144,9 @@ SetupWindow::SetupWindow(const QString& packagePath, bool uninstallOnly)
     : StudioDialog(QString()), packagePath_(packagePath), installedDirectory_(installedDirectory()),
       uninstallOnly_(uninstallOnly) {
     InstallerPackage::read(packagePath, &manifest_, &packageError_);
-    // The installed Uninstall.exe still finds its installation when the
-    // Installed Apps entry is gone.
-    if (uninstallOnly_ && installedDirectory_.isEmpty() &&
-        QFileInfo(packagePath).fileName().compare(kUninstallerName, Qt::CaseInsensitive) == 0) {
+    // An installed Uninstall.exe removes its own installation: the Installed
+    // Apps entry may be gone, or name a newer one in another folder.
+    if (uninstallOnly_ && QFileInfo(packagePath).fileName().compare(kUninstallerName, Qt::CaseInsensitive) == 0) {
         installedDirectory_ = QFileInfo(packagePath).absolutePath();
     }
     installDirectory_ = installedDirectory_.isEmpty() ? defaultInstallDirectory() : installedDirectory_;
@@ -412,7 +412,10 @@ void SetupWindow::back() {
 
 bool SetupWindow::validateOptions() {
     const QString chosen = QDir::fromNativeSeparators(path_->text().trimmed());
-    if (chosen.isEmpty() || !QDir::isAbsolutePath(chosen) || QDir(chosen).isRoot()) {
+    // Past the drive, none of the characters Windows refuses in a name.
+    static const QRegularExpression kInvalid(QStringLiteral("[<>:\"|?*\\x00-\\x1f]"));
+    if (chosen.isEmpty() || !QDir::isAbsolutePath(chosen) || QDir(chosen).isRoot() ||
+        chosen.mid(2).contains(kInvalid)) {
         tell(this, windowTitle(), rlTr("setup", "Choose another folder"),
              rlTr("setup", "The studio needs a full folder path that is not the root of a drive."));
         return false;

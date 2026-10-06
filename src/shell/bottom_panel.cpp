@@ -179,6 +179,8 @@ BottomPanel::BottomPanel(QWidget* parent) : QFrame(parent) {
     log_->setReadOnly(true);
     log_->setFont(theme::font(theme::TextRole::Mono, 11.5));
     log_->setLineWrapMode(QPlainTextEdit::NoWrap);
+    // A long session must not grow the log without end.
+    log_->setMaximumBlockCount(20000);
     stack_->addWidget(log_);
     layout->addWidget(stack_);
 
@@ -221,10 +223,9 @@ QString BottomPanel::summary() const {
         errors += d.severity == sdk::Severity::Error;
         warnings += d.severity == sdk::Severity::Warning;
     }
-    // Whole phrases per count, so a translation can word each its own way.
-    return QStringLiteral("%1 · %2")
-        .arg(errors == 1 ? tr("1 error") : tr("%1 errors").arg(errors),
-             warnings == 1 ? tr("1 warning") : tr("%1 warnings").arg(warnings));
+    // Counted phrases (%n) take each language's plural forms; English's
+    // come from retrolarium_studio_en.ts.
+    return QStringLiteral("%1 · %2").arg(tr("%n errors", nullptr, errors), tr("%n warnings", nullptr, warnings));
 }
 
 void BottomPanel::setDiagnostics(const QVector<sdk::Diagnostic>& diagnostics) {

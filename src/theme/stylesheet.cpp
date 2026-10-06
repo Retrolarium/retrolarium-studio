@@ -28,7 +28,7 @@ QMainWindow::separator { background: @line; width: 1px; height: 1px; }
 
 QFrame[surface="bg"] { background: @bg; }
 QFrame[surface="chrome"] { background: @chrome; }
-QFrame[surface="panel"] { background: @panel; }
+QWidget[surface="panel"] { background: @panel; }
 QFrame[surface="canvas"] { background: @canvas; }
 QFrame[divider="line"] { background: @line; border: none; }
 QFrame[divider="strong"] { background: @lineStrong; border: none; }

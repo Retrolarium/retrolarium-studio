@@ -13,7 +13,8 @@ namespace rl::smb {
 namespace {
 
 const QStringList& buttonNames() {
-    static const QStringList kNames{QStringLiteral("A"),     QStringLiteral("B"),  rlTr("smb", "SELECT"),
+    // The demo document's names: never translated.
+    static const QStringList kNames{QStringLiteral("A"),     QStringLiteral("B"),  QStringLiteral("SELECT"),
                                     QStringLiteral("START"), QStringLiteral("UP"), QStringLiteral("DOWN"),
                                     QStringLiteral("LEFT"),  QStringLiteral("RIGHT")};
     return kNames;
@@ -80,7 +81,7 @@ QVector<sdk::TableColumn> SmbDemoModel::columns() const {
     step.muted = true;
     sdk::TableColumn frames;
     frames.key = QStringLiteral("frames");
-    frames.label = QStringLiteral("Frames");
+    frames.label = tr("Frames");
     frames.width = 100;
     frames.monospace = true;
     frames.editable = true;

@@ -126,13 +126,19 @@ QString SmbRoutesModel::courseLabel(int row) const {
     // The game numbers levels, not steps: a pipe intro (auto-walk entrance)
     // shares the number of the level it leads to.
     const SmbResourceDocument& d = session_->document();
+    // A step may name an area the levels lack: it counts as a level of its own.
+    const QStringList areas = d.areaNames(session_->levels());
+    const auto entranceAt = [&](int r) {
+        const QString area = areaAt(r);
+        return areas.contains(area) ? d.area(session_->levels(), area).header.value(1) : -1;
+    };
     const int first = row - at.second;
     int level = 1;
     for (int r = first; r < row; ++r) {
-        const int entrance = d.area(session_->levels(), areaAt(r)).header.value(1);
+        const int entrance = entranceAt(r);
         if (entrance != 6 && entrance != 7) ++level;
     }
-    const int entrance = d.area(session_->levels(), areaAt(row)).header.value(1);
+    const int entrance = entranceAt(row);
     const QString number = QStringLiteral("%1-%2").arg(at.first).arg(level);
     return entrance == 6 || entrance == 7 ? number + tr(" · pipe intro") : number;
 }

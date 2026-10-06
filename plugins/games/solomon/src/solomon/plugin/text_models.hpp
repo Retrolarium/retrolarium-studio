@@ -31,7 +31,7 @@ class SolomonTextTableModel final : public sdk::TableModel {
 public:
     explicit SolomonTextTableModel(SolomonSession* session);
 
-    QString title() const override { return QStringLiteral("Text"); }
+    QString title() const override { return tr("Text"); }
     sdk::Budget budget() const override;
     sdk::Inspection inspect() const override;
 

@@ -15,6 +15,15 @@ namespace {
 
 const char* const kQuarters[4] = {"top left", "top right", "bottom left", "bottom right"};
 
+// The number in a label made from `pattern` (a translated "BG %1"),
+// matched whole: a translation may place the number anywhere. -1 for none.
+int labelNumber(const QString& label, const QString& pattern, int count) {
+    for (int n = 0; n < count; ++n) {
+        if (label == pattern.arg(n)) return n;
+    }
+    return -1;
+}
+
 }  // namespace
 
 DoraemonBlockModel::DoraemonBlockModel(DoraemonSession* session, Kind kind, World world)
@@ -127,7 +136,9 @@ QVector<sdk::ViewOption> DoraemonBlockModel::viewOptions() const {
 
 void DoraemonBlockModel::setViewOption(const QString& key, const QString& value) {
     if (key != QLatin1String("preset")) return;
-    preset_ = std::max(0, value.section(QLatin1Char(' '), 1).toInt());
+    const int n = labelNumber(value, tr("Preset %1"), 64);
+    if (n < 0) return;
+    preset_ = n;
     emit toolsChanged();
     emit contentChanged();
     emit selectionChanged();
@@ -267,7 +278,7 @@ bool DoraemonBlockModel::setField(const QString& key, const QVariant& value, QSt
     }
     const QString id = resourceId();
     if (key == QLatin1String("palette") || key == QLatin1String("properties") || key == QLatin1String("solid")) {
-        const int row = value.toString().section(QLatin1Char(' '), 1).toInt();
+        const int row = std::max(0, labelNumber(value.toString(), tr("BG %1"), 4));
         const Kind kind = kind_;
         return session_->editBundle(
             tr("Edit %1 %2").arg(title()).arg(nes::hex(block)),
@@ -313,7 +324,7 @@ sdk::Library DoraemonBlockModel::sheet() const {
 
 sdk::Budget DoraemonBlockModel::budget() const {
     sdk::Budget budget;
-    budget.text = tr("%1 blocks").arg(count());
+    budget.text = tr("%n blocks", nullptr, count());
     return budget;
 }
 

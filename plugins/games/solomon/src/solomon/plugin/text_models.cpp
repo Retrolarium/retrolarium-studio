@@ -92,6 +92,14 @@ const QVector<TextScreen>& textScreens() {
 
 namespace {
 
+// Where a string may start so all of it stays on the screen; a string longer
+// than a row or column starts at its edge.
+QPoint clampedTopLeft(const TextString& s, QPoint at) {
+    const int length = int(s.tiles.size());
+    return QPoint(std::clamp(at.x(), 0, std::max(0, kColumns - (s.vertical ? 1 : length))),
+                  std::clamp(at.y(), 0, std::max(0, kRows - (s.vertical ? length : 1))));
+}
+
 // The runs a screen shows; program runs resolve against the document.
 QStringList screenStrings(const SolomonText& text, const TextScreen& screen) {
     if (screen.id == QLatin1String("clear")) return programStrings(text, {QStringLiteral("0"), QStringLiteral("2"), QStringLiteral("3"), QStringLiteral("4")});
@@ -149,7 +157,7 @@ QImage tileImage(const QVector<quint8>& pixels, int tile, const QVector<int>& co
 
 QImage renderTextScreen(const SolomonSession* session, const TextScreen& screen, int bank, const SolomonText* draft) {
     const SolomonText& text = draft ? *draft : session->state().text;
-    const QVector<quint8> pixels = session->bundle().allPixels(rlTr("solomon", "chr-bank-%1").arg(bank));
+    const QVector<quint8> pixels = session->bundle().allPixels(QStringLiteral("chr-bank-%1").arg(bank));
     QVector<int> palette = text.palette(screen.paletteProgram);
     if (palette.size() < 4) palette = {0x0f, 0x00, 0x10, 0x30};
     QImage image(kColumns * 8, kRows * 8, QImage::Format_RGB32);
@@ -194,7 +202,7 @@ QVector<sdk::TableColumn> SolomonTextTableModel::columns() const {
     where.muted = true;
     sdk::TableColumn text;
     text.key = QStringLiteral("text");
-    text.label = QStringLiteral("Text");
+    text.label = tr("Text");
     text.monospace = true;
     text.editable = true;
     sdk::TableColumn size;
@@ -224,6 +232,9 @@ QString SolomonTextTableModel::cell(int row, int column) const {
 int SolomonTextTableModel::maxLength(int row, int column) const {
     const QVector<TextString> strings = session_->state().text.strings();
     if (column == 1 && row >= 0 && row < strings.size()) {
+        // A limit in characters would cut a {XX} code apart: fitting the
+        // text checks the tiles of such a string instead.
+        if (tilesToText(strings.at(row).tiles).contains(QLatin1Char('{'))) return -1;
         return strings.at(row).width ? strings.at(row).width : 64;
     }
     return TableModel::maxLength(row, column);
@@ -271,7 +282,7 @@ sdk::Budget SolomonTextTableModel::budget() const {
 sdk::Inspection SolomonTextTableModel::inspect() const {
     sdk::Inspection inspection;
     const QVector<TextString> strings = session_->state().text.strings();
-    inspection.kicker = QStringLiteral("Text");
+    inspection.kicker = tr("Text");
     if (row_ >= 0 && row_ < strings.size()) {
         const TextString& s = strings.at(row_);
         inspection.title = s.label;
@@ -417,8 +428,7 @@ bool SolomonTextScreenModel::dragObject(const QString& id, QPoint topLeftCell) {
     const int cell = cellOf(s.addresses.first());
     if (cell < 0) return false;
     const QPoint at(cell % kColumns, cell / kColumns);
-    const QPoint to(std::clamp(topLeftCell.x(), 0, kColumns - (s.vertical ? 1 : int(s.tiles.size()))),
-                    std::clamp(topLeftCell.y(), 0, kRows - (s.vertical ? int(s.tiles.size()) : 1)));
+    const QPoint to = clampedTopLeft(s, topLeftCell);
     if (to == at) return false;
     draft_.move(id, (to.y() - at.y()) * kColumns + (to.x() - at.x()));
     emit contentChanged();
@@ -455,7 +465,7 @@ sdk::Library SolomonTextScreenModel::sheet() const {
     sdk::Library library;
     library.grid = true;
     library.hint = tr("click: brush · paint into a line");
-    const QVector<quint8> pixels = session_->bundle().allPixels(tr("chr-bank-%1").arg(bank_));
+    const QVector<quint8> pixels = session_->bundle().allPixels(QStringLiteral("chr-bank-%1").arg(bank_));
     QVector<int> palette = text().palette(screen_.paletteProgram);
     if (palette.size() < 4) palette = {0x0f, 0x00, 0x10, 0x30};
     for (int tile = 0; tile < 0x40; ++tile) {
@@ -506,7 +516,7 @@ sdk::Inspection SolomonTextScreenModel::inspect() const {
         inspection.title = s.label;
         sdk::Field field;
         field.key = QStringLiteral("text");
-        field.label = QStringLiteral("Text");
+        field.label = tr("Text");
         field.type = sdk::Field::Type::Text;
         field.value = tilesToText(s.tiles);
         field.hint = s.width ? tr("%1 wide").arg(s.width) : QString::number(s.tiles.size());
@@ -557,8 +567,10 @@ bool SolomonTextScreenModel::setField(const QString& key, const QVariant& value,
         if (cell < 0) return false;
         QPoint at(cell % kColumns, cell / kColumns);
         QPoint to = at;
-        if (key == QLatin1String("column")) to.setX(std::clamp(value.toInt(), 0, kColumns - 1));
-        else to.setY(std::clamp(value.toInt(), 0, kRows - 1));
+        if (key == QLatin1String("column")) to.setX(value.toInt());
+        else to.setY(value.toInt());
+        to = clampedTopLeft(s, to);
+        if (to == at) return true;
         next.move(s.id, (to.y() - at.y()) * kColumns + (to.x() - at.x()));
         return commit(next, tr("Move %1").arg(s.label), error);
     }

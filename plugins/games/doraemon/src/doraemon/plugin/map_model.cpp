@@ -308,7 +308,12 @@ bool DoraemonMapModel::setField(const QString& key, const QVariant& value, QStri
     }
     if (key == QLatin1String("colours") && world_ == World::Three) {
         const int room = ((cell_ / width_) / kRoomCells) * 8 + (cell_ % width_) / kRoomCells;
-        const int preset = value.toString().section(QLatin1Char(' '), 1).toInt();
+        // The whole label: a translation may place the number anywhere.
+        int preset = -1;
+        for (int p = 0; p < 64 && preset < 0; ++p) {
+            if (value.toString() == tr("Preset %1").arg(p)) preset = p;
+        }
+        if (preset < 0) return false;
         return session_->editBundle(
             tr("Colour room %1").arg(room),
             [room, preset](nes::Bundle& b) {

@@ -79,7 +79,7 @@ QVector<sdk::TableColumn> FlickyDemoModel::columns() const {
     index.muted = true;
     sdk::TableColumn frames;
     frames.key = QStringLiteral("frames");
-    frames.label = QStringLiteral("Frames");
+    frames.label = tr("Frames");
     frames.width = 100;
     frames.monospace = true;
     frames.editable = true;

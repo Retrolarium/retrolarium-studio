@@ -106,7 +106,8 @@ void LibrarySheet::mouseMoveEvent(QMouseEvent* event) {
         hovered_ = index;
         update();
     }
-    if (!(event->buttons() & Qt::LeftButton) || pressed_ < 0 ||
+    // The items can change between press and drag (the pane refreshes).
+    if (!(event->buttons() & Qt::LeftButton) || pressed_ < 0 || pressed_ >= items_.size() ||
         (event->pos() - pressPos_).manhattanLength() < QApplication::startDragDistance()) {
         return;
     }
