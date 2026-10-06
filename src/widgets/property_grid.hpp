@@ -2,6 +2,7 @@
 
 #include <QComboBox>
 #include <QLineEdit>
+#include <QVector>
 #include <QWidget>
 
 class QGridLayout;
@@ -32,8 +33,9 @@ private:
     QString hint_;
 };
 
-// The two-column key/value grid of the inspector: 88px muted keys, fields
-// that stretch.
+// The two-column key/value grid of the inspector: muted keys at least 88px
+// wide, fields that stretch. A longer key (translations run longer than
+// English) widens the key column up to a limit and wraps past it.
 class PropertyGrid final : public QWidget {
     Q_OBJECT
 
@@ -53,7 +55,9 @@ public:
 private:
     QGridLayout* grid_;
     int rows_ = 0;
+    int baseKeyWidth_ = 88;
     int keyWidth_ = 88;
+    QVector<QWidget*> keys_;
 };
 
 // Monospace key/value rows of raw engine data (record, offset, encoding).

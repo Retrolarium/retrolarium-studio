@@ -247,7 +247,7 @@ SmbPacketModel::SmbPacketModel(SmbSession* session, const QString& packet)
 }
 
 QString SmbPacketModel::title() const {
-    return titled(packet_) + tr(" palette");
+    return tr("%1 palette").arg(titled(packet_));
 }
 
 QVector<sdk::PaletteRow> SmbPacketModel::rows() const {

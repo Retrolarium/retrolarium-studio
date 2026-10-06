@@ -9,10 +9,10 @@
 
 namespace rl::setup {
 
-// The setup program speaks the language chosen at its start: English or
-// Russian, with both texts side by side in the code.
-QString text(const char* english, const char* russian);
-bool russian();
+// The language chosen at setup's start (an interface language code): its
+// text comes from the studio's translations, and the studio starts in it.
+void setLanguage(const QString& code);
+QString language();
 
 enum class Mode { Install, Repair, Uninstall };
 

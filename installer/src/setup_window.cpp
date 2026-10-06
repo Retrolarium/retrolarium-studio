@@ -1,6 +1,8 @@
 #include "setup_window.hpp"
 
 #include "frame/title_bar.hpp"
+#include "sdk/i18n.hpp"
+#include "sdk/languages.hpp"
 #include "theme/theme.hpp"
 #include "theme/typography.hpp"
 #include "widgets/brand_mark.hpp"
@@ -16,7 +18,6 @@
 #include <QFileDialog>
 #include <QHBoxLayout>
 #include <QLineEdit>
-#include <QLocale>
 #include <QPointer>
 #include <QPushButton>
 #include <QRadioButton>
@@ -62,7 +63,7 @@ bool ask(QWidget* parent, const QString& title, const QString& heading, const QS
 
 void tell(QWidget* parent, const QString& title, const QString& heading, const QString& body) {
     frame::MessageDialog dialog(title, heading, body, parent);
-    dialog.addButton(text("OK", "ОК"), 0, true);
+    dialog.addButton(rlTr("setup", "OK"), 0, true);
     dialog.exec();
 }
 
@@ -80,7 +81,8 @@ QString emphasis(const QString& value) {
 
 // ---------------------------------------------------------------- language
 
-LanguageDialog::LanguageDialog() : StudioDialog(QStringLiteral("Retrolarium Studio")) {
+LanguageDialog::LanguageDialog(std::function<void(const QString&)> use)
+    : StudioDialog(QStringLiteral("Retrolarium Studio")), use_(std::move(use)) {
     setWindowFlag(Qt::MSWindowsFixedSizeDialogHint, true);
     layout()->setSizeConstraint(QLayout::SetFixedSize);
 
@@ -97,9 +99,11 @@ LanguageDialog::LanguageDialog() : StudioDialog(QStringLiteral("Retrolarium Stud
     content->addWidget(prompt_);
     language_ = new QComboBox(body());
     language_->setFont(theme::font(theme::TextRole::Body, 13.0));
-    language_->addItem(QStringLiteral("English"), false);
-    language_->addItem(QStringLiteral("Русский"), true);
-    language_->setCurrentIndex(QLocale::system().language() == QLocale::Russian ? 1 : 0);
+    const QString system = systemInterfaceLanguage();
+    for (const InterfaceLanguage& language : interfaceLanguages()) {
+        language_->addItem(language.name, language.code);
+        if (language.code == system) language_->setCurrentIndex(language_->count() - 1);
+    }
     language_->setFixedWidth(220);
     content->addWidget(language_);
     content->addSpacing(10);
@@ -120,17 +124,16 @@ LanguageDialog::LanguageDialog() : StudioDialog(QStringLiteral("Retrolarium Stud
     retranslate();
 }
 
-bool LanguageDialog::russianChosen() const {
-    return language_->currentData().toBool();
+QString LanguageDialog::chosen() const {
+    return language_->currentData().toString();
 }
 
 void LanguageDialog::retranslate() {
-    const bool ru = russianChosen();
-    titleBar()->setTitle(ru ? QStringLiteral("Язык установки") : QStringLiteral("Setup language"));
-    prompt_->setText(ru ? QStringLiteral("Выберите язык установки. Студия запустится на нём же.")
-                        : QStringLiteral("Choose the language of setup. The studio starts in it too."));
-    cancel_->setText(ru ? QStringLiteral("Отмена") : QStringLiteral("Cancel"));
-    ok_->setText(ru ? QStringLiteral("Продолжить") : QStringLiteral("Continue"));
+    use_(chosen());
+    titleBar()->setTitle(rlTr("setup", "Setup language"));
+    prompt_->setText(rlTr("setup", "Choose the language of setup. The studio starts in it too."));
+    cancel_->setText(rlTr("setup", "Cancel"));
+    ok_->setText(rlTr("setup", "Continue"));
     ok_->updateGeometry();
 }
 
@@ -149,8 +152,8 @@ SetupWindow::SetupWindow(const QString& packagePath, bool uninstallOnly)
     installDirectory_ = installedDirectory_.isEmpty() ? defaultInstallDirectory() : installedDirectory_;
     if (uninstallOnly_) mode_ = Mode::Uninstall;
     QString version = manifest_.version.isEmpty() ? installedVersion() : manifest_.version;
-    const QString windowTitle = version.isEmpty() ? text("Retrolarium Studio setup", "Установка Retrolarium Studio")
-                                                  : text("Retrolarium Studio %1 setup", "Установка Retrolarium Studio %1")
+    const QString windowTitle = version.isEmpty() ? rlTr("setup", "Retrolarium Studio setup")
+                                                  : rlTr("setup", "Retrolarium Studio %1 setup")
                                                         .arg(version);
     setWindowTitle(windowTitle);
     titleBar()->setTitle(windowTitle);
@@ -178,9 +181,9 @@ SetupWindow::SetupWindow(const QString& packagePath, bool uninstallOnly)
     layout->addWidget(new ui::Divider(Qt::Horizontal, ui::Divider::Strength::Line, body()));
 
     // The buttons first: the pages refer to them.
-    back_ = plainButton(text("Back", "Назад"), body());
+    back_ = plainButton(rlTr("setup", "Back"), body());
     next_ = new ui::PrimaryButton(QString(), QString(), body());
-    cancel_ = plainButton(text("Cancel", "Отмена"), body());
+    cancel_ = plainButton(rlTr("setup", "Cancel"), body());
     pages_ = new QStackedWidget(body());
     pages_->addWidget(welcomePage());
     pages_->addWidget(optionsPage());
@@ -212,9 +215,9 @@ QWidget* SetupWindow::welcomePage() {
     auto* layout = new QVBoxLayout(page);
     layout->setContentsMargins(kMargin + 66, 22, kMargin, 16);
     layout->setSpacing(12);
-    install_ = new QRadioButton(text("Install Retrolarium Studio", "Установить Retrolarium Studio"), page);
-    repair_ = new QRadioButton(text("Repair the installed studio", "Восстановить установленную студию"), page);
-    uninstall_ = new QRadioButton(text("Uninstall Retrolarium Studio", "Удалить Retrolarium Studio"), page);
+    install_ = new QRadioButton(rlTr("setup", "Install Retrolarium Studio"), page);
+    repair_ = new QRadioButton(rlTr("setup", "Repair the installed studio"), page);
+    uninstall_ = new QRadioButton(rlTr("setup", "Uninstall Retrolarium Studio"), page);
     const bool installed = !installedDirectory_.isEmpty();
     const bool package = packageError_.isEmpty();
     install_->setEnabled(package);
@@ -235,9 +238,7 @@ QWidget* SetupWindow::welcomePage() {
     }
     if (installed && !uninstallOnly_) {
         layout->addSpacing(6);
-        layout->addWidget(paragraph(text("Installed in %1. Installing again updates it; your games and edits stay.",
-                                         "Установлена в %1. Повторная установка обновит её; ваши игры и правки "
-                                         "сохранятся.")
+        layout->addWidget(paragraph(rlTr("setup", "Installed in %1. Installing again updates it; your games and edits stay.")
                                         .arg(nativePath(installedDirectory_)),
                                     page));
     }
@@ -254,32 +255,29 @@ QWidget* SetupWindow::optionsPage() {
     auto* layout = new QVBoxLayout(page);
     layout->setContentsMargins(kMargin + 66, 22, kMargin, 16);
     layout->setSpacing(8);
-    layout->addWidget(new ui::Label(text("Install to", "Папка установки"), ui::Label::Role::Caps, page));
+    layout->addWidget(new ui::Label(rlTr("setup", "Install to"), ui::Label::Role::Caps, page));
     auto* row = new QHBoxLayout;
     row->setSpacing(8);
     path_ = new QLineEdit(nativePath(installDirectory_), page);
     path_->setFont(theme::font(theme::TextRole::Body, 13.0));
     row->addWidget(path_, 1);
-    auto* browse = plainButton(text("Browse…", "Обзор…"), page);
+    auto* browse = plainButton(rlTr("setup", "Browse…"), page);
     row->addWidget(browse);
     layout->addLayout(row);
     layout->addSpacing(14);
-    desktop_ = new QCheckBox(text("Put a shortcut on the desktop", "Создать ярлык на рабочем столе"), page);
+    desktop_ = new QCheckBox(rlTr("setup", "Put a shortcut on the desktop"), page);
     desktop_->setFont(theme::font(theme::TextRole::Body, 13.0));
     desktop_->setChecked(installedDirectory_.isEmpty() || QFile::exists(desktopShortcutPath()));
     layout->addWidget(desktop_);
     layout->addSpacing(10);
-    layout->addWidget(paragraph(text("The studio carries everything it needs: its kit, Python and MAME. It goes into "
+    layout->addWidget(paragraph(rlTr("setup", "The studio carries everything it needs: its kit, Python and MAME. It goes into "
                                      "your user folder, so setup needs no administrator rights, and .rlj files open "
-                                     "in it.",
-                                     "Студия несёт с собой всё, что ей нужно: кит, Python и MAME. Она ставится в "
-                                     "папку пользователя, поэтому права администратора не нужны, а файлы .rlj будут "
-                                     "открываться в ней."),
+                                     "in it."),
                                 page));
     layout->addStretch(1);
     connect(browse, &QPushButton::clicked, this, [this] {
         const QString chosen = QFileDialog::getExistingDirectory(
-            this, text("Choose the installation folder", "Выберите папку установки"), path_->text());
+            this, rlTr("setup", "Choose the installation folder"), path_->text());
         if (!chosen.isEmpty()) path_->setText(nativePath(chosen));
     });
     return page;
@@ -296,13 +294,11 @@ QWidget* SetupWindow::readyPage() {
     layout->addSpacing(4);
     // Off by default and never remembered: the one choice here that deletes
     // something the user cannot get back.
-    removeUserData_ = new QCheckBox(text("Also delete your games, edits and the studio's settings",
-                                         "Удалить также ваши игры, правки и настройки студии"),
+    removeUserData_ = new QCheckBox(rlTr("setup", "Also delete your games, edits and the studio's settings"),
                                     page);
     removeUserData_->setFont(theme::font(theme::TextRole::Body, 13.0));
     layout->addWidget(removeUserData_);
-    removeUserDataNote_ = paragraph(text("The games the studio downloaded and their edits are in<br>%1",
-                                         "Скачанные студией игры и правки в них лежат в<br>%1")
+    removeUserDataNote_ = paragraph(rlTr("setup", "The games the studio downloaded and their edits are in<br>%1")
                                         .arg(emphasis(nativePath(gamesDirectory()))),
                                     page);
     removeUserDataNote_->setTextFormat(Qt::RichText);
@@ -345,7 +341,7 @@ QWidget* SetupWindow::finishedPage() {
     finishedMessage_ = paragraph(QString(), page);
     finishedMessage_->setTextFormat(Qt::RichText);
     layout->addWidget(finishedMessage_);
-    launch_ = new QCheckBox(text("Start Retrolarium Studio", "Запустить Retrolarium Studio"), page);
+    launch_ = new QCheckBox(rlTr("setup", "Start Retrolarium Studio"), page);
     launch_->setFont(theme::font(theme::TextRole::Body, 13.0));
     launch_->setChecked(true);
     layout->addWidget(launch_);
@@ -362,25 +358,24 @@ void SetupWindow::showPage(Page page) {
     next_->setVisible(page != Running);
     switch (page) {
     case Welcome:
-        title_->setText(uninstallOnly_ ? text("Uninstall Retrolarium Studio", "Удаление Retrolarium Studio")
-                                       : text("Welcome to Retrolarium Studio", "Добро пожаловать в Retrolarium Studio"));
-        subtitle_->setText(text("Choose what setup should do.", "Выберите, что сделать."));
-        next_->setText(text("Next", "Далее"));
+        title_->setText(uninstallOnly_ ? rlTr("setup", "Uninstall Retrolarium Studio")
+                                       : rlTr("setup", "Welcome to Retrolarium Studio"));
+        subtitle_->setText(rlTr("setup", "Choose what setup should do."));
+        next_->setText(rlTr("setup", "Next"));
         break;
     case Options:
-        title_->setText(text("Where to install", "Куда установить"));
-        subtitle_->setText(text("A new folder, or the one of an earlier installation.",
-                                "Новая папка или папка прежней установки."));
-        next_->setText(text("Next", "Далее"));
+        title_->setText(rlTr("setup", "Where to install"));
+        subtitle_->setText(rlTr("setup", "A new folder, or the one of an earlier installation."));
+        next_->setText(rlTr("setup", "Next"));
         break;
     case Ready:
         prepareReady();
         break;
     case Running:
-        title_->setText(mode_ == Mode::Uninstall ? text("Uninstalling", "Удаление")
-                                                 : text("Installing", "Установка"));
-        subtitle_->setText(text("This takes a minute.", "Это займёт около минуты."));
-        next_->setText(text("Next", "Далее"));
+        title_->setText(mode_ == Mode::Uninstall ? rlTr("setup", "Uninstalling")
+                                                 : rlTr("setup", "Installing"));
+        subtitle_->setText(rlTr("setup", "This takes a minute."));
+        next_->setText(rlTr("setup", "Next"));
         break;
     case Finished:
         prepareFinished();
@@ -418,15 +413,13 @@ void SetupWindow::back() {
 bool SetupWindow::validateOptions() {
     const QString chosen = QDir::fromNativeSeparators(path_->text().trimmed());
     if (chosen.isEmpty() || !QDir::isAbsolutePath(chosen) || QDir(chosen).isRoot()) {
-        tell(this, windowTitle(), text("Choose another folder", "Выберите другую папку"),
-             text("The studio needs a full folder path that is not the root of a drive.",
-                  "Нужен полный путь к папке, и это не может быть корень диска."));
+        tell(this, windowTitle(), rlTr("setup", "Choose another folder"),
+             rlTr("setup", "The studio needs a full folder path that is not the root of a drive."));
         return false;
     }
     if (!replaceableDirectory(chosen)) {
-        tell(this, windowTitle(), text("Choose another folder", "Выберите другую папку"),
-             text("%1 already holds other files. Choose an empty or new folder, for example %2.",
-                  "В папке %1 уже есть другие файлы. Выберите пустую или новую папку, например %2.")
+        tell(this, windowTitle(), rlTr("setup", "Choose another folder"),
+             rlTr("setup", "%1 already holds other files. Choose an empty or new folder, for example %2.")
                  .arg(nativePath(chosen), nativePath(QDir(chosen).filePath(QStringLiteral("Retrolarium Studio")))));
         return false;
     }
@@ -439,34 +432,25 @@ void SetupWindow::prepareReady() {
     removeUserDataNote_->setVisible(mode_ == Mode::Uninstall);
     removeUserData_->setChecked(false);
     if (mode_ == Mode::Install) {
-        title_->setText(text("Ready to install", "Всё готово к установке"));
-        subtitle_->setText(text("An earlier version in that folder is replaced; what you added to it stays.",
-                                "Прежняя версия в этой папке будет заменена; то, что вы в неё добавили, "
-                                "сохранится."));
-        summary_->setText(text("Retrolarium Studio %1 goes into<br>%2<br><br>Shortcuts go to the Start menu%3.",
-                               "Retrolarium Studio %1 будет установлена в<br>%2<br><br>Ярлыки появятся в меню "
-                               "«Пуск»%3.")
+        title_->setText(rlTr("setup", "Ready to install"));
+        subtitle_->setText(rlTr("setup", "An earlier version in that folder is replaced; what you added to it stays."));
+        summary_->setText(rlTr("setup", "Retrolarium Studio %1 goes into<br>%2<br><br>Shortcuts go to the Start menu%3.")
                               .arg(manifest_.version, emphasis(nativePath(installDirectory_)),
-                                   desktop_->isChecked() ? text(" and on the desktop", " и на рабочем столе") : QString()));
-        next_->setText(text("Install", "Установить"));
+                                   desktop_->isChecked() ? rlTr("setup", " and on the desktop") : QString()));
+        next_->setText(rlTr("setup", "Install"));
     } else if (mode_ == Mode::Repair) {
-        title_->setText(text("Ready to repair", "Всё готово к восстановлению"));
-        subtitle_->setText(text("The studio's files and shortcuts are put back; your games and settings stay.",
-                                "Файлы и ярлыки студии будут восстановлены; ваши игры и настройки сохранятся."));
-        summary_->setText(text("Retrolarium Studio %1 is reinstalled in<br>%2",
-                               "Retrolarium Studio %1 будет заново установлена в<br>%2")
+        title_->setText(rlTr("setup", "Ready to repair"));
+        subtitle_->setText(rlTr("setup", "The studio's files and shortcuts are put back; your games and settings stay."));
+        summary_->setText(rlTr("setup", "Retrolarium Studio %1 is reinstalled in<br>%2")
                               .arg(manifest_.version, emphasis(nativePath(installedDirectory_))));
-        next_->setText(text("Repair", "Восстановить"));
+        next_->setText(rlTr("setup", "Repair"));
     } else {
-        title_->setText(text("Ready to uninstall", "Всё готово к удалению"));
-        subtitle_->setText(text("Your games and edits stay unless you ask otherwise.",
-                                "Ваши игры и правки сохранятся, если не выбрать иное."));
-        summary_->setText(text("Retrolarium Studio is removed from<br>%1<br><br>with its shortcuts, its entry in "
-                               "Installed Apps and the .rlj file association.",
-                               "Retrolarium Studio будет удалена из<br>%1<br><br>вместе с ярлыками, записью в "
-                               "списке программ и связью с файлами .rlj.")
+        title_->setText(rlTr("setup", "Ready to uninstall"));
+        subtitle_->setText(rlTr("setup", "Your games and edits stay unless you ask otherwise."));
+        summary_->setText(rlTr("setup", "Retrolarium Studio is removed from<br>%1<br><br>with its shortcuts, its entry in "
+                               "Installed Apps and the .rlj file association.")
                               .arg(emphasis(nativePath(installedDirectory_))));
-        next_->setText(text("Uninstall", "Удалить"));
+        next_->setText(rlTr("setup", "Uninstall"));
     }
 }
 
@@ -475,11 +459,10 @@ void SetupWindow::startOperation() {
     for (;;) {
         const QStringList running = runningPrograms(directory);
         if (running.isEmpty()) break;
-        if (!ask(this, windowTitle(), text("Close Retrolarium Studio first", "Сначала закройте Retrolarium Studio"),
-                 text("These programs still run from the studio's folder: %1. Close them, then try again.",
-                      "Из папки студии ещё запущены: %1. Закройте их и повторите.")
+        if (!ask(this, windowTitle(), rlTr("setup", "Close Retrolarium Studio first"),
+                 rlTr("setup", "These programs still run from the studio's folder: %1. Close them, then try again.")
                      .arg(running.join(QStringLiteral(", "))),
-                 text("Try again", "Повторить"), text("Cancel", "Отмена"))) {
+                 rlTr("setup", "Try again"), rlTr("setup", "Cancel"))) {
             return;
         }
     }
@@ -491,19 +474,18 @@ void SetupWindow::startOperation() {
     request.desktopShortcut = desktop_->isChecked();
     request.removeUserData = mode_ == Mode::Uninstall && removeUserData_->isChecked();
     if (request.removeUserData &&
-        !ask(this, windowTitle(), text("Delete your games and edits?", "Удалить ваши игры и правки?"),
-             text("Everything in %1 is deleted: the games the studio downloaded and every edit in them. This cannot be "
-                  "undone.",
-                  "Будет удалено всё в %1: скачанные студией игры и все правки в них. Отменить это нельзя.")
+        !ask(this, windowTitle(), rlTr("setup", "Delete your games and edits?"),
+             rlTr("setup", "Everything in %1 is deleted: the games the studio downloaded and every edit in them. This cannot be "
+                  "undone.")
                  .arg(nativePath(gamesDirectory())),
-             text("Delete", "Удалить"), text("Keep them", "Оставить"))) {
+             rlTr("setup", "Delete"), rlTr("setup", "Keep them"))) {
         return;
     }
     running_ = true;
     succeeded_ = false;
     error_.clear();
     warning_.clear();
-    setProgress(0, text("Preparing…", "Подготовка…"));
+    setProgress(0, rlTr("setup", "Preparing…"));
     showPage(Running);
 
     QPointer<SetupWindow> self(this);
@@ -528,11 +510,11 @@ void SetupWindow::startOperation() {
         running_ = false;
         std::tie(succeeded_, error_, warning_) = *result;
         if (succeeded_) {
-            setProgress(100, text("Done.", "Готово."));
+            setProgress(100, rlTr("setup", "Done."));
             QTimer::singleShot(300, this, [this] { showPage(Finished); });
         } else {
             showPage(Ready);
-            tell(this, windowTitle(), text("Setup did not finish", "Установка не завершилась"), error_);
+            tell(this, windowTitle(), rlTr("setup", "Setup did not finish"), error_);
         }
     });
     worker->start();
@@ -547,32 +529,28 @@ void SetupWindow::setProgress(int percent, const QString& message) {
 
 void SetupWindow::prepareFinished() {
     const bool installed = mode_ != Mode::Uninstall;
-    title_->setText(installed ? text("Retrolarium Studio is ready", "Retrolarium Studio готова")
-                              : text("Retrolarium Studio is removed", "Retrolarium Studio удалена"));
-    subtitle_->setText(installed ? text("Setup finished.", "Установка завершена.")
-                                 : text("Uninstall finished.", "Удаление завершено."));
+    title_->setText(installed ? rlTr("setup", "Retrolarium Studio is ready")
+                              : rlTr("setup", "Retrolarium Studio is removed"));
+    subtitle_->setText(installed ? rlTr("setup", "Setup finished.")
+                                 : rlTr("setup", "Uninstall finished."));
     QString message = installed
-                          ? text("Open your ROM in the studio and it finds the game, downloads its files the first time "
-                                 "and opens the version you have.",
-                                 "Откройте в студии свой ROM: она определит игру, при первом открытии скачает её файлы "
-                                 "и откроет вашу версию.")
+                          ? rlTr("setup", "Open your ROM in the studio and it finds the game, downloads its files the first time "
+                                 "and opens the version you have.")
                           : (removeUserData_->isChecked()
-                                 ? text("The studio, its shortcuts, your games and its settings were removed.",
-                                        "Студия, её ярлыки, ваши игры и настройки удалены.")
-                                 : text("The studio and its shortcuts were removed. Your games and edits stay in<br>%1",
-                                        "Студия и её ярлыки удалены. Ваши игры и правки остались в<br>%1")
+                                 ? rlTr("setup", "The studio, its shortcuts, your games and its settings were removed.")
+                                 : rlTr("setup", "The studio and its shortcuts were removed. Your games and edits stay in<br>%1")
                                        .arg(emphasis(nativePath(gamesDirectory()))));
     if (!warning_.isEmpty()) message += QStringLiteral("<br><br>%1").arg(warning_.toHtmlEscaped());
     finishedMessage_->setText(message);
     launch_->setVisible(installed);
-    next_->setText(text("Finish", "Готово"));
+    next_->setText(rlTr("setup", "Finish"));
 }
 
 void SetupWindow::finish() {
     if (mode_ != Mode::Uninstall && launch_->isChecked()) {
         QString error;
         if (!launchStudio(mode_ == Mode::Install ? installDirectory_ : installedDirectory_, &error)) {
-            tell(this, windowTitle(), text("The studio did not start", "Студия не запустилась"), error);
+            tell(this, windowTitle(), rlTr("setup", "The studio did not start"), error);
         }
     }
     if (mode_ == Mode::Uninstall) {
@@ -581,7 +559,7 @@ void SetupWindow::finish() {
         QString error;
         if (QFile::exists(uninstaller) && sameFile(self, uninstaller) &&
             !scheduleSelfRemoval(self, installedDirectory_, &error)) {
-            tell(this, windowTitle(), text("Could not finish uninstalling", "Не удалось завершить удаление"), error);
+            tell(this, windowTitle(), rlTr("setup", "Could not finish uninstalling"), error);
         }
     }
     QDialog::accept();
@@ -593,9 +571,9 @@ void SetupWindow::reject() {
         finish();
         return;
     }
-    if (ask(this, windowTitle(), text("Exit setup?", "Выйти из установки?"),
-            text("Nothing has been changed yet.", "Пока ничего не изменено."), text("Exit", "Выйти"),
-            text("Stay", "Остаться"))) {
+    if (ask(this, windowTitle(), rlTr("setup", "Exit setup?"),
+            rlTr("setup", "Nothing has been changed yet."), rlTr("setup", "Exit"),
+            rlTr("setup", "Stay"))) {
         QDialog::reject();
     }
 }

@@ -244,7 +244,7 @@ QVector<sdk::DocumentGroup> SmbSession::documents(const QString& kind) const {
             }
             for (const QString& type : order) {
                 sdk::DocumentGroup group;
-                group.title = displayName(type) + tr(" areas");
+                group.title = tr("%1 areas").arg(displayName(type));
                 for (const QString& area : areas) {
                     if (areaTypeOf(area) != type) {
                         continue;
@@ -449,7 +449,11 @@ QVector<sdk::DocumentGroup> SmbSession::documents(const QString& kind) const {
         sdk::DocumentGroup effects;
         effects.title = tr("Sound effects");
         for (const nes::SoundEffect& effect : soundEffects()) {
-            effects.documents << entry(QStringLiteral("sfx:") + effect.key, effect.title, effect.trigger.section(tr(" queue"), 0, 0));
+            const QString queue = effect.key.section(QLatin1Char(':'), 1, 1);
+            const QString channel = queue == QLatin1String("square1")   ? tr("Square 1")
+                                    : queue == QLatin1String("square2") ? tr("Square 2")
+                                                                        : tr("Noise");
+            effects.documents << entry(QStringLiteral("sfx:") + effect.key, effect.title, channel);
         }
         const bool tables = document_.resourceIds(QStringLiteral("smb.sfx-tables.v1")).contains(kSfxTables);
         sdk::DocumentEntry e = entry(kSfxTables, tr("Sound effect tables"),

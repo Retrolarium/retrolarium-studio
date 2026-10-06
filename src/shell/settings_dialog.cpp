@@ -1,6 +1,7 @@
 #include "shell/settings_dialog.hpp"
 
 #include "runtime/tool_locator.hpp"
+#include "sdk/languages.hpp"
 #include "theme/typography.hpp"
 #include "widgets/label.hpp"
 #include "widgets/primary_button.hpp"
@@ -20,12 +21,6 @@
 namespace rl::shell {
 
 namespace {
-
-// The interface languages, by their own names.
-const QVector<QPair<QString, QString>> kLanguages{
-    {QStringLiteral("en"), QStringLiteral("English")},
-    {QStringLiteral("ru"), QStringLiteral("Русский")},
-};
 
 QPushButton* button(const QString& text, QWidget* parent) {
     auto* b = new QPushButton(text, parent);
@@ -58,11 +53,7 @@ QString biosPath(const QString& mame) {
 
 QString SettingsDialog::language() {
     const QString chosen = QSettings().value(QString::fromLatin1(kLanguageKey)).toString();
-    const QString wanted = chosen.isEmpty() ? QLocale::system().name().section(QLatin1Char('_'), 0, 0) : chosen;
-    for (const auto& [code, name] : kLanguages) {
-        if (code == wanted) return code;
-    }
-    return QStringLiteral("en");
+    return isInterfaceLanguage(chosen) ? chosen : systemInterfaceLanguage();
 }
 
 SettingsDialog::SettingsDialog(QWidget* parent) : StudioDialog(tr("Settings"), parent) {
@@ -79,9 +70,9 @@ SettingsDialog::SettingsDialog(QWidget* parent) : StudioDialog(tr("Settings"), p
     language_ = new QComboBox(body());
     language_->setFont(theme::font(theme::TextRole::Body, 13.0));
     const QString current = language();
-    for (const auto& [code, name] : kLanguages) {
-        language_->addItem(name, code);
-        if (code == current) language_->setCurrentIndex(language_->count() - 1);
+    for (const InterfaceLanguage& language : interfaceLanguages()) {
+        language_->addItem(language.name, language.code);
+        if (language.code == current) language_->setCurrentIndex(language_->count() - 1);
     }
     language_->setFixedWidth(200);
     content->addWidget(language_);

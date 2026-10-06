@@ -229,7 +229,7 @@ endif()
 # Interface translations: resources/i18n holds the .ts files (refreshed with
 # tools/update-translations.ps1); the build compiles them and embeds them
 # with Qt's own translation of its dialogs.
-set(studio_languages ru)
+set(studio_languages pt_BR es zh_CN ja fr de it pl ru)
 set(studio_ts)
 foreach(language IN LISTS studio_languages)
     list(APPEND studio_ts ${CMAKE_CURRENT_SOURCE_DIR}/resources/i18n/retrolarium_studio_${language}.ts)
@@ -241,8 +241,11 @@ set(i18n_qrc ${CMAKE_CURRENT_BINARY_DIR}/i18n.qrc)
 set(i18n_files "")
 foreach(language IN LISTS studio_languages)
     string(APPEND i18n_files
-           "        <file alias=\"retrolarium_studio_${language}.qm\">${CMAKE_CURRENT_BINARY_DIR}/retrolarium_studio_${language}.qm</file>\n"
-           "        <file alias=\"qtbase_${language}.qm\">${qt_translations}/qtbase_${language}.qm</file>\n")
+           "        <file alias=\"retrolarium_studio_${language}.qm\">${CMAKE_CURRENT_BINARY_DIR}/retrolarium_studio_${language}.qm</file>\n")
+    if(EXISTS ${qt_translations}/qtbase_${language}.qm)
+        string(APPEND i18n_files
+               "        <file alias=\"qtbase_${language}.qm\">${qt_translations}/qtbase_${language}.qm</file>\n")
+    endif()
 endforeach()
 file(WRITE ${i18n_qrc} "<!DOCTYPE RCC>\n<RCC version=\"1.0\">\n    <qresource prefix=\"/i18n\">\n${i18n_files}    </qresource>\n</RCC>\n")
 set_source_files_properties(${i18n_qrc} PROPERTIES SKIP_AUTORCC ON)
@@ -267,6 +270,9 @@ if(WIN32)
         installer/src/setup_window.cpp
         installer/src/setup_window.hpp
         ${CMAKE_CURRENT_BINARY_DIR}/retrolarium-setup.rc
+        # Setup speaks the studio's languages: its text is in the same files.
+        ${studio_qm}
+        ${i18n_sources}
     )
     target_include_directories(retrolarium-setup PRIVATE installer/src)
     target_compile_definitions(retrolarium-setup PRIVATE UNICODE _UNICODE _WIN32_WINNT=0x0601)

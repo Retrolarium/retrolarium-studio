@@ -12,6 +12,8 @@
 #include <QGridLayout>
 #include <QPainter>
 
+#include <algorithm>
+
 namespace rl::ui {
 
 namespace {
@@ -19,6 +21,8 @@ constexpr int kFieldHeight = 26;
 constexpr int kHintGap = 6;
 constexpr double kHintPx = 10.0;
 constexpr int kChoiceIcon = 20;
+// The widest the key column grows before its keys wrap.
+constexpr int kMaxKeyWidth = 132;
 
 QFont hintFont() {
     return theme::font(theme::TextRole::Body, kHintPx);
@@ -37,6 +41,8 @@ PropertyField::PropertyField(const QString& value, const QString& hint, QWidget*
     setFont(theme::font(theme::TextRole::Body, theme::size::kRow));
     setFixedHeight(kFieldHeight);
     updateMargins();
+    // A value wider than the field shows its start, not its end.
+    setCursorPosition(0);
 }
 
 void PropertyField::setHint(const QString& hint) {
@@ -77,14 +83,22 @@ PropertyGrid::PropertyGrid(QWidget* parent) : QWidget(parent), grid_(new QGridLa
 }
 
 void PropertyGrid::setKeyWidth(int pixels) {
-    keyWidth_ = pixels;
+    baseKeyWidth_ = keyWidth_ = pixels;
     grid_->setColumnMinimumWidth(0, keyWidth_);
 }
 
 void PropertyGrid::addRow(const QString& key, QWidget* field) {
     auto* label = new Label(key, Label::Role::Row, this);
     label->setTone(QStringLiteral("muted"));
+    label->setWordWrap(true);
+    const int wanted = std::min(kMaxKeyWidth, label->fontMetrics().horizontalAdvance(key) + 2);
+    if (wanted > keyWidth_) {
+        keyWidth_ = wanted;
+        grid_->setColumnMinimumWidth(0, keyWidth_);
+        for (QWidget* earlier : keys_) earlier->setFixedWidth(keyWidth_);
+    }
     label->setFixedWidth(keyWidth_);
+    keys_ << label;
     grid_->addWidget(label, rows_, 0, Qt::AlignVCenter);
     field->setParent(this);
     grid_->addWidget(field, rows_, 1);
@@ -130,6 +144,9 @@ QComboBox* PropertyGrid::addChoice(const QString& key, const QStringList& choice
 void PropertyGrid::clear() {
     clearLayout(grid_);
     rows_ = 0;
+    keys_.clear();
+    keyWidth_ = baseKeyWidth_;
+    grid_->setColumnMinimumWidth(0, keyWidth_);
 }
 
 EngineTable::EngineTable(QWidget* parent) : QWidget(parent), grid_(new QGridLayout(this)) {

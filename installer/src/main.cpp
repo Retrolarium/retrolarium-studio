@@ -7,6 +7,7 @@
 //   Uninstall.exe --uninstall
 
 #include "installer_package.hpp"
+#include "sdk/languages.hpp"
 #include "setup_window.hpp"
 #include "theme/brand.hpp"
 #include "theme/theme.hpp"
@@ -16,6 +17,7 @@
 #include <QCoreApplication>
 #include <QLocale>
 #include <QTextStream>
+#include <QTranslator>
 
 int main(int argc, char* argv[]) {
     QStringList arguments;
@@ -56,16 +58,31 @@ int main(int argc, char* argv[]) {
     QApplication::setOrganizationName(QStringLiteral("Retrolarium"));
 
     // The language question itself is set for the system's language.
-    rl::theme::setCyrillicInterface(QLocale::system().language() == QLocale::Russian);
+    rl::theme::setInterfaceLanguage(rl::systemInterfaceLanguage());
     rl::theme::Theme::instance().install(app, rl::theme::Mode::Dark);
     QApplication::setWindowIcon(rl::theme::brand::appIcon(rl::theme::Mode::Dark));
 
-    rl::setup::LanguageDialog language;
+    // The studio's translations: setup's own text is among them.
+    QTranslator studioTranslator;
+    QTranslator qtTranslator;
+    const auto use = [&](const QString& code) {
+        QApplication::removeTranslator(&studioTranslator);
+        QApplication::removeTranslator(&qtTranslator);
+        const bool translated = code != QLatin1String("en")
+                                && studioTranslator.load(QStringLiteral(":/i18n/retrolarium_studio_%1").arg(code));
+        if (translated) {
+            QApplication::installTranslator(&studioTranslator);
+            if (qtTranslator.load(QStringLiteral(":/i18n/qtbase_%1").arg(code))) {
+                QApplication::installTranslator(&qtTranslator);
+            }
+        }
+        QLocale::setDefault(QLocale(code));
+        rl::setup::setLanguage(code);
+    };
+    rl::setup::LanguageDialog language(use);
     if (language.exec() != QDialog::Accepted) return 0;
-    QLocale::setDefault(language.russianChosen() ? QLocale(QLocale::Russian, QLocale::Russia)
-                                                 : QLocale(QLocale::English, QLocale::UnitedStates));
-    // Russian setup sets in IBM Plex Sans like the Russian studio.
-    rl::theme::setCyrillicInterface(language.russianChosen());
+    // The faces of the chosen language, as the studio will use them.
+    rl::theme::setInterfaceLanguage(language.chosen());
     QApplication::setFont(rl::theme::font(rl::theme::TextRole::Body, rl::theme::size::kBody));
 
     rl::setup::SetupWindow window(QCoreApplication::applicationFilePath(),

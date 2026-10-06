@@ -50,7 +50,10 @@ enum FaceIndex {
 };
 
 bool gLoaded = false;
+// Set for Russian: the Plex faces. Set for Chinese or Japanese: a system
+// family for all but the mono text.
 bool gCyrillic = false;
+QString gSystemFamily;
 // Plex Sans is wider than Barlow; this keeps a line close to its Latin length.
 constexpr double kPlexScale = 0.94;
 
@@ -82,8 +85,11 @@ void loadFonts() {
     }
 }
 
-void setCyrillicInterface(bool cyrillic) {
-    gCyrillic = cyrillic;
+void setInterfaceLanguage(const QString& code) {
+    gCyrillic = code == QLatin1String("ru");
+    gSystemFamily = code == QLatin1String("zh_CN") ? QStringLiteral("Microsoft YaHei UI")
+                    : code == QLatin1String("ja")  ? QStringLiteral("Yu Gothic UI")
+                                                   : QString();
 }
 
 bool fontsLoaded() {
@@ -148,6 +154,12 @@ QFont font(TextRole role, double cssPixels) {
     }
     // The prototype is specified in CSS pixels at 96 dpi; points keep the
     // fractional sizes and scale with the display like the rest of the UI.
+    const bool mono = role == TextRole::Mono || role == TextRole::MonoMedium || role == TextRole::MonoSemiBold;
+    if (!mono && !gSystemFamily.isEmpty()) {
+        // Ideographs read small at Barlow's sizes; the system face keeps them.
+        result.setFamily(gSystemFamily);
+        result.setLetterSpacing(QFont::PercentageSpacing, 100.0);
+    }
     result.setPointSizeF(cssPixels * 0.75 * (plex ? kPlexScale : 1.0));
     result.setHintingPreference(QFont::PreferVerticalHinting);
     return result;

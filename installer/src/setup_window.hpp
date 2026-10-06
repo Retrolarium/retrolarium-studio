@@ -3,6 +3,8 @@
 #include "frame/studio_dialog.hpp"
 #include "setup_operations.hpp"
 
+#include <functional>
+
 class QCheckBox;
 class QComboBox;
 class QLineEdit;
@@ -18,17 +20,19 @@ class PrimaryButton;
 
 namespace rl::setup {
 
-// Asks which language setup speaks, before anything else.
+// Asks which language setup speaks, before anything else, and speaks it
+// as soon as it is picked: `use` installs a language's translations.
 class LanguageDialog final : public frame::StudioDialog {
     Q_OBJECT
 
 public:
-    LanguageDialog();
-    bool russianChosen() const;
+    explicit LanguageDialog(std::function<void(const QString& code)> use);
+    QString chosen() const;
 
 private:
     void retranslate();
 
+    std::function<void(const QString&)> use_;
     ui::Label* prompt_;
     QComboBox* language_;
     QPushButton* cancel_;

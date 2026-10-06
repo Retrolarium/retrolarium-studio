@@ -471,7 +471,7 @@ sdk::Budget SmbMusicModel::budget() const {
     sdk::Budget budget;
     budget.used = music().arena.size();
     budget.capacity = music().arena.size();
-    budget.text = QStringLiteral("stream arena %1 bytes · fixed").arg(music().arena.size());
+    budget.text = tr("stream arena %1 bytes · fixed").arg(music().arena.size());
     return budget;
 }
 

@@ -1,11 +1,12 @@
 #include "setup_operations.hpp"
 
+#include "sdk/i18n.hpp"
+
 #include <QCoreApplication>
 #include <QDir>
 #include <QDirIterator>
 #include <QFile>
 #include <QFileInfo>
-#include <QLocale>
 #include <QSettings>
 #include <QTemporaryDir>
 
@@ -103,7 +104,7 @@ bool createShortcut(const QString& shortcutPath, const QString& target, const QS
     if (uninitialize) CoUninitialize();
     if (FAILED(result)) {
         if (error) {
-            *error = text("Could not create the shortcut %1.", "Не удалось создать ярлык %1.").arg(nativePath(shortcutPath));
+            *error = rlTr("setup", "Could not create the shortcut %1.").arg(nativePath(shortcutPath));
         }
         return false;
     }
@@ -147,14 +148,13 @@ bool registerInstallation(const QString& directory, const QString& version, quin
     extension.setValue(QStringLiteral("Default"), kProjectType);
     extension.sync();
     QSettings type(writable(kProjectTypeKey), QSettings::NativeFormat);
-    type.setValue(QStringLiteral("Default"), text("Retrolarium project", "Проект Retrolarium"));
+    type.setValue(QStringLiteral("Default"), rlTr("setup", "Retrolarium project"));
     type.setValue(QStringLiteral("DefaultIcon/Default"), studio + QStringLiteral(",0"));
     type.setValue(QStringLiteral("shell/open/command/Default"), QStringLiteral("\"%1\" \"%2\"").arg(studio, QStringLiteral("%1")));
     type.sync();
     SHChangeNotify(SHCNE_ASSOCCHANGED, SHCNF_IDLIST, nullptr, nullptr);
     if (uninstall.status() != QSettings::NoError || type.status() != QSettings::NoError) {
-        if (error) *error = text("Could not register Retrolarium Studio with Windows.",
-                                 "Не удалось зарегистрировать Retrolarium Studio в Windows.");
+        if (error) *error = rlTr("setup", "Could not register Retrolarium Studio with Windows.");
         return false;
     }
     return true;
@@ -190,12 +190,16 @@ void keepUserFiles(const QString& from, const QString& to) {
 
 }  // namespace
 
-bool russian() {
-    return QLocale().language() == QLocale::Russian;
+namespace {
+QString gLanguage = QStringLiteral("en");
+}  // namespace
+
+void setLanguage(const QString& code) {
+    gLanguage = code;
 }
 
-QString text(const char* english, const char* russianText) {
-    return QString::fromUtf8(russian() ? russianText : english);
+QString language() {
+    return gLanguage;
 }
 
 QString defaultInstallDirectory() {
@@ -258,23 +262,20 @@ bool install(const Request& request, const Progress& progress, QString* error) {
     const QString target = QDir::cleanPath(QDir(request.installDirectory).absolutePath());
     const QString parent = QFileInfo(target).absolutePath();
     if (!runningPrograms(target).isEmpty()) {
-        if (error) *error = text("Retrolarium Studio is still running. Close it and try again.",
-                                 "Retrolarium Studio всё ещё запущена. Закройте её и повторите.");
+        if (error) *error = rlTr("setup", "Retrolarium Studio is still running. Close it and try again.");
         return false;
     }
     if (!replaceableDirectory(target)) {
-        if (error) *error = text("%1 holds other files. Choose an empty folder.",
-                                 "В папке %1 есть другие файлы. Выберите пустую папку.").arg(nativePath(target));
+        if (error) *error = rlTr("setup", "%1 holds other files. Choose an empty folder.").arg(nativePath(target));
         return false;
     }
     if (!QDir().mkpath(parent)) {
-        if (error) *error = text("Could not create the installation folder.", "Не удалось создать папку установки.");
+        if (error) *error = rlTr("setup", "Could not create the installation folder.");
         return false;
     }
     QTemporaryDir staging(QDir(parent).filePath(QStringLiteral(".Retrolarium Studio-setup-XXXXXX")));
     if (!staging.isValid()) {
-        if (error) *error = text("Could not create a temporary folder next to the installation.",
-                                 "Не удалось создать временную папку рядом с папкой установки.");
+        if (error) *error = rlTr("setup", "Could not create a temporary folder next to the installation.");
         return false;
     }
     if (!InstallerPackage::extract(
@@ -282,7 +283,7 @@ bool install(const Request& request, const Progress& progress, QString* error) {
             [&progress](quint64 done, quint64 total, const QString& path) {
                 if (progress) {
                     progress(2 + static_cast<int>(total ? done * 76 / total : 76),
-                             text("Unpacking %1", "Распаковка %1").arg(nativePath(path)));
+                             rlTr("setup", "Unpacking %1").arg(nativePath(path)));
                 }
             },
             error) ||
@@ -293,14 +294,13 @@ bool install(const Request& request, const Progress& progress, QString* error) {
     quint64 bytes = request.manifest.stubSize;
     for (const PayloadEntry& entry : request.manifest.files) bytes += entry.size;
 
-    if (progress) progress(80, text("Replacing the earlier version", "Замена прежней версии"));
+    if (progress) progress(80, rlTr("setup", "Replacing the earlier version"));
     const bool update = QDir(target).exists();
     const QString previous = target + QStringLiteral(".previous-%1").arg(GetCurrentProcessId());
     if (update) {
         keepUserFiles(target, staging.path());
         if (!QDir().rename(target, previous)) {
-            if (error) *error = text("Could not replace the earlier version: a program may still use its files.",
-                                     "Не удалось заменить прежнюю версию: её файлы, возможно, ещё заняты.");
+            if (error) *error = rlTr("setup", "Could not replace the earlier version: a program may still use its files.");
             return false;
         }
     }
@@ -308,7 +308,7 @@ bool install(const Request& request, const Progress& progress, QString* error) {
     if (!QDir().rename(staging.path(), target)) {
         QDir(staging.path()).removeRecursively();
         if (update) QDir().rename(previous, target);
-        if (error) *error = text("Could not move the new files into place.", "Не удалось переместить новые файлы на место.");
+        if (error) *error = rlTr("setup", "Could not move the new files into place.");
         return false;
     }
     auto rollback = [&] {
@@ -316,41 +316,40 @@ bool install(const Request& request, const Progress& progress, QString* error) {
         if (update) QDir().rename(previous, target);
     };
 
-    if (progress) progress(88, text("Creating shortcuts", "Создание ярлыков"));
+    if (progress) progress(88, rlTr("setup", "Creating shortcuts"));
     const QString menu = startMenuDirectory();
     const QString studio = QDir(target).filePath(kStudioName);
     removeShortcuts();
     if (menu.isEmpty() ||
         !createShortcut(QDir(menu).filePath(kProduct + QStringLiteral(".lnk")), studio, {}, kProduct, error) ||
-        !createShortcut(QDir(menu).filePath(text("Uninstall Retrolarium Studio.lnk", "Удалить Retrolarium Studio.lnk")),
+        !createShortcut(QDir(menu).filePath(rlTr("setup", "Uninstall Retrolarium Studio.lnk")),
                         QDir(target).filePath(kUninstallerName), QStringLiteral("--uninstall"),
-                        text("Uninstall Retrolarium Studio", "Удалить Retrolarium Studio"), error) ||
+                        rlTr("setup", "Uninstall Retrolarium Studio"), error) ||
         (request.desktopShortcut && !createShortcut(desktopShortcutPath(), studio, {}, kProduct, error))) {
         rollback();
         return false;
     }
-    if (progress) progress(94, text("Registering with Windows", "Регистрация в Windows"));
+    if (progress) progress(94, rlTr("setup", "Registering with Windows"));
     if (!registerInstallation(target, request.manifest.version, bytes, error)) {
         rollback();
         return false;
     }
     // The studio starts in the language setup ran in.
     QSettings studioSettings(writable(kSettingsKey), QSettings::NativeFormat);
-    studioSettings.setValue(QStringLiteral("ui/language"), russian() ? QStringLiteral("ru") : QStringLiteral("en"));
+    studioSettings.setValue(QStringLiteral("ui/language"), language());
 
     if (update) QDir(previous).removeRecursively();
-    if (progress) progress(100, text("Retrolarium Studio is installed", "Retrolarium Studio установлена"));
+    if (progress) progress(100, rlTr("setup", "Retrolarium Studio is installed"));
     return true;
 }
 
 bool uninstall(const Request& request, const Progress& progress, QString* error, QString* warning) {
     const QString directory = QDir::cleanPath(QDir(request.installDirectory).absolutePath());
     if (!runningPrograms(directory).isEmpty()) {
-        if (error) *error = text("Retrolarium Studio is still running. Close it and try again.",
-                                 "Retrolarium Studio всё ещё запущена. Закройте её и повторите.");
+        if (error) *error = rlTr("setup", "Retrolarium Studio is still running. Close it and try again.");
         return false;
     }
-    if (progress) progress(10, text("Removing shortcuts", "Удаление ярлыков"));
+    if (progress) progress(10, rlTr("setup", "Removing shortcuts"));
     removeShortcuts();
     unregisterInstallation(directory);
 
@@ -361,7 +360,7 @@ bool uninstall(const Request& request, const Progress& progress, QString* error,
     for (int i = 0; i < entries.size(); ++i) {
         const QFileInfo& entry = entries.at(i);
         if (progress) {
-            progress(20 + i * 60 / qMax(1, entries.size()), text("Removing %1", "Удаление %1").arg(entry.fileName()));
+            progress(20 + i * 60 / qMax(1, entries.size()), rlTr("setup", "Removing %1").arg(entry.fileName()));
         }
         if (sameFile(entry.absoluteFilePath(), self)) continue;
         const bool removed = entry.isDir() ? QDir(entry.absoluteFilePath()).removeRecursively()
@@ -369,19 +368,18 @@ bool uninstall(const Request& request, const Progress& progress, QString* error,
         if (!removed) left << entry.fileName();
     }
     if (!left.isEmpty() && warning) {
-        *warning = text("Some files stayed in %1: %2. Delete them by hand.",
-                        "В %1 остались файлы: %2. Удалите их вручную.")
+        *warning = rlTr("setup", "Some files stayed in %1: %2. Delete them by hand.")
                        .arg(nativePath(directory), left.join(QStringLiteral(", ")));
     }
     if (request.removeUserData) {
-        if (progress) progress(90, text("Removing your games and settings", "Удаление ваших игр и настроек"));
+        if (progress) progress(90, rlTr("setup", "Removing your games and settings"));
         QDir(gamesDirectory()).removeRecursively();
         deleteKey(kSettingsKey);
         // And the organisation's key, while nothing else is under it.
         RegDeleteKeyW(HKEY_CURRENT_USER, L"Software\\Retrolarium");
     }
     if (!inside(self, directory)) QDir().rmdir(directory);
-    if (progress) progress(100, text("Retrolarium Studio has been removed", "Retrolarium Studio удалена"));
+    if (progress) progress(100, rlTr("setup", "Retrolarium Studio has been removed"));
     return true;
 }
 
@@ -391,8 +389,7 @@ bool launchStudio(const QString& directory, QString* error) {
                                            reinterpret_cast<const wchar_t*>(nativePath(directory).utf16()),
                                            SW_SHOWNORMAL);
     if (reinterpret_cast<INT_PTR>(result) <= 32) {
-        if (error) *error = text("Windows could not start the studio (error %1).",
-                                 "Windows не смогла запустить студию (ошибка %1).")
+        if (error) *error = rlTr("setup", "Windows could not start the studio (error %1).")
                                 .arg(reinterpret_cast<INT_PTR>(result));
         return false;
     }
@@ -414,8 +411,7 @@ bool scheduleSelfRemoval(const QString& self, const QString& directory, QString*
     const std::wstring directoryVariable = QStringLiteral("RETROLARIUM_UNINSTALL_DIR_%1").arg(suffix).toStdWString();
     if (!SetEnvironmentVariableW(selfVariable.c_str(), nativePath(self).toStdWString().c_str()) ||
         !SetEnvironmentVariableW(directoryVariable.c_str(), nativePath(directory).toStdWString().c_str())) {
-        if (error) *error = text("The studio was removed, but setup could not remove itself.",
-                                 "Студия удалена, но программа установки не смогла удалить себя.");
+        if (error) *error = rlTr("setup", "The studio was removed, but setup could not remove itself.");
         return false;
     }
     const QString selfReference = QLatin1Char('%') + QString::fromStdWString(selfVariable) + QLatin1Char('%');
@@ -441,8 +437,7 @@ bool scheduleSelfRemoval(const QString& self, const QString& directory, QString*
     SetEnvironmentVariableW(selfVariable.c_str(), nullptr);
     SetEnvironmentVariableW(directoryVariable.c_str(), nullptr);
     if (!started) {
-        if (error) *error = text("The studio was removed, but setup could not remove itself.",
-                                 "Студия удалена, но программа установки не смогла удалить себя.");
+        if (error) *error = rlTr("setup", "The studio was removed, but setup could not remove itself.");
         return false;
     }
     return true;
