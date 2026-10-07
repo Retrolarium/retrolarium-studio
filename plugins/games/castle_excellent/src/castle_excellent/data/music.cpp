@@ -282,42 +282,44 @@ QString CastleMusic::retune(const QJsonObject& music, const CastleMusicNote& not
     const bool hasAccidental = note.position + 1 < text.size() &&
                                (text.at(note.position + 1) == QLatin1Char('+') || text.at(note.position + 1) == QLatin1Char('-'));
     const int letterSpan = hasAccidental ? 2 : 1;
-    QString token;
-    if (find(note.octave, &token)) {
-        return text.left(note.position) + token + text.mid(note.position + letterSpan);
-    }
     const auto octaveOf = [](QChar digit) { return ((digit.toLatin1() - 0x32) * 12) & 0xff; };
     const auto isSwitch = [&](int at) {
         return at >= 0 && at + 1 < text.size() && text.at(at) == QLatin1Char('o') && text.at(at + 1) >= QLatin1Char('0') &&
                text.at(at + 1) <= QLatin1Char('9');
     };
     const QString rest = text.mid(note.position + letterSpan, note.span - letterSpan);
-    // Already switched for this note alone (oN note oM): change that switch,
-    // or drop both when the note goes back to the octave around it, rather
-    // than nesting another pair each time.
+    // Octave switches right before and after the note are reused rather than
+    // nested: retuning a note back and forth then settles on one form.
     const int before = note.position - 2;
     const int after = note.position + note.span;
-    if (isSwitch(before) && isSwitch(after) && octaveOf(text.at(before + 1)) == note.octave) {
-        const int outer = octaveOf(text.at(after + 1));
-        for (char digit = '0'; digit <= '9'; ++digit) {
-            const int octave = octaveOf(QLatin1Char(digit));
-            if (octave == note.octave || !find(octave, &token)) continue;
-            if (octave == outer) return text.left(before) + token + rest + text.mid(after + 2);
-            return text.left(before) + QLatin1Char('o') + QLatin1Char(digit) + token + rest + text.mid(after);
-        }
-        return {};
+    const bool switchBefore = isSwitch(before);   // sets this note's octave
+    const bool switchAfter = isSwitch(after);
+    QString token;
+    // oN note oM, and the note fits octave M: "oM note", or just "note"
+    // when an oM stands before it already. Tried before octave N, where an
+    // enharmonic (c- for b) would keep the pair.
+    if (switchBefore && switchAfter && find(octaveOf(text.at(after + 1)), &token)) {
+        const QChar outer = text.at(after + 1);
+        const bool already = isSwitch(before - 2) && text.at(before - 1) == outer;
+        return text.left(before) + (already ? QString() : QStringLiteral("o") + outer) + token + rest +
+               text.mid(after + 2);
     }
-    // Another octave: switch to it for this note and back after it.
+    if (find(note.octave, &token)) {
+        return text.left(note.position) + token + text.mid(note.position + letterSpan);
+    }
+    // Another octave: switch to it for this note (changing the switch before
+    // it, if any) and back after it, unless a switch follows anyway.
     char back = 0;
     for (char digit = '0'; digit <= '9'; ++digit) {
-        if ((((digit - 0x32) * 12) & 0xff) == note.octave) back = digit;
+        if (octaveOf(QLatin1Char(digit)) == note.octave) back = digit;
     }
-    if (!back) return {};
+    if (!back && !switchAfter) return {};
     for (char digit = '0'; digit <= '9'; ++digit) {
-        const int octave = ((digit - 0x32) * 12) & 0xff;
+        const int octave = octaveOf(QLatin1Char(digit));
         if (octave == note.octave || !find(octave, &token)) continue;
-        return text.left(note.position) + QLatin1Char('o') + QLatin1Char(digit) + token + rest + QLatin1Char('o') + QLatin1Char(back) +
-               text.mid(note.position + note.span);
+        const QString restore = switchAfter ? QString() : QStringLiteral("o") + QLatin1Char(back);
+        return text.left(switchBefore ? before : note.position) + QLatin1Char('o') + QLatin1Char(digit) + token + rest +
+               restore + text.mid(after);
     }
     return {};
 }

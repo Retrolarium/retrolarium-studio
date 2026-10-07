@@ -107,8 +107,9 @@ SettingsDialog::SettingsDialog(QWidget* parent) : StudioDialog(tr("Settings"), p
     grid->addWidget(chooseBios, 1, 2);
     content->addLayout(grid);
     auto* biosNote = hint(tr("Famicom Disk System games (Super Mario Bros. 2, the Disk System Super "
-                             "Mario Bros.) play only with the console's BIOS, which the studio cannot "
-                             "include. Choose your dump of it, usually called disksys.rom."),
+                             "Mario Bros.) play on OpenDiskSysROM, a free BIOS that comes with the "
+                             "studio. If a game misbehaves on it, choose your dump of the console's "
+                             "BIOS, usually called disksys.rom: disk games then play on that."),
                           body());
     biosNote->setFixedWidth(560);
     content->addWidget(biosNote);
@@ -130,7 +131,8 @@ void SettingsDialog::refresh() {
                                                                     mame_->width()));
     mame_->setToolTip(mame);
     const QString bios = biosPath(mame);
-    bios_->setText(bios.isEmpty() ? tr("Not installed") : tr("Installed"));
+    // Without a dump of its own MAME gets the studio's OpenDiskSysROM.
+    bios_->setText(bios.isEmpty() ? tr("OpenDiskSysROM (built in)") : tr("Your dump"));
     bios_->setToolTip(QDir::toNativeSeparators(bios));
 }
 

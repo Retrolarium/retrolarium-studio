@@ -15,12 +15,17 @@ license. Paths are relative to the installation folder.
 | AS macro assembler (in the kit) | GPL-2.0-or-later | `kit/retrolarium_kit/_toolchains/licenses/AS-GPL-2.0.txt` |
 | cc65 (in the kit) | zlib | `kit/retrolarium_kit/_toolchains/licenses/cc65-Zlib.txt` |
 | p2bin (in the kit) | ISC | `kit/retrolarium_kit/_toolchains/licenses/p2bin-ISC.txt` |
+| OpenDiskSysROM (in the kit) | LGPL-3.0 | `kit/retrolarium_kit/firmware/opendisksys/LICENSE-LGPL-3.0.txt` |
 | Python (private runtime for the kit) | PSF License | `python/LICENSE.txt` |
 | MAME | GPL-2.0-or-later | `mame/COPYING` |
 
-The package holds no game ROMs and no console BIOS: the studio downloads
-game disassemblies, and the Famicom Disk System BIOS comes from the user's
-own console.
+The package holds no game ROMs and no console BIOS dump: the studio
+downloads game disassemblies. Famicom Disk System games play on
+OpenDiskSysROM, a free re-implementation of the Disk System BIOS. Its source
+is at https://github.com/RetrolariumLab/OpenDiskSysROM, and
+`kit/retrolarium_kit/firmware/opendisksys/manifest.json` names the commit the
+image was built from. A user may still install their own console's BIOS,
+which MAME then prefers.
 
 Since Qt is linked statically, the LGPL lets you relink the studio with a
 modified Qt: the studio's complete source is public under the GPL, and

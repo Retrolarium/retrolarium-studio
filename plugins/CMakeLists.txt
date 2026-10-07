@@ -308,3 +308,25 @@ add_library(studio_builtin_plugins STATIC
 target_include_directories(studio_builtin_plugins PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(studio_builtin_plugins PUBLIC castle_plugin doraemon_plugin flicky_plugin pacman_plugin smb_plugin solomon_plugin studio_sdk)
 studio_enable_warnings(studio_builtin_plugins)
+
+# Tests against the projects the kit prepared in the game repositories
+# (games:<repository>/...): they read them only, and pass as skipped where
+# a project is not there.
+add_executable(flicky_sound_document_test
+    flicky/tests/sound_document_test.cpp
+)
+target_link_libraries(flicky_sound_document_test PRIVATE flicky_data studio_sdk)
+studio_add_test(flicky_sound_document_test games:flicky_src/.retrolarium/ue/flicky-ue.rlj)
+
+add_executable(castle_music_retune_test
+    castle/tests/music_retune_test.cpp
+)
+target_link_libraries(castle_music_retune_test PRIVATE castle_plugin)
+studio_add_test(castle_music_retune_test
+    games:castle_excellent_src/.retrolarium/castlequest-usa/castle-excellent-castlequest-usa.rlj)
+
+add_executable(solomon_text_and_rooms_test
+    solomon/tests/text_and_rooms_test.cpp
+)
+target_link_libraries(solomon_text_and_rooms_test PRIVATE solomon_plugin)
+studio_add_test(solomon_text_and_rooms_test games:solomon_no_kagi_src/.retrolarium/usa/solomons-key-usa.rlj)

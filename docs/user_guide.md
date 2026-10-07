@@ -22,8 +22,10 @@ running the studio from a checkout need:
   `python/python.exe` next to the studio, else Python on `PATH`.
 - **MAME** (`consoles.exe`) for Play, Playtest, demos and some previews:
   `RETROLARIUM_MAME`, the one chosen in File → Settings, or
-  `mame/consoles.exe` next to the studio. Famicom Disk System games also
-  need the console's BIOS (`disksys.rom`, yours): choose it in Settings.
+  `mame/consoles.exe` next to the studio. Famicom Disk System games play
+  on OpenDiskSysROM, a free BIOS the studio carries; if one misbehaves on
+  it, choose your dump of the console's BIOS (`disksys.rom`) in Settings and
+  disk games play on that instead.
 - **The game's ROM** (yours) and its disassembly for the games below.
 
 When something is missing, the Messages panel says what and where it looked.
@@ -127,8 +129,9 @@ Playtest view; Pause and Stop are in the toolbar.
   `RETROLARIUM_KIT`, or choose MAME in File → Settings (see above).
 - **"This file is … not …"** when choosing a ROM: it is another version (or
   a changed copy); the message names the version it is.
-- **"MAME needs the Famicom Disk System BIOS"**: choose `disksys.rom` in
-  File → Settings.
+- **"MAME needs the Famicom Disk System BIOS … OpenDiskSysROM is missing"**:
+  the kit lost its copy of the free BIOS; reinstall the studio, or choose
+  your `disksys.rom` in File → Settings.
 - **"<view> cannot be opened"**: the project has no data for that document
   and the kit could not add it; Messages and Build output show the kit's
   error.
