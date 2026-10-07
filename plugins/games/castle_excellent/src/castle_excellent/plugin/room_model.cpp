@@ -12,8 +12,25 @@ namespace rl::castle {
 
 namespace {
 
-constexpr int kObjectStreamBytes = 2449;     // $EF6B-$F8FB, three bytes per object
+constexpr int kObjectStreamBytes = 2449;     // $EF6B-$F8FC: three bytes per object, $FF after each room
 constexpr int kStateBytes = 141;             // one persistent bit per object, per room rounded to bytes
+
+// What every room's objects take together, with `objects` for `room`: the
+// shared record stream and the saved-state bits (the kit's own sums).
+struct ObjectTotals {
+    int stream = 0;
+    int state = 0;
+};
+
+ObjectTotals objectTotals(const CastleLevels& levels, int room, int roomCount) {
+    ObjectTotals totals;
+    for (int r = 0; r < levels.roomCount(); ++r) {
+        const int count = r == room ? roomCount : levels.objects(r).size();
+        totals.stream += 1 + 3 * count;
+        totals.state += (count + 7) / 8;
+    }
+    return totals;
+}
 
 QString hex(int value) {
     return nes::hex(value);
@@ -346,6 +363,29 @@ bool CastleRoomModel::commitObjects(const QVector<CastleObject>& objects, const 
         }
         return false;
     }
+    // The rooms share one stream and one saved-state area: an object that
+    // fits the room may still not fit the game.
+    const ObjectTotals totals = objectTotals(session_->levels(), room_, objects.size());
+    if (objects.size() > session_->levels().objects(room_).size()) {
+        if (totals.stream > kObjectStreamBytes) {
+            if (error) {
+                *error = tr("All rooms share %1 bytes of objects; this would need %2. Delete an object in any room "
+                            "first.")
+                             .arg(kObjectStreamBytes)
+                             .arg(totals.stream);
+            }
+            return false;
+        }
+        if (totals.state > kStateBytes) {
+            if (error) {
+                *error = tr("All rooms share %1 bytes of saved object state; this would need %2. Delete an object "
+                            "in any room first.")
+                             .arg(kStateBytes)
+                             .arg(totals.state);
+            }
+            return false;
+        }
+    }
     const int room = room_;
     return session_->edit(text, [room, objects](CastleState& s) { s.levels.setObjects(room, objects); }, error);
 }
@@ -419,23 +459,16 @@ sdk::Library CastleRoomModel::objectLibrary() const {
 // ---------------------------------------------------------------- inspector
 
 sdk::Budget CastleRoomModel::budget() const {
-    const CastleLevels& levels = session_->levels();
-    int total = 0;
-    int state = 0;
-    for (int r = 0; r < levels.roomCount(); ++r) {
-        const int count = r == room_ ? roomObjects().size() : levels.objects(r).size();
-        total += count;
-        state += (count + 7) / 8;
-    }
+    const ObjectTotals totals = objectTotals(session_->levels(), room_, roomObjects().size());
     sdk::Budget budget;
     budget.used = roomObjects().size();
     budget.capacity = kMaximumObjects;
     budget.text = tr("this room %1 / %2 objects · all rooms: stream %3 / %4 B, saved state %5 / %6 B")
                       .arg(roomObjects().size())
                       .arg(kMaximumObjects)
-                      .arg(total * 3)
+                      .arg(totals.stream)
                       .arg(kObjectStreamBytes)
-                      .arg(state)
+                      .arg(totals.state)
                       .arg(kStateBytes);
     return budget;
 }

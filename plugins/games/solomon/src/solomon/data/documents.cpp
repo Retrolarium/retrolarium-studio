@@ -273,6 +273,15 @@ void SolomonRooms::setExpanded(bool expanded) {
 }
 
 QString SolomonRooms::overflow() const {
+    // The enemy sets the mirrors drop have their own area, smaller in the
+    // original layout: switching back to it must not leave them over.
+    if (mirrorSetBytes() > mirrorSetCapacity()) {
+        return expanded() ? rlTr("solomon", "The mirror enemy sets share %1 bytes; they need %2. Shorten a set.")
+                                .arg(mirrorSetCapacity()).arg(mirrorSetBytes())
+                          : rlTr("solomon", "The mirror enemy sets share %1 bytes; they need %2. Shorten a set, or "
+                                            "switch the ROM to Expanded.")
+                                .arg(mirrorSetCapacity()).arg(mirrorSetBytes());
+    }
     if (!expanded()) {
         if (itemBytes() > kItemArenaBytes) {
             return rlTr("solomon", "The item lists of all rooms share %1 bytes; they need %2. Remove an item in any "
