@@ -11,12 +11,9 @@
 #include "sdk/plugin.hpp"
 #include "sdk/snapshot_command.hpp"
 
-#include <QDateTime>
 #include <QFile>
 #include <QJsonArray>
-#include <QJsonDocument>
 #include <QPainter>
-#include <QSaveFile>
 #include <QUndoStack>
 
 #include <algorithm>
@@ -36,15 +33,9 @@ const QString kFruit = QStringLiteral("fruit-by-stage");
 // profile); later rounds keep the key.
 const int kFruitOfRound[16] = {0, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 7, 7};
 
-QString tabDocument(const sdk::ProjectFile& project, const QString& codec) {
-    for (const QVariant& value : project.list(QStringLiteral("workspace.tabs"))) {
-        const QVariantMap tab = value.toMap();
-        if (tab.value(QStringLiteral("codec")).toString() == codec && tab.value(QStringLiteral("enabled"), true).toBool()) {
-            return tab.value(QStringLiteral("document")).toString();
-        }
-    }
-    return {};
-}
+using sdk::loadJsonObject;
+using sdk::saveJsonObject;
+using sdk::tabDocument;
 
 sdk::Kind kind(const char* id, const char* label, const char* icon, sdk::EditorType editor) {
     sdk::Kind result;
@@ -62,42 +53,6 @@ sdk::DocumentEntry entry(const QString& id, const QString& label, const QString&
     result.meta = meta;
     result.dirty = dirty;
     return result;
-}
-
-QString failureText(const sdk::ProcessResult& result) {
-    if (!result.started) return result.error;
-    const QStringList lines = QString::fromUtf8(result.standardError).split(QLatin1Char('\n'), Qt::SkipEmptyParts);
-    for (int i = lines.size() - 1; i >= 0; --i) {
-        if (!lines.at(i).trimmed().isEmpty()) return lines.at(i).trimmed();
-    }
-    return rlTr("pacman", "exit code %1").arg(result.exitCode);
-}
-
-sdk::ProcessSpec specFromPlan(const QJsonObject& json) {
-    sdk::ProcessSpec game;
-    game.program = json.value(QStringLiteral("program")).toString();
-    for (const QJsonValue& argument : json.value(QStringLiteral("arguments")).toArray()) game.arguments << argument.toString();
-    game.workingDirectory = json.value(QStringLiteral("working_directory")).toString();
-    const QJsonObject environment = json.value(QStringLiteral("environment")).toObject();
-    for (auto it = environment.constBegin(); it != environment.constEnd(); ++it) {
-        game.environment.insert(it.key(), it.value().toString());
-    }
-    return game;
-}
-
-QJsonObject loadJsonObject(const QString& path) {
-    QFile file(path);
-    if (!file.open(QIODevice::ReadOnly)) throw nes::BundleError(rlTr("pacman", "Cannot read %1.").arg(path).toStdString());
-    const QJsonDocument doc = QJsonDocument::fromJson(file.readAll());
-    if (!doc.isObject()) throw nes::BundleError(rlTr("pacman", "%1 is not a JSON object.").arg(path).toStdString());
-    return doc.object();
-}
-
-void saveJsonObject(const QString& path, const QJsonObject& value) {
-    QSaveFile file(path);
-    if (!file.open(QIODevice::WriteOnly)) throw nes::BundleError(rlTr("pacman", "Cannot write %1.").arg(path).toStdString());
-    file.write(QJsonDocument(value).toJson(QJsonDocument::Indented));
-    if (!file.commit()) throw nes::BundleError(rlTr("pacman", "Cannot write %1.").arg(path).toStdString());
 }
 
 QString paletteLabel(const QString& id) {
@@ -287,7 +242,7 @@ QVector<sdk::DocumentGroup> PacmanSession::documents(const QString& kind) const 
         sdk::DocumentGroup group;
         group.title = tr("Session");
         group.documents << entry(QStringLiteral("playtest"), tr("Build and run"),
-                                 lastBuild_.isEmpty() ? QString() : QStringLiteral("built"));
+                                 lastBuild().isEmpty() ? QString() : QStringLiteral("built"));
         groups << group;
     }
     return groups;
@@ -457,7 +412,7 @@ QString PacmanSession::selectedStart() const {
 }
 
 QString PacmanSession::playSelectedLabel() const {
-    if (recordingActive_) return tr("Stop recording");
+    if (isRecording()) return tr("Stop recording");
     return demoStart() ? tr("Play demo") : QString();
 }
 
@@ -573,68 +528,13 @@ QVector<sdk::PaletteSample> PacmanSession::paletteSamples(const QString& table) 
 
 // ---------------------------------------------------------------- build and play
 
-void PacmanSession::report(sdk::Severity severity, const QString& source, const QString& message) {
-    if (!host()) return;
-    sdk::Diagnostic d;
-    d.severity = severity;
-    d.source = source;
-    d.message = message;
-    d.location = project_.path().section(QLatin1Char('/'), -1);
-    host()->report(d);
-}
-
-void PacmanSession::runBuild(std::function<void(bool)> next) {
-    sdk::Host* h = host();
-    if (!h || h->isBusy()) {
-        next(false);
-        return;
-    }
+bool PacmanSession::prepareBuild(BuildStep&, QString* error) {
     const maze::Report checks = maze::inspect(mazeGrid(state_.bundle));
     if (!checks.errors.isEmpty()) {
-        report(sdk::Severity::Error, QStringLiteral("build"), tr("The maze does not pass: %1").arg(checks.errors.first()));
-        next(false);
-        return;
+        if (error) *error = tr("The maze does not pass: %1").arg(checks.errors.first());
+        return false;
     }
-    if (isModified()) {
-        QString error;
-        if (!save(&error)) {
-            report(sdk::Severity::Error, QStringLiteral("save"), error);
-            next(false);
-            return;
-        }
-    }
-    QString error;
-    sdk::ProcessSpec spec =
-        h->kitCommand({QStringLiteral("studio"), QStringLiteral("build"), project_.path()}, project_.directory(), &error);
-    if (spec.program.isEmpty()) {
-        report(sdk::Severity::Error, QStringLiteral("build"), error);
-        next(false);
-        return;
-    }
-    spec.label = tr("Build ROM");
-    h->runProcess(spec, [this, next](const sdk::ProcessResult& result) {
-        if (!result.succeeded()) {
-            if (!result.cancelled) {
-                report(sdk::Severity::Error, QStringLiteral("build"), tr("Build failed: %1").arg(failureText(result)));
-            }
-            next(false);
-            return;
-        }
-        const QJsonObject json = QJsonDocument::fromJson(result.standardOutput).object();
-        const QJsonObject artifact = json.value(QStringLiteral("artifact")).toObject();
-        if (json.value(QStringLiteral("status")).toString() != QLatin1String("built")) {
-            report(sdk::Severity::Error, QStringLiteral("build"), tr("The kit did not report a built ROM."));
-            next(false);
-            return;
-        }
-        lastBuild_ = QDateTime::currentDateTime().toString(QStringLiteral("HH:mm"));
-        report(sdk::Severity::Info, QStringLiteral("build"),
-               tr("Built %1 (%2 bytes).")
-                   .arg(artifact.value(QStringLiteral("path")).toString())
-                   .arg(artifact.value(QStringLiteral("size")).toInt()));
-        emit documentsChanged(QStringLiteral("playtest"));
-        next(true);
-    });
+    return true;
 }
 
 void PacmanSession::build() {
@@ -646,7 +546,7 @@ void PacmanSession::play() {
 }
 
 void PacmanSession::playSelected() {
-    if (recordingActive_) stopRecording();
+    if (isRecording()) stopRecording();
     else if (demoStart()) launchDemo(false);
     else launch(false);
 }
@@ -674,11 +574,7 @@ void PacmanSession::attachDemoEditor(bool attach) {
 }
 
 void PacmanSession::playDemo(bool record) {
-    if (!recordingActive_) launchDemo(record);
-}
-
-void PacmanSession::stopRecording() {
-    if (recordingActive_ && host()) host()->stopEmulator();
+    if (!isRecording()) launchDemo(record);
 }
 
 QJsonArray PacmanSession::stepsFromRecording(const QJsonArray& steps, const QString& text) {
@@ -701,115 +597,43 @@ QJsonArray PacmanSession::stepsFromRecording(const QJsonArray& steps, const QStr
 }
 
 void PacmanSession::upgradeDocuments(const QString& kind, const QString& document) {
-    sdk::Host* h = host();
-    if (!h || h->isBusy()) return;
-    QString error;
-    sdk::ProcessSpec spec =
-        h->kitCommand({QStringLiteral("studio"), QStringLiteral("pacman-upgrade"), project_.path()}, project_.directory(), &error);
-    if (spec.program.isEmpty()) {
-        report(sdk::Severity::Error, kind, error);
-        return;
-    }
-    spec.label = tr("Add the attract demo");
-    h->runProcess(spec, [this, kind, document](const sdk::ProcessResult& result) {
-        if (!result.succeeded()) {
-            if (!result.cancelled) {
-                report(sdk::Severity::Error, kind, tr("Adding the attract demo failed: %1").arg(failureText(result)));
-            }
-            return;
+    UpgradeStep step;
+    step.arguments = QStringList{QStringLiteral("studio"), QStringLiteral("pacman-upgrade"), project_.path()};
+    step.label = tr("Add the attract demo");
+    step.source = kind;
+    step.failure = tr("Adding the attract demo failed: %1");
+    step.adopt = [this] {
+        // The new document joins the saved state; other unsaved edits stay.
+        const QString demo = tabDocument(project_, QStringLiteral("pacman.demo@1"));
+        if (!demo.isEmpty() && state_.demo.isEmpty()) {
+            demoPath_ = project_.resolve(demo);
+            state_.demo = saved_.demo = loadJsonObject(demoPath_);
         }
-        QString loadError;
-        const sdk::ProjectFile reloaded = sdk::ProjectFile::load(project_.path(), &loadError);
-        if (reloaded.path().isEmpty()) {
-            report(sdk::Severity::Error, kind, loadError);
-            return;
-        }
-        project_ = reloaded;
-        try {
-            // The new document joins the saved state; other unsaved edits stay.
-            const QString demo = tabDocument(project_, QStringLiteral("pacman.demo@1"));
-            if (!demo.isEmpty() && state_.demo.isEmpty()) {
-                demoPath_ = project_.resolve(demo);
-                state_.demo = saved_.demo = loadJsonObject(demoPath_);
-            }
-        } catch (const std::exception& e) {
-            report(sdk::Severity::Error, kind, QString::fromUtf8(e.what()));
-            return;
-        }
-        report(sdk::Severity::Info, kind, tr("Added the attract demo to the project."));
-        emit contentChanged();
-        for (const sdk::Kind& k : kinds()) emit documentsChanged(k.id);
-        emit documentRequested(kind, document);
-    });
+    };
+    step.done = tr("Added the attract demo to the project.");
+    step.openKind = kind;
+    step.openDocument = document;
+    runUpgrade(step);
 }
 
 void PacmanSession::launchDemo(bool record) {
-    runBuild([this, record](bool ok) {
-        sdk::Host* h = host();
-        if (!ok || !h) return;
-        const QString mame = h->emulatorPath(QStringLiteral("mame"));
-        if (mame.isEmpty()) {
-            report(sdk::Severity::Error, QStringLiteral("playtest"),
-                   tr("MAME was not found. Set RETROLARIUM_MAME to consoles.exe."));
-            return;
-        }
-        QStringList arguments{QStringLiteral("studio"), QStringLiteral("pacman-demo-plan"), project_.path(),
-                              QStringLiteral("--mame"), mame};
-        const QString recording = project_.resolve(QStringLiteral("build/demo-recording.txt"));
-        if (record) {
-            QFile::remove(recording);
-            arguments << QStringLiteral("--record") << recording;
-        }
-        QString error;
-        sdk::ProcessSpec plan = h->kitCommand(arguments, project_.directory(), &error);
-        if (plan.program.isEmpty()) {
-            report(sdk::Severity::Error, QStringLiteral("playtest"), error);
-            return;
-        }
-        plan.label = record ? tr("Plan demo recording") : tr("Plan attract demo");
-        h->runProcess(plan, [this, record, recording](const sdk::ProcessResult& result) {
-            sdk::Host* host = this->host();
-            if (!host) return;
-            if (!result.succeeded()) {
-                if (!result.cancelled) {
-                    report(sdk::Severity::Error, QStringLiteral("playtest"),
-                           tr("Demo plan failed: %1").arg(failureText(result)));
-                }
-                return;
-            }
-            sdk::ProcessSpec game = specFromPlan(QJsonDocument::fromJson(result.standardOutput).object());
-            if (game.program.isEmpty()) {
-                report(sdk::Severity::Error, QStringLiteral("playtest"), tr("The kit returned no emulator command."));
-                return;
-            }
-            const std::string model = state_.bundle.paletteModel(ids::kGameplay).toStdString();
-            for (int i = 0; i < 64; ++i) game.palette << nes::masterColor(i, model);
-            // The Playtest view covers the title and the character introduction.
-            game.readyFile = project_.resolve(QStringLiteral("build/demo-ready.txt"));
-            QFile::remove(game.readyFile);
-            game.environment.insert(QStringLiteral("PACMAN_DEMO_READY"), game.readyFile);
-            if (record) {
-                recordingActive_ = true;
-                emit selectedStartChanged();
-                report(sdk::Severity::Info, QStringLiteral("demo"),
-                       tr("Recording: Pac-Man runs the first step's way for 255 frames, then follows the "
-                          "controller until he is caught, you press Start or Stop recording, or the "
-                          "demo's steps are full."));
-            }
-            const QString title = record ? tr("Pac-Man · recording the demo") : tr("Pac-Man · attract demo");
-            host->launchEmulator(game, title, [this, record, recording](const sdk::ProcessResult& run) {
-                if (run.crashed || (!run.started && !run.error.isEmpty())) {
-                    report(sdk::Severity::Error, QStringLiteral("playtest"),
-                           run.error.isEmpty() ? tr("The emulator crashed.") : run.error);
-                }
-                if (record) {
-                    recordingActive_ = false;
-                    emit selectedStartChanged();
-                    applyRecording(recording);
-                }
-            });
-        });
-    });
+    EmulatorPlan plan;
+    plan.arguments = QStringList{QStringLiteral("studio"), QStringLiteral("pacman-demo-plan"), project_.path()};
+    plan.label = record ? tr("Plan demo recording") : tr("Plan attract demo");
+    plan.title = record ? tr("Pac-Man · recording the demo") : tr("Pac-Man · attract demo");
+    plan.demo = true;
+    // The Playtest view covers the title and the character introduction.
+    plan.readyFile = QStringLiteral("build/demo-ready.txt");
+    plan.readyVariable = QStringLiteral("PACMAN_DEMO_READY");
+    if (record) {
+        plan.recordTo = QStringLiteral("build/demo-recording.txt");
+        plan.recordingMessage = tr("Recording: Pac-Man runs the first step's way for 255 frames, then follows the "
+                                   "controller until he is caught, you press Start or Stop recording, or the "
+                                   "demo's steps are full.");
+        plan.recorded = [this](const QString& path) { applyRecording(path); };
+    }
+    plan.prepare = [this](sdk::ProcessSpec& game) { useColours(game); };
+    launchPlanned(plan);
 }
 
 void PacmanSession::applyRecording(const QString& path) {
@@ -840,63 +664,28 @@ void PacmanSession::applyRecording(const QString& path) {
 
 void PacmanSession::launch(bool fromStart) {
     const int round = round_;
-    runBuild([this, fromStart, round](bool ok) {
-        sdk::Host* h = host();
-        if (!ok || !h) return;
-        const QString mame = h->emulatorPath(QStringLiteral("mame"));
-        if (mame.isEmpty()) {
-            report(sdk::Severity::Error, QStringLiteral("playtest"),
-                   tr("MAME was not found. Set RETROLARIUM_MAME to consoles.exe."));
-            return;
-        }
-        QStringList arguments;
-        if (fromStart) {
-            arguments = QStringList{QStringLiteral("studio"), QStringLiteral("launch-plan"), project_.path(),
-                                    QStringLiteral("--mame"), mame};
-        } else {
-            arguments = QStringList{QStringLiteral("studio"), QStringLiteral("pacman-round-playtest-plan"), project_.path(),
-                                    QStringLiteral("--mame"), mame, QStringLiteral("--round"), QString::number(round)};
-        }
-        QString error;
-        sdk::ProcessSpec plan = h->kitCommand(arguments, project_.directory(), &error);
-        if (plan.program.isEmpty()) {
-            report(sdk::Severity::Error, QStringLiteral("playtest"), error);
-            return;
-        }
-        const QString title = fromStart ? tr("Pac-Man · power-on") : tr("Pac-Man · Round %1").arg(round);
-        plan.label = fromStart ? tr("Plan playtest from power-on")
-                               : tr("Plan playtest of round %1").arg(round);
-        h->runProcess(plan, [this, title, fromStart](const sdk::ProcessResult& result) {
-            sdk::Host* host = this->host();
-            if (!host) return;
-            if (!result.succeeded()) {
-                if (!result.cancelled) {
-                    report(sdk::Severity::Error, QStringLiteral("playtest"),
-                           tr("Playtest plan failed: %1").arg(failureText(result)));
-                }
-                return;
-            }
-            sdk::ProcessSpec game = specFromPlan(QJsonDocument::fromJson(result.standardOutput).object());
-            if (game.program.isEmpty()) {
-                report(sdk::Severity::Error, QStringLiteral("playtest"), tr("The kit returned no emulator command."));
-                return;
-            }
-            const std::string model = state_.bundle.paletteModel(ids::kGameplay).toStdString();
-            for (int i = 0; i < 64; ++i) game.palette << nes::masterColor(i, model);
-            if (!fromStart) {
-                // The Playtest view covers the title and the way into the round.
-                game.readyFile = project_.resolve(QStringLiteral("build/playtest-ready.txt"));
-                QFile::remove(game.readyFile);
-                game.environment.insert(QStringLiteral("PACMAN_PLAYTEST_READY"), game.readyFile);
-            }
-            host->launchEmulator(game, title, [this](const sdk::ProcessResult& run) {
-                if (run.crashed || (!run.started && !run.error.isEmpty())) {
-                    report(sdk::Severity::Error, QStringLiteral("playtest"),
-                           run.error.isEmpty() ? tr("The emulator crashed.") : run.error);
-                }
-            });
-        });
-    });
+    EmulatorPlan plan;
+    if (fromStart) {
+        plan.arguments = QStringList{QStringLiteral("studio"), QStringLiteral("launch-plan"), project_.path()};
+        plan.label = tr("Plan playtest from power-on");
+        plan.title = tr("Pac-Man · power-on");
+    } else {
+        plan.arguments = QStringList{QStringLiteral("studio"), QStringLiteral("pacman-round-playtest-plan"), project_.path(),
+                          QStringLiteral("--round"), QString::number(round)};
+        plan.label = tr("Plan playtest of round %1").arg(round);
+        plan.title = tr("Pac-Man · Round %1").arg(round);
+        // The Playtest view covers the title and the way into the round.
+        plan.readyFile = QStringLiteral("build/playtest-ready.txt");
+        plan.readyVariable = QStringLiteral("PACMAN_PLAYTEST_READY");
+    }
+    plan.prepare = [this](sdk::ProcessSpec& game) { useColours(game); };
+    launchPlanned(plan);
+}
+
+void PacmanSession::useColours(sdk::ProcessSpec& game) const {
+    // The game in the colours the editors draw with.
+    const std::string model = state_.bundle.paletteModel(ids::kGameplay).toStdString();
+    for (int i = 0; i < 64; ++i) game.palette << nes::masterColor(i, model);
 }
 
 }  // namespace rl::pacman

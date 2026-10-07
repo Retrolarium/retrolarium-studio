@@ -1,7 +1,6 @@
 #pragma once
 
-#include "sdk/project_file.hpp"
-#include "sdk/session.hpp"
+#include "sdk/kit_session.hpp"
 #include "smb/data/resource_document.hpp"
 #include "smb/data/screens.hpp"
 #include "smb/render/level_image.hpp"
@@ -29,7 +28,7 @@ struct SmbStart {
 // An open Super Mario Bros. project (`rltool studio preset`): one NES
 // resource bundle, documents/resources.json, that every editor reads and
 // writes. Edits are whole-document snapshots on the project undo stack.
-class SmbSession final : public sdk::Session {
+class SmbSession final : public sdk::KitSession {
     Q_OBJECT
 
 public:
@@ -59,10 +58,8 @@ public:
     // While a demo editor is open, Play from selected runs the demo.
     void attachDemoEditor(bool attach);
     bool demoStart() const { return demoEditors_ > 0; }
-    bool recordingActive() const { return recordingActive_; }
     // Builds and loops the demo, or records a new one from the controller.
     void playDemo(bool record);
-    void stopRecording();
 
     const SmbResourceDocument& document() const { return document_; }
     const SmbResourceDocument& saved() const { return saved_; }
@@ -85,7 +82,6 @@ public:
     QString metatiles() const { return art_.metatiles; }
     QString playerFrames() const { return art_.playerFrames; }
     QString music() const { return music_; }
-    QString projectDirectory() const { return project_.directory(); }
 
     // Screen-packet resources, decoded once per revision.
     const SmbScreenSet& screenSet(const QString& resource) const;
@@ -135,17 +131,15 @@ private:
     // A document id names its bank only when there are several.
     QString bankDocument(const QString& levels, const QString& document) const;
     void setDocument(const SmbResourceDocument& document, quint64 revision);
-    void report(sdk::Severity severity, const QString& source, const QString& message);
-    void runBuild(std::function<void(bool)> next, bool force);
     void launch(bool fromStart);
     void launchDemo(bool record);
+    void useColours(sdk::ProcessSpec& game) const;
     void applyRecording(const QString& path);
     // Runs the kit's upgrade (the title demo, new bundle resources), then
     // opens the document that asked for it.
     void upgradeProject(const QString& kind, const QString& document);
     void setDemo(const QJsonObject& demo);
 
-    sdk::ProjectFile project_;
     QString documentPath_;
     SmbResourceDocument document_;
     SmbResourceDocument saved_;
@@ -161,12 +155,10 @@ private:
     QHash<QString, QPoint> hero_;
     SmbStart start_;
     QString lighting_ = QStringLiteral("Auto");
-    QString lastBuild_;
     QString demoPath_;
     QJsonObject demo_;
     QJsonObject savedDemo_;
     int demoEditors_ = 0;
-    bool recordingActive_ = false;
 
     mutable QHash<QString, SmbScreenSet> screenSets_;
     mutable quint64 screenRevision_ = ~quint64(0);

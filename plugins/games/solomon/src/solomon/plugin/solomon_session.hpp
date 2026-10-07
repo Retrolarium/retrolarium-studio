@@ -1,8 +1,7 @@
 #pragma once
 
 #include "nes/editors.hpp"
-#include "sdk/project_file.hpp"
-#include "sdk/session.hpp"
+#include "sdk/kit_session.hpp"
 #include "solomon/data/documents.hpp"
 #include "solomon/plugin/animation_model.hpp"
 #include "solomon/render/room_painter.hpp"
@@ -14,7 +13,7 @@ namespace rl::solomon {
 
 // An open Solomon's Key project (`rltool studio preset`): the rooms, room
 // art, animation tables and the graphics bundle.
-class SolomonSession final : public sdk::Session, public nes::BundleOwner {
+class SolomonSession final : public sdk::KitSession, public nes::BundleOwner {
     Q_OBJECT
 
 public:
@@ -52,7 +51,6 @@ public:
     const SolomonPainter& painter() const;
     const QVector<AnimationFamily>& animationFamilies() const;
     quint64 revision() const { return revision_; }
-    QString projectDirectory() const { return project_.directory(); }
 
     // One undo step: the edit runs on a copy of every document.
     bool edit(const QString& text, const std::function<void(SolomonState&)>& change, QString* error);
@@ -64,8 +62,6 @@ public:
     bool demoStart() const { return demoEditors_ > 0; }
     // Builds and loops the demo, or records a new one from the controller.
     void playDemo(bool record);
-    void stopRecording();
-    bool recordingActive() const { return recordingActive_; }
     void attachDemoEditor(bool attach);
 
 signals:
@@ -74,15 +70,13 @@ signals:
 private:
     SolomonSession() = default;
     void setState(const SolomonState& state, quint64 revision);
-    void report(sdk::Severity severity, const QString& source, const QString& message);
-    void runBuild(std::function<void(bool)> next);
+    void built(const BuildStep& step, const QJsonObject& artifact) override;
     void launch(bool fromStart);
     // Adds the screen text document to a project made before it existed.
     void upgradeText();
     void launchDemo(bool record);
     void applyRecording(const QString& path);
 
-    sdk::ProjectFile project_;
     QString roomsPath_;
     QString artPath_;
     QString animationsPath_;
@@ -96,8 +90,6 @@ private:
     quint64 nextRevision_ = 1;
     int startRoom_ = 1;
     int demoEditors_ = 0;
-    bool recordingActive_ = false;      // a demo recording runs in the emulator
-    QString lastBuild_;
 
     mutable std::unique_ptr<SolomonPainter> painter_;
     mutable quint64 painterRevision_ = ~quint64(0);

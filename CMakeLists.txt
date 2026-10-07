@@ -104,6 +104,8 @@ add_library(studio_sdk STATIC
     src/sdk/editor_model.cpp
     src/sdk/editor_model.hpp
     src/sdk/i18n.hpp
+    src/sdk/kit_session.cpp
+    src/sdk/kit_session.hpp
     src/sdk/plugin.cpp
     src/sdk/plugin.hpp
     src/sdk/project_file.cpp
@@ -202,7 +204,13 @@ function(studio_add_test target)
     set(fixtures "")
     set(arguments "")
     foreach(fixture IN LISTS ARGN)
-        list(APPEND fixtures "${PROJECT_SOURCE_DIR}/${fixture}")
+        # games:<path> is a project in a game repository; test-win.ps1
+        # finds the repositories (-GameSources).
+        if(fixture MATCHES "^games:")
+            list(APPEND fixtures "${fixture}")
+        else()
+            list(APPEND fixtures "${PROJECT_SOURCE_DIR}/${fixture}")
+        endif()
         string(APPEND arguments ", \"${fixture}\"")
     endforeach()
     add_test(NAME ${target} COMMAND ${target} ${fixtures})

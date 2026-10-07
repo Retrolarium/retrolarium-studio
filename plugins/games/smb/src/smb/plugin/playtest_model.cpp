@@ -13,7 +13,7 @@ SmbPlaytestModel::SmbPlaytestModel(SmbSession* session) : EmulatorModel(session)
 }
 
 bool SmbPlaytestModel::isRecording() const {
-    return session_->recordingActive();
+    return session_->isRecording();
 }
 
 QString SmbPlaytestModel::startLabel() const {

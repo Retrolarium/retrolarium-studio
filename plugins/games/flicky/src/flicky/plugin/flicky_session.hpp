@@ -6,8 +6,7 @@
 #include "flicky/data/sequences_document.hpp"
 #include "flicky/data/sound_document.hpp"
 #include "flicky/render/scene_renderer.hpp"
-#include "sdk/project_file.hpp"
-#include "sdk/session.hpp"
+#include "sdk/kit_session.hpp"
 
 #include <QHash>
 #include <QImage>
@@ -37,7 +36,7 @@ struct Tracked {
 
 // An open Flicky (UE) content project: the five workspace documents, the
 // scene renderer over the source snapshot, and the editors' shared state.
-class FlickySession final : public sdk::Session {
+class FlickySession final : public sdk::KitSession {
     Q_OBJECT
 
 public:
@@ -121,9 +120,6 @@ public:
     // picking one in a sprite editor does not move the start point.
     int paletteRound() const { return paletteRound_; }
     void setPaletteRound(int round);
-    QString lastBuild() const { return lastBuild_; }
-    QString projectDirectory() const { return project_.directory(); }
-    QString projectPath() const { return project_.path(); }
     bool bonusPlacementsDirty() const;
 
     // Attract demos (attract_demos in the levels document; projects made
@@ -135,10 +131,8 @@ public:
     // While a demo editor is open, Play from selected runs its demo.
     void attachDemoEditor(int demo, bool attach);
     bool demoStart() const { return demoEditors_ > 0; }
-    bool recordingActive() const { return recordingActive_; }
     // Builds and loops the demo, or records a new one from the controller.
     void playDemo(int demo, bool record);
-    void stopRecording();
     int bonusPhase() const { return bonusPhase_; }
     void setBonusPhase(int phase) { bonusPhase_ = phase; }
     QSet<int>& mutedChannels(const QString& header) { return muted_[header]; }
@@ -180,7 +174,6 @@ private:
     // Saves, builds, asks the kit for the emulator command and launches it.
     // `round` >= 0 runs the kit's round script, else the game from power-on.
     void launch(int round);
-    void launchPlanned(const sdk::ProcessSpec& game, int round);
     void launchDemo(int demo, bool record);
     void applyRecording(int demo, const QString& path);
     // Runs the kit's upgrade (attract demos, the title layout), takes what
@@ -194,10 +187,10 @@ private:
     void notifySemantics();
     void notifySequences();
     void notifySound();
-    // Saves if needed, then builds; `next(ok)` continues the operation.
-    // Saves and builds. Unless `force`, a build whose inputs have not changed
-    // since the last one is skipped.
-    void runBuild(std::function<void(bool)> next, bool force = false);
+    // Unless forced, a build whose inputs have not changed since the last
+    // one is skipped.
+    bool prepareBuild(BuildStep& step, QString* error) override;
+    void built(const BuildStep& step, const QJsonObject& artifact) override;
     // Size and modification time of every project file outside build/
     // directories, and of the level writer: what a build reads.
     QByteArray buildInputs(const QString& writer) const;
@@ -205,11 +198,9 @@ private:
     QString buildRecordPath() const;
     void loadBuildRecord();
     void saveBuildRecord() const;
-    void report(sdk::Severity severity, const QString& source, const QString& message);
     QVector<int> layoutsOfRound(int round) const;
     const QSet<int>& dirtyTiles(const QString& asset) const;
 
-    sdk::ProjectFile project_;
     QString levelsPath_;
     QString sourceRoot_;
     FlickyLevelDocument levels_;
@@ -240,8 +231,6 @@ private:
     int bonusPhase_ = 60;
     int demoEditors_ = 0;
     int demo_ = 0;
-    bool recordingActive_ = false;
-    QString lastBuild_;
 };
 
 }  // namespace rl::flicky

@@ -15,11 +15,8 @@
 #include "sdk/plugin.hpp"
 #include "sdk/snapshot_command.hpp"
 
-#include <QDateTime>
 #include <QFile>
 #include <QJsonArray>
-#include <QJsonDocument>
-#include <QSaveFile>
 #include <QSet>
 #include <QUndoStack>
 
@@ -29,15 +26,9 @@ namespace rl::castle {
 
 namespace {
 
-QString tabDocument(const sdk::ProjectFile& project, const QString& codec) {
-    for (const QVariant& value : project.list(QStringLiteral("workspace.tabs"))) {
-        const QVariantMap tab = value.toMap();
-        if (tab.value(QStringLiteral("codec")).toString() == codec && tab.value(QStringLiteral("enabled"), true).toBool()) {
-            return tab.value(QStringLiteral("document")).toString();
-        }
-    }
-    return {};
-}
+using sdk::loadJsonObject;
+using sdk::saveJsonObject;
+using sdk::tabDocument;
 
 sdk::Kind kind(const char* id, const char* label, const char* icon, sdk::EditorType editor) {
     sdk::Kind result;
@@ -55,48 +46,6 @@ sdk::DocumentEntry entry(const QString& id, const QString& label, const QString&
     result.meta = meta;
     result.dirty = dirty;
     return result;
-}
-
-QString failureText(const sdk::ProcessResult& result) {
-    if (!result.started) {
-        return result.error;
-    }
-    const QStringList lines = QString::fromUtf8(result.standardError).split(QLatin1Char('\n'), Qt::SkipEmptyParts);
-    for (int i = lines.size() - 1; i >= 0; --i) {
-        if (!lines.at(i).trimmed().isEmpty()) {
-            return lines.at(i).trimmed();
-        }
-    }
-    return rlTr("castle", "exit code %1").arg(result.exitCode);
-}
-
-sdk::ProcessSpec specFromPlan(const QJsonObject& json) {
-    sdk::ProcessSpec game;
-    game.program = json.value(QStringLiteral("program")).toString();
-    for (const QJsonValue& argument : json.value(QStringLiteral("arguments")).toArray()) {
-        game.arguments << argument.toString();
-    }
-    game.workingDirectory = json.value(QStringLiteral("working_directory")).toString();
-    const QJsonObject environment = json.value(QStringLiteral("environment")).toObject();
-    for (auto it = environment.constBegin(); it != environment.constEnd(); ++it) {
-        game.environment.insert(it.key(), it.value().toString());
-    }
-    return game;
-}
-
-QJsonObject loadJsonObject(const QString& path) {
-    QFile file(path);
-    if (!file.open(QIODevice::ReadOnly)) throw CastleError(rlTr("castle", "Cannot read %1.").arg(path).toStdString());
-    const QJsonDocument doc = QJsonDocument::fromJson(file.readAll());
-    if (!doc.isObject()) throw CastleError(rlTr("castle", "%1 is not a JSON object.").arg(path).toStdString());
-    return doc.object();
-}
-
-void saveJsonObject(const QString& path, const QJsonObject& value) {
-    QSaveFile file(path);
-    if (!file.open(QIODevice::WriteOnly)) throw CastleError(rlTr("castle", "Cannot write %1.").arg(path).toStdString());
-    file.write(QJsonDocument(value).toJson(QJsonDocument::Indented));
-    if (!file.commit()) throw CastleError(rlTr("castle", "Cannot write %1.").arg(path).toStdString());
 }
 
 QString first(const nes::Bundle& bundle, const char* codec) {
@@ -377,7 +326,7 @@ QVector<sdk::DocumentGroup> CastleSession::documents(const QString& kind) const 
         sdk::DocumentGroup group;
         group.title = tr("Session");
         group.documents << entry(QStringLiteral("playtest"), tr("Build and run"),
-                                 lastBuild_.isEmpty() ? QString() : QStringLiteral("built"));
+                                 lastBuild().isEmpty() ? QString() : QStringLiteral("built"));
         groups << group;
     }
     return groups;
@@ -645,67 +594,6 @@ QVector<sdk::PaletteSample> CastleSession::paletteSamples(const QString& table) 
 
 // ---------------------------------------------------------------- build and play
 
-void CastleSession::report(sdk::Severity severity, const QString& source, const QString& message) {
-    if (!host()) {
-        return;
-    }
-    sdk::Diagnostic d;
-    d.severity = severity;
-    d.source = source;
-    d.message = message;
-    d.location = project_.path().section(QLatin1Char('/'), -1);
-    host()->report(d);
-}
-
-void CastleSession::runBuild(std::function<void(bool)> next) {
-    sdk::Host* h = host();
-    if (!h || h->isBusy()) {
-        next(false);
-        return;
-    }
-    if (isModified()) {
-        QString error;
-        if (!save(&error)) {
-            report(sdk::Severity::Error, QStringLiteral("save"), error);
-            next(false);
-            return;
-        }
-    }
-    QString error;
-    sdk::ProcessSpec spec =
-        h->kitCommand({QStringLiteral("studio"), QStringLiteral("build"), project_.path()}, project_.directory(), &error);
-    if (spec.program.isEmpty()) {
-        report(sdk::Severity::Error, QStringLiteral("build"), error);
-        next(false);
-        return;
-    }
-    spec.label = tr("Build ROM");
-    h->runProcess(spec, [this, next](const sdk::ProcessResult& result) {
-        if (!result.succeeded()) {
-            if (!result.cancelled) {
-                report(sdk::Severity::Error, QStringLiteral("build"),
-                       tr("Build failed: %1").arg(failureText(result)));
-            }
-            next(false);
-            return;
-        }
-        const QJsonObject json = QJsonDocument::fromJson(result.standardOutput).object();
-        const QJsonObject artifact = json.value(QStringLiteral("artifact")).toObject();
-        if (json.value(QStringLiteral("status")).toString() != QLatin1String("built")) {
-            report(sdk::Severity::Error, QStringLiteral("build"), tr("The kit did not report a built ROM."));
-            next(false);
-            return;
-        }
-        lastBuild_ = QDateTime::currentDateTime().toString(QStringLiteral("HH:mm"));
-        report(sdk::Severity::Info, QStringLiteral("build"),
-               tr("Built %1 (%2 bytes).")
-                   .arg(artifact.value(QStringLiteral("path")).toString())
-                   .arg(artifact.value(QStringLiteral("size")).toInt()));
-        emit documentsChanged(QStringLiteral("playtest"));
-        next(true);
-    });
-}
-
 void CastleSession::build() {
     runBuild([](bool) {});
 }
@@ -715,13 +603,13 @@ void CastleSession::play() {
 }
 
 void CastleSession::playSelected() {
-    if (recordingActive_) stopRecording();
+    if (isRecording()) stopRecording();
     else if (demoStart()) launchDemo(false);
     else launch(false);
 }
 
 QString CastleSession::playSelectedLabel() const {
-    if (recordingActive_) return tr("Stop recording");
+    if (isRecording()) return tr("Stop recording");
     return demoStart() ? tr("Play demo") : QString();
 }
 
@@ -771,11 +659,7 @@ void CastleSession::attachDemoEditor(bool attach) {
 }
 
 void CastleSession::playDemo(bool record) {
-    if (!recordingActive_) launchDemo(record);
-}
-
-void CastleSession::stopRecording() {
-    if (recordingActive_ && host()) host()->stopEmulator();
+    if (!isRecording()) launchDemo(record);
 }
 
 bool CastleSession::editScreens(const QString& text, const QJsonObject& next, QString* error) {
@@ -784,122 +668,49 @@ bool CastleSession::editScreens(const QString& text, const QJsonObject& next, QS
 }
 
 void CastleSession::upgradeDocuments(const QString& kind, const QString& document) {
-    sdk::Host* h = host();
-    if (!h || h->isBusy()) return;
-    QString error;
-    sdk::ProcessSpec spec =
-        h->kitCommand({QStringLiteral("studio"), QStringLiteral("castle-upgrade"), project_.path()}, project_.directory(), &error);
-    if (spec.program.isEmpty()) {
-        report(sdk::Severity::Error, QStringLiteral("demo"), error);
-        return;
-    }
-    spec.label = tr("Add the title demo and screens");
-    h->runProcess(spec, [this, kind, document](const sdk::ProcessResult& result) {
-        if (!result.succeeded()) {
-            if (!result.cancelled) {
-                report(sdk::Severity::Error, kind,
-                       tr("Adding the demo and screens failed: %1").arg(failureText(result)));
-            }
-            return;
+    UpgradeStep step;
+    step.arguments = QStringList{QStringLiteral("studio"), QStringLiteral("castle-upgrade"), project_.path()};
+    step.label = tr("Add the title demo and screens");
+    step.source = kind;
+    step.failure = tr("Adding the demo and screens failed: %1");
+    step.adopt = [this] {
+        // New documents join the saved state; other unsaved edits stay.
+        const QString demo = tabDocument(project_, QStringLiteral("castle.demo@1"));
+        if (!demo.isEmpty() && state_.demo.isEmpty()) {
+            demoPath_ = project_.resolve(demo);
+            state_.demo = saved_.demo = loadJsonObject(demoPath_);
         }
-        QString loadError;
-        const sdk::ProjectFile reloaded = sdk::ProjectFile::load(project_.path(), &loadError);
-        if (reloaded.path().isEmpty()) {
-            report(sdk::Severity::Error, kind, loadError);
-            return;
+        const QString screensDocument = tabDocument(project_, QStringLiteral("castle.screens@1"));
+        if (!screensDocument.isEmpty() && state_.screens.isEmpty()) {
+            screensPath_ = project_.resolve(screensDocument);
+            state_.screens = saved_.screens = loadJsonObject(screensPath_);
         }
-        project_ = reloaded;
-        try {
-            // New documents join the saved state; other unsaved edits stay.
-            const QString demo = tabDocument(project_, QStringLiteral("castle.demo@1"));
-            if (!demo.isEmpty() && state_.demo.isEmpty()) {
-                demoPath_ = project_.resolve(demo);
-                state_.demo = saved_.demo = loadJsonObject(demoPath_);
-            }
-            const QString screensDocument = tabDocument(project_, QStringLiteral("castle.screens@1"));
-            if (!screensDocument.isEmpty() && state_.screens.isEmpty()) {
-                screensPath_ = project_.resolve(screensDocument);
-                state_.screens = saved_.screens = loadJsonObject(screensPath_);
-            }
-        } catch (const std::exception& e) {
-            report(sdk::Severity::Error, kind, QString::fromUtf8(e.what()));
-            return;
-        }
-        report(sdk::Severity::Info, kind, tr("Added the title demo and the screens to the project."));
-        emit contentChanged();
-        for (const sdk::Kind& k : kinds()) emit documentsChanged(k.id);
-        emit documentRequested(kind, document);
-    });
+    };
+    step.done = tr("Added the title demo and the screens to the project.");
+    step.openKind = kind;
+    step.openDocument = document;
+    runUpgrade(step);
 }
 
 void CastleSession::launchDemo(bool record) {
-    runBuild([this, record](bool ok) {
-        sdk::Host* h = host();
-        if (!ok || !h) return;
-        const QString mame = h->emulatorPath(QStringLiteral("mame"));
-        if (mame.isEmpty()) {
-            report(sdk::Severity::Error, QStringLiteral("playtest"),
-                   tr("MAME was not found. Set RETROLARIUM_MAME to consoles.exe."));
-            return;
-        }
-        QStringList arguments{QStringLiteral("studio"), QStringLiteral("castle-demo-plan"), project_.path(),
-                              QStringLiteral("--mame"), mame};
-        const QString recording = project_.resolve(QStringLiteral("build/demo-recording.txt"));
-        if (record) {
-            QFile::remove(recording);
-            arguments << QStringLiteral("--record") << recording;
-        }
-        QString error;
-        sdk::ProcessSpec plan = h->kitCommand(arguments, project_.directory(), &error);
-        if (plan.program.isEmpty()) {
-            report(sdk::Severity::Error, QStringLiteral("playtest"), error);
-            return;
-        }
-        plan.label = record ? tr("Plan demo recording") : tr("Plan title demo");
-        h->runProcess(plan, [this, record, recording](const sdk::ProcessResult& result) {
-            sdk::Host* host = this->host();
-            if (!host) return;
-            if (!result.succeeded()) {
-                if (!result.cancelled) {
-                    report(sdk::Severity::Error, QStringLiteral("playtest"),
-                           tr("Demo plan failed: %1").arg(failureText(result)));
-                }
-                return;
-            }
-            sdk::ProcessSpec game = specFromPlan(QJsonDocument::fromJson(result.standardOutput).object());
-            if (game.program.isEmpty()) {
-                report(sdk::Severity::Error, QStringLiteral("playtest"), tr("The kit returned no emulator command."));
-                return;
-            }
-            const std::string model = state_.graphics.paletteModel(art_.roomPalette).toStdString();
-            for (int i = 0; i < 64; ++i) game.palette << nes::masterColor(i, model);
-            // The Playtest view covers the way to the demo.
-            game.readyFile = project_.resolve(QStringLiteral("build/demo-ready.txt"));
-            game.environment.insert(QStringLiteral("CASTLE_DEMO_READY"), game.readyFile);
-            if (record) {
-                recordingActive_ = true;
-                emit selectedStartChanged();
-                report(sdk::Severity::Info, QStringLiteral("demo"),
-                       tr("Recording: play with the controller; it ends after %1 s, on Start or on Stop "
-                          "recording.")
-                           .arg(demoCapacity() * 12 / 60));
-            }
-            const QString name = profile().name;
-            const QString title = record ? tr("%1 · recording the demo").arg(name)
-                                         : tr("%1 · title demo").arg(name);
-            host->launchEmulator(game, title, [this, record, recording](const sdk::ProcessResult& run) {
-                if (run.crashed || (!run.started && !run.error.isEmpty())) {
-                    report(sdk::Severity::Error, QStringLiteral("playtest"),
-                           run.error.isEmpty() ? tr("The emulator crashed.") : run.error);
-                }
-                if (record) {
-                    recordingActive_ = false;
-                    emit selectedStartChanged();
-                    applyRecording(recording);
-                }
-            });
-        });
-    });
+    EmulatorPlan plan;
+    plan.arguments = QStringList{QStringLiteral("studio"), QStringLiteral("castle-demo-plan"), project_.path()};
+    plan.label = record ? tr("Plan demo recording") : tr("Plan title demo");
+    const QString name = profile().name;
+    plan.title = record ? tr("%1 · recording the demo").arg(name) : tr("%1 · title demo").arg(name);
+    plan.demo = true;
+    // The Playtest view covers the way to the demo.
+    plan.readyFile = QStringLiteral("build/demo-ready.txt");
+    plan.readyVariable = QStringLiteral("CASTLE_DEMO_READY");
+    if (record) {
+        plan.recordTo = QStringLiteral("build/demo-recording.txt");
+        plan.recordingMessage = tr("Recording: play with the controller; it ends after %1 s, on Start or on Stop "
+                                   "recording.")
+                                    .arg(demoCapacity() * 12 / 60);
+        plan.recorded = [this](const QString& path) { applyRecording(path); };
+    }
+    plan.prepare = [this](sdk::ProcessSpec& game) { useColours(game); };
+    launchPlanned(plan);
 }
 
 void CastleSession::applyRecording(const QString& path) {
@@ -931,73 +742,32 @@ void CastleSession::applyRecording(const QString& path) {
 
 void CastleSession::launch(bool fromStart) {
     const CastleStart start = start_;
-    runBuild([this, fromStart, start](bool ok) {
-        sdk::Host* h = host();
-        if (!ok || !h) {
-            return;
-        }
-        const QString mame = h->emulatorPath(QStringLiteral("mame"));
-        if (mame.isEmpty()) {
-            report(sdk::Severity::Error, QStringLiteral("playtest"),
-                   tr("MAME was not found. Set RETROLARIUM_MAME to consoles.exe."));
-            return;
-        }
-        QStringList arguments;
-        if (fromStart) {
-            arguments = QStringList{QStringLiteral("studio"), QStringLiteral("launch-plan"), project_.path(),
-                                    QStringLiteral("--mame"), mame};
-        } else {
-            arguments = QStringList{QStringLiteral("studio"), QStringLiteral("castle-point-playtest-plan"),
-                                    project_.path(), QStringLiteral("--mame"), mame, QStringLiteral("--room"),
-                                    QString::number(start.room), QStringLiteral("--x"),
-                                    QString::number(start.pixel.x()), QStringLiteral("--y"),
-                                    QString::number(start.pixel.y() + 16)};
-        }
-        QString error;
-        sdk::ProcessSpec plan = h->kitCommand(arguments, project_.directory(), &error);
-        if (plan.program.isEmpty()) {
-            report(sdk::Severity::Error, QStringLiteral("playtest"), error);
-            return;
-        }
-        const QString name = profile().name;
-        const QString title = fromStart ? tr("%1 · power-on").arg(name)
-                                        : QStringLiteral("%1 · %2").arg(name, roomLabel(start.room));
-        plan.label = fromStart ? tr("Plan playtest from power-on")
-                               : tr("Plan playtest of %1").arg(roomLabel(start.room));
-        h->runProcess(plan, [this, title, fromStart](const sdk::ProcessResult& result) {
-            sdk::Host* host = this->host();
-            if (!host) {
-                return;
-            }
-            if (!result.succeeded()) {
-                if (!result.cancelled) {
-                    report(sdk::Severity::Error, QStringLiteral("playtest"),
-                           tr("Playtest plan failed: %1").arg(failureText(result)));
-                }
-                return;
-            }
-            sdk::ProcessSpec game = specFromPlan(QJsonDocument::fromJson(result.standardOutput).object());
-            if (game.program.isEmpty()) {
-                report(sdk::Severity::Error, QStringLiteral("playtest"), tr("The kit returned no emulator command."));
-                return;
-            }
-            const std::string model = state_.graphics.paletteModel(art_.roomPalette).toStdString();
-            for (int i = 0; i < 64; ++i) {
-                game.palette << nes::masterColor(i, model);
-            }
-            if (!fromStart) {
-                // The Playtest view covers the title and the way to the room.
-                game.readyFile = project_.resolve(QStringLiteral("build/playtest-ready.txt"));
-                game.environment.insert(QStringLiteral("CASTLE_PLAYTEST_READY"), game.readyFile);
-            }
-            host->launchEmulator(game, title, [this](const sdk::ProcessResult& run) {
-                if (run.crashed || (!run.started && !run.error.isEmpty())) {
-                    report(sdk::Severity::Error, QStringLiteral("playtest"),
-                           run.error.isEmpty() ? tr("The emulator crashed.") : run.error);
-                }
-            });
-        });
-    });
+    const QString name = profile().name;
+    EmulatorPlan plan;
+    if (fromStart) {
+        plan.arguments = QStringList{QStringLiteral("studio"), QStringLiteral("launch-plan"), project_.path()};
+        plan.label = tr("Plan playtest from power-on");
+        plan.title = tr("%1 · power-on").arg(name);
+    } else {
+        plan.arguments = QStringList{QStringLiteral("studio"), QStringLiteral("castle-point-playtest-plan"), project_.path(),
+                          QStringLiteral("--room"), QString::number(start.room), QStringLiteral("--x"),
+                          QString::number(start.pixel.x()), QStringLiteral("--y"), QString::number(start.pixel.y() + 16)};
+        plan.label = tr("Plan playtest of %1").arg(roomLabel(start.room));
+        plan.title = QStringLiteral("%1 · %2").arg(name, roomLabel(start.room));
+        // The Playtest view covers the title and the way to the room.
+        plan.readyFile = QStringLiteral("build/playtest-ready.txt");
+        plan.readyVariable = QStringLiteral("CASTLE_PLAYTEST_READY");
+    }
+    plan.prepare = [this](sdk::ProcessSpec& game) { useColours(game); };
+    launchPlanned(plan);
+}
+
+void CastleSession::useColours(sdk::ProcessSpec& game) const {
+    // The game in the colours the editors draw with.
+    const std::string model = state_.graphics.paletteModel(art_.roomPalette).toStdString();
+    for (int i = 0; i < 64; ++i) {
+        game.palette << nes::masterColor(i, model);
+    }
 }
 
 }  // namespace rl::castle

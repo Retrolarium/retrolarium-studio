@@ -18,44 +18,19 @@
 #include "smb/plugin/text_model.hpp"
 #include "smb/plugin/world_models.hpp"
 
-#include <QDateTime>
 #include <QDir>
 #include <QFile>
-#include <QSaveFile>
-#include <QFileInfo>
 #include <QHash>
 #include <QJsonArray>
-#include <QJsonDocument>
 #include <QUndoStack>
 
 namespace rl::smb {
 
 namespace {
 
-QJsonObject loadJsonObject(const QString& path) {
-    QFile file(path);
-    if (!file.open(QIODevice::ReadOnly)) throw SmbError(rlTr("smb", "Cannot read %1.").arg(path).toStdString());
-    const QJsonDocument doc = QJsonDocument::fromJson(file.readAll());
-    if (!doc.isObject()) throw SmbError(rlTr("smb", "%1 is not a JSON object.").arg(path).toStdString());
-    return doc.object();
-}
-
-void saveJsonObject(const QString& path, const QJsonObject& value) {
-    QSaveFile file(path);
-    if (!file.open(QIODevice::WriteOnly)) throw SmbError(rlTr("smb", "Cannot write %1.").arg(path).toStdString());
-    file.write(QJsonDocument(value).toJson(QJsonDocument::Indented));
-    if (!file.commit()) throw SmbError(rlTr("smb", "Cannot write %1.").arg(path).toStdString());
-}
-
-QString tabDocument(const sdk::ProjectFile& project, const QString& codec) {
-    for (const QVariant& value : project.list(QStringLiteral("workspace.tabs"))) {
-        const QVariantMap tab = value.toMap();
-        if (tab.value(QStringLiteral("codec")).toString() == codec && tab.value(QStringLiteral("enabled"), true).toBool()) {
-            return tab.value(QStringLiteral("document")).toString();
-        }
-    }
-    return {};
-}
+using sdk::loadJsonObject;
+using sdk::saveJsonObject;
+using sdk::tabDocument;
 
 sdk::Kind kind(const char* id, const char* label, const char* icon, sdk::EditorType editor) {
     sdk::Kind result;
@@ -90,34 +65,6 @@ QString displayName(QString name) {
         name[0] = name.at(0).toUpper();
     }
     return name;
-}
-
-QString failureText(const sdk::ProcessResult& result) {
-    if (!result.started) {
-        return result.error;
-    }
-    const QStringList lines = QString::fromUtf8(result.standardError).split(QLatin1Char('\n'), Qt::SkipEmptyParts);
-    for (int i = lines.size() - 1; i >= 0; --i) {
-        if (!lines.at(i).trimmed().isEmpty()) {
-            return lines.at(i).trimmed();
-        }
-    }
-    return rlTr("smb", "exit code %1").arg(result.exitCode);
-}
-
-// The emulator command a kit plan describes.
-sdk::ProcessSpec specFromPlan(const QJsonObject& json) {
-    sdk::ProcessSpec game;
-    game.program = json.value(QStringLiteral("program")).toString();
-    for (const QJsonValue& argument : json.value(QStringLiteral("arguments")).toArray()) {
-        game.arguments << argument.toString();
-    }
-    game.workingDirectory = json.value(QStringLiteral("working_directory")).toString();
-    const QJsonObject environment = json.value(QStringLiteral("environment")).toObject();
-    for (auto it = environment.constBegin(); it != environment.constEnd(); ++it) {
-        game.environment.insert(it.key(), it.value().toString());
-    }
-    return game;
 }
 
 }  // namespace
@@ -488,7 +435,7 @@ QVector<sdk::DocumentGroup> SmbSession::documents(const QString& kind) const {
         sdk::DocumentGroup group;
         group.title = tr("Session");
         group.documents << entry(QStringLiteral("playtest"), tr("Build and run"),
-                                 lastBuild_.isEmpty() ? QString() : QStringLiteral("built"));
+                                 lastBuild().isEmpty() ? QString() : QStringLiteral("built"));
         groups << group;
     }
     return groups;
@@ -687,18 +634,6 @@ QVector<sdk::Diagnostic> SmbSession::diagnostics() const {
     return result;
 }
 
-void SmbSession::report(sdk::Severity severity, const QString& source, const QString& message) {
-    if (!host()) {
-        return;
-    }
-    sdk::Diagnostic d;
-    d.severity = severity;
-    d.source = source;
-    d.message = message;
-    d.location = QFileInfo(project_.path()).fileName();
-    host()->report(d);
-}
-
 // ---------------------------------------------------------------- screens and text
 
 const SmbScreenSet& SmbSession::screenSet(const QString& resource) const {
@@ -884,57 +819,6 @@ void SmbSession::setLighting(const QString& lighting) {
 
 // ---------------------------------------------------------------- build and play
 
-void SmbSession::runBuild(std::function<void(bool)> next, bool) {
-    sdk::Host* h = host();
-    if (!h || h->isBusy()) {
-        next(false);
-        return;
-    }
-    if (isModified()) {
-        QString error;
-        if (!save(&error)) {
-            report(sdk::Severity::Error, QStringLiteral("save"), error);
-            next(false);
-            return;
-        }
-    }
-    QString error;
-    sdk::ProcessSpec spec =
-        h->kitCommand({QStringLiteral("studio"), QStringLiteral("build"), project_.path()}, project_.directory(), &error);
-    if (spec.program.isEmpty()) {
-        report(sdk::Severity::Error, QStringLiteral("build"), error);
-        next(false);
-        return;
-    }
-    spec.label = tr("Build ROM");
-    h->runProcess(spec, [this, next](const sdk::ProcessResult& result) {
-        if (!result.succeeded()) {
-            if (!result.cancelled) {
-                report(sdk::Severity::Error, QStringLiteral("build"),
-                       tr("Build failed: %1").arg(failureText(result)));
-            }
-            next(false);
-            return;
-        }
-        const QJsonObject json = QJsonDocument::fromJson(result.standardOutput).object();
-        const QJsonObject artifact = json.value(QStringLiteral("artifact")).toObject();
-        if (json.value(QStringLiteral("status")).toString() != QLatin1String("built")) {
-            report(sdk::Severity::Error, QStringLiteral("build"), tr("The kit did not report a built ROM."));
-            next(false);
-            return;
-        }
-        lastBuild_ = QStringLiteral("%1 · %2")
-                         .arg(QDateTime::currentDateTime().toString(QStringLiteral("HH:mm")),
-                              artifact.value(QStringLiteral("path")).toString());
-        report(sdk::Severity::Info, QStringLiteral("build"),
-               tr("Built %1 (%2 bytes).")
-                   .arg(artifact.value(QStringLiteral("path")).toString())
-                   .arg(artifact.value(QStringLiteral("size")).toInt()));
-        emit documentsChanged(QStringLiteral("playtest"));
-        next(true);
-    });
-}
-
 void SmbSession::build() {
     runBuild([](bool) {}, true);
 }
@@ -944,13 +828,13 @@ void SmbSession::play() {
 }
 
 void SmbSession::playSelected() {
-    if (recordingActive_) stopRecording();
+    if (isRecording()) stopRecording();
     else if (demoStart()) launchDemo(false);
     else launch(false);
 }
 
 QString SmbSession::playSelectedLabel() const {
-    if (recordingActive_) return tr("Stop recording");
+    if (isRecording()) return tr("Stop recording");
     return demoStart() ? tr("Play demo") : QString();
 }
 
@@ -991,140 +875,59 @@ void SmbSession::attachDemoEditor(bool attach) {
 }
 
 void SmbSession::playDemo(bool record) {
-    if (!recordingActive_) launchDemo(record);
-}
-
-void SmbSession::stopRecording() {
-    if (recordingActive_ && host()) host()->stopEmulator();
+    if (!isRecording()) launchDemo(record);
 }
 
 void SmbSession::upgradeProject(const QString& kind, const QString& document) {
-    sdk::Host* h = host();
-    if (!h || h->isBusy()) return;
-    QString error;
-    // The kit merges into the files: they must hold every edit first.
-    if (isModified() && !save(&error)) {
-        report(sdk::Severity::Error, kind, error);
-        return;
-    }
-    sdk::ProcessSpec spec =
-        h->kitCommand({QStringLiteral("studio"), QStringLiteral("smb-upgrade"), project_.path()}, project_.directory(), &error);
-    if (spec.program.isEmpty()) {
-        report(sdk::Severity::Error, kind, error);
-        return;
-    }
-    spec.label = tr("Add what this kit edits to the project");
-    h->runProcess(spec, [this, kind, document](const sdk::ProcessResult& result) {
-        if (!result.succeeded()) {
-            if (!result.cancelled) {
-                report(sdk::Severity::Error, kind, tr("Upgrading the project failed: %1").arg(failureText(result)));
-            }
-            return;
+    UpgradeStep step;
+    step.arguments = QStringList{QStringLiteral("studio"), QStringLiteral("smb-upgrade"), project_.path()};
+    step.label = tr("Add what this kit edits to the project");
+    step.source = kind;
+    step.failure = tr("Upgrading the project failed: %1");
+    step.saveFirst = true;
+    step.adopt = [this] {
+        const QString demo = tabDocument(project_, QStringLiteral("smb.demo@1"));
+        if (!demo.isEmpty() && demo_.isEmpty()) {
+            demoPath_ = project_.resolve(demo);
+            demo_ = loadJsonObject(demoPath_);
+            savedDemo_ = demo_;
         }
-        QString loadError;
-        const sdk::ProjectFile reloaded = sdk::ProjectFile::load(project_.path(), &loadError);
-        if (reloaded.path().isEmpty()) {
-            report(sdk::Severity::Error, kind, loadError);
-            return;
+        // Resources the bundle gained; it was saved before the upgrade,
+        // and older undo steps would drop them again.
+        const SmbResourceDocument bundle = SmbResourceDocument::load(documentPath_);
+        if (bundle.root() != document_.root()) {
+            undoStack()->clear();
+            saved_ = bundle;
+            savedRevision_ = nextRevision_;
+            // Through setDocument: the painter's cache and the open
+            // editors follow the new resources.
+            setDocument(bundle, nextRevision_++);
         }
-        project_ = reloaded;
-        try {
-            const QString demo = tabDocument(project_, QStringLiteral("smb.demo@1"));
-            if (!demo.isEmpty() && demo_.isEmpty()) {
-                demoPath_ = project_.resolve(demo);
-                demo_ = loadJsonObject(demoPath_);
-                savedDemo_ = demo_;
-            }
-            // Resources the bundle gained; it was saved before the upgrade,
-            // and older undo steps would drop them again.
-            const SmbResourceDocument bundle = SmbResourceDocument::load(documentPath_);
-            if (bundle.root() != document_.root()) {
-                undoStack()->clear();
-                saved_ = bundle;
-                savedRevision_ = nextRevision_;
-                // Through setDocument: the painter's cache and the open
-                // editors follow the new resources.
-                setDocument(bundle, nextRevision_++);
-            }
-        } catch (const std::exception& e) {
-            report(sdk::Severity::Error, kind, QString::fromUtf8(e.what()));
-            return;
-        }
-        report(sdk::Severity::Info, kind, tr("Added the documents and resources this kit edits to the project."));
-        emit contentChanged();
-        for (const sdk::Kind& k : kinds()) emit documentsChanged(k.id);
-        emit documentRequested(kind, document);
-    });
+    };
+    step.done = tr("Added the documents and resources this kit edits to the project.");
+    step.openKind = kind;
+    step.openDocument = document;
+    runUpgrade(step);
 }
 
 void SmbSession::launchDemo(bool record) {
-    runBuild(
-        [this, record](bool ok) {
-            sdk::Host* h = host();
-            if (!ok || !h) return;
-            const QString mame = h->emulatorPath(QStringLiteral("mame"));
-            if (mame.isEmpty()) {
-                report(sdk::Severity::Error, QStringLiteral("playtest"),
-                       tr("MAME was not found. Set RETROLARIUM_MAME to consoles.exe."));
-                return;
-            }
-            QStringList arguments{QStringLiteral("studio"), QStringLiteral("smb-demo-plan"), project_.path(),
-                                  QStringLiteral("--mame"), mame};
-            const QString recording = project_.resolve(QStringLiteral("build/demo-recording.txt"));
-            if (record) {
-                QFile::remove(recording);
-                arguments << QStringLiteral("--record") << recording;
-            }
-            QString error;
-            sdk::ProcessSpec plan = h->kitCommand(arguments, project_.directory(), &error);
-            if (plan.program.isEmpty()) {
-                report(sdk::Severity::Error, QStringLiteral("playtest"), error);
-                return;
-            }
-            plan.label = record ? tr("Plan demo recording") : tr("Plan title demo");
-            h->runProcess(plan, [this, record, recording](const sdk::ProcessResult& result) {
-                sdk::Host* host = this->host();
-                if (!host) return;
-                if (!result.succeeded()) {
-                    if (!result.cancelled) {
-                        report(sdk::Severity::Error, QStringLiteral("playtest"),
-                               tr("Demo plan failed: %1").arg(failureText(result)));
-                    }
-                    return;
-                }
-                sdk::ProcessSpec game = specFromPlan(QJsonDocument::fromJson(result.standardOutput).object());
-                if (game.program.isEmpty()) {
-                    report(sdk::Severity::Error, QStringLiteral("playtest"), tr("The kit returned no emulator command."));
-                    return;
-                }
-                const std::string model = document_.paletteModel(art_.palettes).toStdString();
-                for (int i = 0; i < 64; ++i) game.palette << nes::masterColor(i, model);
-                // The Playtest view covers the way to the demo.
-                game.readyFile = project_.resolve(QStringLiteral("build/demo-ready.txt"));
-                game.environment.insert(QStringLiteral("SMB_DEMO_READY"), game.readyFile);
-                if (record) {
-                    recordingActive_ = true;
-                    emit selectedStartChanged();
-                    report(sdk::Severity::Info, QStringLiteral("demo"),
-                           tr("Recording: play 1-1 with the controller; it ends when Hero dies, on Start or "
-                              "on Stop recording."));
-                }
-                const QString title = record ? tr("Super Mario Bros. · recording the demo")
-                                             : tr("Super Mario Bros. · title demo");
-                host->launchEmulator(game, title, [this, record, recording](const sdk::ProcessResult& run) {
-                    if (run.crashed || (!run.started && !run.error.isEmpty())) {
-                        report(sdk::Severity::Error, QStringLiteral("playtest"),
-                               run.error.isEmpty() ? tr("The emulator crashed.") : run.error);
-                    }
-                    if (record) {
-                        recordingActive_ = false;
-                        emit selectedStartChanged();
-                        applyRecording(recording);
-                    }
-                });
-            });
-        },
-        false);
+    EmulatorPlan plan;
+    plan.arguments = QStringList{QStringLiteral("studio"), QStringLiteral("smb-demo-plan"), project_.path()};
+    plan.label = record ? tr("Plan demo recording") : tr("Plan title demo");
+    plan.title = record ? tr("Super Mario Bros. · recording the demo") : tr("Super Mario Bros. · title demo");
+    plan.demo = true;
+    plan.force = false;
+    // The Playtest view covers the way to the demo.
+    plan.readyFile = QStringLiteral("build/demo-ready.txt");
+    plan.readyVariable = QStringLiteral("SMB_DEMO_READY");
+    if (record) {
+        plan.recordTo = QStringLiteral("build/demo-recording.txt");
+        plan.recordingMessage = tr("Recording: play 1-1 with the controller; it ends when Hero dies, on Start or "
+                                   "on Stop recording.");
+        plan.recorded = [this](const QString& path) { applyRecording(path); };
+    }
+    plan.prepare = [this](sdk::ProcessSpec& game) { useColours(game); };
+    launchPlanned(plan);
 }
 
 void SmbSession::applyRecording(const QString& path) {
@@ -1160,86 +963,47 @@ void SmbSession::applyRecording(const QString& path) {
 
 void SmbSession::launch(bool fromStart) {
     const SmbStart start = start_;
-    runBuild(
-        [this, fromStart, start](bool ok) {
-            sdk::Host* h = host();
-            if (!ok || !h) {
-                return;
-            }
-            const QString mame = h->emulatorPath(QStringLiteral("mame"));
-            if (mame.isEmpty()) {
-                report(sdk::Severity::Error, QStringLiteral("playtest"),
-                       tr("MAME was not found. Set RETROLARIUM_MAME to consoles.exe."));
-                return;
-            }
-            QStringList arguments;
-            if (fromStart) {
-                arguments = QStringList{QStringLiteral("studio"), QStringLiteral("launch-plan"), project_.path(),
-                             QStringLiteral("--mame"), mame};
-            } else {
-                arguments = QStringList{QStringLiteral("studio"), QStringLiteral("smb-point-playtest-plan"), project_.path(),
-                             QStringLiteral("--mame"), mame, QStringLiteral("--course-bank"), levels_,
-                             QStringLiteral("--area"), start.area, QStringLiteral("--world"), QString::number(start.world),
-                             QStringLiteral("--course"), QString::number(start.course), QStringLiteral("--column"),
-                             QString::number(start.cell.x()), QStringLiteral("--row"), QString::number(start.cell.y()),
-                             QStringLiteral("--theme"),
-                             night(start.area) ? QStringLiteral("night") : QStringLiteral("day"),
-                             QStringLiteral("--sfx-channel"), QStringLiteral("none"), QStringLiteral("--sfx-value"),
-                             QStringLiteral("0")};
-            }
-            QString error;
-            sdk::ProcessSpec plan = h->kitCommand(arguments, project_.directory(), &error);
-            if (plan.program.isEmpty()) {
-                report(sdk::Severity::Error, QStringLiteral("playtest"), error);
-                return;
-            }
-            const QString title = fromStart ? tr("Super Mario Bros. · power-on")
-                                            : tr("Super Mario Bros. · %1").arg(areaLabel(start.area));
-            plan.label = fromStart ? tr("Plan playtest from power-on")
-                                   : tr("Plan playtest of %1").arg(areaLabel(start.area));
-            h->runProcess(plan, [this, title, fromStart](const sdk::ProcessResult& result) {
-                sdk::Host* host = this->host();
-                if (!host) {
-                    return;
-                }
-                if (!result.succeeded()) {
-                    if (!result.cancelled) {
-                        report(sdk::Severity::Error, QStringLiteral("playtest"),
-                               tr("Playtest plan failed: %1").arg(failureText(result)));
-                    }
-                    return;
-                }
-                sdk::ProcessSpec game = specFromPlan(QJsonDocument::fromJson(result.standardOutput).object());
-                // The kit's point script reports nothing; the game is up once
-                // it plays the area with Hero placed on the start page
-                // (operating mode 1, task 3, player engine running), so the
-                // boot and the steering can run hidden and fast.
-                // The game in the colours the editors draw with.
-                const std::string model = document_.paletteModel(art_.palettes).toStdString();
-                for (int i = 0; i < 64; ++i) {
-                    game.palette << nes::masterColor(i, model);
-                }
-                const QString page = game.environment.value(QStringLiteral("SMB1_PLAYTEST_PAGE"));
-                if (!fromStart && !page.isEmpty()) {
-                    game.readyWhen = QStringLiteral("memory:read_u8(0x0770) == 1 and memory:read_u8(0x0772) == 3 and "
-                                                    "memory:read_u8(0x000e) >= 7 and memory:read_u8(0x006d) == %1 and "
-                                                    "memory:read_u8(0x071a) == %1")
-                                         .arg(page.toInt());
-                }
-                if (game.program.isEmpty()) {
-                    report(sdk::Severity::Error, QStringLiteral("playtest"),
-                           tr("The kit returned no emulator command."));
-                    return;
-                }
-                host->launchEmulator(game, title, [this](const sdk::ProcessResult& run) {
-                    if (run.crashed || (!run.started && !run.error.isEmpty())) {
-                        report(sdk::Severity::Error, QStringLiteral("playtest"),
-                               run.error.isEmpty() ? tr("The emulator crashed.") : run.error);
-                    }
-                });
-            });
-        },
-        false);
+    EmulatorPlan plan;
+    plan.force = false;
+    if (fromStart) {
+        plan.arguments = QStringList{QStringLiteral("studio"), QStringLiteral("launch-plan"), project_.path()};
+        plan.label = tr("Plan playtest from power-on");
+        plan.title = tr("Super Mario Bros. · power-on");
+    } else {
+        plan.arguments = QStringList{QStringLiteral("studio"), QStringLiteral("smb-point-playtest-plan"), project_.path(),
+                          QStringLiteral("--course-bank"), levels_, QStringLiteral("--area"), start.area,
+                          QStringLiteral("--world"), QString::number(start.world), QStringLiteral("--course"),
+                          QString::number(start.course), QStringLiteral("--column"), QString::number(start.cell.x()),
+                          QStringLiteral("--row"), QString::number(start.cell.y()), QStringLiteral("--theme"),
+                          night(start.area) ? QStringLiteral("night") : QStringLiteral("day"),
+                          QStringLiteral("--sfx-channel"), QStringLiteral("none"), QStringLiteral("--sfx-value"),
+                          QStringLiteral("0")};
+        plan.label = tr("Plan playtest of %1").arg(areaLabel(start.area));
+        plan.title = tr("Super Mario Bros. · %1").arg(areaLabel(start.area));
+    }
+    plan.prepare = [this, fromStart](sdk::ProcessSpec& game) {
+        useColours(game);
+        // The kit's point script reports nothing; the game is up once it
+        // plays the area with Hero placed on the start page (operating
+        // mode 1, task 3, player engine running), so the boot and the
+        // steering can run hidden and fast.
+        const QString page = game.environment.value(QStringLiteral("SMB1_PLAYTEST_PAGE"));
+        if (!fromStart && !page.isEmpty()) {
+            game.readyWhen = QStringLiteral("memory:read_u8(0x0770) == 1 and memory:read_u8(0x0772) == 3 and "
+                                            "memory:read_u8(0x000e) >= 7 and memory:read_u8(0x006d) == %1 and "
+                                            "memory:read_u8(0x071a) == %1")
+                                 .arg(page.toInt());
+        }
+    };
+    launchPlanned(plan);
+}
+
+void SmbSession::useColours(sdk::ProcessSpec& game) const {
+    // The game in the colours the editors draw with.
+    const std::string model = document_.paletteModel(art_.palettes).toStdString();
+    for (int i = 0; i < 64; ++i) {
+        game.palette << nes::masterColor(i, model);
+    }
 }
 
 }  // namespace rl::smb

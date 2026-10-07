@@ -2,8 +2,7 @@
 
 #include "doraemon/render/painter.hpp"
 #include "nes/editors.hpp"
-#include "sdk/project_file.hpp"
-#include "sdk/session.hpp"
+#include "sdk/kit_session.hpp"
 
 #include <QHash>
 #include <QJsonObject>
@@ -29,7 +28,7 @@ struct DoraemonState {
 // An open Doraemon project (`rltool studio preset`): one resource bundle with
 // the World 1 and World 3 hierarchies, World 2's metatiles and streams, the
 // four CHR banks and the palette presets.
-class DoraemonSession final : public sdk::Session, public nes::BundleOwner {
+class DoraemonSession final : public sdk::KitSession, public nes::BundleOwner {
     Q_OBJECT
 
 public:
@@ -62,7 +61,6 @@ public:
     const DoraemonPainter& painter() const;
     quint64 revision() const { return revision_; }
     QJsonObject resource(const QString& id) const { return state_.bundle.resource(id); }
-    void report(sdk::Severity severity, const QString& source, const QString& message);
 
     // World 2's routes as panels (`rltool studio doraemon-world2-view`):
     // geometry from the stage, branch and chapter bytes and the original
@@ -83,7 +81,6 @@ public:
     QJsonObject musicTrace(int driver, int track);
     // Writes the current music to a file the kit can read.
     QString writeMusicSnapshot(QString* error) const;
-    QString projectPath() const { return project_.path(); }
 
     // World 1's attract demo (retrolarium.doraemon-demo).
     const QJsonObject& demo() const { return state_.demo; }
@@ -93,9 +90,7 @@ public:
     // While a demo editor is open, Play from selected loops the demo.
     void attachDemoEditor(bool attach);
     bool demoStart() const { return demoEditors_ > 0; }
-    bool recordingActive() const { return recordingActive_; }
     void playDemo(bool record);
-    void stopRecording();
 
     // Where Play from selected starts, past the title: a world from its
     // beginning, or a World 1 city or underground block, a World 2 stage
@@ -110,7 +105,6 @@ public:
     // Demo steps from a recording ("<buttons> <updates>" lines); empty when
     // nothing was recorded.
     static QJsonArray stepsFromRecording(const QString& text, int capacity);
-    QString projectDirectory() const { return project_.directory(); }
 
 signals:
     void traceReady();
@@ -122,7 +116,6 @@ private:
     // Runs the kit's doraemon-upgrade (documents and bundle resources newer
     // kits edit), loads them and opens `kind`/`document`.
     void upgradeDocuments(const QString& kind, const QString& document);
-    void runBuild(std::function<void(bool)> next);
     void launchDemo(bool record);
     // Power-on (world 0), or the start world and point past the title.
     void launchWorld(int world);
@@ -132,7 +125,6 @@ private:
     // Asks the kit for the view, then opens `kind`/`document`.
     void computeWorld2View(const QString& kind, const QString& document);
 
-    sdk::ProjectFile project_;
     QString bundlePath_;
     QString textPath_;
     QString musicPath_;
@@ -143,7 +135,6 @@ private:
     bool startUnderground_ = false;
     int startStage_ = -1;
     int startRoom_ = 0;
-    bool recordingActive_ = false;
     QHash<QString, QJsonObject> traces_;    // "hash/driver/track"
     QString tracing_;
     QString musicHash_;
@@ -152,12 +143,9 @@ private:
     DoraemonState saved_;
     quint64 revision_ = 0;
     quint64 nextRevision_ = 1;
-    QString lastBuild_;
     QJsonObject world2View_;
     // The document asked for last while the kit adds documents: opened
     // when it is done.
-    QString pendingKind_;
-    QString pendingDocument_;
 
     mutable std::unique_ptr<DoraemonPainter> painter_;
     mutable quint64 painterRevision_ = ~quint64(0);

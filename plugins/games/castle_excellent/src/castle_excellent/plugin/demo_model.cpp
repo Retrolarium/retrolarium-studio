@@ -188,7 +188,7 @@ QVector<sdk::EditorAction> CastleDemoModel::actions() const {
     sdk::EditorAction record;
     record.danger = true;
     record.showsPlaytest = true;
-    if (session_->recordingActive()) {
+    if (session_->isRecording()) {
         record.id = QStringLiteral("stop");
         record.label = tr("Stop recording");
         record.icon = QStringLiteral("stop");

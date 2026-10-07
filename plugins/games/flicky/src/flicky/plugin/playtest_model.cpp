@@ -37,7 +37,7 @@ QString PlaytestModel::startLabel() const {
 }
 
 bool PlaytestModel::isRecording() const {
-    return session_->recordingActive();
+    return session_->isRecording();
 }
 
 void PlaytestModel::play() {

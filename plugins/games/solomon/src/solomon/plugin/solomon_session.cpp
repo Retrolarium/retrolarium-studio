@@ -12,26 +12,17 @@
 #include "solomon/plugin/sound_model.hpp"
 #include "solomon/plugin/text_models.hpp"
 
-#include <QDateTime>
 #include <QFile>
-#include <QJsonDocument>
 #include <QUndoStack>
 
 #include <algorithm>
+#include <stdexcept>
 
 namespace rl::solomon {
 
 namespace {
 
-QString tabDocument(const sdk::ProjectFile& project, const QString& codec) {
-    for (const QVariant& value : project.list(QStringLiteral("workspace.tabs"))) {
-        const QVariantMap tab = value.toMap();
-        if (tab.value(QStringLiteral("codec")).toString() == codec && tab.value(QStringLiteral("enabled"), true).toBool()) {
-            return tab.value(QStringLiteral("document")).toString();
-        }
-    }
-    return {};
-}
+using sdk::tabDocument;
 
 sdk::Kind kind(const char* id, const char* label, const char* icon, sdk::EditorType editor) {
     sdk::Kind result;
@@ -49,33 +40,6 @@ sdk::DocumentEntry entry(const QString& id, const QString& label, const QString&
     result.meta = meta;
     result.dirty = dirty;
     return result;
-}
-
-QString failureText(const sdk::ProcessResult& result) {
-    if (!result.started) {
-        return result.error;
-    }
-    const QStringList lines = QString::fromUtf8(result.standardError).split(QLatin1Char('\n'), Qt::SkipEmptyParts);
-    for (int i = lines.size() - 1; i >= 0; --i) {
-        if (!lines.at(i).trimmed().isEmpty()) {
-            return lines.at(i).trimmed();
-        }
-    }
-    return rlTr("solomon", "exit code %1").arg(result.exitCode);
-}
-
-sdk::ProcessSpec specFromPlan(const QJsonObject& json) {
-    sdk::ProcessSpec game;
-    game.program = json.value(QStringLiteral("program")).toString();
-    for (const QJsonValue& argument : json.value(QStringLiteral("arguments")).toArray()) {
-        game.arguments << argument.toString();
-    }
-    game.workingDirectory = json.value(QStringLiteral("working_directory")).toString();
-    const QJsonObject environment = json.value(QStringLiteral("environment")).toObject();
-    for (auto it = environment.constBegin(); it != environment.constEnd(); ++it) {
-        game.environment.insert(it.key(), it.value().toString());
-    }
-    return game;
 }
 
 // Rooms 1-48 come in twelve worlds of four; 49-53 are the bonus, princess
@@ -359,7 +323,7 @@ QVector<sdk::DocumentGroup> SolomonSession::listDocuments(const QString& kind) c
         sdk::DocumentGroup group;
         group.title = tr("Session");
         group.documents << entry(QStringLiteral("playtest"), tr("Build and run"),
-                                 lastBuild_.isEmpty() ? QString() : QStringLiteral("built"));
+                                 lastBuild().isEmpty() ? QString() : QStringLiteral("built"));
         groups << group;
     }
     return groups;
@@ -592,11 +556,7 @@ void SolomonSession::setStartRoom(int room) {
 }
 
 void SolomonSession::playDemo(bool record) {
-    if (!recordingActive_) launchDemo(record);
-}
-
-void SolomonSession::stopRecording() {
-    if (recordingActive_ && host()) host()->stopEmulator();
+    if (!isRecording()) launchDemo(record);
 }
 
 void SolomonSession::attachDemoEditor(bool attach) {
@@ -609,7 +569,7 @@ void SolomonSession::attachDemoEditor(bool attach) {
 }
 
 QString SolomonSession::playSelectedLabel() const {
-    if (recordingActive_) return tr("Stop recording");
+    if (isRecording()) return tr("Stop recording");
     return demoStart() ? tr("Play demo") : QString();
 }
 
@@ -661,115 +621,32 @@ QVector<sdk::PaletteSample> SolomonSession::paletteSamples(const QString& table)
 
 // ---------------------------------------------------------------- build and play
 
-void SolomonSession::report(sdk::Severity severity, const QString& source, const QString& message) {
-    if (!host()) {
-        return;
-    }
-    sdk::Diagnostic d;
-    d.severity = severity;
-    d.source = source;
-    d.message = message;
-    d.location = project_.path().section(QLatin1Char('/'), -1);
-    host()->report(d);
-}
-
-void SolomonSession::runBuild(std::function<void(bool)> next) {
-    sdk::Host* h = host();
-    if (!h || h->isBusy()) {
-        next(false);
-        return;
-    }
-    if (isModified()) {
-        QString error;
-        if (!save(&error)) {
-            report(sdk::Severity::Error, QStringLiteral("save"), error);
-            next(false);
-            return;
-        }
-    }
-    QString error;
-    sdk::ProcessSpec spec =
-        h->kitCommand({QStringLiteral("studio"), QStringLiteral("build"), project_.path()}, project_.directory(), &error);
-    if (spec.program.isEmpty()) {
-        report(sdk::Severity::Error, QStringLiteral("build"), error);
-        next(false);
-        return;
-    }
-    spec.label = tr("Build ROM");
-    h->runProcess(spec, [this, next](const sdk::ProcessResult& result) {
-        if (!result.succeeded()) {
-            if (!result.cancelled) {
-                report(sdk::Severity::Error, QStringLiteral("build"),
-                       tr("Build failed: %1").arg(failureText(result)));
-            }
-            next(false);
-            return;
-        }
-        const QJsonObject json = QJsonDocument::fromJson(result.standardOutput).object();
-        const QJsonObject artifact = json.value(QStringLiteral("artifact")).toObject();
-        if (json.value(QStringLiteral("status")).toString() != QLatin1String("built")) {
-            report(sdk::Severity::Error, QStringLiteral("build"), tr("The kit did not report a built ROM."));
-            next(false);
-            return;
-        }
-        lastBuild_ = QDateTime::currentDateTime().toString(QStringLiteral("HH:mm"));
-        documents_.remove(QStringLiteral("playtest"));
-        report(sdk::Severity::Info, QStringLiteral("build"),
-               tr("Built %1 (%2 bytes).")
-                   .arg(artifact.value(QStringLiteral("path")).toString())
-                   .arg(artifact.value(QStringLiteral("size")).toInt()));
-        emit documentsChanged(QStringLiteral("playtest"));
-        next(true);
-    });
+void SolomonSession::built(const BuildStep&, const QJsonObject&) {
+    documents_.remove(QStringLiteral("playtest"));
 }
 
 void SolomonSession::upgradeText() {
-    sdk::Host* h = host();
-    if (!h || h->isBusy()) return;
-    QString error;
-    sdk::ProcessSpec spec =
-        h->kitCommand({QStringLiteral("studio"), QStringLiteral("solomon-upgrade"), project_.path()}, project_.directory(), &error);
-    if (spec.program.isEmpty()) {
-        report(sdk::Severity::Error, QStringLiteral("text"), error);
-        return;
-    }
-    spec.label = tr("Add screen text");
-    h->runProcess(spec, [this](const sdk::ProcessResult& result) {
-        if (!result.succeeded()) {
-            if (!result.cancelled) {
-                report(sdk::Severity::Error, QStringLiteral("text"),
-                       tr("Adding the screen text failed: %1").arg(failureText(result)));
-            }
-            return;
-        }
-        QString loadError;
-        const sdk::ProjectFile reloaded = sdk::ProjectFile::load(project_.path(), &loadError);
-        const QString text = reloaded.path().isEmpty() ? QString() : tabDocument(reloaded, QStringLiteral("solomon.text@1"));
+    UpgradeStep step;
+    step.arguments = QStringList{QStringLiteral("studio"), QStringLiteral("solomon-upgrade"), project_.path()};
+    step.label = tr("Add screen text");
+    step.source = QStringLiteral("text");
+    step.failure = tr("Adding the screen text failed: %1");
+    step.adopt = [this] {
+        const QString text = tabDocument(project_, QStringLiteral("solomon.text@1"));
         if (text.isEmpty()) {
-            report(sdk::Severity::Error, QStringLiteral("text"), tr("The kit added no text document. %1").arg(loadError));
-            return;
+            throw std::runtime_error(tr("The kit added no text document. %1").arg(QString()).trimmed().toStdString());
         }
-        project_ = reloaded;
         textPath_ = project_.resolve(text);
-        try {
-            const SolomonText loaded(loadJson(textPath_));
-            // Part of the project from now on, not an edit to undo.
-            state_.text = loaded;
-            saved_.text = loaded;
-            documents_.clear();
-            // A new revision: what the session caches per revision sees the text.
-            revision_ = nextRevision_++;
-        } catch (const std::exception& e) {
-            report(sdk::Severity::Error, QStringLiteral("text"), QString::fromUtf8(e.what()));
-            return;
-        }
-        report(sdk::Severity::Info, QStringLiteral("text"),
-               tr("Added documents/text.json: the screen text and static palettes."));
-        emit contentChanged();
-        for (const QString& kind : {QStringLiteral("text"), QStringLiteral("screens"), QStringLiteral("palettes")}) {
-            emit documentsChanged(kind);
-        }
-    });
+        const SolomonText loaded(loadJson(textPath_));
+        // Part of the project from now on, not an edit to undo.
+        state_.text = loaded;
+        saved_.text = loaded;
+        documents_.clear();
+        // A new revision: what the session caches per revision sees the text.
+        revision_ = nextRevision_++;
+    };
+    step.done = tr("Added documents/text.json: the screen text and static palettes.");
+    runUpgrade(step);
 }
 
 void SolomonSession::build() {
@@ -781,7 +658,7 @@ void SolomonSession::play() {
 }
 
 void SolomonSession::playSelected() {
-    if (recordingActive_) {
+    if (isRecording()) {
         if (host()) host()->stopEmulator();
         return;
     }
@@ -790,69 +667,23 @@ void SolomonSession::playSelected() {
 }
 
 void SolomonSession::launchDemo(bool record) {
-    runBuild([this, record](bool ok) {
-        sdk::Host* h = host();
-        if (!ok || !h) return;
-        const QString mame = h->emulatorPath(QStringLiteral("mame"));
-        if (mame.isEmpty()) {
-            report(sdk::Severity::Error, QStringLiteral("playtest"),
-                   tr("MAME was not found. Set RETROLARIUM_MAME to consoles.exe."));
-            return;
-        }
-        QStringList arguments{QStringLiteral("studio"), QStringLiteral("solomon-demo-plan"), project_.path(),
-                              QStringLiteral("--mame"), mame};
-        const QString recording = project_.resolve(QStringLiteral("build/demo-recording.txt"));
-        if (record) {
-            QFile::remove(recording);
-            arguments << QStringLiteral("--record") << recording;
-        }
-        QString error;
-        sdk::ProcessSpec plan = h->kitCommand(arguments, project_.directory(), &error);
-        if (plan.program.isEmpty()) {
-            report(sdk::Severity::Error, QStringLiteral("playtest"), error);
-            return;
-        }
-        plan.label = record ? tr("Plan demo recording") : tr("Plan attract demo");
-        h->runProcess(plan, [this, record, recording](const sdk::ProcessResult& result) {
-            sdk::Host* host = this->host();
-            if (!host) return;
-            if (!result.succeeded()) {
-                if (!result.cancelled) {
-                    report(sdk::Severity::Error, QStringLiteral("playtest"),
-                           tr("Demo plan failed: %1").arg(failureText(result)));
-                }
-                return;
-            }
-            sdk::ProcessSpec game = specFromPlan(QJsonDocument::fromJson(result.standardOutput).object());
-            if (game.program.isEmpty()) {
-                report(sdk::Severity::Error, QStringLiteral("playtest"), tr("The kit returned no emulator command."));
-                return;
-            }
-            for (int i = 0; i < 64; ++i) game.palette << nes::masterColor(i);
-            // The Playtest view covers the boot until the demo room loads.
-            game.readyFile = project_.resolve(QStringLiteral("build/demo-ready.txt"));
-            game.environment.insert(QStringLiteral("SOLOMON_DEMO_READY"), game.readyFile);
-            if (record) {
-                recordingActive_ = true;
-                emit selectedStartChanged();
-                report(sdk::Severity::Info, QStringLiteral("demo"),
-                       tr("Recording: play the demo room with the controller; press Start or Stop to finish."));
-            }
-            const QString title = record ? tr("Solomon's Key · recording the demo")
-                                         : tr("Solomon's Key · attract demo");
-            host->launchEmulator(game, title, [this, record, recording](const sdk::ProcessResult& run) {
-                if (run.crashed || (!run.started && !run.error.isEmpty())) {
-                    report(sdk::Severity::Error, QStringLiteral("playtest"),
-                           run.error.isEmpty() ? tr("The emulator crashed.") : run.error);
-                }
-                if (record) {
-                    recordingActive_ = false;
-                    emit selectedStartChanged();
-                    applyRecording(recording);
-                }
-            });
-        });
-    });
+    EmulatorPlan plan;
+    plan.arguments = QStringList{QStringLiteral("studio"), QStringLiteral("solomon-demo-plan"), project_.path()};
+    plan.label = record ? tr("Plan demo recording") : tr("Plan attract demo");
+    plan.title = record ? tr("Solomon's Key · recording the demo") : tr("Solomon's Key · attract demo");
+    plan.demo = true;
+    // The Playtest view covers the boot until the demo room loads.
+    plan.readyFile = QStringLiteral("build/demo-ready.txt");
+    plan.readyVariable = QStringLiteral("SOLOMON_DEMO_READY");
+    if (record) {
+        plan.recordTo = QStringLiteral("build/demo-recording.txt");
+        plan.recordingMessage = tr("Recording: play the demo room with the controller; press Start or Stop to finish.");
+        plan.recorded = [this](const QString& path) { applyRecording(path); };
+    }
+    plan.prepare = [](sdk::ProcessSpec& game) {
+        for (int i = 0; i < 64; ++i) game.palette << nes::masterColor(i);
+    };
+    launchPlanned(plan);
 }
 
 void SolomonSession::applyRecording(const QString& path) {
@@ -889,70 +720,25 @@ void SolomonSession::applyRecording(const QString& path) {
 
 void SolomonSession::launch(bool fromStart) {
     const int room = startRoom_;
-    runBuild([this, fromStart, room](bool ok) {
-        sdk::Host* h = host();
-        if (!ok || !h) {
-            return;
-        }
-        const QString mame = h->emulatorPath(QStringLiteral("mame"));
-        if (mame.isEmpty()) {
-            report(sdk::Severity::Error, QStringLiteral("playtest"),
-                   tr("MAME was not found. Set RETROLARIUM_MAME to consoles.exe."));
-            return;
-        }
-        QStringList arguments;
-        if (fromStart) {
-            arguments = QStringList{QStringLiteral("studio"), QStringLiteral("launch-plan"), project_.path(),
-                                    QStringLiteral("--mame"), mame};
-        } else {
-            // The kit numbers rooms from 0.
-            arguments = QStringList{QStringLiteral("studio"), QStringLiteral("solomon-point-playtest-plan"),
-                                    project_.path(), QStringLiteral("--mame"), mame, QStringLiteral("--room"),
-                                    QString::number(room - 1)};
-        }
-        QString error;
-        sdk::ProcessSpec plan = h->kitCommand(arguments, project_.directory(), &error);
-        if (plan.program.isEmpty()) {
-            report(sdk::Severity::Error, QStringLiteral("playtest"), error);
-            return;
-        }
-        const QString title = fromStart ? tr("Solomon's Key · power-on")
-                                        : tr("Solomon's Key · %1").arg(roomLabel(room));
-        plan.label = fromStart ? tr("Plan playtest from power-on")
-                               : tr("Plan playtest of %1").arg(roomLabel(room));
-        h->runProcess(plan, [this, title, fromStart](const sdk::ProcessResult& result) {
-            sdk::Host* host = this->host();
-            if (!host) {
-                return;
-            }
-            if (!result.succeeded()) {
-                if (!result.cancelled) {
-                    report(sdk::Severity::Error, QStringLiteral("playtest"),
-                           tr("Playtest plan failed: %1").arg(failureText(result)));
-                }
-                return;
-            }
-            sdk::ProcessSpec game = specFromPlan(QJsonDocument::fromJson(result.standardOutput).object());
-            if (game.program.isEmpty()) {
-                report(sdk::Severity::Error, QStringLiteral("playtest"), tr("The kit returned no emulator command."));
-                return;
-            }
-            for (int i = 0; i < 64; ++i) {
-                game.palette << nes::masterColor(i);
-            }
-            if (!fromStart) {
-                // The Playtest view covers the boot until the room is up.
-                game.readyFile = project_.resolve(QStringLiteral("build/playtest-ready.txt"));
-                game.environment.insert(QStringLiteral("SOLOMON_PLAYTEST_RESULT"), game.readyFile);
-            }
-            host->launchEmulator(game, title, [this](const sdk::ProcessResult& run) {
-                if (run.crashed || (!run.started && !run.error.isEmpty())) {
-                    report(sdk::Severity::Error, QStringLiteral("playtest"),
-                           run.error.isEmpty() ? tr("The emulator crashed.") : run.error);
-                }
-            });
-        });
-    });
+    EmulatorPlan plan;
+    if (fromStart) {
+        plan.arguments = QStringList{QStringLiteral("studio"), QStringLiteral("launch-plan"), project_.path()};
+        plan.label = tr("Plan playtest from power-on");
+        plan.title = tr("Solomon's Key · power-on");
+    } else {
+        // The kit numbers rooms from 0.
+        plan.arguments = QStringList{QStringLiteral("studio"), QStringLiteral("solomon-point-playtest-plan"), project_.path(),
+                          QStringLiteral("--room"), QString::number(room - 1)};
+        plan.label = tr("Plan playtest of %1").arg(roomLabel(room));
+        plan.title = tr("Solomon's Key · %1").arg(roomLabel(room));
+        // The Playtest view covers the boot until the room is up.
+        plan.readyFile = QStringLiteral("build/playtest-ready.txt");
+        plan.readyVariable = QStringLiteral("SOLOMON_PLAYTEST_RESULT");
+    }
+    plan.prepare = [](sdk::ProcessSpec& game) {
+        for (int i = 0; i < 64; ++i) game.palette << nes::masterColor(i);
+    };
+    launchPlanned(plan);
 }
 
 }  // namespace rl::solomon

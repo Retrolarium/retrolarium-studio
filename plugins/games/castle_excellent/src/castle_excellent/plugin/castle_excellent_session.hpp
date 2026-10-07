@@ -3,8 +3,7 @@
 #include "castle/data/levels.hpp"
 #include "castle/render/room_painter.hpp"
 #include "nes/editors.hpp"
-#include "sdk/project_file.hpp"
-#include "sdk/session.hpp"
+#include "sdk/kit_session.hpp"
 
 #include <QJsonObject>
 #include <QPoint>
@@ -37,7 +36,7 @@ struct CastleStart {
 
 // An open Castle Excellent / Castlequest project (`rltool studio preset`):
 // the room document and the graphics bundle.
-class CastleSession final : public sdk::Session, public nes::BundleOwner {
+class CastleSession final : public sdk::KitSession, public nes::BundleOwner {
     Q_OBJECT
 
 public:
@@ -72,7 +71,6 @@ public:
     // Rebuilt when the documents change.
     const CastlePainter& painter() const;
     quint64 revision() const { return revision_; }
-    QString projectDirectory() const { return project_.directory(); }
 
     // One undo step: the edit runs on a copy of both documents.
     bool edit(const QString& text, const std::function<void(CastleState&)>& change, QString* error);
@@ -98,10 +96,8 @@ public:
     // While a demo editor is open, Play from selected runs the demo.
     void attachDemoEditor(bool attach);
     bool demoStart() const { return demoEditors_ > 0; }
-    bool recordingActive() const { return recordingActive_; }
     // Builds and loops the demo, or records a new one from the controller.
     void playDemo(bool record);
-    void stopRecording();
 
 signals:
     void startChanged();
@@ -109,30 +105,26 @@ signals:
 private:
     CastleSession() = default;
     void setState(const CastleState& state, quint64 revision);
-    void report(sdk::Severity severity, const QString& source, const QString& message);
-    void runBuild(std::function<void(bool)> next);
     void launch(bool fromStart);
     void launchDemo(bool record);
+    void useColours(sdk::ProcessSpec& game) const;
     void applyRecording(const QString& path);
     // Runs the kit's castle-upgrade (title demo and screens), loads what it
     // added and opens `kind`/`document`.
     void upgradeDocuments(const QString& kind, const QString& document);
 
-    sdk::ProjectFile project_;
     QString levelsPath_;
     QString graphicsPath_;
     QString demoPath_;
     QString screensPath_;
     QString musicId_;
     int demoEditors_ = 0;
-    bool recordingActive_ = false;
     CastleState state_;
     CastleState saved_;
     CastleArt art_;
     quint64 revision_ = 0;
     quint64 nextRevision_ = 1;
     CastleStart start_;
-    QString lastBuild_;
 
     mutable std::unique_ptr<CastlePainter> painter_;
     mutable quint64 painterRevision_ = ~quint64(0);

@@ -840,7 +840,7 @@ void SolomonPlaytestModel::play() {
 }
 
 bool SolomonPlaytestModel::isRecording() const {
-    return session_->recordingActive();
+    return session_->isRecording();
 }
 
 sdk::Inspection SolomonPlaytestModel::inspect() const {

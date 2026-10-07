@@ -332,7 +332,7 @@ void CastlePlaytestModel::play() {
 }
 
 bool CastlePlaytestModel::isRecording() const {
-    return session_->recordingActive();
+    return session_->isRecording();
 }
 
 sdk::Inspection CastlePlaytestModel::inspect() const {

@@ -2,8 +2,7 @@
 
 #include "nes/editors.hpp"
 #include "pacman/render/painter.hpp"
-#include "sdk/project_file.hpp"
-#include "sdk/session.hpp"
+#include "sdk/kit_session.hpp"
 
 #include <QJsonArray>
 #include <QJsonObject>
@@ -24,7 +23,7 @@ struct PacmanState {
 
 // An open Pac-Man project (`rltool studio preset`): one resource bundle with
 // the maze, patterns, palettes, actor frames, screens and sound.
-class PacmanSession final : public sdk::Session, public nes::BundleOwner {
+class PacmanSession final : public sdk::KitSession, public nes::BundleOwner {
     Q_OBJECT
 
 public:
@@ -58,13 +57,11 @@ public:
     // Rebuilt when the bundle changes.
     const PacmanPainter& painter() const;
     quint64 revision() const { return revision_; }
-    QString projectDirectory() const { return project_.directory(); }
     QVector<int> mazeGrid(const nes::Bundle& bundle) const;
     QJsonObject resource(const QString& id) const { return state_.bundle.resource(id); }
     // The round Play from selected starts at (1-based).
     int startRound() const { return round_; }
     void setStartRound(int round);
-    void report(sdk::Severity severity, const QString& source, const QString& message);
 
     // The attract demo (retrolarium.pacman-demo).
     const QJsonObject& demo() const { return state_.demo; }
@@ -73,9 +70,7 @@ public:
     // While a demo editor is open, Play from selected loops the demo.
     void attachDemoEditor(bool attach);
     bool demoStart() const { return demoEditors_ > 0; }
-    bool recordingActive() const { return recordingActive_; }
     void playDemo(bool record);
-    void stopRecording();
     // Demo steps from a recording ("<direction> <updates>" lines) after the
     // demo's fixed first step; empty when nothing was recorded.
     static QJsonArray stepsFromRecording(const QJsonArray& steps, const QString& text);
@@ -87,25 +82,23 @@ private:
     PacmanSession() = default;
     void setState(const PacmanState& state, quint64 revision);
     bool edit(const QString& text, const PacmanState& next, QString* error);
-    void runBuild(std::function<void(bool)> next);
+    bool prepareBuild(BuildStep& step, QString* error) override;
     void launch(bool fromStart);
     void launchDemo(bool record);
+    void useColours(sdk::ProcessSpec& game) const;
     void applyRecording(const QString& path);
     // Runs the kit's pacman-upgrade (the attract demo), loads it and opens
     // `kind`/`document`.
     void upgradeDocuments(const QString& kind, const QString& document);
 
-    sdk::ProjectFile project_;
     QString bundlePath_;
     QString demoPath_;
     PacmanState state_;
     PacmanState saved_;
     int demoEditors_ = 0;
-    bool recordingActive_ = false;
     quint64 revision_ = 0;
     quint64 nextRevision_ = 1;
     int round_ = 1;
-    QString lastBuild_;
 
     mutable std::unique_ptr<PacmanPainter> painter_;
     mutable quint64 painterRevision_ = ~quint64(0);
