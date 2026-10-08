@@ -36,6 +36,7 @@ private:
     void step();
 
     sdk::CompositionModel* composition_;
+    QScrollArea* scroll_ = nullptr;
     CompositionCanvas* canvas_;
     QWidget* strip_;
     QHBoxLayout* stripLayout_;
@@ -65,7 +66,7 @@ public:
     QSize sizeHint() const override;
 
 signals:
-    void zoomRequested(int delta);
+    void zoomRequested(int delta, QPoint anchor);   // anchor: the mouse, canvas coordinates
     void zoomChanged();
     void actionFailed(const QString& message);
 
@@ -81,8 +82,11 @@ protected:
     void dragMoveEvent(QDragMoveEvent* event) override;
     void dropEvent(QDropEvent* event) override;
 
-private:
+public:
+    // Where the picture is drawn in the canvas.
     QRect imageRect() const;
+
+private:
     QRect toScreen(const QRect& pixels) const;
     void applyFit();
     QString pieceAt(const QPoint& pos) const;

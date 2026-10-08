@@ -72,9 +72,9 @@ QImage CastleMapModel::render() const {
                        kRoomHeight);
         painter.drawImage(at, art.room(levels.cells(r), levels.objects(r)));
     }
-    // The player where Play from selected starts.
+    // The player where Play from selected starts, once the user has put him in a room.
     const CastleStart start = session_->start();
-    if (start.room >= 1 && start.room <= kColumns * kRows) {
+    if (start.placed && start.room >= 1 && start.room <= kColumns * kRows) {
         const QPoint origin(((start.room - 1) % kColumns) * kRoomWidth, ((start.room - 1) / kColumns) * kRoomHeight);
         painter.drawImage(QRect(origin + start.pixel / divisor_, QSize(16, 16) / divisor_), art.player());
     }
@@ -112,7 +112,7 @@ void CastleMapModel::selectObject(const QString& id) {
     if (number == selected_ || number < 1 || number > kColumns * kRows) return;
     selected_ = number;
     // The selected room is where Play from selected starts.
-    CastleStart start = session_->start();
+    CastleStart start;
     start.room = number;
     session_->setStart(start);
     emit selectionChanged();

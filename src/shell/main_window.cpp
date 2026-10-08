@@ -42,6 +42,7 @@
 #include <QMenu>
 #include <QMenuBar>
 #include <QPainter>
+#include <QProcess>
 #include <QPushButton>
 #include <QScrollArea>
 #include <QScrollBar>
@@ -178,10 +179,7 @@ MainWindow::MainWindow(QWidget* parent) : StudioWindow(parent) {
 
     connect(rail_, &KindRail::kindChosen, this, &MainWindow::selectKind);
     connect(documents_, &DocumentPanel::documentChosen, this, &MainWindow::selectDocument);
-    connect(inspector_, &InspectorPanel::fieldRejected, this, [this](const QString& message) {
-        updateStatus(message);
-        if (toast_) toast_->showMessage(message);
-    });
+    connect(inspector_, &InspectorPanel::fieldRejected, this, &MainWindow::refuseAction);
     connect(bottom_, &BottomPanel::summaryChanged, this, [this](const QString& summary) {
         statusSummary_->setText(summary);
     });
@@ -282,7 +280,10 @@ void MainWindow::buildMenus() {
     settings->setShortcut(QKeySequence(QStringLiteral("Ctrl+,")));
     connect(settings, &QAction::triggered, this, [this] {
         SettingsDialog dialog(this);
+        bool restart = false;
+        connect(&dialog, &SettingsDialog::restartRequested, this, [&restart] { restart = true; });
         dialog.exec();
+        if (restart) restartStudio();
     });
     file->addSeparator();
     QAction* quit = file->addAction(tr("Exit"));
@@ -661,6 +662,26 @@ void MainWindow::report(const sdk::Diagnostic& diagnostic) {
     }
 }
 
+void MainWindow::refuseAction(const QString& message) {
+    updateStatus(message);
+    if (message.isEmpty()) return;
+    if (toast_) toast_->showMessage(message);
+    // Also in Messages, so the reason stays readable after the toast: once
+    // while the same refusal repeats.
+    const QString source = document_.isEmpty() ? kind_ : kind_ + QLatin1Char('/') + document_;
+    if (!hostMessages_.isEmpty() && hostMessages_.last().message == message && hostMessages_.last().source == source) {
+        return;
+    }
+    sdk::Diagnostic d;
+    d.severity = sdk::Severity::Warning;
+    d.source = source;
+    d.message = message;
+    d.location = QFileInfo(projectPath_).fileName();
+    d.kind = kind_;
+    d.document = document_;
+    report(d);
+}
+
 void MainWindow::log(const QString& line) {
     bottom_->appendLog(line);
 }
@@ -1030,6 +1051,7 @@ void MainWindow::closeProject() {
     // A running task's callback belongs to the session about to go.
     processes_->abandon();
     emulator_->stopNow();
+    emulator_->clearLog();
     audio_->stop();
     releaseEditor();
     session_.reset();
@@ -1044,6 +1066,8 @@ void MainWindow::closeProject() {
     centerStack_->setCurrentWidget(welcome_);
     hostMessages_.clear();
     refreshDiagnostics();
+    // The build output and the emulator's lines were the closed project's.
+    bottom_->clearLog();
     updateProjectChrome();
     updateToolbarRow();
     updateDirtyState();
@@ -1083,6 +1107,20 @@ bool MainWindow::confirmDiscard() {
         discardedIndex_ = index;
     }
     return true;
+}
+
+void MainWindow::restartStudio() {
+    // The same project at the same document, in the same theme.
+    QStringList arguments{QStringLiteral("--theme"), theme::modeName(theme::Theme::instance().mode())};
+    if (!projectPath_.isEmpty()) {
+        arguments << projectPath_;
+        if (!kind_.isEmpty() && !document_.isEmpty()) {
+            arguments << QStringLiteral("--document") << kind_ + QLatin1Char('/') + document_;
+        }
+    }
+    // Closing asks about unsaved edits and running tasks; kept, no restart.
+    if (!close()) return;
+    QProcess::startDetached(QCoreApplication::applicationFilePath(), arguments, QDir::currentPath());
 }
 
 void MainWindow::closeEvent(QCloseEvent* event) {
@@ -1211,11 +1249,7 @@ void MainWindow::installEditor() {
         editorStack_->addWidget(editor_.get());
         editorStack_->setCurrentWidget(editor_.get());
         connect(editor_.get(), &editors::EditorView::toolbarChanged, this, &MainWindow::updateToolbarRow);
-        connect(editor_.get(), &editors::EditorView::actionFailed, this,
-                [this](const QString& message) {
-                    updateStatus(message);
-                    toast_->showMessage(message);
-                });
+        connect(editor_.get(), &editors::EditorView::actionFailed, this, &MainWindow::refuseAction);
         connect(model_.get(), &sdk::EditorModel::contentChanged, this, [this] {
             updateBreadcrumb();
             updateStatus();

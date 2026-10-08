@@ -70,10 +70,11 @@ function Copy-Tree([string]$From, [string]$To, [string[]]$SkipDirectories, [stri
     }
 }
 
-# The studio and the helper its Flicky builds run.
-foreach ($program in @("retrolarium-studio.exe", "retrolarium-flicky-level-writer.exe")) {
-    Copy-Item -LiteralPath (Join-Path $Bin $program) -Destination $package
-}
+# The studio, and in tools\ the helper its Flicky builds run.
+Copy-Item -LiteralPath (Join-Path $Bin "retrolarium-studio.exe") -Destination $package
+$helpers = Join-Path $package "tools"
+New-Item -ItemType Directory -Force -Path $helpers | Out-Null
+Copy-Item -LiteralPath (Join-Path $Bin "tools\retrolarium-flicky-level-writer.exe") -Destination $helpers
 
 # The kit, as a plain package next to a launcher.
 $kit = Join-Path $package "kit"

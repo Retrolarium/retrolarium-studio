@@ -36,6 +36,20 @@ struct Source {
 // comes from (cells the code fills have none).
 QVector<int> cells(const QJsonObject& text, const QString& id, QHash<int, Source>* sources = nullptr);
 QJsonObject withByte(QJsonObject text, const Source& source, int value);
+
+// The title's PPU records as pieces on the screen: the logo (its hex rows,
+// moving together) and each line of text.
+struct Write {
+    QString id;         // "logo" or the record's index
+    QString label;
+    QRect cells;
+    QVector<int> records;
+    bool movable = true;
+};
+QVector<Write> titleWrites(const QJsonObject& text);
+// The records of `write` moved by `offset` cells, or nothing when a record
+// would leave the screen.
+std::optional<QJsonObject> movedWrite(QJsonObject text, const Write& write, QPoint offset);
 // In the screen's own palette, or `palette` (a bundle palette resource).
 QImage render(const DoraemonSession* session, const QString& id, const QJsonObject& text, const QString& palette = QString());
 
@@ -48,6 +62,9 @@ public:
     DoraemonScreenModel(DoraemonSession* session, const QString& screen);
 
     QString title() const override { return shell::screenLabel(screen_); }
+    QVector<sdk::MapLayer> layers() const override;
+    QString currentLayer() const override { return layer_; }
+    void setCurrentLayer(const QString& id) override;
     sdk::Inspection inspect() const override;
     bool setField(const QString& key, const QVariant& value, QString* error) override;
     QString statusText() const override;
@@ -75,17 +92,25 @@ public:
     QVector<sdk::MapObject> objects() const override;
     QString selectedObject() const override;
     void selectObject(const QString& id) override;
+    void beginDrag(const QString& id) override;
+    bool dragObject(const QString& id, QPoint topLeftCell) override;
+    void endDrag() override;
 
 private:
     QJsonObject text() const;
     bool setCell(int cell, int value, const QString& label, QString* error);
+    bool writesLayer() const { return layer_ == QLatin1String("writes"); }
+    std::optional<shell::Write> selectedWrite() const;
 
     DoraemonSession* session_;
     QString screen_;
     int tile_ = 0x41;
     int cell_ = -1;
+    QString layer_ = QStringLiteral("tiles");
+    QString write_;     // the selected write in the writes layer
     std::optional<QJsonObject> stroke_;
     bool strokeChanged_ = false;
+    bool dragging_ = false;
 };
 
 }  // namespace rl::doraemon

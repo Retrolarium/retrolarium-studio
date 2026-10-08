@@ -76,13 +76,34 @@ void PacmanMazeModel::setCurrentLibraryItem(const QString& id) {
 }
 
 int PacmanMazeModel::cellValue(QPoint cell) const {
-    if (!isCellEditable(cell)) return -1;
+    if (cell.x() < 0 || cell.y() < 0 || cell.x() >= kColumns || cell.y() >= kRows) return -1;
     return grid().value(cell.y() * kColumns + cell.x(), -1);
 }
 
-bool PacmanMazeModel::isCellEditable(QPoint cell) const {
-    return cell.x() >= 0 && cell.y() >= 0 && cell.x() < kColumns && cell.y() < kRows;
+// The engine blinks four fixed cells from a table and finds the eaten power
+// pellet by its row and column: the power pellets cannot move. (The source
+// could be extended one day to place them anywhere.)
+QString PacmanMazeModel::fixedPowerPellets() {
+    return tr("Power pellets cannot move: the game's code fixes their four places in the corners.");
 }
+
+bool PacmanMazeModel::isCellEditable(QPoint cell) const {
+    if (cell.x() < 0 || cell.y() < 0 || cell.x() >= kColumns || cell.y() >= kRows) return false;
+    // A corner holding its power pellet stays; one painted over in an older
+    // document can only get it back.
+    return !isPowerCell(cell.y(), cell.x()) || grid().at(cell.y() * kColumns + cell.x()) != 0x01;
+}
+
+QString PacmanMazeModel::lockReason(QPoint cell) const {
+    if (isPowerCell(cell.y(), cell.x())) return fixedPowerPellets();
+    return TileMapModel::lockReason(cell);
+}
+
+bool PacmanMazeModel::refusedTile(QPoint cell, int tile) const {
+    if (isPowerCell(cell.y(), cell.x())) return tile != 0x01;
+    return isPowerTile(tile);
+}
+
 
 bool PacmanMazeModel::commit(const QVector<int>& g, const QString& text, QString* error) {
     return session_->editBundle(
@@ -102,8 +123,13 @@ bool PacmanMazeModel::commit(const QVector<int>& g, const QString& text, QString
 }
 
 bool PacmanMazeModel::placeObject(const QString& libraryItem, QPoint cell, QString* error) {
-    if (!libraryItem.startsWith(QLatin1String("tile:")) || !isCellEditable(cell)) return false;
+    if (!libraryItem.startsWith(QLatin1String("tile:"))) return false;
     setCurrentLibraryItem(libraryItem);
+    if (!isCellEditable(cell) || refusedTile(cell, tile_)) {
+        // The studio shows the reason and logs it.
+        if (error && (isCellEditable(cell) || isPowerCell(cell.y(), cell.x()))) *error = fixedPowerPellets();
+        return false;
+    }
     QVector<int> g = grid();
     g[cell.y() * kColumns + cell.x()] = tile_;
     selectObject(QStringLiteral("cell:%1").arg(cell.y() * kColumns + cell.x()));
@@ -113,10 +139,20 @@ bool PacmanMazeModel::placeObject(const QString& libraryItem, QPoint cell, QStri
 void PacmanMazeModel::beginStroke() {
     stroke_ = grid();
     strokeChanged_ = false;
+    strokeRefused_ = false;
 }
 
 bool PacmanMazeModel::paintCell(QPoint cell, int value) {
     if (!stroke_ || !isCellEditable(cell) || value < 0 || value >= kSheetTiles) return false;
+    if (refusedTile(cell, value)) {
+        // A power pellet painted off the corners (the editor reports locked
+        // corners itself): in the log once per stroke.
+        if (!strokeRefused_) {
+            session_->report(sdk::Severity::Warning, QStringLiteral("levels/maze"), fixedPowerPellets());
+        }
+        strokeRefused_ = true;
+        return false;
+    }
     int& at = (*stroke_)[cell.y() * kColumns + cell.x()];
     if (at == value) return false;
     at = value;
@@ -188,8 +224,14 @@ void PacmanMazeModel::selectObject(const QString& id) {
 
 bool PacmanMazeModel::setField(const QString& key, const QVariant& value, QString* error) {
     if (cell_ < 0 || key != QLatin1String("tile")) return TileMapModel::setField(key, value, error);
+    const QPoint cell(cell_ % kColumns, cell_ / kColumns);
+    const int tile = std::clamp(value.toInt(), 0, kSheetTiles - 1);
+    if (!isCellEditable(cell) || refusedTile(cell, tile)) {
+        if (error) *error = fixedPowerPellets();
+        return false;
+    }
     QVector<int> g = grid();
-    g[cell_] = std::clamp(value.toInt(), 0, kSheetTiles - 1);
+    g[cell_] = tile;
     return commit(g, tr("Set a maze tile"), error);
 }
 
@@ -215,11 +257,8 @@ sdk::Budget PacmanMazeModel::budget() const {
     sdk::Budget budget;
     budget.used = report.rleBytes;
     budget.capacity = kRleBytes;
-    budget.text = tr("%1 / 192 pellets · %2 / 4 power · RLE %3 / %4 bytes")
-                      .arg(report.pellets)
-                      .arg(report.powerPellets)
-                      .arg(report.rleBytes)
-                      .arg(kRleBytes);
+    budget.text = tr("%n pellets", nullptr, report.pellets) +
+                  tr(" · RLE %1 / %2 bytes").arg(report.rleBytes).arg(kRleBytes);
     return budget;
 }
 
@@ -238,11 +277,12 @@ sdk::Inspection PacmanMazeModel::inspect() const {
         sdk::Field pellets;
         pellets.key = QStringLiteral("pellets");
         pellets.label = tr("Pellets");
-        pellets.value = tr("%1 of 192 · %2 of 4 power").arg(report.pellets).arg(report.powerPellets);
+        pellets.value = tr("%n to eat, the four power pellets included", nullptr, report.pellets);
         inspection.fields = {pellets};
-        inspection.note = tr("Every round plays this maze. The round ends when 192 pellets are eaten, four "
-                             "of them power pellets; the door, the spawns and the tunnel ends stay where "
-                             "the engine expects them. Changed cells are outlined. ") + checks;
+        inspection.note = tr("Every round plays this maze and ends when its last pellet is eaten: the build "
+                             "writes the maze's count (up to 255) into the round counter. The four power "
+                             "pellets, the door, the spawns and the tunnel ends stay where the engine expects "
+                             "them. Changed cells are outlined. ") + checks;
         return inspection;
     }
     inspection.kicker = tr("Maze cell");

@@ -144,6 +144,8 @@ private:
     quint64 revision_ = 0;
     quint64 nextRevision_ = 1;
     QJsonObject world2View_;
+    // A palette opens without the route preview once laying it out failed.
+    bool world2ViewFailed_ = false;
     // The document asked for last while the kit adds documents: opened
     // when it is done.
 

@@ -38,7 +38,8 @@ public:
     // `error` explains why when the kit cannot be found.
     virtual ProcessSpec kitCommand(const QStringList& arguments, const QString& workingDirectory,
                                    QString* error) const = 0;
-    // A helper executable shipped next to the studio, e.g. a level writer.
+    // A helper executable shipped in the tools folder beside the studio, e.g. a
+    // level writer; empty when it is not there.
     virtual QString toolPath(const QString& name) const = 0;
     // An emulator executable by id ("mame"); empty when not found.
     virtual QString emulatorPath(const QString& id) const = 0;

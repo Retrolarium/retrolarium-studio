@@ -20,6 +20,12 @@ QString SmbPlaytestModel::startLabel() const {
     return session_->selectedStart();
 }
 
+QString SmbPlaytestModel::coreLabel() const {
+    const QString revision = session_->document().revision();
+    if (revision.endsWith(QLatin1String("fds"))) return QStringLiteral("MAME · fds");
+    return revision == QLatin1String("pal") ? QStringLiteral("MAME · nespal") : QStringLiteral("MAME · nes");
+}
+
 void SmbPlaytestModel::play() {
     session_->playSelected();
 }

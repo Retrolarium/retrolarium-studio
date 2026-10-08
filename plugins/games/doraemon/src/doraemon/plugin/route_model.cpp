@@ -20,7 +20,8 @@ const QString kScreens = QStringLiteral("world2-screens");
 const QString kSecrets = QStringLiteral("world2-secret-screens");
 
 // Spawn tokens $D0-$DE start enemy states $01-$0F; each state's first
-// metasprite. W2Enemy9 ($09) is drawn by the background and has none.
+// metasprite. W2Enemy9 ($09) has none: its render handler is an RTS, so the
+// game never draws it.
 struct Foe {
     const char* name;
     int metasprite;
@@ -30,6 +31,7 @@ const Foe kFoes[16] = {{"", -1},          {"W2Enemy1", 0},           {"W2Enemy2"
                        {"W2Creature7 (straight)", 17}, {"W2Enemy9", -1},     {"W2Enemy10", 36}, {"W2Enemy11", 32},
                        {"W2Enemy12", 38},      {"W2Enemy13", 30},             {"Jura", 23},    {"W2Creature7 (spiral)", 17}};
 constexpr int kStates = 15;
+constexpr int kW2Enemy9 = 9;
 
 int stateOf(int value) {
     return value - DoraemonRouteModel::kSpawnBase + 1;
@@ -46,6 +48,22 @@ QString foeChoice(int state) {
 QImage foeImage(const DoraemonSession* session, int state, int preset) {
     const int metasprite = state >= 1 && state <= kStates ? kFoes[state].metasprite : -1;
     if (metasprite >= 0) return world2Image(session, metasprite, preset);
+    if (state == kW2Enemy9) {
+        // Invisible in the game: a dashed, see-through outline marks where it is.
+        QImage image(16, 16, QImage::Format_ARGB32);
+        image.fill(QColor(150, 210, 255, 60));
+        QPainter painter(&image);
+        QPen pen(QColor(150, 210, 255, 230), 1, Qt::DashLine);
+        painter.setPen(pen);
+        painter.drawRect(image.rect().adjusted(0, 0, -1, -1));
+        QFont font = painter.font();
+        font.setPixelSize(9);
+        font.setBold(true);
+        painter.setFont(font);
+        painter.setPen(Qt::white);
+        painter.drawText(image.rect(), Qt::AlignCenter, QStringLiteral("B"));
+        return image;
+    }
     // No sprite of its own: a neutral marker with the state.
     QImage image(16, 16, QImage::Format_ARGB32);
     image.fill(QColor(120, 120, 120, 170));
@@ -574,7 +592,7 @@ sdk::Inspection DoraemonRouteModel::inspectObject() const {
     }
     const int state = stateOf(value);
     const QPoint cell = cellOf(object_.mid(6).toInt());
-    inspection.kicker = tr("Enemy spawn");
+    inspection.kicker = state == kW2Enemy9 ? tr("Enemy spawn · invisible in the game") : tr("Enemy spawn");
     inspection.title = foeName(state);
     sdk::Field enemy;
     enemy.key = QStringLiteral("enemy");

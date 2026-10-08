@@ -39,11 +39,19 @@ protected:
 private:
     void chooseTool(const QString& id);
     void fitZoom();
+    // The brush and library item the user last picked on this kind of map
+    // and layer: kept as they change, handed back when a map opens or its
+    // layer changes.
+    void rememberPick();
+    void restorePick();
+    bool libraryHas(const QString& item) const;
 
     sdk::TileMapModel* map_;
     QScrollArea* scroll_;
     MapCanvas* canvas_;
     QString tool_;
+    QString pickLayer_;
+    bool restoring_ = false;
     bool fitted_ = false;
 };
 
@@ -65,7 +73,7 @@ public:
     QRect mapRect() const;
 
 signals:
-    void zoomRequested(int delta);
+    void zoomRequested(int delta, QPoint anchor);   // anchor: the mouse, canvas coordinates
     void actionFailed(const QString& message);
 
 protected:
@@ -103,6 +111,7 @@ private:
     // A stroke paints many cells, each a contentChanged: render once after them.
     bool renderPending_ = false;
     bool painting_ = false;
+    bool lockReported_ = false;    // this stroke already said why a cell is locked
     Qt::MouseButton paintButton_ = Qt::NoButton;
     int paintValue_ = 0;
     QPoint lastPaintCell_;

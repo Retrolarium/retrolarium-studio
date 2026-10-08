@@ -68,6 +68,7 @@ private:
     QString typeLabel(int type) const;
     bool commitObjects(const QVector<CastleObject>& objects, const QString& text, QString* error);
     QRect startCells() const;
+    bool hasStart() const;      // the user has put the player in this room
 
     CastleSession* session_;
     int room_;

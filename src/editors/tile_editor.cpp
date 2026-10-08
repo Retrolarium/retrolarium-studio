@@ -9,6 +9,7 @@
 #include "widgets/view_chip.hpp"
 
 #include <QHBoxLayout>
+#include <QHash>
 #include <QKeyEvent>
 #include <QMouseEvent>
 #include <QPainter>
@@ -29,6 +30,17 @@ namespace {
 // Readable label color over a swatch.
 QColor inkOver(const QColor& color) {
     return color.lightness() > 150 ? QColor(0, 0, 0, 200) : QColor(255, 255, 255, 230);
+}
+
+// The tool, and the pen per kind of tile bank, last chosen: opening another
+// bank keeps drawing with them.
+QHash<QString, int>& lastPens() {
+    static QHash<QString, int> pens;
+    return pens;
+}
+QString& lastTileTool() {
+    static QString tool;
+    return tool;
 }
 
 }  // namespace
@@ -327,6 +339,11 @@ void PenRow::mousePressEvent(QMouseEvent* event) {
 
 TileEditor::TileEditor(sdk::TileModel* model, QWidget* parent)
     : EditorView(model, parent), tiles_(model) {
+    const QString penKey = QString::fromLatin1(tiles_->metaObject()->className());
+    const auto pen = lastPens().constFind(penKey);
+    if (pen != lastPens().constEnd() && *pen < tiles_->penCount()) tiles_->setCurrentPen(*pen);
+    connect(tiles_, &sdk::EditorModel::selectionChanged, this,
+            [this, penKey] { lastPens().insert(penKey, tiles_->currentPen()); });
     auto* layout = new QHBoxLayout(this);
     layout->setContentsMargins(24, 24, 24, 24);
     layout->setSpacing(32);
@@ -362,6 +379,12 @@ TileEditor::TileEditor(sdk::TileModel* model, QWidget* parent)
     layout->addWidget(right, 0);
     layout->addStretch(1);
 
+    const QVector<sdk::Tool> tools = tiles_->tools();
+    if (std::any_of(tools.begin(), tools.end(), [](const sdk::Tool& tool) { return tool.id == lastTileTool(); })) {
+        tool_ = lastTileTool();
+        canvas_->setTool(tool_);
+    }
+
     connect(canvas_, &PixelCanvas::actionFailed, this, &EditorView::actionFailed);
     connect(tiles_, &sdk::EditorModel::toolsChanged, this, &EditorView::toolbarChanged);
     // Keep the selected tile in view when it changes from the keyboard.
@@ -374,6 +397,7 @@ TileEditor::TileEditor(sdk::TileModel* model, QWidget* parent)
 
 void TileEditor::chooseTool(const QString& id) {
     tool_ = id;
+    lastTileTool() = id;
     canvas_->setTool(id);
 }
 

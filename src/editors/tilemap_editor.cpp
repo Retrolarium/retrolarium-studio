@@ -2,6 +2,7 @@
 
 #include "editors/library_sheet.hpp"
 #include "editors/mime.hpp"
+#include "editors/zoom_anchor.hpp"
 #include "sdk/editor_model.hpp"
 #include "theme/paint.hpp"
 #include "theme/theme.hpp"
@@ -12,6 +13,7 @@
 
 #include <QDragEnterEvent>
 #include <QHBoxLayout>
+#include <QHash>
 #include <QKeyEvent>
 #include <QMimeData>
 #include <QMouseEvent>
@@ -25,6 +27,7 @@
 
 #include <algorithm>
 #include <cstdlib>
+#include <optional>
 
 namespace rl::editors {
 
@@ -51,6 +54,26 @@ int zoomStep(int quarters, int delta) {
     int index = 0;
     while (index + 1 < count && kZoomSteps[index] < quarters) ++index;
     return kZoomSteps[std::clamp(index + delta, 0, count - 1)];
+}
+
+// The tool and, per kind of map and layer, the brush and library item last
+// chosen: switching to another level or room keeps painting or adding with
+// them instead of falling back to the first tool, brush and item.
+QString& lastTool() {
+    static QString tool;
+    return tool;
+}
+struct Pick {
+    std::optional<int> brush;
+    QString item;
+};
+QHash<QString, Pick>& lastPicks() {
+    static QHash<QString, Pick> picks;
+    return picks;
+}
+QString pickKey(const sdk::TileMapModel* model) {
+    // A tile brush and a palette brush are different values: per layer too.
+    return QString::fromLatin1(model->metaObject()->className()) + QLatin1Char('/') + model->currentLayer();
 }
 
 ui::Divider* toolbarSeparator(QWidget* parent) {
@@ -192,6 +215,10 @@ void MapCanvas::paintLine(QPoint from, QPoint to, int value) {
         const QPoint cell(x0, y0);
         if (insideMap(cell) && model_->isCellEditable(cell)) {
             model_->paintCell(cell, value);
+        } else if (insideMap(cell) && !lockReported_) {
+            // A stroke runs into a locked cell: why, once per stroke.
+            lockReported_ = true;
+            emit actionFailed(model_->lockReason(cell));
         }
         if (x0 == x1 && y0 == y1) {
             break;
@@ -236,9 +263,7 @@ void MapCanvas::mousePressEvent(QMouseEvent* event) {
             }
             return;
         }
-        if (!model_->isCellEditable(cell)) {
-            emit actionFailed(model_->lockReason(cell));
-        }
+        lockReported_ = false;
         paintValue_ = event->button() == Qt::RightButton && !brushes.isEmpty()
                           ? brushes.first().value
                           : model_->currentBrush();
@@ -317,7 +342,7 @@ void MapCanvas::leaveEvent(QEvent*) {
 
 void MapCanvas::wheelEvent(QWheelEvent* event) {
     if (event->modifiers() & Qt::ControlModifier) {
-        emit zoomRequested(event->angleDelta().y() > 0 ? 1 : -1);
+        emit zoomRequested(event->angleDelta().y() > 0 ? 1 : -1, event->position().toPoint());
         event->accept();
         return;
     }
@@ -497,6 +522,12 @@ TileMapEditor::TileMapEditor(sdk::TileMapModel* model, QWidget* parent)
     scroll_->setWidgetResizable(true);
     scroll_->setWidget(canvas_);
     scroll_->setProperty("surface", QStringLiteral("canvas"));
+    // The last pick on this kind of map, before the sheet shows its own.
+    pickLayer_ = map_->currentLayer();
+    restorePick();
+    connect(map_, &sdk::EditorModel::selectionChanged, this, &TileMapEditor::rememberPick);
+    connect(map_, &sdk::EditorModel::toolsChanged, this, &TileMapEditor::rememberPick);
+
     // The model's pattern sheet, if it has one, beside the map.
     auto* split = new QSplitter(Qt::Horizontal, this);
     split->setChildrenCollapsible(false);
@@ -508,11 +539,17 @@ TileMapEditor::TileMapEditor(sdk::TileMapModel* model, QWidget* parent)
     layout->addWidget(split);
 
     const QVector<sdk::Tool> tools = map_->tools();
-    tool_ = tools.isEmpty() ? QStringLiteral("select") : tools.first().id;
+    const bool remembered = std::any_of(tools.begin(), tools.end(), [](const sdk::Tool& tool) {
+        return tool.id == lastTool();
+    });
+    tool_ = remembered ? lastTool() : tools.isEmpty() ? QStringLiteral("select") : tools.first().id;
     canvas_->setTool(tool_);
 
-    connect(canvas_, &MapCanvas::zoomRequested, this, [this](int delta) {
-        setZoom(zoomStep(zoom(), delta));
+    // Ctrl+wheel zooms about the mouse: the picture under it stays put.
+    connect(canvas_, &MapCanvas::zoomRequested, this, [this](int delta, QPoint anchor) {
+        const int next = zoomStep(zoom(), delta);
+        zoomKeepingPoint(scroll_, canvas_, anchor, [this] { return canvas_->mapRect(); },
+                         [this, next] { canvas_->setZoom(next); });
         emit toolbarChanged();
     });
     connect(canvas_, &MapCanvas::actionFailed, this, &EditorView::actionFailed);
@@ -520,11 +557,57 @@ TileMapEditor::TileMapEditor(sdk::TileMapModel* model, QWidget* parent)
         const QVector<sdk::Tool> current = map_->tools();
         const bool known = std::any_of(current.begin(), current.end(),
                                        [this](const sdk::Tool& t) { return t.id == tool_; });
-        if (!known) {
-            chooseTool(current.isEmpty() ? QStringLiteral("select") : current.first().id);
+        const bool remembered = std::any_of(current.begin(), current.end(),
+                                            [](const sdk::Tool& t) { return t.id == lastTool(); });
+        if (remembered && tool_ != lastTool()) {
+            // The user's tool is back (another layer offers it again).
+            tool_ = lastTool();
+            canvas_->setTool(tool_);
+        } else if (!known) {
+            // A fallback, not the user's choice: the remembered tool stays.
+            tool_ = current.isEmpty() ? QStringLiteral("select") : current.first().id;
+            canvas_->setTool(tool_);
         }
         emit toolbarChanged();
     });
+}
+
+void TileMapEditor::rememberPick() {
+    if (restoring_) return;
+    if (map_->currentLayer() != pickLayer_) {
+        // Another layer: its own last pick comes back first.
+        pickLayer_ = map_->currentLayer();
+        restorePick();
+    }
+    Pick& pick = lastPicks()[pickKey(map_)];
+    if (!map_->brushes().isEmpty()) pick.brush = map_->currentBrush();
+    const QString item = map_->currentLibraryItem();
+    if (!item.isEmpty()) pick.item = item;
+}
+
+void TileMapEditor::restorePick() {
+    const auto found = lastPicks().constFind(pickKey(map_));
+    if (found == lastPicks().constEnd()) return;
+    const Pick pick = *found;
+    restoring_ = true;
+    // brushes() often lists only the current brush, so the model's
+    // setCurrentBrush decides whether the value fits this map.
+    if (pick.brush && !map_->brushes().isEmpty() && map_->currentBrush() != *pick.brush) {
+        map_->setCurrentBrush(*pick.brush);
+    }
+    // An item only where this map's library offers it.
+    if (!pick.item.isEmpty() && map_->currentLibraryItem() != pick.item && libraryHas(pick.item)) {
+        map_->setCurrentLibraryItem(pick.item);
+    }
+    restoring_ = false;
+}
+
+bool TileMapEditor::libraryHas(const QString& item) const {
+    const auto has = [&item](const sdk::Library& library) {
+        return std::any_of(library.items.begin(), library.items.end(),
+                           [&item](const sdk::LibraryItem& entry) { return entry.id == item; });
+    };
+    return has(map_->sheet()) || has(map_->inspect().library);
 }
 
 int TileMapEditor::zoom() const {
@@ -532,7 +615,9 @@ int TileMapEditor::zoom() const {
 }
 
 void TileMapEditor::setZoom(int zoom) {
-    canvas_->setZoom(zoom);
+    // About the middle of the view, so what is in sight stays in sight.
+    zoomKeepingPoint(scroll_, canvas_, viewportCentre(scroll_, canvas_), [this] { return canvas_->mapRect(); },
+                     [this, zoom] { canvas_->setZoom(zoom); });
 }
 
 bool TileMapEditor::gridVisible() const {
@@ -545,6 +630,7 @@ void TileMapEditor::setGridVisible(bool visible) {
 
 void TileMapEditor::chooseTool(const QString& id) {
     tool_ = id;
+    lastTool() = id;
     canvas_->setTool(id);
 }
 

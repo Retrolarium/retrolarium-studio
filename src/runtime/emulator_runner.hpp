@@ -67,6 +67,8 @@ public:
     bool isPaused() const { return paused_; }
     QString title() const { return title_; }
     QStringList log() const { return log_; }
+    // Forgets the output: another project's games are not this one's.
+    void clearLog() { log_.clear(); }
 
     // Runs a game. While the same game runs (same program, working directory
     // and arguments apart from the cartridge file and the autoboot script),

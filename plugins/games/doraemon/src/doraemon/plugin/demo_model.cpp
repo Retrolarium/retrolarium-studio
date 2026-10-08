@@ -203,7 +203,7 @@ QVector<sdk::EditorAction> DoraemonDemoModel::actions() const {
     loop.id = QStringLiteral("loop");
     loop.label = tr("Loop demo");
     loop.icon = QStringLiteral("play");
-    loop.tooltip = tr("Build and play World 1's attract demo over and over, as the console does");
+    loop.tooltip = tr("Build and play World 1's attract demo over and over, without the other worlds' demos");
     loop.showsPlaytest = true;
     sdk::EditorAction record;
     record.danger = true;

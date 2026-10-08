@@ -151,6 +151,58 @@ QJsonObject withByte(QJsonObject text, const Source& source, int value) {
     return text;
 }
 
+QVector<Write> titleWrites(const QJsonObject& text) {
+    // The code draws the score digits beside these two at fixed addresses.
+    static const QStringList kAnchored{QStringLiteral("hiscore"), QStringLiteral("score")};
+    const QJsonArray records = text.value(QStringLiteral("title_records")).toArray();
+    QVector<Write> result;
+    Write logo;
+    logo.id = QStringLiteral("logo");
+    logo.label = rlTr("doraemon", "Logo");
+    for (int r = 0; r < records.size(); ++r) {
+        const QJsonObject record = records.at(r).toObject();
+        const int address = record.value(QStringLiteral("ppu_address")).toString().toInt(nullptr, 16) - 0x2000;
+        if (address < 0 || address >= 960) continue;
+        const bool picture = record.contains(QStringLiteral("hex"));
+        const int length = picture ? hexBytes(record.value(QStringLiteral("hex")).toString()).size()
+                                   : record.value(QStringLiteral("text")).toString().size();
+        const QRect cells(address % 32, address / 32, std::min(length, 32 - address % 32), 1);
+        if (picture) {
+            logo.cells = logo.records.isEmpty() ? cells : logo.cells.united(cells);
+            logo.records << r;
+            continue;
+        }
+        Write line;
+        line.id = QString::number(r);
+        line.label = QStringLiteral("\"%1\"").arg(record.value(QStringLiteral("text")).toString().trimmed());
+        line.cells = cells;
+        line.records << r;
+        line.movable = !kAnchored.contains(record.value(QStringLiteral("id")).toString());
+        result << line;
+    }
+    if (!logo.records.isEmpty()) result.prepend(logo);
+    return result;
+}
+
+std::optional<QJsonObject> movedWrite(QJsonObject text, const Write& write, QPoint offset) {
+    QJsonArray records = text.value(QStringLiteral("title_records")).toArray();
+    for (int r : write.records) {
+        QJsonObject record = records.at(r).toObject();
+        const int address = record.value(QStringLiteral("ppu_address")).toString().toInt(nullptr, 16) - 0x2000;
+        const int length = record.contains(QStringLiteral("hex"))
+                               ? hexBytes(record.value(QStringLiteral("hex")).toString()).size()
+                               : record.value(QStringLiteral("text")).toString().size();
+        const int x = address % 32 + offset.x();
+        const int y = address / 32 + offset.y();
+        if (x < 0 || x + length > 32 || y < 0 || y >= 30) return std::nullopt;
+        record.insert(QStringLiteral("ppu_address"),
+                      QStringLiteral("0x") + QString::number(0x2000 + y * 32 + x, 16).toUpper());
+        records.replace(r, record);
+    }
+    text.insert(QStringLiteral("title_records"), records);
+    return text;
+}
+
 QImage render(const DoraemonSession* session, const QString& id, const QJsonObject& text, const QString& override) {
     const QVector<int> table = cells(text, id, nullptr);
     const QString palette = override.isEmpty() ? paletteOf(id) : override;
@@ -206,7 +258,28 @@ QJsonObject DoraemonScreenModel::text() const {
     return stroke_ ? *stroke_ : session_->text();
 }
 
+QVector<sdk::MapLayer> DoraemonScreenModel::layers() const {
+    // The title is drawn by PPU records that can move; the other screens
+    // are whole name tables.
+    if (screen_ != QLatin1String("title")) return {};
+    return {{QStringLiteral("tiles"), tr("Tiles")}, {QStringLiteral("writes"), tr("Writes")}};
+}
+
+void DoraemonScreenModel::setCurrentLayer(const QString& id) {
+    if (screen_ != QLatin1String("title") || id == layer_ ||
+        (id != QLatin1String("tiles") && id != QLatin1String("writes"))) {
+        return;
+    }
+    layer_ = id;
+    emit selectionChanged();
+    emit toolsChanged();
+    emit contentChanged();
+}
+
 QVector<sdk::Tool> DoraemonScreenModel::tools() const {
+    if (writesLayer()) {
+        return {{QStringLiteral("select"), tr("Select a write and drag it elsewhere"), QStringLiteral("select")}};
+    }
     return {{QStringLiteral("select"), tr("Select a cell"), QStringLiteral("select")},
             {QStringLiteral("paint"), tr("Paint the sheet's tile (right button takes one)"), QStringLiteral("paint")},
             {QStringLiteral("pick"), tr("Take a cell's tile as the brush"), QStringLiteral("pick")}};
@@ -226,6 +299,7 @@ QImage DoraemonScreenModel::render() const {
 }
 
 QVector<sdk::CellBrush> DoraemonScreenModel::brushes() const {
+    if (writesLayer()) return {};
     return {{tile_, nes::hex(tile_), QColor()}};
 }
 
@@ -324,6 +398,17 @@ void DoraemonScreenModel::endStroke() {
 
 QVector<sdk::MapObject> DoraemonScreenModel::objects() const {
     QVector<sdk::MapObject> result;
+    if (writesLayer()) {
+        for (const shell::Write& write : shell::titleWrites(text())) {
+            sdk::MapObject o;
+            o.id = QStringLiteral("write:") + write.id;
+            o.label = write.label;
+            o.cells = write.cells;
+            o.movable = write.movable;
+            result << o;
+        }
+        return result;
+    }
     for (int i = 0; i < 960; ++i) {
         sdk::MapObject o;
         o.id = QStringLiteral("cell:%1").arg(i);
@@ -337,10 +422,27 @@ QVector<sdk::MapObject> DoraemonScreenModel::objects() const {
 }
 
 QString DoraemonScreenModel::selectedObject() const {
+    if (writesLayer()) return write_.isEmpty() ? QString() : QStringLiteral("write:") + write_;
     return cell_ >= 0 ? QStringLiteral("cell:%1").arg(cell_) : QString();
 }
 
+std::optional<shell::Write> DoraemonScreenModel::selectedWrite() const {
+    if (!writesLayer() || write_.isEmpty()) return std::nullopt;
+    for (const shell::Write& write : shell::titleWrites(text())) {
+        if (write.id == write_) return write;
+    }
+    return std::nullopt;
+}
+
 void DoraemonScreenModel::selectObject(const QString& id) {
+    if (writesLayer()) {
+        const QString write = id.startsWith(QLatin1String("write:")) ? id.mid(6) : QString();
+        if (write != write_) {
+            write_ = write;
+            emit selectionChanged();
+        }
+        return;
+    }
     const int cell = id.startsWith(QLatin1String("cell:")) ? id.mid(5).toInt() : -1;
     if (cell != cell_) {
         cell_ = cell;
@@ -348,13 +450,66 @@ void DoraemonScreenModel::selectObject(const QString& id) {
     }
 }
 
+void DoraemonScreenModel::beginDrag(const QString& id) {
+    selectObject(id);
+    if (!writesLayer() || !id.startsWith(QLatin1String("write:"))) return;
+    stroke_ = session_->text();
+    strokeChanged_ = false;
+    dragging_ = true;
+}
+
+bool DoraemonScreenModel::dragObject(const QString& id, QPoint topLeftCell) {
+    if (!dragging_ || !id.startsWith(QLatin1String("write:"))) return false;
+    // From the document, so the write moves as one piece.
+    for (const shell::Write& write : shell::titleWrites(session_->text())) {
+        if (QStringLiteral("write:") + write.id != id || !write.movable) continue;
+        const std::optional<QJsonObject> moved =
+            shell::movedWrite(session_->text(), write, topLeftCell - write.cells.topLeft());
+        if (!moved || *moved == *stroke_) return false;
+        stroke_ = *moved;
+        strokeChanged_ = *moved != session_->text();
+        emit contentChanged();
+        return true;
+    }
+    return false;
+}
+
+void DoraemonScreenModel::endDrag() {
+    if (!dragging_) return;
+    dragging_ = false;
+    const QJsonObject moved = *stroke_;
+    const bool changed = strokeChanged_;
+    stroke_.reset();
+    strokeChanged_ = false;
+    if (changed) {
+        QString error;
+        if (!session_->editText(tr("Move a write in %1").arg(title()), moved, &error)) {
+            session_->report(sdk::Severity::Error, QStringLiteral("screens"), error);
+        }
+    }
+    emit contentChanged();
+}
+
 bool DoraemonScreenModel::setField(const QString& key, const QVariant& value, QString* error) {
+    if (const std::optional<shell::Write> write = selectedWrite();
+        write && (key == QLatin1String("column") || key == QLatin1String("row"))) {
+        if (!write->movable) return false;
+        const QPoint to = key == QLatin1String("column") ? QPoint(value.toInt(), write->cells.y())
+                                                         : QPoint(write->cells.x(), value.toInt());
+        const std::optional<QJsonObject> moved = shell::movedWrite(session_->text(), *write, to - write->cells.topLeft());
+        if (!moved) {
+            if (error) *error = tr("The write would leave the screen.");
+            return false;
+        }
+        return session_->editText(tr("Move a write in %1").arg(title()), *moved, error);
+    }
     if (cell_ < 0 || key != QLatin1String("tile")) return TileMapModel::setField(key, value, error);
     return setCell(cell_, std::clamp(value.toInt(), 0, 255), tr("Set a tile of the %1").arg(title().toLower()), error);
 }
 
 sdk::Library DoraemonScreenModel::sheet() const {
     sdk::Library result;
+    if (writesLayer()) return result;
     result.grid = true;
     result.columns = 16;
     result.hint = tr("click: brush · drag onto a cell");
@@ -386,6 +541,41 @@ sdk::Library DoraemonScreenModel::sheet() const {
 sdk::Inspection DoraemonScreenModel::inspect() const {
     sdk::Inspection inspection;
     inspection.engineTag = QStringLiteral("doraemon.text@1");
+    if (writesLayer()) {
+        const std::optional<shell::Write> write = selectedWrite();
+        if (!write) {
+            inspection.kicker = tr("Screen");
+            inspection.title = title();
+            inspection.note = tr("Each PPU record of the title writes its tiles from the address it carries: "
+                                 "select the logo or a line of text and drag it, and the build writes it "
+                                 "where it now stands.");
+            return inspection;
+        }
+        inspection.kicker = tr("Write");
+        inspection.title = write->label;
+        sdk::Field column;
+        column.key = QStringLiteral("column");
+        column.label = tr("Column");
+        column.value = write->cells.x();
+        sdk::Field row;
+        row.key = QStringLiteral("row");
+        row.label = tr("Row");
+        row.value = write->cells.y();
+        if (write->movable) {
+            column.type = row.type = sdk::Field::Type::Integer;
+            column.minimum = row.minimum = 0;
+            column.maximum = 31;
+            row.maximum = 29;
+        }
+        inspection.fields = {column, row};
+        inspection.note = !write->movable
+                              ? tr("The code writes the score's digits beside this line at a fixed address, "
+                                   "so the line stays where the digits are.")
+                          : write->id == QLatin1String("logo")
+                              ? tr("The logo's %n rows move together.", nullptr, write->records.size())
+                              : tr("The line's letters are edited in Text.");
+        return inspection;
+    }
     if (cell_ < 0) {
         inspection.kicker = tr("Screen");
         inspection.title = title();
@@ -422,7 +612,10 @@ sdk::Inspection DoraemonScreenModel::inspect() const {
 }
 
 QString DoraemonScreenModel::statusText() const {
-    if (cell_ < 0) return tr("Screens · %1").arg(title());
+    if (const std::optional<shell::Write> write = selectedWrite()) {
+        return tr("Screens · %1 · %2").arg(title(), write->label);
+    }
+    if (writesLayer() || cell_ < 0) return tr("Screens · %1").arg(title());
     return tr("Screens · %1 · %2, %3").arg(title()).arg(cell_ % 32).arg(cell_ / 32);
 }
 

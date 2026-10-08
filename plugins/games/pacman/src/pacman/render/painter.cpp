@@ -33,6 +33,13 @@ QString tileName(int tile) {
     }
 }
 
+bool isPowerCell(int row, int column) {
+    for (const auto& cell : kPowerPellets) {
+        if (cell[0] == row && cell[1] == column) return true;
+    }
+    return false;
+}
+
 Report inspect(const QVector<int>& grid) {
     // scripts/authoring/maze_studio_model.py and the kit's pacman_maze.
     Report report;
@@ -45,11 +52,17 @@ Report inspect(const QVector<int>& grid) {
         if (tile == 0x01 || tile == 0x03 || tile == 0x09) ++report.pellets;
         if (tile == 0x01) ++report.powerPellets;
     }
-    if (report.pellets != 192) {
-        report.errors << rlTr("pacman", "%1 pellets; the round ends after 192.").arg(report.pellets);
+    if (report.pellets < 1 || report.pellets > kMostPellets) {
+        report.errors << rlTr("pacman", "%1 pellets; the round counter holds 1 to 255.").arg(report.pellets);
     }
-    if (report.powerPellets != 4) {
-        report.errors << rlTr("pacman", "%1 power pellets; the blinking table expects 4.").arg(report.powerPellets);
+    for (int i = 0; i < grid.size(); ++i) {
+        const int row = i / kColumns;
+        const int column = i % kColumns;
+        if (isPowerCell(row, column) && grid.at(i) != 0x01) {
+            report.errors << rlTr("pacman", "The power pellet at %1,%2 must stay.").arg(row).arg(column);
+        } else if (!isPowerCell(row, column) && isPowerTile(grid.at(i))) {
+            report.errors << rlTr("pacman", "A power pellet at %1,%2 would never blink.").arg(row).arg(column);
+        }
     }
     if (at(kDoorRow, kDoorColumn) != 0x2c) report.errors << rlTr("pacman", "The ghost-house door at 11,11 must stay $2C.");
     const int spawns[5][2] = {{kPacmanRow, kPacmanColumn}, {10, 11}, {13, 10}, {13, 11}, {13, 12}};

@@ -26,6 +26,11 @@ public:
     // the studio has it, else English.
     static QString language();
 
+signals:
+    // Restart now: the dialog has closed; the studio should restart into the
+    // new language.
+    void restartRequested();
+
 private:
     void chooseMame();
     void chooseBios();

@@ -77,15 +77,30 @@ SettingsDialog::SettingsDialog(QWidget* parent) : StudioDialog(tr("Settings"), p
         if (language.code == current) language_->setCurrentIndex(language_->count() - 1);
     }
     language_->setFixedWidth(200);
-    content->addWidget(language_);
+    // The interface is built in its language once: a new one shows after a
+    // restart, which the button does at once, reopening the project.
+    auto* languageRow = new QHBoxLayout;
+    languageRow->setSpacing(12);
+    languageRow->addWidget(language_);
+    auto* restartNow = button(tr("Restart now"), body());
+    restartNow->setVisible(false);
+    connect(restartNow, &QPushButton::clicked, this, [this] {
+        emit restartRequested();
+        accept();
+    });
+    languageRow->addWidget(restartNow);
+    languageRow->addStretch(1);
+    content->addLayout(languageRow);
     auto* restart = hint(tr("The studio shows the new language the next time it starts."), body());
     restart->setVisible(false);
     content->addWidget(restart);
-    connect(language_, QOverload<int>::of(&QComboBox::activated), this, [this, restart, current](int index) {
-        const QString code = language_->itemData(index).toString();
-        QSettings().setValue(QString::fromLatin1(kLanguageKey), code);
-        restart->setVisible(code != current);
-    });
+    connect(language_, QOverload<int>::of(&QComboBox::activated), this,
+            [this, restart, restartNow, current](int index) {
+                const QString code = language_->itemData(index).toString();
+                QSettings().setValue(QString::fromLatin1(kLanguageKey), code);
+                restart->setVisible(code != current);
+                restartNow->setVisible(code != current);
+            });
 
     content->addSpacing(10);
     content->addWidget(new ui::Label(tr("Emulator"), ui::Label::Role::Caps, body()));

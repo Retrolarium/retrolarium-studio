@@ -110,6 +110,10 @@ private:
     void revertDocument();
     void chooseProject();
     void rememberRecent(const QString& path);
+    // Restarts into the language just chosen, reopening the project.
+    void restartStudio();
+    // An edit the editor or the inspector refused: why, where the user looks.
+    void refuseAction(const QString& message);
     void rebuildRecentMenu();
     // A game repository's .rlj (schema retrolarium.game): pick a revision,
     // let the kit ready it (its ROM, the asset split, hack/) and open the

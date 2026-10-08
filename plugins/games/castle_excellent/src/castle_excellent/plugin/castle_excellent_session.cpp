@@ -510,22 +510,47 @@ bool CastleSession::save(QString* error) {
     return true;
 }
 
+CastleStart CastleSession::start() const {
+    CastleStart start;
+    start.room = start_.room;
+    const auto placed = placedStarts_.constFind(start.room);
+    if (placed != placedStarts_.constEnd()) {
+        start.pixel = *placed;
+        start.placed = true;
+    }
+    return start;
+}
+
 void CastleSession::setStart(const CastleStart& start) {
-    CastleStart next = start;
-    next.room = std::clamp(next.room, 1, std::max(1, state_.levels.roomCount()));
-    // The player's top-left; the game keeps its feet, 16 pixels lower.
-    next.pixel = QPoint(std::clamp(next.pixel.x(), 0, 304), std::clamp(next.pixel.y(), 0, 143));
-    if (next.room == start_.room && next.pixel == start_.pixel) {
+    const int room = std::clamp(start.room, 1, std::max(1, state_.levels.roomCount()));
+    const CastleStart current = this->start();
+    if (start.placed) {
+        // The player's top-left; the game keeps its feet, 16 pixels lower.
+        const QPoint pixel(std::clamp(start.pixel.x(), 0, 304), std::clamp(start.pixel.y(), 0, 143));
+        if (room == current.room && current.placed && pixel == current.pixel) {
+            return;
+        }
+        placedStarts_.insert(room, pixel);
+    } else if (room == current.room) {
         return;
     }
-    start_ = next;
+    start_.room = room;
+    emit startChanged();
+    emit selectedStartChanged();
+}
+
+void CastleSession::clearStart(int room) {
+    if (placedStarts_.remove(room) == 0) {
+        return;
+    }
     emit startChanged();
     emit selectedStartChanged();
 }
 
 QString CastleSession::selectedStart() const {
     if (demoStart()) return tr("Title demo");
-    return QStringLiteral("%1 · %2, %3").arg(roomLabel(start_.room)).arg(start_.pixel.x()).arg(start_.pixel.y());
+    const CastleStart start = this->start();
+    return QStringLiteral("%1 · %2, %3").arg(roomLabel(start.room)).arg(start.pixel.x()).arg(start.pixel.y());
 }
 
 // ---------------------------------------------------------------- palettes
@@ -741,7 +766,7 @@ void CastleSession::applyRecording(const QString& path) {
 }
 
 void CastleSession::launch(bool fromStart) {
-    const CastleStart start = start_;
+    const CastleStart start = this->start();
     const QString name = profile().name;
     EmulatorPlan plan;
     if (fromStart) {

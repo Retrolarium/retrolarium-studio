@@ -18,6 +18,7 @@
 #include <QToolButton>
 #include <QVBoxLayout>
 
+#include <algorithm>
 #include <functional>
 
 namespace rl::shell {
@@ -75,14 +76,21 @@ public:
         layout->setContentsMargins(12, 0, 12, 0);
         layout->setSpacing(0);
         auto* severity = new QWidget(this);
-        severity->setFixedWidth(84);
         auto* sevLayout = new QHBoxLayout(severity);
         sevLayout->setContentsMargins(0, 0, 0, 0);
         sevLayout->setSpacing(7);
-        sevLayout->addWidget(new SeverityMark(d.severity, severity));
+        auto* mark = new SeverityMark(d.severity, severity);
+        sevLayout->addWidget(mark);
         auto* name = new ui::Label(severityName(d.severity), ui::Label::Role::Row, severity);
         name->setTone(QStringLiteral("muted"));
         sevLayout->addWidget(name);
+        // As wide as the longest of the three names in this language
+        // ("Предупреждение" outgrows "Warning"), so every row lines up.
+        int widest = 0;
+        for (sdk::Severity s : {sdk::Severity::Info, sdk::Severity::Warning, sdk::Severity::Error}) {
+            widest = std::max(widest, name->fontMetrics().horizontalAdvance(severityName(s)));
+        }
+        severity->setFixedWidth(std::max(84, mark->width() + 7 + widest + 12));
         sevLayout->addStretch(1);
         layout->addWidget(severity);
         auto* source = new ui::Label(d.source, ui::Label::Role::Mono, this);

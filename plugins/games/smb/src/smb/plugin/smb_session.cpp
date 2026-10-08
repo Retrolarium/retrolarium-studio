@@ -985,14 +985,17 @@ void SmbSession::launch(bool fromStart) {
         useColours(game);
         // The kit's point script reports nothing; the game is up once it
         // plays the area with Hero placed on the start page (operating
-        // mode 1, task 3, player engine running), so the boot and the
-        // steering can run hidden and fast.
+        // mode 1, the running game's task, player engine running), so the
+        // boot and the steering can run hidden and fast. The running task is
+        // 3, or what the kit names for the later Disk System engine.
         const QString page = game.environment.value(QStringLiteral("SMB1_PLAYTEST_PAGE"));
         if (!fromStart && !page.isEmpty()) {
-            game.readyWhen = QStringLiteral("memory:read_u8(0x0770) == 1 and memory:read_u8(0x0772) == 3 and "
+            const int task = game.environment.value(QStringLiteral("SMB1_PLAYTEST_RUNNING_TASK"), QStringLiteral("3")).toInt();
+            game.readyWhen = QStringLiteral("memory:read_u8(0x0770) == 1 and memory:read_u8(0x0772) == %2 and "
                                             "memory:read_u8(0x000e) >= 7 and memory:read_u8(0x006d) == %1 and "
                                             "memory:read_u8(0x071a) == %1")
-                                 .arg(page.toInt());
+                                 .arg(page.toInt())
+                                 .arg(task);
         }
     };
     launchPlanned(plan);

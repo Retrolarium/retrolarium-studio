@@ -430,6 +430,12 @@ std::unique_ptr<sdk::EditorModel> DoraemonSession::openEditor(const QString& kin
         if (kind == QLatin1String("palettes") && state_.bundle.resourceIds(kPaletteCodec).contains(document) &&
             !kShellPalettes.contains(document)) {
             const auto [world, preset] = presetOf(document);
+            // World 2's preview is a route screen, laid out by the kit.
+            if (world == int(World::Two) && state_.bundle.contains(QStringLiteral("world3-schedule")) &&
+                !world2ViewFailed_ && world2View_.isEmpty() && !loadWorld2View()) {
+                computeWorld2View(kind, document);
+                return nullptr;
+            }
             return std::make_unique<nes::PaletteTableModel>(this, document, tr("World %1 · preset %2").arg(world).arg(preset));
         }
         if (kind == QLatin1String("sound") && document.startsWith(QLatin1String("sfx:"))) {
@@ -677,7 +683,46 @@ QVector<sdk::PaletteSample> DoraemonSession::paletteSamples(const QString& table
     const World world = World(worldNumber);
     const DoraemonPainter& art = painter();
     if (world == World::Two) {
-        // The metatiles in this preset, sixteen to a row.
+        // A route screen drawn in this preset, as Levels shows it: the first
+        // panel of a route that uses it, 16x15 metatiles. Spawn cells show
+        // the empty metatile under the enemy.
+        // The view is a cache file the kit wrote when World 2 was first opened.
+        if (world2View_.isEmpty()) const_cast<DoraemonSession*>(this)->loadWorld2View();
+        const QJsonArray screens = state_.bundle.contains(QStringLiteral("world2-screens"))
+                                       ? state_.bundle.resource(QStringLiteral("world2-screens")).value(QStringLiteral("screens")).toArray()
+                                       : QJsonArray();
+        for (const QJsonValue& routeValue : world2View_.value(QStringLiteral("routes")).toArray()) {
+            const QJsonObject route = routeValue.toObject();
+            for (const QJsonValue& panelValue : route.value(QStringLiteral("panels")).toArray()) {
+                const QJsonObject panel = panelValue.toObject();
+                if (panel.value(QStringLiteral("palette")).toInt() != preset) continue;
+                const QJsonArray screen = screens.at(panel.value(QStringLiteral("selector")).toInt()).toArray();
+                const QJsonArray rows = panel.value(QStringLiteral("cells")).toArray();
+                const QJsonArray fixed = panel.value(QStringLiteral("fixed")).toArray();
+                QImage image(16 * 16, 15 * 16, QImage::Format_ARGB32);
+                image.fill(Qt::black);
+                QPainter p(&image);
+                for (int y = 0; y < 15; ++y) {
+                    for (int x = 0; x < 16; ++x) {
+                        const QJsonArray cell = rows.at(y).toArray().at(x).toArray();
+                        const int value = cell.size() == 2
+                                              ? screen.at(cell.at(1).toInt()).toArray().at(cell.at(0).toInt()).toInt(0xEF)
+                                              : fixed.at(y).toArray().at(x).toInt(0xEF);
+                        if (value < 0xD0) p.drawImage(x * 16, y * 16, art.metatile(value, preset));
+                        else if (value < 0xEF) p.drawImage(x * 16, y * 16, art.metatile(0, preset));
+                    }
+                }
+                p.end();
+                sdk::PaletteSample sample;
+                sample.label = route.value(QStringLiteral("name")).toString();
+                sample.caption = tr("A screen of %1 in preset %2").arg(sample.label).arg(preset);
+                sample.image = image;
+                result << sample;
+                return result;
+            }
+        }
+        // Before the World 2 view is read: the metatiles in this preset,
+        // sixteen to a row.
         const int count = state_.bundle.contains(ids::kWorld2Metatiles)
                               ? state_.bundle.resource(ids::kWorld2Metatiles).value(QStringLiteral("tiles")).toArray().size()
                               : 0;
@@ -808,6 +853,10 @@ void DoraemonSession::computeWorld2View(const QString& kind, const QString& docu
         if (!result.succeeded() || !loadWorld2View()) {
             if (!result.cancelled) {
                 report(sdk::Severity::Error, kind, tr("Laying out the World 2 routes failed: %1").arg(failureText(result)));
+            }
+            if (kind == QLatin1String("palettes")) {
+                world2ViewFailed_ = true;
+                emit documentRequested(kind, document);
             }
             return;
         }

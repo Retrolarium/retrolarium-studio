@@ -28,6 +28,14 @@ constexpr int kRleBytes = 416;
 constexpr int kTunnelRow = 13;
 constexpr int kDoorRow = 11, kDoorColumn = 11;
 constexpr int kPacmanRow = 20, kPacmanColumn = 11;
+// The power pellets: the blinking table draws these four cells and the
+// eaten-slot logic finds them by row and column, so they stay put.
+constexpr int kPowerPellets[4][2] = {{3, 2}, {3, 20}, {20, 2}, {20, 20}};
+bool isPowerCell(int row, int column);
+// The visible power pellet and its blink frame, eaten alike.
+inline bool isPowerTile(int tile) { return tile == 0x01 || tile == 0x02; }
+// The round counter is a byte: the build writes the maze's count into it.
+constexpr int kMostPellets = 255;
 // Where the game draws the maze on the screen, in tiles.
 constexpr int kScreenRow = 2, kScreenColumn = 1;
 QString tileName(int tile);

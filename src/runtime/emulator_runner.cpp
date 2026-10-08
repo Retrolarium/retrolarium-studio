@@ -83,6 +83,12 @@ end
 -- The game's script hooks frames through these; route them to on_frame.
 emu.register_frame_done = function(callback) return on_frame(callback) end
 emu.register_frame = emu.register_frame_done
+-- A hard reset (the Disk System BIOS start does one) brings up the next
+-- machine, which runs frames before this script runs on it: the generation
+-- ends when its machine stops.
+table.insert(_G.retrolarium_subscriptions, emu.add_machine_stop_notifier(function()
+    if _G.retrolarium_generation == generation then _G.retrolarium_generation = generation + 1 end
+end))
 
 _G.retrolarium_getenv = _G.retrolarium_getenv or os.getenv
 os.getenv = function(name)

@@ -68,12 +68,12 @@ target_link_libraries(flicky_plugin PUBLIC flicky_data studio_sdk)
 studio_enable_warnings(flicky_plugin)
 
 # The build step of a Flicky project runs this writer through the kit
-# (RETROLARIUM_FLICKY_LEVEL_WRITER); it must sit next to the studio.
+# (RETROLARIUM_FLICKY_LEVEL_WRITER); the studio finds it in its tools folder.
 add_executable(retrolarium-flicky-level-writer
     flicky/tools/level_writer_main.cpp
 )
 target_link_libraries(retrolarium-flicky-level-writer PRIVATE flicky_data)
-install(TARGETS retrolarium-flicky-level-writer RUNTIME DESTINATION .)
+install(TARGETS retrolarium-flicky-level-writer RUNTIME DESTINATION tools)
 
 # NES platform: the PPU master palette and palette packet layout. Header-only, Qt-free.
 add_library(platform_nes INTERFACE)

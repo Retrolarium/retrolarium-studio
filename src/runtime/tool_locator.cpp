@@ -114,7 +114,8 @@ QString ToolLocator::toolPath(const QString& name) {
         file += QStringLiteral(".exe");
     }
 #endif
-    const QString path = QDir(QCoreApplication::applicationDirPath()).filePath(file);
+    // Helper programs live in tools/ beside the studio, out of the user's way.
+    const QString path = QDir(QCoreApplication::applicationDirPath()).filePath(QStringLiteral("tools/") + file);
     return QFileInfo(path).isFile() ? path : QString();
 }
 

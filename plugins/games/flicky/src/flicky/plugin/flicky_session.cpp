@@ -1255,7 +1255,7 @@ void FlickySession::saveBuildRecord() const {
 bool FlickySession::prepareBuild(BuildStep& step, QString* error) {
     const QString writer = host()->toolPath(QStringLiteral("retrolarium-flicky-level-writer"));
     if (writer.isEmpty()) {
-        if (error) *error = tr("retrolarium-flicky-level-writer is missing next to the studio.");
+        if (error) *error = tr("retrolarium-flicky-level-writer is missing from the studio's tools folder. Reinstall Retrolarium Studio.");
         return false;
     }
     step.inputs = buildInputs(writer);

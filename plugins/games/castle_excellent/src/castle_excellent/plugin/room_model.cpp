@@ -74,11 +74,9 @@ CastleRoomModel::CastleRoomModel(CastleSession* session, int room)
         emit toolsChanged();
     });
     // The room being edited is where Play from selected starts.
-    if (session_->start().room != room_ + 1) {
-        CastleStart start = session_->start();
-        start.room = room_ + 1;
-        session_->setStart(start);
-    }
+    CastleStart start;
+    start.room = room_ + 1;
+    session_->setStart(start);
 }
 
 QString CastleRoomModel::title() const {
@@ -132,9 +130,14 @@ QRect CastleRoomModel::startCells() const {
     return QRect(pixel.x() / 16, pixel.y() / 8, 1, 2);
 }
 
+bool CastleRoomModel::hasStart() const {
+    const CastleStart start = session_->start();
+    return start.placed && start.room == room_ + 1;
+}
+
 QImage CastleRoomModel::render() const {
     QImage image = session_->painter().room(roomCells(), roomObjects());
-    if (session_->start().room == room_ + 1) {
+    if (hasStart()) {
         QPainter painter(&image);
         painter.drawImage(session_->start().pixel, session_->painter().player());
     }
@@ -157,8 +160,11 @@ void CastleRoomModel::setCurrentBrush(int value) {
 }
 
 QString CastleRoomModel::currentLibraryItem() const {
-    return layer_ == QLatin1String("cells") ? QStringLiteral("cell:%1").arg(brush_)
-                                            : QStringLiteral("object:%1").arg(objectType_);
+    if (layer_ == QLatin1String("cells")) {
+        return QStringLiteral("cell:%1").arg(brush_);
+    }
+    // A negative type is the player marker, picked for the Add tool.
+    return objectType_ < 0 ? QStringLiteral("start") : QStringLiteral("object:%1").arg(objectType_);
 }
 
 void CastleRoomModel::setCurrentLibraryItem(const QString& id) {
@@ -166,6 +172,9 @@ void CastleRoomModel::setCurrentLibraryItem(const QString& id) {
         setCurrentBrush(id.mid(5).toInt());
     } else if (id.startsWith(QLatin1String("object:"))) {
         objectType_ = std::clamp(id.mid(7).toInt(), 0, std::max(0, session_->levels().encodedTypeCount() - 1));
+        emit selectionChanged();
+    } else if (id == QLatin1String("start")) {
+        objectType_ = -1;
         emit selectionChanged();
     }
 }
@@ -287,7 +296,7 @@ QVector<sdk::MapObject> CastleRoomModel::objects() const {
                         QPoint(std::max(pixels.left() / 16, (pixels.right()) / 16), pixels.bottom() / 8));
         result << o;
     }
-    if (session_->start().room == room_ + 1) {
+    if (hasStart()) {
         sdk::MapObject start;
         start.id = QStringLiteral("start");
         start.label = tr("Start point");
@@ -320,6 +329,7 @@ bool CastleRoomModel::dragObject(const QString& id, QPoint topLeftCell) {
     const QSize grid = gridSize();
     if (id == QLatin1String("start")) {
         CastleStart start = session_->start();
+        start.placed = true;
         start.pixel = QPoint(std::clamp(topLeftCell.x(), 0, grid.width() - 1) * 16 + dragStartOffset_.x(),
                              std::clamp(topLeftCell.y(), 0, grid.height() - 2) * 8 + dragStartOffset_.y());
         if (start.pixel == session_->start().pixel) {
@@ -391,6 +401,18 @@ bool CastleRoomModel::commitObjects(const QVector<CastleObject>& objects, const 
 }
 
 bool CastleRoomModel::placeObject(const QString& libraryItem, QPoint cell, QString* error) {
+    if (libraryItem == QLatin1String("start")) {
+        // The player marker: Play from selected starts him here.
+        const QSize grid = gridSize();
+        CastleStart start;
+        start.room = room_ + 1;
+        start.placed = true;
+        start.pixel = QPoint(std::clamp(cell.x(), 0, grid.width() - 1) * 16,
+                             std::clamp(cell.y(), 0, grid.height() - 2) * 8);
+        session_->setStart(start);
+        selectObject(QStringLiteral("start"));
+        return true;
+    }
     if (libraryItem.startsWith(QLatin1String("cell:"))) {
         // A cell dropped from the sheet paints the cell under it.
         setCurrentLibraryItem(libraryItem);
@@ -421,8 +443,11 @@ bool CastleRoomModel::placeObject(const QString& libraryItem, QPoint cell, QStri
 bool CastleRoomModel::removeObject(const QString& id, QString* error) {
     const int index = objectIndex(id);
     if (index < 0) {
-        if (id == QLatin1String("start") && error) {
-            *error = tr("The start point stays; drag it where the player should begin.");
+        if (id == QLatin1String("start") && hasStart()) {
+            // Without its marker the room starts the player at the default spot.
+            session_->clearStart(room_ + 1);
+            selectObject(QString());
+            return true;
         }
         return false;
     }
@@ -441,6 +466,12 @@ sdk::Library CastleRoomModel::objectLibrary() const {
         sheetRevision_ = session_->revision();
     }
     if (objectSheet_.isEmpty()) {
+        sdk::LibraryItem player;
+        player.id = QStringLiteral("start");
+        player.label = tr("Player start");
+        player.hint = tr("where Play from selected starts");
+        player.icon = session_->painter().player();
+        objectSheet_ << player;
         for (int type = 0; type < session_->levels().encodedTypeCount(); ++type) {
             sdk::LibraryItem item;
             item.id = QStringLiteral("object:%1").arg(type);
@@ -523,7 +554,8 @@ sdk::Inspection CastleRoomModel::inspect() const {
                              integer(QStringLiteral("start_y"), QStringLiteral("Y"), start.pixel.y(), 0, 159,
                                      QStringLiteral("px"))};
         inspection.note = tr("Play from selected (F5) builds the ROM, enters this room through the "
-                             "game's own room loader and puts the player here.");
+                             "game's own room loader and puts the player here. Delete takes the marker "
+                             "away: the player then starts at the bottom of the room.");
         inspection.engineTag = QStringLiteral("castle-point-playtest");
         inspection.library = objectLibrary();
         return inspection;
@@ -538,8 +570,9 @@ sdk::Inspection CastleRoomModel::inspect() const {
                           ? tr("Paint cells with the sheet's pattern; the right button takes a cell. "
                                "Each cell is two background tiles; its colours come from the attribute "
                                "bytes the room loader writes, so a cell may recolour its neighbours.")
-                          : tr("Drag objects from the library onto the room. Drag the start marker "
-                               "where Play from selected should put the player.");
+                          : tr("Drag objects from the library onto the room. Drag Player start onto "
+                               "the room to choose where Play from selected puts the player; without "
+                               "it he starts at the bottom of the room.");
     inspection.engineTag = QStringLiteral("castle.prefix-rooms@1");
     inspection.engine = {{tr("Room number"), QString::number(session_->levels().roomNumber(room_))},
                          {tr("Cells"), tr("20x20, 16x8 px each")}};
@@ -552,6 +585,7 @@ sdk::Inspection CastleRoomModel::inspect() const {
 bool CastleRoomModel::setField(const QString& key, const QVariant& value, QString* error) {
     if (key == QLatin1String("start_x") || key == QLatin1String("start_y")) {
         CastleStart start = session_->start();
+        start.placed = true;
         if (key == QLatin1String("start_x")) start.pixel.setX(value.toInt());
         else start.pixel.setY(value.toInt());
         session_->setStart(start);

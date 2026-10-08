@@ -2,6 +2,7 @@
 
 #include "editors/library_sheet.hpp"
 #include "editors/mime.hpp"
+#include "editors/zoom_anchor.hpp"
 
 #include "sdk/editor_model.hpp"
 #include "theme/icons.hpp"
@@ -303,7 +304,7 @@ void CompositionCanvas::mouseReleaseEvent(QMouseEvent*) {
 
 void CompositionCanvas::wheelEvent(QWheelEvent* event) {
     if (event->modifiers() & Qt::ControlModifier) {
-        emit zoomRequested(event->angleDelta().y() > 0 ? 1 : -1);
+        emit zoomRequested(event->angleDelta().y() > 0 ? 1 : -1, event->position().toPoint());
         event->accept();
         return;
     }
@@ -342,6 +343,7 @@ CompositionEditor::CompositionEditor(sdk::CompositionModel* model, QWidget* pare
     layout->setContentsMargins(0, 0, 0, 0);
     layout->setSpacing(0);
     auto* scroll = new QScrollArea(this);
+    scroll_ = scroll;
     scroll->setFrameShape(QFrame::NoFrame);
     scroll->setWidgetResizable(true);
     scroll->setProperty("surface", QStringLiteral("canvas"));
@@ -376,8 +378,11 @@ CompositionEditor::CompositionEditor(sdk::CompositionModel* model, QWidget* pare
 
     timer_->setSingleShot(true);
     connect(timer_, &QTimer::timeout, this, &CompositionEditor::step);
-    connect(canvas_, &CompositionCanvas::zoomRequested, this, [this](int delta) {
-        canvas_->setZoom(canvas_->zoom() + delta);
+    // Ctrl+wheel zooms about the mouse: the picture under it stays put.
+    connect(canvas_, &CompositionCanvas::zoomRequested, this, [this](int delta, QPoint anchor) {
+        const int next = canvas_->zoom() + delta;
+        zoomKeepingPoint(scroll_, canvas_, anchor, [this] { return canvas_->imageRect(); },
+                         [this, next] { canvas_->setZoom(next); });
     });
     connect(canvas_, &CompositionCanvas::zoomChanged, this, &EditorView::toolbarChanged);
     connect(canvas_, &CompositionCanvas::actionFailed, this, &EditorView::actionFailed);
@@ -509,7 +514,9 @@ QWidget* CompositionEditor::createToolbar(QWidget* parent) {
         if (value == fit) {
             canvas_->setFitting(true);
         } else {
-            canvas_->setZoom(QString(value).remove(QStringLiteral("×")).toInt());
+            const int next = QString(value).remove(QStringLiteral("×")).toInt();
+            zoomKeepingPoint(scroll_, canvas_, viewportCentre(scroll_, canvas_),
+                             [this] { return canvas_->imageRect(); }, [this, next] { canvas_->setZoom(next); });
         }
     });
     layout->addWidget(zoom);

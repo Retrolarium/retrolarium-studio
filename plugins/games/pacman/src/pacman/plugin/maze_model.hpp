@@ -42,6 +42,7 @@ public:
     void setCurrentBrush(int value) override;
     int cellValue(QPoint cell) const override;
     bool isCellEditable(QPoint cell) const override;
+    QString lockReason(QPoint cell) const override;
     bool rightClickPicks() const override { return true; }
     bool placeObject(const QString& libraryItem, QPoint cell, QString* error) override;
     void beginStroke() override;
@@ -53,6 +54,8 @@ public:
     void selectObject(const QString& id) override;
 
 private:
+    static QString fixedPowerPellets();
+    bool refusedTile(QPoint cell, int tile) const;
     QVector<int> grid() const;
     bool commit(const QVector<int>& grid, const QString& text, QString* error);
 
@@ -61,6 +64,7 @@ private:
     int cell_ = -1;
     std::optional<QVector<int>> stroke_;
     bool strokeChanged_ = false;
+    bool strokeRefused_ = false;
 };
 
 }  // namespace rl::pacman

@@ -71,9 +71,11 @@ private:
 };
 
 // The chosen sample, drawn as large as the column allows: at an integer scale
-// when one fits, so pixels stay square. A scene with a minimum width is cut
-// from the right to the room at the largest scale its height allows; other
-// samples are never cropped.
+// when one fits, so pixels stay square. Screens and level scenes (anything
+// 128 pixels or more across) all show at the same scale, kSceneScale, so
+// every game's previews look alike; sprites grow larger. A scene with a
+// minimum width is cut from the right to the room; other samples are never
+// cropped.
 class PreviewPane final : public QWidget {
 public:
     PreviewPane(const QImage& image, int minimumWidth, QWidget* parent)
@@ -111,7 +113,7 @@ protected:
         const QRect room = rect().adjusted(16, 16, -16, -16);
         QImage image = image_;
         if (minimumWidth_ > 0 && minimumWidth_ < image.width()) {
-            const int scale = std::min({room.height() / image.height(), room.width() / minimumWidth_, 4});
+            const int scale = std::min({room.height() / image.height(), room.width() / minimumWidth_, kSceneScale});
             if (scale >= 1) {
                 image = image.copy(0, 0, std::min(image.width(), room.width() / scale), image.height());
             }
@@ -120,6 +122,9 @@ protected:
         int scale = std::min(room.width() / image.width(), room.height() / image.height());
         if (hasHeightForWidth()) {
             scale = std::min(scale, fittedScale(room.width()));
+        }
+        if (isScene()) {
+            scale = std::min(scale, kSceneScale);
         }
         const QSize size = scale >= 2 ? image.size() * scale : image.size().scaled(room.size(), Qt::KeepAspectRatio);
         const int top = hasHeightForWidth() ? room.top() : room.top() + (room.height() - size.height()) / 2;
@@ -135,9 +140,15 @@ private:
     // stays at 2x instead of overflowing the column.
     static constexpr int kMaxSpriteScale = 8;
     static constexpr int kMaxSampleHeight = 480;
+    static constexpr int kSceneScale = 2;
+    static constexpr int kSceneSize = 128;
 
+    bool isScene() const {
+        return minimumWidth_ > 0 || image_.width() >= kSceneSize || image_.height() >= kSceneSize;
+    }
     int fittedScale(int roomWidth) const {
-        return std::clamp(std::min(roomWidth / image_.width(), kMaxSampleHeight / image_.height()), 1, kMaxSpriteScale);
+        const int largest = isScene() ? kSceneScale : kMaxSpriteScale;
+        return std::clamp(std::min(roomWidth / image_.width(), kMaxSampleHeight / image_.height()), 1, largest);
     }
 
     QImage image_;

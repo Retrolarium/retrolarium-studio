@@ -5,6 +5,7 @@
 #include "nes/editors.hpp"
 #include "sdk/kit_session.hpp"
 
+#include <QHash>
 #include <QJsonObject>
 #include <QPoint>
 
@@ -29,9 +30,13 @@ struct CastleState {
 
 // Where "Play from selected" starts: a room (1-100) and the player's pixel
 // position in it.
+// Where Play from selected starts: a room, and in it the player's top-left.
+// The player stands where the user dropped the start marker in that room;
+// without one (placed false) he starts at the default spot.
 struct CastleStart {
     int room = 1;
     QPoint pixel{152, 136};
+    bool placed = false;
 };
 
 // An open Castle Excellent / Castlequest project (`rltool studio preset`):
@@ -75,8 +80,12 @@ public:
     // One undo step: the edit runs on a copy of both documents.
     bool edit(const QString& text, const std::function<void(CastleState&)>& change, QString* error);
 
-    CastleStart start() const { return start_; }
+    CastleStart start() const;
+    // A placed start puts the room's marker at its pixel; an unplaced one only
+    // picks the room.
     void setStart(const CastleStart& start);
+    // Takes the marker out of `room`: the player starts at the default spot.
+    void clearStart(int room);
 
     // The music resource of the graphics bundle (castle.mml-music.v1).
     QJsonObject music() const;
@@ -124,7 +133,8 @@ private:
     CastleArt art_;
     quint64 revision_ = 0;
     quint64 nextRevision_ = 1;
-    CastleStart start_;
+    CastleStart start_;                 // its room; pixels come from placedStarts_
+    QHash<int, QPoint> placedStarts_;   // room -> where the user put the player
 
     mutable std::unique_ptr<CastlePainter> painter_;
     mutable quint64 painterRevision_ = ~quint64(0);
