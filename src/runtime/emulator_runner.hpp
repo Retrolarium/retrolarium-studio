@@ -108,9 +108,9 @@ private:
     void writeKeys();
     void writePicture();
     void acknowledgeWarnings(const sdk::ProcessSpec& spec);
-    bool writeControl(const sdk::ProcessSpec& spec, const QString& gameScript, QString* error);
+    bool writeControl(const sdk::ProcessSpec& spec, const QStringList& gameScripts, QString* error);
     QString stageCart(const QString& source, QString* error);
-    bool reload(const sdk::ProcessSpec& spec, const QString& cartSource, const QString& gameScript,
+    bool reload(const sdk::ProcessSpec& spec, const QString& cartSource, const QStringList& gameScripts,
                 const QString& title, std::function<void(const sdk::ProcessResult&)>& finished);
 
     QProcess* process_ = nullptr;

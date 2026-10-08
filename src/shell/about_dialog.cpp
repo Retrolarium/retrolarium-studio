@@ -1,15 +1,20 @@
 #include "shell/about_dialog.hpp"
 
 #include "sdk/plugin.hpp"
+#include "shell/project_links.hpp"
+#include "theme/theme.hpp"
 #include "theme/typography.hpp"
 #include "widgets/brand_mark.hpp"
 #include "widgets/label.hpp"
 #include "widgets/primary_button.hpp"
 
 #include <QCoreApplication>
+#include <QDir>
+#include <QFileInfo>
 #include <QGridLayout>
 #include <QHBoxLayout>
 #include <QVBoxLayout>
+#include <QUrl>
 #include <QtGlobal>
 
 namespace rl::shell {
@@ -121,6 +126,31 @@ AboutDialog::AboutDialog(QWidget* parent) : StudioDialog(tr("About"), parent) {
     auto* pad = new ui::Label(tr("A game pad works too. Click the picture to give it the keyboard."),
                               ui::Label::Role::Small, body());
     content->addWidget(pad);
+
+    // The notices GPL-3.0 section 5(d) asks an interactive program to show.
+    content->addSpacing(10);
+    content->addWidget(new ui::Label(tr("License"), ui::Label::Role::Caps, body()));
+    const QString link = QStringLiteral("<a href=\"%1\" style=\"color:%2;\">%3</a>");
+    const QString ink = theme::current().accentInk.name();
+    QString thirdParty = QStringLiteral("THIRD-PARTY.md");
+    const QString notices = QDir(QCoreApplication::applicationDirPath()).filePath(thirdParty);
+    if (QFileInfo::exists(notices)) {
+        thirdParty = link.arg(QUrl::fromLocalFile(notices).toString(), ink, thirdParty);
+    }
+    auto* license = paragraph(
+        tr("Copyright © 2026 Daniel Oranguthang. Retrolarium Studio is free software under the GNU "
+           "General Public License, version 3 or any later version, and comes with absolutely no "
+           "warranty. Its source code is at %1. The components it carries (Qt, MAME, Python, the "
+           "kit's assemblers, OpenDiskSysROM and others) keep their own licenses: %2 lists them, and "
+           "their texts are in the licenses folder next to the program.")
+            .arg(link.arg(QString::fromLatin1(links::kSource), ink,
+                          QString::fromLatin1(links::kSource).section(QLatin1Char('/'), 2)),
+                 thirdParty),
+        body());
+    license->setTextFormat(Qt::RichText);
+    license->setOpenExternalLinks(true);
+    license->setFixedWidth(500);
+    content->addWidget(license);
 
     content->addSpacing(16);
     auto* buttons = new QHBoxLayout;

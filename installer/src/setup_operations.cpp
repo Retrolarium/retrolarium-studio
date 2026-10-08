@@ -290,6 +290,13 @@ QString desktopShortcutPath() {
     return desktop.isEmpty() ? QString() : QDir(desktop).filePath(kProduct + QStringLiteral(".lnk"));
 }
 
+// Where the kit unpacks its assemblers (build_toolchains.default_cache_root):
+// a cache that belongs to the installation.
+QString toolchainDirectory() {
+    const QString base = shellFolder(CSIDL_LOCAL_APPDATA);
+    return base.isEmpty() ? QString() : QDir(base).filePath(QStringLiteral("Retrolarium/toolchains"));
+}
+
 QString gamesDirectory() {
     // Never a relative path: removing the games would start from the current directory.
     const QString documents = shellFolder(CSIDL_PERSONAL);
@@ -476,6 +483,12 @@ bool uninstall(const Request& request, const Progress& progress, QString* error,
     if (!left.isEmpty() && warning) {
         *warning = rlTr("setup", "Some files stayed in %1: %2. Delete them by hand.")
                        .arg(nativePath(directory), left.join(QStringLiteral(", ")));
+    }
+    const QString toolchains = toolchainDirectory();
+    if (!toolchains.isEmpty() && QFileInfo(toolchains).isDir()) {
+        if (progress) progress(85, rlTr("setup", "Removing the unpacked assemblers"));
+        removeTree(toolchains);
+        QDir().rmdir(QFileInfo(toolchains).absolutePath());  // Retrolarium, if nothing else is in it
     }
     if (request.removeUserData) {
         if (progress) progress(90, rlTr("setup", "Removing your games and settings"));

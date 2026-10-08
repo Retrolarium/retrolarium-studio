@@ -6,29 +6,52 @@ your ROM and the studio finds its game; every game's disassembly also has
 a `.rlj` file at the top of its folder that opens it, asking which version
 of the game to edit.
 
-## What you need
+## Installing
 
-The installed studio (or its zip, unpacked anywhere) carries everything:
-the Retrolarium Kit, a private Python to run it and MAME. You add only your
-ROMs, and for Famicom Disk System games the console's BIOS. Developers
-running the studio from a checkout need:
+You need Windows 10 or 11 (64-bit), about 250 MB for the studio, and an
+internet connection the first time you open each game (the studio
+downloads its disassembly then, a few megabytes). Everything else comes
+with the studio: the Retrolarium Kit, a private Python that runs it, MAME,
+and OpenDiskSysROM, a free BIOS for Famicom Disk System games. You add only
+your ROMs.
 
-- **Retrolarium Studio** (`retrolarium-studio.exe`, Windows).
-- **Retrolarium Kit**, which reads and writes the project and builds the ROM.
-  The studio looks for it in this order: the `RETROLARIUM_KIT` environment
-  variable (`rltool` or `rltool.py`), `kit/rltool.py` next to the studio, a
-  `retrolarium_kit/rltool.py` up to six folders above the studio or the
-  current folder, then `rltool` on `PATH`. `rltool.py` runs with
-  `python/python.exe` next to the studio, else Python on `PATH`.
-- **MAME** (`consoles.exe`) for Play, Playtest, demos and some previews:
-  `RETROLARIUM_MAME`, the one chosen in File → Settings, or
-  `mame/consoles.exe` next to the studio. Famicom Disk System games play
-  on OpenDiskSysROM, a free BIOS the studio carries; if one misbehaves on
-  it, choose your dump of the console's BIOS (`disksys.rom`) in Settings and
-  disk games play on that instead.
-- **The game's ROM** (yours) and its disassembly for the games below.
+Run `RetrolariumStudio-<version>-setup.exe`. It installs for your Windows
+user, without administrator rights, into
+`%LOCALAPPDATA%\Programs\Retrolarium Studio`. Running it again updates the
+studio or repairs it, and Uninstall in Installed Apps removes it. The zip
+holds the same folder and runs from wherever you unpack it, as long as you
+can write there: MAME keeps its settings in the folder's `mame`
+subfolder, so `Program Files` will not do.
 
-When something is missing, the Messages panel says what and where it looked.
+The studio is not signed yet, so Windows may stop the setup with
+"Windows protected your PC". Choose *More info*, then *Run anyway*. The
+release page lists the SHA-256 of each download, so you can check the file
+first. On a Windows 11 PC where Smart App Control is on, Windows blocks
+unsigned programs outright, and the studio cannot run there until it is
+signed.
+
+## Where your files are
+
+| What | Where |
+|---|---|
+| The studio, the kit, Python and MAME | `%LOCALAPPDATA%\Programs\Retrolarium Studio` (or where you unpacked the zip) |
+| Downloaded games, your ROM copies and your edits | `Documents\Retrolarium\<game>`; each version's edits are in its `hack\<version>` folder |
+| The kit's assemblers, unpacked on first use | `%LOCALAPPDATA%\Retrolarium\toolchains` |
+| MAME's settings and saves | `mame\cfg` and `mame\nvram` in the studio's folder |
+| Your Disk System BIOS, if you chose one | `mame\roms\fds` in the studio's folder |
+| The studio's own settings (language, MAME, recent projects) | the registry, `HKEY_CURRENT_USER\Software\Retrolarium` |
+
+Updates keep all of these. Uninstalling removes the studio and the
+unpacked assemblers. It also removes your games and settings, but only if
+you tick that option.
+
+Famicom Disk System games (Super Mario Bros. 2, the Disk System Super Mario
+Bros.) play on OpenDiskSysROM. If one misbehaves on it, choose your dump of
+the console's BIOS (`disksys.rom`) in File → Settings, and disk games play
+on that instead.
+
+Building the studio yourself, or running it from a source checkout, is
+described in `developing.md`.
 
 The interface speaks English, Brazilian Portuguese, Spanish, simplified
 Chinese, Japanese, French, German, Italian, Polish and Russian. It follows
@@ -45,8 +68,7 @@ from the RetrolariumLab organisation on GitHub (no Git needed) into
 `Documents\Retrolarium\<repository>`; later it reuses that folder, or any
 disassembly whose `.rlj` you opened before. A ROM the studio does not know
 (a hack, a translation, a bad dump) or a game it cannot edit yet is named
-as such. For a test archive, set `RETROLARIUM_GAMES_SOURCE` to a URL or path
-with `{repository}` in it.
+as such.
 
 A disassembly already on disk opens the same way through its `.rlj`.
 Open the game's `.rlj` (for example `super_mario_bros.rlj` at the top of the
@@ -101,7 +123,7 @@ returns a document to how it came from the source.
 
 | Game | Notes |
 |---|---|
-| Super Mario Bros. | areas with objects and enemies, world routes and physics (World), music, 18 sound effects (the 1-up, power-up, vine and brick tables are editable: drag their notes), title demo, playtest from any column (Japan/USA, Europe, PlayChoice-10); the Disk System versions play from power-on with the BIOS, and Vs. Super Mario Bros. needs MAME's arcade driver, which the studio's MAME lacks |
+| Super Mario Bros. | areas with objects and enemies, world routes and physics (World), music, 18 sound effects (the 1-up, power-up, vine and brick tables are editable: drag their notes), title demo, playtest from any column (Japan/USA, Europe, PlayChoice-10); the Disk System versions play from power-on, and Vs. Super Mario Bros. needs MAME's arcade driver, which the studio's MAME lacks |
 | Castle Excellent | rooms with objects, room cells, music track sets and sequences, 5 sound effects with their parameter table, title demo, playtest from any room |
 | Solomon's Key | levels with Spawn Mirrors, music and effects, demo, playtest from any level; USA, Europe and the Japanese Solomon no Kagi |
 | Pac-Man | the maze, actors, screens, sound, attract demo, playtest by round |
@@ -125,8 +147,13 @@ Playtest view; Pause and Stop are in the toolbar.
 
 ## When something goes wrong
 
-- **"Retrolarium Kit not found"** or **"MAME was not found"**: set
-  `RETROLARIUM_KIT`, or choose MAME in File → Settings (see above).
+- **"Retrolarium Kit was not found"** or **"The Python that runs the kit was
+  not found"**: part of the installation is missing; run the setup again
+  (it repairs the studio).
+- **"MAME was not found"**: choose `consoles.exe` in File → Settings, or run
+  the setup again.
+- **Windows stops the setup or the studio**: see Installing above
+  (SmartScreen, Smart App Control).
 - **"This file is … not …"** when choosing a ROM: it is another version (or
   a changed copy); the message names the version it is.
 - **"MAME needs the Famicom Disk System BIOS … OpenDiskSysROM is missing"**:
@@ -136,18 +163,3 @@ Playtest view; Pause and Stop are in the toolbar.
   and the kit could not add it; Messages and Build output show the kit's
   error.
 - **A build fails**: Build output has the kit's log and Messages its error.
-
-## Building the package and the installer
-
-`tools\build-win.ps1` builds the studio and its setup program;
-`tools\package-win.ps1` then assembles `build\package\RetrolariumStudio`
-(the studio, the kit, a Python taken from the CPython that `python` runs,
-trimmed and isolated, and MAME from `mame_testing\mame`), its zip, and
-`RetrolariumStudio-<version>-setup.exe`: the installer (`installer/`, in the
-studio's own frame and style) with that folder attached and checked file by
-file. Setup asks for its language (the studio then starts in it), installs
-for the current user without administrator rights, keeps the Disk System
-BIOS and MAME's settings across updates, adds Start menu (and optionally
-desktop) shortcuts, an Installed Apps entry and the `.rlj` association, and
-copies itself into the installation as `Uninstall.exe`, which removes all of
-that again; your games in `Documents\Retrolarium` stay unless you ask.

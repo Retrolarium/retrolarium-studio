@@ -12,6 +12,7 @@
 #include "shell/about_dialog.hpp"
 #include "shell/bottom_panel.hpp"
 #include "shell/inspector_panel.hpp"
+#include "shell/project_links.hpp"
 #include "shell/revision_dialog.hpp"
 #include "shell/settings_dialog.hpp"
 #include "shell/side_panels.hpp"
@@ -30,6 +31,7 @@
 #include <QActionGroup>
 #include <QCloseEvent>
 #include <QCoreApplication>
+#include <QDesktopServices>
 #include <QDir>
 #include <QFileDialog>
 #include <QFileInfo>
@@ -49,6 +51,7 @@
 #include <QTimer>
 #include <QToolButton>
 #include <QUndoStack>
+#include <QUrl>
 #include <QVBoxLayout>
 #include <QWheelEvent>
 
@@ -360,6 +363,14 @@ void MainWindow::buildMenus() {
 
     QMenu* help = bar->addMenu(tr("Help"));
     help->setFont(menuFont);
+    const auto openLink = [this, help](const QString& text, const char* url) {
+        connect(help->addAction(text), &QAction::triggered, this,
+                [url] { QDesktopServices::openUrl(QUrl(QString::fromLatin1(url))); });
+    };
+    openLink(tr("User guide"), links::kUserGuide);
+    openLink(tr("Source code"), links::kSource);
+    openLink(tr("Report a problem"), links::kIssues);
+    help->addSeparator();
     QAction* about = help->addAction(tr("About Retrolarium Studio"));
     connect(about, &QAction::triggered, this, [this] {
         AboutDialog dialog(this);

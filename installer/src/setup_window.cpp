@@ -27,6 +27,7 @@
 #include <QThread>
 #include <QTimer>
 #include <QVBoxLayout>
+#include <QVersionNumber>
 
 #include <memory>
 #include <tuple>
@@ -241,6 +242,14 @@ QWidget* SetupWindow::welcomePage() {
         layout->addWidget(paragraph(rlTr("setup", "Installed in %1. Installing again updates it; your games and edits stay.")
                                         .arg(nativePath(installedDirectory_)),
                                     page));
+        const QVersionNumber current = QVersionNumber::fromString(installedVersion());
+        const QVersionNumber offered = QVersionNumber::fromString(manifest_.version);
+        if (package && !current.isNull() && !offered.isNull() && current > offered) {
+            layout->addWidget(paragraph(rlTr("setup", "The installed studio is version %1, newer than this setup's "
+                                                      "%2: installing replaces it with the older version.")
+                                            .arg(current.toString(), offered.toString()),
+                                        page, QStringLiteral("accent")));
+        }
     }
     if (!package && !uninstallOnly_) {
         layout->addSpacing(6);

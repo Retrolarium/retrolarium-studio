@@ -62,8 +62,9 @@ sdk::ProcessSpec ToolLocator::kitCommand(const QStringList& arguments, const QSt
     }
     if (kit.isEmpty()) {
         if (error) {
-            *error = rlTr("studio", "Retrolarium Kit not found. Install retrolarium-kit, or set "
-                                    "RETROLARIUM_KIT to rltool or rltool.py.");
+            *error = rlTr("studio", "Retrolarium Kit was not found next to the studio. Reinstall "
+                                    "Retrolarium Studio. (A studio built from source finds the kit "
+                                    "through RETROLARIUM_KIT.)");
         }
         return spec;
     }
@@ -71,7 +72,9 @@ sdk::ProcessSpec ToolLocator::kitCommand(const QStringList& arguments, const QSt
         const QString interpreter = python();
         if (interpreter.isEmpty()) {
             if (error) {
-                *error = rlTr("studio", "Python is needed to run %1 but is not on PATH.").arg(kit);
+                *error = rlTr("studio", "The Python that runs the kit was not found next to the "
+                                        "studio. Reinstall Retrolarium Studio, or put Python on "
+                                        "PATH to run %1.").arg(kit);
             }
             return spec;
         }

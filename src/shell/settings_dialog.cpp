@@ -38,13 +38,14 @@ ui::Label* hint(const QString& text, QWidget* parent) {
     return label;
 }
 
-// Where MAME finds the Disk System BIOS: roms/fds beside it, under one of
-// the names MAME gives the dumps, or a set archive.
+// Where MAME finds the user's Disk System BIOS: roms/fds beside it, under
+// the one name its fds machine loads (the kit installs either dump there), or
+// a set archive. The kit's fds_bios looks in the same places.
 QString biosPath(const QString& mame) {
     if (mame.isEmpty()) return {};
     const QDir roms(QFileInfo(mame).absoluteDir().filePath(QStringLiteral("roms")));
-    for (const QString& name : {QStringLiteral("fds/rp2c33a-01a.bin"), QStringLiteral("fds/rp2c33-01.bin"),
-                                QStringLiteral("fds.zip"), QStringLiteral("fds.7z")}) {
+    for (const QString& name : {QStringLiteral("fds/rp2c33a-01a.bin"), QStringLiteral("fds.zip"),
+                                QStringLiteral("fds.7z")}) {
         if (QFileInfo(roms.filePath(name)).isFile()) return roms.filePath(name);
     }
     return {};

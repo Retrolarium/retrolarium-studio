@@ -180,7 +180,8 @@ void KitSession::launchPlanned(EmulatorPlan plan) {
             const QString mame = h->emulatorPath(QStringLiteral("mame"));
             if (mame.isEmpty()) {
                 report(Severity::Error, QStringLiteral("playtest"),
-                       tr("MAME was not found. Set RETROLARIUM_MAME to consoles.exe."));
+                       tr("MAME was not found. Choose it in File → Settings, or reinstall "
+                          "Retrolarium Studio."));
                 return;
             }
             ProcessSpec cached;

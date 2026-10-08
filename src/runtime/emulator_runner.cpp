@@ -47,7 +47,8 @@ constexpr int kStopGraceMs = 2000;      // then the process is killed
 //   read the keyboard of a window it does not own): each frame it reads the
 //   keys file and sets every I/O port field whose MAME input assignment
 //   names one of those keys;
-// - runs the game's own script unchanged.
+// - runs the plan's own scripts unchanged, in the order the plan gives them
+//   (MAME alone would keep only the last -autoboot_script).
 const char* kControlScript = R"LUA(-- Written by Retrolarium Studio for the running playtest.
 local cart = [==[@CART@]==]
 local command_file = [==[@COMMAND@]==]
@@ -56,7 +57,7 @@ local picture_file = [==[@PICTURE@]==]
 local studio_palette = {@PALETTE@}
 local ready_file = [==[@READY@]==]
 local ready_when = [==[@READYWHEN@]==]
-local game_script = [==[@SCRIPT@]==]
+local game_scripts = {@SCRIPTS@}
 local environment = {
 @ENVIRONMENT@}
 local machine = manager.machine
@@ -279,7 +280,7 @@ on_frame(function()
     end
 end)
 
-if game_script ~= "" then dofile(game_script) end
+for _, script in ipairs(game_scripts) do dofile(script) end
 )LUA";
 
 // MAME's name for the key of a key event; empty for keys it has no name for.
@@ -351,11 +352,11 @@ QString luaPath(const QString& path) {
 }
 
 // The spec's arguments with the parts the runner owns taken out: its
-// autoboot script (run inside the control script) and the cartridge (a
-// staged copy is mounted instead, marked here by @CART@).
+// autoboot scripts (run inside the control script, in order) and the
+// cartridge (a staged copy is mounted instead, marked here by @CART@).
 struct Launch {
     QStringList arguments;
-    QString gameScript;
+    QStringList gameScripts;
     QString cart;
 };
 
@@ -365,7 +366,7 @@ Launch parseLaunch(const QStringList& arguments) {
         const QString& argument = arguments.at(i);
         const bool hasValue = i + 1 < arguments.size();
         if (hasValue && argument == QLatin1String("-autoboot_script")) {
-            launch.gameScript = arguments.at(++i);
+            launch.gameScripts << arguments.at(++i);
         } else if (hasValue && argument == QLatin1String("-autoboot_delay")) {
             ++i;
         } else if (hasValue && argument == QLatin1String("-cart")) {
@@ -578,7 +579,8 @@ void EmulatorRunner::append(const QString& line) {
     emit outputLine(line);
 }
 
-bool EmulatorRunner::writeControl(const sdk::ProcessSpec& spec, const QString& gameScript, QString* error) {
+bool EmulatorRunner::writeControl(const sdk::ProcessSpec& spec, const QStringList& gameScripts,
+                                  QString* error) {
     const QString command = luaPath(stage_->filePath(QStringLiteral("command.txt")));
     const QString keys = luaPath(stage_->filePath(QStringLiteral("keys.txt")));
     const QString picture = luaPath(stage_->filePath(QStringLiteral("picture.txt")));
@@ -588,7 +590,12 @@ bool EmulatorRunner::writeControl(const sdk::ProcessSpec& spec, const QString& g
     }
     hasPalette_ = !spec.palette.isEmpty();
     writePicture();
-    QStringList values{luaPath(cart_), command, luaPath(spec.readyFile), luaPath(gameScript), keys, spec.readyWhen};
+    QStringList values{luaPath(cart_), command, luaPath(spec.readyFile), keys, spec.readyWhen};
+    QStringList scripts;
+    for (const QString& script : gameScripts) {
+        values << luaPath(script);
+        scripts << QStringLiteral("[==[%1]==]").arg(luaPath(script));
+    }
     QString environment;
     for (auto it = spec.environment.constBegin(); it != spec.environment.constEnd(); ++it) {
         static const QRegularExpression name(QStringLiteral("^[A-Za-z_][A-Za-z0-9_]*$"));
@@ -612,12 +619,12 @@ bool EmulatorRunner::writeControl(const sdk::ProcessSpec& spec, const QString& g
     QString text = QString::fromUtf8(kControlScript);
     text.replace(QLatin1String("@CART@"), values.at(0))
         .replace(QLatin1String("@COMMAND@"), values.at(1))
-        .replace(QLatin1String("@KEYS@"), values.at(4))
+        .replace(QLatin1String("@KEYS@"), values.at(3))
         .replace(QLatin1String("@PICTURE@"), picture)
         .replace(QLatin1String("@PALETTE@"), pens.join(QLatin1Char(',')))
-        .replace(QLatin1String("@READYWHEN@"), values.at(5))
+        .replace(QLatin1String("@READYWHEN@"), values.at(4))
         .replace(QLatin1String("@READY@"), values.at(2))
-        .replace(QLatin1String("@SCRIPT@"), values.at(3))
+        .replace(QLatin1String("@SCRIPTS@"), scripts.join(QStringLiteral(", ")))
         .replace(QLatin1String("@ENVIRONMENT@"), environment);
     file.write(text.toUtf8());
     return true;
@@ -640,7 +647,7 @@ void EmulatorRunner::start(const sdk::ProcessSpec& requested, const QString& tit
     const Launch launch = parseLaunch(spec.arguments);
     const QStringList signature = QStringList{spec.program, spec.workingDirectory} + launch.arguments;
     if (process_ && phase_ != Phase::Stopping && stage_ && !cart_.isEmpty() && !launch.cart.isEmpty() &&
-        signature == signature_ && reload(spec, launch.cart, launch.gameScript, title, finished)) {
+        signature == signature_ && reload(spec, launch.cart, launch.gameScripts, title, finished)) {
         return;
     }
     stopNow();
@@ -697,7 +704,7 @@ void EmulatorRunner::start(const sdk::ProcessSpec& requested, const QString& tit
               << QStringLiteral("-background_input");
     // The control script; without it, the game's own script as given.
     QString error;
-    if (stage_->isValid() && writeControl(spec, launch.gameScript, &error)) {
+    if (stage_->isValid() && writeControl(spec, launch.gameScripts, &error)) {
         arguments << QStringLiteral("-autoboot_delay") << QStringLiteral("0") << QStringLiteral("-autoboot_script")
                   << luaPath(stage_->filePath(QStringLiteral("control.lua")));
         // A game that reports when it is up gets a fast, hidden start.
@@ -711,9 +718,10 @@ void EmulatorRunner::start(const sdk::ProcessSpec& requested, const QString& tit
         if (stage_->isValid() && readyFile_.startsWith(stage_->path())) {
             readyFile_.clear();
         }
-        if (!launch.gameScript.isEmpty()) {
+        // MAME runs one script: the last, as it would have taken it anyway.
+        if (!launch.gameScripts.isEmpty()) {
             arguments << QStringLiteral("-autoboot_delay") << QStringLiteral("0")
-                      << QStringLiteral("-autoboot_script") << launch.gameScript;
+                      << QStringLiteral("-autoboot_script") << launch.gameScripts.last();
         }
     }
 
@@ -793,7 +801,7 @@ void EmulatorRunner::start(const sdk::ProcessSpec& requested, const QString& tit
     emit stateChanged();
 }
 
-bool EmulatorRunner::reload(const sdk::ProcessSpec& requested, const QString& cartSource, const QString& gameScript,
+bool EmulatorRunner::reload(const sdk::ProcessSpec& requested, const QString& cartSource, const QStringList& gameScripts,
                             const QString& title, std::function<void(const sdk::ProcessResult&)>& finished) {
     sdk::ProcessSpec spec = requested;
     if (spec.readyFile.isEmpty() && !spec.readyWhen.isEmpty()) {
@@ -811,7 +819,7 @@ bool EmulatorRunner::reload(const sdk::ProcessSpec& requested, const QString& ca
         return false;
     }
     cart_ = next;
-    if (!writeControl(spec, gameScript, &error)) {
+    if (!writeControl(spec, gameScripts, &error)) {
         cart_ = previous;
         append(tr("Hot reload failed: %1; restarting.").arg(error));
         return false;

@@ -3,7 +3,11 @@ param(
     [string]$Bin,
     [string]$Python,
     [string]$Mame,
-    [string]$Out
+    [string]$Out,
+    # Package a working tree with uncommitted changes (for trying a package
+    # out; BUILD-INFO.txt then says so). A package to publish comes from a
+    # commit, so its source is exactly what the commit holds.
+    [switch]$AllowDirty
 )
 
 # Assembles a Retrolarium Studio that runs on a computer with nothing else
@@ -14,7 +18,8 @@ param(
 #   -Bin     the built studio (default build\win-amd64)
 #   -Python  a CPython installation to take the private Python from (default:
 #            the one `python` on PATH runs); the kit needs no packages
-#   -Mame    consoles.exe (default mame_testing\mame\consoles.exe)
+#   -Mame    consoles.exe (default mame_testing\mame\consoles.exe), built by
+#            tools\build-mame.sh from the MAME commit named there
 
 $ErrorActionPreference = "Stop"
 
@@ -32,6 +37,18 @@ foreach ($required in @((Join-Path $Bin "retrolarium-studio.exe"), (Join-Path $P
         throw "Missing $required"
     }
 }
+
+# What the package is made from. The studio, kit and core share one
+# repository for now.
+$sources = @("retrolarium_studio", "retrolarium_kit", "retrolarium_core")
+$commit = (& git -C $repositoryRoot rev-parse HEAD).Trim()
+if ($LASTEXITCODE -ne 0) { throw "Not a git checkout: $repositoryRoot" }
+$changes = & git -C $repositoryRoot status --porcelain --untracked-files=all -- $sources
+$dirty = [bool]$changes
+if ($dirty -and -not $AllowDirty) {
+    throw "Uncommitted changes in the studio, kit or core; commit them first, or pass -AllowDirty to try a package out:`n$($changes -join "`n")"
+}
+$mameCommit = "c662f9ca1900ed7462dc4fe8d338a98e8e4ce3c3"
 
 $package = Join-Path $Out "RetrolariumStudio"
 if (Test-Path -LiteralPath $package) {
@@ -60,8 +77,9 @@ foreach ($program in @("retrolarium-studio.exe", "retrolarium-flicky-level-write
 
 # The kit, as a plain package next to a launcher.
 $kit = Join-Path $package "kit"
+# Only the Windows toolchains: the package runs on Windows.
 Copy-Tree (Join-Path $repositoryRoot "retrolarium_kit\src\retrolarium_kit") (Join-Path $kit "retrolarium_kit") `
-    @("__pycache__") @("*.pyc")
+    @("__pycache__", "linux-x86_64") @("*.pyc")
 Set-Content -LiteralPath (Join-Path $kit "rltool.py") -Encoding ascii -Value @'
 """Run the Retrolarium Kit that ships with the studio."""
 
@@ -87,7 +105,8 @@ foreach ($file in @("python.exe", "pythonw.exe", "python3.dll", $dll.Name, "vcru
     $source = Join-Path $Python $file
     if (Test-Path -LiteralPath $source) { Copy-Item -LiteralPath $source -Destination $runtime }
 }
-Copy-Tree (Join-Path $Python "DLLs") (Join-Path $runtime "DLLs") @() @("_tkinter.pyd", "tcl*.dll", "tk*.dll", "*.ico")
+Copy-Tree (Join-Path $Python "DLLs") (Join-Path $runtime "DLLs") @() `
+    @("_tkinter.pyd", "tcl*.dll", "tk*.dll", "*.ico", "_test*.pyd", "_ctypes_test.pyd", "xxlimited*.pyd")
 Copy-Tree (Join-Path $Python "Lib") (Join-Path $runtime "Lib") `
     @("site-packages", "test", "tests", "idlelib", "tkinter", "turtledemo", "ensurepip", "__pycache__", "lib2to3", "pydoc_data") `
     @("*.pyc")
@@ -98,9 +117,26 @@ Set-Content -LiteralPath (Join-Path $runtime $pth) -Encoding ascii -Value "Lib`r
 $emulator = Join-Path $package "mame"
 New-Item -ItemType Directory -Force -Path (Join-Path $emulator "roms\fds") | Out-Null
 Copy-Item -LiteralPath $Mame -Destination $emulator
+$mameSource = Split-Path $Mame -Parent
 foreach ($file in @("COPYING", "README.md")) {
-    $source = Join-Path (Split-Path $Mame -Parent) $file
+    $source = Join-Path $mameSource $file
     if (Test-Path -LiteralPath $source) { Copy-Item -LiteralPath $source -Destination $emulator }
+}
+# MAME's license texts and those of the libraries in its source tree.
+$mameLegal = Join-Path $emulator "legal"
+if (Test-Path -LiteralPath (Join-Path $mameSource "docs\legal")) {
+    Copy-Tree (Join-Path $mameSource "docs\legal") $mameLegal @() @()
+    foreach ($library in Get-ChildItem -LiteralPath (Join-Path $mameSource "3rdparty") -Directory) {
+        $texts = Get-ChildItem -LiteralPath $library.FullName -File |
+            Where-Object { $_.Name -match '^(licen[cs]e|copying)' -or ($library.Name -eq "libjpeg" -and $_.Name -eq "README") }
+        foreach ($text in $texts) {
+            $target = Join-Path $mameLegal "3rdparty\$($library.Name)"
+            New-Item -ItemType Directory -Force -Path $target | Out-Null
+            Copy-Item -LiteralPath $text.FullName -Destination $target
+        }
+    }
+} else {
+    Write-Warning "No MAME source next to $Mame (docs\legal, 3rdparty): the package is not ready to publish"
 }
 
 # Licenses: the studio's own and those of what the package carries
@@ -115,11 +151,23 @@ foreach ($pair in @(
         @((Join-Path $projectRoot "resources\fonts\OFL-IBMPlex.txt"), "OFL-IBMPlex.txt"),
         @((Join-Path $core "toml11\LICENSE"), "toml11-MIT.txt"),
         @((Join-Path $core "nlohmann\LICENSE.MIT"), "nlohmann-json-MIT.txt"),
-        @((Join-Path $projectRoot "resources\licenses\Qt-LGPL-3.0.txt"), "Qt-LGPL-3.0.txt"))) {
+        @((Join-Path $projectRoot "resources\licenses\Qt-LGPL-3.0.txt"), "Qt-LGPL-3.0.txt"),
+        @((Join-Path $projectRoot "resources\licenses\mingw-w64-runtime.txt"), "mingw-w64-runtime.txt"))) {
     if (Test-Path -LiteralPath $pair[0] -PathType Leaf) {
         Copy-Item -LiteralPath $pair[0] -Destination (Join-Path $licenses $pair[1])
     } else {
         Write-Warning "Missing license text $($pair[0]): the package is not ready to publish"
+    }
+}
+# The libraries Qt builds into the studio (THIRD-PARTY.md lists them).
+$qtThirdParty = Join-Path $licenses "qt-3rdparty"
+New-Item -ItemType Directory -Force -Path $qtThirdParty | Out-Null
+foreach ($name in @("zlib", "libpng", "libjpeg-turbo", "pcre2", "freetype", "harfbuzz", "double-conversion", "md4c")) {
+    $source = Join-Path $projectRoot "resources\licenses\qt-3rdparty\$name.txt"
+    if (Test-Path -LiteralPath $source -PathType Leaf) {
+        Copy-Item -LiteralPath $source -Destination $qtThirdParty
+    } else {
+        Write-Warning "Missing license text $($source): the package is not ready to publish"
     }
 }
 
@@ -135,6 +183,17 @@ $cmake = Get-Content -LiteralPath (Join-Path $projectRoot "CMakeLists.txt") -Raw
 $match = [regex]::Match($cmake, "project\([^)]*?VERSION\s+(\d+\.\d+\.\d+)", "Singleline")
 if (-not $match.Success) { throw "No project(VERSION) in CMakeLists.txt" }
 $version = $match.Groups[1].Value
+
+# Which sources the package holds, so a binary can be matched to them.
+$bios = Get-Content -LiteralPath (Join-Path $kit "retrolarium_kit\firmware\opendisksys\manifest.json") -Raw | ConvertFrom-Json
+$info = @(
+    "Retrolarium Studio $version",
+    "Packaged: $((Get-Date).ToUniversalTime().ToString('yyyy-MM-dd HH:mm')) UTC",
+    "Studio, kit and core: $commit$(if ($dirty) { ' with uncommitted changes (not for publishing)' })",
+    "MAME: mamedev/mame $mameCommit (tools/build-mame.sh)",
+    "OpenDiskSysROM: $($bios.commit) ($($bios.source))"
+)
+Set-Content -LiteralPath (Join-Path $package "BUILD-INFO.txt") -Encoding ascii -Value $info
 $zip = Join-Path $Out "RetrolariumStudio-$version-win64.zip"
 if (Test-Path -LiteralPath $zip) { Remove-Item -LiteralPath $zip -Force }
 Compress-Archive -LiteralPath $package -DestinationPath $zip -CompressionLevel Optimal
