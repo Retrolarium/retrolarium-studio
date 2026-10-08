@@ -9,7 +9,7 @@ namespace rl::runtime {
 
 // Finds the programs the studio runs for plugins. Search orders:
 //   kit:   $RETROLARIUM_KIT (rltool or rltool.py), kit/rltool.py next to the
-//          studio (the installed layout), retrolarium_kit/rltool.py in the
+//          studio (the installed layout), retrolarium-kit/rltool.py in the
 //          studio's directory or up to six parents, `rltool` on PATH;
 //          rltool.py runs with python/python.exe next to the studio, else
 //          Python on PATH

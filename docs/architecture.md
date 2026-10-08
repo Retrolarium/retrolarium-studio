@@ -31,17 +31,21 @@ src/
   gallery/   theme gallery: every component on one page, the visual test bench
   app/       entry point; the only code that names concrete plugins
 plugins/
-  megadrive/ Mega Drive platform: VDP patterns, CRAM colors, tile words,
-             Enigma (over ../retrolarium_core); Qt-free
-  flicky/    Flicky (UE): data/ documents and codecs, render/ scene renderer,
-             plugin/ session and editor models, tools/ level writer
-  nes/       NES platform: master palette, palette packet layout; the resource
-             bundle and the CHR and palette-table editors NES games share
-  castle/    Castle Excellent / Castlequest: rooms, painter, tables
-  solomon/   Solomon's Key: rooms, painter
-  smb/       Super Mario Bros.: data/ resource bundle and area catalog,
-             render/ level renderer and painter, plugin/ session and models,
-             tests/ the renderer's golden test
+  platforms/   what a console's games share
+    megadrive/ VDP patterns, CRAM colors, tile words, Enigma (over
+               ../retrolarium-core); Qt-free
+    nes/       master palette, palette packet layout; the resource bundle and
+               the CHR and palette-table editors NES games share
+  games/       one plugin per game
+    smb/       Super Mario Bros.: data/ resource bundle and area catalog,
+               render/ level renderer and painter, plugin/ session and models,
+               tests/ golden tests over the game repository's corpora
+    pacman/    Pac-Man: maze, screens, sound
+    castle/    Castle Excellent / Castlequest: rooms, painter, tables
+    solomon/   Solomon's Key: rooms, painter
+    doraemon/  Doraemon: city, underground, World 2 and 3 maps, objects
+    flicky/    Flicky (UE): data/ documents and codecs, render/ scene
+               renderer, plugin/ session and editor models, tools/ level writer
   builtin_plugins.cpp   registers the linked plugins
 resources/   bundled fonts (OFL), the brand set and the Qt resource file
 tools/       Docker build and run scripts

@@ -24,4 +24,11 @@ QVector<Feature> warnedFeatures(const QString& program, const QString& system, Q
 bool acknowledgeWarnings(const QString& configDirectory, const QString& system, const QVector<Feature>& features,
                          QString* error);
 
+// MAME honours that mark only with its "skip_warnings" UI option on, which
+// is off unless a ui.ini says otherwise. Turns it on in the ui.ini MAME reads
+// from its working directory (./ui.ini, else ini/ui.ini, the first two places
+// of the default inipath), creating ./ui.ini with just that line when there
+// is none; other settings are kept. `changed` says whether the file changed.
+bool enableSkipWarnings(const QString& workingDirectory, bool* changed, QString* error);
+
 }  // namespace rl::runtime::mame

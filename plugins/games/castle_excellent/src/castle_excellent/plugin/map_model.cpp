@@ -139,6 +139,12 @@ void CastleMapModel::triggerAction(const QString& id) {
     }
 }
 
+void CastleMapModel::activateObject(const QString& id) {
+    // A double click on a room opens it.
+    selectObject(id);
+    triggerAction(QStringLiteral("open"));
+}
+
 sdk::Inspection CastleMapModel::inspect() const {
     sdk::Inspection inspection;
     inspection.engineTag = QStringLiteral("castle.prefix-rooms@1");
@@ -148,7 +154,7 @@ sdk::Inspection CastleMapModel::inspect() const {
         inspection.title = title();
         inspection.note = tr("All 100 rooms where the game puts them: ten to a row, the room above is ten "
                              "less, the room below ten more. Select a room to start Play from selected "
-                             "there; Open room edits it.");
+                             "there; Open room or a double click edits it.");
         return inspection;
     }
     const CastleLevels& levels = session_->levels();

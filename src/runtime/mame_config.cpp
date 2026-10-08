@@ -174,4 +174,46 @@ bool acknowledgeWarnings(const QString& configDirectory, const QString& system, 
     return true;
 }
 
+bool enableSkipWarnings(const QString& workingDirectory, bool* changed, QString* error) {
+    if (changed) *changed = false;
+    const QDir directory(workingDirectory);
+    QString path = directory.filePath(QStringLiteral("ui.ini"));
+    if (!QFile::exists(path) && QFile::exists(directory.filePath(QStringLiteral("ini/ui.ini")))) {
+        path = directory.filePath(QStringLiteral("ini/ui.ini"));
+    }
+    QByteArray text;
+    {
+        QFile file(path);
+        if (file.open(QIODevice::ReadOnly)) text = file.readAll();
+    }
+    // The option's line ("skip_warnings   1"), whatever its spacing.
+    static const QByteArray kOption("skip_warnings");
+    static const QByteArray kLine("skip_warnings             1");
+    QList<QByteArray> lines = text.split('\n');
+    bool found = false;
+    for (QByteArray& line : lines) {
+        const QByteArray trimmed = line.trimmed();
+        const bool option = trimmed.startsWith(kOption) &&
+                            (trimmed.size() == kOption.size() || trimmed.at(kOption.size()) == ' ' ||
+                             trimmed.at(kOption.size()) == '\t');
+        if (!option) continue;
+        found = true;
+        if (trimmed.simplified() == "skip_warnings 1") return true;
+        line = kLine + (line.endsWith('\r') ? QByteArray("\r") : QByteArray());
+    }
+    if (!found) {
+        // A last empty element is the file's final newline.
+        if (!lines.isEmpty() && lines.last().isEmpty()) lines.removeLast();
+        lines << kLine << QByteArray();
+    }
+    const QByteArray result = lines.join('\n');
+    QSaveFile file(path);
+    if (!file.open(QIODevice::WriteOnly) || file.write(result) != result.size() || !file.commit()) {
+        if (error) *error = file.errorString();
+        return false;
+    }
+    if (changed) *changed = true;
+    return true;
+}
+
 }  // namespace rl::runtime::mame

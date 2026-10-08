@@ -25,6 +25,7 @@ public:
     explicit TileMapEditor(sdk::TileMapModel* model, QWidget* parent = nullptr);
 
     QWidget* createToolbar(QWidget* parent) override;
+    bool armPlacement(const QString& item) override;
 
     // Zoom in quarters: 1 is a quarter size, 4 one to one, 32 eight times.
     int zoom() const;
@@ -45,12 +46,17 @@ private:
     void rememberPick();
     void restorePick();
     bool libraryHas(const QString& item) const;
+    // A library item's icon and footprint, from the sheet or the inspector.
+    bool findLibraryItem(const QString& item, QImage* icon, QSize* cells) const;
+    bool offersTool(const QString& id) const;
+    void updatePlacePreview();
 
     sdk::TileMapModel* map_;
     QScrollArea* scroll_;
     MapCanvas* canvas_;
     QString tool_;
     QString pickLayer_;
+    QString pickedItem_;     // the library item last seen, to notice a new pick
     bool restoring_ = false;
     bool fitted_ = false;
 };
@@ -67,6 +73,8 @@ public:
     bool gridVisible() const { return grid_; }
     void setGridVisible(bool visible);
     void setTool(const QString& tool);
+    // What the Add tool puts down: drawn translucent under the cursor.
+    void setPlacePreview(const QImage& icon, QSize cells);
     void refresh();
 
     QSize sizeHint() const override;
@@ -81,6 +89,7 @@ protected:
     void mousePressEvent(QMouseEvent* event) override;
     void mouseMoveEvent(QMouseEvent* event) override;
     void mouseReleaseEvent(QMouseEvent* event) override;
+    void mouseDoubleClickEvent(QMouseEvent* event) override;
     void leaveEvent(QEvent* event) override;
     void wheelEvent(QWheelEvent* event) override;
     void keyPressEvent(QKeyEvent* event) override;
@@ -111,6 +120,8 @@ private:
     // A stroke paints many cells, each a contentChanged: render once after them.
     bool renderPending_ = false;
     bool painting_ = false;
+    QImage previewIcon_;    // the Add tool's item, and its footprint in cells
+    QSize previewCells_;
     bool lockReported_ = false;    // this stroke already said why a cell is locked
     Qt::MouseButton paintButton_ = Qt::NoButton;
     int paintValue_ = 0;

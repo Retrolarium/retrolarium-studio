@@ -2,7 +2,7 @@
 // screens: decoding and writing back is lossless, the commands project to
 // the stored name tables, text fields read as the game shows them, and edits
 // go through the command that writes a cell, the way the kit encodes them.
-//   smb_screens_test plugins/smb/tests/smb1_ju_screens.json
+//   smb_screens_test <game sources>/smb1_src/tests/retrolarium/smb1_ju_screens.json
 
 #include "smb/data/resource_document.hpp"
 #include "smb/data/screens.hpp"

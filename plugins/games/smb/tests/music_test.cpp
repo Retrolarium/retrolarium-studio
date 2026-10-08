@@ -1,7 +1,7 @@
 // The SMB music decoder against the kit's timelines for every SMB1 JU music
 // header (kind, stream byte, tick, duration and period of each event), and
 // the in-place note edits.
-//   smb_music_test plugins/smb/tests/smb1_ju_music.json
+//   smb_music_test <game sources>/smb1_src/tests/retrolarium/smb1_ju_music.json
 
 #include "smb/data/music.hpp"
 

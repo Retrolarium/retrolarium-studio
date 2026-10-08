@@ -38,12 +38,18 @@ foreach ($required in @((Join-Path $Bin "retrolarium-studio.exe"), (Join-Path $P
     }
 }
 
-# What the package is made from. The studio, kit and core share one
-# repository for now.
-$sources = @("retrolarium_studio", "retrolarium_kit", "retrolarium_core")
-$commit = (& git -C $repositoryRoot rev-parse HEAD).Trim()
-if ($LASTEXITCODE -ne 0) { throw "Not a git checkout: $repositoryRoot" }
-$changes = & git -C $repositoryRoot status --porcelain --untracked-files=all -- $sources
+# What the package is made from: the studio, kit and core checkouts side by
+# side (their own repositories, or folders of one repository).
+$sources = [ordered]@{ "Studio" = "retrolarium-studio"; "Kit" = "retrolarium-kit"; "Core" = "retrolarium-core" }
+$commits = [ordered]@{}
+$changes = @()
+foreach ($name in $sources.Keys) {
+    $folder = Join-Path $repositoryRoot $sources[$name]
+    $commit = & git -C $folder rev-parse HEAD
+    if ($LASTEXITCODE -ne 0) { throw "Not a git checkout: $folder" }
+    $commits[$name] = $commit.Trim()
+    $changes += & git -C $folder status --porcelain --untracked-files=all -- .
+}
 $dirty = [bool]$changes
 if ($dirty -and -not $AllowDirty) {
     throw "Uncommitted changes in the studio, kit or core; commit them first, or pass -AllowDirty to try a package out:`n$($changes -join "`n")"
@@ -79,8 +85,11 @@ Copy-Item -LiteralPath (Join-Path $Bin "tools\retrolarium-flicky-level-writer.ex
 # The kit, as a plain package next to a launcher.
 $kit = Join-Path $package "kit"
 # Only the Windows toolchains: the package runs on Windows.
-Copy-Tree (Join-Path $repositoryRoot "retrolarium_kit\src\retrolarium_kit") (Join-Path $kit "retrolarium_kit") `
+Copy-Tree (Join-Path $repositoryRoot "retrolarium-kit\src\retrolarium_kit") (Join-Path $kit "retrolarium_kit") `
     @("__pycache__", "linux-x86_64") @("*.pyc")
+# The core package the kit builds on, beside it.
+Copy-Tree (Join-Path $repositoryRoot "retrolarium-core\python\retrolarium_core") (Join-Path $kit "retrolarium_core") `
+    @("__pycache__") @("*.pyc")
 Set-Content -LiteralPath (Join-Path $kit "rltool.py") -Encoding ascii -Value @'
 """Run the Retrolarium Kit that ships with the studio."""
 
@@ -123,6 +132,9 @@ foreach ($file in @("COPYING", "README.md")) {
     $source = Join-Path $mameSource $file
     if (Test-Path -LiteralPath $source) { Copy-Item -LiteralPath $source -Destination $emulator }
 }
+# The studio marks MAME's known-problems screen as seen (an embedded MAME
+# never gets the key it waits for); MAME honours the mark only with this on.
+Set-Content -LiteralPath (Join-Path $emulator "ui.ini") -Encoding ascii -Value "skip_warnings             1"
 # MAME's license texts and those of the libraries in its source tree.
 $mameLegal = Join-Path $emulator "legal"
 if (Test-Path -LiteralPath (Join-Path $mameSource "docs\legal")) {
@@ -146,7 +158,7 @@ Copy-Item -LiteralPath (Join-Path $projectRoot "LICENSE") -Destination (Join-Pat
 Copy-Item -LiteralPath (Join-Path $projectRoot "THIRD-PARTY.md") -Destination $package
 $licenses = Join-Path $package "licenses"
 New-Item -ItemType Directory -Force -Path $licenses | Out-Null
-$core = Join-Path $repositoryRoot "retrolarium_core\third_party"
+$core = Join-Path $repositoryRoot "retrolarium-core\third_party"
 foreach ($pair in @(
         @((Join-Path $projectRoot "resources\fonts\OFL-Barlow.txt"), "OFL-Barlow.txt"),
         @((Join-Path $projectRoot "resources\fonts\OFL-IBMPlex.txt"), "OFL-IBMPlex.txt"),
@@ -179,6 +191,16 @@ if ($LASTEXITCODE -ne 0) {
 }
 Get-ChildItem -LiteralPath $kit -Recurse -Directory -Filter "__pycache__" | Remove-Item -Recurse -Force
 
+# Bytecode for the standard library, the kit and core. The studio is usually
+# installed where Python may not write, so without it every kit call would
+# compile the modules it imports again. Hash-checked .pyc files stay valid
+# whatever file times the zip or the setup program give the sources.
+& (Join-Path $runtime "python.exe") -m compileall -q -j 0 --invalidation-mode checked-hash `
+    (Join-Path $runtime "Lib") $kit
+if ($LASTEXITCODE -ne 0) {
+    throw "Compiling the private Python's and the kit's bytecode failed"
+}
+
 # project(VERSION ...), the one place the version is set; not cmake_minimum_required's.
 $cmake = Get-Content -LiteralPath (Join-Path $projectRoot "CMakeLists.txt") -Raw
 $match = [regex]::Match($cmake, "project\([^)]*?VERSION\s+(\d+\.\d+\.\d+)", "Singleline")
@@ -186,14 +208,17 @@ if (-not $match.Success) { throw "No project(VERSION) in CMakeLists.txt" }
 $version = $match.Groups[1].Value
 
 # Which sources the package holds, so a binary can be matched to them.
-$bios = Get-Content -LiteralPath (Join-Path $kit "retrolarium_kit\firmware\opendisksys\manifest.json") -Raw | ConvertFrom-Json
+$bios = Get-Content -LiteralPath (Join-Path $kit "retrolarium_kit\core\opendisksys\manifest.json") -Raw | ConvertFrom-Json
 $info = @(
     "Retrolarium Studio $version",
     "Packaged: $((Get-Date).ToUniversalTime().ToString('yyyy-MM-dd HH:mm')) UTC",
-    "Studio, kit and core: $commit$(if ($dirty) { ' with uncommitted changes (not for publishing)' })",
+    "Studio: $($commits['Studio'])",
+    "Kit: $($commits['Kit'])",
+    "Core: $($commits['Core'])",
     "MAME: mamedev/mame $mameCommit (tools/build-mame.sh)",
     "OpenDiskSysROM: $($bios.commit) ($($bios.source))"
 )
+if ($dirty) { $info += "Built with uncommitted changes (not for publishing)" }
 Set-Content -LiteralPath (Join-Path $package "BUILD-INFO.txt") -Encoding ascii -Value $info
 $zip = Join-Path $Out "RetrolariumStudio-$version-win64.zip"
 if (Test-Path -LiteralPath $zip) { Remove-Item -LiteralPath $zip -Force }

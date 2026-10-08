@@ -7,7 +7,7 @@ namespace rl::doraemon {
 
 namespace {
 
-// Opens projects created by `rltool studio preset` from a Doraemon ROM.
+// Opens projects created by `rldisasm preset` from a Doraemon ROM.
 class DoraemonPlugin final : public sdk::Plugin {
 public:
     QString id() const override { return QStringLiteral("doraemon"); }

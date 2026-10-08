@@ -10,7 +10,7 @@ source finds its parts like this:
 
 - **Retrolarium Kit**, which reads and writes the project and builds the ROM:
   the `RETROLARIUM_KIT` environment variable (`rltool` or `rltool.py`),
-  `kit/rltool.py` next to the studio, a `retrolarium_kit/rltool.py` up to six
+  `kit/rltool.py` next to the studio, a `../retrolarium-kit/rltool.py` up to six
   folders above the studio's own folder, then `rltool` on `PATH`. `rltool.py`
   runs with `python/python.exe` next to the studio, else Python on `PATH`.
 - **MAME** (`consoles.exe`): `RETROLARIUM_MAME`, the one chosen in File →

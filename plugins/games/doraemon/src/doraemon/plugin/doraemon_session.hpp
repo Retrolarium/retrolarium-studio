@@ -25,7 +25,7 @@ struct DoraemonState {
     }
 };
 
-// An open Doraemon project (`rltool studio preset`): one resource bundle with
+// An open Doraemon project (`rldisasm preset`): one resource bundle with
 // the World 1 and World 3 hierarchies, World 2's metatiles and streams, the
 // four CHR banks and the palette presets.
 class DoraemonSession final : public sdk::KitSession, public nes::BundleOwner {

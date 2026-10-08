@@ -8,7 +8,7 @@ namespace rl::castle {
 
 namespace {
 
-// Opens projects created by `rltool studio preset` from a Castle ROM.
+// Opens projects created by `rldisasm preset` from a Castle ROM.
 class CastlePlugin final : public sdk::Plugin {
 public:
     QString id() const override { return QStringLiteral("castle-excellent"); }

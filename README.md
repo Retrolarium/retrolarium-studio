@@ -50,7 +50,11 @@ to do when Windows warns about that.
 ## Building from source
 
 Requires Docker and a static Qt 5.15 SDK for Windows, cross-compiled with
-MinGW-w64, in a Docker image (`tools\build-win.ps1 -Image`).
+MinGW-w64, in a Docker image (`tools\build-win.ps1 -Image`). Clone
+[retrolarium-core](https://github.com/Retrolarium/retrolarium-core) and
+[retrolarium-kit](https://github.com/Retrolarium/retrolarium-kit) beside this
+repository: the build compiles the core from there, and the studio runs the kit
+for every build and Play.
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File tools\build-win.ps1
@@ -74,7 +78,7 @@ A Flicky test project is created with the kit (it only reads the source checkout
 and ROM):
 
 ```powershell
-python ..\retrolarium_kit\rltool.py studio flicky-create "<rom>" --source-root <flicky_src> --project-root build\testdata\flicky
+python ..\retrolarium-kit\rltool.py studio flicky-create "<rom>" --source-root <flicky_src> --project-root build\testdata\flicky
 ```
 
 Keep project paths short: the source snapshot is deep and Windows path limits

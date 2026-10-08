@@ -8,6 +8,7 @@
 #include <QStringList>
 
 #include <functional>
+#include <memory>
 
 namespace rl::sdk {
 
@@ -115,7 +116,23 @@ protected:
     ProjectFile project_;
 
 private:
+    // What the kit answered for a plan it ran right after the build.
+    struct BuiltPlan {
+        bool ran = false;             // the build ran the plan (else ask for it)
+        QJsonObject plan;             // the emulator command it describes
+        QString error;                // why planning failed
+    };
+    // runBuild that may pass the kit a plan command to run in the same
+    // process once the ROM is built (`studio build --plan-json`): Play then
+    // starts one interpreter, not two. `answer` gets the kit's plan.
+    void buildThenPlan(std::function<void(bool)> next, bool force, const QStringList& plan,
+                       std::shared_ptr<BuiltPlan> answer);
+    // The kit's plan command for `plan` with MAME and, for a recording, the
+    // file it goes to (removed first).
+    QStringList planCommand(const EmulatorPlan& plan, const QString& mame);
     void startEmulator(const EmulatorPlan& plan, ProcessSpec game);
+    // Starts the emulator a kit plan document describes.
+    void planned(const EmulatorPlan& plan, const QJsonObject& document);
 
     QString lastBuild_;
     bool recording_ = false;

@@ -11,7 +11,7 @@
 
 namespace rl::solomon {
 
-// An open Solomon's Key project (`rltool studio preset`): the rooms, room
+// An open Solomon's Key project (`rldisasm preset`): the rooms, room
 // art, animation tables and the graphics bundle.
 class SolomonSession final : public sdk::KitSession, public nes::BundleOwner {
     Q_OBJECT

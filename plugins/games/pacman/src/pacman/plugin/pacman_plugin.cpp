@@ -7,7 +7,7 @@ namespace rl::pacman {
 
 namespace {
 
-// Opens projects created by `rltool studio preset` from a Pac-Man ROM.
+// Opens projects created by `rldisasm preset` from a Pac-Man ROM.
 class PacmanPlugin final : public sdk::Plugin {
 public:
     QString id() const override { return QStringLiteral("pacman"); }

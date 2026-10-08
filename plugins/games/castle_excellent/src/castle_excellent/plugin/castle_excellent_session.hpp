@@ -39,7 +39,7 @@ struct CastleStart {
     bool placed = false;
 };
 
-// An open Castle Excellent / Castlequest project (`rltool studio preset`):
+// An open Castle Excellent / Castlequest project (`rldisasm preset`):
 // the room document and the graphics bundle.
 class CastleSession final : public sdk::KitSession, public nes::BundleOwner {
     Q_OBJECT

@@ -21,7 +21,7 @@ struct PacmanState {
     bool operator==(const PacmanState& other) const { return bundle == other.bundle && demo == other.demo; }
 };
 
-// An open Pac-Man project (`rltool studio preset`): one resource bundle with
+// An open Pac-Man project (`rldisasm preset`): one resource bundle with
 // the maze, patterns, palettes, actor frames, screens and sound.
 class PacmanSession final : public sdk::KitSession, public nes::BundleOwner {
     Q_OBJECT

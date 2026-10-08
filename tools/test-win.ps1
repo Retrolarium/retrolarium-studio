@@ -8,7 +8,8 @@ param(
 
 # Runs the test programs the plugins register (tests.json, written by the
 # install step of build-win.ps1). Fixture paths are relative to
-# retrolarium_studio.
+# retrolarium-studio; games:<repository>/... paths are in the game
+# repositories, and a test whose game data is not there is skipped.
 
 $ErrorActionPreference = "Stop"
 
@@ -17,7 +18,20 @@ if (-not $Bin) {
     $Bin = Join-Path $projectRoot "build\win-amd64"
 }
 if (-not $GameSources) { $GameSources = $env:RETROLARIUM_GAME_SOURCES }
-if (-not $GameSources) { $GameSources = Join-Path $projectRoot "..\..\..\oranguthang" }
+if (-not $GameSources) {
+    # An oranguthang folder holding the game repositories, beside one of the
+    # folders above the studio (a monorepo checkout or the product repos).
+    $folder = Split-Path $projectRoot -Parent
+    while ($folder -and -not $GameSources) {
+        $candidate = Join-Path (Split-Path $folder -Parent) "oranguthang"
+        if (Test-Path -LiteralPath $candidate -PathType Container) { $GameSources = $candidate }
+        $parent = Split-Path $folder -Parent
+        if ($parent -eq $folder) { break }
+        $folder = $parent
+    }
+    # None found: the tests that need game data skip.
+    if (-not $GameSources) { $GameSources = Join-Path $projectRoot "oranguthang-not-found" }
+}
 $manifest = Join-Path $Bin "tests.json"
 if (-not (Test-Path -LiteralPath $manifest -PathType Leaf)) {
     throw "No tests.json in $($Bin): build the studio first (make build-retrolarium-studio)."
@@ -31,6 +45,13 @@ foreach ($test in $tests) {
         if ($_ -like "games:*") { Join-Path $GameSources $_.Substring(6) } else { Join-Path $projectRoot $_ }
     })
     Write-Host "== $($test.name)"
+    $missing = @($test.arguments | Where-Object { $_ -like "games:*" } |
+        ForEach-Object { Join-Path $GameSources $_.Substring(6) } |
+        Where-Object { -not (Test-Path -LiteralPath $_) })
+    if ($missing.Count -gt 0) {
+        Write-Host "skipped: no $($missing[0])"
+        continue
+    }
     & (Join-Path $Bin $test.program) @arguments
     if ($LASTEXITCODE -ne 0) {
         $failed += $test.name

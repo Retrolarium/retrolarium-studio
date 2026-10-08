@@ -8,7 +8,7 @@ namespace rl::smb {
 
 namespace {
 
-// Opens projects created by `rltool studio preset` from an SMB1 ROM.
+// Opens projects created by `rldisasm preset` from an SMB1 ROM.
 class SmbPlugin final : public sdk::Plugin {
 public:
     QString id() const override { return QStringLiteral("smb1"); }

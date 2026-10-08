@@ -118,7 +118,11 @@ QRect MapCanvas::hoverRect(QPoint cell) const {
     const QRect map = mapRect();
     const int cw = std::max(1, scaled(model_->cellSize().width()));
     const int ch = std::max(1, scaled(model_->cellSize().height()));
-    return QRect(map.left() + cell.x() * cw, map.top() + cell.y() * ch, cw, ch).adjusted(-3, -3, 3, 3);
+    // The Add tool's preview can cover more than the cell.
+    const QSize cells = tool_ == QLatin1String("place") && !previewIcon_.isNull() ? previewCells_.expandedTo(QSize(1, 1))
+                                                                                  : QSize(1, 1);
+    return QRect(map.left() + cell.x() * cw, map.top() + cell.y() * ch, cw * cells.width(), ch * cells.height())
+        .adjusted(-3, -3, 3, 3);
 }
 
 void MapCanvas::setHoverCell(QPoint cell) {
@@ -155,6 +159,12 @@ void MapCanvas::setGridVisible(bool visible) {
 void MapCanvas::setTool(const QString& tool) {
     tool_ = tool;
     updateCursor();
+    update();
+}
+
+void MapCanvas::setPlacePreview(const QImage& icon, QSize cells) {
+    previewIcon_ = icon;
+    previewCells_ = cells.isEmpty() ? QSize(1, 1) : cells;
     update();
 }
 
@@ -365,6 +375,18 @@ void MapCanvas::keyPressEvent(QKeyEvent* event) {
     QWidget::keyPressEvent(event);
 }
 
+void MapCanvas::mouseDoubleClickEvent(QMouseEvent* event) {
+    // With the select tool a double click opens what the object stands for.
+    if (event->button() == Qt::LeftButton && tool_ == QLatin1String("select")) {
+        const QString hit = objectAt(cellAt(event->pos()));
+        if (!hit.isEmpty()) {
+            model_->activateObject(hit);
+            return;
+        }
+    }
+    QWidget::mouseDoubleClickEvent(event);
+}
+
 void MapCanvas::dragEnterEvent(QDragEnterEvent* event) {
     if (event->mimeData()->hasFormat(kLibraryItemMime) && !model_->isReadOnly()) {
         event->acceptProposedAction();
@@ -505,7 +527,17 @@ void MapCanvas::paintEvent(QPaintEvent* event) {
         (tool_ == QLatin1String("paint") || tool_ == QLatin1String("place"))) {
         const QRect r(map.left() + hoverCell_.x() * cw, map.top() + hoverCell_.y() * ch, cw, ch);
         const bool editable = tool_ != QLatin1String("paint") || model_->isCellEditable(hoverCell_);
-        paint::hairlineRect(painter, r, editable ? QColor(255, 255, 255, 200) : QColor(255, 255, 255, 60));
+        if (tool_ == QLatin1String("place") && !previewIcon_.isNull()) {
+            // Where the item lands: itself, see-through, over its footprint.
+            const QRect footprint(r.topLeft(), QSize(cw * previewCells_.width(), ch * previewCells_.height()));
+            painter.save();
+            painter.setOpacity(0.55);
+            painter.drawImage(footprint, previewIcon_);
+            painter.restore();
+            paint::hairlineRect(painter, footprint, QColor(255, 255, 255, 200));
+        } else {
+            paint::hairlineRect(painter, r, editable ? QColor(255, 255, 255, 200) : QColor(255, 255, 255, 60));
+        }
     }
 }
 
@@ -525,6 +557,7 @@ TileMapEditor::TileMapEditor(sdk::TileMapModel* model, QWidget* parent)
     // The last pick on this kind of map, before the sheet shows its own.
     pickLayer_ = map_->currentLayer();
     restorePick();
+    pickedItem_ = map_->currentLibraryItem();
     connect(map_, &sdk::EditorModel::selectionChanged, this, &TileMapEditor::rememberPick);
     connect(map_, &sdk::EditorModel::toolsChanged, this, &TileMapEditor::rememberPick);
 
@@ -544,6 +577,7 @@ TileMapEditor::TileMapEditor(sdk::TileMapModel* model, QWidget* parent)
     });
     tool_ = remembered ? lastTool() : tools.isEmpty() ? QStringLiteral("select") : tools.first().id;
     canvas_->setTool(tool_);
+    updatePlacePreview();
 
     // Ctrl+wheel zooms about the mouse: the picture under it stays put.
     connect(canvas_, &MapCanvas::zoomRequested, this, [this](int delta, QPoint anchor) {
@@ -568,21 +602,78 @@ TileMapEditor::TileMapEditor(sdk::TileMapModel* model, QWidget* parent)
             tool_ = current.isEmpty() ? QStringLiteral("select") : current.first().id;
             canvas_->setTool(tool_);
         }
+        updatePlacePreview();
         emit toolbarChanged();
     });
 }
 
 void TileMapEditor::rememberPick() {
     if (restoring_) return;
+    bool otherLayer = false;
     if (map_->currentLayer() != pickLayer_) {
         // Another layer: its own last pick comes back first.
         pickLayer_ = map_->currentLayer();
         restorePick();
+        otherLayer = true;
     }
     Pick& pick = lastPicks()[pickKey(map_)];
     if (!map_->brushes().isEmpty()) pick.brush = map_->currentBrush();
     const QString item = map_->currentLibraryItem();
     if (!item.isEmpty()) pick.item = item;
+    if (item != pickedItem_) {
+        pickedItem_ = item;
+        // An object picked in the library (not a brush, not the layer's own
+        // default) is something to put down: the Add tool takes it.
+        if (!otherLayer && !item.isEmpty() && map_->brushes().isEmpty() && offersTool(QStringLiteral("place")) &&
+            tool_ != QLatin1String("place")) {
+            chooseTool(QStringLiteral("place"));
+            emit toolbarChanged();
+        }
+    }
+    updatePlacePreview();
+}
+
+bool TileMapEditor::offersTool(const QString& id) const {
+    const QVector<sdk::Tool> tools = map_->tools();
+    return std::any_of(tools.begin(), tools.end(), [&id](const sdk::Tool& tool) { return tool.id == id; });
+}
+
+bool TileMapEditor::findLibraryItem(const QString& item, QImage* icon, QSize* cells) const {
+    for (const sdk::Library& library : {map_->sheet(), map_->inspect().library}) {
+        for (const sdk::LibraryItem& entry : library.items) {
+            if (entry.id == item) {
+                *icon = entry.icon;
+                *cells = entry.cells;
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+void TileMapEditor::updatePlacePreview() {
+    QImage icon;
+    QSize cells;
+    if (tool_ == QLatin1String("place") && findLibraryItem(map_->currentLibraryItem(), &icon, &cells)) {
+        canvas_->setPlacePreview(icon, cells);
+    } else {
+        canvas_->setPlacePreview(QImage(), QSize());
+    }
+}
+
+bool TileMapEditor::armPlacement(const QString& item) {
+    restoring_ = true;   // a pick of its own: no second arming
+    map_->setCurrentLibraryItem(item);
+    restoring_ = false;
+    // The model may have changed layer to offer the item: that layer's old
+    // pick must not come back over it.
+    pickLayer_ = map_->currentLayer();
+    pickedItem_ = map_->currentLibraryItem();
+    if (!offersTool(QStringLiteral("place")) || pickedItem_ != item) return false;
+    chooseTool(QStringLiteral("place"));
+    rememberPick();
+    emit toolbarChanged();
+    return true;
 }
 
 void TileMapEditor::restorePick() {
@@ -632,6 +723,7 @@ void TileMapEditor::chooseTool(const QString& id) {
     tool_ = id;
     lastTool() = id;
     canvas_->setTool(id);
+    updatePlacePreview();
 }
 
 void TileMapEditor::showEvent(QShowEvent* event) {

@@ -17,9 +17,24 @@ param(
 $ErrorActionPreference = "Stop"
 
 $projectRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
+if (-not $QtKit) { $QtKit = $env:RETROLARIUM_QT_KIT }
 if (-not $QtKit) {
-    # The repository sits two folders below the one holding longreach-qt.
-    $QtKit = Join-Path (Split-Path (Split-Path $projectRoot -Parent) -Parent) "longreach-qt"
+    # A Longreach Qt checkout beside one of the folders above the studio, or
+    # beside a work folder there.
+    $folder = $projectRoot
+    while ($folder -and -not $QtKit) {
+        $parent = Split-Path $folder -Parent
+        if (-not $parent -or $parent -eq $folder) { break }
+        foreach ($candidate in @((Join-Path $parent "longreach-qt"), (Join-Path $parent "work\longreach-qt"))) {
+            if (-not $QtKit -and (Test-Path -LiteralPath (Join-Path $candidate "cmake") -PathType Container)) {
+                $QtKit = $candidate
+            }
+        }
+        $folder = $parent
+    }
+}
+if (-not $QtKit) {
+    throw "Longreach Qt not found: pass -QtKit or set RETROLARIUM_QT_KIT."
 }
 $QtKit = (Resolve-Path -LiteralPath $QtKit).Path
 
@@ -43,7 +58,7 @@ $cmakeMount = (Join-Path $QtKit "cmake") -replace "\\", "/"
 $buildScript = @'
 set -eu
 mkdir -p /out/.cmake-build
-cmake -S /src/retrolarium_studio -B /out/.cmake-build \
+cmake -S /src/retrolarium-studio -B /out/.cmake-build \
     -DCMAKE_BUILD_TYPE=$STUDIO_CONFIGURATION \
     -DCMAKE_TOOLCHAIN_FILE=/kit-cmake/qt5/toolchain-win-amd64.cmake \
     -DCMAKE_PREFIX_PATH=/usr/local/Qt-5.15

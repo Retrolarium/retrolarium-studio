@@ -28,6 +28,12 @@ public:
     // Contents of the 38px editor toolbar row: tools, layers, view chips.
     // Called again after toolbarChanged().
     virtual QWidget* createToolbar(QWidget* parent) = 0;
+    // Picks a library item and arms the tool that places it; false where
+    // this editor places nothing.
+    virtual bool armPlacement(const QString& item) {
+        Q_UNUSED(item);
+        return false;
+    }
 
 signals:
     void toolbarChanged();

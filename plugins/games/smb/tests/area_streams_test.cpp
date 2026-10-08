@@ -1,7 +1,7 @@
 // Removing and re-inserting every record of every SMB1 JU area must leave all
 // other records at their page and column, and give back the same stream
 // positions. Reads the areas from the level renderer's golden corpus.
-//   smb_area_streams_test plugins/smb/tests/smb1_ju_level_scenes.json
+//   smb_area_streams_test <game sources>/smb1_src/tests/retrolarium/smb1_ju_level_scenes.json
 
 #include "smb/data/area_streams.hpp"
 

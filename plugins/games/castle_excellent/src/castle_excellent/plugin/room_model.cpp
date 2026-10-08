@@ -174,6 +174,8 @@ void CastleRoomModel::setCurrentLibraryItem(const QString& id) {
         objectType_ = std::clamp(id.mid(7).toInt(), 0, std::max(0, session_->levels().encodedTypeCount() - 1));
         emit selectionChanged();
     } else if (id == QLatin1String("start")) {
+        // The player marker lives with the objects.
+        if (layer_ == QLatin1String("cells")) setCurrentLayer(QStringLiteral("objects"));
         objectType_ = -1;
         emit selectionChanged();
     }
@@ -471,6 +473,7 @@ sdk::Library CastleRoomModel::objectLibrary() const {
         player.label = tr("Player start");
         player.hint = tr("where Play from selected starts");
         player.icon = session_->painter().player();
+        player.cells = QSize(1, 2);     // 16x16 over 16x8 cells
         objectSheet_ << player;
         for (int type = 0; type < session_->levels().encodedTypeCount(); ++type) {
             sdk::LibraryItem item;
@@ -570,9 +573,10 @@ sdk::Inspection CastleRoomModel::inspect() const {
                           ? tr("Paint cells with the sheet's pattern; the right button takes a cell. "
                                "Each cell is two background tiles; its colours come from the attribute "
                                "bytes the room loader writes, so a cell may recolour its neighbours.")
-                          : tr("Drag objects from the library onto the room. Drag Player start onto "
-                               "the room to choose where Play from selected puts the player; without "
-                               "it he starts at the bottom of the room.");
+                          : tr("Pick an object in the library and click the room to add it, or drag it "
+                               "there. Pick Player start (or click the start point above) and click the "
+                               "room to choose where Play from selected puts the player; without it he "
+                               "starts at the bottom of the room.");
     inspection.engineTag = QStringLiteral("castle.prefix-rooms@1");
     inspection.engine = {{tr("Room number"), QString::number(session_->levels().roomNumber(room_))},
                          {tr("Cells"), tr("20x20, 16x8 px each")}};

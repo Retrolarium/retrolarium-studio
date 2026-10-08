@@ -898,6 +898,14 @@ void EmulatorRunner::acknowledgeWarnings(const sdk::ProcessSpec& spec) {
                    .arg(system, names.join(QStringLiteral(", "))));
     } else {
         append(tr("MAME warning setup: %1").arg(error));
+        return;
+    }
+    // The mark counts only with MAME's skip_warnings option on.
+    bool changed = false;
+    if (!mame::enableSkipWarnings(spec.workingDirectory, &changed, &error)) {
+        append(tr("MAME warning setup: %1").arg(error));
+    } else if (changed) {
+        append(tr("MAME's skip_warnings option is turned on in its ui.ini, so it honours that mark."));
     }
 }
 

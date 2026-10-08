@@ -55,7 +55,7 @@ sdk::ProcessSpec ToolLocator::kitCommand(const QStringList& arguments, const QSt
         kit = QDir(QCoreApplication::applicationDirPath()).filePath(QStringLiteral("kit/rltool.py"));
     }
     if (!QFileInfo(kit).isFile()) {
-        kit = findInParents(QStringLiteral("retrolarium_kit/rltool.py"));
+        kit = findInParents(QStringLiteral("retrolarium-kit/rltool.py"));
     }
     if (kit.isEmpty()) {
         kit = QStandardPaths::findExecutable(QStringLiteral("rltool"));

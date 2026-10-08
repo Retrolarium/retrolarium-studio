@@ -89,6 +89,9 @@ struct LibraryItem {
     QString label;
     QString hint;
     QImage icon;            // optional preview, drawn scaled in the library
+    // Its footprint once placed, in map cells: the Add tool shows the icon
+    // over that much of the map under the cursor. Empty: one cell.
+    QSize cells;
 };
 
 // Items to place or paint with. A model returns it from

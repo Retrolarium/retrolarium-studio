@@ -44,6 +44,10 @@ public:
     // 07", "1-1 · column 40"), shown next to the editor tools; empty when it
     // sets none. Emit toolsChanged() when it moves.
     virtual QString startPoint() const { return {}; }
+    // The library item that puts that start on the map by hand ("start"):
+    // clicking the start point picks it for the Add tool. Empty when the
+    // start is chosen another way.
+    virtual QString startLibraryItem() const { return {}; }
 
     // Buttons in the toolbar row; emit toolsChanged() when they change.
     virtual QVector<EditorAction> actions() const { return {}; }
@@ -150,6 +154,8 @@ public:
     virtual void endDrag();
     virtual bool placeObject(const QString& libraryItem, QPoint cell, QString* error);
     virtual bool removeObject(const QString& id, QString* error);
+    // A double click on an object (opening the room it stands for, say).
+    virtual void activateObject(const QString& id) { Q_UNUSED(id); }
 };
 
 // A bank of 8x8 patterns: an atlas to pick from and one tile to paint.

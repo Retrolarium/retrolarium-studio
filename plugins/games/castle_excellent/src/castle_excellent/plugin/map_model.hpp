@@ -26,6 +26,7 @@ public:
     void setViewOption(const QString& key, const QString& value) override;
     QVector<sdk::EditorAction> actions() const override;
     void triggerAction(const QString& id) override;
+    void activateObject(const QString& id) override;
 
     QSize gridSize() const override { return {kColumns, kRows}; }
     QSize cellSize() const override;

@@ -193,7 +193,7 @@ studio_enable_warnings(studio_shell)
 # kit as rlcore). Platform plugins wrap what they need from it.
 set(RETROLARIUM_CORE_BUILD_CLI OFF CACHE BOOL "" FORCE)
 set(RETROLARIUM_CORE_BUILD_TESTS OFF CACHE BOOL "" FORCE)
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../retrolarium_core retrolarium_core)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../retrolarium-core retrolarium_core)
 
 # Test programs register here with the fixtures they read, as paths
 # relative to this directory. CTest runs them on a native build; the install

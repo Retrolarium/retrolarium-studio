@@ -104,6 +104,11 @@ bool KitSession::prepareBuild(BuildStep&, QString*) {
 void KitSession::built(const BuildStep&, const QJsonObject&) {}
 
 void KitSession::runBuild(std::function<void(bool)> next, bool force) {
+    buildThenPlan(std::move(next), force, {}, nullptr);
+}
+
+void KitSession::buildThenPlan(std::function<void(bool)> next, bool force, const QStringList& plan,
+                               std::shared_ptr<BuiltPlan> answer) {
     Host* h = host();
     if (!h || h->isBusy()) {
         next(false);
@@ -127,9 +132,13 @@ void KitSession::runBuild(std::function<void(bool)> next, bool force) {
         next(true);
         return;
     }
-    ProcessSpec spec = h->kitCommand(QStringList{QStringLiteral("studio"), QStringLiteral("build"), project_.path()} +
-                                         step.arguments,
-                                     project_.directory(), &error);
+    QStringList arguments = QStringList{QStringLiteral("studio"), QStringLiteral("build"), project_.path()} +
+                            step.arguments;
+    if (!plan.isEmpty()) {
+        arguments << QStringLiteral("--plan-json")
+                  << QString::fromUtf8(QJsonDocument(QJsonArray::fromStringList(plan)).toJson(QJsonDocument::Compact));
+    }
+    ProcessSpec spec = h->kitCommand(arguments, project_.directory(), &error);
     if (spec.program.isEmpty()) {
         report(Severity::Error, QStringLiteral("build"), error);
         next(false);
@@ -139,7 +148,7 @@ void KitSession::runBuild(std::function<void(bool)> next, bool force) {
     for (auto it = step.environment.constBegin(); it != step.environment.constEnd(); ++it) {
         spec.environment.insert(it.key(), it.value());
     }
-    h->runProcess(spec, [this, next, step](const ProcessResult& result) {
+    h->runProcess(spec, [this, next, step, answer](const ProcessResult& result) {
         if (!result.succeeded()) {
             if (!result.cancelled) {
                 report(Severity::Error, QStringLiteral("build"), tr("Build failed: %1").arg(failureText(result)));
@@ -164,15 +173,40 @@ void KitSession::runBuild(std::function<void(bool)> next, bool force) {
                                       .arg(path)
                                       .arg(artifact.value(QStringLiteral("size")).toInt())
                                       .arg(sha256.left(12)));
+        if (answer && (json.contains(QStringLiteral("plan")) || json.contains(QStringLiteral("plan_error")))) {
+            answer->ran = true;
+            answer->plan = json.value(QStringLiteral("plan")).toObject();
+            answer->error = json.value(QStringLiteral("plan_error")).toString();
+        }
         emit documentsChanged(QStringLiteral("playtest"));
         next(true);
     });
 }
 
+QStringList KitSession::planCommand(const EmulatorPlan& plan, const QString& mame) {
+    QStringList arguments = plan.arguments;
+    arguments << QStringLiteral("--mame") << mame;
+    if (!plan.recordTo.isEmpty()) {
+        const QString recording = project_.resolve(plan.recordTo);
+        QFile::remove(recording);
+        arguments << QStringLiteral("--record") << recording;
+    }
+    return arguments;
+}
+
 void KitSession::launchPlanned(EmulatorPlan plan) {
-    const bool force = plan.force;
-    runBuild(
-        [this, plan](bool ok) {
+    // Unless an earlier run's plan is kept, the kit plans in the build's own
+    // process; a build the plugin skips (the ROM is current) plans apart.
+    Host* h = host();
+    const QString mame = h ? h->emulatorPath(QStringLiteral("mame")) : QString();
+    ProcessSpec kept;
+    QStringList withBuild;
+    if (!mame.isEmpty() && !(plan.cached && plan.cached(&kept))) {
+        withBuild = planCommand(plan, mame);
+    }
+    auto answer = std::make_shared<BuiltPlan>();
+    buildThenPlan(
+        [this, plan, answer](bool ok) {
             Host* h = host();
             if (!ok || !h) {
                 return;
@@ -184,20 +218,23 @@ void KitSession::launchPlanned(EmulatorPlan plan) {
                           "Retrolarium Studio."));
                 return;
             }
+            if (answer->ran) {
+                if (!answer->error.isEmpty()) {
+                    report(Severity::Error, QStringLiteral("playtest"),
+                           plan.demo ? tr("Demo plan failed: %1").arg(answer->error)
+                                     : tr("Playtest plan failed: %1").arg(answer->error));
+                    return;
+                }
+                planned(plan, answer->plan);
+                return;
+            }
             ProcessSpec cached;
             if (plan.cached && plan.cached(&cached)) {
                 startEmulator(plan, cached);
                 return;
             }
-            QStringList arguments = plan.arguments;
-            arguments << QStringLiteral("--mame") << mame;
-            if (!plan.recordTo.isEmpty()) {
-                const QString recording = project_.resolve(plan.recordTo);
-                QFile::remove(recording);
-                arguments << QStringLiteral("--record") << recording;
-            }
             QString error;
-            ProcessSpec spec = h->kitCommand(arguments, project_.directory(), &error);
+            ProcessSpec spec = h->kitCommand(planCommand(plan, mame), project_.directory(), &error);
             if (spec.program.isEmpty()) {
                 report(Severity::Error, QStringLiteral("playtest"), error);
                 return;
@@ -215,18 +252,22 @@ void KitSession::launchPlanned(EmulatorPlan plan) {
                     }
                     return;
                 }
-                const ProcessSpec game = specFromPlan(QJsonDocument::fromJson(result.standardOutput).object());
-                if (game.program.isEmpty()) {
-                    report(Severity::Error, QStringLiteral("playtest"), tr("The kit returned no emulator command."));
-                    return;
-                }
-                if (plan.remember) {
-                    plan.remember(game);
-                }
-                startEmulator(plan, game);
+                planned(plan, QJsonDocument::fromJson(result.standardOutput).object());
             });
         },
-        force);
+        plan.force, withBuild, answer);
+}
+
+void KitSession::planned(const EmulatorPlan& plan, const QJsonObject& document) {
+    const ProcessSpec game = specFromPlan(document);
+    if (game.program.isEmpty()) {
+        report(Severity::Error, QStringLiteral("playtest"), tr("The kit returned no emulator command."));
+        return;
+    }
+    if (plan.remember) {
+        plan.remember(game);
+    }
+    startEmulator(plan, game);
 }
 
 void KitSession::startEmulator(const EmulatorPlan& plan, ProcessSpec game) {

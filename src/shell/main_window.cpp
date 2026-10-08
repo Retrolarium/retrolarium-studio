@@ -1306,6 +1306,15 @@ void MainWindow::updateToolbarRow() {
         if (!start.isEmpty()) {
             auto* chip = new ui::ViewChip(tr("Start point"), start, content);
             chip->setToolTip(tr("Play from selected (F5) starts here"));
+            // Where the start is put by hand, a click picks it for the Add
+            // tool: it follows the cursor until a click sets it down.
+            const QString item = model_->startLibraryItem();
+            if (!item.isEmpty()) {
+                chip->setToolTip(tr("Play from selected (F5) starts here. Click, then click the map to move it."));
+                connect(chip, &QAbstractButton::clicked, this, [this, item] {
+                    if (editor_) editor_->armPlacement(item);
+                });
+            }
             row->addWidget(chip);
         }
         for (const sdk::EditorAction& action : model_ ? model_->actions() : QVector<sdk::EditorAction>()) {

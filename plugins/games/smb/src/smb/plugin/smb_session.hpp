@@ -25,7 +25,7 @@ struct SmbStart {
     int level = 1;      // the level number the game shows
 };
 
-// An open Super Mario Bros. project (`rltool studio preset`): one NES
+// An open Super Mario Bros. project (`rldisasm preset`): one NES
 // resource bundle, documents/resources.json, that every editor reads and
 // writes. Edits are whole-document snapshots on the project undo stack.
 class SmbSession final : public sdk::KitSession {

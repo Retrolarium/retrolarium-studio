@@ -33,7 +33,7 @@ while other documents are open. Play (`Ctrl+F5`) runs the game from power-on
 them and work only while the game runs. MAME is `RETROLARIUM_MAME`, else
 `mame/consoles.exe` next to the studio, else the nearest
 `mame_testing/mame/consoles.exe` up the tree; the kit is `RETROLARIUM_KIT`, else
-the nearest `retrolarium_kit/rltool.py`, else `rltool` on `PATH`.
+the nearest `../retrolarium-kit/rltool.py`, else `rltool` on `PATH`.
 
 MAME draws straight into the Playtest surface (`-attach_window`), so it never
 sees its window as focused; the runner passes `-background_input`, without which
@@ -94,7 +94,7 @@ when the project was created).
 
 ## Super Mario Bros.
 
-Projects come from `rltool studio preset <rom>`; every editor reads and writes
+Projects come from `rldisasm preset <rom>`; every editor reads and writes
 `documents/resources.json`, the NES resource bundle. The level renderer is the
 original app's, pinned to the kit's output for all 34 SMB1 JU areas by
 `smb_level_renderer_golden_test`. `smb_area_streams_test` checks the stream
@@ -127,7 +127,7 @@ reports), so MAME's `skip_warnings` setting skips it.
 
 ## Castle Excellent
 
-Projects from `rltool studio preset` on Castle Excellent (J) or Castlequest (U).
+Projects from `rldisasm preset` on Castle Excellent (J) or Castlequest (U).
 
 | Kind     | Editor  | What it does                                                                                                                                                                                                                                                                                             |
 | -------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -139,7 +139,7 @@ Projects from `rltool studio preset` on Castle Excellent (J) or Castlequest (U).
 
 ## Solomon's Key
 
-Projects from `rltool studio preset` on Solomon's Key (USA or Europe).
+Projects from `rldisasm preset` on Solomon's Key (USA or Europe).
 
 | Kind            | Editor        | What it does                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | --------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
