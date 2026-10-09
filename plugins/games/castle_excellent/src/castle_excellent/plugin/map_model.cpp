@@ -1,14 +1,14 @@
-#include "castle/plugin/map_model.hpp"
+#include "castle_excellent/plugin/map_model.hpp"
 
-#include "castle/plugin/castle_session.hpp"
+#include "castle_excellent/plugin/castle_excellent_session.hpp"
 
 #include <QPainter>
 
-namespace rl::castle {
+namespace rl::castle_excellent {
 
-CastleMapModel::CastleMapModel(CastleSession* session) : TileMapModel(session), session_(session) {
+CastleExcellentMapModel::CastleExcellentMapModel(CastleExcellentSession* session) : TileMapModel(session), session_(session) {
     connect(session_, &sdk::Session::contentChanged, this, &sdk::EditorModel::contentChanged);
-    connect(session_, &CastleSession::startChanged, this, [this] {
+    connect(session_, &CastleExcellentSession::startChanged, this, [this] {
         emit contentChanged();
         emit selectionChanged();
         emit toolsChanged();
@@ -16,11 +16,11 @@ CastleMapModel::CastleMapModel(CastleSession* session) : TileMapModel(session), 
     selected_ = session_->start().room;
 }
 
-QSize CastleMapModel::cellSize() const {
-    return {CastlePainter::kCellWidth * 20 / divisor_, CastlePainter::kCellHeight * 20 / divisor_};
+QSize CastleExcellentMapModel::cellSize() const {
+    return {CastleExcellentPainter::kCellWidth * 20 / divisor_, CastleExcellentPainter::kCellHeight * 20 / divisor_};
 }
 
-QVector<sdk::ViewOption> CastleMapModel::viewOptions() const {
+QVector<sdk::ViewOption> CastleExcellentMapModel::viewOptions() const {
     sdk::ViewOption scale;
     scale.key = QStringLiteral("scale");
     scale.label = tr("Scale");
@@ -29,7 +29,7 @@ QVector<sdk::ViewOption> CastleMapModel::viewOptions() const {
     return {scale};
 }
 
-void CastleMapModel::setViewOption(const QString& key, const QString& value) {
+void CastleExcellentMapModel::setViewOption(const QString& key, const QString& value) {
     if (key != QLatin1String("scale")) return;
     const int divisor = value == QLatin1String("1/4") ? 4 : value == QLatin1String("1/2") ? 2 : 1;
     if (divisor != divisor_) {
@@ -39,19 +39,19 @@ void CastleMapModel::setViewOption(const QString& key, const QString& value) {
     }
 }
 
-int CastleMapModel::roomIndex(int number) const {
-    const CastleLevels& levels = session_->levels();
+int CastleExcellentMapModel::roomIndex(int number) const {
+    const CastleExcellentLevels& levels = session_->levels();
     for (int r = 0; r < levels.roomCount(); ++r) {
         if (levels.roomNumber(r) == number) return r;
     }
     return -1;
 }
 
-QVector<sdk::Tool> CastleMapModel::tools() const {
+QVector<sdk::Tool> CastleExcellentMapModel::tools() const {
     return {{QStringLiteral("select"), tr("Select a room"), QStringLiteral("select")}};
 }
 
-QImage CastleMapModel::render() const {
+QImage CastleExcellentMapModel::render() const {
     const QString startKey = session_->selectedStart();
     if (imageRevision_ == session_->revision() && imageDivisor_ == divisor_ && imageStart_ == startKey && !image_.isNull()) {
         return image_;
@@ -63,8 +63,8 @@ QImage CastleMapModel::render() const {
     image.fill(Qt::black);
     QPainter painter(&image);
     painter.setRenderHint(QPainter::SmoothPixmapTransform);
-    const CastleLevels& levels = session_->levels();
-    const CastlePainter& art = session_->painter();
+    const CastleExcellentLevels& levels = session_->levels();
+    const CastleExcellentPainter& art = session_->painter();
     for (int r = 0; r < levels.roomCount(); ++r) {
         const int number = levels.roomNumber(r);
         if (number < 1 || number > kColumns * kRows) continue;
@@ -73,7 +73,7 @@ QImage CastleMapModel::render() const {
         painter.drawImage(at, art.room(levels.cells(r), levels.objects(r)));
     }
     // The player where Play from selected starts, once the user has put him in a room.
-    const CastleStart start = session_->start();
+    const CastleExcellentStart start = session_->start();
     if (start.placed && start.room >= 1 && start.room <= kColumns * kRows) {
         const QPoint origin(((start.room - 1) % kColumns) * kRoomWidth, ((start.room - 1) / kColumns) * kRoomHeight);
         painter.drawImage(QRect(origin + start.pixel / divisor_, QSize(16, 16) / divisor_), art.player());
@@ -89,7 +89,7 @@ QImage CastleMapModel::render() const {
     return image_;
 }
 
-QVector<sdk::MapObject> CastleMapModel::objects() const {
+QVector<sdk::MapObject> CastleExcellentMapModel::objects() const {
     QVector<sdk::MapObject> result;
     for (int number = 1; number <= kColumns * kRows; ++number) {
         sdk::MapObject o;
@@ -103,27 +103,27 @@ QVector<sdk::MapObject> CastleMapModel::objects() const {
     return result;
 }
 
-QString CastleMapModel::selectedObject() const {
+QString CastleExcellentMapModel::selectedObject() const {
     return selected_ > 0 ? QStringLiteral("room:%1").arg(selected_) : QString();
 }
 
-void CastleMapModel::selectObject(const QString& id) {
+void CastleExcellentMapModel::selectObject(const QString& id) {
     const int number = id.startsWith(QLatin1String("room:")) ? id.mid(5).toInt() : -1;
     if (number == selected_ || number < 1 || number > kColumns * kRows) return;
     selected_ = number;
     // The selected room is where Play from selected starts.
-    CastleStart start;
+    CastleExcellentStart start;
     start.room = number;
     session_->setStart(start);
     emit selectionChanged();
     emit toolsChanged();
 }
 
-QString CastleMapModel::startPoint() const {
+QString CastleExcellentMapModel::startPoint() const {
     return session_->selectedStart();
 }
 
-QVector<sdk::EditorAction> CastleMapModel::actions() const {
+QVector<sdk::EditorAction> CastleExcellentMapModel::actions() const {
     sdk::EditorAction open;
     open.id = QStringLiteral("open");
     open.label = selected_ > 0 ? tr("Open %1").arg(roomLabel(selected_)) : tr("Open room");
@@ -132,22 +132,22 @@ QVector<sdk::EditorAction> CastleMapModel::actions() const {
     return {open};
 }
 
-void CastleMapModel::triggerAction(const QString& id) {
+void CastleExcellentMapModel::triggerAction(const QString& id) {
     const int index = roomIndex(selected_);
     if (id == QLatin1String("open") && index >= 0) {
         emit session_->documentRequested(QStringLiteral("rooms"), QString::number(index + 1));
     }
 }
 
-void CastleMapModel::activateObject(const QString& id) {
+void CastleExcellentMapModel::activateObject(const QString& id) {
     // A double click on a room opens it.
     selectObject(id);
     triggerAction(QStringLiteral("open"));
 }
 
-sdk::Inspection CastleMapModel::inspect() const {
+sdk::Inspection CastleExcellentMapModel::inspect() const {
     sdk::Inspection inspection;
-    inspection.engineTag = QStringLiteral("castle.prefix-rooms@1");
+    inspection.engineTag = QStringLiteral("castle-excellent.prefix-rooms@1");
     const int index = roomIndex(selected_);
     if (index < 0) {
         inspection.kicker = tr("Castle");
@@ -157,7 +157,7 @@ sdk::Inspection CastleMapModel::inspect() const {
                              "there; Open room or a double click edits it.");
         return inspection;
     }
-    const CastleLevels& levels = session_->levels();
+    const CastleExcellentLevels& levels = session_->levels();
     inspection.kicker = tr("Castle map");
     inspection.title = roomLabel(selected_);
     const auto neighbour = [this](int number) {
@@ -188,8 +188,8 @@ sdk::Inspection CastleMapModel::inspect() const {
     return inspection;
 }
 
-QString CastleMapModel::statusText() const {
+QString CastleExcellentMapModel::statusText() const {
     return selected_ > 0 ? tr("Castle map · %1").arg(roomLabel(selected_)) : tr("Castle map");
 }
 
-}  // namespace rl::castle
+}  // namespace rl::castle_excellent

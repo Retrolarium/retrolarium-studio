@@ -1,25 +1,25 @@
 #pragma once
 
-#include "castle/data/music.hpp"
+#include "castle_excellent/data/music.hpp"
 #include "sdk/editor_model.hpp"
 
 #include <QJsonObject>
 #include <QSet>
 
-namespace rl::castle {
+namespace rl::castle_excellent {
 
-class CastleSession;
+class CastleExcellentSession;
 
 // One of the eight music track sets on the piano roll: the three streams
 // it starts on Pulse 1, Pulse 2 and Triangle, as the engine plays them.
 // Dragging a note rewrites its letter in the MML (and wraps it in octave
 // commands when it leaves its octave), so every pass through that stream
 // changes with it. The inspector picks the streams and channel parameters.
-class CastleMusicModel final : public sdk::SequencerModel {
+class CastleExcellentMusicModel final : public sdk::SequencerModel {
     Q_OBJECT
 
 public:
-    CastleMusicModel(CastleSession* session, int track);
+    CastleExcellentMusicModel(CastleExcellentSession* session, int track);
 
     QString title() const override;
     sdk::Inspection inspect() const override;
@@ -52,11 +52,11 @@ public:
 
 private:
     QJsonObject music() const;
-    const QVector<QVector<CastleMusicNote>>& traced() const;
+    const QVector<QVector<CastleExcellentMusicNote>>& traced() const;
     bool find(const QString& id, int* channel, int* index) const;
     QJsonObject trackSet() const;
 
-    CastleSession* session_;
+    CastleExcellentSession* session_;
     int track_;
     int channel_ = 0;
     QString selected_;
@@ -66,18 +66,18 @@ private:
     QJsonObject draft_;
 
     int draftVersion_ = 0;
-    mutable QVector<QVector<CastleMusicNote>> trace_;
+    mutable QVector<QVector<CastleExcellentMusicNote>> trace_;
     mutable QString traceKey_;      // session revision, or the draft's version
 };
 
 // One MML sequence alone on the piano roll, on the voice that plays it (the
 // triangle when a track set starts it there, else a pulse). Notes drag as in
 // a track set; the inspector edits the whole MML text and what plays next.
-class CastleSequenceModel final : public sdk::SequencerModel {
+class CastleExcellentSequenceModel final : public sdk::SequencerModel {
     Q_OBJECT
 
 public:
-    CastleSequenceModel(CastleSession* session, int stream);
+    CastleExcellentSequenceModel(CastleExcellentSession* session, int stream);
 
     QString title() const override;
     sdk::Inspection inspect() const override;
@@ -111,26 +111,26 @@ private:
     // `music` with track set 0 starting this sequence alone on its voice.
     QJsonObject solo(const QJsonObject& music) const;
     QString id() const;
-    const QVector<CastleMusicNote>& traced() const;
+    const QVector<CastleExcellentMusicNote>& traced() const;
 
-    CastleSession* session_;
+    CastleExcellentSession* session_;
     int stream_;
     int voice_ = 0;                 // 0 pulse 1, 2 triangle
     QString selected_;
     bool editing_ = false;
     QJsonObject draft_;
     int draftVersion_ = 0;
-    mutable QVector<CastleMusicNote> trace_;
+    mutable QVector<CastleExcellentMusicNote> trace_;
     mutable QString traceKey_;
 };
 
 // The 21 MML streams as text: edit a stream's commands and where it
 // restarts. The arena they share is fixed; the budget shows what is left.
-class CastleStreamsModel final : public sdk::TableModel {
+class CastleExcellentStreamsModel final : public sdk::TableModel {
     Q_OBJECT
 
 public:
-    explicit CastleStreamsModel(CastleSession* session);
+    explicit CastleExcellentStreamsModel(CastleExcellentSession* session);
 
     QString title() const override { return tr("MML streams"); }
     sdk::Budget budget() const override;
@@ -145,8 +145,8 @@ public:
     bool setCell(int row, int column, const QString& value, QString* error) override;
 
 private:
-    CastleSession* session_;
+    CastleExcellentSession* session_;
     int row_ = 0;
 };
 
-}  // namespace rl::castle
+}  // namespace rl::castle_excellent

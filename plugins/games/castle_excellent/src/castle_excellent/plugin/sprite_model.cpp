@@ -1,6 +1,6 @@
-#include "castle/plugin/sprite_model.hpp"
+#include "castle_excellent/plugin/sprite_model.hpp"
 
-#include "castle/plugin/castle_session.hpp"
+#include "castle_excellent/plugin/castle_excellent_session.hpp"
 #include "sdk/i18n.hpp"
 
 #include <QJsonArray>
@@ -9,7 +9,7 @@
 
 #include <algorithm>
 
-namespace rl::castle {
+namespace rl::castle_excellent {
 
 namespace {
 
@@ -36,14 +36,14 @@ constexpr int kObjectFrames[][2] = {
 constexpr int kSheetColumns = 24;   // sprites per row, with a gap after each frame
 
 const QStringList& flipNames() {
-    static const QStringList kNames{QStringLiteral("None"), rlTr("castle", "Horizontal"), rlTr("castle", "Vertical"),
-                                    rlTr("castle", "Both")};
+    static const QStringList kNames{QStringLiteral("None"), rlTr("castle_excellent", "Horizontal"), rlTr("castle_excellent", "Vertical"),
+                                    rlTr("castle_excellent", "Both")};
     return kNames;
 }
 
 }  // namespace
 
-CastleSpriteModel::CastleSpriteModel(CastleSession* session) : TileMapModel(session), session_(session) {
+CastleExcellentSpriteModel::CastleExcellentSpriteModel(CastleExcellentSession* session) : TileMapModel(session), session_(session) {
     connect(session_, &sdk::Session::contentChanged, this, &sdk::EditorModel::contentChanged);
     const int total = count();
     QVector<Frame> frames;
@@ -75,11 +75,11 @@ CastleSpriteModel::CastleSpriteModel(CastleSession* session) : TileMapModel(sess
     rows_ = row + 1;
 }
 
-int CastleSpriteModel::count() const {
+int CastleExcellentSpriteModel::count() const {
     return session_->bundle().resource(session_->art().descriptors).value(QStringLiteral("descriptors")).toArray().size();
 }
 
-int CastleSpriteModel::tileOf(int descriptor) const {
+int CastleExcellentSpriteModel::tileOf(int descriptor) const {
     const auto found = pending_.constFind(descriptor);
     if (found != pending_.constEnd()) return *found;
     return session_->bundle()
@@ -92,7 +92,7 @@ int CastleSpriteModel::tileOf(int descriptor) const {
         .toInt();
 }
 
-int CastleSpriteModel::attributesOf(int descriptor) const {
+int CastleExcellentSpriteModel::attributesOf(int descriptor) const {
     return session_->bundle()
         .resource(session_->art().descriptors)
         .value(QStringLiteral("descriptors"))
@@ -103,23 +103,23 @@ int CastleSpriteModel::attributesOf(int descriptor) const {
         .toInt();
 }
 
-int CastleSpriteModel::descriptorAt(QPoint cell) const {
+int CastleExcellentSpriteModel::descriptorAt(QPoint cell) const {
     for (auto it = positions_.constBegin(); it != positions_.constEnd(); ++it) {
         if (it.value().x() == cell.x() && it.value().y() == cell.y() / 2) return it.key();
     }
     return -1;
 }
 
-QSize CastleSpriteModel::gridSize() const {
+QSize CastleExcellentSpriteModel::gridSize() const {
     return {kSheetColumns, rows_ * 2};
 }
 
-QString CastleSpriteModel::frameLabel(int frame) const {
+QString CastleExcellentSpriteModel::frameLabel(int frame) const {
     const Frame& f = frames_.at(frame);
     if (f.player) return tr("Player %1").arg(f.first / 2 + 1);
     if (!f.referenced) return tr("Unused %1").arg(f.first);
     QStringList types;
-    for (const CastleObjectPreview& preview : session_->levels().objectPreviews()) {
+    for (const CastleExcellentObjectPreview& preview : session_->levels().objectPreviews()) {
         if (preview.descriptorOffset == f.first * 2) types << hex(preview.runtimeType);
     }
     return types.isEmpty() ? tr("Frame %1").arg(f.first) : tr("Object %1").arg(types.join(QLatin1Char(' ')));
@@ -127,14 +127,14 @@ QString CastleSpriteModel::frameLabel(int frame) const {
 
 // ---------------------------------------------------------------- view
 
-QVector<sdk::Tool> CastleSpriteModel::tools() const {
+QVector<sdk::Tool> CastleExcellentSpriteModel::tools() const {
     return {{QStringLiteral("select"), tr("Select a frame"), QStringLiteral("select")},
             {QStringLiteral("paint"), tr("Paint the sheet's pattern pair into sprites (right button takes one)"),
              QStringLiteral("paint")},
             {QStringLiteral("pick"), tr("Take a sprite's pattern pair as the brush"), QStringLiteral("pick")}};
 }
 
-QVector<sdk::ViewOption> CastleSpriteModel::viewOptions() const {
+QVector<sdk::ViewOption> CastleExcellentSpriteModel::viewOptions() const {
     sdk::ViewOption palette;
     palette.key = QStringLiteral("palette");
     palette.label = tr("Sheet colours");
@@ -143,7 +143,7 @@ QVector<sdk::ViewOption> CastleSpriteModel::viewOptions() const {
     return {palette};
 }
 
-int CastleSpriteModel::paletteNumber(const QString& label) {
+int CastleExcellentSpriteModel::paletteNumber(const QString& label) {
     // The whole label: a translation may place the number anywhere.
     for (int p = 0; p < 4; ++p) {
         if (label == tr("SPR %1").arg(p)) return p;
@@ -151,7 +151,7 @@ int CastleSpriteModel::paletteNumber(const QString& label) {
     return 0;
 }
 
-void CastleSpriteModel::setViewOption(const QString& key, const QString& value) {
+void CastleExcellentSpriteModel::setViewOption(const QString& key, const QString& value) {
     if (key == QLatin1String("palette")) {
         libraryPalette_ = paletteNumber(value);
         emit contentChanged();
@@ -159,18 +159,18 @@ void CastleSpriteModel::setViewOption(const QString& key, const QString& value) 
     }
 }
 
-QImage CastleSpriteModel::render() const {
+QImage CastleExcellentSpriteModel::render() const {
     const QSize grid = gridSize();
     QImage image(grid.width() * 8, grid.height() * 8, QImage::Format_ARGB32);
     image.fill(QColor(0, 0, 0, 0));
     QPainter painter(&image);
-    const CastlePainter& art = session_->painter();
+    const CastleExcellentPainter& art = session_->painter();
     for (const Frame& frame : frames_) {
         painter.fillRect(QRect(frame.at.x() * 8, frame.at.y() * 16, frame.count * 8, 16), art.backdrop());
         for (int i = 0; i < frame.count; ++i) {
             const int d = frame.first + i;
             painter.drawImage(QPoint((frame.at.x() + i) * 8, frame.at.y() * 16),
-                              art.sprite(CastleSprite{tileOf(d), attributesOf(d), 0, 0}));
+                              art.sprite(CastleExcellentSprite{tileOf(d), attributesOf(d), 0, 0}));
         }
     }
     return image;
@@ -178,21 +178,21 @@ QImage CastleSpriteModel::render() const {
 
 // ---------------------------------------------------------------- cells
 
-QVector<sdk::CellBrush> CastleSpriteModel::brushes() const {
+QVector<sdk::CellBrush> CastleExcellentSpriteModel::brushes() const {
     return {{tile_, tr("Pattern pair %1").arg(hex(tile_)), QColor()}};
 }
 
-void CastleSpriteModel::setCurrentBrush(int value) {
+void CastleExcellentSpriteModel::setCurrentBrush(int value) {
     tile_ = std::clamp(value, 0, 255);
     emit toolsChanged();
     emit selectionChanged();
 }
 
-QString CastleSpriteModel::currentLibraryItem() const {
+QString CastleExcellentSpriteModel::currentLibraryItem() const {
     return QStringLiteral("tile:%1").arg(tile_);
 }
 
-void CastleSpriteModel::setCurrentLibraryItem(const QString& id) {
+void CastleExcellentSpriteModel::setCurrentLibraryItem(const QString& id) {
     if (!id.startsWith(QLatin1String("tile:"))) return;
     const int tile = std::clamp(id.mid(5).toInt(), 0, 255);
     if (tile != tile_) {
@@ -202,16 +202,16 @@ void CastleSpriteModel::setCurrentLibraryItem(const QString& id) {
     }
 }
 
-int CastleSpriteModel::cellValue(QPoint cell) const {
+int CastleExcellentSpriteModel::cellValue(QPoint cell) const {
     const int d = descriptorAt(cell);
     return d < 0 ? -1 : tileOf(d);
 }
 
-bool CastleSpriteModel::isCellEditable(QPoint cell) const {
+bool CastleExcellentSpriteModel::isCellEditable(QPoint cell) const {
     return descriptorAt(cell) >= 0;
 }
 
-bool CastleSpriteModel::setDescriptors(const QHash<int, QPair<int, int>>& values, const QString& text, QString* error) {
+bool CastleExcellentSpriteModel::setDescriptors(const QHash<int, QPair<int, int>>& values, const QString& text, QString* error) {
     const QString id = session_->art().descriptors;
     return session_->editBundle(text,
                                 [id, values](nes::Bundle& b) {
@@ -229,7 +229,7 @@ bool CastleSpriteModel::setDescriptors(const QHash<int, QPair<int, int>>& values
                                 error);
 }
 
-bool CastleSpriteModel::placeObject(const QString& libraryItem, QPoint cell, QString* error) {
+bool CastleExcellentSpriteModel::placeObject(const QString& libraryItem, QPoint cell, QString* error) {
     const int d = descriptorAt(cell);
     if (!libraryItem.startsWith(QLatin1String("tile:")) || d < 0) {
         if (error) *error = tr("Drop a pattern pair onto a sprite.");
@@ -241,12 +241,12 @@ bool CastleSpriteModel::placeObject(const QString& libraryItem, QPoint cell, QSt
                           error);
 }
 
-void CastleSpriteModel::beginStroke() {
+void CastleExcellentSpriteModel::beginStroke() {
     stroking_ = true;
     pending_.clear();
 }
 
-bool CastleSpriteModel::paintCell(QPoint cell, int value) {
+bool CastleExcellentSpriteModel::paintCell(QPoint cell, int value) {
     const int d = descriptorAt(cell);
     if (!stroking_ || d < 0 || value < 0 || value > 255 || tileOf(d) == value) return false;
     pending_.insert(d, value);
@@ -254,7 +254,7 @@ bool CastleSpriteModel::paintCell(QPoint cell, int value) {
     return true;
 }
 
-void CastleSpriteModel::endStroke() {
+void CastleExcellentSpriteModel::endStroke() {
     stroking_ = false;
     if (pending_.isEmpty()) return;
     QHash<int, QPair<int, int>> values;
@@ -269,7 +269,7 @@ void CastleSpriteModel::endStroke() {
 
 // ---------------------------------------------------------------- objects
 
-QVector<sdk::MapObject> CastleSpriteModel::objects() const {
+QVector<sdk::MapObject> CastleExcellentSpriteModel::objects() const {
     QVector<sdk::MapObject> result;
     for (int f = 0; f < frames_.size(); ++f) {
         sdk::MapObject o;
@@ -283,11 +283,11 @@ QVector<sdk::MapObject> CastleSpriteModel::objects() const {
     return result;
 }
 
-QString CastleSpriteModel::selectedObject() const {
+QString CastleExcellentSpriteModel::selectedObject() const {
     return selected_ >= 0 ? QStringLiteral("frame:%1").arg(selected_) : QString();
 }
 
-void CastleSpriteModel::selectObject(const QString& id) {
+void CastleExcellentSpriteModel::selectObject(const QString& id) {
     const int frame = id.startsWith(QLatin1String("frame:")) ? id.mid(6).toInt() : -1;
     if (frame != selected_ && frame < frames_.size()) {
         selected_ = frame;
@@ -299,7 +299,7 @@ void CastleSpriteModel::selectObject(const QString& id) {
 
 // ---------------------------------------------------------------- inspector
 
-bool CastleSpriteModel::setField(const QString& key, const QVariant& value, QString* error) {
+bool CastleExcellentSpriteModel::setField(const QString& key, const QVariant& value, QString* error) {
     if (selected_ < 0 || key.size() < 2) return TileMapModel::setField(key, value, error);
     const Frame& frame = frames_.at(selected_);
     const int i = key.mid(1).toInt();
@@ -322,13 +322,13 @@ bool CastleSpriteModel::setField(const QString& key, const QVariant& value, QStr
     return setDescriptors({{d, qMakePair(tile, attributes)}}, tr("Edit sprite %1").arg(d), error);
 }
 
-sdk::Library CastleSpriteModel::sheet() const {
+sdk::Library CastleExcellentSpriteModel::sheet() const {
     sdk::Library result;
     result.grid = true;
     result.columns = 16;
     result.cell = QSize(1, 2);
     result.hint = tr("click: brush · drag onto a sprite");
-    const CastlePainter& art = session_->painter();
+    const CastleExcellentPainter& art = session_->painter();
     // 8x16 pairs: even numbers from the first pattern table, odd from the second.
     for (int table = 0; table < 2; ++table) {
         for (int pair = 0; pair < 128; ++pair) {
@@ -336,7 +336,7 @@ sdk::Library CastleSpriteModel::sheet() const {
             QImage icon(8, 16, QImage::Format_ARGB32);
             icon.fill(art.backdrop());
             QPainter p(&icon);
-            p.drawImage(0, 0, art.sprite(CastleSprite{tile, libraryPalette_, 0, 0}));
+            p.drawImage(0, 0, art.sprite(CastleExcellentSprite{tile, libraryPalette_, 0, 0}));
             p.end();
             sdk::LibraryItem item;
             item.id = QStringLiteral("tile:%1").arg(tile);
@@ -348,9 +348,9 @@ sdk::Library CastleSpriteModel::sheet() const {
     return result;
 }
 
-sdk::Inspection CastleSpriteModel::inspect() const {
+sdk::Inspection CastleExcellentSpriteModel::inspect() const {
     sdk::Inspection inspection;
-    inspection.engineTag = QStringLiteral("castle.metasprite-descriptors.v1");
+    inspection.engineTag = QStringLiteral("castle-excellent.metasprite-descriptors.v1");
     if (selected_ < 0 || selected_ >= frames_.size()) {
         inspection.kicker = tr("Sprites");
         inspection.title = title();
@@ -387,7 +387,7 @@ sdk::Inspection CastleSpriteModel::inspect() const {
         palette.type = sdk::Field::Type::Choice;
         for (int p = 0; p < 4; ++p) {
             palette.choices << tr("SPR %1").arg(p);
-            palette.choiceIcons << session_->painter().sprite(CastleSprite{tileOf(d), (attributes & ~3) | p, 0, 0});
+            palette.choiceIcons << session_->painter().sprite(CastleExcellentSprite{tileOf(d), (attributes & ~3) | p, 0, 0});
         }
         palette.value = tr("SPR %1").arg(attributes & 3);
         sdk::Field flip;
@@ -411,7 +411,7 @@ sdk::Inspection CastleSpriteModel::inspect() const {
     return inspection;
 }
 
-sdk::Budget CastleSpriteModel::budget() const {
+sdk::Budget CastleExcellentSpriteModel::budget() const {
     sdk::Budget budget;
     budget.used = count();
     budget.capacity = count();
@@ -419,8 +419,8 @@ sdk::Budget CastleSpriteModel::budget() const {
     return budget;
 }
 
-QString CastleSpriteModel::statusText() const {
+QString CastleExcellentSpriteModel::statusText() const {
     return selected_ < 0 ? tr("Sprites · %1").arg(count()) : tr("Sprites · %1").arg(frameLabel(selected_));
 }
 
-}  // namespace rl::castle
+}  // namespace rl::castle_excellent

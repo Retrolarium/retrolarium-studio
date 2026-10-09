@@ -1,4 +1,4 @@
-#include "castle/render/room_painter.hpp"
+#include "castle_excellent/render/room_painter.hpp"
 
 #include "nes/palette.hpp"
 
@@ -7,9 +7,9 @@
 
 #include <algorithm>
 
-namespace rl::castle {
+namespace rl::castle_excellent {
 
-CastlePainter::CastlePainter(const CastleLevels& levels, const nes::Bundle& graphics, const CastleArt& art)
+CastleExcellentPainter::CastleExcellentPainter(const CastleExcellentLevels& levels, const nes::Bundle& graphics, const CastleExcellentArt& art)
     : width_(levels.width()), height_(levels.height()) {
     chr_ = graphics.allPixels(art.chr);
     palette_ = graphics.tableValues(art.roomPalette);
@@ -45,25 +45,25 @@ CastlePainter::CastlePainter(const CastleLevels& levels, const nes::Bundle& grap
     } else {
         descriptors_ = levels.renderingInts(QStringLiteral("metasprite_descriptors"));
     }
-    for (const CastleObjectPreview& preview : levels.objectPreviews()) {
+    for (const CastleExcellentObjectPreview& preview : levels.objectPreviews()) {
         previews_.insert(preview.runtimeType, preview);
     }
 }
 
-QColor CastlePainter::color(int index) const {
+QColor CastleExcellentPainter::color(int index) const {
     return QColor::fromRgb(nes::masterColor(index & 0x3f, model_.toStdString()));
 }
 
-QColor CastlePainter::backdrop() const {
+QColor CastleExcellentPainter::backdrop() const {
     return color(palette_.value(0, 0x0f));
 }
 
-int CastlePainter::pixel(int tile, int x, int y) const {
+int CastleExcellentPainter::pixel(int tile, int x, int y) const {
     const int at = tile * 64 + y * 8 + x;
     return at >= 0 && at < chr_.size() ? chr_.at(at) : 0;
 }
 
-QVector<int> CastlePainter::cellPalettes(const QVector<int>& cells) const {
+QVector<int> CastleExcellentPainter::cellPalettes(const QVector<int>& cells) const {
     // As the room loader writes them: the initial attribute bytes, then
     // every cell that does not keep what is there sets its quadrant. The
     // room starts at tile column 4, row 7, across two name tables.
@@ -107,7 +107,7 @@ QVector<int> CastlePainter::cellPalettes(const QVector<int>& cells) const {
     return result;
 }
 
-QImage CastlePainter::cell(int type, int palette) const {
+QImage CastleExcellentPainter::cell(int type, int palette) const {
     const int key = (type << 2) | (palette & 3);
     const auto found = cells_.constFind(key);
     if (found != cells_.constEnd()) {
@@ -126,7 +126,7 @@ QImage CastlePainter::cell(int type, int palette) const {
     return image;
 }
 
-QImage CastlePainter::backgroundTile(int tile, int palette) const {
+QImage CastleExcellentPainter::backgroundTile(int tile, int palette) const {
     QImage image(8, 8, QImage::Format_RGB32);
     for (int y = 0; y < 8; ++y) {
         for (int x = 0; x < 8; ++x) {
@@ -137,11 +137,11 @@ QImage CastlePainter::backgroundTile(int tile, int palette) const {
     return image;
 }
 
-QImage CastlePainter::cellIcon(int type) const {
+QImage CastleExcellentPainter::cellIcon(int type) const {
     return cell(type, ownPalettes_.value(type));
 }
 
-QImage CastlePainter::sprite(const CastleSprite& s) const {
+QImage CastleExcellentPainter::sprite(const CastleExcellentSprite& s) const {
     QImage image(8, 16, QImage::Format_ARGB32);
     image.fill(Qt::transparent);
     // 8x16 sprites: the low bit of the tile picks the pattern table.
@@ -159,7 +159,7 @@ QImage CastlePainter::sprite(const CastleSprite& s) const {
     return image;
 }
 
-QImage CastlePainter::player() const {
+QImage CastleExcellentPainter::player() const {
     // PLAYER_NEUTRAL_METASPRITE ($B4C2): descriptors 6 and 7.
     constexpr int kNeutral = 6;
     QImage image(16, 16, QImage::Format_ARGB32);
@@ -167,17 +167,17 @@ QImage CastlePainter::player() const {
     QPainter painter(&image);
     for (int i = 0; i < 2; ++i) {
         const int d = (kNeutral + i) * 2;
-        painter.drawImage(i * 8, 0, sprite(CastleSprite{descriptors_.value(d), descriptors_.value(d + 1), 0, 0}));
+        painter.drawImage(i * 8, 0, sprite(CastleExcellentSprite{descriptors_.value(d), descriptors_.value(d + 1), 0, 0}));
     }
     return image;
 }
 
-int CastlePainter::runtimeType(int encodedType) const {
+int CastleExcellentPainter::runtimeType(int encodedType) const {
     return runtimeTypes_.value(encodedType, -1);
 }
 
-QVector<CastleSprite> CastlePainter::sprites(const CastleObject& object) const {
-    QVector<CastleSprite> result;
+QVector<CastleExcellentSprite> CastleExcellentPainter::sprites(const CastleExcellentObject& object) const {
+    QVector<CastleExcellentSprite> result;
     const int runtime = runtimeType(object.type);
     const auto found = previews_.constFind(runtime);
     if (runtime < 0 || found == previews_.constEnd()) {
@@ -187,14 +187,14 @@ QVector<CastleSprite> CastlePainter::sprites(const CastleObject& object) const {
     const int baseY = object.y * kCellHeight;
     for (int i = 0; i < found->xOffsets.size(); ++i) {
         const int d = found->descriptorOffset + i * 2;
-        result << CastleSprite{descriptors_.value(d), descriptors_.value(d + 1), baseX + found->xOffsets.at(i), baseY};
+        result << CastleExcellentSprite{descriptors_.value(d), descriptors_.value(d + 1), baseX + found->xOffsets.at(i), baseY};
     }
     return result;
 }
 
-QRect CastlePainter::bounds(const CastleObject& object) const {
+QRect CastleExcellentPainter::bounds(const CastleExcellentObject& object) const {
     QRect box;
-    for (const CastleSprite& s : sprites(object)) {
+    for (const CastleExcellentSprite& s : sprites(object)) {
         box |= QRect(s.x, s.y, 8, 16);
     }
     if (box.isEmpty()) {
@@ -203,9 +203,9 @@ QRect CastlePainter::bounds(const CastleObject& object) const {
     return box;
 }
 
-void CastlePainter::drawObject(QImage& image, const CastleObject& object) const {
+void CastleExcellentPainter::drawObject(QImage& image, const CastleExcellentObject& object) const {
     QPainter painter(&image);
-    const QVector<CastleSprite> list = sprites(object);
+    const QVector<CastleExcellentSprite> list = sprites(object);
     if (list.isEmpty()) {
         // An object the game draws no picture for (a trigger): a dot.
         painter.setPen(Qt::NoPen);
@@ -213,12 +213,12 @@ void CastlePainter::drawObject(QImage& image, const CastleObject& object) const 
         painter.drawEllipse(QRect(object.x * kCellWidth + 5, object.y * kCellHeight + 1, 6, 6));
         return;
     }
-    for (const CastleSprite& s : list) {
+    for (const CastleExcellentSprite& s : list) {
         painter.drawImage(s.x, s.y, sprite(s));
     }
 }
 
-QImage CastlePainter::room(const QVector<int>& cells, const QVector<CastleObject>& objects) const {
+QImage CastleExcellentPainter::room(const QVector<int>& cells, const QVector<CastleExcellentObject>& objects) const {
     QImage image(width_ * kCellWidth, height_ * kCellHeight, QImage::Format_RGB32);
     const QVector<int> palettes = cellPalettes(cells);
     {
@@ -230,14 +230,14 @@ QImage CastlePainter::room(const QVector<int>& cells, const QVector<CastleObject
             }
         }
     }
-    for (const CastleObject& object : objects) {
+    for (const CastleExcellentObject& object : objects) {
         drawObject(image, object);
     }
     return image;
 }
 
-QImage CastlePainter::objectIcon(int type) const {
-    const CastleObject object{type, 0, 0};
+QImage CastleExcellentPainter::objectIcon(int type) const {
+    const CastleExcellentObject object{type, 0, 0};
     const QRect box = bounds(object);
     QImage image(box.right() + 1, box.bottom() + 1, QImage::Format_ARGB32);
     image.fill(Qt::transparent);
@@ -245,4 +245,4 @@ QImage CastlePainter::objectIcon(int type) const {
     return image.copy(box);
 }
 
-}  // namespace rl::castle
+}  // namespace rl::castle_excellent

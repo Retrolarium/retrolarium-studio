@@ -6,20 +6,20 @@
 #include <QPoint>
 #include <QVector>
 
-namespace rl::castle {
+namespace rl::castle_excellent {
 
-class CastleSession;
+class CastleExcellentSession;
 
-// The metasprite descriptors (castle.metasprite-descriptors.v1): the 8x16
+// The metasprite descriptors (castle-excellent.metasprite-descriptors.v1): the 8x16
 // sprites, one tile pair and one attribute byte each, that the player's and
 // the objects' frames are drawn from. The sheet lays the frames the game's
 // code points at side by side, one 8x16 sprite to a column; painting puts
 // the brush pattern pair into a sprite, the inspector edits a frame.
-class CastleSpriteModel final : public sdk::TileMapModel {
+class CastleExcellentSpriteModel final : public sdk::TileMapModel {
     Q_OBJECT
 
 public:
-    explicit CastleSpriteModel(CastleSession* session);
+    explicit CastleExcellentSpriteModel(CastleExcellentSession* session);
 
     QString title() const override { return tr("Sprites"); }
     sdk::Budget budget() const override;
@@ -71,7 +71,7 @@ private:
     QString frameLabel(int frame) const;
     bool setDescriptors(const QHash<int, QPair<int, int>>& values, const QString& text, QString* error);
 
-    CastleSession* session_;
+    CastleExcellentSession* session_;
     QVector<Frame> frames_;
     QHash<int, QPoint> positions_;      // descriptor -> sheet column, row
     int rows_ = 1;
@@ -82,4 +82,4 @@ private:
     QHash<int, int> pending_;           // descriptor -> tile
 };
 
-}  // namespace rl::castle
+}  // namespace rl::castle_excellent

@@ -4,19 +4,19 @@
 
 #include <QImage>
 
-namespace rl::castle {
+namespace rl::castle_excellent {
 
-class CastleSession;
+class CastleExcellentSession;
 
-// The whole castle: the 100 rooms on the game's fixed 10 by 10 grid (room
+// The whole castle-excellent: the 100 rooms on the game's fixed 10 by 10 grid (room
 // n sits at column (n-1) % 10, row (n-1) / 10; up and down are n -/+ 10),
 // each drawn as the room editor draws it, scaled down to fit. Selecting a room
 // makes it the start of Play from selected; Open room edits it.
-class CastleMapModel final : public sdk::TileMapModel {
+class CastleExcellentMapModel final : public sdk::TileMapModel {
     Q_OBJECT
 
 public:
-    explicit CastleMapModel(CastleSession* session);
+    explicit CastleExcellentMapModel(CastleExcellentSession* session);
 
     QString title() const override { return tr("Castle map"); }
     sdk::Inspection inspect() const override;
@@ -44,7 +44,7 @@ private:
     // The document index of the room numbered `number`, or -1.
     int roomIndex(int number) const;
 
-    CastleSession* session_;
+    CastleExcellentSession* session_;
     int selected_ = -1;             // room number, 1-100
     int divisor_ = 4;               // rooms drawn at 1/divisor of their size
     mutable QImage image_;
@@ -53,4 +53,4 @@ private:
     mutable QString imageStart_;
 };
 
-}  // namespace rl::castle
+}  // namespace rl::castle_excellent

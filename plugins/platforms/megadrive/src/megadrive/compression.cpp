@@ -1,6 +1,6 @@
 #include "megadrive/compression.hpp"
 
-#include <retrolarium/core/enigma.hpp>
+#include <retrolarium/core/megadrive/enigma.hpp>
 
 namespace rl::megadrive {
 

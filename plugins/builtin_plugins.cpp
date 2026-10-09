@@ -1,6 +1,6 @@
 #include "builtin_plugins.hpp"
 
-#include "castle/plugin/castle_plugin.hpp"
+#include "castle_excellent/plugin/castle_excellent_plugin.hpp"
 #include "doraemon/plugin/doraemon_plugin.hpp"
 #include "flicky/plugin/flicky_plugin.hpp"
 #include "pacman/plugin/pacman_plugin.hpp"
@@ -13,7 +13,7 @@ namespace rl::plugins {
 // The one place that names concrete plugins. Add a line per plugin.
 void registerBuiltinPlugins() {
     sdk::PluginRegistry& registry = sdk::PluginRegistry::instance();
-    castle::registerPlugin(registry);
+    castle_excellent::registerPlugin(registry);
     doraemon::registerPlugin(registry);
     flicky::registerPlugin(registry);
     pacman::registerPlugin(registry);

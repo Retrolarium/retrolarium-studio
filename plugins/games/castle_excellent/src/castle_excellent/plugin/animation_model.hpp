@@ -4,13 +4,13 @@
 
 #include <QVector>
 
-namespace rl::castle {
+namespace rl::castle_excellent {
 
-class CastleSession;
+class CastleExcellentSession;
 
 // One frame the code draws: metasprite descriptors from `first`, side by
 // side at the renderer's x offsets, for `ticks` frames.
-struct CastleAnimationFrame {
+struct CastleExcellentAnimationFrame {
     int first = 0;
     QVector<int> offsets;   // x of each 8x16 sprite
     int ticks = 8;
@@ -20,23 +20,23 @@ struct CastleAnimationFrame {
 
 // A player animation (from the source's frame selection) or the frames an
 // object type's sprite selector chooses between.
-struct CastleAnimation {
+struct CastleExcellentAnimation {
     QString id;             // "player:walk-right", "object:84"
     QString label;
     QString group;          // "Player", "Enemies", "Objects"
-    QVector<CastleAnimationFrame> frames;
+    QVector<CastleExcellentAnimationFrame> frames;
 };
 
-const QVector<CastleAnimation>& castleAnimations();
+const QVector<CastleExcellentAnimation>& castleExcellentAnimations();
 
 // An animation on the composition canvas: step or play its frames, select a
 // sprite to set its patterns, palette and flip, or drop a pattern pair on
 // it. The descriptors are shared: every frame that uses one changes with it.
-class CastleAnimationModel final : public sdk::CompositionModel {
+class CastleExcellentAnimationModel final : public sdk::CompositionModel {
     Q_OBJECT
 
 public:
-    CastleAnimationModel(CastleSession* session, int animation);
+    CastleExcellentAnimationModel(CastleExcellentSession* session, int animation);
 
     QString title() const override;
     sdk::Inspection inspect() const override;
@@ -58,15 +58,15 @@ public:
     bool dropItem(const QString& libraryItem, const QString& piece, QString* error) override;
 
 private:
-    const CastleAnimation& animation() const;
+    const CastleExcellentAnimation& animation() const;
     int tileOf(int descriptor) const;
     int attributesOf(int descriptor) const;
     bool setDescriptor(int descriptor, int tile, int attributes, QString* error);
 
-    CastleSession* session_;
+    CastleExcellentSession* session_;
     int index_;
     int frame_ = 0;
     int selected_ = -1;     // descriptor
 };
 
-}  // namespace rl::castle
+}  // namespace rl::castle_excellent

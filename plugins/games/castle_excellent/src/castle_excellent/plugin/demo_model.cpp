@@ -1,11 +1,11 @@
-#include "castle/plugin/demo_model.hpp"
+#include "castle_excellent/plugin/demo_model.hpp"
 
-#include "castle/plugin/castle_session.hpp"
+#include "castle_excellent/plugin/castle_excellent_session.hpp"
 
 #include <QJsonObject>
 #include <QRegularExpression>
 
-namespace rl::castle {
+namespace rl::castle_excellent {
 
 namespace {
 
@@ -29,18 +29,18 @@ constexpr int kCommandFrames = 12;
 
 }  // namespace
 
-CastleDemoModel::CastleDemoModel(CastleSession* session) : TableModel(session), session_(session), attached_(session) {
+CastleExcellentDemoModel::CastleExcellentDemoModel(CastleExcellentSession* session) : TableModel(session), session_(session), attached_(session) {
     connect(session_, &sdk::Session::contentChanged, this, &sdk::EditorModel::contentChanged);
     connect(session_, &sdk::Session::selectedStartChanged, this, &sdk::EditorModel::toolsChanged);
     // Play from selected runs the demo while this is open.
     session_->attachDemoEditor(true);
 }
 
-CastleDemoModel::~CastleDemoModel() {
+CastleExcellentDemoModel::~CastleExcellentDemoModel() {
     if (attached_) attached_->attachDemoEditor(false);
 }
 
-CastleDemoModel::Recording CastleDemoModel::stepsFromRecording(const QString& text, int capacity) {
+CastleExcellentDemoModel::Recording CastleExcellentDemoModel::stepsFromRecording(const QString& text, int capacity) {
     Recording result;
     for (const QString& line : text.split(QLatin1Char('\n'), Qt::SkipEmptyParts)) {
         const QStringList words = line.simplified().split(QLatin1Char(' '));
@@ -63,11 +63,11 @@ CastleDemoModel::Recording CastleDemoModel::stepsFromRecording(const QString& te
     return result;
 }
 
-QJsonArray CastleDemoModel::steps() const {
+QJsonArray CastleExcellentDemoModel::steps() const {
     return session_->demo().value(QStringLiteral("steps")).toArray();
 }
 
-QVector<sdk::TableColumn> CastleDemoModel::columns() const {
+QVector<sdk::TableColumn> CastleExcellentDemoModel::columns() const {
     sdk::TableColumn step;
     step.key = QStringLiteral("step");
     step.label = tr("Step");
@@ -92,11 +92,11 @@ QVector<sdk::TableColumn> CastleDemoModel::columns() const {
     return {step, commands, buttons, at};
 }
 
-int CastleDemoModel::rowCount() const {
+int CastleExcellentDemoModel::rowCount() const {
     return steps().size();
 }
 
-QString CastleDemoModel::cell(int row, int column) const {
+QString CastleExcellentDemoModel::cell(int row, int column) const {
     const QJsonArray list = steps();
     if (row < 0 || row >= list.size()) return {};
     const QJsonObject item = list.at(row).toObject();
@@ -119,20 +119,20 @@ QString CastleDemoModel::cell(int row, int column) const {
     }
 }
 
-bool CastleDemoModel::isRowDirty(int row) const {
+bool CastleExcellentDemoModel::isRowDirty(int row) const {
     const QJsonArray now = steps();
     const QJsonArray saved = session_->savedDemo().value(QStringLiteral("steps")).toArray();
     return row >= 0 && row < now.size() && now.at(row) != saved.at(row);
 }
 
-void CastleDemoModel::setCurrentRow(int row) {
+void CastleExcellentDemoModel::setCurrentRow(int row) {
     if (row != row_ && row >= 0 && row < rowCount()) {
         row_ = row;
         emit selectionChanged();
     }
 }
 
-bool CastleDemoModel::setCell(int row, int column, const QString& value, QString* error) {
+bool CastleExcellentDemoModel::setCell(int row, int column, const QString& value, QString* error) {
     if (row < 0 || row >= rowCount() || (column != 1 && column != 2)) return TableModel::setCell(row, column, value, error);
     QJsonArray list = steps();
     QJsonObject item = list.at(row).toObject();
@@ -164,7 +164,7 @@ bool CastleDemoModel::setCell(int row, int column, const QString& value, QString
                               [list](QJsonObject& demo) { demo.insert(QStringLiteral("steps"), list); }, error);
 }
 
-sdk::Budget CastleDemoModel::budget() const {
+sdk::Budget CastleExcellentDemoModel::budget() const {
     int commands = 0;
     for (const QJsonValue& v : steps()) commands += v.toObject().value(QStringLiteral("commands")).toInt();
     sdk::Budget budget;
@@ -174,11 +174,11 @@ sdk::Budget CastleDemoModel::budget() const {
     return budget;
 }
 
-QString CastleDemoModel::startPoint() const {
+QString CastleExcellentDemoModel::startPoint() const {
     return session_->demoStart() ? session_->selectedStart() : QString();
 }
 
-QVector<sdk::EditorAction> CastleDemoModel::actions() const {
+QVector<sdk::EditorAction> CastleExcellentDemoModel::actions() const {
     sdk::EditorAction loop;
     loop.id = QStringLiteral("loop");
     loop.label = tr("Loop demo");
@@ -210,13 +210,13 @@ QVector<sdk::EditorAction> CastleDemoModel::actions() const {
     return {loop, record};
 }
 
-void CastleDemoModel::triggerAction(const QString& id) {
+void CastleExcellentDemoModel::triggerAction(const QString& id) {
     if (id == QLatin1String("loop")) session_->playDemo(false);
     else if (id == QLatin1String("record")) session_->playDemo(true);
     else if (id == QLatin1String("stop")) session_->stopRecording();
 }
 
-sdk::Inspection CastleDemoModel::inspect() const {
+sdk::Inspection CastleExcellentDemoModel::inspect() const {
     sdk::Inspection inspection;
     inspection.kicker = tr("Title demo");
     inspection.title = tr("Step %1").arg(row_ + 1);
@@ -227,8 +227,8 @@ sdk::Inspection CastleDemoModel::inspect() const {
                          "hold as each command starts; the script holds %1 commands. Write buttons as "
                          "words, e.g. A RIGHT.")
                           .arg(session_->demoCapacity());
-    inspection.engineTag = QStringLiteral("castle.demo@1");
+    inspection.engineTag = QStringLiteral("castle-excellent.demo@1");
     return inspection;
 }
 
-}  // namespace rl::castle
+}  // namespace rl::castle_excellent

@@ -1,6 +1,6 @@
-#include "castle/data/music.hpp"
+#include "castle_excellent/data/music.hpp"
 
-#include "castle/data/levels.hpp"
+#include "castle_excellent/data/levels.hpp"
 #include "sdk/i18n.hpp"
 
 #include <QJsonArray>
@@ -9,7 +9,7 @@
 #include <algorithm>
 #include <cmath>
 
-namespace rl::castle {
+namespace rl::castle_excellent {
 
 namespace {
 
@@ -89,14 +89,14 @@ struct Cursor {
 
 }  // namespace
 
-int CastleMusic::pitchOf(const QJsonObject& music, char letter, char accidental, int octave, int channel) {
+int CastleExcellentMusic::pitchOf(const QJsonObject& music, char letter, char accidental, int octave, int channel) {
     if (noteIndex(letter) < 0) return -1;
     const QByteArray memory = memoryOf(music);
     return pitchFromPeriod(memory, periodIndex(memory, letter, accidental, octave, channel), channel);
 }
 
-QVector<QVector<CastleMusicNote>> CastleMusic::trace(const QJsonObject& music, int track, int frames) {
-    QVector<QVector<CastleMusicNote>> lanes(kChannels);
+QVector<QVector<CastleExcellentMusicNote>> CastleExcellentMusic::trace(const QJsonObject& music, int track, int frames) {
+    QVector<QVector<CastleExcellentMusicNote>> lanes(kChannels);
     const QJsonArray streams = music.value(QStringLiteral("streams")).toArray();
     const QJsonObject set = music.value(QStringLiteral("track_sets")).toArray().at(track).toObject();
     QHash<QString, int> ids;
@@ -165,7 +165,7 @@ QVector<QVector<CastleMusicNote>> CastleMusic::trace(const QJsonObject& music, i
                     cur.position = p + 1;
                     continue;
                 }
-                CastleMusicNote note;
+                CastleExcellentMusicNote note;
                 note.start = frame;
                 note.stream = cur.stream;
                 note.position = cur.position;
@@ -205,24 +205,24 @@ QVector<QVector<CastleMusicNote>> CastleMusic::trace(const QJsonObject& music, i
     return lanes;
 }
 
-QString CastleMusic::checkText(const QString& text) {
-    if (text.isEmpty()) return rlTr("castle", "A stream needs at least one command.");
+QString CastleExcellentMusic::checkText(const QString& text) {
+    if (text.isEmpty()) return rlTr("castle_excellent", "A stream needs at least one command.");
     const QByteArray data = text.toLatin1();
-    if (QString::fromLatin1(data) != text) return rlTr("castle", "MML is plain ASCII.");
+    if (QString::fromLatin1(data) != text) return rlTr("castle_excellent", "MML is plain ASCII.");
     for (int i = 0; i < data.size();) {
         const char c = data.at(i++);
         if (c == 'o' || c == 't' || c == 'l' || c == 'v') {
-            if (i >= data.size()) return rlTr("castle", "'%1' needs an argument.").arg(QLatin1Char(c));
+            if (i >= data.size()) return rlTr("castle_excellent", "'%1' needs an argument.").arg(QLatin1Char(c));
             const char a = data.at(i++);
             if ((c == 'o' || c == 't') && !(a >= '0' && a <= '9'))
-                return rlTr("castle", "'%1' takes a digit.").arg(QLatin1Char(c));
-            if (c == 'l' && defaultLengthIndex(a) < 0) return rlTr("castle", "'l' takes @, 8, 4, 2 or 1.");
+                return rlTr("castle_excellent", "'%1' takes a digit.").arg(QLatin1Char(c));
+            if (c == 'l' && defaultLengthIndex(a) < 0) return rlTr("castle_excellent", "'l' takes @, 8, 4, 2 or 1.");
             if (c == 'v' && !((a >= '0' && a <= '9') || (a >= 'a' && a <= 'f')))
-                return rlTr("castle", "'v' takes 0-9 or a-f.");
+                return rlTr("castle_excellent", "'v' takes 0-9 or a-f.");
             continue;
         }
         if (noteIndex(c) < 0 && c != 'r') {
-            return rlTr("castle", "'%1' at %2 is not MML (notes a-g, r, o l t v commands).")
+            return rlTr("castle_excellent", "'%1' at %2 is not MML (notes a-g, r, o l t v commands).")
                 .arg(QLatin1Char(c))
                 .arg(i - 1);
         }
@@ -233,7 +233,7 @@ QString CastleMusic::checkText(const QString& text) {
     return {};
 }
 
-int CastleMusic::usedBytes(const QJsonObject& music) {
+int CastleExcellentMusic::usedBytes(const QJsonObject& music) {
     int used = 0;
     for (const QJsonValue& v : music.value(QStringLiteral("streams")).toArray()) {
         used += v.toObject().value(QStringLiteral("text")).toString().toLatin1().size() + 3;
@@ -241,12 +241,12 @@ int CastleMusic::usedBytes(const QJsonObject& music) {
     return used;
 }
 
-QJsonObject CastleMusic::withText(const QJsonObject& music, int stream, const QString& text) {
+QJsonObject CastleExcellentMusic::withText(const QJsonObject& music, int stream, const QString& text) {
     const QString problem = checkText(text);
-    if (!problem.isEmpty()) throw CastleError(problem.toStdString());
+    if (!problem.isEmpty()) throw CastleExcellentError(problem.toStdString());
     QJsonObject next = music;
     QJsonArray streams = next.value(QStringLiteral("streams")).toArray();
-    if (stream < 0 || stream >= streams.size()) throw CastleError("No such music stream.");
+    if (stream < 0 || stream >= streams.size()) throw CastleExcellentError("No such music stream.");
     QJsonObject s = streams.at(stream).toObject();
     s.insert(QStringLiteral("text"), text);
     streams.replace(stream, s);
@@ -254,7 +254,7 @@ QJsonObject CastleMusic::withText(const QJsonObject& music, int stream, const QS
     const int used = usedBytes(next);
     const int capacity = next.value(QStringLiteral("capacity_bytes")).toInt();
     if (used > capacity) {
-        throw CastleError(rlTr("castle", "The music would take %1 of %2 bytes; shorten a stream by %3 first.")
+        throw CastleExcellentError(rlTr("castle_excellent", "The music would take %1 of %2 bytes; shorten a stream by %3 first.")
                               .arg(used)
                               .arg(capacity)
                               .arg(used - capacity)
@@ -264,7 +264,7 @@ QJsonObject CastleMusic::withText(const QJsonObject& music, int stream, const QS
     return next;
 }
 
-QString CastleMusic::retune(const QJsonObject& music, const CastleMusicNote& note, int channel, int pitch,
+QString CastleExcellentMusic::retune(const QJsonObject& music, const CastleExcellentMusicNote& note, int channel, int pitch,
                             const QString& text) {
     if (note.pitch < 0 || note.position >= text.size()) return {};
     const QByteArray memory = memoryOf(music);
@@ -324,4 +324,4 @@ QString CastleMusic::retune(const QJsonObject& music, const CastleMusicNote& not
     return {};
 }
 
-}  // namespace rl::castle
+}  // namespace rl::castle_excellent

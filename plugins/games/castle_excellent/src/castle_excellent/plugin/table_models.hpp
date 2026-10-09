@@ -2,18 +2,18 @@
 
 #include "sdk/editor_model.hpp"
 
-namespace rl::castle {
+namespace rl::castle_excellent {
 
-class CastleSession;
+class CastleExcellentSession;
 
-// The sub-command menu words (castle.sub-command-text.v1): each record is a
+// The sub-command menu words (castle-excellent.sub-command-text.v1): each record is a
 // fixed run of font codes ending in 0. Letters A-Z are codes $71-$8A and
 // $FF is a blank.
-class CastleTextModel final : public sdk::TableModel {
+class CastleExcellentTextModel final : public sdk::TableModel {
     Q_OBJECT
 
 public:
-    CastleTextModel(CastleSession* session, const QString& resource);
+    CastleExcellentTextModel(CastleExcellentSession* session, const QString& resource);
 
     QString title() const override { return tr("Menu text"); }
     sdk::Budget budget() const override;
@@ -42,18 +42,18 @@ private:
     QString recordId(int row) const;
     bool setText(int row, const QString& text, QString* error);
 
-    CastleSession* session_;
+    CastleExcellentSession* session_;
     QString resource_;
     int row_ = 0;
 };
 
-// Sound-effect tuning bytes (castle.sfx-parameters.v1): named records of
+// Sound-effect tuning bytes (castle-excellent.sfx-parameters.v1): named records of
 // period and timing values the sound driver reads.
-class CastleSfxModel final : public sdk::TableModel {
+class CastleExcellentSfxModel final : public sdk::TableModel {
     Q_OBJECT
 
 public:
-    CastleSfxModel(CastleSession* session, const QString& resource);
+    CastleExcellentSfxModel(CastleExcellentSession* session, const QString& resource);
 
     QString title() const override { return tr("Sound effect parameters"); }
     sdk::Inspection inspect() const override;
@@ -69,17 +69,17 @@ public:
 private:
     int width() const;
 
-    CastleSession* session_;
+    CastleExcellentSession* session_;
     QString resource_;
     int row_ = 0;
 };
 
 // The Playtest view: the build in MAME's NES driver.
-class CastlePlaytestModel final : public sdk::EmulatorModel {
+class CastleExcellentPlaytestModel final : public sdk::EmulatorModel {
     Q_OBJECT
 
 public:
-    explicit CastlePlaytestModel(CastleSession* session);
+    explicit CastleExcellentPlaytestModel(CastleExcellentSession* session);
 
     QString title() const override { return tr("Build and run"); }
     sdk::Inspection inspect() const override;
@@ -90,7 +90,7 @@ public:
     bool isRecording() const override;
 
 private:
-    CastleSession* session_;
+    CastleExcellentSession* session_;
 };
 
-}  // namespace rl::castle
+}  // namespace rl::castle_excellent

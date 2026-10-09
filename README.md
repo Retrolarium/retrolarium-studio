@@ -45,7 +45,7 @@ to do when Windows warns about that.
 - [Running from source and packaging](docs/developing.md).
 - [Architecture](docs/architecture.md): the plugin model, the source layout, the
   theme rules.
-- [Game status](docs/game-status.md): each game's integration in detail.
+- [Game status](docs/game_status.md): each game's integration in detail.
 
 ## Building from source
 

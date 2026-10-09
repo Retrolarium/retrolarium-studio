@@ -1,25 +1,25 @@
 #pragma once
 
-#include "castle/data/levels.hpp"
+#include "castle_excellent/data/levels.hpp"
 #include "sdk/editor_model.hpp"
 
 #include <QHash>
 
 #include <optional>
 
-namespace rl::castle {
+namespace rl::castle_excellent {
 
-class CastleSession;
+class CastleExcellentSession;
 
-// One Castle room on the map editor: 20x20 logical cells of 16x8 pixels.
+// One Castle Excellent room on the map editor: 20x20 logical cells of 16x8 pixels.
 // The Cells layer paints cell types from the sheet beside the room; the
 // Objects layer moves, adds and removes the room's static objects and the
 // start marker that "Play from selected" puts the player at.
-class CastleRoomModel final : public sdk::TileMapModel {
+class CastleExcellentRoomModel final : public sdk::TileMapModel {
     Q_OBJECT
 
 public:
-    CastleRoomModel(CastleSession* session, int room);
+    CastleExcellentRoomModel(CastleExcellentSession* session, int room);
 
     QString title() const override;
     sdk::Budget budget() const override;
@@ -63,15 +63,15 @@ public:
 
 private:
     QVector<int> roomCells() const;
-    QVector<CastleObject> roomObjects() const;
+    QVector<CastleExcellentObject> roomObjects() const;
     int objectIndex(const QString& id) const;
     sdk::Library objectLibrary() const;
     QString typeLabel(int type) const;
-    bool commitObjects(const QVector<CastleObject>& objects, const QString& text, QString* error);
+    bool commitObjects(const QVector<CastleExcellentObject>& objects, const QString& text, QString* error);
     QRect startCells() const;
     bool hasStart() const;      // the user has put the player in this room
 
-    CastleSession* session_;
+    CastleExcellentSession* session_;
     int room_;
     QString layer_ = QStringLiteral("cells");
     int brush_ = 0;
@@ -82,7 +82,7 @@ private:
     bool stroking_ = false;
     QHash<int, int> pending_;               // cell index: type
     // A drag moves records here and writes once on release.
-    std::optional<QVector<CastleObject>> dragged_;
+    std::optional<QVector<CastleExcellentObject>> dragged_;
     QPoint dragStartOffset_;                // start marker: pixel offset in its box
 
     mutable QVector<sdk::LibraryItem> cellSheet_;
@@ -90,4 +90,4 @@ private:
     mutable quint64 sheetRevision_ = ~quint64(0);
 };
 
-}  // namespace rl::castle
+}  // namespace rl::castle_excellent

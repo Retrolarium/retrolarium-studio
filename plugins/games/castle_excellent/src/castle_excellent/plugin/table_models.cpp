@@ -1,13 +1,13 @@
-#include "castle/plugin/table_models.hpp"
+#include "castle_excellent/plugin/table_models.hpp"
 
-#include "castle/plugin/castle_session.hpp"
+#include "castle_excellent/plugin/castle_excellent_session.hpp"
 #include "nes/editors.hpp"
 
 #include <QJsonArray>
 
 #include <algorithm>
 
-namespace rl::castle {
+namespace rl::castle_excellent {
 
 namespace {
 
@@ -28,12 +28,12 @@ QString titled(QString text) {
 
 // ---------------------------------------------------------------- menu text
 
-CastleTextModel::CastleTextModel(CastleSession* session, const QString& resource)
+CastleExcellentTextModel::CastleExcellentTextModel(CastleExcellentSession* session, const QString& resource)
     : TableModel(session), session_(session), resource_(resource) {
     connect(session_, &sdk::Session::contentChanged, this, &sdk::EditorModel::contentChanged);
 }
 
-QString CastleTextModel::decode(const QVector<int>& codes) {
+QString CastleExcellentTextModel::decode(const QVector<int>& codes) {
     QString text;
     for (int code : codes) {
         if (code == 0) break;
@@ -46,7 +46,7 @@ QString CastleTextModel::decode(const QVector<int>& codes) {
     return text;
 }
 
-QVector<int> CastleTextModel::encode(const QString& text, int size, QString* error) {
+QVector<int> CastleExcellentTextModel::encode(const QString& text, int size, QString* error) {
     QVector<int> codes;
     const QString upper = text.toUpper();
     for (int i = 0; i < upper.size(); ++i) {
@@ -80,7 +80,7 @@ QVector<int> CastleTextModel::encode(const QString& text, int size, QString* err
     return codes;
 }
 
-QVector<sdk::TableColumn> CastleTextModel::columns() const {
+QVector<sdk::TableColumn> CastleExcellentTextModel::columns() const {
     sdk::TableColumn name;
     name.key = QStringLiteral("name");
     name.label = tr("Name");
@@ -99,30 +99,30 @@ QVector<sdk::TableColumn> CastleTextModel::columns() const {
     return {name, text, length};
 }
 
-int CastleTextModel::rowCount() const {
+int CastleExcellentTextModel::rowCount() const {
     return records(session_->bundle(), resource_).size();
 }
 
-QVector<int> CastleTextModel::values(int row) const {
+QVector<int> CastleExcellentTextModel::values(int row) const {
     return nes::intsOf(records(session_->bundle(), resource_).at(row).toObject().value(QStringLiteral("values")));
 }
 
-QVector<int> CastleTextModel::savedValues(int row) const {
+QVector<int> CastleExcellentTextModel::savedValues(int row) const {
     return nes::intsOf(records(session_->savedBundle(), resource_).at(row).toObject().value(QStringLiteral("values")));
 }
 
-QString CastleTextModel::recordId(int row) const {
+QString CastleExcellentTextModel::recordId(int row) const {
     return records(session_->bundle(), resource_).at(row).toObject().value(QStringLiteral("id")).toString();
 }
 
-QString CastleTextModel::cell(int row, int column) const {
+QString CastleExcellentTextModel::cell(int row, int column) const {
     if (row < 0 || row >= rowCount()) return {};
     if (column == 0) return titled(recordId(row));
     if (column == 1) return decode(values(row));
     return {};
 }
 
-sdk::Budget CastleTextModel::cellBudget(int row, int) const {
+sdk::Budget CastleExcellentTextModel::cellBudget(int row, int) const {
     sdk::Budget budget;
     if (row >= 0 && row < rowCount()) {
         // In bytes: a {XX} code is one.
@@ -133,7 +133,7 @@ sdk::Budget CastleTextModel::cellBudget(int row, int) const {
     return budget;
 }
 
-int CastleTextModel::maxLength(int row, int) const {
+int CastleExcellentTextModel::maxLength(int row, int) const {
     if (row < 0 || row >= rowCount()) return -1;
     // A limit in characters would cut a {XX} code apart: encode checks the
     // bytes of such a word instead.
@@ -141,18 +141,18 @@ int CastleTextModel::maxLength(int row, int) const {
     return values(row).size() - 1;
 }
 
-bool CastleTextModel::isRowDirty(int row) const {
+bool CastleExcellentTextModel::isRowDirty(int row) const {
     return row >= 0 && row < rowCount() && values(row) != savedValues(row);
 }
 
-void CastleTextModel::setCurrentRow(int row) {
+void CastleExcellentTextModel::setCurrentRow(int row) {
     if (row != row_ && row >= 0 && row < rowCount()) {
         row_ = row;
         emit selectionChanged();
     }
 }
 
-bool CastleTextModel::setText(int row, const QString& text, QString* error) {
+bool CastleExcellentTextModel::setText(int row, const QString& text, QString* error) {
     if (row < 0 || row >= rowCount()) return false;
     const QVector<int> codes = encode(text, values(row).size(), error);
     if (codes.isEmpty()) return false;
@@ -172,17 +172,17 @@ bool CastleTextModel::setText(int row, const QString& text, QString* error) {
                                 error);
 }
 
-bool CastleTextModel::setCell(int row, int column, const QString& value, QString* error) {
+bool CastleExcellentTextModel::setCell(int row, int column, const QString& value, QString* error) {
     if (column != 1) return TableModel::setCell(row, column, value, error);
     return setText(row, value, error);
 }
 
-bool CastleTextModel::setField(const QString& key, const QVariant& value, QString* error) {
+bool CastleExcellentTextModel::setField(const QString& key, const QVariant& value, QString* error) {
     if (key == QLatin1String("text")) return setText(row_, value.toString(), error);
     return TableModel::setField(key, value, error);
 }
 
-sdk::Budget CastleTextModel::budget() const {
+sdk::Budget CastleExcellentTextModel::budget() const {
     sdk::Budget budget;
     for (int row = 0; row < rowCount(); ++row) {
         budget.used += decode(values(row)).size();
@@ -192,7 +192,7 @@ sdk::Budget CastleTextModel::budget() const {
     return budget;
 }
 
-sdk::Inspection CastleTextModel::inspect() const {
+sdk::Inspection CastleExcellentTextModel::inspect() const {
     sdk::Inspection inspection;
     if (row_ < 0 || row_ >= rowCount()) return inspection;
     inspection.kicker = tr("Menu word");
@@ -210,19 +210,19 @@ sdk::Inspection CastleTextModel::inspect() const {
                          "blanks. The font has A-Z and the blank; write another code as {XX}.");
     QStringList bytes;
     for (int v : values(row_)) bytes << QStringLiteral("%1").arg(v, 2, 16, QLatin1Char('0')).toUpper();
-    inspection.engineTag = QStringLiteral("castle.sub-command-text.v1");
+    inspection.engineTag = QStringLiteral("castle-excellent.sub-command-text.v1");
     inspection.engine = {{tr("Record"), recordId(row_)}, {tr("Bytes"), bytes.join(QLatin1Char(' '))}};
     return inspection;
 }
 
 // ---------------------------------------------------------------- sound effect parameters
 
-CastleSfxModel::CastleSfxModel(CastleSession* session, const QString& resource)
+CastleExcellentSfxModel::CastleExcellentSfxModel(CastleExcellentSession* session, const QString& resource)
     : TableModel(session), session_(session), resource_(resource) {
     connect(session_, &sdk::Session::contentChanged, this, &sdk::EditorModel::contentChanged);
 }
 
-int CastleSfxModel::width() const {
+int CastleExcellentSfxModel::width() const {
     int width = 0;
     for (const QJsonValue& value : records(session_->bundle(), resource_)) {
         width = std::max(width, int(value.toObject().value(QStringLiteral("values")).toArray().size()));
@@ -230,7 +230,7 @@ int CastleSfxModel::width() const {
     return width;
 }
 
-QVector<sdk::TableColumn> CastleSfxModel::columns() const {
+QVector<sdk::TableColumn> CastleExcellentSfxModel::columns() const {
     sdk::TableColumn name;
     name.key = QStringLiteral("name");
     name.label = tr("Parameter");
@@ -249,11 +249,11 @@ QVector<sdk::TableColumn> CastleSfxModel::columns() const {
     return result;
 }
 
-int CastleSfxModel::rowCount() const {
+int CastleExcellentSfxModel::rowCount() const {
     return records(session_->bundle(), resource_).size();
 }
 
-QString CastleSfxModel::cell(int row, int column) const {
+QString CastleExcellentSfxModel::cell(int row, int column) const {
     if (row < 0 || row >= rowCount()) return {};
     const QJsonObject record = records(session_->bundle(), resource_).at(row).toObject();
     if (column == 0) return titled(record.value(QStringLiteral("id")).toString());
@@ -261,19 +261,19 @@ QString CastleSfxModel::cell(int row, int column) const {
     return column - 1 < values.size() ? QString::number(values.at(column - 1).toInt()) : QString();
 }
 
-bool CastleSfxModel::isRowDirty(int row) const {
+bool CastleExcellentSfxModel::isRowDirty(int row) const {
     return row >= 0 && row < rowCount() &&
            records(session_->bundle(), resource_).at(row) != records(session_->savedBundle(), resource_).at(row);
 }
 
-void CastleSfxModel::setCurrentRow(int row) {
+void CastleExcellentSfxModel::setCurrentRow(int row) {
     if (row != row_ && row >= 0 && row < rowCount()) {
         row_ = row;
         emit selectionChanged();
     }
 }
 
-bool CastleSfxModel::setCell(int row, int column, const QString& value, QString* error) {
+bool CastleExcellentSfxModel::setCell(int row, int column, const QString& value, QString* error) {
     if (row < 0 || row >= rowCount() || column < 1) return TableModel::setCell(row, column, value, error);
     bool ok = false;
     const int number = value.trimmed().startsWith(QLatin1Char('$')) ? value.trimmed().mid(1).toInt(&ok, 16)
@@ -302,40 +302,40 @@ bool CastleSfxModel::setCell(int row, int column, const QString& value, QString*
                                 error);
 }
 
-sdk::Inspection CastleSfxModel::inspect() const {
+sdk::Inspection CastleExcellentSfxModel::inspect() const {
     sdk::Inspection inspection;
     if (row_ < 0 || row_ >= rowCount()) return inspection;
     inspection.kicker = tr("Sound effect");
     inspection.title = cell(row_, 0);
     inspection.note = tr("Bytes the sound driver steps through for this effect: pitch periods "
                          "(lower is higher) and timings. Each is 0-255.");
-    inspection.engineTag = QStringLiteral("castle.sfx-parameters.v1");
+    inspection.engineTag = QStringLiteral("castle-excellent.sfx-parameters.v1");
     return inspection;
 }
 
 // ---------------------------------------------------------------- playtest
 
-CastlePlaytestModel::CastlePlaytestModel(CastleSession* session) : EmulatorModel(session), session_(session) {
-    connect(session_, &CastleSession::startChanged, this, [this] {
+CastleExcellentPlaytestModel::CastleExcellentPlaytestModel(CastleExcellentSession* session) : EmulatorModel(session), session_(session) {
+    connect(session_, &CastleExcellentSession::startChanged, this, [this] {
         emit toolsChanged();
         emit contentChanged();
     });
     connect(session_, &sdk::Session::selectedStartChanged, this, &sdk::EditorModel::contentChanged);
 }
 
-QString CastlePlaytestModel::startLabel() const {
+QString CastleExcellentPlaytestModel::startLabel() const {
     return session_->selectedStart();
 }
 
-void CastlePlaytestModel::play() {
+void CastleExcellentPlaytestModel::play() {
     session_->playSelected();
 }
 
-bool CastlePlaytestModel::isRecording() const {
+bool CastleExcellentPlaytestModel::isRecording() const {
     return session_->isRecording();
 }
 
-sdk::Inspection CastlePlaytestModel::inspect() const {
+sdk::Inspection CastleExcellentPlaytestModel::inspect() const {
     sdk::Inspection inspection;
     inspection.kicker = tr("Session");
     inspection.title = startLabel();
@@ -346,8 +346,8 @@ sdk::Inspection CastlePlaytestModel::inspect() const {
     inspection.fields = {core};
     inspection.note = tr("Play from selected builds the ROM with the kit and enters the room open in "
                          "Rooms with the player at the start marker; Play starts from power-on.");
-    inspection.engineTag = QStringLiteral("castle-point-playtest");
+    inspection.engineTag = QStringLiteral("castle-excellent-point-playtest");
     return inspection;
 }
 
-}  // namespace rl::castle
+}  // namespace rl::castle_excellent

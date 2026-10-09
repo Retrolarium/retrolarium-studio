@@ -17,7 +17,7 @@ namespace rl::nes {
 class BundleOwner;
 
 // A sound effect as the session lists it: the kit's effect key
-// ("smb:square2:1", "castle:3", "doraemon:0:12") and what to call it.
+// ("smb:square2:1", "castle-excellent:3", "doraemon:0:12") and what to call it.
 struct SoundEffect {
     QString key;
     QString title;
@@ -42,7 +42,7 @@ public:
     virtual bool setTableValue(const QString& table, int index, int value, const QString& text, QString* error);
 };
 
-// Bundle resources of a nes::BundleOwner session (Castle's SFX parameters).
+// Bundle resources of a nes::BundleOwner session (Castle Excellent's SFX parameters).
 std::shared_ptr<SoundEffectData> bundleSoundEffectData(BundleOwner* owner, QStringList resources);
 
 // One NES sound effect played through the game's own driver: the kit runs

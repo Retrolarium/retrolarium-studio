@@ -85,7 +85,7 @@ sdk::Inspection PlaytestModel::inspect() const {
                          "game from power-on. Opening a round in Levels selects it.");
     inspection.engineTag = QStringLiteral("flicky-round-playtest");
     inspection.engine = {{QStringLiteral("Output"), QStringLiteral("build/flicky-edited.bin")},
-                         {QStringLiteral("Script"), QStringLiteral("flicky_mame_round_playtest.lua")},
+                         {QStringLiteral("Script"), QStringLiteral("flicky/playtest.lua")},
                          {QStringLiteral("MAME"), mame.isEmpty() ? tr("not found") : mame}};
     return inspection;
 }

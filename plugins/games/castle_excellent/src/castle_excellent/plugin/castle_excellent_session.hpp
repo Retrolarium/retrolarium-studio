@@ -1,7 +1,7 @@
 #pragma once
 
-#include "castle/data/levels.hpp"
-#include "castle/render/room_painter.hpp"
+#include "castle_excellent/data/levels.hpp"
+#include "castle_excellent/render/room_painter.hpp"
 #include "nes/editors.hpp"
 #include "sdk/kit_session.hpp"
 
@@ -12,17 +12,17 @@
 #include <functional>
 #include <memory>
 
-namespace rl::castle {
+namespace rl::castle_excellent {
 
-// The documents of a Castle project, swapped whole by undo. The title demo
+// The documents of a Castle Excellent project, swapped whole by undo. The title demo
 // (documents/demo.json) is empty in projects made before it.
-struct CastleState {
-    CastleLevels levels;
+struct CastleExcellentState {
+    CastleExcellentLevels levels;
     nes::Bundle graphics;
     QJsonObject demo;
     QJsonObject screens;    // documents/screens.json, empty before it is added
 
-    bool operator==(const CastleState& other) const {
+    bool operator==(const CastleExcellentState& other) const {
         return levels == other.levels && graphics == other.graphics && demo == other.demo &&
                screens == other.screens;
     }
@@ -33,7 +33,7 @@ struct CastleState {
 // Where Play from selected starts: a room, and in it the player's top-left.
 // The player stands where the user dropped the start marker in that room;
 // without one (placed false) he starts at the default spot.
-struct CastleStart {
+struct CastleExcellentStart {
     int room = 1;
     QPoint pixel{152, 136};
     bool placed = false;
@@ -41,11 +41,11 @@ struct CastleStart {
 
 // An open Castle Excellent / Castlequest project (`rldisasm preset`):
 // the room document and the graphics bundle.
-class CastleSession final : public sdk::KitSession, public nes::BundleOwner {
+class CastleExcellentSession final : public sdk::KitSession, public nes::BundleOwner {
     Q_OBJECT
 
 public:
-    static std::unique_ptr<CastleSession> open(const sdk::ProjectFile& project, QString* error);
+    static std::unique_ptr<CastleExcellentSession> open(const sdk::ProjectFile& project, QString* error);
 
     sdk::Profile profile() const override;
     QVector<sdk::Kind> kinds() const override;
@@ -70,24 +70,24 @@ public:
     QVector<sdk::PaletteSample> paletteSamples(const QString& table) const override;
     QStringList paletteRowLabels(const QString& table) const override;
 
-    const CastleLevels& levels() const { return state_.levels; }
-    const CastleLevels& savedLevels() const { return saved_.levels; }
-    const CastleArt& art() const { return art_; }
+    const CastleExcellentLevels& levels() const { return state_.levels; }
+    const CastleExcellentLevels& savedLevels() const { return saved_.levels; }
+    const CastleExcellentArt& art() const { return art_; }
     // Rebuilt when the documents change.
-    const CastlePainter& painter() const;
+    const CastleExcellentPainter& painter() const;
     quint64 revision() const { return revision_; }
 
     // One undo step: the edit runs on a copy of both documents.
-    bool edit(const QString& text, const std::function<void(CastleState&)>& change, QString* error);
+    bool edit(const QString& text, const std::function<void(CastleExcellentState&)>& change, QString* error);
 
-    CastleStart start() const;
+    CastleExcellentStart start() const;
     // A placed start puts the room's marker at its pixel; an unplaced one only
     // picks the room.
-    void setStart(const CastleStart& start);
+    void setStart(const CastleExcellentStart& start);
     // Takes the marker out of `room`: the player starts at the default spot.
     void clearStart(int room);
 
-    // The music resource of the graphics bundle (castle.mml-music.v1).
+    // The music resource of the graphics bundle (castle-excellent.mml-music.v1).
     QJsonObject music() const;
     QJsonObject savedMusic() const;
     bool editMusic(const QString& text, const QJsonObject& next, QString* error);
@@ -112,13 +112,13 @@ signals:
     void startChanged();
 
 private:
-    CastleSession() = default;
-    void setState(const CastleState& state, quint64 revision);
+    CastleExcellentSession() = default;
+    void setState(const CastleExcellentState& state, quint64 revision);
     void launch(bool fromStart);
     void launchDemo(bool record);
     void useColours(sdk::ProcessSpec& game) const;
     void applyRecording(const QString& path);
-    // Runs the kit's castle-upgrade (title demo and screens), loads what it
+    // Runs the kit's castle-excellent-upgrade (title demo and screens), loads what it
     // added and opens `kind`/`document`.
     void upgradeDocuments(const QString& kind, const QString& document);
 
@@ -128,19 +128,19 @@ private:
     QString screensPath_;
     QString musicId_;
     int demoEditors_ = 0;
-    CastleState state_;
-    CastleState saved_;
-    CastleArt art_;
+    CastleExcellentState state_;
+    CastleExcellentState saved_;
+    CastleExcellentArt art_;
     quint64 revision_ = 0;
     quint64 nextRevision_ = 1;
-    CastleStart start_;                 // its room; pixels come from placedStarts_
+    CastleExcellentStart start_;                 // its room; pixels come from placedStarts_
     QHash<int, QPoint> placedStarts_;   // room -> where the user put the player
 
-    mutable std::unique_ptr<CastlePainter> painter_;
+    mutable std::unique_ptr<CastleExcellentPainter> painter_;
     mutable quint64 painterRevision_ = ~quint64(0);
 };
 
 // "Room 7"
 QString roomLabel(int room);
 
-}  // namespace rl::castle
+}  // namespace rl::castle_excellent

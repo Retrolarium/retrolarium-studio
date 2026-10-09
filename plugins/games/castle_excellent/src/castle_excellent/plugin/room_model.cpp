@@ -1,6 +1,6 @@
-#include "castle/plugin/room_model.hpp"
+#include "castle_excellent/plugin/room_model.hpp"
 
-#include "castle/plugin/castle_session.hpp"
+#include "castle_excellent/plugin/castle_excellent_session.hpp"
 #include "nes/editors.hpp"
 
 #include <QPainter>
@@ -8,7 +8,7 @@
 
 #include <algorithm>
 
-namespace rl::castle {
+namespace rl::castle_excellent {
 
 namespace {
 
@@ -22,7 +22,7 @@ struct ObjectTotals {
     int state = 0;
 };
 
-ObjectTotals objectTotals(const CastleLevels& levels, int room, int roomCount) {
+ObjectTotals objectTotals(const CastleExcellentLevels& levels, int room, int roomCount) {
     ObjectTotals totals;
     for (int r = 0; r < levels.roomCount(); ++r) {
         const int count = r == room ? roomCount : levels.objects(r).size();
@@ -61,7 +61,7 @@ sdk::Field readOnly(const QString& key, const QString& label, const QVariant& va
 
 }  // namespace
 
-CastleRoomModel::CastleRoomModel(CastleSession* session, int room)
+CastleExcellentRoomModel::CastleExcellentRoomModel(CastleExcellentSession* session, int room)
     : TileMapModel(session), session_(session), room_(room) {
     connect(session_, &sdk::Session::contentChanged, this, [this] {
         if (!selected_.isEmpty() && selected_ != QLatin1String("start") && objectIndex(selected_) < 0) {
@@ -69,29 +69,29 @@ CastleRoomModel::CastleRoomModel(CastleSession* session, int room)
         }
         emit contentChanged();
     });
-    connect(session_, &CastleSession::startChanged, this, [this] {
+    connect(session_, &CastleExcellentSession::startChanged, this, [this] {
         emit contentChanged();
         emit toolsChanged();
     });
     // The room being edited is where Play from selected starts.
-    CastleStart start;
+    CastleExcellentStart start;
     start.room = room_ + 1;
     session_->setStart(start);
 }
 
-QString CastleRoomModel::title() const {
+QString CastleExcellentRoomModel::title() const {
     return roomLabel(session_->levels().roomNumber(room_));
 }
 
-QSize CastleRoomModel::gridSize() const {
+QSize CastleExcellentRoomModel::gridSize() const {
     return {session_->levels().width(), session_->levels().height()};
 }
 
-QVector<sdk::MapLayer> CastleRoomModel::layers() const {
+QVector<sdk::MapLayer> CastleExcellentRoomModel::layers() const {
     return {{QStringLiteral("cells"), tr("Cells")}, {QStringLiteral("objects"), tr("Objects")}};
 }
 
-void CastleRoomModel::setCurrentLayer(const QString& id) {
+void CastleExcellentRoomModel::setCurrentLayer(const QString& id) {
     if (id != layer_ && (id == QLatin1String("cells") || id == QLatin1String("objects"))) {
         layer_ = id;
         selected_.clear();
@@ -101,7 +101,7 @@ void CastleRoomModel::setCurrentLayer(const QString& id) {
     }
 }
 
-QVector<sdk::Tool> CastleRoomModel::tools() const {
+QVector<sdk::Tool> CastleExcellentRoomModel::tools() const {
     if (layer_ == QLatin1String("cells")) {
         return {{QStringLiteral("paint"), tr("Paint the sheet's cell (right button takes one)"),
                  QStringLiteral("paint")},
@@ -113,7 +113,7 @@ QVector<sdk::Tool> CastleRoomModel::tools() const {
             {QStringLiteral("remove"), tr("Delete objects"), QStringLiteral("erase")}};
 }
 
-QVector<int> CastleRoomModel::roomCells() const {
+QVector<int> CastleExcellentRoomModel::roomCells() const {
     QVector<int> cells = session_->levels().cells(room_);
     for (auto it = pending_.constBegin(); it != pending_.constEnd(); ++it) {
         cells[it.key()] = it.value();
@@ -121,21 +121,21 @@ QVector<int> CastleRoomModel::roomCells() const {
     return cells;
 }
 
-QVector<CastleObject> CastleRoomModel::roomObjects() const {
+QVector<CastleExcellentObject> CastleExcellentRoomModel::roomObjects() const {
     return dragged_ ? *dragged_ : session_->levels().objects(room_);
 }
 
-QRect CastleRoomModel::startCells() const {
+QRect CastleExcellentRoomModel::startCells() const {
     const QPoint pixel = session_->start().pixel;
     return QRect(pixel.x() / 16, pixel.y() / 8, 1, 2);
 }
 
-bool CastleRoomModel::hasStart() const {
-    const CastleStart start = session_->start();
+bool CastleExcellentRoomModel::hasStart() const {
+    const CastleExcellentStart start = session_->start();
     return start.placed && start.room == room_ + 1;
 }
 
-QImage CastleRoomModel::render() const {
+QImage CastleExcellentRoomModel::render() const {
     QImage image = session_->painter().room(roomCells(), roomObjects());
     if (hasStart()) {
         QPainter painter(&image);
@@ -146,20 +146,20 @@ QImage CastleRoomModel::render() const {
 
 // ---------------------------------------------------------------- cells
 
-QVector<sdk::CellBrush> CastleRoomModel::brushes() const {
+QVector<sdk::CellBrush> CastleExcellentRoomModel::brushes() const {
     if (layer_ != QLatin1String("cells")) {
         return {};
     }
     return {{brush_, QStringLiteral("Cell %1").arg(hex(brush_)), QColor()}};
 }
 
-void CastleRoomModel::setCurrentBrush(int value) {
+void CastleExcellentRoomModel::setCurrentBrush(int value) {
     brush_ = std::clamp(value, 0, std::max(0, session_->painter().cellTypeCount() - 1));
     emit toolsChanged();
     emit selectionChanged();
 }
 
-QString CastleRoomModel::currentLibraryItem() const {
+QString CastleExcellentRoomModel::currentLibraryItem() const {
     if (layer_ == QLatin1String("cells")) {
         return QStringLiteral("cell:%1").arg(brush_);
     }
@@ -167,7 +167,7 @@ QString CastleRoomModel::currentLibraryItem() const {
     return objectType_ < 0 ? QStringLiteral("start") : QStringLiteral("object:%1").arg(objectType_);
 }
 
-void CastleRoomModel::setCurrentLibraryItem(const QString& id) {
+void CastleExcellentRoomModel::setCurrentLibraryItem(const QString& id) {
     if (id.startsWith(QLatin1String("cell:"))) {
         setCurrentBrush(id.mid(5).toInt());
     } else if (id.startsWith(QLatin1String("object:"))) {
@@ -181,7 +181,7 @@ void CastleRoomModel::setCurrentLibraryItem(const QString& id) {
     }
 }
 
-sdk::Library CastleRoomModel::sheet() const {
+sdk::Library CastleExcellentRoomModel::sheet() const {
     sdk::Library library;
     if (layer_ != QLatin1String("cells")) {
         return library;
@@ -212,23 +212,23 @@ sdk::Library CastleRoomModel::sheet() const {
     return library;
 }
 
-int CastleRoomModel::cellValue(QPoint cell) const {
+int CastleExcellentRoomModel::cellValue(QPoint cell) const {
     if (cell.x() < 0 || cell.y() < 0 || cell.x() >= gridSize().width() || cell.y() >= gridSize().height()) {
         return -1;
     }
     return roomCells().value(cell.y() * gridSize().width() + cell.x(), -1);
 }
 
-bool CastleRoomModel::isCellEditable(QPoint cell) const {
+bool CastleExcellentRoomModel::isCellEditable(QPoint cell) const {
     return layer_ == QLatin1String("cells") && cellValue(cell) >= 0;
 }
 
-void CastleRoomModel::beginStroke() {
+void CastleExcellentRoomModel::beginStroke() {
     stroking_ = true;
     pending_.clear();
 }
 
-bool CastleRoomModel::paintCell(QPoint cell, int value) {
+bool CastleExcellentRoomModel::paintCell(QPoint cell, int value) {
     if (!isCellEditable(cell) || value < 0 || value >= session_->painter().cellTypeCount()) {
         return false;
     }
@@ -239,14 +239,14 @@ bool CastleRoomModel::paintCell(QPoint cell, int value) {
     if (!stroking_) {
         const int room = room_;
         return session_->edit(tr("Paint %1").arg(title()),
-                              [room, cell, value](CastleState& s) { s.levels.setCell(room, cell, value); }, nullptr);
+                              [room, cell, value](CastleExcellentState& s) { s.levels.setCell(room, cell, value); }, nullptr);
     }
     pending_.insert(index, value);
     emit contentChanged();
     return true;
 }
 
-void CastleRoomModel::endStroke() {
+void CastleExcellentRoomModel::endStroke() {
     if (!stroking_) {
         return;
     }
@@ -257,7 +257,7 @@ void CastleRoomModel::endStroke() {
         const int room = room_;
         const int width = gridSize().width();
         session_->edit(tr("Paint %1").arg(title()),
-                       [room, cells, width](CastleState& s) {
+                       [room, cells, width](CastleExcellentState& s) {
                            for (auto it = cells.constBegin(); it != cells.constEnd(); ++it) {
                                s.levels.setCell(room, QPoint(it.key() % width, it.key() / width), it.value());
                            }
@@ -269,13 +269,13 @@ void CastleRoomModel::endStroke() {
 
 // ---------------------------------------------------------------- objects
 
-QString CastleRoomModel::typeLabel(int type) const {
+QString CastleExcellentRoomModel::typeLabel(int type) const {
     const int runtime = session_->painter().runtimeType(type);
     return runtime < 0 ? tr("Object %1").arg(hex(type))
                        : tr("Object %1 · runtime %2").arg(hex(type), hex(runtime));
 }
 
-int CastleRoomModel::objectIndex(const QString& id) const {
+int CastleExcellentRoomModel::objectIndex(const QString& id) const {
     if (!id.startsWith(QLatin1String("object:"))) {
         return -1;
     }
@@ -283,12 +283,12 @@ int CastleRoomModel::objectIndex(const QString& id) const {
     return index >= 0 && index < roomObjects().size() ? index : -1;
 }
 
-QVector<sdk::MapObject> CastleRoomModel::objects() const {
+QVector<sdk::MapObject> CastleExcellentRoomModel::objects() const {
     QVector<sdk::MapObject> result;
     if (layer_ != QLatin1String("objects")) {
         return result;
     }
-    const QVector<CastleObject> list = roomObjects();
+    const QVector<CastleExcellentObject> list = roomObjects();
     for (int i = 0; i < list.size(); ++i) {
         const QRect pixels = session_->painter().bounds(list.at(i));
         sdk::MapObject o;
@@ -308,14 +308,14 @@ QVector<sdk::MapObject> CastleRoomModel::objects() const {
     return result;
 }
 
-void CastleRoomModel::selectObject(const QString& id) {
+void CastleExcellentRoomModel::selectObject(const QString& id) {
     if (id != selected_) {
         selected_ = id;
         emit selectionChanged();
     }
 }
 
-void CastleRoomModel::beginDrag(const QString& id) {
+void CastleExcellentRoomModel::beginDrag(const QString& id) {
     selectObject(id);
     if (id == QLatin1String("start")) {
         const QPoint pixel = session_->start().pixel;
@@ -327,10 +327,10 @@ void CastleRoomModel::beginDrag(const QString& id) {
     }
 }
 
-bool CastleRoomModel::dragObject(const QString& id, QPoint topLeftCell) {
+bool CastleExcellentRoomModel::dragObject(const QString& id, QPoint topLeftCell) {
     const QSize grid = gridSize();
     if (id == QLatin1String("start")) {
-        CastleStart start = session_->start();
+        CastleExcellentStart start = session_->start();
         start.placed = true;
         start.pixel = QPoint(std::clamp(topLeftCell.x(), 0, grid.width() - 1) * 16 + dragStartOffset_.x(),
                              std::clamp(topLeftCell.y(), 0, grid.height() - 2) * 8 + dragStartOffset_.y());
@@ -345,7 +345,7 @@ bool CastleRoomModel::dragObject(const QString& id, QPoint topLeftCell) {
         return false;
     }
     const QPoint to(std::clamp(topLeftCell.x(), 0, grid.width() - 1), std::clamp(topLeftCell.y(), 0, grid.height() - 1));
-    CastleObject& object = (*dragged_)[index];
+    CastleExcellentObject& object = (*dragged_)[index];
     if (object.x == to.x() && object.y == to.y()) {
         return false;
     }
@@ -355,11 +355,11 @@ bool CastleRoomModel::dragObject(const QString& id, QPoint topLeftCell) {
     return true;
 }
 
-void CastleRoomModel::endDrag() {
+void CastleExcellentRoomModel::endDrag() {
     if (!dragged_) {
         return;
     }
-    const QVector<CastleObject> moved = *dragged_;
+    const QVector<CastleExcellentObject> moved = *dragged_;
     dragged_.reset();
     if (moved != session_->levels().objects(room_)) {
         commitObjects(moved, tr("Move an object in %1").arg(title()), nullptr);
@@ -367,7 +367,7 @@ void CastleRoomModel::endDrag() {
     emit contentChanged();
 }
 
-bool CastleRoomModel::commitObjects(const QVector<CastleObject>& objects, const QString& text, QString* error) {
+bool CastleExcellentRoomModel::commitObjects(const QVector<CastleExcellentObject>& objects, const QString& text, QString* error) {
     if (objects.size() > kMaximumObjects) {
         if (error) {
             *error = tr("A room holds at most %1 objects; the game keeps them in a fixed pool.")
@@ -399,14 +399,14 @@ bool CastleRoomModel::commitObjects(const QVector<CastleObject>& objects, const 
         }
     }
     const int room = room_;
-    return session_->edit(text, [room, objects](CastleState& s) { s.levels.setObjects(room, objects); }, error);
+    return session_->edit(text, [room, objects](CastleExcellentState& s) { s.levels.setObjects(room, objects); }, error);
 }
 
-bool CastleRoomModel::placeObject(const QString& libraryItem, QPoint cell, QString* error) {
+bool CastleExcellentRoomModel::placeObject(const QString& libraryItem, QPoint cell, QString* error) {
     if (libraryItem == QLatin1String("start")) {
         // The player marker: Play from selected starts him here.
         const QSize grid = gridSize();
-        CastleStart start;
+        CastleExcellentStart start;
         start.room = room_ + 1;
         start.placed = true;
         start.pixel = QPoint(std::clamp(cell.x(), 0, grid.width() - 1) * 16,
@@ -432,8 +432,8 @@ bool CastleRoomModel::placeObject(const QString& libraryItem, QPoint cell, QStri
         return false;
     }
     const int type = libraryItem.mid(7).toInt();
-    QVector<CastleObject> list = session_->levels().objects(room_);
-    list << CastleObject{type, std::clamp(cell.x(), 0, gridSize().width() - 1),
+    QVector<CastleExcellentObject> list = session_->levels().objects(room_);
+    list << CastleExcellentObject{type, std::clamp(cell.x(), 0, gridSize().width() - 1),
                          std::clamp(cell.y(), 0, gridSize().height() - 1)};
     if (!commitObjects(list, tr("Add %1 to %2").arg(typeLabel(type), title()), error)) {
         return false;
@@ -442,7 +442,7 @@ bool CastleRoomModel::placeObject(const QString& libraryItem, QPoint cell, QStri
     return true;
 }
 
-bool CastleRoomModel::removeObject(const QString& id, QString* error) {
+bool CastleExcellentRoomModel::removeObject(const QString& id, QString* error) {
     const int index = objectIndex(id);
     if (index < 0) {
         if (id == QLatin1String("start") && hasStart()) {
@@ -453,14 +453,14 @@ bool CastleRoomModel::removeObject(const QString& id, QString* error) {
         }
         return false;
     }
-    QVector<CastleObject> list = session_->levels().objects(room_);
+    QVector<CastleExcellentObject> list = session_->levels().objects(room_);
     const QString label = typeLabel(list.at(index).type);
     list.removeAt(index);
     selectObject(QString());
     return commitObjects(list, tr("Delete %1 from %2").arg(label, title()), error);
 }
 
-sdk::Library CastleRoomModel::objectLibrary() const {
+sdk::Library CastleExcellentRoomModel::objectLibrary() const {
     sdk::Library library;
     if (sheetRevision_ != session_->revision()) {
         cellSheet_.clear();
@@ -492,7 +492,7 @@ sdk::Library CastleRoomModel::objectLibrary() const {
 
 // ---------------------------------------------------------------- inspector
 
-sdk::Budget CastleRoomModel::budget() const {
+sdk::Budget CastleExcellentRoomModel::budget() const {
     const ObjectTotals totals = objectTotals(session_->levels(), room_, roomObjects().size());
     sdk::Budget budget;
     budget.used = roomObjects().size();
@@ -507,22 +507,22 @@ sdk::Budget CastleRoomModel::budget() const {
     return budget;
 }
 
-QString CastleRoomModel::startPoint() const {
+QString CastleExcellentRoomModel::startPoint() const {
     return session_->start().room == room_ + 1 ? session_->selectedStart() : QString();
 }
 
-QString CastleRoomModel::statusText() const {
+QString CastleExcellentRoomModel::statusText() const {
     return tr("%1 · %2 objects · %3")
         .arg(title())
         .arg(roomObjects().size())
         .arg(layer_ == QLatin1String("cells") ? tr("brush %1").arg(hex(brush_)) : QStringLiteral("objects"));
 }
 
-sdk::Inspection CastleRoomModel::inspect() const {
+sdk::Inspection CastleExcellentRoomModel::inspect() const {
     sdk::Inspection inspection;
     const int index = objectIndex(selected_);
     if (index >= 0) {
-        const CastleObject object = roomObjects().at(index);
+        const CastleExcellentObject object = roomObjects().at(index);
         inspection.kicker = tr("Room object");
         inspection.title = typeLabel(object.type);
         sdk::Field type;
@@ -541,7 +541,7 @@ sdk::Inspection CastleRoomModel::inspect() const {
                                      tr("8 px"))};
         inspection.note = tr("Drag to move it, Delete to remove it. The game keeps one bit per object "
                              "in the saved game, so a collected key stays collected.");
-        inspection.engineTag = QStringLiteral("castle.object-stream.v1");
+        inspection.engineTag = QStringLiteral("castle-excellent.object-stream.v1");
         inspection.engine = {{tr("Encoded type"), hex(object.type)},
                              {tr("Runtime type"), hex(session_->painter().runtimeType(object.type))},
                              {tr("Record"), QStringLiteral("%1 %2 %3").arg(hex(object.type), hex(object.x), hex(object.y))}};
@@ -549,7 +549,7 @@ sdk::Inspection CastleRoomModel::inspect() const {
         return inspection;
     }
     if (selected_ == QLatin1String("start")) {
-        const CastleStart start = session_->start();
+        const CastleExcellentStart start = session_->start();
         inspection.kicker = tr("Start point");
         inspection.title = session_->selectedStart();
         inspection.fields = {integer(QStringLiteral("start_x"), QStringLiteral("X"), start.pixel.x(), 0, 319,
@@ -559,7 +559,7 @@ sdk::Inspection CastleRoomModel::inspect() const {
         inspection.note = tr("Play from selected (F5) builds the ROM, enters this room through the "
                              "game's own room loader and puts the player here. Delete takes the marker "
                              "away: the player then starts at the bottom of the room.");
-        inspection.engineTag = QStringLiteral("castle-point-playtest");
+        inspection.engineTag = QStringLiteral("castle-excellent-point-playtest");
         inspection.library = objectLibrary();
         return inspection;
     }
@@ -577,7 +577,7 @@ sdk::Inspection CastleRoomModel::inspect() const {
                                "there. Pick Player start (or click the start point above) and click the "
                                "room to choose where Play from selected puts the player; without it he "
                                "starts at the bottom of the room.");
-    inspection.engineTag = QStringLiteral("castle.prefix-rooms@1");
+    inspection.engineTag = QStringLiteral("castle-excellent.prefix-rooms@1");
     inspection.engine = {{tr("Room number"), QString::number(session_->levels().roomNumber(room_))},
                          {tr("Cells"), tr("20x20, 16x8 px each")}};
     if (layer_ == QLatin1String("objects")) {
@@ -586,9 +586,9 @@ sdk::Inspection CastleRoomModel::inspect() const {
     return inspection;
 }
 
-bool CastleRoomModel::setField(const QString& key, const QVariant& value, QString* error) {
+bool CastleExcellentRoomModel::setField(const QString& key, const QVariant& value, QString* error) {
     if (key == QLatin1String("start_x") || key == QLatin1String("start_y")) {
-        CastleStart start = session_->start();
+        CastleExcellentStart start = session_->start();
         start.placed = true;
         if (key == QLatin1String("start_x")) start.pixel.setX(value.toInt());
         else start.pixel.setY(value.toInt());
@@ -599,8 +599,8 @@ bool CastleRoomModel::setField(const QString& key, const QVariant& value, QStrin
     if (index < 0) {
         return TileMapModel::setField(key, value, error);
     }
-    QVector<CastleObject> list = session_->levels().objects(room_);
-    CastleObject& object = list[index];
+    QVector<CastleExcellentObject> list = session_->levels().objects(room_);
+    CastleExcellentObject& object = list[index];
     if (key == QLatin1String("type")) {
         const QString text = value.toString();
         bool ok = false;
@@ -620,4 +620,4 @@ bool CastleRoomModel::setField(const QString& key, const QVariant& value, QStrin
     return commitObjects(list, tr("Edit %1 in %2").arg(typeLabel(object.type), title()), error);
 }
 
-}  // namespace rl::castle
+}  // namespace rl::castle_excellent

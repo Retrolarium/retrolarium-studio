@@ -8,9 +8,9 @@
 
 #include <optional>
 
-namespace rl::castle {
+namespace rl::castle_excellent {
 
-class CastleSession;
+class CastleExcellentSession;
 
 // What the screens share: the font the ending and the GAME OVER message are
 // written in, and drawing a screen the way the game shows it.
@@ -29,18 +29,18 @@ QChar character(int code);
 int paletteOf(const QJsonArray& attributes, int cell);
 QJsonArray withPalette(QJsonArray attributes, int cell, int palette);
 // One background pattern (second pattern table of the screen's CHR bank).
-QImage tile(const CastleSession* session, const QJsonObject& screen, int tile, int palette);
-QImage render(const CastleSession* session, const QJsonObject& screen);
+QImage tile(const CastleExcellentSession* session, const QJsonObject& screen, int tile, int palette);
+QImage render(const CastleExcellentSession* session, const QJsonObject& screen);
 
 }  // namespace screens
 
 // A full-screen name table (ending, title, castle map): paint its tiles from
 // the screen's own patterns, or its palettes onto 16x16 blocks.
-class CastleScreenModel final : public sdk::TileMapModel {
+class CastleExcellentScreenModel final : public sdk::TileMapModel {
     Q_OBJECT
 
 public:
-    CastleScreenModel(CastleSession* session, int screen);
+    CastleExcellentScreenModel(CastleExcellentSession* session, int screen);
 
     QString title() const override;
     sdk::Budget budget() const override;
@@ -79,7 +79,7 @@ private:
     QJsonObject screen() const;
     bool commit(const QJsonObject& screen, const QString& text, QString* error);
 
-    CastleSession* session_;
+    CastleExcellentSession* session_;
     int index_;
     QString layer_ = QStringLiteral("tiles");
     int tile_ = 0xff;
@@ -93,11 +93,11 @@ private:
 
 // The text the screens carry: the ending's lines (found on its name table,
 // each kept to its place and width) and the GAME OVER message.
-class CastleScreenTextModel final : public sdk::TableModel {
+class CastleExcellentScreenTextModel final : public sdk::TableModel {
     Q_OBJECT
 
 public:
-    explicit CastleScreenTextModel(CastleSession* session);
+    explicit CastleExcellentScreenTextModel(CastleExcellentSession* session);
 
     QString title() const override { return tr("Ending & messages"); }
     sdk::Inspection inspect() const override;
@@ -122,9 +122,9 @@ private:
     void findLines();
     QString text(const QJsonObject& screens, int row) const;
 
-    CastleSession* session_;
+    CastleExcellentSession* session_;
     QVector<Line> lines_;   // ending lines; one more row is GAME OVER
     int row_ = 0;
 };
 
-}  // namespace rl::castle
+}  // namespace rl::castle_excellent

@@ -177,39 +177,39 @@ studio_add_test(smb_music_test games:smb1_src/tests/retrolarium/smb1_ju_music.js
 
 # Castle Excellent / Castlequest: the room document, its painter and the
 # editor models.
-add_library(castle_plugin STATIC
-    games/castle/src/castle/data/levels.cpp
-    games/castle/src/castle/data/levels.hpp
-    games/castle/src/castle/data/music.cpp
-    games/castle/src/castle/data/music.hpp
-    games/castle/src/castle/plugin/animation_model.cpp
-    games/castle/src/castle/plugin/animation_model.hpp
-    games/castle/src/castle/plugin/castle_plugin.cpp
-    games/castle/src/castle/plugin/castle_plugin.hpp
-    games/castle/src/castle/plugin/castle_session.cpp
-    games/castle/src/castle/plugin/castle_session.hpp
-    games/castle/src/castle/plugin/cell_model.cpp
-    games/castle/src/castle/plugin/cell_model.hpp
-    games/castle/src/castle/plugin/demo_model.cpp
-    games/castle/src/castle/plugin/demo_model.hpp
-    games/castle/src/castle/plugin/map_model.cpp
-    games/castle/src/castle/plugin/map_model.hpp
-    games/castle/src/castle/plugin/music_models.cpp
-    games/castle/src/castle/plugin/music_models.hpp
-    games/castle/src/castle/plugin/room_model.cpp
-    games/castle/src/castle/plugin/room_model.hpp
-    games/castle/src/castle/plugin/screen_model.cpp
-    games/castle/src/castle/plugin/screen_model.hpp
-    games/castle/src/castle/plugin/sprite_model.cpp
-    games/castle/src/castle/plugin/sprite_model.hpp
-    games/castle/src/castle/plugin/table_models.cpp
-    games/castle/src/castle/plugin/table_models.hpp
-    games/castle/src/castle/render/room_painter.cpp
-    games/castle/src/castle/render/room_painter.hpp
+add_library(castle_excellent_plugin STATIC
+    games/castle_excellent/src/castle_excellent/data/levels.cpp
+    games/castle_excellent/src/castle_excellent/data/levels.hpp
+    games/castle_excellent/src/castle_excellent/data/music.cpp
+    games/castle_excellent/src/castle_excellent/data/music.hpp
+    games/castle_excellent/src/castle_excellent/plugin/animation_model.cpp
+    games/castle_excellent/src/castle_excellent/plugin/animation_model.hpp
+    games/castle_excellent/src/castle_excellent/plugin/castle_excellent_plugin.cpp
+    games/castle_excellent/src/castle_excellent/plugin/castle_excellent_plugin.hpp
+    games/castle_excellent/src/castle_excellent/plugin/castle_excellent_session.cpp
+    games/castle_excellent/src/castle_excellent/plugin/castle_excellent_session.hpp
+    games/castle_excellent/src/castle_excellent/plugin/cell_model.cpp
+    games/castle_excellent/src/castle_excellent/plugin/cell_model.hpp
+    games/castle_excellent/src/castle_excellent/plugin/demo_model.cpp
+    games/castle_excellent/src/castle_excellent/plugin/demo_model.hpp
+    games/castle_excellent/src/castle_excellent/plugin/map_model.cpp
+    games/castle_excellent/src/castle_excellent/plugin/map_model.hpp
+    games/castle_excellent/src/castle_excellent/plugin/music_models.cpp
+    games/castle_excellent/src/castle_excellent/plugin/music_models.hpp
+    games/castle_excellent/src/castle_excellent/plugin/room_model.cpp
+    games/castle_excellent/src/castle_excellent/plugin/room_model.hpp
+    games/castle_excellent/src/castle_excellent/plugin/screen_model.cpp
+    games/castle_excellent/src/castle_excellent/plugin/screen_model.hpp
+    games/castle_excellent/src/castle_excellent/plugin/sprite_model.cpp
+    games/castle_excellent/src/castle_excellent/plugin/sprite_model.hpp
+    games/castle_excellent/src/castle_excellent/plugin/table_models.cpp
+    games/castle_excellent/src/castle_excellent/plugin/table_models.hpp
+    games/castle_excellent/src/castle_excellent/render/room_painter.cpp
+    games/castle_excellent/src/castle_excellent/render/room_painter.hpp
 )
-target_include_directories(castle_plugin PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/games/castle/src)
-target_link_libraries(castle_plugin PUBLIC nes_editors studio_sdk)
-studio_enable_warnings(castle_plugin)
+target_include_directories(castle_excellent_plugin PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/games/castle_excellent/src)
+target_link_libraries(castle_excellent_plugin PUBLIC nes_editors studio_sdk)
+studio_enable_warnings(castle_excellent_plugin)
 
 # Doraemon: the World 1-3 maps, blocks and palettes of the resource bundle.
 add_library(doraemon_plugin STATIC
@@ -306,7 +306,7 @@ add_library(studio_builtin_plugins STATIC
     builtin_plugins.hpp
 )
 target_include_directories(studio_builtin_plugins PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(studio_builtin_plugins PUBLIC castle_plugin doraemon_plugin flicky_plugin pacman_plugin smb_plugin solomon_plugin studio_sdk)
+target_link_libraries(studio_builtin_plugins PUBLIC castle_excellent_plugin doraemon_plugin flicky_plugin pacman_plugin smb_plugin solomon_plugin studio_sdk)
 studio_enable_warnings(studio_builtin_plugins)
 
 # Tests against the projects the kit prepared in the game repositories
@@ -318,11 +318,11 @@ add_executable(flicky_sound_document_test
 target_link_libraries(flicky_sound_document_test PRIVATE flicky_data studio_sdk)
 studio_add_test(flicky_sound_document_test games:flicky_src/.retrolarium/ue/flicky-ue.rlj)
 
-add_executable(castle_music_retune_test
-    games/castle/tests/music_retune_test.cpp
+add_executable(castle_excellent_music_retune_test
+    games/castle_excellent/tests/music_retune_test.cpp
 )
-target_link_libraries(castle_music_retune_test PRIVATE castle_plugin)
-studio_add_test(castle_music_retune_test
+target_link_libraries(castle_excellent_music_retune_test PRIVATE castle_excellent_plugin)
+studio_add_test(castle_excellent_music_retune_test
     games:castle_excellent_src/.retrolarium/castlequest-usa/castle-excellent-castlequest-usa.rlj)
 
 add_executable(solomon_text_and_rooms_test

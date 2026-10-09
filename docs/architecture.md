@@ -41,7 +41,7 @@ plugins/
                render/ level renderer and painter, plugin/ session and models,
                tests/ golden tests over the game repository's corpora
     pacman/    Pac-Man: maze, screens, sound
-    castle/    Castle Excellent / Castlequest: rooms, painter, tables
+    castle_excellent/    Castle Excellent / Castlequest: rooms, painter, tables
     solomon/   Solomon's Key: rooms, painter
     doraemon/  Doraemon: city, underground, World 2 and 3 maps, objects
     flicky/    Flicky (UE): data/ documents and codecs, render/ scene

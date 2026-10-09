@@ -1,6 +1,6 @@
-#include "castle/plugin/cell_model.hpp"
+#include "castle_excellent/plugin/cell_model.hpp"
 
-#include "castle/plugin/castle_session.hpp"
+#include "castle_excellent/plugin/castle_excellent_session.hpp"
 
 #include <QJsonArray>
 #include <QJsonObject>
@@ -8,7 +8,7 @@
 
 #include <algorithm>
 
-namespace rl::castle {
+namespace rl::castle_excellent {
 
 namespace {
 
@@ -20,15 +20,15 @@ const char* const kHalves[2] = {"Left", "Right"};
 
 }  // namespace
 
-CastleCellModel::CastleCellModel(CastleSession* session) : TileMapModel(session), session_(session) {
+CastleExcellentCellModel::CastleExcellentCellModel(CastleExcellentSession* session) : TileMapModel(session), session_(session) {
     connect(session_, &sdk::Session::contentChanged, this, &sdk::EditorModel::contentChanged);
 }
 
-int CastleCellModel::count() const {
+int CastleExcellentCellModel::count() const {
     return session_->bundle().resource(session_->art().cellVisuals).value(QStringLiteral("records")).toArray().size();
 }
 
-int CastleCellModel::tileOf(int cell, int half) const {
+int CastleExcellentCellModel::tileOf(int cell, int half) const {
     const auto found = pending_.constFind(cell);
     if (found != pending_.constEnd()) {
         return found->at(static_cast<std::size_t>(half));
@@ -38,7 +38,7 @@ int CastleCellModel::tileOf(int cell, int half) const {
     return record.value(half == 0 ? QStringLiteral("left_tile") : QStringLiteral("right_tile")).toInt();
 }
 
-int CastleCellModel::paletteOf(int cell) const {
+int CastleExcellentCellModel::paletteOf(int cell) const {
     return session_->bundle()
         .resource(session_->art().cellVisuals)
         .value(QStringLiteral("records"))
@@ -49,7 +49,7 @@ int CastleCellModel::paletteOf(int cell) const {
         .toInt();
 }
 
-QPair<int, int> CastleCellModel::cellAt(QPoint at) const {
+QPair<int, int> CastleExcellentCellModel::cellAt(QPoint at) const {
     const int cell = at.y() * kPerRow + at.x() / 2;
     if (at.x() < 0 || at.y() < 0 || at.x() >= kPerRow * 2 || cell >= count()) {
         return {-1, -1};
@@ -57,20 +57,20 @@ QPair<int, int> CastleCellModel::cellAt(QPoint at) const {
     return {cell, at.x() % 2};
 }
 
-QSize CastleCellModel::gridSize() const {
+QSize CastleExcellentCellModel::gridSize() const {
     return {kPerRow * 2, std::max(1, (count() + kPerRow - 1) / kPerRow)};
 }
 
 // ---------------------------------------------------------------- view
 
-QVector<sdk::Tool> CastleCellModel::tools() const {
+QVector<sdk::Tool> CastleExcellentCellModel::tools() const {
     return {{QStringLiteral("select"), tr("Select a cell"), QStringLiteral("select")},
             {QStringLiteral("paint"), tr("Paint the sheet's pattern into cell halves (right button takes one)"),
              QStringLiteral("paint")},
             {QStringLiteral("pick"), tr("Take a half's pattern as the brush"), QStringLiteral("pick")}};
 }
 
-QVector<sdk::ViewOption> CastleCellModel::viewOptions() const {
+QVector<sdk::ViewOption> CastleExcellentCellModel::viewOptions() const {
     sdk::ViewOption palette;
     palette.key = QStringLiteral("palette");
     palette.label = tr("Sheet colours");
@@ -79,7 +79,7 @@ QVector<sdk::ViewOption> CastleCellModel::viewOptions() const {
     return {palette};
 }
 
-int CastleCellModel::paletteNumber(const QString& label) {
+int CastleExcellentCellModel::paletteNumber(const QString& label) {
     // The whole label: a translation may place the number anywhere.
     for (int p = 0; p < 4; ++p) {
         if (label == tr("BG %1").arg(p)) return p;
@@ -87,7 +87,7 @@ int CastleCellModel::paletteNumber(const QString& label) {
     return 0;
 }
 
-void CastleCellModel::setViewOption(const QString& key, const QString& value) {
+void CastleExcellentCellModel::setViewOption(const QString& key, const QString& value) {
     if (key == QLatin1String("palette")) {
         libraryPalette_ = paletteNumber(value);
         emit contentChanged();
@@ -95,14 +95,14 @@ void CastleCellModel::setViewOption(const QString& key, const QString& value) {
     }
 }
 
-QImage CastleCellModel::render() const {
+QImage CastleExcellentCellModel::render() const {
     const QSize grid = gridSize();
     QImage image(grid.width() * 8, grid.height() * 8, QImage::Format_ARGB32);
     image.fill(QColor(0, 0, 0, 0));
     QPainter painter(&image);
-    const CastlePainter& art = session_->painter();
+    const CastleExcellentPainter& art = session_->painter();
     for (int i = 0; i < count(); ++i) {
-        const QPoint at((i % kPerRow) * CastlePainter::kCellWidth, (i / kPerRow) * CastlePainter::kCellHeight);
+        const QPoint at((i % kPerRow) * CastleExcellentPainter::kCellWidth, (i / kPerRow) * CastleExcellentPainter::kCellHeight);
         if (!pending_.contains(i)) {
             painter.drawImage(at, art.cellIcon(i));
             continue;
@@ -116,21 +116,21 @@ QImage CastleCellModel::render() const {
 
 // ---------------------------------------------------------------- cells
 
-QVector<sdk::CellBrush> CastleCellModel::brushes() const {
+QVector<sdk::CellBrush> CastleExcellentCellModel::brushes() const {
     return {{tile_, tr("Pattern %1").arg(hex(tile_)), QColor()}};
 }
 
-void CastleCellModel::setCurrentBrush(int value) {
+void CastleExcellentCellModel::setCurrentBrush(int value) {
     tile_ = std::clamp(value, 0, 255);
     emit toolsChanged();
     emit selectionChanged();
 }
 
-QString CastleCellModel::currentLibraryItem() const {
+QString CastleExcellentCellModel::currentLibraryItem() const {
     return QStringLiteral("tile:%1").arg(tile_);
 }
 
-void CastleCellModel::setCurrentLibraryItem(const QString& id) {
+void CastleExcellentCellModel::setCurrentLibraryItem(const QString& id) {
     if (!id.startsWith(QLatin1String("tile:"))) {
         return;
     }
@@ -142,16 +142,16 @@ void CastleCellModel::setCurrentLibraryItem(const QString& id) {
     }
 }
 
-int CastleCellModel::cellValue(QPoint cell) const {
+int CastleExcellentCellModel::cellValue(QPoint cell) const {
     const QPair<int, int> at = cellAt(cell);
     return at.first < 0 ? -1 : tileOf(at.first, at.second);
 }
 
-bool CastleCellModel::isCellEditable(QPoint cell) const {
+bool CastleExcellentCellModel::isCellEditable(QPoint cell) const {
     return cellAt(cell).first >= 0;
 }
 
-bool CastleCellModel::setCellFields(int cell, int left, int right, int palette, const QString& text, QString* error) {
+bool CastleExcellentCellModel::setCellFields(int cell, int left, int right, int palette, const QString& text, QString* error) {
     const QString id = session_->art().cellVisuals;
     return session_->editBundle(text,
                                 [id, cell, left, right, palette](nes::Bundle& b) {
@@ -168,7 +168,7 @@ bool CastleCellModel::setCellFields(int cell, int left, int right, int palette, 
                                 error);
 }
 
-bool CastleCellModel::placeObject(const QString& libraryItem, QPoint cell, QString* error) {
+bool CastleExcellentCellModel::placeObject(const QString& libraryItem, QPoint cell, QString* error) {
     const QPair<int, int> at = cellAt(cell);
     if (!libraryItem.startsWith(QLatin1String("tile:")) || at.first < 0) {
         if (error) *error = tr("Drop a pattern onto a half of a cell.");
@@ -183,12 +183,12 @@ bool CastleCellModel::placeObject(const QString& libraryItem, QPoint cell, QStri
                          tr("Set a pattern of cell %1").arg(at.first), error);
 }
 
-void CastleCellModel::beginStroke() {
+void CastleExcellentCellModel::beginStroke() {
     stroking_ = true;
     pending_.clear();
 }
 
-bool CastleCellModel::paintCell(QPoint cell, int value) {
+bool CastleExcellentCellModel::paintCell(QPoint cell, int value) {
     const QPair<int, int> at = cellAt(cell);
     if (!stroking_ || at.first < 0 || value < 0 || value > 255 || tileOf(at.first, at.second) == value) {
         return false;
@@ -202,7 +202,7 @@ bool CastleCellModel::paintCell(QPoint cell, int value) {
     return true;
 }
 
-void CastleCellModel::endStroke() {
+void CastleExcellentCellModel::endStroke() {
     stroking_ = false;
     if (pending_.isEmpty()) {
         return;
@@ -230,7 +230,7 @@ void CastleCellModel::endStroke() {
 
 // ---------------------------------------------------------------- objects
 
-QVector<sdk::MapObject> CastleCellModel::objects() const {
+QVector<sdk::MapObject> CastleExcellentCellModel::objects() const {
     QVector<sdk::MapObject> result;
     for (int i = 0; i < count(); ++i) {
         sdk::MapObject o;
@@ -244,11 +244,11 @@ QVector<sdk::MapObject> CastleCellModel::objects() const {
     return result;
 }
 
-QString CastleCellModel::selectedObject() const {
+QString CastleExcellentCellModel::selectedObject() const {
     return selected_ >= 0 ? QStringLiteral("cell:%1").arg(selected_) : QString();
 }
 
-void CastleCellModel::selectObject(const QString& id) {
+void CastleExcellentCellModel::selectObject(const QString& id) {
     const int cell = id.startsWith(QLatin1String("cell:")) ? id.mid(5).toInt() : -1;
     if (cell != selected_) {
         selected_ = cell;
@@ -260,7 +260,7 @@ void CastleCellModel::selectObject(const QString& id) {
 
 // ---------------------------------------------------------------- inspector
 
-bool CastleCellModel::setField(const QString& key, const QVariant& value, QString* error) {
+bool CastleExcellentCellModel::setField(const QString& key, const QVariant& value, QString* error) {
     if (selected_ < 0 || selected_ >= count()) {
         return TileMapModel::setField(key, value, error);
     }
@@ -288,11 +288,11 @@ bool CastleCellModel::setField(const QString& key, const QVariant& value, QStrin
     return setCellFields(selected_, left, right, palette, tr("Edit cell %1").arg(selected_), error);
 }
 
-sdk::Library CastleCellModel::sheet() const {
+sdk::Library CastleExcellentCellModel::sheet() const {
     sdk::Library result;
     result.grid = true;
     result.hint = tr("click: brush · drag onto a half");
-    const CastlePainter& art = session_->painter();
+    const CastleExcellentPainter& art = session_->painter();
     for (int tile = 0; tile < 256; ++tile) {
         sdk::LibraryItem item;
         item.id = QStringLiteral("tile:%1").arg(tile);
@@ -303,9 +303,9 @@ sdk::Library CastleCellModel::sheet() const {
     return result;
 }
 
-sdk::Inspection CastleCellModel::inspect() const {
+sdk::Inspection CastleExcellentCellModel::inspect() const {
     sdk::Inspection inspection;
-    inspection.engineTag = QStringLiteral("castle.room-cell-visuals.v1");
+    inspection.engineTag = QStringLiteral("castle-excellent.room-cell-visuals.v1");
     if (selected_ < 0 || selected_ >= count()) {
         inspection.kicker = tr("Room cells");
         inspection.title = title();
@@ -370,7 +370,7 @@ sdk::Inspection CastleCellModel::inspect() const {
     return inspection;
 }
 
-sdk::Budget CastleCellModel::budget() const {
+sdk::Budget CastleExcellentCellModel::budget() const {
     sdk::Budget budget;
     budget.used = count();
     budget.capacity = count();
@@ -378,11 +378,11 @@ sdk::Budget CastleCellModel::budget() const {
     return budget;
 }
 
-QString CastleCellModel::statusText() const {
+QString CastleExcellentCellModel::statusText() const {
     if (selected_ < 0) {
         return tr("Room cells · %1").arg(count());
     }
     return tr("Room cells · cell %1").arg(selected_);
 }
 
-}  // namespace rl::castle
+}  // namespace rl::castle_excellent

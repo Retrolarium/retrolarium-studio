@@ -7,19 +7,19 @@
 
 #include <array>
 
-namespace rl::castle {
+namespace rl::castle_excellent {
 
-class CastleSession;
+class CastleExcellentSession;
 
-// The 100 room cells (castle.room-cell-visuals.v1): each is two background
+// The 100 room cells (castle-excellent.room-cell-visuals.v1): each is two background
 // patterns side by side, 16x8, with the palette the room loader gives it.
 // The sheet shows them ten to a row; painting puts the brush pattern into a
 // cell's left or right half.
-class CastleCellModel final : public sdk::TileMapModel {
+class CastleExcellentCellModel final : public sdk::TileMapModel {
     Q_OBJECT
 
 public:
-    explicit CastleCellModel(CastleSession* session);
+    explicit CastleExcellentCellModel(CastleExcellentSession* session);
 
     QString title() const override { return tr("Room cells"); }
     sdk::Budget budget() const override;
@@ -63,7 +63,7 @@ private:
     static int paletteNumber(const QString& label);
     bool setCellFields(int cell, int left, int right, int palette, const QString& text, QString* error);
 
-    CastleSession* session_;
+    CastleExcellentSession* session_;
     int selected_ = -1;
     int tile_ = 2;
     int libraryPalette_ = 0;
@@ -71,4 +71,4 @@ private:
     QHash<int, std::array<int, 2>> pending_;     // cell -> left, right
 };
 
-}  // namespace rl::castle
+}  // namespace rl::castle_excellent

@@ -1,6 +1,6 @@
-#include "castle/plugin/screen_model.hpp"
+#include "castle_excellent/plugin/screen_model.hpp"
 
-#include "castle/plugin/castle_session.hpp"
+#include "castle_excellent/plugin/castle_excellent_session.hpp"
 #include "nes/editors.hpp"
 #include "sdk/i18n.hpp"
 
@@ -9,7 +9,7 @@
 
 #include <algorithm>
 
-namespace rl::castle {
+namespace rl::castle_excellent {
 
 namespace {
 
@@ -34,14 +34,14 @@ const QStringList& ids() {
 }
 
 QString label(const QString& id) {
-    if (id == QLatin1String("completion")) return rlTr("castle", "Ending");
-    if (id == QLatin1String("title")) return rlTr("castle", "Title");
-    if (id == QLatin1String("castle-map")) return rlTr("castle", "Castle map");
+    if (id == QLatin1String("completion")) return rlTr("castle_excellent", "Ending");
+    if (id == QLatin1String("title")) return rlTr("castle_excellent", "Title");
+    if (id == QLatin1String("castle-map")) return rlTr("castle_excellent", "Castle map");
     return id;
 }
 
 int paletteFirst(const QString& id) {
-    // CompletionPaletteData, TitlePaletteData and CastleMapPaletteData lie
+    // CompletionPaletteData, TitlePaletteData and CastleExcellentMapPaletteData lie
     // 16 bytes apart; each load takes 32.
     return std::max(0, int(ids().indexOf(id))) * 16;
 }
@@ -96,7 +96,7 @@ QJsonArray withPalette(QJsonArray attributes, int cell, int palette) {
     return attributes;
 }
 
-QImage tile(const CastleSession* session, const QJsonObject& screen, int tile, int palette) {
+QImage tile(const CastleExcellentSession* session, const QJsonObject& screen, int tile, int palette) {
     const nes::Bundle& bundle = session->bundle();
     const QString chr = QStringLiteral("chr-bank-%1").arg(screen.value(QStringLiteral("chr_bank")).toInt());
     const QString id = screen.value(QStringLiteral("id")).toString();
@@ -111,7 +111,7 @@ QImage tile(const CastleSession* session, const QJsonObject& screen, int tile, i
     return image;
 }
 
-QImage render(const CastleSession* session, const QJsonObject& screen) {
+QImage render(const CastleExcellentSession* session, const QJsonObject& screen) {
     const QJsonArray tiles = screen.value(QStringLiteral("tiles")).toArray();
     const QJsonArray attributes = screen.value(QStringLiteral("attributes")).toArray();
     QImage image(kWidth * 8, kHeight * 8, QImage::Format_RGB32);
@@ -130,24 +130,24 @@ QImage render(const CastleSession* session, const QJsonObject& screen) {
 
 // ---------------------------------------------------------------- screen editor
 
-CastleScreenModel::CastleScreenModel(CastleSession* session, int screen)
+CastleExcellentScreenModel::CastleExcellentScreenModel(CastleExcellentSession* session, int screen)
     : TileMapModel(session), session_(session), index_(screen) {
     connect(session_, &sdk::Session::contentChanged, this, &sdk::EditorModel::contentChanged);
 }
 
-QJsonObject CastleScreenModel::screen() const {
+QJsonObject CastleExcellentScreenModel::screen() const {
     return stroke_ ? *stroke_ : session_->screensDocument().value(QStringLiteral("screens")).toArray().at(index_).toObject();
 }
 
-QString CastleScreenModel::title() const {
+QString CastleExcellentScreenModel::title() const {
     return screens::label(screen().value(QStringLiteral("id")).toString());
 }
 
-QVector<sdk::MapLayer> CastleScreenModel::layers() const {
+QVector<sdk::MapLayer> CastleExcellentScreenModel::layers() const {
     return {{QStringLiteral("tiles"), tr("Tiles")}, {QStringLiteral("palettes"), tr("Palettes")}};
 }
 
-void CastleScreenModel::setCurrentLayer(const QString& id) {
+void CastleExcellentScreenModel::setCurrentLayer(const QString& id) {
     if (id != layer_ && (id == QLatin1String("tiles") || id == QLatin1String("palettes"))) {
         layer_ = id;
         emit selectionChanged();
@@ -156,7 +156,7 @@ void CastleScreenModel::setCurrentLayer(const QString& id) {
     }
 }
 
-QVector<sdk::Tool> CastleScreenModel::tools() const {
+QVector<sdk::Tool> CastleExcellentScreenModel::tools() const {
     return {{QStringLiteral("select"), tr("Select a cell"), QStringLiteral("select")},
             {QStringLiteral("paint"),
              layer_ == QLatin1String("tiles") ? tr("Paint the sheet's tile (right button takes one)")
@@ -165,11 +165,11 @@ QVector<sdk::Tool> CastleScreenModel::tools() const {
             {QStringLiteral("pick"), tr("Take a cell's tile or palette as the brush"), QStringLiteral("pick")}};
 }
 
-QImage CastleScreenModel::render() const {
+QImage CastleExcellentScreenModel::render() const {
     return screens::render(session_, screen());
 }
 
-QVector<sdk::CellBrush> CastleScreenModel::brushes() const {
+QVector<sdk::CellBrush> CastleExcellentScreenModel::brushes() const {
     if (layer_ == QLatin1String("palettes")) {
         static const QColor kColors[4] = {QColor(255, 196, 0, 70), QColor(0, 200, 255, 70), QColor(255, 64, 160, 70),
                                           QColor(120, 255, 90, 70)};
@@ -180,22 +180,22 @@ QVector<sdk::CellBrush> CastleScreenModel::brushes() const {
     return {{kBlank, tr("Blank"), QColor()}, {tile_, tr("Tile %1").arg(hex(tile_)), QColor()}};
 }
 
-int CastleScreenModel::currentBrush() const {
+int CastleExcellentScreenModel::currentBrush() const {
     return layer_ == QLatin1String("palettes") ? palette_ : tile_;
 }
 
-void CastleScreenModel::setCurrentBrush(int value) {
+void CastleExcellentScreenModel::setCurrentBrush(int value) {
     if (layer_ == QLatin1String("palettes")) palette_ = std::clamp(value, 0, 3);
     else tile_ = std::clamp(value, 0, 255);
     emit toolsChanged();
     emit selectionChanged();
 }
 
-QString CastleScreenModel::currentLibraryItem() const {
+QString CastleExcellentScreenModel::currentLibraryItem() const {
     return QStringLiteral("tile:%1").arg(tile_);
 }
 
-void CastleScreenModel::setCurrentLibraryItem(const QString& id) {
+void CastleExcellentScreenModel::setCurrentLibraryItem(const QString& id) {
     if (!id.startsWith(QLatin1String("tile:"))) return;
     const int tile = std::clamp(id.mid(5).toInt(), 0, 255);
     if (tile != tile_) {
@@ -205,7 +205,7 @@ void CastleScreenModel::setCurrentLibraryItem(const QString& id) {
     }
 }
 
-int CastleScreenModel::cellValue(QPoint cell) const {
+int CastleExcellentScreenModel::cellValue(QPoint cell) const {
     const int at = cell.y() * kWidth + cell.x();
     if (cell.x() < 0 || cell.y() < 0 || cell.x() >= kWidth || cell.y() >= kHeight) return -1;
     const QJsonObject s = screen();
@@ -213,11 +213,11 @@ int CastleScreenModel::cellValue(QPoint cell) const {
                                                : s.value(QStringLiteral("tiles")).toArray().at(at).toInt();
 }
 
-bool CastleScreenModel::isCellEditable(QPoint cell) const {
+bool CastleExcellentScreenModel::isCellEditable(QPoint cell) const {
     return cell.x() >= 0 && cell.y() >= 0 && cell.x() < kWidth && cell.y() < kHeight;
 }
 
-bool CastleScreenModel::commit(const QJsonObject& screen, const QString& text, QString* error) {
+bool CastleExcellentScreenModel::commit(const QJsonObject& screen, const QString& text, QString* error) {
     QJsonObject document = session_->screensDocument();
     QJsonArray list = document.value(QStringLiteral("screens")).toArray();
     list.replace(index_, screen);
@@ -225,7 +225,7 @@ bool CastleScreenModel::commit(const QJsonObject& screen, const QString& text, Q
     return session_->editScreens(text, document, error);
 }
 
-bool CastleScreenModel::placeObject(const QString& libraryItem, QPoint cell, QString* error) {
+bool CastleExcellentScreenModel::placeObject(const QString& libraryItem, QPoint cell, QString* error) {
     if (!libraryItem.startsWith(QLatin1String("tile:")) || !isCellEditable(cell)) return false;
     const int value = std::clamp(libraryItem.mid(5).toInt(), 0, 255);
     setCurrentLibraryItem(libraryItem);
@@ -237,12 +237,12 @@ bool CastleScreenModel::placeObject(const QString& libraryItem, QPoint cell, QSt
     return commit(s, tr("Set a tile in %1").arg(title()), error);
 }
 
-void CastleScreenModel::beginStroke() {
+void CastleExcellentScreenModel::beginStroke() {
     stroke_ = screen();
     strokeChanged_ = false;
 }
 
-bool CastleScreenModel::paintCell(QPoint cell, int value) {
+bool CastleExcellentScreenModel::paintCell(QPoint cell, int value) {
     if (!stroke_ || !isCellEditable(cell)) return false;
     const int at = cell.y() * kWidth + cell.x();
     if (layer_ == QLatin1String("palettes")) {
@@ -260,7 +260,7 @@ bool CastleScreenModel::paintCell(QPoint cell, int value) {
     return true;
 }
 
-void CastleScreenModel::endStroke() {
+void CastleExcellentScreenModel::endStroke() {
     if (!stroke_) return;
     const QJsonObject painted = *stroke_;
     const bool changed = strokeChanged_;
@@ -277,7 +277,7 @@ void CastleScreenModel::endStroke() {
            &error);
 }
 
-QVector<sdk::MapObject> CastleScreenModel::objects() const {
+QVector<sdk::MapObject> CastleExcellentScreenModel::objects() const {
     QVector<sdk::MapObject> result;
     const QJsonArray tiles = screen().value(QStringLiteral("tiles")).toArray();
     for (int cell = 0; cell < kWidth * kHeight; ++cell) {
@@ -292,11 +292,11 @@ QVector<sdk::MapObject> CastleScreenModel::objects() const {
     return result;
 }
 
-QString CastleScreenModel::selectedObject() const {
+QString CastleExcellentScreenModel::selectedObject() const {
     return cell_ >= 0 ? QStringLiteral("cell:%1").arg(cell_) : QString();
 }
 
-void CastleScreenModel::selectObject(const QString& id) {
+void CastleExcellentScreenModel::selectObject(const QString& id) {
     const int cell = id.startsWith(QLatin1String("cell:")) ? id.mid(5).toInt() : -1;
     if (cell != cell_) {
         cell_ = cell;
@@ -304,7 +304,7 @@ void CastleScreenModel::selectObject(const QString& id) {
     }
 }
 
-bool CastleScreenModel::setField(const QString& key, const QVariant& value, QString* error) {
+bool CastleExcellentScreenModel::setField(const QString& key, const QVariant& value, QString* error) {
     if (cell_ < 0) return TileMapModel::setField(key, value, error);
     QJsonObject s = screen();
     if (key == QLatin1String("tile")) {
@@ -320,7 +320,7 @@ bool CastleScreenModel::setField(const QString& key, const QVariant& value, QStr
     return commit(s, tr("Edit a cell of %1").arg(title()), error);
 }
 
-sdk::Library CastleScreenModel::sheet() const {
+sdk::Library CastleExcellentScreenModel::sheet() const {
     if (layer_ != QLatin1String("tiles")) return {};
     const QJsonObject s = screen();
     const int palette = cell_ >= 0 ? screens::paletteOf(s.value(QStringLiteral("attributes")).toArray(), cell_) : 0;
@@ -345,11 +345,11 @@ sdk::Library CastleScreenModel::sheet() const {
     return result;
 }
 
-sdk::Inspection CastleScreenModel::inspect() const {
+sdk::Inspection CastleExcellentScreenModel::inspect() const {
     const QJsonObject s = screen();
     const QString id = s.value(QStringLiteral("id")).toString();
     sdk::Inspection inspection;
-    inspection.engineTag = QStringLiteral("castle.screens@1");
+    inspection.engineTag = QStringLiteral("castle-excellent.screens@1");
     if (cell_ < 0) {
         inspection.kicker = tr("Screen");
         inspection.title = title();
@@ -401,7 +401,7 @@ sdk::Inspection CastleScreenModel::inspect() const {
     return inspection;
 }
 
-sdk::Budget CastleScreenModel::budget() const {
+sdk::Budget CastleExcellentScreenModel::budget() const {
     sdk::Budget budget;
     budget.used = 1024;
     budget.capacity = 1024;
@@ -409,19 +409,19 @@ sdk::Budget CastleScreenModel::budget() const {
     return budget;
 }
 
-QString CastleScreenModel::statusText() const {
+QString CastleExcellentScreenModel::statusText() const {
     if (cell_ < 0) return tr("%1 · 32x30 tiles").arg(title());
     return tr("%1 · cell %2, %3").arg(title()).arg(cell_ % kWidth).arg(cell_ / kWidth);
 }
 
 // ---------------------------------------------------------------- text
 
-CastleScreenTextModel::CastleScreenTextModel(CastleSession* session) : TableModel(session), session_(session) {
+CastleExcellentScreenTextModel::CastleExcellentScreenTextModel(CastleExcellentSession* session) : TableModel(session), session_(session) {
     connect(session_, &sdk::Session::contentChanged, this, &sdk::EditorModel::contentChanged);
     findLines();
 }
 
-void CastleScreenTextModel::findLines() {
+void CastleExcellentScreenTextModel::findLines() {
     // The ending's lines as the source drew them: runs of font codes between
     // the picture tiles, each free to grow over the blanks after it.
     lines_.clear();
@@ -446,7 +446,7 @@ void CastleScreenTextModel::findLines() {
     }
 }
 
-QString CastleScreenTextModel::text(const QJsonObject& document, int row) const {
+QString CastleExcellentScreenTextModel::text(const QJsonObject& document, int row) const {
     QString result;
     if (row == lines_.size()) {
         for (const QJsonValue& v : document.value(QStringLiteral("game_over")).toArray()) result += screens::character(v.toInt());
@@ -463,7 +463,7 @@ QString CastleScreenTextModel::text(const QJsonObject& document, int row) const 
     return result;
 }
 
-QVector<sdk::TableColumn> CastleScreenTextModel::columns() const {
+QVector<sdk::TableColumn> CastleExcellentScreenTextModel::columns() const {
     sdk::TableColumn where;
     where.key = QStringLiteral("where");
     where.label = tr("Where");
@@ -482,11 +482,11 @@ QVector<sdk::TableColumn> CastleScreenTextModel::columns() const {
     return {where, text, length};
 }
 
-int CastleScreenTextModel::rowCount() const {
+int CastleExcellentScreenTextModel::rowCount() const {
     return lines_.size() + 1;
 }
 
-QString CastleScreenTextModel::cell(int row, int column) const {
+QString CastleExcellentScreenTextModel::cell(int row, int column) const {
     if (row < 0 || row >= rowCount()) return {};
     if (column == 0) {
         return row == lines_.size() ? tr("GAME OVER message")
@@ -495,12 +495,12 @@ QString CastleScreenTextModel::cell(int row, int column) const {
     return text(session_->screensDocument(), row);
 }
 
-int CastleScreenTextModel::maxLength(int row, int) const {
+int CastleExcellentScreenTextModel::maxLength(int row, int) const {
     if (row == lines_.size()) return session_->screensDocument().value(QStringLiteral("game_over")).toArray().size();
     return row >= 0 && row < lines_.size() ? lines_.at(row).width : -1;
 }
 
-sdk::Budget CastleScreenTextModel::cellBudget(int row, int column) const {
+sdk::Budget CastleExcellentScreenTextModel::cellBudget(int row, int column) const {
     sdk::Budget budget;
     if (column != 2 || row < 0 || row >= rowCount()) return budget;
     budget.used = cell(row, 1).size();
@@ -508,18 +508,18 @@ sdk::Budget CastleScreenTextModel::cellBudget(int row, int column) const {
     return budget;
 }
 
-bool CastleScreenTextModel::isRowDirty(int row) const {
+bool CastleExcellentScreenTextModel::isRowDirty(int row) const {
     return row >= 0 && row < rowCount() && text(session_->screensDocument(), row) != text(session_->savedScreens(), row);
 }
 
-void CastleScreenTextModel::setCurrentRow(int row) {
+void CastleExcellentScreenTextModel::setCurrentRow(int row) {
     if (row != row_ && row >= 0 && row < rowCount()) {
         row_ = row;
         emit selectionChanged();
     }
 }
 
-bool CastleScreenTextModel::setCell(int row, int column, const QString& value, QString* error) {
+bool CastleExcellentScreenTextModel::setCell(int row, int column, const QString& value, QString* error) {
     if (column != 1 || row < 0 || row >= rowCount()) return TableModel::setCell(row, column, value, error);
     const int width = maxLength(row, column);
     if (value.size() > width) {
@@ -554,9 +554,9 @@ bool CastleScreenTextModel::setCell(int row, int column, const QString& value, Q
     return session_->editScreens(tr("Edit %1").arg(cell(row, 0)), document, error);
 }
 
-sdk::Inspection CastleScreenTextModel::inspect() const {
+sdk::Inspection CastleExcellentScreenTextModel::inspect() const {
     sdk::Inspection inspection;
-    inspection.engineTag = QStringLiteral("castle.screens@1");
+    inspection.engineTag = QStringLiteral("castle-excellent.screens@1");
     inspection.kicker = tr("Text");
     inspection.title = cell(row_, 0);
     inspection.note = row_ == lines_.size()
@@ -568,4 +568,4 @@ sdk::Inspection CastleScreenTextModel::inspect() const {
     return inspection;
 }
 
-}  // namespace rl::castle
+}  // namespace rl::castle_excellent
