@@ -165,7 +165,8 @@ foreach ($pair in @(
         @((Join-Path $core "toml11\LICENSE"), "toml11-MIT.txt"),
         @((Join-Path $core "nlohmann\LICENSE.MIT"), "nlohmann-json-MIT.txt"),
         @((Join-Path $projectRoot "resources\licenses\Qt-LGPL-3.0.txt"), "Qt-LGPL-3.0.txt"),
-        @((Join-Path $projectRoot "resources\licenses\mingw-w64-runtime.txt"), "mingw-w64-runtime.txt"))) {
+        @((Join-Path $projectRoot "resources\licenses\mingw-w64-runtime.txt"), "mingw-w64-runtime.txt"),
+        @((Join-Path $projectRoot "resources\licenses\ymfm-BSD-3-Clause.txt"), "ymfm-BSD-3-Clause.txt"))) {
     if (Test-Path -LiteralPath $pair[0] -PathType Leaf) {
         Copy-Item -LiteralPath $pair[0] -Destination (Join-Path $licenses $pair[1])
     } else {
