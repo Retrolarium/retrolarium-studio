@@ -816,7 +816,8 @@ void MainWindow::openGameRepository(const QString& descriptor) {
             choices << RevisionChoice{o.value(QStringLiteral("id")).toString(), o.value(QStringLiteral("label")).toString(),
                                       o.value(QStringLiteral("rom")).toString(),
                                       o.value(QStringLiteral("rom_status")).toString(),
-                                      o.value(QStringLiteral("edited")).toBool()};
+                                      o.value(QStringLiteral("edited")).toBool(),
+                                      o.value(QStringLiteral("built_from")).toObject().value(QStringLiteral("label")).toString()};
         }
         const QJsonObject split = r.value(QStringLiteral("split")).toObject();
         const QString splitStatus = split.value(QStringLiteral("status")).toString();
@@ -935,6 +936,14 @@ void MainWindow::prepareRevision(const QString& descriptor, const QString& revis
                                name));
             }
             openProjectFile(r.value(QStringLiteral("project")).toString());
+            return;
+        }
+        if (status == QLatin1String("build-failed")) {
+            // A version the repository builds (an expanded layout) did not build.
+            report(message(sdk::Severity::Error, QStringLiteral("project"),
+                           tr("Building this version from the game's sources failed: %1")
+                               .arg(r.value(QStringLiteral("message")).toString().section(QLatin1Char('\n'), -3)),
+                           name));
             return;
         }
         // The revision's ROM is missing, or the file given is another one.

@@ -34,10 +34,13 @@ was built from. A user may still install their own console's BIOS, which MAME
 then prefers.
 
 `mame/consoles.exe` is MAME built unchanged from mamedev/mame commit
-`c662f9ca1900ed7462dc4fe8d338a98e8e4ce3c3` (2026-09-08), with only the NES, SNES
-and Mega Drive drivers; `tools/build-mame.sh` in the studio's source does that
-build. `BUILD-INFO.txt` names this commit and those of the studio, kit and core
-the package was made from.
+`c662f9ca1900ed7462dc4fe8d338a98e8e4ce3c3` (2026-09-08), with only the NES, Vs.
+System, SNES and Mega Drive drivers; `tools/build-mame-docker.ps1` (or
+`tools/build-mame.sh` in MSYS2) in the studio's source does that build. The Vs.
+System palette ROM MAME loads for Vs. Super Mario Bros. is written by the kit
+from the RP2C04-0004 colour table the NESdev wiki publishes; it is no dump.
+`BUILD-INFO.txt` names this commit and those of the studio, kit and core the
+package was made from.
 
 Since Qt is linked statically, the LGPL lets you relink the studio with a
 modified Qt: the studio's complete source is public under the GPL, and

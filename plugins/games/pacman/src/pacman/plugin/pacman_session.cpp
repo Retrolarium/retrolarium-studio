@@ -1,6 +1,7 @@
 #include "pacman/plugin/pacman_session.hpp"
 
 #include "nes/palette.hpp"
+#include "nes/record_table_model.hpp"
 #include "pacman/plugin/animation_model.hpp"
 #include "pacman/plugin/demo_model.hpp"
 #include "pacman/plugin/maze_model.hpp"
@@ -65,6 +66,30 @@ QString paletteLabel(const QString& id) {
     return id;
 }
 
+// The round tables (kit nes.record-table.v1), as the Levels view lists them.
+struct RoundTable {
+    const char* id;
+    const char* title;
+    const char* note;
+};
+const RoundTable kRoundTables[] = {
+    {"round-profiles", QT_TRANSLATE_NOOP("pacman", "Rounds"),
+     QT_TRANSLATE_NOOP("pacman", "Per round: the speed and timing set, how long ghosts stay frightened, the "
+                                 "pellet-threshold and release-target sets, the fruit group and the seconds "
+                                 "between ghost releases.")},
+    {"round-speed-sets", QT_TRANSLATE_NOOP("pacman", "Speed sets"),
+     QT_TRANSLATE_NOOP("pacman", "The 22 bytes a speed and timing set copies to the level parameters ($009F-$00B4): "
+                                 "the fixed-point speeds of Pac-Man and the ghosts.")},
+    {"round-timing-sets", QT_TRANSLATE_NOOP("pacman", "Scatter and chase timing"),
+     QT_TRANSLATE_NOOP("pacman", "The eight scatter and chase durations of sets 0-3. Set 4 reads the first four "
+                                 "pellet-threshold pairs instead, as the original does.")},
+    {"round-pellet-thresholds", QT_TRANSLATE_NOOP("pacman", "Pellet thresholds"),
+     QT_TRANSLATE_NOOP("pacman", "The pellet counts that let ghosts out of the house, a pair per set.")},
+    {"round-release-targets", QT_TRANSLATE_NOOP("pacman", "Release targets"),
+     QT_TRANSLATE_NOOP("pacman", "How many ghosts leave the house at once and the pellet target after them. A "
+                                 "restarted round uses Restart, less the pellets already eaten.")},
+};
+
 // Sound slots shown together: the two-channel tunes.
 const QVector<QPair<QString, QVector<int>>>& tunes() {
     static const QVector<QPair<QString, QVector<int>>> kTunes{
@@ -111,7 +136,10 @@ sdk::Profile PacmanSession::profile() const {
     profile.name = QStringLiteral("Pac-Man");
     profile.badge = QStringLiteral("NES");
     profile.platform = QStringLiteral("NES");
-    profile.revision = state_.bundle.revision().contains(QLatin1String("v11")) ? QStringLiteral("J 1.1") : QStringLiteral("J 1.0");
+    const QString revision = state_.bundle.revision();
+    profile.revision = revision.contains(QLatin1String("nrom256")) ? QStringLiteral("J 1.0 NROM-256")
+                       : revision.contains(QLatin1String("v11"))   ? QStringLiteral("J 1.1")
+                                                                   : QStringLiteral("J 1.0");
     profile.cpu = QStringLiteral("6502");
     profile.chip = QStringLiteral("2A03");
     profile.codec = QStringLiteral("pacman.maze-rle.v1");
@@ -141,6 +169,17 @@ QVector<sdk::DocumentGroup> PacmanSession::documents(const QString& kind) const 
         group.documents << entry(QStringLiteral("maze"), tr("Maze"), QStringLiteral("27 × 22"),
                                  mazeGrid(state_.bundle) != mazeGrid(saved_.bundle));
         groups << group;
+        // Projects prepared by an older kit lack them until it refreshes them.
+        sdk::DocumentGroup rounds;
+        rounds.title = tr("Rounds");
+        for (const RoundTable& table : kRoundTables) {
+            const QString id = QString::fromLatin1(table.id);
+            if (!state_.bundle.contains(id)) continue;
+            rounds.documents << entry(QStringLiteral("table:") + id, rlTr("pacman", table.title),
+                                      tr("%n rows", nullptr, int(state_.bundle.resource(id).value(QStringLiteral("records")).toArray().size())),
+                                      saved_.bundle.contains(id) && changed(id));
+        }
+        if (!rounds.documents.isEmpty()) groups << rounds;
     } else if (kind == QLatin1String("graphics")) {
         sdk::DocumentGroup group;
         group.title = ids::kChr;
@@ -252,6 +291,16 @@ std::unique_ptr<sdk::EditorModel> PacmanSession::openEditor(const QString& kind,
     try {
         if (kind == QLatin1String("levels") && document == QLatin1String("maze")) {
             return std::make_unique<PacmanMazeModel>(this);
+        }
+        if (kind == QLatin1String("levels") && document.startsWith(QLatin1String("table:"))) {
+            const QString id = document.mid(6);
+            for (const RoundTable& table : kRoundTables) {
+                if (id == QLatin1String(table.id) && state_.bundle.contains(id)) {
+                    return std::make_unique<nes::RecordTableModel>(this, id, rlTr("pacman", table.title),
+                                                                   rlTr("pacman", table.note));
+                }
+            }
+            return nullptr;
         }
         if (kind == QLatin1String("graphics")) {
             const int half = document.section(QLatin1Char('/'), 1).toInt();

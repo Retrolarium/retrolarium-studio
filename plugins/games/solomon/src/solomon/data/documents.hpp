@@ -85,6 +85,10 @@ public:
     QVector<SolomonEnemy> enemies(int room) const;
     void setEnemies(int room, const QVector<SolomonEnemy>& enemies);
     QJsonObject specialRooms() const { return root_.value(QStringLiteral("special_rooms")).toObject(); }
+    // The fixed scripted cells of special rooms: the random bonus room's 32
+    // spots and 16 items, the Royal Seals, the princess room's hidden
+    // cells and the symbols of rooms 20 and 30.
+    void setSpecialRooms(const QJsonObject& special) { root_.insert(QStringLiteral("special_rooms"), special); }
 
     // The CHR bank a room draws with: bits 2-3 of its terminator.
     static int chrBank(const QJsonArray& commands);

@@ -13,8 +13,9 @@ struct RevisionChoice {
     QString id;
     QString label;          // "Japan · v1.0"
     QString rom;            // the ROM file the repository expects
-    QString romStatus;      // "ok", "missing" or "mismatch"
+    QString romStatus;      // "ok", "missing", "mismatch" or "buildable"
     bool edited = false;    // hack/<revision> holds edits
+    QString builtFrom;      // a built revision: the label of the one it is built from
 };
 
 // Opening a game repository's .rlj: pick the revision to edit, as a

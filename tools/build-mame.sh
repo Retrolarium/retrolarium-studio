@@ -1,7 +1,7 @@
 #!/bin/bash
 # Builds the MAME the studio ships: mamedev/mame at the commit below, unchanged,
-# as a "consoles" subtarget with only the NES/Famicom, SNES and Mega Drive
-# drivers. The result is consoles.exe in the checkout, which
+# as a "consoles" subtarget with only the NES/Famicom, Vs. System, SNES and
+# Mega Drive drivers (Vs. System for Vs. Super Mario Bros.). The result is consoles.exe in the checkout, which
 # tools/package-win.ps1 takes (-Mame) together with the checkout's license
 # texts (docs/legal, 3rdparty).
 #
@@ -32,5 +32,5 @@ fi
 export OS=Windows_NT
 exec make \
     SUBTARGET=consoles \
-    SOURCES=src/mame/nintendo/nes.cpp,src/mame/nintendo/snes.cpp,src/mame/sega/mdconsole.cpp \
+    SOURCES=src/mame/nintendo/nes.cpp,src/mame/nintendo/vsnes.cpp,src/mame/nintendo/snes.cpp,src/mame/sega/mdconsole.cpp \
     REGENIE=1 NOWERROR=1 -j"${JOBS:-$(nproc)}"

@@ -19,7 +19,8 @@ param(
 #   -Python  a CPython installation to take the private Python from (default:
 #            the one `python` on PATH runs); the kit needs no packages
 #   -Mame    consoles.exe (default mame_testing\mame\consoles.exe), built by
-#            tools\build-mame.sh from the MAME commit named there
+#            tools\build-mame-docker.ps1 (or tools\build-mame.sh in MSYS2)
+#            from the MAME commit named there
 
 $ErrorActionPreference = "Stop"
 

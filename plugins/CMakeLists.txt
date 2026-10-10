@@ -75,6 +75,12 @@ add_executable(retrolarium-flicky-level-writer
 target_link_libraries(retrolarium-flicky-level-writer PRIVATE flicky_data)
 install(TARGETS retrolarium-flicky-level-writer RUNTIME DESTINATION tools)
 
+add_executable(nes_record_table_test
+    platforms/nes/tests/record_table_test.cpp
+)
+target_link_libraries(nes_record_table_test PRIVATE nes_editors)
+studio_add_test(nes_record_table_test)
+
 # Mega Drive sound previews: the kit writes a VGM and runs this renderer
 # (RETROLARIUM_YMFM_RENDERER) for the WAV; the studio finds it in its tools
 # folder. ymfm (BSD-3-Clause) is vendored unchanged.
@@ -98,6 +104,8 @@ add_library(nes_editors STATIC
     platforms/nes/src/nes/bundle.hpp
     platforms/nes/src/nes/editors.cpp
     platforms/nes/src/nes/editors.hpp
+    platforms/nes/src/nes/record_table_model.cpp
+    platforms/nes/src/nes/record_table_model.hpp
     platforms/nes/src/nes/sound_effect_model.cpp
     platforms/nes/src/nes/sound_effect_model.hpp
 )
@@ -245,6 +253,8 @@ add_library(doraemon_plugin STATIC
     games/doraemon/src/doraemon/plugin/route_model.hpp
     games/doraemon/src/doraemon/plugin/screen_model.cpp
     games/doraemon/src/doraemon/plugin/screen_model.hpp
+    games/doraemon/src/doraemon/plugin/table_models.cpp
+    games/doraemon/src/doraemon/plugin/table_models.hpp
     games/doraemon/src/doraemon/plugin/text_model.cpp
     games/doraemon/src/doraemon/plugin/text_model.hpp
     games/doraemon/src/doraemon/render/painter.cpp

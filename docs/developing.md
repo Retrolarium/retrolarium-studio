@@ -22,8 +22,12 @@ source finds its parts like this:
 ## Building
 
 `tools\build-win.ps1` cross-compiles the studio, its helper programs and the
-setup program with the static Qt 5 SDK in Docker. `tools\build-mame.sh` builds
-the MAME the package ships (the commit is pinned in the script).
+setup program with the static Qt 5 SDK in Docker. `tools\build-mame-docker.ps1`
+builds the MAME the package ships the same way: MinGW-w64 GCC cross-compiles the
+"consoles" subtarget (NES/Famicom, Vs. System, SNES and Mega Drive drivers) of
+an unchanged MAME checkout in Docker, from `tools\mame\Dockerfile`, and
+`tools\mame\build.sh` pins the commit. `tools\build-mame.sh` builds the same
+subtarget natively in MSYS2.
 
 ## The package and the installer
 

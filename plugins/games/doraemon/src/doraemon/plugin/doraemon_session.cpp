@@ -5,12 +5,14 @@
 #include "doraemon/plugin/demo_model.hpp"
 #include "doraemon/plugin/map_model.hpp"
 #include "doraemon/plugin/music_model.hpp"
+#include "doraemon/plugin/table_models.hpp"
 #include "doraemon/plugin/playtest_model.hpp"
 #include "doraemon/plugin/route_model.hpp"
 #include "doraemon/plugin/screen_model.hpp"
 #include "doraemon/plugin/text_model.hpp"
 #include "nes/editors.hpp"
 #include "nes/palette.hpp"
+#include "nes/record_table_model.hpp"
 #include "nes/sound_effect_model.hpp"
 #include "sdk/i18n.hpp"
 #include "sdk/plugin.hpp"
@@ -92,6 +94,43 @@ std::pair<int, int> presetOf(const QString& id) {
 }
 
 const char* const kSoundDrivers[4] = {"World 1", "World 2", "World 3", "Title and ending"};
+
+// The object tables of each world (kit nes.record-table.v1), in the order
+// the Levels view lists them, and the World 3 behavior streams after them.
+struct TableEntry {
+    World world;
+    const char* id;
+    const char* title;
+    const char* note;
+};
+const TableEntry kTables[] = {
+    {World::One, "world1-underground-rooms", QT_TRANSLATE_NOOP("doraemon", "Underground rooms"),
+     QT_TRANSLATE_NOOP("doraemon", "Where each underground room puts the camera and Doraemon, and the city return "
+                                   "each way out leads to (— for none).")},
+    {World::One, "world1-city-returns", QT_TRANSLATE_NOOP("doraemon", "City returns"),
+     QT_TRANSLATE_NOOP("doraemon", "Where Doraemon comes back up into the city: the camera and the manhole.")},
+    {World::One, "world1-weapon-sounds", QT_TRANSLATE_NOOP("doraemon", "Weapon sounds"),
+     QT_TRANSLATE_NOOP("doraemon", "The sound effect request a shot plays at each weapon level.")},
+    {World::One, "world1-weapon-shots", QT_TRANSLATE_NOOP("doraemon", "Weapon shots"),
+     QT_TRANSLATE_NOOP("doraemon", "Where a shot starts from Doraemon and how it is drawn, per weapon level and direction.")},
+    {World::Two, "world2-enemy-states", QT_TRANSLATE_NOOP("doraemon", "Enemy states"),
+     QT_TRANSLATE_NOOP("doraemon", "World 2's enemies by state: how often they attack, the hits they take and their "
+                                   "score code. State $00 is no enemy; its damage and score bytes belong to other tables.")},
+    {World::Three, "world3-rooms", QT_TRANSLATE_NOOP("doraemon", "Room flags"),
+     QT_TRANSLATE_NOOP("doraemon", "Per room: the look type $03 creatures take, whether type $04 creatures follow "
+                                   "Doraemon, and whether type $05 creatures stay where they are.")},
+    {World::Three, "world3-type05-motion", QT_TRANSLATE_NOOP("doraemon", "Type $05 steps"),
+     QT_TRANSLATE_NOOP("doraemon", "How far a type $05 creature moves each step in its four directions.")},
+    {World::Three, "world3-type0c-formation", QT_TRANSLATE_NOOP("doraemon", "Type $0C group"),
+     QT_TRANSLATE_NOOP("doraemon", "The creatures a type $0C spawn brings: state, position and type.")},
+    {World::Three, "world3-type0a-formation", QT_TRANSLATE_NOOP("doraemon", "Type $0A group"),
+     QT_TRANSLATE_NOOP("doraemon", "The creatures a type $0A spawn brings: state, position and type.")},
+    {World::Three, "world3-type08-formation", QT_TRANSLATE_NOOP("doraemon", "Type $08 group"),
+     QT_TRANSLATE_NOOP("doraemon", "The creatures a type $08 spawn brings: state, position, type and first frame.")},
+};
+const char* const kRoutingIds[4] = {"world1-effect-routing", "world2-effect-routing", "world3-effect-routing",
+                                    "shell-effect-routing"};
+constexpr int kBehaviorStreams = 16;
 
 // The effect requests of the four bank-local drivers (QueueEffect,
 // UpdateEffects): what each one's handler pair does, from the source
@@ -272,6 +311,28 @@ QVector<sdk::DocumentGroup> DoraemonSession::documents(const QString& kind) cons
                 }
             }
         }
+        // The object tables; opening one adds them from the project's source.
+        for (const TableEntry& table : kTables) {
+            const QString id = QString::fromLatin1(table.id);
+            const bool present = state_.bundle.contains(id);
+            group(tr("%1 · tables").arg(worldLabel(table.world))).documents
+                << entry(QStringLiteral("table:") + id, rlTr("doraemon", table.title),
+                         present ? tr("%n rows", nullptr, int(state_.bundle.resource(id).value(QStringLiteral("records")).toArray().size()))
+                                 : tr("not added yet"),
+                         present && saved_.bundle.contains(id) && changed(id));
+        }
+        const bool behavior = state_.bundle.contains(QStringLiteral("world3-behavior"));
+        for (int s = 0; s < kBehaviorStreams; ++s) {
+            const QJsonArray now = behavior ? state_.bundle.resource(QStringLiteral("world3-behavior")).value(QStringLiteral("streams")).toArray() : QJsonArray();
+            const QJsonArray saved = behavior && saved_.bundle.contains(QStringLiteral("world3-behavior"))
+                                         ? saved_.bundle.resource(QStringLiteral("world3-behavior")).value(QStringLiteral("streams")).toArray()
+                                         : QJsonArray();
+            group(tr("%1 · behavior").arg(worldLabel(World::Three))).documents
+                << entry(QStringLiteral("behavior:%1").arg(s), tr("Behavior %1").arg(s),
+                         behavior ? tr("%n steps", nullptr, int(now.at(s).toObject().value(QStringLiteral("instructions")).toArray().size()))
+                                  : tr("not added yet"),
+                         behavior && now.at(s) != saved.at(s));
+        }
     } else if (kind == QLatin1String("graphics")) {
         static const char* const kBanks[4] = {"World 1", "World 2", "World 3", "Title and ending"};
         for (int bank = 0; bank < 4; ++bank) {
@@ -357,6 +418,20 @@ QVector<sdk::DocumentGroup> DoraemonSession::documents(const QString& kind) cons
             sdk::DocumentGroup& effects = group(tr("Sound effects · %1").arg(QString::fromLatin1(kSoundDrivers[d])));
             for (const nes::SoundEffect& effect : soundEffects(d)) effects.documents << entry(QStringLiteral("sfx:") + effect.key, effect.title);
         }
+        sdk::DocumentGroup& routing = group(tr("Effect routing"));
+        for (int d = 0; d < 4; ++d) {
+            const QString id = QString::fromLatin1(kRoutingIds[d]);
+            routing.documents << entry(QStringLiteral("routing:%1").arg(d), QString::fromLatin1(kSoundDrivers[d]),
+                                       state_.bundle.contains(id) ? QString() : tr("not added yet"),
+                                       state_.bundle.contains(id) && saved_.bundle.contains(id) && changed(id));
+        }
+        sdk::DocumentGroup& bytes = group(tr("Stream bytes"));
+        for (int d = 0; d < 4; ++d) {
+            const QJsonValue now = state_.music.value(QStringLiteral("drivers")).toArray().at(d);
+            const QJsonValue saved = saved_.music.value(QStringLiteral("drivers")).toArray().at(d);
+            bytes.documents << entry(QStringLiteral("events:%1").arg(d), QString::fromLatin1(kSoundDrivers[d]),
+                                     missing ? tr("not added yet") : QString(), !missing && now != saved);
+        }
     } else if (kind == QLatin1String("text")) {
         // Opening one adds the document from the project's own source.
         const bool missing = state_.text.isEmpty();
@@ -406,6 +481,52 @@ std::unique_ptr<sdk::EditorModel> DoraemonSession::openEditor(const QString& kin
                 return nullptr;
             }
             return std::make_unique<DoraemonRouteModel>(this, route);
+        }
+        if (kind == QLatin1String("levels") && document.startsWith(QLatin1String("table:"))) {
+            const QString id = document.mid(6);
+            for (const TableEntry& table : kTables) {
+                if (id != QLatin1String(table.id)) continue;
+                if (!state_.bundle.contains(id)) {
+                    upgradeDocuments(kind, document);
+                    return nullptr;
+                }
+                return std::make_unique<nes::RecordTableModel>(this, id, rlTr("doraemon", table.title),
+                                                               rlTr("doraemon", table.note));
+            }
+            return nullptr;
+        }
+        if (kind == QLatin1String("levels") && document.startsWith(QLatin1String("behavior:"))) {
+            const int stream = document.mid(9).toInt();
+            if (stream < 0 || stream >= kBehaviorStreams) return nullptr;
+            if (!state_.bundle.contains(QStringLiteral("world3-behavior"))) {
+                upgradeDocuments(kind, document);
+                return nullptr;
+            }
+            return std::make_unique<DoraemonBehaviorModel>(this, stream);
+        }
+        if (kind == QLatin1String("sound") && document.startsWith(QLatin1String("routing:"))) {
+            const int driver = document.mid(8).toInt();
+            if (driver < 0 || driver > 3) return nullptr;
+            const QString id = QString::fromLatin1(kRoutingIds[driver]);
+            if (!state_.bundle.contains(id)) {
+                upgradeDocuments(kind, document);
+                return nullptr;
+            }
+            return std::make_unique<nes::RecordTableModel>(
+                this, id, tr("Effect routing · %1").arg(QString::fromLatin1(kSoundDrivers[driver])),
+                tr("Which effect each request of this driver plays. The effect's place in the list is also its "
+                   "priority: a playing effect is cut off only by a request whose effect comes earlier, or "
+                   "by the same one. Picking an effect another request has swaps the two; request $00 "
+                   "resets the sound."));
+        }
+        if (kind == QLatin1String("sound") && document.startsWith(QLatin1String("events:"))) {
+            const int driver = document.mid(7).toInt();
+            if (driver < 0 || driver > 3) return nullptr;
+            if (state_.music.isEmpty()) {
+                upgradeDocuments(kind, document);
+                return nullptr;
+            }
+            return std::make_unique<DoraemonStreamEventsModel>(this, driver);
         }
         if (kind == QLatin1String("graphics")) {
             const QString id = document.section(QLatin1Char('/'), 0, 0);

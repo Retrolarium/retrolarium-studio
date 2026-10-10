@@ -23,6 +23,8 @@ QString SmbPlaytestModel::startLabel() const {
 QString SmbPlaytestModel::coreLabel() const {
     const QString revision = session_->document().revision();
     if (revision.endsWith(QLatin1String("fds"))) return QStringLiteral("MAME · fds");
+    // The arcade board MAME runs it on (the kit's launch plan picks it too).
+    if (revision == QLatin1String("vs_smb")) return QStringLiteral("MAME · suprmrio");
     return revision == QLatin1String("pal") ? QStringLiteral("MAME · nespal") : QStringLiteral("MAME · nes");
 }
 

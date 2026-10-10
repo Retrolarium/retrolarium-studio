@@ -46,6 +46,11 @@ Bros.) play on OpenDiskSysROM. If one misbehaves on it, choose your dump of the
 console's BIOS (`disksys.rom`) in File → Settings, and disk games play on that
 instead.
 
+Vs. Super Mario Bros. plays on MAME's Vs. System arcade board. The kit writes
+each build as the board's ROM chips, so an edited game runs without MAME's
+warning about unknown chips, and sets the cabinet to free play: Enter starts a
+game, right Shift drops a coin.
+
 Building the studio yourself, or running it from a source checkout, is described
 in `developing.md`.
 
@@ -73,7 +78,10 @@ All Night Nippon, Super Mario Bros. 2) and says which already have their ROM.
 Pick one:
 
 - If its ROM is not there yet, the studio asks for it, checks that it is that
-  exact version and copies it into the folder. Your file is not changed.
+  exact version and copies it into the folder. Your file is not changed. A
+  version the disassembly builds itself (Pac-Man's expanded NROM-256 layout) is
+  built from another version's ROM when you open it; the studio asks for that
+  ROM if it is missing.
 - The studio then takes the game's data out of the ROM into `hack/<version>/`:
   these are the documents you edit. The original ROM is never written; a build
   lays your edits over it.
@@ -116,14 +124,14 @@ document to how it came from the source.
 
 ## Games
 
-| Game              | Notes                                                                                                                                                                                                                                                                                                                                                                           |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Super Mario Bros. | areas with objects and enemies, world routes and physics (World), music, 18 sound effects (the 1-up, power-up, vine and brick tables are editable: drag their notes), title demo, playtest from any column (Japan/USA, Europe, PlayChoice-10); the Disk System versions play from power-on, and Vs. Super Mario Bros. needs MAME's arcade driver, which the studio's MAME lacks |
-| Castle Excellent  | rooms with objects, room cells, music track sets and sequences, 5 sound effects with their parameter table, title demo, playtest from any room                                                                                                                                                                                                                                  |
-| Solomon's Key     | levels with Spawn Mirrors, music and effects, demo, playtest from any level; USA, Europe and the Japanese Solomon no Kagi                                                                                                                                                                                                                                                       |
-| Pac-Man           | the maze, actors, screens, sound, attract demo, playtest by round                                                                                                                                                                                                                                                                                                               |
-| Flicky            | rounds and bonus rounds (seesaws, tigers, chick spawn), FM voices and envelopes, screens with movable title sprites, attract demos, playtest by round                                                                                                                                                                                                                           |
-| Doraemon          | World 1 city and underground (blocks and objects, hidden ones translucent), World 2 routes (enemy spawns, secret item screens), World 3 underwater rooms (persistent objects and each room's spawn schedule), help and title screens, music for four drivers and 93 sound effects, World 1 demo, playtest from a block, stage or room                                           |
+| Game              | Notes                                                                                                                                                                                                                                                                                                                                                                                  |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Super Mario Bros. | areas with objects and enemies, world routes and physics (World), music, 18 sound effects (the 1-up, power-up, vine and brick tables are editable: drag their notes), title demo, playtest from any column (Japan/USA, Europe, PlayChoice-10); the Disk System versions play from power-on, and Vs. Super Mario Bros. plays from power-on on MAME's Vs. System board, set to free play |
+| Castle Excellent  | rooms with objects, room cells, music track sets and sequences, 5 sound effects with their parameter table, title demo, playtest from any room                                                                                                                                                                                                                                         |
+| Solomon's Key     | levels with Spawn Mirrors, music and effects, demo, playtest from any level; USA, Europe and the Japanese Solomon no Kagi                                                                                                                                                                                                                                                              |
+| Pac-Man           | the maze, round tables (speed, scatter/chase timing, pellet thresholds, release targets), actors, screens, sound, attract demo, playtest by round; v1.0, v1.1 and the expanded NROM-256 version (a second maze and 8 KiB of sound), which the studio builds from the v1.0 ROM                                                                                                          |
+| Flicky            | rounds and bonus rounds (seesaws, tigers, chick spawn), FM voices and envelopes, screens with movable title sprites, attract demos, playtest by round                                                                                                                                                                                                                                  |
+| Doraemon          | World 1 city and underground (blocks and objects, hidden ones translucent), World 2 routes (enemy spawns, secret item screens), World 3 underwater rooms (persistent objects and each room's spawn schedule), help and title screens, music for four drivers and 93 sound effects, World 1 demo, playtest from a block, stage or room                                                  |
 
 ## Sound effects
 

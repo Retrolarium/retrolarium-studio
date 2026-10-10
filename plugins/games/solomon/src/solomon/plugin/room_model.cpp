@@ -67,6 +67,88 @@ QString metadataLabel(const QString& key) {
     return key;
 }
 
+// Special rooms keep fixed scripted cells outside their item lists (kit
+// solomon.special): rooms 20 and 30 draw symbols from bit planes, room 49
+// (the princess room) hides twelve cells, room 51 is the random bonus room,
+// and eight rooms have a Royal Seal.
+constexpr int kBatRoom = 20;
+constexpr int kOpalRoom = 30;
+constexpr int kPrincessRoom = 49;
+constexpr int kBonusRoom = 51;
+
+QString symbolField(int number) {
+    return number == kBatRoom    ? QStringLiteral("room_20_bat_symbols")
+           : number == kOpalRoom ? QStringLiteral("room_30_blue_opals")
+                                 : QString();
+}
+
+int symbolPattern(int number) {
+    return number == kBatRoom ? 0x04 : 0x27;
+}
+
+bool isSpecial(const QString& kind) {
+    return kind == QLatin1String("seal") || kind == QLatin1String("hidden") || kind == QLatin1String("bonus") ||
+           kind == QLatin1String("symbol");
+}
+
+// The position list a special kind edits in `special`, and where it goes back.
+QJsonArray specialPositions(const QJsonObject& special, const QString& kind, int number) {
+    if (kind == QLatin1String("hidden")) return special.value(QStringLiteral("princess_room_hidden_cells")).toArray();
+    if (kind == QLatin1String("bonus")) {
+        return special.value(QStringLiteral("random_bonus_room")).toObject().value(QStringLiteral("positions")).toArray();
+    }
+    return special.value(symbolField(number)).toArray();
+}
+
+void setSpecialPositions(QJsonObject& special, const QString& kind, int number, const QJsonArray& positions) {
+    if (kind == QLatin1String("hidden")) {
+        special.insert(QStringLiteral("princess_room_hidden_cells"), positions);
+    } else if (kind == QLatin1String("bonus")) {
+        QJsonObject bonus = special.value(QStringLiteral("random_bonus_room")).toObject();
+        bonus.insert(QStringLiteral("positions"), positions);
+        special.insert(QStringLiteral("random_bonus_room"), bonus);
+    } else {
+        special.insert(symbolField(number), positions);
+    }
+}
+
+// Moves one special cell of room `number`; false when nothing moved or the
+// kind does not belong to the room.
+bool moveSpecial(SolomonRooms& r, int number, const QString& kind, int index, QPoint cell) {
+    QJsonObject special = r.specialRooms();
+    if (kind == QLatin1String("seal")) {
+        QJsonArray seals = special.value(QStringLiteral("solomon_seals")).toArray();
+        if (index < 0 || index >= seals.size()) return false;
+        QJsonObject record = seals.at(index).toObject();
+        if (record.value(QStringLiteral("room")).toInt() != number ||
+            point(record.value(QStringLiteral("position"))) == cell) {
+            return false;
+        }
+        record.insert(QStringLiteral("position"), pointJson(cell));
+        seals.replace(index, record);
+        special.insert(QStringLiteral("solomon_seals"), seals);
+        r.setSpecialRooms(special);
+        return true;
+    }
+    if ((kind == QLatin1String("hidden") && number != kPrincessRoom) ||
+        (kind == QLatin1String("bonus") && number != kBonusRoom) ||
+        (kind == QLatin1String("symbol") && symbolField(number).isEmpty())) {
+        return false;
+    }
+    QJsonArray positions = specialPositions(special, kind, number);
+    if (index < 0 || index >= positions.size() || point(positions.at(index)) == cell) return false;
+    if (kind == QLatin1String("symbol")) {
+        // A bit plane holds a cell once.
+        for (int other = 0; other < positions.size(); ++other) {
+            if (other != index && point(positions.at(other)) == cell) return false;
+        }
+    }
+    positions.replace(index, pointJson(cell));
+    setSpecialPositions(special, kind, number, positions);
+    r.setSpecialRooms(special);
+    return true;
+}
+
 const QStringList& hidings() {
     static const QStringList kHidings{rlTr("solomon", "In the open"), rlTr("solomon", "Hidden"),
                                       rlTr("solomon", "In a brown block")};
@@ -249,7 +331,18 @@ sdk::Library SolomonRoomModel::enemyLibrary() const {
 }
 
 sdk::Library SolomonRoomModel::sheet() const {
-    if (layer_ == QLatin1String("items")) return itemLibrary();
+    if (layer_ == QLatin1String("items")) {
+        sdk::Library library = itemLibrary();
+        const int number = rooms().roomNumber(room_);
+        if (!symbolField(number).isEmpty()) {
+            sdk::LibraryItem symbol;
+            symbol.id = QStringLiteral("special:symbol");
+            symbol.label = number == kBatRoom ? tr("Bat symbol") : tr("Blue opal");
+            symbol.icon = session_->painter().patternIcon(symbolPattern(number), bank(), group());
+            library.items.prepend(symbol);
+        }
+        return library;
+    }
     if (layer_ == QLatin1String("enemies")) return enemyLibrary();
     sdk::Library library;
     library.grid = true;
@@ -313,6 +406,30 @@ QVector<sdk::MapObject> SolomonRoomModel::objects() const {
             const QPoint p = r.metadataPosition(room_, key);
             if (p.x() >= 0) add(QStringLiteral("meta:") + key, metadataLabel(key), QRect(p, QSize(1, 1)));
         }
+        const QJsonObject special = r.specialRooms();
+        const int number = r.roomNumber(room_);
+        const QJsonArray seals = special.value(QStringLiteral("solomon_seals")).toArray();
+        for (int i = 0; i < seals.size(); ++i) {
+            const QJsonObject record = seals.at(i).toObject();
+            if (record.value(QStringLiteral("room")).toInt() == number) {
+                add(QStringLiteral("seal:%1").arg(i), tr("Royal Seal"),
+                    QRect(point(record.value(QStringLiteral("position"))), QSize(1, 1)));
+            }
+        }
+        const QString kind = number == kPrincessRoom ? QStringLiteral("hidden")
+                             : number == kBonusRoom  ? QStringLiteral("bonus")
+                             : symbolField(number).isEmpty() ? QString()
+                                                             : QStringLiteral("symbol");
+        if (!kind.isEmpty()) {
+            const QJsonArray positions = specialPositions(special, kind, number);
+            for (int i = 0; i < positions.size(); ++i) {
+                const QString label = kind == QLatin1String("hidden") ? tr("Hidden cell %1").arg(i + 1)
+                                      : kind == QLatin1String("bonus") ? tr("Bonus spot %1").arg(i + 1)
+                                      : number == kBatRoom             ? tr("Bat symbol")
+                                                                       : tr("Blue opal");
+                add(QStringLiteral("%1:%2").arg(kind).arg(i), label, QRect(point(positions.at(i)), QSize(1, 1)));
+            }
+        }
     } else {
         const QVector<SolomonEnemy> enemies = r.enemies(room_);
         for (int i = 0; i < enemies.size(); ++i) {
@@ -349,6 +466,7 @@ bool SolomonRoomModel::moveTo(SolomonRooms& r, const QString& id, QPoint cell) c
         r.setEnemies(room_, enemies);
         return true;
     }
+    if (isSpecial(parts.first())) return moveSpecial(r, r.roomNumber(room_), parts.first(), parts.value(1).toInt(), cell);
     QJsonArray commands = r.itemCommands(room_);
     const int c = parts.value(1).toInt();
     if (c < 0 || c >= commands.size()) return false;
@@ -429,6 +547,27 @@ bool SolomonRoomModel::placeObject(const QString& libraryItem, QPoint cell, QStr
         selectObject(QStringLiteral("enemy:%1").arg(enemies.size() - 1));
         return true;
     }
+    if (libraryItem == QLatin1String("special:symbol")) {
+        const int number = next.roomNumber(room_);
+        const QString field = symbolField(number);
+        if (field.isEmpty()) return false;
+        QJsonObject special = next.specialRooms();
+        QJsonArray positions = special.value(field).toArray();
+        for (const QJsonValue& value : positions) {
+            if (point(value) == cell) {
+                if (error) *error = tr("That cell already has one.");
+                return false;
+            }
+        }
+        positions << pointJson(cell);
+        special.insert(field, positions);
+        next.setSpecialRooms(special);
+        const QString label = number == kBatRoom ? tr("Bat symbol") : tr("Blue opal");
+        if (!commit(next, tr("Add %1 to %2").arg(label, title()), error)) return false;
+        setCurrentLayer(QStringLiteral("items"));
+        selectObject(QStringLiteral("symbol:%1").arg(positions.size() - 1));
+        return true;
+    }
     if (libraryItem.startsWith(QLatin1String("item:"))) {
         const int type = libraryItem.mid(5).toInt();
         QJsonArray commands = next.itemCommands(room_);
@@ -487,6 +626,15 @@ bool SolomonRoomModel::removeObject(const QString& id, QString* error) {
             }
         }
         next.setItemCommands(room_, commands);
+    } else if (parts.first() == QLatin1String("symbol") && !symbolField(next.roomNumber(room_)).isEmpty()) {
+        const QString field = symbolField(next.roomNumber(room_));
+        QJsonObject special = next.specialRooms();
+        QJsonArray positions = special.value(field).toArray();
+        const int i = parts.value(1).toInt();
+        if (i < 0 || i >= positions.size()) return false;
+        positions.removeAt(i);
+        special.insert(field, positions);
+        next.setSpecialRooms(special);
     } else {
         if (error) {
             *error = id.startsWith(QLatin1String("constellation"))
@@ -631,6 +779,24 @@ sdk::Inspection SolomonRoomModel::inspect() const {
         inspection.engineTag = QStringLiteral("solomon.rooms@3");
         return inspection;
     }
+    if (isSpecial(parts.first())) {
+        inspection.kicker = tr("Special room");
+        inspection.title = objectLabel(selected_);
+        if (parts.first() == QLatin1String("seal")) {
+            inspection.note = tr("Eight rooms hide a Royal Seal on a fixed cell; drag it to move it.");
+        } else if (parts.first() == QLatin1String("hidden")) {
+            inspection.note = tr("The princess room hides its prizes on twelve fixed cells; drag one to move it.");
+        } else if (parts.first() == QLatin1String("bonus")) {
+            inspection.note = tr("The random bonus room puts its 16 items on 16 of these 32 spots in a row, "
+                                 "starting at a random one, while the items go round on their own. Drag a "
+                                 "spot to move it; the room's inspector picks the items.");
+        } else {
+            inspection.note = tr("The room draws these from a table of its own, not from its item list. "
+                                 "Drag one to move it, delete it, or add more from the sheet.");
+        }
+        inspection.engineTag = QStringLiteral("solomon.special@3");
+        return inspection;
+    }
     if (parts.first() == QLatin1String("constellation")) {
         const int opcode = r.itemCommands(room_).at(parts.value(1).toInt()).toObject().value(QStringLiteral("opcode")).toInt();
         inspection.kicker = tr("Constellation");
@@ -666,6 +832,22 @@ sdk::Inspection SolomonRoomModel::inspect() const {
                                "The right button takes a cell's blocks as the brush.")
                           : tr("Drag items and enemies from the sheet onto the room. The door, key, "
                                "mirrors and Wizard's start are moved, not deleted.");
+    if (r.roomNumber(room_) == kBonusRoom) {
+        QStringList choices;
+        QVector<QImage> icons;
+        for (const sdk::LibraryItem& item : itemLibrary().items) {
+            choices << item.label;
+            icons << item.icon;
+        }
+        const QJsonArray types =
+            r.specialRooms().value(QStringLiteral("random_bonus_room")).toObject().value(QStringLiteral("item_types")).toArray();
+        for (int k = 0; k < types.size(); ++k) {
+            const int type = types.at(k).toInt();
+            inspection.fields << choice(QStringLiteral("bonus_item_%1").arg(k), tr("Bonus item %1").arg(k + 1),
+                                        QStringLiteral("%1 · %2").arg(hex(type & 0x3f), itemName(type)), choices, icons);
+        }
+        inspection.note += QLatin1Char(' ') + tr("Bonus items 1-16 go round the 32 spots on their own.");
+    }
     inspection.engineTag = QStringLiteral("solomon.rooms@3");
     inspection.engine = {{tr("Palette group"), QString::number(group())},
                          {tr("Item list"), tr("%n bytes", nullptr, SolomonRooms::itemStreamBytes(r.itemCommands(room_)))}};
@@ -708,6 +890,25 @@ bool SolomonRoomModel::setField(const QString& key, const QVariant& value, QStri
         enemies[i].type = type;
         next.setEnemies(room_, enemies);
         return commit(next, tr("Edit an enemy in %1").arg(title()), error);
+    }
+    if (key.startsWith(QLatin1String("bonus_item_"))) {
+        const int k = key.mid(11).toInt();
+        QJsonObject special = next.specialRooms();
+        QJsonObject bonus = special.value(QStringLiteral("random_bonus_room")).toObject();
+        QJsonArray types = bonus.value(QStringLiteral("item_types")).toArray();
+        const int identity = hexOf(value.toString());
+        if (next.roomNumber(room_) != kBonusRoom || k < 0 || k >= types.size() || identity < 1) return false;
+        // The item changes; whether it hides stays.
+        const int type = identity | (types.at(k).toInt() & 0xc0);
+        if (type >= 0xc0) {
+            if (error) *error = tr("That item cannot be stored that way.");
+            return false;
+        }
+        types.replace(k, type);
+        bonus.insert(QStringLiteral("item_types"), types);
+        special.insert(QStringLiteral("random_bonus_room"), bonus);
+        next.setSpecialRooms(special);
+        return commit(next, tr("Edit the bonus items"), error);
     }
     if (key == QLatin1String("rom_layout")) {
         const bool expanded = value.toString().startsWith(QLatin1String("Expanded"));

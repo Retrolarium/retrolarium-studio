@@ -18,11 +18,18 @@ namespace rl::shell {
 namespace {
 
 QString statusText(const RevisionChoice& revision) {
-    QString text = revision.romStatus == QLatin1String("ok")
-                       ? rlTr("studio", "ROM ready")
-                       : revision.romStatus == QLatin1String("missing")
-                             ? rlTr("studio", "You will be asked for its ROM")
-                             : rlTr("studio", "Its ROM file differs: choose the ROM again");
+    QString text;
+    if (revision.romStatus == QLatin1String("ok")) {
+        text = rlTr("studio", "ROM ready");
+    } else if (revision.romStatus == QLatin1String("buildable")) {
+        text = rlTr("studio", "Built from %1 when you open it").arg(revision.builtFrom);
+    } else if (!revision.builtFrom.isEmpty()) {
+        text = rlTr("studio", "Built from %1: you will be asked for its ROM").arg(revision.builtFrom);
+    } else if (revision.romStatus == QLatin1String("missing")) {
+        text = rlTr("studio", "You will be asked for its ROM");
+    } else {
+        text = rlTr("studio", "Its ROM file differs: choose the ROM again");
+    }
     if (revision.edited) text += rlTr("studio", " · edited");
     return text;
 }
