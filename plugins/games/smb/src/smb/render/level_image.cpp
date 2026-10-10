@@ -2,6 +2,7 @@
 
 #include "nes/palette.hpp"
 
+#include <QJsonArray>
 #include <QPainter>
 
 #include <algorithm>
@@ -28,33 +29,23 @@ int groupCount(int id) {
     return id == 0x37 || id == 0x3b ? 2 : id == 0x38 || id == 0x3c ? 3 : 0;
 }
 
-// Six 8x8 tiles, two wide and three tall; 0xfc is the game's blank sprite.
-QVector<int> enemyTiles(int id) {
+// Six 8x8 tiles, two wide and three tall, from the game's enemy graphics
+// table at the enemy's offset; 0xfc is the game's blank sprite. Enemies the
+// level view does not draw (frenzies, Boss's fire) and offset 0xff have
+// none; the jumpspring object draws like the jumpspring enemy, and the
+// retainer is the row after the princess.
+QVector<int> enemyTiles(int id, const QVector<int>& graphics, const QVector<int>& offsets) {
     if (id == 0x14 || id == 0x15 || id == 0x17 || id == 0x34) {
         return {};
     }
-    QVector<int> tiles;
-    switch (id) {
-    case 0x00: case 0x01: case 0x03: case 0x04: tiles = {0xfc, 0xa5, 0xa6, 0xa7, 0xa8, 0xa9}; break;
-    case 0x02: tiles = {0xfc, 0xfc, 0xaa, 0xab, 0xac, 0xad}; break;
-    case 0x05: tiles = {0x7d, 0x7c, 0xd1, 0x8c, 0xd3, 0xd2}; break;
-    case 0x06: tiles = {0xfc, 0xfc, 0x70, 0x71, 0x72, 0x73}; break;
-    case 0x07: tiles = {0xfc, 0xfc, 0xdc, 0xdc, 0xdf, 0xdf}; break;
-    case 0x08: tiles = {0xfc, 0xfc, 0xe8, 0xe7, 0xea, 0xe9}; break;
-    case 0x09: case 0x0e: case 0x0f: case 0x10: tiles = {0x69, 0xa5, 0x6a, 0xa7, 0xa8, 0xa9}; break;
-    case 0x0a: case 0x0b: tiles = {0xfc, 0xfc, 0xb2, 0xb3, 0xb4, 0xb5}; break;
-    case 0x0c: tiles = {0xfc, 0xfc, 0xd0, 0xd0, 0xd7, 0xd7}; break;
-    case 0x0d: tiles = {0xe5, 0xe5, 0xe6, 0xe6, 0xeb, 0xeb}; break;
-    case 0x11: tiles = {0xb9, 0xb8, 0xbb, 0xba, 0xbc, 0xbc}; break;
-    case 0x12: tiles = {0xfc, 0xfc, 0x96, 0x97, 0x98, 0x99}; break;
-    case 0x16: tiles = {0xbf, 0xbe, 0xc1, 0xc0, 0xc2, 0xfc}; break;
-    case 0x18: tiles = {0xf2, 0xf2, 0xf3, 0xf3, 0xf2, 0xf2}; break;
-    case 0x19: tiles = {0xf1, 0xf1, 0xf1, 0xf1, 0xfc, 0xfc}; break;
-    case 0x1a: tiles = {0xf0, 0xf0, 0xfc, 0xfc, 0xfc, 0xfc}; break;
-    case 0x32: tiles = {0xf2, 0xf2, 0xf3, 0xf3, 0xf2, 0xf2}; break;
-    case 0x35: tiles = {0xcd, 0xcd, 0xce, 0xce, 0xcf, 0xcf}; break;
-    default: return {};
+    int offset = -1;
+    if (id == 0x32 && offsets.size() > 0x18) offset = offsets.at(0x18);
+    else if (id == 0x35 && offsets.size() > 0x15) offset = offsets.at(0x15) + 6;
+    else if (id >= 0 && id < offsets.size() && offsets.at(id) != 0xff) offset = offsets.at(id);
+    if (offset < 0 || offset + 6 > graphics.size()) {
+        return {};
     }
+    QVector<int> tiles = graphics.mid(offset, 6);
     // Walking enemies face left: the game draws their columns swapped.
     if (id >= 0 && id <= 0x12) {
         for (int i = 0; i + 1 < tiles.size(); i += 2) {
@@ -64,14 +55,14 @@ QVector<int> enemyTiles(int id) {
     return tiles;
 }
 
-int enemyPalette(int id) {
-    if (isFirebar(id) || isLargeLift(id) || isSmallLift(id)) return 2;
-    if (id == 0x37 || id == 0x38) return 3;
-    if (id == 0x3b || id == 0x3c) return 1;
-    if (id == 0x35) return 2;
-    static constexpr std::array<int, 27> kRows{1, 2, 3, 2, 1, 1, 3, 3, 3, 1, 1, 2, 2, 1,
-                                               1, 2, 1, 1, 2, 3, 2, 2, 1, 1, 2, 2, 2};
-    return id >= 0 && id < int(kRows.size()) ? kRows[id] & 3 : 1;
+// The sprite palette: firebars and lifts load theirs in code, groups and the
+// retainer take their member's, the rest come from the attribute table.
+int enemyPalette(int id, const QVector<int>& attributes, int firebar, int platform) {
+    if (isFirebar(id)) return firebar & 3;
+    if (isLargeLift(id) || isSmallLift(id)) return platform & 3;
+    if (groupMember(id) >= 0) return enemyPalette(groupMember(id), attributes, firebar, platform);
+    if (id == 0x35) return enemyPalette(0x15, attributes, firebar, platform);
+    return id >= 0 && id < attributes.size() ? attributes.at(id) & 3 : 1;
 }
 
 QVector<bool> horizontalFlips(int id) {
@@ -103,19 +94,27 @@ QString areaTypeOf(const QString& areaName) {
     return areaName.section(QLatin1Char('_'), 0, -2);
 }
 
-bool automaticNight(const QString& areaType, const QVector<int>& header) {
-    if (header.size() != 6) return false;
-    static constexpr std::array<bool, 8> kNight{false, false, true, true, true, false, true, true};
-    static const QStringList kTypes{QStringLiteral("water"), QStringLiteral("ground"), QStringLiteral("underground"),
-                                    QStringLiteral("castle")};
-    const int color = header.at(2) >= 4 ? header.at(2) : int(kTypes.indexOf(areaType));
-    return color >= 0 && color < int(kNight.size()) && kNight[color];
+QVector<int> smbLevelTable(const SmbResourceDocument& document, const QString& name) {
+    QVector<int> values;
+    const QJsonArray raw =
+        document.resource(kLevelTables).value(QStringLiteral("tables")).toObject().value(name).toArray();
+    for (const QJsonValue& value : raw) values.push_back(value.toInt());
+    return values;
 }
 
-QPoint entranceCell(const QVector<int>& header) {
-    static constexpr std::array<int, 8> kStartY{0x00, 0x20, 0xb0, 0x50, 0x00, 0x00, 0xb0, 0xb0};
+bool automaticNight(const QString& areaType, const QVector<int>& header, const QVector<int>& colors) {
+    if (header.size() != 6 || colors.isEmpty()) return false;
+    static const QStringList kTypes{QStringLiteral("water"), QStringLiteral("ground"), QStringLiteral("underground"),
+                                    QStringLiteral("castle")};
+    // A backdrop other than the water areas' daytime colour is a night sky.
+    const int color = header.at(2) >= 4 ? header.at(2) : int(kTypes.indexOf(areaType));
+    return color >= 0 && color < colors.size() && colors.at(color) != colors.at(0);
+}
+
+QPoint entranceCell(const QVector<int>& header, const QVector<int>& startY) {
     const int entrance = header.size() == 6 ? std::clamp(header.at(1), 0, 7) : 0;
-    return {2, std::max(1, (kStartY[entrance] - 0x10) / 0x10)};
+    if (entrance >= startY.size()) return {2, 1};
+    return {2, std::max(1, (startY.at(entrance) - 0x10) / 0x10)};
 }
 
 SmbLevelPainter::SmbLevelPainter(const SmbResourceDocument& document, SmbArt art)
@@ -186,8 +185,20 @@ QImage SmbLevelPainter::enemy(int id, const QString& areaType) const {
     if (found != cache_.constEnd()) {
         return *found;
     }
+    const QVector<int> graphics = smbLevelTable(document_, QStringLiteral("enemy_graphics_tiles"));
+    const QVector<int> offsets = smbLevelTable(document_, QStringLiteral("enemy_graphics_offsets"));
+    const QVector<int> attributes = smbLevelTable(document_, QStringLiteral("enemy_sprite_attributes"));
+    const QVector<int> firebar = smbLevelTable(document_, QStringLiteral("firebar_tile"));
+    const QVector<int> platform = smbLevelTable(document_, QStringLiteral("platform_tile"));
+    const QVector<int> firebarAttributes = smbLevelTable(document_, QStringLiteral("firebar_attributes"));
+    const QVector<int> platformAttributes = smbLevelTable(document_, QStringLiteral("platform_attributes"));
+    if (graphics.isEmpty() || offsets.size() <= 0x18 || attributes.isEmpty() || firebar.isEmpty() ||
+        platform.isEmpty() || firebarAttributes.isEmpty() || platformAttributes.isEmpty()) {
+        return {};  // a project made before the level tables
+    }
     const QVector<int> palette = document_.paletteFor(art_.palettes, areaType);
-    const int start = nes::spriteEntry(enemyPalette(id), 0);
+    const int start =
+        nes::spriteEntry(enemyPalette(id, attributes, firebarAttributes.at(0), platformAttributes.at(0)), 0);
     if (start + 3 >= palette.size()) {
         return {};
     }
@@ -212,7 +223,7 @@ QImage SmbLevelPainter::enemy(int id, const QString& areaType) const {
         image = QImage((segments - 1) * 6 + 8, (segments - 1) * 6 + 8, QImage::Format_ARGB32);
         image.fill(Qt::transparent);
         for (int s = 0; s < segments; ++s) {
-            drawTile(image, 0x64, QPoint(s * 6, s * 6));
+            drawTile(image, firebar.at(0), QPoint(s * 6, s * 6));
         }
     } else if (isLargeLift(id) || isSmallLift(id)) {
         const int segments =
@@ -220,11 +231,11 @@ QImage SmbLevelPainter::enemy(int id, const QString& areaType) const {
         image = QImage(segments * 8, 8, QImage::Format_ARGB32);
         image.fill(Qt::transparent);
         for (int s = 0; s < segments; ++s) {
-            drawTile(image, 0x5b, QPoint(s * 8, 0));
+            drawTile(image, platform.at(0), QPoint(s * 8, 0));
         }
-    } else if (id == 0x2d) {  // Boss: rear and front halves
-        const QVector<int> rear{0xc4, 0xc3, 0xc6, 0xc5, 0xc8, 0xc7};
-        const QVector<int> front{0xbf, 0xbe, 0xc1, 0xc0, 0xc2, 0xfc};
+    } else if (id == 0x2d) {  // Boss: rear and front halves, his enemy rows
+        const QVector<int> rear = graphics.mid(offsets.at(0x17), 6);
+        const QVector<int> front = graphics.mid(offsets.at(0x16), 6);
         image = QImage(32, 24, QImage::Format_ARGB32);
         image.fill(Qt::transparent);
         for (int i = 0; i < rear.size(); ++i) {
@@ -243,7 +254,7 @@ QImage SmbLevelPainter::enemy(int id, const QString& areaType) const {
             painter.drawImage(i * member.width(), 0, member);
         }
     } else {
-        const QVector<int> tiles = enemyTiles(id);
+        const QVector<int> tiles = enemyTiles(id, graphics, offsets);
         if (tiles.isEmpty()) {
             return {};
         }

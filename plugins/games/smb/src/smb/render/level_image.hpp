@@ -59,11 +59,15 @@ private:
     mutable std::string model_;     // palette model, read once per cache
 };
 
+// A table of the project's level tables; empty in a project made before
+// them.
+QVector<int> smbLevelTable(const SmbResourceDocument& document, const QString& name);
 // The sky is dark for these areas: by area type, or the header's background
-// colour (foreground_or_color 4-7).
-bool automaticNight(const QString& areaType, const QVector<int>& header);
-// The cell Hero enters an area at, from its entrance control.
-QPoint entranceCell(const QVector<int>& header);
+// colour (foreground_or_color 4-7), against the game's background colours.
+bool automaticNight(const QString& areaType, const QVector<int>& header, const QVector<int>& colors);
+// The cell Hero enters an area at, from its entrance control and the game's
+// starting heights.
+QPoint entranceCell(const QVector<int>& header, const QVector<int>& startY);
 // "ground_3" -> "ground"
 QString areaTypeOf(const QString& areaName);
 

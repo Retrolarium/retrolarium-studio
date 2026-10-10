@@ -49,12 +49,23 @@ to do when Windows warns about that.
 
 ## Building from source
 
-Requires Docker and a static Qt 5.15 SDK for Windows, cross-compiled with
-MinGW-w64, in a Docker image (`tools\build-win.ps1 -Image`). Clone
-[retrolarium-core](https://github.com/Retrolarium/retrolarium-core) and
-[retrolarium-kit](https://github.com/Retrolarium/retrolarium-kit) beside this
-repository: the build compiles the core from there, and the studio runs the kit
-for every build and Play.
+Requires Docker and the static Qt 5.15 SDK for Windows from
+[Longreach Qt](https://github.com/OpenKaryon/longreach-qt) (v0.1.0 or newer),
+cross-compiled with MinGW-w64. Clone it beside this repository and build its
+image `qt5-win-amd64-gpl-enabled` once, which needs GNU make and Python 3.11 or
+newer and takes an hour or more:
+
+```sh
+git clone --branch v0.1.0 https://github.com/OpenKaryon/longreach-qt.git
+make -C longreach-qt qt5-win-amd64
+```
+
+`tools\build-win.ps1` finds `longreach-qt` beside any folder above the studio;
+`-QtKit` or `RETROLARIUM_QT_KIT` names another checkout and `-Image` another
+image. Clone [retrolarium-core](https://github.com/Retrolarium/retrolarium-core)
+and [retrolarium-kit](https://github.com/Retrolarium/retrolarium-kit) beside
+this repository too: the build compiles the core from there, and the studio runs
+the kit for every build and Play.
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File tools\build-win.ps1
@@ -100,6 +111,13 @@ keep a build of the unchanged project byte-identical to the original ROM: the
 kit's tests check that. Interface text goes through `tr()`, and new text needs
 its translations in every `resources/i18n/*.ts` (`tools/update-translations.ps1`
 brings them in).
+
+## Trademarks
+
+The games are named only to say which ones Retrolarium works with. Their titles
+and characters are trademarks of their owners, who have not made or endorsed
+Retrolarium. Retrolarium does not include the games: you need your own copy of
+each.
 
 ## License
 

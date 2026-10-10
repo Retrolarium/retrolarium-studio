@@ -29,10 +29,9 @@ const QString kAttract = QStringLiteral("attract-bg-sprite");
 const QString kIntermission = QStringLiteral("intermission-sprites");
 const QString kFrightened = QStringLiteral("frightened-active-normal");
 const QString kFruit = QStringLiteral("fruit-by-stage");
+const QString kRoundProfiles = QStringLiteral("round-profiles");
+const QString kRenderTables = QStringLiteral("render-tables");
 
-// The fruit of rounds 1-16 (tbl_fruit_sprite_tile_by_stage via the stage
-// profile); later rounds keep the key.
-const int kFruitOfRound[16] = {0, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 7, 7};
 
 using sdk::loadJsonObject;
 using sdk::saveJsonObject;
@@ -232,7 +231,8 @@ QVector<sdk::DocumentGroup> PacmanSession::documents(const QString& kind) const 
         const QJsonObject saved = saved_.bundle.resource(ids::kScreens);
         for (const QString& id : screens::ids()) {
             group.documents << entry(id, screens::label(id), QStringLiteral("32 × 30"),
-                                     screens::cells(now, id) != screens::cells(saved, id));
+                                     screens::cells(now, id, attractAttributes()) !=
+                                         screens::cells(saved, id, attractAttributes()));
         }
         groups << group;
     } else if (kind == QLatin1String("text")) {
@@ -289,6 +289,12 @@ QVector<sdk::DocumentGroup> PacmanSession::documents(const QString& kind) const 
 
 std::unique_ptr<sdk::EditorModel> PacmanSession::openEditor(const QString& kind, const QString& document) {
     try {
+        // Screens and palettes draw with data a newer kit reads from the
+        // game (the attract attributes, the round table's fruit).
+        if ((kind == QLatin1String("screens") || kind == QLatin1String("palettes")) && !hasGameTables()) {
+            upgradeDocuments(kind, document);
+            return nullptr;
+        }
         if (kind == QLatin1String("levels") && document == QLatin1String("maze")) {
             return std::make_unique<PacmanMazeModel>(this);
         }
@@ -564,10 +570,14 @@ QVector<sdk::PaletteSample> PacmanSession::paletteSamples(const QString& table) 
         QImage image(16 * 18 + 2, 20, QImage::Format_ARGB32);
         image.fill(backdrop);
         QPainter p(&image);
-        for (int r = 0; r < 16; ++r) {
+        // The fruit of each round, from the round table.
+        const QJsonArray rounds = state_.bundle.contains(kRoundProfiles)
+            ? state_.bundle.resource(kRoundProfiles).value(QStringLiteral("records")).toArray() : QJsonArray();
+        for (int r = 0; r < 16 && r < rounds.size(); ++r) {
             QVector<QVector<int>> sprites = art.spritePalettes(ids::kGameplay);
             sprites[3][1] = colours.value(r, sprites[3][1]);
-            p.drawImage(2 + r * 18, 2, art.frame(actors, false, 36 + kFruitOfRound[r], 3, sprites));
+            const int fruit = rounds.at(r).toObject().value(QStringLiteral("fruit_group")).toInt();
+            p.drawImage(2 + r * 18, 2, art.frame(actors, false, 36 + fruit, 3, sprites));
         }
         p.end();
         sample(tr("Rounds 1-16"), tr("Each round's fruit in its colour"), image);
@@ -645,12 +655,38 @@ QJsonArray PacmanSession::stepsFromRecording(const QJsonArray& steps, const QStr
     return result.size() > 1 ? result : QJsonArray();
 }
 
+QVector<int> PacmanSession::attractAttributes() const {
+    QVector<int> table(64, 0);
+    if (!state_.bundle.contains(kRenderTables)) return table;
+    const QJsonObject tables = state_.bundle.resource(kRenderTables).value(QStringLiteral("tables")).toObject();
+    const auto value = [&tables](const char* name) {
+        return tables.value(QLatin1String(name)).toArray().at(0).toInt();
+    };
+    // Rows of equal bytes from $23D0, each row the step above the last,
+    // then three footer bytes and a last one at $23E8.
+    const int rows = value("attract_attribute_rows");
+    const int length = value("attract_attribute_row_length");
+    int byte = value("attract_attribute_start");
+    for (int row = 0; row < rows; ++row) {
+        for (int i = 0; i < length && 16 + row * length + i < 64; ++i) table[16 + row * length + i] = byte;
+        byte = (byte + value("attract_attribute_step")) & 0xff;
+    }
+    for (int i = 0; i < 3; ++i) table[40 + i] = value("attract_attribute_footer");
+    table[43] = value("attract_attribute_footer_end");
+    return table;
+}
+
+bool PacmanSession::hasGameTables() const {
+    return state_.bundle.contains(kRenderTables) && state_.bundle.contains(kRoundProfiles);
+}
+
 void PacmanSession::upgradeDocuments(const QString& kind, const QString& document) {
     UpgradeStep step;
     step.arguments = QStringList{QStringLiteral("studio"), QStringLiteral("pacman-upgrade"), project_.path()};
-    step.label = tr("Add the attract demo");
+    step.label = tr("Add what this kit edits to the project");
     step.source = kind;
-    step.failure = tr("Adding the attract demo failed: %1");
+    step.failure = tr("Upgrading the project failed: %1");
+    step.saveFirst = true;
     step.adopt = [this] {
         // The new document joins the saved state; other unsaved edits stay.
         const QString demo = tabDocument(project_, QStringLiteral("pacman.demo@1"));
@@ -658,8 +694,14 @@ void PacmanSession::upgradeDocuments(const QString& kind, const QString& documen
             demoPath_ = project_.resolve(demo);
             state_.demo = saved_.demo = loadJsonObject(demoPath_);
         }
+        // Resources the bundle gained, read from the game; part of the
+        // project from now on, not an edit to undo.
+        const nes::Bundle bundle = nes::Bundle::load(bundlePath_);
+        if (bundle != state_.bundle) {
+            state_.bundle = saved_.bundle = bundle;
+        }
     };
-    step.done = tr("Added the attract demo to the project.");
+    step.done = tr("Added the documents and resources this kit edits to the project.");
     step.openKind = kind;
     step.openDocument = document;
     runUpgrade(step);

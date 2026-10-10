@@ -83,7 +83,13 @@ $helpers = Join-Path $package "tools"
 New-Item -ItemType Directory -Force -Path $helpers | Out-Null
 Copy-Item -LiteralPath (Join-Path $Bin "tools\retrolarium-flicky-level-writer.exe") -Destination $helpers
 
-# The kit, as a plain package next to a launcher.
+# The kit, as a plain package next to a launcher, with the assemblers its
+# checkout built (retrolarium-kit	ools\build_toolchains.ps1); the package
+# carries them, so users need nothing installed.
+$toolchainStatus = & python -c "import json, sys; sys.path[:0] = [r'$(Join-Path $repositoryRoot 'retrolarium-kit\src')', r'$(Join-Path $repositoryRoot 'retrolarium-core\python')']; from retrolarium_kit.core.build_toolchains import packaged_toolchain_status as s; print(all(item['available'] for item in s('windows-x86_64')['suites'].values()))"
+if ($toolchainStatus -ne "True") {
+    throw "The kit's assemblers are missing or differ from its manifest; run retrolarium-kit	ools\build_toolchains.ps1 first."
+}
 $kit = Join-Path $package "kit"
 # Only the Windows toolchains: the package runs on Windows.
 Copy-Tree (Join-Path $repositoryRoot "retrolarium-kit\src\retrolarium_kit") (Join-Path $kit "retrolarium_kit") `

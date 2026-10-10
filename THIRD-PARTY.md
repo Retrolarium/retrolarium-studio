@@ -44,4 +44,7 @@ package was made from.
 
 Since Qt is linked statically, the LGPL lets you relink the studio with a
 modified Qt: the studio's complete source is public under the GPL, and
-`README.md` (Building from source) shows how to build it.
+`README.md` (Building from source) shows how to build it. The packaged Qt is Qt
+5.15.19 built by [Longreach Qt](https://github.com/OpenKaryon/longreach-qt)
+v0.1.0, whose `patches/qt5` holds every change made to Qt, under Qt's own
+licence.

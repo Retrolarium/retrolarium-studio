@@ -340,7 +340,7 @@ QVector<sdk::PaletteSample> SmbPacketModel::samples() const {
             const SmbArea a = session_->document().area(session_->levels(), chosen);
             const SmbLevelScene scene = renderSmbLevelScene(
                 chosen, a.header, a.objects, a.enemies, std::max(0, session_->courseOf(chosen).first - 1),
-                SmbLevelRendering::fromId(session_->document().rendering(session_->levels())));
+                session_->levelRendering());
             for (int column = 0; column < scene.metatiles.size() && first == 0; ++column) {
                 for (int value : scene.metatiles.at(column)) {
                     if (value != 0 && SmbResourceDocument::metatilePalette(value) == 0) {

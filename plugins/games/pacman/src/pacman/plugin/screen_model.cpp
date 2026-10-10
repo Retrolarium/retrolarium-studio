@@ -18,14 +18,6 @@ namespace {
 constexpr int kBlank = 0x2d;    // the code's fill around the screens
 constexpr int kSpace = 0x20;
 
-// The character screen's attribute bytes once every row is drawn (the code
-// writes them; captured from the game): a palette per ghost's rows.
-const int kAttractAttributes[64] = {
-    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,
-    0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa,
-    0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xaa, 0xaa, 0xaa, 0x22, 0,    0,    0,    0,
-    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0};
-
 }  // namespace
 
 const QStringList& ids() {
@@ -41,7 +33,8 @@ QString paletteTable(const QString& id) {
     return id == QLatin1String("attract") ? QStringLiteral("attract-bg-sprite") : ids::kTitle;
 }
 
-QVector<int> cells(const QJsonObject& collection, const QString& id, QHash<int, Source>* sources) {
+QVector<int> cells(const QJsonObject& collection, const QString& id, const QVector<int>& attractAttributes,
+                   QHash<int, Source>* sources) {
     QVector<int> table(1024, kBlank);
     const bool attract = id == QLatin1String("attract");
     for (int i = 0; i < 960; ++i) {
@@ -49,7 +42,7 @@ QVector<int> cells(const QJsonObject& collection, const QString& id, QHash<int, 
         const int y = i / 32;
         if (attract && y >= 6 && x >= 2 && x < 30) table[i] = kSpace;
     }
-    for (int i = 0; i < 64; ++i) table[960 + i] = attract ? kAttractAttributes[i] : 0;
+    for (int i = 0; i < 64; ++i) table[960 + i] = attract ? attractAttributes.value(i, 0) : 0;
     const auto put = [&table, sources](int address, int value, const Source& source) {
         const int at = address - 0x2000;
         if (at < 0 || at >= 1024) return;
@@ -121,7 +114,7 @@ QJsonObject withByte(QJsonObject collection, const Source& source, int value) {
 
 QImage render(const PacmanSession* session, const QString& id) {
     const QJsonObject collection = session->resource(ids::kScreens);
-    QImage image = session->painter().nameTable(cells(collection, id), paletteTable(id));
+    QImage image = session->painter().nameTable(cells(collection, id, session->attractAttributes()), paletteTable(id));
     if (id != QLatin1String("attract")) return image;
     // The ghosts beside their names, as the introduction leaves them.
     const QJsonObject actors = session->resource(ids::kActors);
@@ -155,7 +148,7 @@ QVector<sdk::Tool> PacmanScreenModel::tools() const {
 
 QImage PacmanScreenModel::render() const {
     if (!stroke_) return screens::render(session_, screen_);
-    return session_->painter().nameTable(screens::cells(*stroke_, screen_), screens::paletteTable(screen_));
+    return session_->painter().nameTable(screens::cells(*stroke_, screen_, session_->attractAttributes()), screens::paletteTable(screen_));
 }
 
 QVector<sdk::CellBrush> PacmanScreenModel::brushes() const {
@@ -184,13 +177,13 @@ void PacmanScreenModel::setCurrentLibraryItem(const QString& id) {
 
 int PacmanScreenModel::cellValue(QPoint cell) const {
     if (cell.x() < 0 || cell.y() < 0 || cell.x() >= 32 || cell.y() >= 30) return -1;
-    return screens::cells(collection(), screen_).value(cell.y() * 32 + cell.x(), -1);
+    return screens::cells(collection(), screen_, session_->attractAttributes()).value(cell.y() * 32 + cell.x(), -1);
 }
 
 bool PacmanScreenModel::isCellEditable(QPoint cell) const {
     if (cell.x() < 0 || cell.y() < 0 || cell.x() >= 32 || cell.y() >= 30) return false;
     QHash<int, screens::Source> sources;
-    screens::cells(collection(), screen_, &sources);
+    screens::cells(collection(), screen_, session_->attractAttributes(), &sources);
     return sources.contains(cell.y() * 32 + cell.x());
 }
 
@@ -200,7 +193,7 @@ QString PacmanScreenModel::lockReason(QPoint) const {
 
 bool PacmanScreenModel::setCell(int cell, int value, const QString& text, QString* error) {
     QHash<int, screens::Source> sources;
-    screens::cells(session_->resource(ids::kScreens), screen_, &sources);
+    screens::cells(session_->resource(ids::kScreens), screen_, session_->attractAttributes(), &sources);
     if (!sources.contains(cell)) {
         if (error) *error = lockReason({});
         return false;
@@ -224,7 +217,7 @@ void PacmanScreenModel::beginStroke() {
 bool PacmanScreenModel::paintCell(QPoint cell, int value) {
     if (!stroke_ || value < 0 || value > 255) return false;
     QHash<int, screens::Source> sources;
-    const QVector<int> now = screens::cells(*stroke_, screen_, &sources);
+    const QVector<int> now = screens::cells(*stroke_, screen_, session_->attractAttributes(), &sources);
     const int at = cell.y() * 32 + cell.x();
     if (!sources.contains(at) || now.at(at) == value) return false;
     stroke_ = screens::withByte(*stroke_, sources.value(at), value);
@@ -287,7 +280,7 @@ sdk::Library PacmanScreenModel::sheet() const {
     // The palette of the selected cell, or the screen's first.
     int palette = 0;
     if (cell_ >= 0) {
-        const QVector<int> table = screens::cells(collection(), screen_);
+        const QVector<int> table = screens::cells(collection(), screen_, session_->attractAttributes());
         const int x = cell_ % 32;
         const int y = cell_ / 32;
         palette = (table.at(960 + (y / 4) * 8 + x / 4) >> (((y % 4) / 2) * 4 + ((x % 4) / 2) * 2)) & 3;
@@ -318,7 +311,7 @@ sdk::Inspection PacmanScreenModel::inspect() const {
                                    "painted; the scores are drawn by the code. Edit the words in Text.");
         return inspection;
     }
-    const QVector<int> table = screens::cells(collection(), screen_);
+    const QVector<int> table = screens::cells(collection(), screen_, session_->attractAttributes());
     inspection.kicker = tr("Cell");
     inspection.title = tr("Column %1, row %2").arg(cell_ % 32).arg(cell_ / 32);
     sdk::Field tile;

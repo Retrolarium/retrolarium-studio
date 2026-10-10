@@ -1,38 +1,28 @@
 #include "smb/render/level_renderer.hpp"
 
+#include "smb/data/level_records.hpp"
+
+#include <QJsonArray>
+
 #include <algorithm>
-#include <array>
 
 namespace rl::smb {
 namespace {
 
-constexpr std::array<int, 3> backgroundOffsets {0x00, 0x30, 0x60};
-constexpr std::array<int, 144> backgroundPatterns {
-    0x93,0,0,0x11,0x12,0x12,0x13,0,0,0x51,0x52,0x53,0,0,0,0,
-    0,0,1,2,2,3,0,0,0,0,0,0,0x91,0x92,0x93,0,
-    0,0,0,0x51,0x52,0x53,0x41,0x42,0x43,0,0,0,0,0,0x91,0x92,
-    0x97,0x87,0x88,0x89,0x99,0,0,0,0x11,0x12,0x13,0xa4,0xa5,0xa5,0xa5,0xa6,
-    0x97,0x98,0x99,1,2,3,0,0xa4,0xa5,0xa6,0,0x11,0x12,0x12,0x12,0x13,
-    0,0,0,0,1,2,2,3,0,0xa4,0xa5,0xa5,0xa6,0,0,0,
-    0x11,0x12,0x12,0x13,0,0,0,0,0,0,0,0x9c,0,0x8b,0xaa,0xaa,
-    0xaa,0xaa,0x11,0x12,0x13,0x8b,0,0x9c,0x9c,0,0,1,2,3,0x11,0x12,
-    0x12,0x13,0,0,0,0,0xaa,0xaa,0x9c,0xaa,0,0x8b,0,1,2,3};
-constexpr std::array<int, 36> backgroundMetatiles {
-    0x80,0x83,0,0x81,0x84,0,0x82,0x85,0,2,0,0,3,0,0,4,0,0,
-    0,5,6,7,6,0x0a,0,8,9,0x4d,0,0,0x0d,0x0f,0x4e,0x0e,0x4e,0x4e};
-constexpr std::array<int, 3> foregroundOffsets {0, 13, 26};
-constexpr std::array<std::array<int, 2>, 16> terrainMasks {{
-    {{0,0}},{{0,0x18}},{{1,0x18}},{{7,0x18}},{{0x0f,0x18}},{{0xff,0x18}},
-    {{1,0x1f}},{{7,0x1f}},{{0x0f,0x1f}},{{0x81,0x1f}},{{1,0}},
-    {{0x8f,0x1f}},{{0xf1,0x1f}},{{0xf9,0x18}},{{0xf1,0x18}},{{0xff,0x1f}}
-}};
-constexpr std::array<int, 55> castleStructure {
-    0,0x45,0x45,0x45,0, 0,0x48,0x47,0x46,0,
-    0x45,0x49,0x49,0x49,0x45, 0x47,0x47,0x4a,0x47,0x47,
-    0x47,0x47,0x4b,0x47,0x47, 0x49,0x49,0x49,0x49,0x49,
-    0x47,0x4a,0x47,0x4a,0x47, 0x47,0x4b,0x47,0x4b,0x47,
-    0x47,0x47,0x47,0x47,0x47, 0x4a,0x47,0x4a,0x47,0x4a,
-    0x4b,0x47,0x4b,0x47,0x4b};
+// Brick and question-block objects per engine: question blocks come first in
+// the block table, then a row of item bricks for ground areas and one for the
+// others, each this long.
+int itemBrickCount(const QString &engine)
+{
+    if (engine == QLatin1String("smb1") || engine == QLatin1String("ann")) return 5;
+    if (engine == QLatin1String("smb2")) return 6;
+    return -1;
+}
+
+bool upsideDownPipes(const QString &engine)
+{
+    return engine == QLatin1String("ann") || engine == QLatin1String("smb2");
+}
 
 int objectWidth(const SmbAreaObject &object);
 
@@ -105,36 +95,33 @@ QVector<int> baseColumn(int column, int areaType, int world, int foreground,
 {
     QVector<int> values(13, 0);
     if (background) {
-        const int patternIndex = backgroundOffsets[background - 1]
+        const int patternIndex = rendering.table(QStringLiteral("background_scenery_offsets")).at(background - 1)
             + ((column / 16) % 3) * 16 + column % 16;
-        const int pattern = backgroundPatterns[patternIndex];
+        const int pattern = rendering.table(QStringLiteral("background_scenery_patterns")).at(patternIndex);
         if (pattern) {
+            const auto &metatiles = rendering.table(QStringLiteral("background_scenery_metatiles"));
             const int row = pattern >> 4;
             const int offset = ((pattern & 15) - 1) * 3;
-            for (int part = 0; part < 3 && row + part < 11; ++part) {
-                values[row + part] = backgroundMetatiles[offset + part];
-            }
+            for (int part = 0; part < 3 && row + part < 11; ++part) values[row + part] = metatiles.at(offset + part);
         }
     }
     if (foreground) {
-        const int offset = foregroundOffsets[foreground - 1];
+        const int offset = rendering.table(QStringLiteral("foreground_scenery_offsets")).at(foreground - 1);
+        const auto &metatiles = rendering.table(QStringLiteral("foreground_scenery_metatiles"));
         for (int row = 0; row < 13; ++row) {
-            const int value = rendering.foregroundSceneryMetatiles[offset + row];
+            const int value = metatiles.at(offset + row);
             if (value) values[row] = value;
         }
     }
-    int terrainValue = areaType == 0 && world == 7
-        ? rendering.terrainMetatiles[3] : rendering.terrainMetatiles[areaType];
-    if (cloud) terrainValue = 0x88;
-    const auto masks = terrainMasks[terrain];
+    const auto &terrainMetatiles = rendering.table(QStringLiteral("terrain_metatiles"));
+    int terrainValue = areaType == 0 && world == 7 ? terrainMetatiles.at(3) : terrainMetatiles.at(areaType);
+    if (cloud) terrainValue = rendering.one(QStringLiteral("cloud_terrain"));
+    const auto &masks = rendering.table(QStringLiteral("terrain_render_masks"));
     for (int row = 0; row < 13; ++row) {
-        int byte = row < 8 ? masks[0] : masks[1];
+        int byte = row < 8 ? masks.at(terrain * 2) : masks.at(terrain * 2 + 1);
         const int bit = row < 8 ? row : row - 8;
         if (cloud && row >= 8) byte &= 8;
-        if (byte & (1 << bit)) {
-            values[row] = areaType == 2 && row >= 11
-                ? rendering.terrainMetatiles[1] : terrainValue;
-        }
+        if (byte & (1 << bit)) values[row] = areaType == 2 && row >= 11 ? terrainMetatiles.at(1) : terrainValue;
     }
     return values;
 }
@@ -143,26 +130,30 @@ void renderStyle(QVector<QVector<int>> &grid, int column, int row, int length,
     int style, const SmbLevelRendering &rendering)
 {
     if (style == 1) {
-        for (int offset = 0; offset <= length; ++offset) {
-            write(grid, column + offset, row, offset == 0
-                ? rendering.secondaryLedgeMetatiles[0]
-                : offset == length ? rendering.secondaryLedgeMetatiles[2]
-                : rendering.secondaryLedgeMetatiles[1]);
-        }
-        if (rendering.secondaryLedgeSupportMetatiles.size() >= 2) {
+        const QString ledge = rendering.has(QStringLiteral("mushroom_ledge_start"))
+            ? QStringLiteral("mushroom_ledge") : QStringLiteral("cloud_ledge");
+        const int start = rendering.one(ledge + QStringLiteral("_start"));
+        const int middle = rendering.one(ledge + QStringLiteral("_middle"));
+        const int end = rendering.one(ledge + QStringLiteral("_end"));
+        for (int offset = 0; offset <= length; ++offset)
+            write(grid, column + offset, row, offset == 0 ? start : offset == length ? end : middle);
+        if (rendering.has(QStringLiteral("mushroom_stem"))) {
             const int center = column + (length + 1) / 2;
-            write(grid, center, row + 1, rendering.secondaryLedgeSupportMetatiles[0]);
-            fillDown(grid, center, row + 2, 12, rendering.secondaryLedgeSupportMetatiles[1]);
+            write(grid, center, row + 1, rendering.one(QStringLiteral("mushroom_stem_top")));
+            fillDown(grid, center, row + 2, 12, rendering.one(QStringLiteral("mushroom_stem")));
         }
     } else if (style == 2) {
-        write(grid, column, row, rendering.cannonMetatiles[0]);
-        if (length) write(grid, column, row + 1, rendering.cannonMetatiles[1]);
-        if (length > 1) fillDown(grid, column, row + 2, length - 2, rendering.cannonMetatiles[2]);
+        write(grid, column, row, rendering.one(QStringLiteral("cannon_top")));
+        if (length) write(grid, column, row + 1, rendering.one(QStringLiteral("cannon_middle")));
+        if (length > 1) fillDown(grid, column, row + 2, length - 2, rendering.one(QStringLiteral("cannon_bottom")));
     } else {
+        const int start = rendering.one(QStringLiteral("tree_ledge_start"));
+        const int middle = rendering.one(QStringLiteral("tree_ledge_middle"));
+        const int end = rendering.one(QStringLiteral("tree_ledge_end"));
+        const int trunk = rendering.one(QStringLiteral("tree_ledge_trunk"));
         for (int offset = 0; offset <= length; ++offset) {
-            write(grid, column + offset, row,
-                offset == 0 ? 0x16 : offset == length ? 0x18 : 0x17);
-            if (offset > 0 && offset < length) fillDown(grid, column + offset, row + 1, 12, 0x4c);
+            write(grid, column + offset, row, offset == 0 ? start : offset == length ? end : middle);
+            if (offset > 0 && offset < length) fillDown(grid, column + offset, row + 1, 12, trunk);
         }
     }
 }
@@ -172,24 +163,27 @@ void renderRowC(QVector<QVector<int>> &grid, int column, int identifier,
 {
     const int count = length + 1;
     if (identifier == 0) {
-        const int holes[] {0x87, 0, 0, 0};
+        const int hole = rendering.table(QStringLiteral("hole_metatiles")).at(areaType);
         for (int x = column; x < column + count; ++x)
-            for (int row = 8; row < 13; ++row) write(grid, x, row, holes[areaType]);
+            for (int row = 8; row < 13; ++row) write(grid, x, row, hole);
     } else if (identifier == 1) {
+        const auto &rope = rendering.table(QStringLiteral("pulley_rope_metatiles"));
         for (int offset = 0; offset < count; ++offset)
-            write(grid, column + offset, 0, offset == 0 ? 0x42 : offset == count - 1 ? 0x43 : 0x41);
+            write(grid, column + offset, 0, offset == 0 ? rope.at(0) : offset == count - 1 ? rope.at(2) : rope.at(1));
     } else if (identifier >= 2 && identifier <= 4) {
         const int rows[] {6, 7, 9}; const int row = rows[identifier - 2];
         for (int x = column; x < column + count; ++x) {
-            write(grid, x, row, 0x0b); fillDown(grid, x, row + 1, 12, rendering.bridgeMetatile);
+            write(grid, x, row, rendering.one(QStringLiteral("bridge_top")));
+            fillDown(grid, x, row + 1, 12, rendering.one(QStringLiteral("bridge_support")));
         }
     } else if (identifier == 5) {
         for (int x = column; x < column + count; ++x) {
-            write(grid, x, 10, 0x86); fillDown(grid, x, 11, 1, 0x87);
+            write(grid, x, 10, rendering.one(QStringLiteral("water_surface")));
+            fillDown(grid, x, 11, 1, rendering.one(QStringLiteral("water_body")));
         }
     } else if (identifier == 6 || identifier == 7) {
         const int row = identifier == 6 ? 3 : 7;
-        for (int x = column; x < column + count; ++x) write(grid, x, row, 0xc0);
+        for (int x = column; x < column + count; ++x) write(grid, x, row, rendering.one(QStringLiteral("coin_row")));
     }
 }
 
@@ -197,58 +191,72 @@ void renderRowD(QVector<QVector<int>> &grid, int column, int identifier,
     const SmbLevelRendering &rendering)
 {
     if (identifier == 0) {
+        const QVector<int> top = rendering.sidePipe(QStringLiteral("top"));
+        const QVector<int> bottom = rendering.sidePipe(QStringLiteral("bottom"));
         for (int offset = 0; offset < 4; ++offset) {
-            write(grid, column + offset, 9, rendering.sidePipeTopMetatiles[offset]);
-            write(grid, column + offset, 10, rendering.sidePipeBottomMetatiles[offset]);
+            write(grid, column + offset, 9, top.at(offset));
+            write(grid, column + offset, 10, bottom.at(offset));
         }
-        write(grid, column + 2, 7, 0x10); write(grid, column + 2, 8, 0x14);
-        write(grid, column + 3, 7, 0x11); write(grid, column + 3, 8, 0x15);
+        // An entrance pipe above it: the game's table holds right, left pairs.
+        const auto &pipe = rendering.table(QStringLiteral("vertical_pipe_metatiles"));
+        write(grid, column + 2, 7, pipe.at(1)); write(grid, column + 2, 8, pipe.at(3));
+        write(grid, column + 3, 7, pipe.at(0)); write(grid, column + 3, 8, pipe.at(2));
     } else if (identifier == 1) {
-        write(grid, column, 0, rendering.flagpoleMetatiles[0]);
-        for (int row = 1; row < 10; ++row) write(grid, column, row, rendering.flagpoleMetatiles[1]);
-        write(grid, column, 10, rendering.flagpoleMetatiles[2]);
+        write(grid, column, 0, rendering.one(QStringLiteral("flagpole_ball")));
+        for (int row = 1; row < 10; ++row) write(grid, column, row, rendering.one(QStringLiteral("flagpole_shaft")));
+        write(grid, column, 10, rendering.one(QStringLiteral("flagpole_base")));
     } else if (identifier >= 2 && identifier <= 4) {
-        const int rows[] {6, 7, 8};
-        for (int offset = 0; offset < (identifier == 4 ? 13 : 1); ++offset)
-            write(grid, column + offset, rows[identifier - 2], rendering.castleSpecialMetatiles[identifier - 2]);
+        const int row = rendering.table(QStringLiteral("castle_object_rows")).at(identifier - 2);
+        const int tile = rendering.table(QStringLiteral("castle_object_metatiles")).at(identifier - 2);
+        for (int offset = 0; offset < (identifier == 4 ? 13 : 1); ++offset) write(grid, column + offset, row, tile);
     }
 }
 
 void renderRowF(QVector<QVector<int>> &grid, int column, int identifier,
     int length, int page, const SmbLevelRendering &rendering)
 {
-    if (identifier == 0) fillDown(grid, column, 0, 12, 0x40);
+    if (identifier == 0) fillDown(grid, column, 0, 12, rendering.one(QStringLiteral("rope")));
     else if (identifier == 1) {
-        fillDown(grid, column, 1, 12, 0x44); fillDown(grid, column, 1, length, 0x40);
+        fillDown(grid, column, 1, 12, rendering.one(QStringLiteral("balance_rope_top")));
+        fillDown(grid, column, 1, length, rendering.one(QStringLiteral("rope")));
     } else if (identifier == 2) {
+        const auto &structure = rendering.table(QStringLiteral("castle_structure_metatiles"));
         const int start = std::min(length, 10);
         for (int xOffset = 0; xOffset < 5; ++xOffset)
             for (int row = start; row < 11; ++row)
-                write(grid, column + xOffset, row, castleStructure[4 - xOffset + (row - start) * 5]);
-        if (page) { write(grid, column + 3, 10, 0x50); if (start == 0) write(grid, column + 1, 10, 0x50); }
+                write(grid, column + xOffset, row, structure.at(4 - xOffset + (row - start) * 5));
+        if (page) {
+            const int stop = rendering.one(QStringLiteral("castle_stop_block"));
+            write(grid, column + 3, 10, stop);
+            if (start == 0) write(grid, column + 1, 10, stop);
+        }
     } else if (identifier == 3) {
-        constexpr int heights[] {7,7,6,5,4,3,2,1,0};
-        constexpr int rows[] {3,3,4,5,6,7,8,9,10};
-        for (int offset = 0; offset < std::min(length + 1, 9); ++offset) {
-            const int index = 8 - offset;
-            fillDown(grid, column + offset, rows[index], heights[index], rendering.staircaseMetatile);
+        const auto &heights = rendering.table(QStringLiteral("staircase_heights"));
+        const auto &rows = rendering.table(QStringLiteral("staircase_start_rows"));
+        for (int offset = 0; offset < std::min(length + 1, int(rows.size())); ++offset) {
+            const int index = int(rows.size()) - 1 - offset;
+            fillDown(grid, column + offset, rows.at(index), heights.at(index), rendering.one(QStringLiteral("staircase")));
         }
     } else if (identifier == 4) {
+        const auto &shaft = rendering.table(QStringLiteral("side_pipe_shaft_metatiles"));
         const int bottom = std::max(0, length - 2); const int mouth = bottom + 1;
         for (int row = 0; row <= bottom; ++row) {
-            write(grid, column + 2, row, 0x14); write(grid, column + 3, row, 0x15);
+            write(grid, column + 2, row, shaft.at(1)); write(grid, column + 3, row, shaft.at(0));
         }
-        for (int offset = 0; offset < rendering.sidePipeTopMetatiles.size(); ++offset) {
-            write(grid, column + offset, mouth, rendering.sidePipeTopMetatiles[offset]);
-            write(grid, column + offset, mouth + 1, rendering.sidePipeBottomMetatiles[offset]);
+        const QVector<int> top = rendering.sidePipe(QStringLiteral("top"));
+        const QVector<int> under = rendering.sidePipe(QStringLiteral("bottom"));
+        for (int offset = 0; offset < top.size(); ++offset) {
+            write(grid, column + offset, mouth, top.at(offset));
+            write(grid, column + offset, mouth + 1, under.at(offset));
         }
-    } else if (identifier == 5) fillDown(grid, column, 2, length, rendering.residualFlagMetatile);
-    else if ((identifier == 6 || identifier == 7) && rendering.upsideDownPipes) {
+    } else if (identifier == 5) fillDown(grid, column, 2, length, rendering.one(QStringLiteral("residual_flag")));
+    else if ((identifier == 6 || identifier == 7) && upsideDownPipes(rendering.engine)) {
+        const auto &pipe = rendering.table(QStringLiteral("vertical_pipe_metatiles"));
         const int start = identifier == 6 ? 1 : 4; const int count = std::max(1, length & 7);
         for (int offset = 0; offset < count; ++offset) {
-            write(grid, column, start + offset, 0x14); write(grid, column + 1, start + offset, 0x15);
+            write(grid, column, start + offset, pipe.at(3)); write(grid, column + 1, start + offset, pipe.at(2));
         }
-        write(grid, column, start + count, 0x10); write(grid, column + 1, start + count, 0x11);
+        write(grid, column, start + count, pipe.at(1)); write(grid, column + 1, start + count, pipe.at(0));
     }
 }
 
@@ -258,22 +266,25 @@ void renderObject(QVector<QVector<int>> &grid, const SmbPositionedObject &item,
     const int column = item.x, row = item.record.row, control = item.record.control;
     const int value = control & 15, identifier = (control >> 4) & 7;
     if (row <= 11) {
-        if (identifier == 0 && value < rendering.smallObjects.size()) {
-            const auto &tiles = rendering.smallObjects[value][areaType == 1 ? 0 : 1];
-            for (int offset = 0; offset < tiles.size(); ++offset) write(grid, column, row + offset, tiles[offset]);
+        if (identifier == 0) {
+            const QVector<int> tiles = rendering.smallObject(value, areaType);
+            for (int offset = 0; offset < tiles.size(); ++offset) write(grid, column, row + offset, tiles.at(offset));
         } else if (identifier == 1) renderStyle(grid, column, row, value, style, rendering);
         else if (identifier >= 2 && identifier <= 4) {
-            const int tile = identifier == 2 ? rendering.brickMetatiles[cloud ? 4 : areaType]
-                : identifier == 3 ? rendering.solidMetatiles[areaType]
-                : rendering.coinMetatiles[areaType];
+            const int tile = identifier == 2 ? rendering.table(QStringLiteral("brick_metatiles")).at(cloud ? 4 : areaType)
+                : identifier == 3 ? rendering.table(QStringLiteral("solid_block_metatiles")).at(areaType)
+                : rendering.table(QStringLiteral("coin_metatiles")).at(areaType);
             for (int offset = 0; offset <= value; ++offset) write(grid, column + offset, row, tile);
         } else if (identifier == 5 || identifier == 6) {
             fillDown(grid, column, row, value, identifier == 5
-                ? rendering.brickMetatiles[areaType] : rendering.solidMetatiles[areaType]);
+                ? rendering.table(QStringLiteral("brick_metatiles")).at(areaType)
+                : rendering.table(QStringLiteral("solid_block_metatiles")).at(areaType));
         } else if (identifier == 7) {
-            write(grid, column, row, 0x12); write(grid, column + 1, row, 0x13);
+            // A decoration pipe: the game's table holds right, left pairs.
+            const auto &pipe = rendering.table(QStringLiteral("vertical_pipe_metatiles"));
+            write(grid, column, row, pipe.at(5)); write(grid, column + 1, row, pipe.at(4));
             for (int offset = 1; offset <= (value & 7); ++offset) {
-                write(grid, column, row + offset, 0x14); write(grid, column + 1, row + offset, 0x15);
+                write(grid, column, row + offset, pipe.at(7)); write(grid, column + 1, row + offset, pipe.at(6));
             }
         }
     } else if (row == 12) renderRowC(grid, column, identifier, value, areaType, rendering);
@@ -281,124 +292,54 @@ void renderObject(QVector<QVector<int>> &grid, const SmbPositionedObject &item,
     else if (row == 15) renderRowF(grid, column, identifier, value, item.page, rendering);
 }
 
-void validateRendering(const SmbLevelRendering &rendering)
-{
-    const bool fixedTablesValid = rendering.terrainMetatiles.size() >= 4
-        && rendering.foregroundSceneryMetatiles.size() >= 39
-        && rendering.brickMetatiles.size() >= 5
-        && rendering.solidMetatiles.size() >= 4
-        && rendering.coinMetatiles.size() >= 4
-        && rendering.sidePipeTopMetatiles.size() >= 4
-        && rendering.sidePipeBottomMetatiles.size() >= 4
-        && rendering.castleSpecialMetatiles.size() >= 3
-        && rendering.secondaryLedgeMetatiles.size() >= 3
-        && (rendering.secondaryLedgeSupportMetatiles.isEmpty()
-            || rendering.secondaryLedgeSupportMetatiles.size() >= 2)
-        && rendering.cannonMetatiles.size() >= 3
-        && rendering.flagpoleMetatiles.size() >= 3
-        && rendering.smallObjects.size() >= 12;
-    if (!fixedTablesValid) {
-        throw SmbError("invalid SMB level rendering tables");
-    }
-    for (const auto &variants : rendering.smallObjects) {
-        if (variants.size() < 2 || variants[0].isEmpty() || variants[1].isEmpty()) {
-            throw SmbError("invalid SMB small-object rendering table");
-        }
-    }
-}
-
 } // namespace
 
-SmbLevelRendering SmbLevelRendering::smb1()
+SmbLevelRendering SmbLevelRendering::fromResource(const QJsonObject &resource, const QString &engine)
 {
+    if (itemBrickCount(engine) < 0) {
+        throw SmbError((QStringLiteral("unsupported SMB level rendering profile: ") + engine).toStdString());
+    }
+    const QJsonObject tables = resource.value(QStringLiteral("tables")).toObject();
+    if (tables.isEmpty()) throw SmbError("the project has no SMB level tables");
     SmbLevelRendering result;
-    result.terrainMetatiles = {0x69,0x54,0x52,0x62};
-    result.foregroundSceneryMetatiles = {
-        0x86,0x87,0x87,0x87,0x87,0x87,0x87,0x87,0x87,0x87,0x87,0x69,0x69,
-        0,0,0,0,0,0x45,0x47,0x47,0x47,0x47,0x47,0,0,
-        0,0,0,0,0,0,0,0,0,0,0,0x86,0x87};
-    result.brickMetatiles = {0x22,0x51,0x52,0x52,0x88};
-    result.solidMetatiles = {0x69,0x61,0x61,0x62};
-    result.coinMetatiles = {0xc3,0xc2,0xc2,0xc2};
-    result.sidePipeTopMetatiles = {0x1c,0x1d,0x1e,0x15};
-    result.sidePipeBottomMetatiles = {0x1f,0x20,0x21,0x15};
-    result.castleSpecialMetatiles = {0xc5,0x0c,0x89};
-    result.secondaryLedgeMetatiles = {0x19,0x1a,0x1b};
-    result.secondaryLedgeSupportMetatiles = {0x4f,0x50};
-    result.cannonMetatiles = {0x64,0x65,0x66};
-    result.flagpoleMetatiles = {0x24,0x25,0x61};
-    result.smallObjects = {
-        {{0xc1},{0xc1}}, {{0xc0},{0xc0}}, {{0x5f},{0x5f}},
-        {{0x60},{0x60}}, {{0x55},{0x5a}}, {{0x56},{0x5b}},
-        {{0x57},{0x5c}}, {{0x58},{0x5d}}, {{0x59},{0x5e}},
-        {{0x6b,0x6c},{0x6b,0x6c}}, {{0xc4},{0xc4}},
-        {{0x67,0x68},{0x67,0x68}}};
+    result.engine = engine;
+    for (auto it = tables.begin(); it != tables.end(); ++it) {
+        QVector<int> values;
+        for (const QJsonValue &value : it.value().toArray()) values.push_back(value.toInt());
+        result.tables.insert(it.key(), values);
+    }
     return result;
 }
 
-SmbLevelRendering SmbLevelRendering::ann()
+const QVector<int> &SmbLevelRendering::table(const QString &name) const
 {
-    auto result = smb1();
-    result.terrainMetatiles = {0x69,0x6a,0x52,0x62};
-    result.residualFlagMetatile = 0x6e;
-    result.upsideDownPipes = true;
-    result.smallObjects = {
-        {{0xc1},{0xc1}}, {{0xc0},{0xc0}}, {{0x5e},{0x5e}},
-        {{0x5f},{0x5f}}, {{0x60},{0x60}}, {{0x54},{0x59}},
-        {{0x55},{0x5a}}, {{0x56},{0x5b}}, {{0x57},{0x5c}},
-        {{0x58},{0x5d}}, {{0x6c,0x6d},{0x6c,0x6d}}, {{0xc4},{0xc4}},
-        {{0x67,0x68},{0x67,0x68}}};
-    return result;
+    const auto it = tables.constFind(name);
+    if (it == tables.constEnd() || it->isEmpty()) {
+        throw SmbError((QStringLiteral("the SMB level tables lack ") + name).toStdString());
+    }
+    return *it;
 }
 
-SmbLevelRendering SmbLevelRendering::smb2()
+QVector<int> SmbLevelRendering::smallObject(int value, int areaType) const
 {
-    auto result = smb1();
-    result.terrainMetatiles = {0x6a,0x6b,0x50,0x63};
-    result.foregroundSceneryMetatiles = {
-        0x86,0x87,0x87,0x87,0x87,0x87,0x87,0x87,0x87,0x87,0x87,0x6a,0x6a,
-        0,0,0,0,0,0x45,0x47,0x47,0x47,0x47,0x47,0,0,
-        0,0,0,0,0,0,0,0,0,0,0,0x86,0x87};
-    result.brickMetatiles = {0x1f,0x4f,0x50,0x50,0x88};
-    result.solidMetatiles = {0x6a,0x62,0x62,0x63};
-    result.coinMetatiles = {0xc4,0xc3,0xc3,0xc3};
-    result.sidePipeTopMetatiles = {0x19,0x1a,0x1b,0x15};
-    result.sidePipeBottomMetatiles = {0x1c,0x1d,0x1e,0x15};
-    result.castleSpecialMetatiles = {0xc6,0x0c,0x89};
-    result.secondaryLedgeMetatiles = {0x8a,0x8b,0x8c};
-    result.secondaryLedgeSupportMetatiles.clear();
-    result.cannonMetatiles = {0x65,0x66,0x67};
-    result.bridgeMetatile = 0x64;
-    result.flagpoleMetatiles = {0x21,0x22,0x62};
-    result.staircaseMetatile = 0x62;
-    result.residualFlagMetatile = 0x6f;
-    result.upsideDownPipes = true;
-    result.smallObjects = {
-        {{0xc1},{0xc1}}, {{0xc2},{0xc2}}, {{0xc0},{0xc0}},
-        {{0x5e},{0x5e}}, {{0x5f},{0x5f}}, {{0x60},{0x60}},
-        {{0x61},{0x61}}, {{0x52},{0x58}}, {{0x53},{0x59}},
-        {{0x54},{0x5a}}, {{0x55},{0x5b}}, {{0x56},{0x5c}},
-        {{0x57},{0x5d}}, {{0x6d,0x6e},{0x6d,0x6e}}, {{0xc5},{0xc5}},
-        {{0x68,0x69},{0x68,0x69}}};
-    return result;
+    const auto &blocks = table(QStringLiteral("block_metatiles"));
+    const int bricks = itemBrickCount(engine);
+    const int questions = int(blocks.size()) - 2 * bricks;
+    if (value < questions) return {blocks.at(value)};
+    if (value < questions + bricks) return {blocks.at(value + (areaType == 1 ? 0 : bricks))};
+    const int extra = value - questions - bricks;
+    if (extra == 0) return {one(QStringLiteral("water_pipe_top")), one(QStringLiteral("water_pipe_bottom"))};
+    if (extra == 1) return {one(QStringLiteral("empty_block"))};
+    if (extra == 2) return {one(QStringLiteral("jumpspring_top")), one(QStringLiteral("jumpspring_bottom"))};
+    return {};
 }
 
-SmbLevelRendering SmbLevelRendering::fromId(const QString &id)
+QVector<int> SmbLevelRendering::sidePipe(const QString &part) const
 {
-    if (id == QStringLiteral("smb1")) return smb1();
-    if (id == QStringLiteral("ann")) return ann();
-    if (id == QStringLiteral("smb2")) return smb2();
-    throw SmbError(
-        (QStringLiteral("unsupported SMB level rendering profile: ") + id)
-            .toStdString());
-}
-
-SmbLevelScene renderSmbLevelScene(const QString &name, const QVector<int> &header,
-    const QVector<SmbAreaObject> &objects, const QVector<SmbEnemyRecord> &enemies,
-    int world)
-{
-    return renderSmbLevelScene(name, header, objects, enemies, world,
-        SmbLevelRendering::smb1());
+    // The game's tables run right to left.
+    QVector<int> row = table(QStringLiteral("side_pipe_%1_metatiles").arg(part));
+    std::reverse(row.begin(), row.end());
+    return row;
 }
 
 SmbLevelScene renderSmbLevelScene(const QString &name, const QVector<int> &header,
@@ -408,7 +349,6 @@ SmbLevelScene renderSmbLevelScene(const QString &name, const QVector<int> &heade
     if (header.size() != 6 || world < 0 || world > 7) {
         throw SmbError("invalid SMB level renderer input");
     }
-    validateRendering(rendering);
     const QString prefix = name.section(QLatin1Char('_'), 0, -2);
     const QStringList types {QStringLiteral("water"), QStringLiteral("ground"),
         QStringLiteral("underground"), QStringLiteral("castle")};

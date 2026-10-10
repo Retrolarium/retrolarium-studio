@@ -381,9 +381,8 @@ QVector<sdk::DocumentGroup> DoraemonSession::documents(const QString& kind) cons
     } else if (kind == QLatin1String("animations")) {
         // Opening one adds the catalogs from the project's own source.
         const bool missing = !state_.bundle.contains(QStringLiteral("world2-enemy-metasprites"));
-        const QVector<DoraemonAnimation>& animations = doraemonAnimations();
-        for (int i = 0; i < animations.size(); ++i) {
-            const DoraemonAnimation& a = animations.at(i);
+        for (int i = 0; i < doraemonAnimations().size(); ++i) {
+            const DoraemonAnimation a = resolvedAnimation(this, i);
             const QString id = metaspriteId(a.world);
             const bool dirty = !missing && state_.bundle.resource(id) != saved_.bundle.resource(id);
             group(QStringLiteral("%1 · %2").arg(worldLabel(a.world), a.group)).documents
@@ -461,7 +460,8 @@ std::unique_ptr<sdk::EditorModel> DoraemonSession::openEditor(const QString& kin
             for (const MapEntry& m : hierarchyMaps()) {
                 if (document == QStringLiteral("%1/%2").arg(int(m.world)).arg(m.id)) {
                     // Map objects came with a newer kit.
-                    if (m.world != World::Two && !state_.bundle.contains(QStringLiteral("world3-schedule"))) {
+                    if (m.world != World::Two && (!state_.bundle.contains(QStringLiteral("world3-schedule")) ||
+                                                  !hasWorld3Tables(this))) {
                         upgradeDocuments(kind, document);
                         return nullptr;
                     }
@@ -578,7 +578,7 @@ std::unique_ptr<sdk::EditorModel> DoraemonSession::openEditor(const QString& kin
         if (kind == QLatin1String("animations") && document.startsWith(QLatin1String("anim:"))) {
             const int index = document.mid(5).toInt();
             if (index < 0 || index >= doraemonAnimations().size()) return nullptr;
-            if (!state_.bundle.contains(QStringLiteral("world2-enemy-metasprites"))) {
+            if (!state_.bundle.contains(QStringLiteral("world2-enemy-metasprites")) || !hasWorld3Tables(this)) {
                 upgradeDocuments(kind, document);
                 return nullptr;
             }

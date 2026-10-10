@@ -107,45 +107,6 @@ int main(int argc, char *argv[])
 {
     QCoreApplication application(argc, argv);
     try {
-        const auto annRendering = rl::smb::SmbLevelRendering::fromId(
-            QStringLiteral("ann"));
-        if (annRendering.terrainMetatiles[1] != 0x6a
-            || annRendering.residualFlagMetatile != 0x6e
-            || !annRendering.upsideDownPipes
-            || annRendering.smallObjects.size() != 13
-            || annRendering.smallObjects[2][0][0] != 0x5e) {
-            throw std::runtime_error("ANN renderer profile differs");
-        }
-        const auto smb2Rendering = rl::smb::SmbLevelRendering::fromId(
-            QStringLiteral("smb2"));
-        if (smb2Rendering.terrainMetatiles != QVector<int> {0x6a,0x6b,0x50,0x63}
-            || !smb2Rendering.secondaryLedgeSupportMetatiles.isEmpty()
-            || smb2Rendering.smallObjects.size() != 16
-            || smb2Rendering.smallObjects[1][0][0] != 0xc2
-            || smb2Rendering.bridgeMetatile != 0x64) {
-            throw std::runtime_error("SMB2 renderer profile differs");
-        }
-        bool rejectedUnknownRendering = false;
-        try {
-            static_cast<void>(rl::smb::SmbLevelRendering::fromId(
-                QStringLiteral("unknown")));
-        } catch (const rl::smb::SmbError &) {
-            rejectedUnknownRendering = true;
-        }
-        if (!rejectedUnknownRendering) {
-            throw std::runtime_error("Unknown SMB renderer profile was accepted");
-        }
-        const auto unsupportedLedge = rl::smb::renderSmbLevelScene(
-            QStringLiteral("ground_1"), QVector<int> {0,0,0,1,0,0},
-            QVector<rl::smb::SmbAreaObject> {{0,4,false,0x12}}, {}, 0,
-            smb2Rendering);
-        if (unsupportedLedge.metatiles[0][4] != 0x8a
-            || unsupportedLedge.metatiles[1][4] != 0x8b
-            || unsupportedLedge.metatiles[2][4] != 0x8c
-            || unsupportedLedge.metatiles[1][5] != 0) {
-            throw std::runtime_error("SMB2 supportless ledge rendering differs");
-        }
-
         if (argc < 2) {
             throw std::runtime_error("usage: smb_level_renderer_golden_test <smb1_ju_level_scenes.json>");
         }
@@ -161,9 +122,54 @@ int main(int argc, char *argv[])
         const auto root = document.object();
         if (root[QStringLiteral("schema")].toString()
                 != QStringLiteral("retrolarium.smb-level-scene-golden")
-            || root[QStringLiteral("schema_version")].toInt() != 1
+            || root[QStringLiteral("schema_version")].toInt() != 2
             || root[QStringLiteral("profile")].toString() != QStringLiteral("smb1.ju")) {
             throw std::runtime_error("SMB JU golden corpus identity differs");
+        }
+        // The corpus carries the JU level tables the kit reads from the game.
+        const QJsonObject tables = root[QStringLiteral("level_tables")].toObject();
+        const auto rendering = rl::smb::SmbLevelRendering::fromResource(
+            tables, root[QStringLiteral("rendering")].toString());
+
+        bool rejectedUnknownRendering = false;
+        try {
+            static_cast<void>(rl::smb::SmbLevelRendering::fromResource(tables, QStringLiteral("unknown")));
+        } catch (const rl::smb::SmbError &) {
+            rejectedUnknownRendering = true;
+        }
+        if (!rejectedUnknownRendering) {
+            throw std::runtime_error("Unknown SMB renderer profile was accepted");
+        }
+        bool rejectedMissingTable = false;
+        try {
+            auto partial = rendering;
+            partial.tables.remove(QStringLiteral("cannon_top"));
+            static_cast<void>(rl::smb::renderSmbLevelScene(
+                QStringLiteral("ground_1"), QVector<int> {0,0,0,2,0,0},
+                QVector<rl::smb::SmbAreaObject> {{0,4,false,0x12}}, {}, 0, partial));
+        } catch (const rl::smb::SmbError &) {
+            rejectedMissingTable = true;
+        }
+        if (!rejectedMissingTable) {
+            throw std::runtime_error("A missing level table was not reported");
+        }
+        // Super Mario Bros. 2's cloud ledge has no stem below it.
+        auto smb2 = rendering;
+        smb2.engine = QStringLiteral("smb2");
+        for (const QString part : {QStringLiteral("start"), QStringLiteral("middle"), QStringLiteral("end")}) {
+            smb2.tables.insert(QStringLiteral("cloud_ledge_") + part,
+                               smb2.tables.take(QStringLiteral("mushroom_ledge_") + part));
+        }
+        smb2.tables.remove(QStringLiteral("mushroom_stem_top"));
+        smb2.tables.remove(QStringLiteral("mushroom_stem"));
+        const auto unsupportedLedge = rl::smb::renderSmbLevelScene(
+            QStringLiteral("ground_1"), QVector<int> {0,0,0,1,0,0},
+            QVector<rl::smb::SmbAreaObject> {{0,4,false,0x12}}, {}, 0, smb2);
+        if (unsupportedLedge.metatiles[0][4] != smb2.one(QStringLiteral("cloud_ledge_start"))
+            || unsupportedLedge.metatiles[1][4] != smb2.one(QStringLiteral("cloud_ledge_middle"))
+            || unsupportedLedge.metatiles[2][4] != smb2.one(QStringLiteral("cloud_ledge_end"))
+            || unsupportedLedge.metatiles[1][5] != 0) {
+            throw std::runtime_error("SMB2 supportless ledge rendering differs");
         }
 
         const auto areas = root[QStringLiteral("areas")].toArray();
@@ -182,7 +188,7 @@ int main(int argc, char *argv[])
                 parseHeader(area[QStringLiteral("header")].toArray(), name),
                 parseObjects(area[QStringLiteral("objects")].toArray(), name),
                 parseEnemies(area[QStringLiteral("enemies")].toArray(), name),
-                area[QStringLiteral("world")].toInt());
+                area[QStringLiteral("world")].toInt(), rendering);
             const auto expected = area[QStringLiteral("expected")].toObject();
             if (scene.width != expected[QStringLiteral("width")].toInt()) {
                 throw std::runtime_error((name + QStringLiteral(" width differs"))

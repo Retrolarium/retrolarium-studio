@@ -24,7 +24,7 @@ const QVector<SmbObjectKind>& objectCatalog() {
         {QStringLiteral("Sideways pipe"), 8, 0x09},
         {QStringLiteral("Used block"), 8, 0x0a},
         {QStringLiteral("Springboard"), 8, 0x0b},
-        {QStringLiteral("Platform"), 8, 0x10},
+        {QStringLiteral("Tree or mushroom ledge"), 8, 0x10},
         {QStringLiteral("Row of bricks"), 8, 0x20},
         {QStringLiteral("Row of blocks"), 8, 0x30},
         {QStringLiteral("Row of coins"), 8, 0x40},
@@ -36,7 +36,7 @@ const QVector<SmbObjectKind>& objectCatalog() {
         {QStringLiteral("Bridge row 7"), 12, 0x20},
         {QStringLiteral("Bridge row 8"), 12, 0x30},
         {QStringLiteral("Bridge row 10"), 12, 0x40},
-        {QStringLiteral("Water / lava hole"), 12, 0x50},
+        {QStringLiteral("Water or lava hole"), 12, 0x50},
         {QStringLiteral("Question row 3"), 12, 0x60},
         {QStringLiteral("Question row 7"), 12, 0x70},
         {QStringLiteral("Reverse L pipe"), 13, 0x40},
@@ -55,6 +55,8 @@ const QVector<SmbObjectKind>& objectCatalog() {
     return kEntries;
 }
 
+// The enemies a level's stream can place. $09 is left out: it has no initializer
+// (its sprite is an unused green Flier), so a placed one never appears.
 const QVector<SmbEnemyKind>& enemyCatalog() {
     static const QVector<SmbEnemyKind> kEntries{
         {0x00, QStringLiteral("Green Turtle")},
@@ -64,7 +66,6 @@ const QVector<SmbEnemyKind>& enemyCatalog() {
         {0x06, QStringLiteral("Walker")},
         {0x07, QStringLiteral("Squid")},
         {0x08, QStringLiteral("Bullet")},
-        {0x09, QStringLiteral("Green Flier")},
         {0x0a, QStringLiteral("Green Flying-Fish")},
         {0x0b, QStringLiteral("Red Flying-Fish")},
         {0x0c, QStringLiteral("Bubble")},
@@ -76,27 +77,33 @@ const QVector<SmbEnemyKind>& enemyCatalog() {
         {0x12, QStringLiteral("Spiker")},
         {0x14, QStringLiteral("Flying Flying-Fish generator")},
         {0x15, QStringLiteral("Boss fire generator")},
-        {0x17, QStringLiteral("Bullet generator")},
-        {0x1b, QStringLiteral("Fast clockwise firebar")},
-        {0x1c, QStringLiteral("Slow clockwise firebar")},
-        {0x1d, QStringLiteral("Fast counterclockwise firebar")},
-        {0x1e, QStringLiteral("Slow counterclockwise firebar")},
+        {0x17, QStringLiteral("Bullet and Flying-Fish generator")},
+        // Speed and direction come from tbl_firebar_spin_* in the source, by id - $1b.
+        {0x1b, QStringLiteral("Slow clockwise firebar")},
+        {0x1c, QStringLiteral("Fast clockwise firebar")},
+        {0x1d, QStringLiteral("Slow counterclockwise firebar")},
+        {0x1e, QStringLiteral("Fast counterclockwise firebar")},
         {0x1f, QStringLiteral("Long firebar")},
         {0x24, QStringLiteral("Balance lift")},
         {0x25, QStringLiteral("Vertical lift")},
-        {0x26, QStringLiteral("Lift up")},
-        {0x27, QStringLiteral("Small lift up")},
+        {0x26, QStringLiteral("Large lift up")},
+        {0x27, QStringLiteral("Large lift down")},
         {0x28, QStringLiteral("Horizontal lift")},
         {0x29, QStringLiteral("Falling lift")},
-        {0x2a, QStringLiteral("Surfing lift")},
-        {0x2b, QStringLiteral("Lift down")},
+        {0x2a, QStringLiteral("Right-moving lift")},
+        {0x2b, QStringLiteral("Small lift up")},
         {0x2c, QStringLiteral("Small lift down")},
         {0x2d, QStringLiteral("Boss")},
         {0x35, QStringLiteral("Retainer")},
+        // Groups: in the primary hard mode the Walkers are Beetles.
         {0x37, QStringLiteral("Two Walkers")},
         {0x38, QStringLiteral("Three Walkers")},
+        {0x39, QStringLiteral("Two Walkers (upper row)")},
+        {0x3a, QStringLiteral("Three Walkers (upper row)")},
         {0x3b, QStringLiteral("Two green Turtles")},
         {0x3c, QStringLiteral("Three green Turtles")},
+        {0x3d, QStringLiteral("Two green Turtles (upper row)")},
+        {0x3e, QStringLiteral("Three green Turtles (upper row)")},
     };
     return kEntries;
 }

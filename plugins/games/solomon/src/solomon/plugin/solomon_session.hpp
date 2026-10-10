@@ -74,6 +74,9 @@ private:
     void launch(bool fromStart);
     // Adds the screen text document to a project made before it existed.
     void upgradeText();
+    // Reads the tables a newer kit takes from the game (constellations) into
+    // the graphics bundle, then opens the view again.
+    void upgradeTables(const QString& kind, const QString& document);
     void launchDemo(bool record);
     void applyRecording(const QString& path);
 

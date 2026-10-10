@@ -63,8 +63,14 @@ public:
 
     const SmbResourceDocument& document() const { return document_; }
     const SmbResourceDocument& saved() const { return saved_; }
-    // Columns of an area as the game draws them, for samples.
+    // Columns of an area as the game draws them, for samples; empty while
+    // the project lacks the level tables.
     QImage areaPreview(const QString& area, int columns, int firstColumn = 0) const;
+    // What the level renderer draws with: the course bank's engine and the
+    // project's level tables, which the kit reads from the game's build.
+    // Projects made before the tables lack them until the kit upgrades them.
+    bool hasLevelTables() const;
+    SmbLevelRendering levelRendering() const;
     // The palettes an area shows: its type's packet and the packets the game
     // writes over it (snow and castle skies, mushroom platforms, Boss), as
     // a painter palette key: "ground+day_snow".

@@ -71,19 +71,19 @@ QString metadataLabel(const QString& key) {
 // solomon.special): rooms 20 and 30 draw symbols from bit planes, room 49
 // (the princess room) hides twelve cells, room 51 is the random bonus room,
 // and eight rooms have a Royal Seal.
-constexpr int kBatRoom = 20;
-constexpr int kOpalRoom = 30;
+constexpr int kEmblemRoom = 20;
+constexpr int kJewelRoom = 30;
 constexpr int kPrincessRoom = 49;
 constexpr int kBonusRoom = 51;
 
 QString symbolField(int number) {
-    return number == kBatRoom    ? QStringLiteral("room_20_bat_symbols")
-           : number == kOpalRoom ? QStringLiteral("room_30_blue_opals")
+    return number == kEmblemRoom    ? QStringLiteral("room_20_bat_symbols")
+           : number == kJewelRoom ? QStringLiteral("room_30_blue_opals")
                                  : QString();
 }
 
 int symbolPattern(int number) {
-    return number == kBatRoom ? 0x04 : 0x27;
+    return number == kEmblemRoom ? 0x04 : 0x27;
 }
 
 bool isSpecial(const QString& kind) {
@@ -337,7 +337,7 @@ sdk::Library SolomonRoomModel::sheet() const {
         if (!symbolField(number).isEmpty()) {
             sdk::LibraryItem symbol;
             symbol.id = QStringLiteral("special:symbol");
-            symbol.label = number == kBatRoom ? tr("Bat symbol") : tr("Blue opal");
+            symbol.label = number == kEmblemRoom ? tr("Dark Emblem") : tr("Framed blue jewel");
             symbol.icon = session_->painter().patternIcon(symbolPattern(number), bank(), group());
             library.items.prepend(symbol);
         }
@@ -425,8 +425,8 @@ QVector<sdk::MapObject> SolomonRoomModel::objects() const {
             for (int i = 0; i < positions.size(); ++i) {
                 const QString label = kind == QLatin1String("hidden") ? tr("Hidden cell %1").arg(i + 1)
                                       : kind == QLatin1String("bonus") ? tr("Bonus spot %1").arg(i + 1)
-                                      : number == kBatRoom             ? tr("Bat symbol")
-                                                                       : tr("Blue opal");
+                                      : number == kEmblemRoom             ? tr("Dark Emblem")
+                                                                       : tr("Framed blue jewel");
                 add(QStringLiteral("%1:%2").arg(kind).arg(i), label, QRect(point(positions.at(i)), QSize(1, 1)));
             }
         }
@@ -562,7 +562,7 @@ bool SolomonRoomModel::placeObject(const QString& libraryItem, QPoint cell, QStr
         positions << pointJson(cell);
         special.insert(field, positions);
         next.setSpecialRooms(special);
-        const QString label = number == kBatRoom ? tr("Bat symbol") : tr("Blue opal");
+        const QString label = number == kEmblemRoom ? tr("Dark Emblem") : tr("Framed blue jewel");
         if (!commit(next, tr("Add %1 to %2").arg(label, title()), error)) return false;
         setCurrentLayer(QStringLiteral("items"));
         selectObject(QStringLiteral("symbol:%1").arg(positions.size() - 1));
@@ -822,7 +822,7 @@ sdk::Inspection SolomonRoomModel::inspect() const {
                          integer(QStringLiteral("time_rate"), tr("Timer speed"),
                                  r.metadata(room_).value(QStringLiteral("status_rate_raw")).toInt() & 0x0f, 0, 15),
                          integer(QStringLiteral("spawn_lifetime"), tr("Hornhead lifetime"),
-                                 r.spawnLifetime(room_), 0, 255, tr("also Saramandor")),
+                                 r.spawnLifetime(room_), 0, 255, tr("also Salamander")),
                          choice(QStringLiteral("room_constellation"), tr("Constellation"), sign, signs),
                          choice(QStringLiteral("rom_layout"), QStringLiteral("ROM"),
                                 r.expanded() ? QStringLiteral("Expanded") : tr("Original"),

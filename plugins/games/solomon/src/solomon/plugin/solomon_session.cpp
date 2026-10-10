@@ -331,6 +331,10 @@ QVector<sdk::DocumentGroup> SolomonSession::listDocuments(const QString& kind) c
 
 std::unique_ptr<sdk::EditorModel> SolomonSession::openEditor(const QString& kind, const QString& document) {
     try {
+        if (kind == QLatin1String("rooms") && !state_.graphics.contains(QStringLiteral("render-tables"))) {
+            upgradeTables(kind, document);
+            return nullptr;
+        }
         if (kind == QLatin1String("rooms")) {
             const int room = document.toInt() - 1;
             if (room >= 0 && room < state_.rooms.roomCount()) {
@@ -646,6 +650,27 @@ void SolomonSession::upgradeText() {
         revision_ = nextRevision_++;
     };
     step.done = tr("Added documents/text.json: the screen text and static palettes.");
+    runUpgrade(step);
+}
+
+void SolomonSession::upgradeTables(const QString& kind, const QString& document) {
+    UpgradeStep step;
+    step.arguments = QStringList{QStringLiteral("studio"), QStringLiteral("solomon-upgrade"), project_.path()};
+    step.label = tr("Read the game's tables into the project");
+    step.source = kind;
+    step.failure = tr("Upgrading the project failed: %1");
+    step.saveFirst = true;
+    step.adopt = [this] {
+        // Part of the project from now on, not an edit to undo.
+        const nes::Bundle graphics = nes::Bundle::load(graphicsPath_);
+        state_.graphics = graphics;
+        saved_.graphics = graphics;
+        documents_.clear();
+        revision_ = nextRevision_++;
+    };
+    step.done = tr("Read the game's tables into the project.");
+    step.openKind = kind;
+    step.openDocument = document;
     runUpgrade(step);
 }
 

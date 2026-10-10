@@ -11,30 +11,30 @@ param(
 )
 
 # Cross-compiles Retrolarium Studio with the static Qt 5 MinGW SDK from
-# Longreach Qt inside Docker and installs it into build\win-amd64: the app,
-# the helper programs the plugins install, their tests and tests.json.
+# Longreach Qt (https://github.com/OpenKaryon/longreach-qt, `make
+# qt5-win-amd64` builds the image) inside Docker and installs it into
+# build\win-amd64: the app, the helper programs the plugins install, their
+# tests and tests.json.
 
 $ErrorActionPreference = "Stop"
 
 $projectRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 if (-not $QtKit) { $QtKit = $env:RETROLARIUM_QT_KIT }
 if (-not $QtKit) {
-    # A Longreach Qt checkout beside one of the folders above the studio, or
-    # beside a work folder there.
+    # A Longreach Qt checkout beside one of the folders above the studio.
     $folder = $projectRoot
     while ($folder -and -not $QtKit) {
         $parent = Split-Path $folder -Parent
         if (-not $parent -or $parent -eq $folder) { break }
-        foreach ($candidate in @((Join-Path $parent "longreach-qt"), (Join-Path $parent "work\longreach-qt"))) {
-            if (-not $QtKit -and (Test-Path -LiteralPath (Join-Path $candidate "cmake") -PathType Container)) {
-                $QtKit = $candidate
-            }
+        $candidate = Join-Path $parent "longreach-qt"
+        if (Test-Path -LiteralPath (Join-Path $candidate "cmake") -PathType Container) {
+            $QtKit = $candidate
         }
         $folder = $parent
     }
 }
 if (-not $QtKit) {
-    throw "Longreach Qt not found: pass -QtKit or set RETROLARIUM_QT_KIT."
+    throw "Longreach Qt not found: clone https://github.com/OpenKaryon/longreach-qt beside the studio, or pass -QtKit or set RETROLARIUM_QT_KIT."
 }
 $QtKit = (Resolve-Path -LiteralPath $QtKit).Path
 

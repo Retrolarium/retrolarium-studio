@@ -167,11 +167,10 @@ SmbLevelPool SmbLevelModel::pool(const SmbArea* edited) const {
 
 const SmbLevelScene& SmbLevelModel::scene() const {
     if (sceneRevision_ != session_->revision() || sceneSerial_ != dragSerial_) {
-        const SmbResourceDocument& d = session_->document();
         const SmbArea a = area();
         const QPair<int, int> course = session_->courseOf(area_);
         scene_ = renderSmbLevelScene(area_, a.header, a.objects, a.enemies, std::max(0, course.first - 1),
-                                     SmbLevelRendering::fromId(d.rendering(session_->levels())));
+                                     session_->levelRendering());
         sceneRevision_ = session_->revision();
         sceneSerial_ = dragSerial_;
     }
@@ -613,7 +612,7 @@ sdk::Library SmbLevelModel::library() const {
         const SmbArea a = area();
         const QString type = session_->paletteKey(area_);
         const bool night = session_->night(area_);
-        const SmbLevelRendering rendering = SmbLevelRendering::fromId(session_->document().rendering(session_->levels()));
+        const SmbLevelRendering rendering = session_->levelRendering();
         // Each object alone on a bare area, against the bare area itself.
         const QVector<int> header{a.header.value(0), 0, 0, 0, 0, 0};
         QImage blank;

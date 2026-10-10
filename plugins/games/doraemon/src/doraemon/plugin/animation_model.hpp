@@ -18,9 +18,14 @@ struct DoraemonAnimation {
     QVector<int> frames;    // metasprite indexes
     int ticks = 8;
     int palette = 0;        // sprite palette 0-3 (World 2: from the record)
+    int world3Type = -1;    // a World 3 entity type: frames and palette come
+                            // from the game's tables (resolvedAnimation)
 };
 
 const QVector<DoraemonAnimation>& doraemonAnimations();
+// An entry of doraemonAnimations() with a World 3 type's frames and
+// palette filled in from the project.
+DoraemonAnimation resolvedAnimation(const DoraemonSession* session, int index);
 QString metaspriteId(World world);      // the bundle resource
 
 // One sprite of a World 1 / World 3 metasprite, its offset from the
@@ -35,8 +40,11 @@ struct SpritePiece {
 QVector<SpritePiece> metaspritePieces(const DoraemonSession* session, World world, int index);
 // World 3 entity types $00-$1F: base metasprite and initial render flags
 // ($8ED5 / $8EF5).
-int world3TypeMetasprite(int type);
-int world3TypeFlags(int type);
+// World 3 entity types $00-$1F: the first metasprite and the render flags,
+// from the game's tables (0 in a project made before them).
+int world3TypeMetasprite(const DoraemonSession* session, int type);
+int world3TypeFlags(const DoraemonSession* session, int type);
+bool hasWorld3Tables(const DoraemonSession* session);
 // The pieces drawn in one sprite palette row (four NES colours).
 QImage metaspriteImage(const DoraemonSession* session, World world, int index, const QVector<int>& colours,
                        QPoint* origin);
@@ -101,6 +109,7 @@ private:
 
     DoraemonSession* session_;
     int index_;
+    DoraemonAnimation animation_;  // resolved from the project when opened
     int frame_ = 0;
     int selected_ = -1;
     int preset_ = 0;

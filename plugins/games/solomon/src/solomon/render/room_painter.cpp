@@ -3,7 +3,8 @@
 #include "nes/palette.hpp"
 #include "sdk/i18n.hpp"
 
-#include <array>
+#include <QJsonArray>
+
 
 namespace rl::solomon {
 
@@ -14,16 +15,16 @@ constexpr int kBrownBlock = 0x90;
 constexpr int kWhiteBlock = 0xf8;
 constexpr int kKey = 0x06;
 
-// The six patterns of each constellation, as the game's table lists them.
-constexpr std::array<unsigned char, 96> kConstellationTiles{
-    0x28, 0xc1, 0x2a, 0xc3, 0xc0, 0xc5, 0xc2, 0xc7, 0xc4, 0x29, 0xc6, 0x2b, 0x28, 0xc9, 0x2a, 0xcb,
-    0xc8, 0xcd, 0xca, 0xcf, 0xcc, 0x29, 0xce, 0x2b, 0x28, 0xd1, 0x2a, 0xd3, 0xd0, 0xd5, 0xd2, 0xd7,
-    0xd4, 0x29, 0xd6, 0x2b, 0x28, 0xd9, 0x2a, 0xdb, 0xd8, 0xdd, 0xda, 0xdf, 0xdc, 0x29, 0xde, 0x2b,
-    0x28, 0xe1, 0x2a, 0xe3, 0xe0, 0xe5, 0xe2, 0xe7, 0xe4, 0x29, 0xe6, 0x2b, 0x28, 0xe9, 0x2a, 0xeb,
-    0xe8, 0xed, 0xea, 0xef, 0xec, 0x29, 0xee, 0x2b, 0x28, 0xf1, 0x2a, 0xf3, 0xf0, 0xf5, 0xf2, 0xf7,
-    0xf4, 0x29, 0xf6, 0x2b, 0x28, 0xf9, 0x2a, 0xfb, 0xf8, 0xfd, 0xfa, 0xff, 0xfc, 0x29, 0xfe, 0x2b,
-};
-constexpr std::array<int, 12> kConstellationPalettes{3, 3, 3, 3, 2, 3, 0, 2, 0, 1, 0, 1};
+// A table the kit reads from the game into the graphics bundle's
+// render-tables resource; empty in a project made before them.
+QVector<int> renderTable(const nes::Bundle& graphics, const QString& name) {
+    QVector<int> values;
+    if (!graphics.contains(QStringLiteral("render-tables"))) return values;
+    const QJsonArray raw = graphics.resource(QStringLiteral("render-tables"))
+                               .value(QStringLiteral("tables")).toObject().value(name).toArray();
+    for (const QJsonValue& value : raw) values.push_back(value.toInt());
+    return values;
+}
 
 bool visible(QPoint p) {
     return p.x() >= 0 && p.x() < kWidth && p.y() >= 0 && p.y() < kHeight;
@@ -252,8 +253,12 @@ QImage SolomonPainter::room(int index, const Options& options, const SolomonRoom
             constellation = value.toObject();
         }
     }
-    const auto constellationAt = [&constellation](int x, int y, SolomonPattern* result) {
-        if (constellation.isEmpty()) return false;
+    // The six patterns of each constellation and its palette, as the game's
+    // tables list them.
+    const QVector<int> constellationTiles = renderTable(state_->graphics, QStringLiteral("constellation_tile_patterns"));
+    const QVector<int> constellationPalettes = renderTable(state_->graphics, QStringLiteral("constellation_palettes"));
+    const auto constellationAt = [&](int x, int y, SolomonPattern* result) {
+        if (constellation.isEmpty() || constellationTiles.size() < 96 || constellationPalettes.size() < 12) return false;
         const QPoint origin = point(constellation.value(QStringLiteral("position")));
         const int rx = x - origin.x();
         const int ry = y - origin.y();
@@ -261,11 +266,11 @@ QImage SolomonPainter::room(int index, const Options& options, const SolomonRoom
         const int opcode = constellation.value(QStringLiteral("opcode")).toInt(-1);
         if (opcode < 0xf0 || opcode > 0xfb) return false;
         const int offset = (opcode & 3) * 24 + (ry * 3 + rx) * 4;
-        result->palette = kConstellationPalettes.at(opcode & 15);
-        result->tiles[0] = kConstellationTiles.at(offset) & 0xfc;
-        result->tiles[1] = kConstellationTiles.at(offset + 1);
-        result->tiles[2] = kConstellationTiles.at(offset + 2);
-        result->tiles[3] = kConstellationTiles.at(offset + 3);
+        result->palette = constellationPalettes.at(opcode & 15);
+        result->tiles[0] = constellationTiles.at(offset) & 0xfc;
+        result->tiles[1] = constellationTiles.at(offset + 1);
+        result->tiles[2] = constellationTiles.at(offset + 2);
+        result->tiles[3] = constellationTiles.at(offset + 3);
         return true;
     };
 

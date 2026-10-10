@@ -92,6 +92,9 @@ private:
                   bool wrapX = true) const;
     void drawPlane(QImage &frame, const std::array<int, 64> &palette,
                    const Plane &plane, int offsetX) const;
+    // current when the sequences hold it, else legacy: the label a source from
+    // before the 2026-10 object names gives the same mapping.
+    [[nodiscard]] QString mappingName(const QString &current, const QString &legacy) const;
     void drawMapping(QImage &frame, const std::array<int, 64> &palette,
                      const QString &id, int x, int y,
                      bool objectFlipped = false, bool wrapX = true) const;
@@ -112,6 +115,7 @@ private:
 
     QString sourceRoot_;
     QHash<QString, QVector<int>> tables_;
+    QVector<int> group3Themes_;     // Level_BgObject3Pointers: data index per theme
     mutable QHash<int, megadrive::Tile> tileCache_;
     // While a front-end screen renders, tile() serves its VRAM: the fonts
     // with these pens (foreground << 4 | background) and the title logo.

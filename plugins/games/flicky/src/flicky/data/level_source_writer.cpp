@@ -141,11 +141,12 @@ QByteArray bonusPlacementSource(const FlickyLevelDocument &document,
         throw FlickyLevelDocumentError("cannot read staged Flicky bonus source: "
                                        + path.toStdString());
     QString source = QString::fromUtf8(input.readAll());
-    struct Group { const char *id; const char *start; const char *end; };
+    // legacyEnd: the label a source from before the 2026-10 object names uses.
+    struct Group { const char *id; const char *start; const char *end; const char *legacyEnd; };
     const Group groups[] = {
-        {"seesaw", "Obj_BonusSeesaw:", "Obj_BonusTiger:"},
-        {"tiger", "Obj_BonusTiger:", "Obj_BonusHeldChick:"},
-        {"chick_spawn", "BonusChick_StateWait:", "BonusChick_StateFly:"},
+        {"seesaw", "Obj_BonusSeesaw:", "Obj_BonusTiger:", nullptr},
+        {"tiger", "Obj_BonusTiger:", "Obj_BonusNet:", "Obj_BonusHeldChick:"},
+        {"chick_spawn", "BonusChick_StateWait:", "BonusChick_StateFly:", nullptr},
     };
     const QRegularExpression xWord(
         QStringLiteral(R"(move\.w\s+#\$([0-9A-Fa-f]+),\$30\(a0\))"));
@@ -153,7 +154,8 @@ QByteArray bonusPlacementSource(const FlickyLevelDocument &document,
         QStringLiteral(R"(move\.w\s+#\$([0-9A-Fa-f]+),\$24\(a0\))"));
     for (const auto &group : groups) {
         const QString start = QString::fromLatin1(group.start);
-        const QString end = QString::fromLatin1(group.end);
+        QString end = QString::fromLatin1(group.end);
+        if (!source.contains(end) && group.legacyEnd) end = QString::fromLatin1(group.legacyEnd);
         const int begin = source.indexOf(start);
         const int finish = source.indexOf(end);
         if (begin < 0 || finish <= begin

@@ -21,11 +21,6 @@ constexpr int screenHeight = 224;
 constexpr int mapWidth = 32;
 constexpr int mapHeight = 28;
 constexpr int tileSize = 8;
-constexpr std::array<int, 16> solidGroundWords {
-    0x220D, 0x2206, 0x2207, 0x2208, 0x2209, 0x220A, 0x220B, 0x220C,
-    0x220D, 0x220E, 0x220F, 0x2210, 0x2211, 0x2212, 0x2213, 0x2214,
-};
-constexpr std::array<int, 8> group3Themes {0, 1, 2, 3, 4, 0, 1, 2};
 const QStringList group4Labels {
     QStringLiteral("Ending_GraphicsMap1"),
     QStringLiteral("Ending_GraphicsMap1"),
@@ -378,6 +373,41 @@ int number(const QString &value)
     return result;
 }
 
+// The labels a dc.l pointer table lists, in order.
+QStringList tableLabels(const QString &path, const QString &label)
+{
+    QFile file(path);
+    if (!file.open(QIODevice::ReadOnly))
+        fail(QStringLiteral("cannot read Flicky pointer table: ") + path);
+    static const QRegularExpression labelRx(
+        QStringLiteral(R"(^([A-Za-z_][A-Za-z0-9_]*):\s*(.*)$)"));
+    static const QRegularExpression pointerRx(
+        QStringLiteral(R"(^dc\.l\s+(.+)$)"), QRegularExpression::CaseInsensitiveOption);
+    bool collecting = false;
+    QStringList labels;
+    for (const auto &raw : QString::fromUtf8(file.readAll()).split(QLatin1Char('\n'))) {
+        auto code = raw.section(QLatin1Char(';'), 0, 0).trimmed();
+        const auto match = labelRx.match(code);
+        if (match.hasMatch()) {
+            if (collecting) break;
+            if (match.captured(1) != label) continue;
+            collecting = true;
+            code = match.captured(2).trimmed();
+        } else if (!collecting) {
+            continue;
+        }
+        const auto pointer = pointerRx.match(code);
+        if (pointer.hasMatch()) {
+            for (const auto &token : pointer.captured(1).split(QLatin1Char(',')))
+                labels << token.trimmed();
+        } else if (!code.isEmpty()) {
+            break;
+        }
+    }
+    if (labels.isEmpty()) fail(QStringLiteral("missing Flicky pointer table: ") + label);
+    return labels;
+}
+
 QVector<int> tableWords(const QString &path, const QString &label)
 {
     QFile file(path);
@@ -488,6 +518,16 @@ FlickyLevelSceneRenderer::FlickyLevelSceneRenderer(
     names.insert(QStringLiteral("UI_Draw1UPAndHILabelsData1"));
     for (const auto &name : names)
         tables_.insert(name, tableWords(tablesPath, name));
+    // The ground's tile word for each mask of solid neighbours, and the
+    // window scenery each group-3 theme points at.
+    tables_.insert(QStringLiteral("UI_GroundTileTable"), tableWords(
+        source.filePath(QStringLiteral("src/rendering/level_draw.s")), QStringLiteral("UI_GroundTileTable")));
+    for (const auto &target : tableLabels(source.filePath(QStringLiteral("src/game/round/select_and_setup.s")),
+                                          QStringLiteral("Level_BgObject3Pointers"))) {
+        static const QString prefix = QStringLiteral("Level_BgObject3Data");
+        if (!target.startsWith(prefix)) fail(QStringLiteral("unexpected Flicky group 3 pointer: ") + target);
+        group3Themes_ << target.mid(prefix.size()).toInt();
+    }
     tables_.insert(QStringLiteral("UI_EntryArrowFrame1"), tableWords(
         source.filePath(QStringLiteral("src/rendering/hud.s")),
         QStringLiteral("UI_EntryArrowFrame1")));
@@ -651,7 +691,7 @@ int FlickyLevelSceneRenderer::groundWord(
         int mask = 0;
         for (int bit = 0; bit < 4; ++bit)
             mask |= static_cast<int>(linear(neighbours[static_cast<std::size_t>(bit)])) << bit;
-        return solidGroundWords[static_cast<std::size_t>(mask)];
+        return tables_.value(QStringLiteral("UI_GroundTileTable")).value(mask);
     }
     const std::array<int, 3> neighbours = x == 0
         ? std::array<int, 3> {position - 32, position - 1, position + 31}
@@ -669,8 +709,13 @@ QVector<FlickyLevelSceneRenderer::TitleSprite> FlickyLevelSceneRenderer::titleSp
     // In the source, x and y tables follow each other, two words an object.
     const auto positions = [&](const QString &group, const char *xs, const char *ys) {
         if (semantics_->hasTitleLayout()) return semantics_->titlePositions(group);
-        const auto words = tableWords(frontEnd, QString::fromLatin1(xs))
+        auto words = tableWords(frontEnd, QString::fromLatin1(xs))
             + tableWords(frontEnd, QString::fromLatin1(ys));
+        // A source from before the 2026-10 object names calls the logo
+        // letters' tables Title_Static*.
+        if (words.isEmpty() && group == QLatin1String("statics"))
+            words = tableWords(frontEnd, QStringLiteral("Title_StaticXTable"))
+                + tableWords(frontEnd, QStringLiteral("Title_StaticYTable"));
         QVector<QPoint> result;
         for (int index = 0; index + 1 < words.size(); index += 2)
             result.append(QPoint(words.at(index), words.at(index + 1)));
@@ -691,9 +736,11 @@ QVector<FlickyLevelSceneRenderer::TitleSprite> FlickyLevelSceneRenderer::titleSp
         if (sprite.bounds.isEmpty()) sprite.bounds = QRect(at - QPoint(128, 128), QSize(8, 8));
         result.append(sprite);
     };
-    const auto statics = positions(QStringLiteral("statics"), "Title_StaticXTable", "Title_StaticYTable");
+    const auto statics = positions(QStringLiteral("statics"), "Title_LogoLetterXTable", "Title_LogoLetterYTable");
     for (int index = 0; index < 6 && index < statics.size(); ++index)
-        add(QStringLiteral("statics"), index, QStringLiteral("Title_StaticMap%1").arg(index), statics.at(index));
+        add(QStringLiteral("statics"), index,
+            mappingName(QStringLiteral("Title_LogoLetterMap%1").arg(index), QStringLiteral("Title_StaticMap%1").arg(index)),
+            statics.at(index));
     // Obj_TitleBird: the first frame of each cast member's animation
     // (Title_BirdAnimIndexTable picks the pointer table's entry).
     static const std::array<const char *, 4> birds {{
@@ -705,6 +752,11 @@ QVector<FlickyLevelSceneRenderer::TitleSprite> FlickyLevelSceneRenderer::titleSp
         if (!frames.isEmpty()) add(QStringLiteral("cast"), index, frames.at(0).toString(), cast.at(index));
     }
     return result;
+}
+
+QString FlickyLevelSceneRenderer::mappingName(const QString &current, const QString &legacy) const
+{
+    return sequences_->mapping(current).isEmpty() && !sequences_->mapping(legacy).isEmpty() ? legacy : current;
 }
 
 void FlickyLevelSceneRenderer::drawMapping(
@@ -868,11 +920,12 @@ QImage FlickyLevelSceneRenderer::renderBonusPhase(
     for (const auto &chick : bonusChicks.sprites)
         drawMapping(frame, palette, chick.mapping, chick.x, chick.y,
                     chick.flipped, false);
-    // Object01 is a held Chick drawn ahead of the player in the sprite table.
+    // Object01 is the net, drawn ahead of the player in the sprite table.
     // Without joypad input, player.s keeps facing left and objects.s places
     // it eight pixels to the right and ten below the player's world origin.
     drawMapping(frame, palette,
-                QStringLiteral("Obj_BonusHeldChick_UpdateData0"),
+                mappingName(QStringLiteral("Obj_BonusNet_UpdateData0"),
+                            QStringLiteral("Obj_BonusHeldChick_UpdateData0")),
                 0xF4 + 8 - 0x80, playerY + 0xA - 0x80, true);
     QImage priorityText(screenWidth, screenHeight, QImage::Format_ARGB32);
     priorityText.fill(Qt::transparent);
@@ -1125,8 +1178,9 @@ QImage FlickyLevelSceneRenderer::renderScreen(Screen screen) const
     for (const TitleSprite &sprite : titleSprites())
         drawMapping(frame, palette, sprite.mapping, sprite.position.x() - 128,
             sprite.position.y() - 128, false, false);
-    // Obj_TitleCursor: PUSH START BUTTON, shown in its blink's on phase.
-    drawMapping(frame, palette, QStringLiteral("Obj_TitleCursorData"),
+    // Obj_TitlePushStart: PUSH START BUTTON, shown in its blink's on phase.
+    drawMapping(frame, palette, mappingName(QStringLiteral("Obj_TitlePushStartData"),
+                                            QStringLiteral("Obj_TitleCursorData")),
         0xF0 - 128, 0x120 - 128, false, false);
     // Plane A text (priority tiles, over the sprites) and the HUD.
     drawScreenTexts(frame, palette, screen);
@@ -1213,7 +1267,7 @@ QImage FlickyLevelSceneRenderer::renderPlacementPreview(
         height = 3;
     } else if (field == QStringLiteral("background_group_3")) {
         tableId = QStringLiteral("Level_BgObject3Data%1").arg(
-            group3Themes[static_cast<std::size_t>(theme.group3)]);
+            group3Themes_.value(theme.group3));
         width = 2;
         height = 3;
     } else if (field == QStringLiteral("background_group_4")) {
@@ -1332,7 +1386,7 @@ QImage FlickyLevelSceneRenderer::renderLayer(
     };
     writeGroup(QStringLiteral("background_group_3"),
         QStringLiteral("Level_BgObject3Data%1").arg(
-            group3Themes[static_cast<std::size_t>(theme.group3)]), 2, 3);
+            group3Themes_.value(theme.group3)), 2, 3);
     writeGroup(QStringLiteral("background_group_4"),
         group4Labels.at(theme.tileset), 5, 3);
     writeGroup(QStringLiteral("background_group_5"),

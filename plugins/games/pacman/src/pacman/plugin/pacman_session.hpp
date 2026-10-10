@@ -59,6 +59,12 @@ public:
     quint64 revision() const { return revision_; }
     QVector<int> mazeGrid(const nes::Bundle& bundle) const;
     QJsonObject resource(const QString& id) const { return state_.bundle.resource(id); }
+    // The character screen's attribute bytes as the attract code writes
+    // them, from the values it loads (the render-tables resource); zero in
+    // a project made before the tables.
+    QVector<int> attractAttributes() const;
+    // Whether the bundle holds what a newer kit reads from the game.
+    bool hasGameTables() const;
     // The round Play from selected starts at (1-based).
     int startRound() const { return round_; }
     void setStartRound(int round);

@@ -460,8 +460,8 @@ QString DoraemonMapModel::objectName(int type) const {
             "Tortoise / Combat Fish", "Crab / CreatureC", "Volcanic rock", "CreatureB / CreatureA", "Skull", "Ghost",
             "Punishment swarm", "Energy Candy", "Octopus tip", "Octopus segment", "Dragon head", "Dragon body",
             "Poseidon", "Poseidon (right)", "Poseidon (lower)", "Poseidon (lower right)", "Stopwatch", "Pancake",
-            "Diamond", "Gold bar", "Snob's chest", "Boy's chest", "Bully's chest", "Dragon chest", "Talisman",
-            "Pass Hoop", "Key", "Item Bag", "Snob", "Boy", "Bully", "Girl"};
+            "Diamond", "Gold bar", "Boy's chest", "Snob's chest", "Bully's chest", "Dragon chest", "Talisman",
+            "Pass Hoop", "Key", "Item Bag", "Boy", "Snob", "Bully", "Girl"};
         return QString::fromLatin1(kTypes[type & 0x1F]);
     }
     if (isDescriptor(type)) {
@@ -494,8 +494,8 @@ QImage DoraemonMapModel::objectImage(const QJsonObject& record, QPoint* topLeft)
                         (room / 8) * 256 + record.value(QStringLiteral("y")).toInt());
         const int preset = areaPreset(session_->bundle(), world_, map_, (room % 8) * kRoomCells, (room / 8) * kRoomCells);
         QPoint origin;
-        const QImage image = metaspriteImage(session_, world_, world3TypeMetasprite(type),
-                                             session_->painter().colours(world_, preset, 4 + (world3TypeFlags(type) & 3)),
+        const QImage image = metaspriteImage(session_, world_, world3TypeMetasprite(session_, type),
+                                             session_->painter().colours(world_, preset, 4 + (world3TypeFlags(session_, type) & 3)),
                                              &origin);
         if (topLeft) *topLeft = at + origin;
         return image;
@@ -750,8 +750,8 @@ QImage DoraemonMapModel::scheduleImage(int slot, QRect* pixels) const {
     const int type = channel.value(QStringLiteral("type")).toInt();
     const int preset = areaPreset(session_->bundle(), world_, map_, (room % 8) * kRoomCells, (room / 8) * kRoomCells);
     QPoint origin;
-    QImage image = metaspriteImage(session_, world_, world3TypeMetasprite(type),
-                                   session_->painter().colours(world_, preset, 4 + (world3TypeFlags(type) & 3)), &origin);
+    QImage image = metaspriteImage(session_, world_, world3TypeMetasprite(session_, type),
+                                   session_->painter().colours(world_, preset, 4 + (world3TypeFlags(session_, type) & 3)), &origin);
     if (pixels) *pixels = QRect(corner, image.size());
     return image;
 }

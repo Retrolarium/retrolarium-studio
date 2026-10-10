@@ -443,6 +443,12 @@ QVector<sdk::DocumentGroup> SmbSession::documents(const QString& kind) const {
 
 std::unique_ptr<sdk::EditorModel> SmbSession::openEditor(const QString& kind, const QString& document) {
     try {
+        // The level renderer draws with tables a newer kit reads from the
+        // game; a project made before them gets them first.
+        if ((kind == QLatin1String("levels") || kind == QLatin1String("graphics")) && !hasLevelTables()) {
+            upgradeProject(kind, document);
+            return nullptr;
+        }
         if (kind == QLatin1String("levels")) {
             const QString bank = document.contains(QLatin1Char('/')) ? document.section(QLatin1Char('/'), 0, 0) : levels_;
             const QString area = document.section(QLatin1Char('/'), -1);
@@ -733,7 +739,8 @@ QPair<int, int> SmbSession::levelOf(const QString& area, const QString& levels, 
 
 QPoint SmbSession::heroCell(const QString& area) const {
     const auto found = hero_.constFind(area);
-    return found != hero_.constEnd() ? *found : entranceCell(document_.area(levels_, area).header);
+    return found != hero_.constEnd() ? *found : entranceCell(document_.area(levels_, area).header,
+                                                            smbLevelTable(document_, QStringLiteral("player_starting_y_positions")));
 }
 
 void SmbSession::setHeroCell(const QString& area, QPoint cell) {
@@ -765,11 +772,33 @@ QString SmbSession::selectedStart() const {
     return tr("%1 · column %2").arg(areaLabel(start_.area)).arg(start_.cell.x());
 }
 
+bool SmbSession::hasLevelTables() const {
+    // The tables every engine has; a project from an older kit lacks some
+    // until the kit's upgrade reads them again.
+    static const QStringList kNeeded{
+        QStringLiteral("background_scenery_patterns"), QStringLiteral("terrain_render_masks"),
+        QStringLiteral("block_metatiles"), QStringLiteral("enemy_graphics_tiles"),
+        QStringLiteral("enemy_sprite_attributes"), QStringLiteral("player_starting_y_positions"),
+        QStringLiteral("background_colors"), QStringLiteral("firebar_tile"),
+        QStringLiteral("platform_attributes")};
+    if (!document_.resourceIds(QStringLiteral("nes.byte-tables.v1")).contains(kLevelTables)) return false;
+    const QJsonObject tables = document_.resource(kLevelTables).value(QStringLiteral("tables")).toObject();
+    for (const QString& name : kNeeded) {
+        if (!tables.contains(name)) return false;
+    }
+    return true;
+}
+
+SmbLevelRendering SmbSession::levelRendering() const {
+    return SmbLevelRendering::fromResource(document_.resource(kLevelTables), document_.rendering(levels_));
+}
+
 QImage SmbSession::areaPreview(const QString& area, int columns, int firstColumn) const {
+    if (!hasLevelTables()) return {};
     const SmbArea a = document_.area(levels_, area);
     const SmbLevelScene scene =
         renderSmbLevelScene(area, a.header, a.objects, a.enemies, std::max(0, courseOf(area).first - 1),
-                            SmbLevelRendering::fromId(document_.rendering(levels_)));
+                            levelRendering());
     const QImage image = painter_->render(scene, paletteKey(area), night(area));
     const int left = std::clamp(firstColumn * SmbLevelPainter::kCell, 0, std::max(0, image.width() - 1));
     return image.copy(left, 0, std::min(image.width() - left, columns * SmbLevelPainter::kCell), image.height());
@@ -807,7 +836,8 @@ QString SmbSession::paletteKey(const QString& area) const {
 bool SmbSession::night(const QString& area) const {
     if (lighting_ == QLatin1String("Day")) return false;
     if (lighting_ == QLatin1String("Night")) return true;
-    return automaticNight(areaTypeOf(area), document_.area(levels_, area).header);
+    return automaticNight(areaTypeOf(area), document_.area(levels_, area).header,
+                          smbLevelTable(document_, QStringLiteral("background_colors")));
 }
 
 void SmbSession::setLighting(const QString& lighting) {

@@ -38,17 +38,26 @@ const char* const kFlips[4] = {"None", "Horizontal", "Vertical", "Both"};
 
 }  // namespace
 
-int world3TypeMetasprite(int type) {
-    static const int kBases[32] = {0x10, 0x14, 0x18, 0x1C, 0x20, 0x24, 0x40, 0xB0, 0x30, 0x34, 0x28,
-                                   0x2C, 0x80, 0x84, 0x88, 0x8C, 0x64, 0x40, 0x70, 0x74, 0x50, 0x54,
-                                   0x58, 0x5C, 0x44, 0x60, 0x4C, 0x48, 0x90, 0x94, 0x98, 0x9C};
-    return kBases[type & 0x1F];
+namespace {
+
+int world3Table(const DoraemonSession* session, const char* name, int type) {
+    if (!session->bundle().contains(QStringLiteral("render-tables"))) return 0;
+    return session->resource(QStringLiteral("render-tables"))
+        .value(QStringLiteral("tables")).toObject().value(QLatin1String(name)).toArray().at(type & 0x1F).toInt();
 }
 
-int world3TypeFlags(int type) {
-    static const int kFlags[32] = {2, 3, 1, 3, 0x20, 0, 1, 0, 3, 3, 0, 0, 2, 2, 2, 2,
-                                   0, 1, 0, 1, 1,    1, 1, 1, 0, 0, 1, 0, 1, 1, 1, 1};
-    return kFlags[type & 0x1F];
+}  // namespace
+
+bool hasWorld3Tables(const DoraemonSession* session) {
+    return session->bundle().contains(QStringLiteral("render-tables"));
+}
+
+int world3TypeMetasprite(const DoraemonSession* session, int type) {
+    return world3Table(session, "world3_entity_metasprites", type);
+}
+
+int world3TypeFlags(const DoraemonSession* session, int type) {
+    return world3Table(session, "world3_entity_render_flags", type);
 }
 
 QVector<SpritePiece> metaspritePieces(const DoraemonSession* session, World world, int index) {
@@ -185,11 +194,12 @@ const QVector<DoraemonAnimation>& doraemonAnimations() {
         const World three = World::Three;
         list << make(three, "Doraemon", rlTr("doraemon", "Swim (one way)"), run(0x00, 3), 8)
              << make(three, "Doraemon", rlTr("doraemon", "Swim (other way)"), run(0x03, 3), 8);
-        // Entity types $00-$1F: metasprite base and render flags ($8ED5, $8EF5).
+        // Entity types $00-$1F: their frames and palette come from the
+        // game's tables when one opens (resolvedAnimation).
         for (int t = 0; t < 32; ++t) {
-            list << make(three, "Creatures", rlTr("doraemon", "Type %1").arg(nes::hex(t)),
-                         run(world3TypeMetasprite(t), std::min(4, 0xBC - world3TypeMetasprite(t))), 8,
-                         world3TypeFlags(t) & 3);
+            DoraemonAnimation creature = make(three, "Creatures", rlTr("doraemon", "Type %1").arg(nes::hex(t)), {}, 8);
+            creature.world3Type = t;
+            list << creature;
         }
         list << make(three, "Frames", rlTr("doraemon", "World 3 · all frames"), run(0, 188), 15);
         return list;
@@ -197,13 +207,25 @@ const QVector<DoraemonAnimation>& doraemonAnimations() {
     return kAnimations;
 }
 
+DoraemonAnimation resolvedAnimation(const DoraemonSession* session, int index) {
+    DoraemonAnimation a = doraemonAnimations().at(index);
+    if (a.world3Type < 0) return a;
+    // A type's frames run from its base for up to four, inside the table.
+    const int count = session->resource(metaspriteId(World::Three)).value(QStringLiteral("entries")).toArray().size();
+    const int base = world3TypeMetasprite(session, a.world3Type);
+    for (int f = base; f < std::min(base + 4, count); ++f) a.frames << f;
+    a.palette = world3TypeFlags(session, a.world3Type) & 3;
+    return a;
+}
+
 DoraemonAnimationModel::DoraemonAnimationModel(DoraemonSession* session, int animation)
-    : CompositionModel(session), session_(session), index_(animation), palette_(doraemonAnimations().at(animation).palette) {
+    : CompositionModel(session), session_(session), index_(animation),
+      animation_(resolvedAnimation(session, animation)), palette_(animation_.palette) {
     connect(session_, &sdk::Session::contentChanged, this, &sdk::EditorModel::contentChanged);
 }
 
 const DoraemonAnimation& DoraemonAnimationModel::animation() const {
-    return doraemonAnimations().at(index_);
+    return animation_;
 }
 
 int DoraemonAnimationModel::index() const {

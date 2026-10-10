@@ -90,6 +90,13 @@ AboutDialog::AboutDialog(QWidget* parent) : StudioDialog(tr("About"), parent) {
                                body());
     gameList->setTone(QStringLiteral("text"));
     content->addWidget(gameList);
+    auto* trademarks = paragraph(tr("The games are named only to say which ones the studio works with. "
+                                    "Their titles and characters are trademarks of their owners, who "
+                                    "have not made or endorsed Retrolarium. You need your own copy of "
+                                    "each game."),
+                                 body());
+    trademarks->setFixedWidth(500);
+    content->addWidget(trademarks);
 
     content->addSpacing(10);
     content->addWidget(new ui::Label(tr("From an edit to the game"), ui::Label::Role::Caps, body()));

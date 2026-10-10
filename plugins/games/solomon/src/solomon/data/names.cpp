@@ -13,7 +13,7 @@ const char* const kItems[64] = {
     "Broken block (glitch)",
     "Door (glitch)",
     "White block (glitch)",
-    "Bat symbol",
+    "Dark Emblem",
     "Spawn Mirror",
     "Key (glitch)",
     "Open door (glitch)",
@@ -36,31 +36,31 @@ const char* const kItems[64] = {
     "Bell",
     "Explosion jar",
     "Blue key",
-    "Blue jewels / blue Archdemon",
-    "Shrine 1",
-    "Shrine 2",
-    "Shrine 3",
-    "Shrine 4",
+    "Blue jewel (blue Archdemon)",
+    "Zodiac panel (fire signs)",
+    "Zodiac panel (earth signs)",
+    "Zodiac panel (air signs)",
+    "Zodiac panel (water signs)",
     "Royal Seal",
     "Solomon page / Egyptian head",
-    "Golden Wings / warp item",
+    "Golden Wings",
     "Open door (out-of-table glitch 1)",
     "Open door (out-of-table glitch 2)",
     "Silver coin",
-    "Silver double coin",
-    "Blue opal",
+    "Two silver coins",
+    "Framed blue jewel",
     "Gold coin",
-    "Gold double coin",
-    "Orange opal",
-    "Star coin",
-    "Double star coin",
-    "Dark orange opal",
-    "Origami swan",
-    "Hornhead coin",
+    "Two gold coins",
+    "Framed gold jewel",
+    "Gold star coin",
+    "Two gold star coins",
+    "Gold-framed gold jewel",
+    "Golden crane",
+    "Medal Hero medal",
     "Sphinx",
-    "Egyptian head",
-    "Magic lamp / Bonus Rabbit reward",
-    "E-bottle",
+    "Pharaoh head",
+    "Magic lamp",
+    "Extra life",
     "Extra life (glitch 1)",
     "Extra life (glitch 2)",
     "Extra life (glitch 3)",
@@ -120,7 +120,7 @@ QString enemyName(int type) {
         static const char* const kSpins[4] = {"right, counterclockwise", "left, clockwise", "up, clockwise",
                                               "down, counterclockwise"};
         const int offset = type - 0x28;
-        return rlTr("solomon", "Fireball (%1, speed %2)").arg(QString::fromLatin1(kSpins[offset & 3])).arg(offset / 4 + 1);
+        return rlTr("solomon", "Spark ball (%1, speed %2)").arg(QString::fromLatin1(kSpins[offset & 3])).arg(offset / 4 + 1);
     }
     if (type < 0x50) {
         const int offset = type - 0x30;
@@ -130,7 +130,7 @@ QString enemyName(int type) {
         const QString direction = neul ? (variant < 2 ? QStringLiteral("up") : QStringLiteral("down"))
                                        : (variant < 2 ? QStringLiteral("right") : QStringLiteral("left"));
         return rlTr("solomon", "%1 (%2, speed %3%4)%5")
-            .arg(neul ? rlTr("solomon", "Neul") : rlTr("solomon", "Ghost"), direction)
+            .arg(neul ? rlTr("solomon", "Wisp") : rlTr("solomon", "Ghost"), direction)
             .arg(group / 2 % 2 + 1)
             .arg(group >= 4 ? rlTr("solomon", ", no slow-down") : QString())
             .arg(variant & 1 ? rlTr("solomon", " variant 2") : QString());
@@ -138,9 +138,11 @@ QString enemyName(int type) {
     QString family;
     int base = 0;
     if (type < 0x5c) { family = rlTr("solomon", "Hornhead"); base = 0x50; }
-    else if (type < 0x68) { family = rlTr("solomon", "Saramandor"); base = 0x5c; }
+    else if (type < 0x68) { family = rlTr("solomon", "Salamander"); base = 0x5c; }
     else if (type < 0x70) { family = rlTr("solomon", "Dragon"); base = 0x68; }
-    else if (type < 0x78) { family = rlTr("solomon", "Golem"); base = 0x70; }
+    // $74-$77 run the same Goblin code with other tiles, which CHR bank 2 draws as an Stone Mage.
+    else if (type < 0x74) { family = rlTr("solomon", "Goblin"); base = 0x70; }
+    else if (type < 0x78) { family = rlTr("solomon", "Goblin / Stone Mage"); base = 0x74; }
     else if (type < 0x80) { family = rlTr("solomon", "Gargoyle"); base = 0x78; }
     else {
         static const char* const kFlames[4] = {"Red flame", "White flame", "Red flame variant 2", "White flame variant 2"};

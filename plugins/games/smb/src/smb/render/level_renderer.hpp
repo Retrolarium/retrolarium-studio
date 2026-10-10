@@ -2,12 +2,16 @@
 
 #include "smb/data/level_records.hpp"
 
+#include <QHash>
+#include <QJsonObject>
 #include <QString>
 #include <QStringList>
 #include <QVector>
 
-// Ported from the original Retrolarium app; the golden test pins its
-// output to the kit's renderer for all SMB1 JU areas.
+// The kit's level renderer in C++; the golden test pins both to the same
+// scenes for all SMB1 JU areas. It follows the area parser's logic, and
+// every metatile it lays out comes from the project's level-tables
+// resource, which the kit reads from the game's own build.
 
 namespace rl::smb {
 
@@ -26,29 +30,25 @@ struct SmbPositionedObject final {
     int width = 1;
 };
 
-struct SmbLevelRendering final {
-    QVector<int> terrainMetatiles;
-    QVector<int> foregroundSceneryMetatiles;
-    QVector<int> brickMetatiles;
-    QVector<int> solidMetatiles;
-    QVector<int> coinMetatiles;
-    QVector<int> sidePipeTopMetatiles;
-    QVector<int> sidePipeBottomMetatiles;
-    QVector<int> castleSpecialMetatiles;
-    QVector<int> secondaryLedgeMetatiles;
-    QVector<int> secondaryLedgeSupportMetatiles;
-    QVector<int> cannonMetatiles;
-    QVector<int> flagpoleMetatiles;
-    QVector<QVector<QVector<int>>> smallObjects;
-    int bridgeMetatile = 0x63;
-    int staircaseMetatile = 0x61;
-    int residualFlagMetatile = 0x6d;
-    bool upsideDownPipes = false;
+// The bundle resource of the level tables.
+inline const QString kLevelTables = QStringLiteral("level-tables");
 
-    [[nodiscard]] static SmbLevelRendering smb1();
-    [[nodiscard]] static SmbLevelRendering ann();
-    [[nodiscard]] static SmbLevelRendering smb2();
-    [[nodiscard]] static SmbLevelRendering fromId(const QString &id);
+// What one engine renders with: its id (smb1, ann or smb2) and the tables
+// of the project's level-tables resource (codec nes.byte-tables.v1).
+struct SmbLevelRendering final {
+    QString engine;
+    QHash<QString, QVector<int>> tables;
+
+    // Throws SmbError when the engine is unknown or a table is missing.
+    [[nodiscard]] static SmbLevelRendering fromResource(const QJsonObject &resource, const QString &engine);
+
+    [[nodiscard]] bool has(const QString &name) const { return tables.contains(name); }
+    [[nodiscard]] const QVector<int> &table(const QString &name) const;
+    [[nodiscard]] int one(const QString &name) const { return table(name).at(0); }
+    // The metatiles of row object value (identifier 0), top down.
+    [[nodiscard]] QVector<int> smallObject(int value, int areaType) const;
+    // A sideways pipe's "top" or "bottom" row, left to right.
+    [[nodiscard]] QVector<int> sidePipe(const QString &part) const;
 };
 
 struct SmbLevelScene final {
@@ -58,10 +58,6 @@ struct SmbLevelScene final {
     QVector<SmbPositionedObject> objects;
     int width = 0;
 };
-
-[[nodiscard]] SmbLevelScene renderSmbLevelScene(const QString &name,
-    const QVector<int> &header, const QVector<SmbAreaObject> &objects,
-    const QVector<SmbEnemyRecord> &enemies, int world = 0);
 
 [[nodiscard]] SmbLevelScene renderSmbLevelScene(const QString &name,
     const QVector<int> &header, const QVector<SmbAreaObject> &objects,

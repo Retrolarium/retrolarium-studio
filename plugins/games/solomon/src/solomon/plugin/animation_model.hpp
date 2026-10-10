@@ -25,7 +25,7 @@ struct AnimationFamily {
     int frames = 0;
 };
 
-// One action of an object type (Wizard standing, a Golem walking): the frames
+// One action of an object type (Wizard standing, a Goblin walking): the frames
 // its animation cycles through, each a 16x16 sprite of two 8x16 halves.
 // Drop a pattern pair on a half, flip it or change its palette in the
 // inspector. Frames are shared records: other actions that show the same

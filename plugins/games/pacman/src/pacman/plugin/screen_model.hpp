@@ -29,7 +29,10 @@ struct Source {
 
 // The name table (1024 entries with attributes) the screen leaves on the
 // screen, and the cells the collection writes (the rest is the code's fill).
-QVector<int> cells(const QJsonObject& collection, const QString& id, QHash<int, Source>* sources = nullptr);
+// attractAttributes: the character screen's 64 attribute bytes
+// (PacmanSession::attractAttributes); the title has none.
+QVector<int> cells(const QJsonObject& collection, const QString& id, const QVector<int>& attractAttributes,
+                   QHash<int, Source>* sources = nullptr);
 QJsonObject withByte(QJsonObject collection, const Source& source, int value);
 QImage render(const PacmanSession* session, const QString& id);
 
