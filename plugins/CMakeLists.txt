@@ -75,6 +75,18 @@ add_executable(retrolarium-flicky-level-writer
 target_link_libraries(retrolarium-flicky-level-writer PRIVATE flicky_data)
 install(TARGETS retrolarium-flicky-level-writer RUNTIME DESTINATION tools)
 
+# Mega Drive sound previews: the kit writes a VGM and runs this renderer
+# (RETROLARIUM_YMFM_RENDERER) for the WAV; the studio finds it in its tools
+# folder. ymfm (BSD-3-Clause) is vendored unchanged.
+add_executable(retrolarium-ymfm-renderer
+    platforms/megadrive/tools/ymfm_renderer_main.cpp
+    platforms/megadrive/third_party/ymfm/src/ymfm_adpcm.cpp
+    platforms/megadrive/third_party/ymfm/src/ymfm_opn.cpp
+    platforms/megadrive/third_party/ymfm/src/ymfm_ssg.cpp
+)
+target_include_directories(retrolarium-ymfm-renderer PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/platforms/megadrive/third_party/ymfm/src)
+install(TARGETS retrolarium-ymfm-renderer RUNTIME DESTINATION tools)
+
 # NES platform: the PPU master palette and palette packet layout. Header-only, Qt-free.
 add_library(platform_nes INTERFACE)
 target_include_directories(platform_nes INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/platforms/nes/src)

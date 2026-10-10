@@ -8,6 +8,10 @@ version.
 Ported: all five workspace documents, the collision codec, the level source
 writer (`retrolarium-flicky-level-writer`) and the scene renderer.
 
+The kit's Flicky workspace (`retrolarium_kit.games.flicky.workspace`) makes the
+documents from a snapshot of the game's source and stages them back to build;
+sound previews render the kit's VGM through `retrolarium-ymfm-renderer`.
+
 | Kind                         | Editor      | State                                                                                                                                   |
 | ---------------------------- | ----------- | --------------------------------------------------------------------------------------------------------------------------------------- |
 | Levels                       | TileMap     | Objects / Layout / Background layers; place, drag, remove, retype objects; paint collision                                              |

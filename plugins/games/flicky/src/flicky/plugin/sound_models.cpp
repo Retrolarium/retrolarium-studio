@@ -234,6 +234,9 @@ void SoundHeaderModel::preview() {
         return;
     }
     spec.label = tr("Render %1").arg(id_);
+    // The kit hears the VGM through the studio's YM2612 renderer.
+    const QString renderer = host->toolPath(QStringLiteral("retrolarium-ymfm-renderer"));
+    if (!renderer.isEmpty()) spec.environment.insert(QStringLiteral("RETROLARIUM_YMFM_RENDERER"), renderer);
     const QString projectDirectory = session_->projectDirectory();
     const QString id = id_;
     // The model may close before rendering ends; capture values only.
