@@ -41,13 +41,13 @@ const PhysicsInfo& physicsInfo(const QString& name) {
                                    rlTr("smb", "entry 3")};
     static const QStringList climb{QStringLiteral("still"), QStringLiteral("up"), QStringLiteral("down")};
     static const QVector<PhysicsInfo> kInfo{
-        {"jump_gravity", "Jump gravity", "Downward pull while A is held and Hero rises.", jump},
+        {"jump_gravity", "Jump gravity", "Downward pull while A is held and the player rises.", jump},
         {"fall_gravity", "Fall gravity", "Downward pull once A is let go, and while falling.", jump},
         {"initial_y_speed", "Jump speed", "Vertical speed at take-off, in pixels per frame; negative is up.", jump},
         {"initial_y_fraction", "Jump speed fraction", "The sub-pixel part of the take-off speed (256ths).", jump},
         {"maximum_left_speed", "Top speed left", "Fastest walk or run to the left (negative).", speed},
         {"maximum_right_speed", "Top speed right", "Fastest walk or run to the right.", speed},
-        {"horizontal_friction", "Friction", "How fast Hero speeds up and slows down on the ground.", speed},
+        {"horizontal_friction", "Friction", "How fast the player speeds up and slows down on the ground.", speed},
         {"climb_y_speed", "Climb speed", "Vertical speed on a vine, in pixels per frame.", climb},
         {"climb_y_fraction", "Climb fraction", "The sub-pixel part of the climb speed (256ths).", climb},
     };
@@ -344,7 +344,7 @@ sdk::Inspection SmbRoutesModel::inspect() const {
     step.monospace = true;
     inspection.fields = {area, alternate, step};
     inspection.note = tr("Each world plays its steps in order; a pipe intro (an area whose entrance "
-                         "walks Hero into a pipe) shares the level number of the next step. The "
+                         "walks the player into a pipe) shares the level number of the next step. The "
                          "steps per world are fixed. F5 plays the selected step's area.");
     inspection.engineTag = QStringLiteral("smb.world.v1");
     inspection.engine = {{tr("Route byte"), cell(row_, 4)},

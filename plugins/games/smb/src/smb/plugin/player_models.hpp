@@ -6,7 +6,7 @@ namespace rl::smb {
 
 class SmbSession;
 
-// One of Hero's animations (big walk, small swim, ...): its frames, each
+// One of the player's animations (big walk, small swim, ...): its frames, each
 // 2x4 sprite patterns. Select a cell and pick its pattern in the library or
 // type its number. Cells the engine flips are drawn flipped.
 class SmbPlayerFramesModel final : public sdk::CompositionModel {
@@ -23,7 +23,7 @@ public:
     // flips the right sprite of the bottom rows for some frames).
     static bool mirrored(int frame, int cell);
     // A frame of the table as the game draws it, in player palette 0-2
-    // (Hero, Brother, fire).
+    // (first player, second player, fire).
     static QImage frameImage(const SmbSession* session, int frame, int palette);
 
     QString title() const override;
@@ -63,7 +63,7 @@ private:
     QString animation_;
     int frame_ = 0;         // within the animation
     int piece_ = -1;
-    int palette_ = 0;       // 0 Hero, 1 Brother, 2 fire
+    int palette_ = 0;       // 0 first player, 1 second player, 2 fire
 };
 
 // Which frame each player action shows (big and small), and the two

@@ -3,6 +3,7 @@
 #include "doraemon/plugin/animation_model.hpp"
 #include "doraemon/plugin/doraemon_session.hpp"
 #include "nes/editors.hpp"
+#include "sdk/game_names.hpp"
 #include "sdk/i18n.hpp"
 
 #include <QJsonArray>
@@ -415,18 +416,10 @@ bool isDescriptor(int type) {
     return (type & 0x80) != 0;
 }
 
-const char* const kDescriptorNames[13] = {"Manhole",          "Warp Door", "Stopwatch",         "Energy Candy",
-                                          "1UP",              "Weapon upgrade", "Pancake",         "Rapid-Fire Drink",
-                                          "Shrink Light",      "Programmer's face", "Gold Bar",      "Diamond",
-                                          "Invulnerability"};
-
+// The game's names (its repository's names.json): World 1's enemies by their
+// metasprite base, its descriptor objects by index, World 3's types.
 QString enemyName(int metasprite) {
-    static const QHash<int, QString> kNames{{0x3E, rlTr("doraemon", "W1Enemy3E")}, {0x4C, rlTr("doraemon", "W1Enemy4C")},
-                                            {0x54, rlTr("doraemon", "Nezumi")},   {0x56, rlTr("doraemon", "W1Enemy56")},
-                                            {0x58, rlTr("doraemon", "W1Enemy58")},    {0x5C, rlTr("doraemon", "W1Enemy5C")},
-                                            {0x60, rlTr("doraemon", "W1Enemy60")},   {0x64, rlTr("doraemon", "W1Enemy64")},
-                                            {0x6C, rlTr("doraemon", "W1Enemy6C")}, {0x70, rlTr("doraemon", "W1Enemy70")}};
-    return kNames.value(metasprite, rlTr("doraemon", "Enemy"));
+    return sdk::gameName("world1_enemies", metasprite, rlTr("doraemon", "Enemy"));
 }
 
 }  // namespace
@@ -456,17 +449,11 @@ bool DoraemonMapModel::commitRecords(const QJsonArray& next, const QString& text
 
 QString DoraemonMapModel::objectName(int type) const {
     if (world_ == World::Three) {
-        static const char* const kTypes[32] = {
-            "Tortoise / Combat Fish", "Crab / CreatureC", "Volcanic rock", "CreatureB / CreatureA", "Skull", "Ghost",
-            "Punishment swarm", "Energy Candy", "Octopus tip", "Octopus segment", "Dragon head", "Dragon body",
-            "Poseidon", "Poseidon (right)", "Poseidon (lower)", "Poseidon (lower right)", "Stopwatch", "Pancake",
-            "Diamond", "Gold bar", "Boy's chest", "Snob's chest", "Bully's chest", "Dragon chest", "Talisman",
-            "Pass Hoop", "Key", "Item Bag", "Boy", "Snob", "Bully", "Girl"};
-        return QString::fromLatin1(kTypes[type & 0x1F]);
+        return sdk::gameName("world3_types", type & 0x1F, rlTr("doraemon", "Type %1").arg(nes::hex(type & 0x1F)));
     }
     if (isDescriptor(type)) {
         const int index = type & 0x0f;
-        return index < 13 ? QString::fromLatin1(kDescriptorNames[index]) : tr("Object");
+        return sdk::gameName("world1_objects", index, tr("Object"));
     }
     const QJsonArray metasprites = session_->resource(QStringLiteral("world1-enemy-properties"))
                                        .value(QStringLiteral("metasprites")).toArray();
@@ -629,8 +616,8 @@ sdk::Inspection DoraemonMapModel::inspectObject() const {
         if (object_ < 0 || object_ >= list.size()) {
             inspection.kicker = tr("Objects");
             inspection.title = label_;
-            inspection.note = tr("World 3's thirteen persistent objects: chests, the talisman, the Pass "
-                                 "Hoop, the key, the Item Bag and Girl. Drag one to move it, across "
+            inspection.note = tr("World 3's thirteen persistent objects: the chests, keys and other things "
+                                 "the rooms keep. Drag one to move it, across "
                                  "rooms too. Creatures come from each room's spawn schedule: its four "
                                  "channels sit in the room's top-left corner with their counts; pick one "
                                  "to change it.");

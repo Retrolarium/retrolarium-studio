@@ -206,7 +206,7 @@ QVector<sdk::EditorAction> SmbDemoModel::actions() const {
         record.icon = QStringLiteral("record");
         record.tooltip = tr("Play the demo with your controller; what you play becomes the demo");
         record.confirmHeading = tr("Record a new demo?");
-        record.confirmText = tr("You play 1-1 with your controller. When Hero dies, you press Start "
+        record.confirmText = tr("You play 1-1 with your controller. When the player dies, you press Start "
                                 "or Stop recording, what you played replaces the current demo (%1 "
                                 "steps). Undo brings it back.")
                                  .arg(rowCount());
@@ -227,7 +227,7 @@ sdk::Inspection SmbDemoModel::inspect() const {
     inspection.title = tr("Step %1").arg(row_ + 1);
     inspection.note = tr("When the title waits, the game plays this input in 1-1: each step holds its "
                          "buttons for its frames. Loop demo plays it over and over in the emulator. "
-                         "Record plays 1-1 with your controller and keeps what you play when Hero "
+                         "Record plays 1-1 with your controller and keeps what you play when the player "
                          "dies, you press Start or Stop recording; the game's tables hold %1 steps. "
                          "Write buttons as words, e.g. B RIGHT.")
                           .arg(session_->demoCapacity());

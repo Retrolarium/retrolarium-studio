@@ -3,6 +3,7 @@
 #include "doraemon/plugin/animation_model.hpp"
 #include "doraemon/plugin/doraemon_session.hpp"
 #include "nes/editors.hpp"
+#include "sdk/game_names.hpp"
 #include "sdk/i18n.hpp"
 
 #include <QJsonArray>
@@ -19,26 +20,30 @@ constexpr int kPanelHeight = 15;
 const QString kScreens = QStringLiteral("world2-screens");
 const QString kSecrets = QStringLiteral("world2-secret-screens");
 
-// Spawn tokens $D0-$DE start enemy states $01-$0F; each state's first
-// metasprite. W2Enemy9 ($09) has none: its render handler is an RTS, so the
-// game never draws it.
-struct Foe {
-    const char* name;
-    int metasprite;
-};
-const Foe kFoes[16] = {{"", -1},          {"W2Enemy1", 0},           {"W2Enemy2", 2},   {"W2Enemy3", 4},
-                       {"W2Enemy4", 7}, {"W2Enemy5", 9},           {"W2Enemy6", 12}, {"W2Enemy7", 14},
-                       {"W2Creature7 (straight)", 17}, {"W2Enemy9", -1},     {"W2Enemy10", 36}, {"W2Enemy11", 32},
-                       {"W2Enemy12", 38},      {"W2Enemy13", 30},             {"Jura", 23},    {"W2Creature7 (spiral)", 17}};
+// Spawn tokens $D0-$DE start enemy states $01-$0F. Each state's name and
+// first metasprite are the game's (world2_enemies and the
+// world2_state_metasprites catalog); a state the game never draws (its
+// render handler is an RTS) is in world2_invisible_states.
 constexpr int kStates = 15;
-constexpr int kW2Enemy9 = 9;
+
+int stateMetasprite(int state) {
+    const QJsonValue value = sdk::gameCatalog("world2_state_metasprites").toObject().value(QString::number(state));
+    return value.isDouble() ? value.toInt() : -1;
+}
+
+bool invisibleState(int state) {
+    for (const QJsonValue& value : sdk::gameCatalog("world2_invisible_states").toArray()) {
+        if (value.toInt() == state) return true;
+    }
+    return false;
+}
 
 int stateOf(int value) {
     return value - DoraemonRouteModel::kSpawnBase + 1;
 }
 
 QString foeName(int state) {
-    return state >= 1 && state <= kStates ? QString::fromLatin1(kFoes[state].name) : rlTr("doraemon", "State %1").arg(nes::hex(state));
+    return sdk::gameName("world2_enemies", state, rlTr("doraemon", "State %1").arg(nes::hex(state)));
 }
 
 QString foeChoice(int state) {
@@ -46,9 +51,9 @@ QString foeChoice(int state) {
 }
 
 QImage foeImage(const DoraemonSession* session, int state, int preset) {
-    const int metasprite = state >= 1 && state <= kStates ? kFoes[state].metasprite : -1;
+    const int metasprite = state >= 1 && state <= kStates ? stateMetasprite(state) : -1;
     if (metasprite >= 0) return world2Image(session, metasprite, preset);
-    if (state == kW2Enemy9) {
+    if (invisibleState(state)) {
         // Invisible in the game: a dashed, see-through outline marks where it is.
         QImage image(16, 16, QImage::Format_ARGB32);
         image.fill(QColor(150, 210, 255, 60));
@@ -592,7 +597,7 @@ sdk::Inspection DoraemonRouteModel::inspectObject() const {
     }
     const int state = stateOf(value);
     const QPoint cell = cellOf(object_.mid(6).toInt());
-    inspection.kicker = state == kW2Enemy9 ? tr("Enemy spawn · invisible in the game") : tr("Enemy spawn");
+    inspection.kicker = invisibleState(state) ? tr("Enemy spawn · invisible in the game") : tr("Enemy spawn");
     inspection.title = foeName(state);
     sdk::Field enemy;
     enemy.key = QStringLiteral("enemy");
@@ -611,7 +616,7 @@ sdk::Inspection DoraemonRouteModel::inspectObject() const {
     const int shared = session_->world2View().value(QStringLiteral("aliases")).toArray().at(at.selector).toArray().size();
     inspection.note = tr("Token %1 in the screen's stream; the enemy appears when the screen scrolls in.%2%3")
                           .arg(nes::hex(value))
-                          .arg(state == 9 ? tr(" W2Enemy9 is drawn by the background, so it shows as a marker.") : QString())
+                          .arg(invisibleState(state) ? tr(" The background draws this enemy, so it shows as a marker.") : QString())
                           .arg(shared > 1 ? tr(" %1 screens share this stream and change together.").arg(shared) : QString());
     return inspection;
 }

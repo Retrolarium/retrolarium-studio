@@ -43,7 +43,7 @@ sdk::Inspection SmbPlaytestModel::inspect() const {
     course.value = tr("World %1-%2").arg(start.world).arg(start.level);
     sdk::Field cell;
     cell.key = QStringLiteral("cell");
-    cell.label = tr("Hero at");
+    cell.label = tr("Player at");
     cell.value = tr("column %1, row %2").arg(start.cell.x()).arg(start.cell.y());
     cell.monospace = true;
     sdk::Field core;
@@ -51,9 +51,9 @@ sdk::Inspection SmbPlaytestModel::inspect() const {
     core.label = tr("Core");
     core.value = coreLabel();
     inspection.fields = {course, cell, core};
-    inspection.note = tr("Play from selected builds the ROM with the kit and starts MAME with Hero "
-                         "where the level editor puts him; Play starts from power-on. Drag Hero "
-                         "in Levels to move the start point.");
+    inspection.note = tr("Play from selected builds the ROM with the kit and starts MAME with the "
+                         "player where the level editor puts it; Play starts from power-on. Drag "
+                         "the player in Levels to move the start point.");
     inspection.engineTag = QStringLiteral("smb-point-playtest");
     return inspection;
 }

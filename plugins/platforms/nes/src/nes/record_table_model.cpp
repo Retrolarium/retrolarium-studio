@@ -1,6 +1,7 @@
 #include "nes/record_table_model.hpp"
 
 #include "nes/editors.hpp"
+#include "sdk/game_names.hpp"
 #include "sdk/i18n.hpp"
 #include "sdk/session.hpp"
 
@@ -14,6 +15,16 @@ const QString kNone = QStringLiteral("—");
 
 QString fieldName(const QJsonObject& field) {
     return field.value(QStringLiteral("name")).toString();
+}
+
+// What a choice shows: the game's name for its value when the field names a
+// category of them ("names": "fruits"), else its label in the interface
+// language ("Fruit 3" read as "Fruit %1").
+QString choiceLabel(const QJsonObject& field, const QJsonObject& choice) {
+    const QString label = RecordTableModel::recordLabel(choice.value(QStringLiteral("label")).toString());
+    const QString category = field.value(QStringLiteral("names")).toString();
+    if (category.isEmpty()) return label;
+    return sdk::gameName(category.toLatin1().constData(), choice.value(QStringLiteral("value")).toInt(), label);
 }
 
 }  // namespace
@@ -59,7 +70,7 @@ QString RecordTableModel::display(const QJsonObject& field, const QJsonValue& va
     const int number = value.toInt();
     for (const QJsonValue& choice : field.value(QStringLiteral("choices")).toArray()) {
         if (choice.toObject().value(QStringLiteral("value")).toInt() == number) {
-            return rlValue(choice.toObject().value(QStringLiteral("label")).toString());
+            return choiceLabel(field, choice.toObject());
         }
     }
     return QString::number(number);
@@ -103,7 +114,7 @@ QStringList RecordTableModel::cellChoices(int row, int column) const {
     if (locked(field, row)) return {};
     QStringList result;
     for (const QJsonValue& choice : field.value(QStringLiteral("choices")).toArray()) {
-        result << rlValue(choice.toObject().value(QStringLiteral("label")).toString());
+        result << choiceLabel(field, choice.toObject());
     }
     return result;
 }
@@ -141,7 +152,7 @@ bool RecordTableModel::setCell(int row, int column, const QString& value, QStrin
         next = QJsonValue::Null;
     } else if (field.contains(QStringLiteral("choices"))) {
         for (const QJsonValue& choice : field.value(QStringLiteral("choices")).toArray()) {
-            if (rlValue(choice.toObject().value(QStringLiteral("label")).toString()) == text) {
+            if (choiceLabel(field, choice.toObject()) == text) {
                 next = choice.toObject().value(QStringLiteral("value"));
             }
         }

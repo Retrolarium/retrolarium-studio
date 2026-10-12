@@ -52,19 +52,12 @@ void validatePiece(const QJsonObject &piece)
     }
 }
 
+// A module of the game's source under src/: a relative path to a .s file
+// that stays inside it.
 bool sourceIsKnown(const QString &source)
 {
-    static const QSet<QString> sources {
-        QStringLiteral("game/bonus/objects.s"),
-        QStringLiteral("game/actors/chirp.s"),
-        QStringLiteral("game/actors/window_girl_and_throwable.s"),
-        QStringLiteral("game/enemies/tiger.s"),
-        QStringLiteral("game/actors/player.s"),
-        QStringLiteral("game/enemies/lizard.s"),
-        QStringLiteral("game/enemies/spawner.s"),
-        QStringLiteral("rendering/hud.s"),
-    };
-    return sources.contains(source);
+    return source.endsWith(QLatin1String(".s")) && !source.startsWith(QLatin1Char('/'))
+        && !source.contains(QLatin1Char('\\')) && !source.split(QLatin1Char('/')).contains(QStringLiteral(".."));
 }
 
 } // namespace

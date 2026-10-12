@@ -61,16 +61,16 @@ int hexOf(const QString& text) {
 QString metadataLabel(const QString& key) {
     if (key == QLatin1String("door")) return rlTr("solomon", "Door");
     if (key == QLatin1String("key")) return rlTr("solomon", "Key");
-    if (key == QLatin1String("mirror_1")) return rlTr("solomon", "Spawn Mirror 1");
-    if (key == QLatin1String("mirror_2")) return rlTr("solomon", "Spawn Mirror 2");
-    if (key == QLatin1String("player_start")) return rlTr("solomon", "Wizard · start");
+    if (key == QLatin1String("mirror_1")) return rlTr("solomon", "Mirror 1");
+    if (key == QLatin1String("mirror_2")) return rlTr("solomon", "Mirror 2");
+    if (key == QLatin1String("player_start")) return rlTr("solomon", "%1 · start").arg(playerName());
     return key;
 }
 
 // Special rooms keep fixed scripted cells outside their item lists (kit
 // solomon.special): rooms 20 and 30 draw symbols from bit planes, room 49
 // (the princess room) hides twelve cells, room 51 is the random bonus room,
-// and eight rooms have a Royal Seal.
+// and eight rooms have a seal (item $20).
 constexpr int kEmblemRoom = 20;
 constexpr int kJewelRoom = 30;
 constexpr int kPrincessRoom = 49;
@@ -337,7 +337,7 @@ sdk::Library SolomonRoomModel::sheet() const {
         if (!symbolField(number).isEmpty()) {
             sdk::LibraryItem symbol;
             symbol.id = QStringLiteral("special:symbol");
-            symbol.label = number == kEmblemRoom ? tr("Dark Emblem") : tr("Framed blue jewel");
+            symbol.label = number == kEmblemRoom ? itemName(0x04) : itemName(0x27);
             symbol.icon = session_->painter().patternIcon(symbolPattern(number), bank(), group());
             library.items.prepend(symbol);
         }
@@ -412,7 +412,7 @@ QVector<sdk::MapObject> SolomonRoomModel::objects() const {
         for (int i = 0; i < seals.size(); ++i) {
             const QJsonObject record = seals.at(i).toObject();
             if (record.value(QStringLiteral("room")).toInt() == number) {
-                add(QStringLiteral("seal:%1").arg(i), tr("Royal Seal"),
+                add(QStringLiteral("seal:%1").arg(i), itemName(0x20),
                     QRect(point(record.value(QStringLiteral("position"))), QSize(1, 1)));
             }
         }
@@ -425,8 +425,8 @@ QVector<sdk::MapObject> SolomonRoomModel::objects() const {
             for (int i = 0; i < positions.size(); ++i) {
                 const QString label = kind == QLatin1String("hidden") ? tr("Hidden cell %1").arg(i + 1)
                                       : kind == QLatin1String("bonus") ? tr("Bonus spot %1").arg(i + 1)
-                                      : number == kEmblemRoom             ? tr("Dark Emblem")
-                                                                       : tr("Framed blue jewel");
+                                      : number == kEmblemRoom             ? itemName(0x04)
+                                                                       : itemName(0x27);
                 add(QStringLiteral("%1:%2").arg(kind).arg(i), label, QRect(point(positions.at(i)), QSize(1, 1)));
             }
         }
@@ -562,7 +562,7 @@ bool SolomonRoomModel::placeObject(const QString& libraryItem, QPoint cell, QStr
         positions << pointJson(cell);
         special.insert(field, positions);
         next.setSpecialRooms(special);
-        const QString label = number == kEmblemRoom ? tr("Dark Emblem") : tr("Framed blue jewel");
+        const QString label = number == kEmblemRoom ? itemName(0x04) : itemName(0x27);
         if (!commit(next, tr("Add %1 to %2").arg(label, title()), error)) return false;
         setCurrentLayer(QStringLiteral("items"));
         selectObject(QStringLiteral("symbol:%1").arg(positions.size() - 1));
@@ -715,7 +715,7 @@ sdk::Inspection SolomonRoomModel::inspect() const {
         inspection.note = parts.first() == QLatin1String("repeat")
                               ? tr("One of several copies the item list places with one command; they "
                                    "share the item. Delete one and the rest stay.")
-                              : tr("Hidden items appear when Wizard finds them; an item in a brown block "
+                              : tr("Hidden items appear when the player finds them; an item in a brown block "
                                    "shows when the block breaks.");
         inspection.engineTag = QStringLiteral("solomon.rooms@3");
         inspection.engine = {{tr("Type byte"), hex(type)}};
@@ -770,9 +770,9 @@ sdk::Inspection SolomonRoomModel::inspect() const {
                                  choice(QStringLiteral("schedule"), tr("When"), schedules.value(schedule), schedules)};
         }
         inspection.note = key == QLatin1String("player_start")
-                              ? tr("Where Wizard appears; she faces the room's middle.")
+                              ? tr("Where the player appears, facing the room's middle.")
                           : key.startsWith(QLatin1String("mirror_"))
-                              ? tr("A Spawn Mirror drops the enemies of its set in turn, when its drop "
+                              ? tr("A mirror drops the enemies of its set in turn, when its drop "
                                    "schedule says. Sets and schedules are shared by all rooms; edit them "
                                    "in Mirrors.")
                               : tr("Drag it to move it. Every room has one door, one key and its mirrors.");
@@ -783,7 +783,7 @@ sdk::Inspection SolomonRoomModel::inspect() const {
         inspection.kicker = tr("Special room");
         inspection.title = objectLabel(selected_);
         if (parts.first() == QLatin1String("seal")) {
-            inspection.note = tr("Eight rooms hide a Royal Seal on a fixed cell; drag it to move it.");
+            inspection.note = tr("Eight rooms hide %1 on a fixed cell; drag it to move it.").arg(itemName(0x20));
         } else if (parts.first() == QLatin1String("hidden")) {
             inspection.note = tr("The princess room hides its prizes on twelve fixed cells; drag one to move it.");
         } else if (parts.first() == QLatin1String("bonus")) {
@@ -821,17 +821,17 @@ sdk::Inspection SolomonRoomModel::inspect() const {
                                 {QStringLiteral("0"), QStringLiteral("1"), QStringLiteral("2"), QStringLiteral("3")}),
                          integer(QStringLiteral("time_rate"), tr("Timer speed"),
                                  r.metadata(room_).value(QStringLiteral("status_rate_raw")).toInt() & 0x0f, 0, 15),
-                         integer(QStringLiteral("spawn_lifetime"), tr("Hornhead lifetime"),
-                                 r.spawnLifetime(room_), 0, 255, tr("also Salamander")),
+                         integer(QStringLiteral("spawn_lifetime"), tr("%1 lifetime").arg(enemyFamilyName(0x50)),
+                                 r.spawnLifetime(room_), 0, 255, tr("also %1").arg(enemyFamilyName(0x5c))),
                          choice(QStringLiteral("room_constellation"), tr("Constellation"), sign, signs),
                          choice(QStringLiteral("rom_layout"), QStringLiteral("ROM"),
                                 r.expanded() ? QStringLiteral("Expanded") : tr("Original"),
                                 {tr("Original"), QStringLiteral("Expanded")})};
     inspection.note = layer_ == QLatin1String("blocks")
-                          ? tr("Brown blocks break and can be made by Wizard; white blocks are solid. "
+                          ? tr("Brown blocks break and can be made by the player; white blocks are solid. "
                                "The right button takes a cell's blocks as the brush.")
                           : tr("Drag items and enemies from the sheet onto the room. The door, key, "
-                               "mirrors and Wizard's start are moved, not deleted.");
+                               "mirrors and the player's start are moved, not deleted.");
     if (r.roomNumber(room_) == kBonusRoom) {
         QStringList choices;
         QVector<QImage> icons;

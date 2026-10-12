@@ -2,6 +2,7 @@
 
 #include "castle_excellent/plugin/castle_excellent_session.hpp"
 #include "nes/editors.hpp"
+#include "sdk/game_names.hpp"
 #include "sdk/i18n.hpp"
 
 #include <QJsonArray>
@@ -20,112 +21,60 @@ QVector<int> offsetsFor(int sprites) {
     return offsets;
 }
 
-CastleExcellentAnimationFrame frame(int first, int sprites, int ticks = 8) {
-    CastleExcellentAnimationFrame f;
-    f.first = first;
-    f.offsets = offsetsFor(sprites);
-    f.ticks = ticks;
-    return f;
-}
-
-CastleExcellentAnimation player(const char* id, const char* label, std::initializer_list<int> firsts, int ticks = 8) {
-    CastleExcellentAnimation a;
-    a.id = QStringLiteral("player:") + QString::fromLatin1(id);
-    a.label = QString::fromLatin1(label);
-    a.group = QStringLiteral("Player");
-    for (int first : firsts) a.frames << frame(first, 2, ticks);
-    return a;
-}
-
+// The game's names for its object types (objects in its names.json).
 QString typeName(int type) {
-    switch (type) {
-    case 0x81: return rlTr("castle_excellent", "Fairy");
-    case 0x84: return rlTr("castle_excellent", "Fighter");
-    case 0x85: return rlTr("castle_excellent", "Bishop");
-    case 0x87: return rlTr("castle_excellent", "Knight");
-    case 0x88: return rlTr("castle_excellent", "Witch");
-    case 0x89: return rlTr("castle_excellent", "Flame");
-    case 0x8e: return rlTr("castle_excellent", "Lift control block");
-    case 0xa0: return rlTr("castle_excellent", "Witch summon");
-    case 0xa1: return rlTr("castle_excellent", "Small lift");
-    case 0xa2: return rlTr("castle_excellent", "Large lift");
-    case 0xa3: return rlTr("castle_excellent", "Flying block");
-    case 0xa4: return rlTr("castle_excellent", "Linked lift (left)");
-    case 0xa5: return rlTr("castle_excellent", "Linked lift (right)");
-    case 0xa6: return rlTr("castle_excellent", "Knight arrow");
-    case 0xa8: return rlTr("castle_excellent", "Vanishing object");
-    case 0xa9: return rlTr("castle_excellent", "Collected item");
-    default: return {};
-    }
+    return sdk::gameName("objects", type, QString());
 }
 
-CastleExcellentAnimation object(int type, std::initializer_list<int> firsts, int sprites = 2) {
-    CastleExcellentAnimation a;
-    a.id = QStringLiteral("object:%1").arg(type, 2, 16, QLatin1Char('0'));
-    const QString name = typeName(type);
-    a.label = name.isEmpty() ? rlTr("castle_excellent", "Object %1").arg(nes::hex(type))
-                             : QStringLiteral("%1 · %2").arg(name, nes::hex(type));
-    a.group = type == 0x81 || (type >= 0x84 && type <= 0x89) || type == 0xa0 || type == 0xa6 ? rlTr("castle_excellent", "Enemies")
-                                                                             : rlTr("castle_excellent", "Objects");
-    for (int first : firsts) a.frames << frame(first, sprites);
-    return a;
+CastleExcellentAnimationFrame frameOf(const QJsonObject& record) {
+    CastleExcellentAnimationFrame f;
+    f.first = record.value(QStringLiteral("first")).toInt();
+    f.offsets = offsetsFor(record.value(QStringLiteral("sprites")).toInt(2));
+    f.ticks = record.value(QStringLiteral("ticks")).toInt(8);
+    f.weapon = record.value(QStringLiteral("weapon")).toBool();
+    f.flipped = record.value(QStringLiteral("flipped")).toBool();
+    return f;
 }
 
 }  // namespace
 
-const QVector<CastleExcellentAnimation>& castleExcellentAnimations() {
-    // The player's frames come from the source reconstruction's model of its
-    // frame selection (scripts/authoring/frame_sprites.py); an object type's
-    // from the descriptors its sprite selector references. Both revisions
-    // share them, and the code that picks them is not edited.
-    static const QVector<CastleExcellentAnimation> kAnimations = [] {
-        QVector<CastleExcellentAnimation> list;
-        list << player("walk-right", "Walk right", {0, 2, 4, 2});
-        list << player("walk-left", "Walk left", {10, 12, 14, 12});
-        list << player("stand", "Standing", {6});
-        list << player("jump", "Jump", {16});
-        list << player("jump-right", "Jump right", {8});
-        list << player("jump-left", "Jump left", {18});
-        CastleExcellentAnimation right = player("attack-right", "Attack right", {20});
-        right.frames[0].weapon = true;
-        CastleExcellentAnimation left = player("attack-left", "Attack left", {22});
-        left.frames[0].weapon = true;
-        left.frames[0].flipped = true;
-        list << right << left;
-        list << player("transition", "Room transition", {24, 26, 28, 30}, 4);
-        list << object(0x81, {111, 113, 115});
-        list << object(0x84, {32, 34, 36, 38, 40, 42, 44, 46});
-        list << object(0x85, {48, 50, 52, 54, 56, 58});
-        CastleExcellentAnimation odd = object(0x86, {61, 63, 65, 67, 69});
-        odd.frames.prepend(frame(60, 1));
-        list << odd;
-        list << object(0x87, {71, 73, 75, 77, 79, 81});
-        list << object(0x88, {83, 85, 87, 91, 93, 95});
-        list << object(0x89, {99, 101, 103, 105, 107, 109});
-        list << object(0xa0, {163, 165, 167});
-        list << object(0xa6, {187, 188}, 1);
-        list << object(0x82, {123}) << object(0x83, {131});
-        for (int type = 0x8a; type <= 0x8e; ++type) list << object(type, {133 + (type - 0x8a) * 2});
-        list << object(0x8f, {143, 145});
-        for (int type = 0x90; type <= 0x95; ++type) list << object(type, {125 + type - 0x90}, 1);
-        for (int type = 0x96; type <= 0x9c; ++type) list << object(type, {147 + (type - 0x96) * 2});
-        list << object(0x9d, {163}) << object(0x9e, {163}) << object(0x9f, {169, 171});
-        list << object(0xa1, {177});
-        list << object(0xa2, {173}, 4);
-        list << object(0xa3, {181}) << object(0xa4, {183}) << object(0xa5, {185});
-        list << object(0xa8, {189, 191, 193}) << object(0xa9, {195, 197, 199, 201});
-        return list;
-    }();
-    return kAnimations;
+QVector<CastleExcellentAnimation> castleExcellentAnimations() {
+    // The game's catalog (animations in its names.json): the player's frames
+    // from the source reconstruction's model of its frame selection, an
+    // object type's from the descriptors its sprite selector references.
+    // Both revisions share them, and the code that picks them is not edited.
+    QVector<CastleExcellentAnimation> list;
+    for (const QJsonValue& value : sdk::gameCatalog("animations").toArray()) {
+        const QJsonObject record = value.toObject();
+        CastleExcellentAnimation a;
+        const QString group = record.value(QStringLiteral("group")).toString();
+        if (group == QLatin1String("player")) {
+            a.id = record.value(QStringLiteral("id")).toString();
+            a.label = record.value(QStringLiteral("label")).toString();
+            a.group = QStringLiteral("Player");
+        } else {
+            const int type = record.value(QStringLiteral("type")).toInt();
+            const QString name = typeName(type);
+            a.id = QStringLiteral("object:%1").arg(type, 2, 16, QLatin1Char('0'));
+            a.label = name.isEmpty() ? rlTr("castle_excellent", "Object %1").arg(nes::hex(type))
+                                     : QStringLiteral("%1 · %2").arg(name, nes::hex(type));
+            a.group = group == QLatin1String("enemies") ? rlTr("castle_excellent", "Enemies")
+                                                        : rlTr("castle_excellent", "Objects");
+        }
+        for (const QJsonValue& frame : record.value(QStringLiteral("frames")).toArray()) a.frames << frameOf(frame.toObject());
+        list << a;
+    }
+    return list;
 }
 
 CastleExcellentAnimationModel::CastleExcellentAnimationModel(CastleExcellentSession* session, int animation)
-    : CompositionModel(session), session_(session), index_(animation) {
+    : CompositionModel(session), session_(session), index_(animation),
+      animation_(castleExcellentAnimations().value(animation)) {
     connect(session_, &sdk::Session::contentChanged, this, &sdk::EditorModel::contentChanged);
 }
 
 const CastleExcellentAnimation& CastleExcellentAnimationModel::animation() const {
-    return castleExcellentAnimations().at(index_);
+    return animation_;
 }
 
 QString CastleExcellentAnimationModel::title() const {

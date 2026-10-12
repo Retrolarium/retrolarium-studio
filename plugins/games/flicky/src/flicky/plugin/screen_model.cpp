@@ -1,6 +1,7 @@
 #include "flicky/plugin/screen_model.hpp"
 
 #include "flicky/plugin/flicky_session.hpp"
+#include "sdk/game_names.hpp"
 #include "sdk/i18n.hpp"
 
 #include <QPainter>
@@ -34,8 +35,12 @@ QString label(const QString& id) {
 }
 
 QString spriteLabel(const QString& group, int index) {
-    static const char* const kCast[4] = {"Flicky", "Chirp", "Tiger", "Lizard"};
-    if (group == QLatin1String("cast") && index >= 0 && index < 4) return QString::fromLatin1(kCast[index]);
+    if (group == QLatin1String("cast")) {
+        // The cast members' names are the game's (title_cast in its names.json).
+        const QJsonObject member = sdk::gameCatalog("title_cast").toArray().at(index).toObject();
+        const QString name = member.value(QStringLiteral("name")).toString();
+        return name.isEmpty() ? rlTr("flicky", "Cast member %1").arg(index + 1) : name;
+    }
     return rlTr("flicky", "Logo piece %1").arg(index + 1);
 }
 

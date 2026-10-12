@@ -1,7 +1,9 @@
 #include "smb/plugin/graphics_models.hpp"
 
 #include "nes/palette.hpp"
+#include "sdk/game_names.hpp"
 #include "sdk/i18n.hpp"
+#include "smb/data/catalog.hpp"
 #include "smb/data/area_streams.hpp"
 #include "smb/plugin/player_models.hpp"
 #include "smb/plugin/smb_session.hpp"
@@ -52,19 +54,22 @@ const QStringList& areaPackets() {
     return kPackets;
 }
 
-const QStringList& playerNames() {
-    static const QStringList kNames{rlTr("smb", "Hero"), rlTr("smb", "Brother"), rlTr("smb", "Fire")};
-    return kNames;
-}
-
 }  // namespace
+
+QStringList playerPaletteNames() {
+    QStringList names;
+    for (int row = 0; row < 3; ++row) {
+        names << sdk::gameName("player_palettes", row, rlTr("smb", "Player colours %1").arg(row + 1));
+    }
+    return names;
+}
 
 // ---------------------------------------------------------------- tiles
 
 SmbTileModel::SmbTileModel(SmbSession* session, bool background)
     : TileModel(session), session_(session), background_(background) {
     // A label paletteChoices offers, so penColors finds its packet.
-    palette_ = background_ ? packetLabel(QStringLiteral("ground"), 0) : playerNames().first();
+    palette_ = background_ ? packetLabel(QStringLiteral("ground"), 0) : playerPaletteNames().first();
     connect(session_, &SmbSession::documentChanged, this, &sdk::EditorModel::contentChanged);
 }
 
@@ -76,7 +81,7 @@ QStringList SmbTileModel::paletteChoices() const {
     QStringList choices;
     if (!background_) {
         for (int i = 0; i < 3 && (i + 1) * 4 <= session_->document().tableValues(session_->playerPalette()).size(); ++i) {
-            choices << playerNames().at(i);
+            choices << playerPaletteNames().at(i);
         }
     }
     for (const QString& packet : areaPackets()) {
@@ -94,7 +99,7 @@ QString SmbTileModel::packetLabel(const QString& packet, int palette) const {
 QVector<QColor> SmbTileModel::penColors() const {
     const SmbResourceDocument& d = session_->document();
     QVector<int> values;
-    const int player = playerNames().indexOf(palette_);
+    const int player = playerPaletteNames().indexOf(palette_);
     if (player >= 0) {
         values = d.tableValues(session_->playerPalette()).mid(player * 4, 4);
     } else {
@@ -352,7 +357,7 @@ QVector<sdk::PaletteSample> SmbPacketModel::samples() const {
             }
         }
         if (packet_ == QLatin1String("boss")) {
-            // Boss waits by the axe at the end of the castle.
+            // The boss waits by the axe at the end of the castle.
             const SmbArea a = session_->document().area(session_->levels(), chosen);
             const QVector<int> pages = objectPages(a.objects);
             for (int i = 0; i < a.objects.size(); ++i) {
@@ -360,7 +365,7 @@ QVector<sdk::PaletteSample> SmbPacketModel::samples() const {
                     first = std::max(0, pages.at(i) * 16 + a.objects.at(i).column - 15);
                 }
             }
-            where = tr("Boss's bridge");
+            where = tr("the bridge before the axe");
             width = 17;
         }
         sdk::PaletteSample sample;
@@ -369,10 +374,10 @@ QVector<sdk::PaletteSample> SmbPacketModel::samples() const {
         sample.caption = course.first > 0 ? tr("World %1-%2, %3").arg(course.first).arg(course.second).arg(where)
                                           : QStringLiteral("%1, %2").arg(titled(chosen), where);
         if (packet_ == QLatin1String("boss")) {
-            // Only Boss wears it: show him alone, like the player previews.
+            // Only the boss wears it: show it alone, like the player previews.
             constexpr int kBoss = 0x2d;
             sample.image = session_->painter().enemy(kBoss, session_->paletteKey(chosen));
-            sample.caption = tr("Boss, as in World %1-%2").arg(course.first).arg(course.second);
+            sample.caption = tr("%1, as in World %2-%3").arg(enemyName(kBoss)).arg(course.first).arg(course.second);
             result << sample;
             return result;
         }
@@ -448,7 +453,7 @@ QVector<sdk::PaletteRow> SmbPlayerPaletteModel::rows() const {
     QVector<sdk::PaletteRow> rows;
     for (int start = 0; start < values.size(); start += 4) {
         sdk::PaletteRow row;
-        row.label = playerNames().value(start / 4, tr("Row %1").arg(start / 4));
+        row.label = playerPaletteNames().value(start / 4, tr("Row %1").arg(start / 4));
         for (int i = start; i < std::min(int(values.size()), start + 4); ++i) {
             row.colors << nesColor(session_, values.at(i));
             row.labels << QStringLiteral("%1").arg(values.at(i), 2, 16, QLatin1Char('0')).toUpper();
@@ -490,12 +495,12 @@ bool SmbPlayerPaletteModel::assignGamut(int index, QString* error) {
 }
 
 QVector<sdk::PaletteSample> SmbPlayerPaletteModel::samples() const {
-    // Small Hero standing in each row's colours, side by side.
+    // The small player standing in each row's colours, side by side.
     const int rows = session_->document().tableValues(session_->playerPalette()).size() / 4;
     if (rows <= 0 || session_->playerFrames().isEmpty()) {
         return {};
     }
-    // Small Hero fills the bottom half of his 16x32 frame.
+    // The small player fills the bottom half of its 16x32 frame.
     constexpr int kStand = 23;
     QImage image(rows * 24 - 8, 16, QImage::Format_ARGB32);
     image.fill(Qt::transparent);
@@ -505,8 +510,8 @@ QVector<sdk::PaletteSample> SmbPlayerPaletteModel::samples() const {
     }
     painter.end();
     sdk::PaletteSample sample;
-    sample.label = tr("Hero · Brother · Fire");
-    sample.caption = tr("Small Hero standing in each row's colours");
+    sample.label = playerPaletteNames().join(QStringLiteral(" · "));
+    sample.caption = tr("The small player standing in each row's colours");
     sample.image = image;
     return {sample};
 }
@@ -518,15 +523,15 @@ QString SmbPlayerPaletteModel::statusText() const {
 sdk::Inspection SmbPlayerPaletteModel::inspect() const {
     sdk::Inspection inspection;
     inspection.kicker = tr("Colour");
-    inspection.title = QStringLiteral("%1 · %2").arg(playerNames().value(entry_.y())).arg(entry_.x());
+    inspection.title = QStringLiteral("%1 · %2").arg(playerPaletteNames().value(entry_.y())).arg(entry_.x());
     sdk::Field value;
     value.key = QStringLiteral("value");
     value.label = tr("Colour");
     value.value = hex(currentGamutIndex());
     value.monospace = true;
     inspection.fields = {value};
-    inspection.note = tr("The game loads one row into sprite palette 0 for the player: Hero, "
-                         "Brother, or the fire item colours.");
+    inspection.note = tr("The game loads one of these rows into sprite palette 0 for the player: "
+                         "the first or second player's colours, or the fire colours.");
     inspection.engineTag = QStringLiteral("nes.palette-table.v1");
     return inspection;
 }

@@ -14,6 +14,7 @@
 #include "nes/palette.hpp"
 #include "nes/record_table_model.hpp"
 #include "nes/sound_effect_model.hpp"
+#include "sdk/game_names.hpp"
 #include "sdk/i18n.hpp"
 #include "sdk/plugin.hpp"
 #include "sdk/snapshot_command.hpp"
@@ -164,26 +165,30 @@ QVector<nes::SoundEffect> soundEffects(int driver) {
         "Pulse 1 alternator (repeats)",
         "Pulse 1 alternator (repeats)",
         "Noise sweep, fast"};
-    // World 2's driver has fifteen requests with its own order.
-    static const int kWorld2[15] = {0, 1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 14, 15, 16, 17};
+    // World 2's driver has fifteen requests in its own order (the game's
+    // world2_sound_requests catalog); without it they show by number.
+    const QJsonArray world2 = sdk::gameCatalog("world2_sound_requests").toArray();
     struct Known {
         int driver;
         int request;
         const char* name;
     };
-    static const Known kKnown[] = {{0, 0x06, "Pause"},          {0, 0x11, "Bull Robot"},  {0, 0x12, "Jump"},
-                                   {0, 0x13, "Warp Door"},  {1, 0x09, "Part complete"}, {1, 0x0A, "Inventory attack"}};
+    static const Known kKnown[] = {{0, 0x06, "Pause"}, {0, 0x12, "Jump"}, {1, 0x09, "Part complete"},
+                                   {1, 0x0A, "Inventory attack"}};
     QVector<nes::SoundEffect> result;
     const int count = driver == 1 ? 15 : 26;
     for (int request = 1; request < count; ++request) {
-        const int role = driver == 1 ? kWorld2[request] : request;
-        QString name = QString::fromLatin1(kRoles[role]);
+        const int role = driver == 1 ? (request < world2.size() ? world2.at(request).toInt() : -1) : request;
+        QString name = role > 0 && role < 26 ? QString::fromLatin1(kRoles[role]) : rlTr("doraemon", "Effect");
         if (driver == 3 && request == 22) name = rlTr("doraemon", "Pulse 1 and rising noise (repeats)");
         if (driver == 3 && request == 23) name = rlTr("doraemon", "Pulse 1 and falling noise (repeats)");
         if (driver == 3 && request == 24) name = rlTr("doraemon", "Pulse pair and noise tail");
         for (const Known& known : kKnown) {
             if (known.driver == driver && known.request == request) name = QStringLiteral("%1 · %2").arg(QString::fromLatin1(known.name), name);
         }
+        // The game's own names for its sounds (sound_effects, "driver:request").
+        const QString named = sdk::gameName("sound_effects", QStringLiteral("%1:%2").arg(driver).arg(nes::hex(request)), QString());
+        if (!named.isEmpty()) name = QStringLiteral("%1 · %2").arg(named, name);
         result << nes::SoundEffect{QStringLiteral("doraemon:%1:%2").arg(driver).arg(request),
                                    QStringLiteral("%1 %2").arg(nes::hex(request), name),
                                    rlTr("doraemon", "%1 · request %2").arg(QString::fromLatin1(kSoundDrivers[driver]), nes::hex(request)),
@@ -381,7 +386,8 @@ QVector<sdk::DocumentGroup> DoraemonSession::documents(const QString& kind) cons
     } else if (kind == QLatin1String("animations")) {
         // Opening one adds the catalogs from the project's own source.
         const bool missing = !state_.bundle.contains(QStringLiteral("world2-enemy-metasprites"));
-        for (int i = 0; i < doraemonAnimations().size(); ++i) {
+        const int animations = doraemonAnimations().size();
+        for (int i = 0; i < animations; ++i) {
             const DoraemonAnimation a = resolvedAnimation(this, i);
             const QString id = metaspriteId(a.world);
             const bool dirty = !missing && state_.bundle.resource(id) != saved_.bundle.resource(id);

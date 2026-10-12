@@ -12,7 +12,7 @@ class SolomonSession;
 // One Solomon's Key room on the map editor: 16x12 cells of 16x16 pixels.
 // Blocks paints the brown and white block planes; Items moves, adds and
 // removes the item stream's items, the door, key and mirrors; Enemies the
-// enemy stream and Wizard's start.
+// enemy stream and the player's start.
 class SolomonRoomModel final : public sdk::TileMapModel {
     Q_OBJECT
 

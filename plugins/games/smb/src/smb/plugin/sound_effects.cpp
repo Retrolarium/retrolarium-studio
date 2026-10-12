@@ -112,7 +112,7 @@ QVector<nes::SoundEffect> soundEffects() {
         {"square2", 0x04, "Vine", "Reveal / vine notes"}, {"square1", 0x10, "Pipe / damage", nullptr},
         {"noise", 0x01, "Brick breaks", "Brick noise"}, {"square1", 0x40, "Flagpole", nullptr},
         {"square2", 0x10, "Timer count", nullptr},    {"square2", 0x08, "Fireworks", nullptr},
-        {"noise", 0x02, "Boss's fire", nullptr},    {"square2", 0x80, "Boss falls", nullptr}};
+        {"noise", 0x02, "Boss fire", nullptr},        {"square2", 0x80, "Boss falls", nullptr}};
     QVector<nes::SoundEffect> result;
     for (const Effect& e : kEffects) {
         const QString queue = QString::fromLatin1(e.queue);

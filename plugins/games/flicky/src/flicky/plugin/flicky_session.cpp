@@ -12,6 +12,7 @@
 #include "flicky/plugin/screen_model.hpp"
 #include "flicky/plugin/sound_models.hpp"
 #include "flicky/plugin/sprite_models.hpp"
+#include "sdk/game_names.hpp"
 #include "sdk/i18n.hpp"
 #include "sdk/snapshot_command.hpp"
 #include "sdk/plugin.hpp"
@@ -133,6 +134,14 @@ std::unique_ptr<FlickySession> FlickySession::open(const sdk::ProjectFile& proje
         session->renderer_ = std::make_unique<FlickyLevelSceneRenderer>(
             session->sourceRoot_, session->graphics_.doc, session->semantics_.doc,
             session->sequences_.doc);
+        QVector<FlickyLevelSceneRenderer::CastMember> cast;
+        for (const QJsonValue& value : sdk::gameCatalog("title_cast").toArray()) {
+            const QJsonObject member = value.toObject();
+            cast.append({member.value(QStringLiteral("animation")).toString(),
+                         member.value(QStringLiteral("label")).toString(),
+                         member.value(QStringLiteral("text")).toString()});
+        }
+        session->renderer_->setTitleCast(cast);
         session->loadBuildRecord();
     } catch (const std::exception& e) {
         if (error) {

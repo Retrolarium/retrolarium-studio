@@ -1,6 +1,8 @@
 #include "smb/data/catalog.hpp"
 
-#include <algorithm>
+#include "sdk/game_names.hpp"
+
+#include <QMap>
 
 namespace rl::smb {
 
@@ -8,130 +10,103 @@ namespace {
 QString hex(int value) {
     return QStringLiteral("%1").arg(value, 2, 16, QLatin1Char('0')).toUpper();
 }
+
+// The placeable area objects: the row a record needs (8 stands for rows
+// 0-11) and the object control, in the order the add list shows them.
+struct ObjectSlot {
+    int row;
+    int control;
+};
+const ObjectSlot kObjects[] = {
+    {8, 0x00},
+    {8, 0x01},
+    {8, 0x02},
+    {8, 0x03},
+    {8, 0x04},
+    {8, 0x05},
+    {8, 0x06},
+    {8, 0x07},
+    {8, 0x08},
+    {8, 0x09},
+    {8, 0x0a},
+    {8, 0x0b},
+    {8, 0x10},
+    {8, 0x20},
+    {8, 0x30},
+    {8, 0x40},
+    {8, 0x50},
+    {8, 0x60},
+    {8, 0x70},
+    {12, 0x00},
+    {12, 0x10},
+    {12, 0x20},
+    {12, 0x30},
+    {12, 0x40},
+    {12, 0x50},
+    {12, 0x60},
+    {12, 0x70},
+    {13, 0x40},
+    {13, 0x41},
+    {13, 0x42},
+    {13, 0x43},
+    {13, 0x44},
+    {13, 0x45},
+    {13, 0x46},
+    {13, 0x47},
+    {13, 0x48},
+    {13, 0x49},
+    {13, 0x4a},
+    {13, 0x4b},
+};
+
 }  // namespace
 
-const QVector<SmbObjectKind>& objectCatalog() {
-    static const QVector<SmbObjectKind> kEntries{
-        {QStringLiteral("Question block (power-up)"), 8, 0x00},
-        {QStringLiteral("Question block (coin)"), 8, 0x01},
-        {QStringLiteral("Hidden block (coin)"), 8, 0x02},
-        {QStringLiteral("Hidden block (1-up)"), 8, 0x03},
-        {QStringLiteral("Brick (power-up)"), 8, 0x04},
-        {QStringLiteral("Brick (vine)"), 8, 0x05},
-        {QStringLiteral("Brick (star)"), 8, 0x06},
-        {QStringLiteral("Brick (coins)"), 8, 0x07},
-        {QStringLiteral("Brick (1-up)"), 8, 0x08},
-        {QStringLiteral("Sideways pipe"), 8, 0x09},
-        {QStringLiteral("Used block"), 8, 0x0a},
-        {QStringLiteral("Springboard"), 8, 0x0b},
-        {QStringLiteral("Tree or mushroom ledge"), 8, 0x10},
-        {QStringLiteral("Row of bricks"), 8, 0x20},
-        {QStringLiteral("Row of blocks"), 8, 0x30},
-        {QStringLiteral("Row of coins"), 8, 0x40},
-        {QStringLiteral("Column of bricks"), 8, 0x50},
-        {QStringLiteral("Column of blocks"), 8, 0x60},
-        {QStringLiteral("Pipe"), 8, 0x70},
-        {QStringLiteral("Hole"), 12, 0x00},
-        {QStringLiteral("Pulley rope"), 12, 0x10},
-        {QStringLiteral("Bridge row 7"), 12, 0x20},
-        {QStringLiteral("Bridge row 8"), 12, 0x30},
-        {QStringLiteral("Bridge row 10"), 12, 0x40},
-        {QStringLiteral("Water or lava hole"), 12, 0x50},
-        {QStringLiteral("Question row 3"), 12, 0x60},
-        {QStringLiteral("Question row 7"), 12, 0x70},
-        {QStringLiteral("Reverse L pipe"), 13, 0x40},
-        {QStringLiteral("Flagpole"), 13, 0x41},
-        {QStringLiteral("Boss axe"), 13, 0x42},
-        {QStringLiteral("Axe rope"), 13, 0x43},
-        {QStringLiteral("Boss bridge"), 13, 0x44},
-        {QStringLiteral("Warp scroll stop"), 13, 0x45},
-        {QStringLiteral("Scroll stop"), 13, 0x46},
-        {QStringLiteral("Alternate scroll stop"), 13, 0x47},
-        {QStringLiteral("Flying-Fish generator"), 13, 0x48},
-        {QStringLiteral("Bullet generator"), 13, 0x49},
-        {QStringLiteral("Stop generator"), 13, 0x4a},
-        {QStringLiteral("Area loop"), 13, 0x4b},
-    };
-    return kEntries;
+// The game's names come from its repository (sdk::GameNames): area_objects by
+// "row:control", enemies by id; without them an entry shows its numbers.
+QString objectKindName(int row, int control) {
+    const QString key = QStringLiteral("%1:%2").arg(row).arg(hex(control));
+    return sdk::gameName("area_objects", key, QStringLiteral("Object %1").arg(key));
 }
 
-// The enemies a level's stream can place. $09 is left out: it has no initializer
-// (its sprite is an unused green Flier), so a placed one never appears.
-const QVector<SmbEnemyKind>& enemyCatalog() {
-    static const QVector<SmbEnemyKind> kEntries{
-        {0x00, QStringLiteral("Green Turtle")},
-        {0x01, QStringLiteral("Red Turtle")},
-        {0x02, QStringLiteral("Beetle")},
-        {0x05, QStringLiteral("Hammer Thrower")},
-        {0x06, QStringLiteral("Walker")},
-        {0x07, QStringLiteral("Squid")},
-        {0x08, QStringLiteral("Bullet")},
-        {0x0a, QStringLiteral("Green Flying-Fish")},
-        {0x0b, QStringLiteral("Red Flying-Fish")},
-        {0x0c, QStringLiteral("Bubble")},
-        {0x0d, QStringLiteral("Biting Plant")},
-        {0x0e, QStringLiteral("Jumping Flier")},
-        {0x0f, QStringLiteral("Red Flier")},
-        {0x10, QStringLiteral("Flying Flier")},
-        {0x11, QStringLiteral("Rider")},
-        {0x12, QStringLiteral("Spiker")},
-        {0x14, QStringLiteral("Flying Flying-Fish generator")},
-        {0x15, QStringLiteral("Boss fire generator")},
-        {0x17, QStringLiteral("Bullet and Flying-Fish generator")},
-        // Speed and direction come from tbl_firebar_spin_* in the source, by id - $1b.
-        {0x1b, QStringLiteral("Slow clockwise firebar")},
-        {0x1c, QStringLiteral("Fast clockwise firebar")},
-        {0x1d, QStringLiteral("Slow counterclockwise firebar")},
-        {0x1e, QStringLiteral("Fast counterclockwise firebar")},
-        {0x1f, QStringLiteral("Long firebar")},
-        {0x24, QStringLiteral("Balance lift")},
-        {0x25, QStringLiteral("Vertical lift")},
-        {0x26, QStringLiteral("Large lift up")},
-        {0x27, QStringLiteral("Large lift down")},
-        {0x28, QStringLiteral("Horizontal lift")},
-        {0x29, QStringLiteral("Falling lift")},
-        {0x2a, QStringLiteral("Right-moving lift")},
-        {0x2b, QStringLiteral("Small lift up")},
-        {0x2c, QStringLiteral("Small lift down")},
-        {0x2d, QStringLiteral("Boss")},
-        {0x35, QStringLiteral("Retainer")},
-        // Groups: in the primary hard mode the Walkers are Beetles.
-        {0x37, QStringLiteral("Two Walkers")},
-        {0x38, QStringLiteral("Three Walkers")},
-        {0x39, QStringLiteral("Two Walkers (upper row)")},
-        {0x3a, QStringLiteral("Three Walkers (upper row)")},
-        {0x3b, QStringLiteral("Two green Turtles")},
-        {0x3c, QStringLiteral("Three green Turtles")},
-        {0x3d, QStringLiteral("Two green Turtles (upper row)")},
-        {0x3e, QStringLiteral("Three green Turtles (upper row)")},
-    };
-    return kEntries;
+QVector<SmbObjectKind> objectCatalog() {
+    QVector<SmbObjectKind> result;
+    for (const ObjectSlot& slot : kObjects) {
+        result.append({objectKindName(slot.row, slot.control), slot.row, slot.control});
+    }
+    return result;
+}
+
+// The enemies a level's stream can place are the ones the game names (its
+// names.json leaves out ids that place nothing, such as one without an
+// initializer).
+QVector<SmbEnemyKind> enemyCatalog() {
+    QVector<SmbEnemyKind> result;
+    const QMap<int, QString> names = sdk::gameNames("enemies");
+    for (auto it = names.begin(); it != names.end(); ++it) {
+        result.append({it.key(), it.value()});
+    }
+    return result;
 }
 
 QString areaObjectName(int row, int control) {
-    const QVector<SmbObjectKind>& catalog = objectCatalog();
     if (row <= 11) {
         const int family = (control >> 4) & 7;
         if (family == 0 && (control & 15) < 12) {
-            return catalog.at(control & 15).name;
+            return objectKindName(8, control & 15);
         }
-        const int index = 12 + family - 1;
-        if (index >= 12 && index < 19) {
-            return catalog.at(index).name;
+        if (family >= 1) {
+            return objectKindName(8, family << 4);
         }
     } else if (row == 12) {
-        return catalog.at(19 + ((control >> 4) & 7)).name;
+        return objectKindName(12, control & 0x70);
     } else if (row == 13 && (control & 0x40) && (control & 0x3f) < 12) {
-        return catalog.at(27 + (control & 0x3f)).name;
+        return objectKindName(13, 0x40 | (control & 0x3f));
     }
     return QStringLiteral("Stream command $%1").arg(hex(control));
 }
 
 QString enemyName(int id) {
-    const QVector<SmbEnemyKind>& catalog = enemyCatalog();
-    const auto found =
-        std::find_if(catalog.cbegin(), catalog.cend(), [id](const SmbEnemyKind& kind) { return kind.id == id; });
-    return found == catalog.cend() ? QStringLiteral("Enemy $%1").arg(hex(id)) : found->name;
+    return sdk::gameName("enemies", id, QStringLiteral("Enemy $%1").arg(hex(id)));
 }
 
 }  // namespace rl::smb

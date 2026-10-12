@@ -58,7 +58,28 @@ foreach ($test in $tests) {
     }
 }
 
-if ($failed.Count -gt 0) {
-    throw "$($failed.Count) of $($tests.Count) tests failed: $($failed -join ', ')"
+# The studio carries no names or tables taken from games: the core's name
+# guard checks the repository (the core checkout beside the studio, as the
+# build uses it; skipped without Python or that checkout).
+$coreModules = Join-Path (Split-Path $projectRoot -Parent) "retrolarium-core\python"
+$python = Get-Command python -ErrorAction SilentlyContinue
+if ($python -and (Test-Path -LiteralPath (Join-Path $coreModules "retrolarium_core\name_guard.py"))) {
+    $savedPath = $env:PYTHONPATH
+    $env:PYTHONPATH = $coreModules
+    try {
+        foreach ($check in @("check", "tables")) {
+            Write-Host "== name guard: $check"
+            & $python.Source -m retrolarium_core.name_guard $check $projectRoot
+            if ($LASTEXITCODE -ne 0) { $failed += "name guard ($check)" }
+        }
+    } finally {
+        $env:PYTHONPATH = $savedPath
+    }
+} else {
+    Write-Host "== name guard: skipped (no Python or no retrolarium-core beside the studio)"
 }
-Write-Host "$($tests.Count) tests passed"
+
+if ($failed.Count -gt 0) {
+    throw "$($failed.Count) checks failed: $($failed -join ', ')"
+}
+Write-Host "$($tests.Count) tests and the name guard passed"

@@ -244,7 +244,7 @@ QVector<sdk::DocumentGroup> SmbSession::documents(const QString& kind) const {
         if (!art_.playerPalette.isEmpty()) {
             sdk::DocumentGroup player;
             player.title = QStringLiteral("Player");
-            player.documents << entry(QStringLiteral("player"), tr("Hero, Brother, fire"),
+            player.documents << entry(QStringLiteral("player"), tr("Both players and fire"),
                                       tr("%n colours", nullptr, document_.tableValues(art_.playerPalette).size()));
             groups << player;
         }
@@ -300,9 +300,9 @@ QVector<sdk::DocumentGroup> SmbSession::documents(const QString& kind) const {
         const QJsonArray now = document_.resource(art_.playerFrames).value(QStringLiteral("frames")).toArray();
         const QJsonArray saved = saved_.resource(art_.playerFrames).value(QStringLiteral("frames")).toArray();
         sdk::DocumentGroup big;
-        big.title = tr("Big Hero");
+        big.title = tr("Big player");
         sdk::DocumentGroup small;
-        small.title = tr("Small Hero");
+        small.title = tr("Small player");
         sdk::DocumentGroup other;
         other.title = tr("Other");
         for (const QString& animation : SmbPlayerFramesModel::animations(names)) {
@@ -737,14 +737,14 @@ QPair<int, int> SmbSession::levelOf(const QString& area, const QString& levels, 
     return {course.first, level};
 }
 
-QPoint SmbSession::heroCell(const QString& area) const {
-    const auto found = hero_.constFind(area);
-    return found != hero_.constEnd() ? *found : entranceCell(document_.area(levels_, area).header,
+QPoint SmbSession::playerCell(const QString& area) const {
+    const auto found = playerCells_.constFind(area);
+    return found != playerCells_.constEnd() ? *found : entranceCell(document_.area(levels_, area).header,
                                                             smbLevelTable(document_, QStringLiteral("player_starting_y_positions")));
 }
 
-void SmbSession::setHeroCell(const QString& area, QPoint cell) {
-    hero_.insert(area, cell);
+void SmbSession::setPlayerCell(const QString& area, QPoint cell) {
+    playerCells_.insert(area, cell);
     if (start_.area == area) {
         start_.cell = cell;
         emit startChanged();
@@ -755,7 +755,7 @@ void SmbSession::setHeroCell(const QString& area, QPoint cell) {
 void SmbSession::selectStart(const QString& area) {
     const QPair<int, int> course = courseOf(area);
     start_.area = area;
-    start_.cell = heroCell(area);
+    start_.cell = playerCell(area);
     // An area no route plays still starts: the kit loads it directly.
     start_.world = course.first > 0 ? course.first : 1;
     start_.course = course.first > 0 ? course.second : 1;
@@ -808,7 +808,7 @@ QString SmbSession::paletteKey(const QString& area) const {
     // As the game loads them: GetAreaPalette by type, then GetBGPlayerColor
     // (background colour control 5 day snow, 6 night snow, 7 the castle
     // palette), GetAlternatePalette1 (mushroom style) and the axe object
-    // (Boss's sprite palette).
+    // (the boss's sprite palette).
     const SmbArea a = document_.area(levels_, area);
     const QStringList packets = document_.packetNames(art_.palettes);
     QString key = areaTypeOf(area);
@@ -952,7 +952,7 @@ void SmbSession::launchDemo(bool record) {
     plan.readyVariable = QStringLiteral("SMB_DEMO_READY");
     if (record) {
         plan.recordTo = QStringLiteral("build/demo-recording.txt");
-        plan.recordingMessage = tr("Recording: play 1-1 with the controller; it ends when Hero dies, on Start or "
+        plan.recordingMessage = tr("Recording: play 1-1 with the controller; it ends when the player dies, on Start or "
                                    "on Stop recording.");
         plan.recorded = [this](const QString& path) { applyRecording(path); };
     }
@@ -1014,7 +1014,7 @@ void SmbSession::launch(bool fromStart) {
     plan.prepare = [this, fromStart](sdk::ProcessSpec& game) {
         useColours(game);
         // The kit's point script reports nothing; the game is up once it
-        // plays the area with Hero placed on the start page (operating
+        // plays the area with the player placed on the start page (operating
         // mode 1, the running game's task, player engine running), so the
         // boot and the steering can run hidden and fast. The running task is
         // 3, or what the kit names for the later Disk System engine.

@@ -202,7 +202,7 @@ QString SolomonAnimationModel::familyLabel(const AnimationFamily& family) {
     for (int i = 0; i < family.members.size() && i < 3; ++i) names << hex(family.members.at(i).action);
     QString list = names.join(QStringLiteral(", "));
     if (family.members.size() > 3) list += QStringLiteral(" +%1").arg(family.members.size() - 3);
-    // Only Wizard's standing poses have names; the rest are numbered.
+    // Only the player's standing poses have names; the rest are numbered.
     if (family.group == 0 && (first.action == 0x16 || first.action == 0x17)) {
         return QStringLiteral("%1 · %2").arg(actionLabel(family.group, first.action).section(QLatin1Char(','), 0, 0), list);
     }
@@ -210,7 +210,7 @@ QString SolomonAnimationModel::familyLabel(const AnimationFamily& family) {
 }
 
 QString SolomonAnimationModel::groupLabel(int group) {
-    if (group == 0) return tr("Wizard");
+    if (group == 0) return playerName();
     if (group < 6) return tr("Objects $%1").arg(group * 4, 2, 16, QLatin1Char('0')).toUpper();
     // An enemy family, without the direction and speed of its variants.
     return enemyName(group * 4).section(QLatin1String(" ("), 0, 0);
@@ -257,7 +257,7 @@ SolomonAnimationModel::SolomonAnimationModel(SolomonSession* session, int group,
         emit contentChanged();
     });
     // Enemies show in the tileset of the rooms they mostly live in; start
-    // with Wizard's and the first tileset.
+    // with the player's and the first tileset.
     bank_ = 0;
     const QJsonObject first = frameRecord();
     tile_ = first.value(QStringLiteral("left_tile")).toInt();

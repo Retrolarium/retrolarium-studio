@@ -12,7 +12,7 @@ class SmbSession;
 
 // One SMB area on the map editor: the rendered level (13 rows of 16px
 // metatiles, pages of 16 columns), its area objects and enemies as map
-// objects, and Hero, whose cell is where "Play from selected" starts.
+// objects, and the player, whose cell is where "Play from selected" starts.
 //
 // Objects and enemies move, are added from the library and removed through
 // the stream helpers, so every other record keeps its page and column. An
@@ -65,7 +65,7 @@ private:
     std::optional<SmbArea> moved(const SmbArea& area, const QString& id, int column, int row, int* index) const;
     sdk::Library library() const;
     QImage libraryIcon(const QString& id) const;
-    // The selected record as it stands; empty for Hero or no selection.
+    // The selected record as it stands; empty for the player or no selection.
     QVariantList selectedRecord() const;
     // Undo, redo and other editors renumber records: drop a selection whose
     // index now names a different record.
@@ -84,7 +84,7 @@ private:
     std::optional<SmbArea> dragArea_;
     QVector<SmbArea> dragAreas_;  // all areas when pooled, for the budget
     QString dragging_;
-    QPoint dragOffset_;   // Hero's feet relative to the dragged top-left cell
+    QPoint dragOffset_;   // the player's feet relative to the dragged top-left cell
     QPoint dragCell_;     // the last cell the drag was asked for
     quint64 dragSerial_ = 0;
 

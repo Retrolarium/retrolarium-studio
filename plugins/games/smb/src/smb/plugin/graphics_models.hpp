@@ -6,6 +6,10 @@ namespace rl::smb {
 
 class SmbSession;
 
+// The player palette rows by the game's names (player_palettes in its
+// repository's names.json), else "Player colours 1-3".
+QStringList playerPaletteNames();
+
 // One half of the pattern table: sprite tiles (0-255) or background tiles
 // (256-511), 2bpp, drawn with a palette the user picks for the preview.
 class SmbTileModel final : public sdk::TileModel {
@@ -81,7 +85,7 @@ private:
     QPoint entry_;
 };
 
-// The player palette table: Hero, Brother and fire Hero, four colours each.
+// The player palette table: the first and second player and the fire colours, four each.
 class SmbPlayerPaletteModel final : public sdk::PaletteModel {
     Q_OBJECT
 

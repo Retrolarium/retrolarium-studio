@@ -6,7 +6,7 @@ namespace rl::solomon {
 
 class SolomonSession;
 
-// The Spawn Mirror enemy sets every room's mirrors point at: the enemies
+// The mirror enemy sets every room's mirrors point at: the enemies
 // a mirror drops in turn and where it loops back to. They share 42 bytes.
 class SolomonMirrorSetsModel final : public sdk::TableModel {
     Q_OBJECT

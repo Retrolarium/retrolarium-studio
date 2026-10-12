@@ -103,6 +103,8 @@ studio_enable_warnings(studio_ui)
 add_library(studio_sdk STATIC
     src/sdk/editor_model.cpp
     src/sdk/editor_model.hpp
+    src/sdk/game_names.cpp
+    src/sdk/game_names.hpp
     src/sdk/i18n.hpp
     src/sdk/kit_session.cpp
     src/sdk/kit_session.hpp

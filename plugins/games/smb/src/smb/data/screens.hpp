@@ -155,7 +155,7 @@ class SmbResourceDocument;
 struct SmbTextSlot {
     QString resource;       // resource id
     QString key;            // field key
-    QString label;          // "Brother name"
+    QString label;          // "Second player name"
     QString screen;         // screen key; empty for a fixed text field
     QString screenLabel;    // "Status bar"
     int width = 0;

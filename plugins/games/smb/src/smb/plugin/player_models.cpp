@@ -1,6 +1,7 @@
 #include "smb/plugin/player_models.hpp"
 
 #include "sdk/i18n.hpp"
+#include "smb/plugin/graphics_models.hpp"
 #include "smb/plugin/smb_session.hpp"
 
 #include <QJsonArray>
@@ -165,7 +166,7 @@ QVector<sdk::ViewOption> SmbPlayerFramesModel::viewOptions() const {
     sdk::ViewOption palette;
     palette.key = QStringLiteral("palette");
     palette.label = tr("Colours");
-    const QStringList names{tr("Hero"), tr("Brother"), tr("Fire")};
+    const QStringList names = playerPaletteNames();
     palette.value = names.value(palette_);
     const int rows = session_->document().tableValues(session_->playerPalette()).size() / 4;
     palette.choices = names.mid(0, std::max(1, std::min(rows, int(names.size()))));
@@ -174,7 +175,7 @@ QVector<sdk::ViewOption> SmbPlayerFramesModel::viewOptions() const {
 
 void SmbPlayerFramesModel::setViewOption(const QString& key, const QString& value) {
     if (key == QLatin1String("palette")) {
-        palette_ = std::max(0, QStringList{tr("Hero"), tr("Brother"), tr("Fire")}.indexOf(value));
+        palette_ = std::max(0, playerPaletteNames().indexOf(value));
         emit contentChanged();
         emit selectionChanged();
     }

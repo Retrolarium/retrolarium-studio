@@ -190,7 +190,7 @@ QSize SmbLevelModel::gridSize() const {
 }
 
 QVector<sdk::Tool> SmbLevelModel::tools() const {
-    return {{QStringLiteral("select"), tr("Select and move (Hero: the start point)"),
+    return {{QStringLiteral("select"), tr("Select and move (the player: the start point)"),
              QStringLiteral("select")},
             {QStringLiteral("place"), tr("Add the library item"), QStringLiteral("place")},
             {QStringLiteral("remove"), tr("Delete objects and enemies"), QStringLiteral("erase")}};
@@ -199,10 +199,10 @@ QVector<sdk::Tool> SmbLevelModel::tools() const {
 QImage SmbLevelModel::render() const {
     const QString type = session_->paletteKey(area_);
     QImage image = session_->painter().render(scene(), type, session_->night(area_));
-    const QImage hero = session_->painter().hero();
-    if (!hero.isNull()) {
+    const QImage player = session_->painter().player();
+    if (!player.isNull()) {
         QPainter painter(&image);
-        painter.drawImage(session_->painter().heroBounds(session_->heroCell(area_)).topLeft(), hero);
+        painter.drawImage(session_->painter().playerBounds(session_->playerCell(area_)).topLeft(), player);
     }
     return image;
 }
@@ -233,12 +233,12 @@ QVector<sdk::MapObject> SmbLevelModel::objects() const {
         o.movable = true;
         result << o;
     }
-    sdk::MapObject hero;
-    hero.id = QStringLiteral("hero");
-    hero.label = tr("Hero · start point");
-    hero.cells = cellsOf(session_->painter().heroBounds(session_->heroCell(area_)));
-    hero.movable = true;
-    result << hero;
+    sdk::MapObject player;
+    player.id = QStringLiteral("player");
+    player.label = tr("Player · start point");
+    player.cells = cellsOf(session_->painter().playerBounds(session_->playerCell(area_)));
+    player.movable = true;
+    result << player;
     return result;
 }
 
@@ -267,7 +267,7 @@ QVariantList SmbLevelModel::selectedRecord() const {
 }
 
 void SmbLevelModel::checkSelection() {
-    if (editing_ || !dragging_.isEmpty() || selected_.isEmpty() || selected_ == QLatin1String("hero")) {
+    if (editing_ || !dragging_.isEmpty() || selected_.isEmpty() || selected_ == QLatin1String("player")) {
         return;
     }
     if (selectedRecord() != selectedRecord_) {
@@ -414,9 +414,9 @@ void SmbLevelModel::beginDrag(const QString& id) {
     selectObject(id);
     dragging_ = id;
     dragCell_ = QPoint(-1, -1);
-    if (id == QLatin1String("hero")) {
-        const QPoint feet = session_->heroCell(area_);
-        dragOffset_ = feet - cellsOf(session_->painter().heroBounds(feet)).topLeft();
+    if (id == QLatin1String("player")) {
+        const QPoint feet = session_->playerCell(area_);
+        dragOffset_ = feet - cellsOf(session_->painter().playerBounds(feet)).topLeft();
         return;
     }
     const SmbResourceDocument& d = session_->document();
@@ -425,14 +425,14 @@ void SmbLevelModel::beginDrag(const QString& id) {
 }
 
 bool SmbLevelModel::dragObject(const QString& id, QPoint topLeftCell) {
-    if (id == QLatin1String("hero")) {
+    if (id == QLatin1String("player")) {
         // The start point is not level data: it moves without an undo step.
         const QPoint feet(std::clamp(topLeftCell.x() + dragOffset_.x(), 0, std::max(0, scene().width - 1)),
                           std::clamp(topLeftCell.y() + dragOffset_.y(), 1, 12));
-        if (feet == session_->heroCell(area_)) {
+        if (feet == session_->playerCell(area_)) {
             return false;
         }
-        session_->setHeroCell(area_, feet);
+        session_->setPlayerCell(area_, feet);
         return true;
     }
     if (!dragOriginal_ || id != dragging_ || topLeftCell == dragCell_) {
@@ -485,12 +485,12 @@ void SmbLevelModel::endDrag() {
 
 bool SmbLevelModel::placeObject(const QString& libraryItem, QPoint cell, QString* error) {
     if (libraryItem == QLatin1String("start")) {
-        // The test start marker: where Play from selected puts Hero. It is
+        // The test start marker: where Play from selected puts the player. It is
         // not level data and takes no bytes.
-        session_->setHeroCell(area_, QPoint(std::clamp(cell.x(), 0, std::max(0, scene().width - 1)),
+        session_->setPlayerCell(area_, QPoint(std::clamp(cell.x(), 0, std::max(0, scene().width - 1)),
                                              std::clamp(cell.y(), 1, 12)));
         session_->selectStart(area_);
-        selectObject(QStringLiteral("hero"));
+        selectObject(QStringLiteral("player"));
         return true;
     }
     SmbArea next = area();
@@ -501,7 +501,7 @@ bool SmbLevelModel::placeObject(const QString& libraryItem, QPoint cell, QString
     QString id;
     QString name;
     if (objectKind >= 0 && objectKind < objectCatalog().size()) {
-        const SmbObjectKind& kind = objectCatalog().at(objectKind);
+        const SmbObjectKind kind = objectCatalog().at(objectKind);
         const SmbAreaObject record = newObject(kind, column, std::clamp(cell.y(), 0, 11));
         id = QStringLiteral("object:%1").arg(insertObject(next.objects, page, record));
         name = kind.name;
@@ -536,8 +536,8 @@ bool SmbLevelModel::removeObject(const QString& id, QString* error) {
         name = enemyName(next.enemies.at(e).objectOrPage);
         removeEnemy(next.enemies, e);
     } else {
-        if (error && id == QLatin1String("hero")) {
-            *error = tr("Hero is the start point; move him instead.");
+        if (error && id == QLatin1String("player")) {
+            *error = tr("The player is the start point; move it instead.");
         }
         return false;
     }
@@ -623,8 +623,8 @@ sdk::Library SmbLevelModel::library() const {
         sdk::LibraryItem start;
         start.id = QStringLiteral("start");
         start.label = tr("Test start");
-        start.hint = tr("drop where Play from selected (F5) puts Hero; not level data");
-        start.icon = session_->painter().hero();
+        start.hint = tr("drop where Play from selected (F5) puts the player; not level data");
+        start.icon = session_->painter().player();
         library_ << start;
         const QVector<SmbObjectKind>& objects = objectCatalog();
         for (int i = 0; i < objects.size(); ++i) {
@@ -750,9 +750,10 @@ sdk::Inspection SmbLevelModel::inspect() const {
         if (cls >= 0) {
             QStringList kinds;
             QVector<QImage> icons;
-            for (int i = 0; i < objectCatalog().size(); ++i) {
-                if (objectCatalog().at(i).row != cls) continue;
-                kinds << objectCatalog().at(i).name;
+            const QVector<SmbObjectKind> catalog = objectCatalog();
+            for (int i = 0; i < catalog.size(); ++i) {
+                if (catalog.at(i).row != cls) continue;
+                kinds << catalog.at(i).name;
                 icons << libraryIcon(QStringLiteral("add-object:%1").arg(i));
             }
             sdk::Field kind = choice(QStringLiteral("kind"), tr("Kind"), inspection.title, kinds);
@@ -808,17 +809,17 @@ sdk::Inspection SmbLevelModel::inspect() const {
                              {tr("Object"), hex(record.objectOrPage)}};
         return inspection;
     }
-    if (selected_ == QLatin1String("hero")) {
+    if (selected_ == QLatin1String("player")) {
         const SmbStart start = session_->start();
-        const QPoint cell = session_->heroCell(area_);
+        const QPoint cell = session_->playerCell(area_);
         inspection.kicker = tr("Start point");
-        inspection.title = tr("Hero");
+        inspection.title = tr("Player");
         inspection.fields = {readOnly(QStringLiteral("column"), tr("Column"), cell.x()),
                              readOnly(QStringLiteral("row"), tr("Row"), cell.y()),
                              readOnly(QStringLiteral("page"), tr("Page"), cell.x() / 16),
                              readOnly(QStringLiteral("course"), tr("Plays as"),
                                       tr("World %1-%2").arg(start.world).arg(start.level))};
-        inspection.note = tr("Drag Hero to where Play from selected (F5) puts him. The start point "
+        inspection.note = tr("Drag the player to where Play from selected (F5) puts it. The start point "
                              "is a playtest setting, not level data.");
         return inspection;
     }

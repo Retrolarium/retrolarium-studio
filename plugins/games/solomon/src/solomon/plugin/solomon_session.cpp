@@ -142,7 +142,7 @@ sdk::Profile SolomonSession::profile() const {
 }
 
 QVector<sdk::Kind> SolomonSession::kinds() const {
-    // The Spawn Mirrors' enemy sets and drop schedules list under Levels.
+    // The mirrors' enemy sets and drop schedules list under Levels.
     return {kind("rooms", "Levels", "levels", sdk::EditorType::TileMap),
             kind("graphics", "Tiles", "tiles", sdk::EditorType::Tile),
             kind("palettes", "Palettes", "palettes", sdk::EditorType::Palette),
@@ -178,7 +178,7 @@ QVector<sdk::DocumentGroup> SolomonSession::listDocuments(const QString& kind) c
                                              now.at(r) != saved.at(r));
         }
         sdk::DocumentGroup group;
-        group.title = tr("Spawn Mirrors");
+        group.title = tr("Mirrors");
         group.documents << entry(QStringLiteral("sets"), tr("Enemy sets"),
                                  QStringLiteral("%1 / %2 B").arg(state_.rooms.mirrorSetBytes()).arg(state_.rooms.mirrorSetCapacity()),
                                  state_.rooms.mirrorSets() != saved_.rooms.mirrorSets())

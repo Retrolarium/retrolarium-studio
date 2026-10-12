@@ -27,11 +27,15 @@ struct PacmanAnimation {
     bool ghost = false;
     bool fruit = false;     // the fruit's colour comes from the round
     bool frightened = false;    // sprite palette 1 in the frightened colour
+    int fruitIndex = -1;    // the fruit's number in the game's fruit list
 };
 
 const QVector<PacmanAnimation>& pacmanAnimations();
-// "Cherry" for the fruit frames, a ghost's name for its palette.
+// A ghost's name for its palette and an animation's label: the game's names
+// (ghosts and fruits in its repository's names.json), else "Ghost 1",
+// "Fruit 1".
 QString ghostName(int palette);
+QString animationLabel(const PacmanAnimation& animation);
 
 // An actor animation on the composition canvas: step or play its frames,
 // select a quarter to set its pattern, palette bits, priority and flip, or

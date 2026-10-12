@@ -80,10 +80,21 @@ public:
         QRect bounds;
     };
     [[nodiscard]] QVector<TitleSprite> titleSprites() const;
+    // A title cast member as the game's source has it: the animation whose
+    // first frame it shows (in the order of the Title_Bird tables), and the
+    // labels of its name's plane address and text. The game's repository
+    // lists them (its names.json); without them the cast is not drawn.
+    struct CastMember {
+        QString animation;
+        QString label;
+        QString text;
+    };
+    void setTitleCast(const QVector<CastMember> &cast) { titleCast_ = cast; }
     // The 64 CRAM words the game loads for a one-based round.
     [[nodiscard]] std::array<int, 64> paletteForRound(int round) const;
 
 private:
+    QVector<CastMember> titleCast_;
     using Plane = std::array<int, 32 * 28>;
     [[nodiscard]] const QVector<int> &table(const QString &id) const;
     [[nodiscard]] megadrive::Tile tile(int index) const;

@@ -1,5 +1,6 @@
 #include "solomon/data/text.hpp"
 
+#include "sdk/game_names.hpp"
 #include "sdk/i18n.hpp"
 
 #include <QJsonArray>
@@ -170,12 +171,12 @@ QVector<TextString> SolomonText::strings() const {
         result << s;
     }
     const QJsonArray names = root_.value(QStringLiteral("special_room_names")).toArray();
-    static const char* const kNames[] = {"Room intro · princess room", "Room intro · Final room",
-                                         "Room intro · hidden room"};
     for (int n = 0; n < names.size() && n < 3; ++n) {
         TextString s;
         s.id = QStringLiteral("n:%1").arg(n);
-        s.label = QString::fromUtf8(kNames[n]);
+        // The three special rooms' names, as the game calls the rooms.
+        s.label = rlTr("solomon", "Room intro · %1")
+                      .arg(sdk::gameName("places", n, rlTr("solomon", "special room %1").arg(n + 1)));
         s.tiles = ints(names.at(n));
         // The name replaces the room line from its first cell.
         s.addresses = {intro.at(1).toObject().value(QStringLiteral("address")).toInt()};

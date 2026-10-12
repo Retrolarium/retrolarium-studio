@@ -2,6 +2,7 @@
 
 #include "doraemon/plugin/doraemon_session.hpp"
 #include "nes/editors.hpp"
+#include "sdk/game_names.hpp"
 #include "sdk/plugin.hpp"
 
 #include <QDir>
@@ -27,16 +28,9 @@ int widthOf(const QString& text) {
 }  // namespace
 
 QString DoraemonMusicModel::trackTitle(int driver, int track) {
-    // The source reconstruction's evidence-backed track catalog.
-    static const char* const kTitles[4][8] = {
-        {"City - Starting Area", "Underground - Main", "Underground - Deep Rooms", "City - Cross Area", "Underground Finale",
-         "Bull Robot Boss", "Player Defeat", "Chapter Clear"},
-        {"Cave - Part 1", "Cave - Part 2", "Cave - Part 3", "Stage Boss", "Boss Defeated", "Player Defeat", nullptr, nullptr},
-        {"Underwater - Upper Rooms", "Underwater - Middle Rooms", "Mid-Boss Formation", "Mid-Boss Alternate Mix",
-         "Underwater - Lower Rooms", "Underwater - Final Room", "Chapter Clear", "Player Defeat"},
-        {"Title Screen", "Ending - Opening", "Ending - Credits", "Game Over", nullptr, nullptr, nullptr, nullptr}};
-    if (driver < 0 || driver > 3 || track < 0 || track > 7 || !kTitles[driver][track]) return tr("Track %1").arg(track + 1);
-    return QString::fromLatin1(kTitles[driver][track]);
+    // The game's track titles (music_tracks, "driver:track" in its
+    // repository's names.json), else the number.
+    return sdk::gameName("music_tracks", QStringLiteral("%1:%2").arg(driver).arg(track), tr("Track %1").arg(track + 1));
 }
 
 DoraemonMusicModel::DoraemonMusicModel(DoraemonSession* session, int driver, int track)

@@ -14,7 +14,7 @@
 
 namespace rl::smb {
 
-// Where "Play from selected" starts: an area, Hero's cell in it (16px
+// Where "Play from selected" starts: an area, the player's cell in it (16px
 // column from the area start, row 1-12), and the world and course of the
 // route that plays it.
 struct SmbStart {
@@ -72,7 +72,7 @@ public:
     bool hasLevelTables() const;
     SmbLevelRendering levelRendering() const;
     // The palettes an area shows: its type's packet and the packets the game
-    // writes over it (snow and castle skies, mushroom platforms, Boss), as
+    // writes over it (snow and castle skies, mushroom platforms, the boss), as
     // a painter palette key: "ground+day_snow".
     QString paletteKey(const QString& area) const;
     const SmbLevelPainter& painter() const { return *painter_; }
@@ -101,9 +101,9 @@ public:
     // keep their changes in their own model and edit() once on release.
     quint64 revision() const { return revision_; }
 
-    // Hero's cell per area; an area without one starts at its entrance.
-    QPoint heroCell(const QString& area) const;
-    void setHeroCell(const QString& area, QPoint cell);
+    // The player's cell per area; an area without one starts at its entrance.
+    QPoint playerCell(const QString& area) const;
+    void setPlayerCell(const QString& area, QPoint cell);
     void selectStart(const QString& area);
     SmbStart start() const { return start_; }
     // The first world route step that plays an area, or {0, 0}.
@@ -158,7 +158,7 @@ private:
     QString music_;
     SmbArt art_;
     std::unique_ptr<SmbLevelPainter> painter_;
-    QHash<QString, QPoint> hero_;
+    QHash<QString, QPoint> playerCells_;
     SmbStart start_;
     QString lighting_ = QStringLiteral("Auto");
     QString demoPath_;

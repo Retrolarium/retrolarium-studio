@@ -2,9 +2,11 @@
 
 #include "doraemon/plugin/doraemon_session.hpp"
 #include "nes/editors.hpp"
+#include "sdk/game_names.hpp"
 #include "sdk/i18n.hpp"
 
 #include <QJsonArray>
+#include <QMap>
 #include <QJsonObject>
 #include <QPainter>
 
@@ -138,13 +140,13 @@ QString metaspriteId(World world) {
     return QStringLiteral("world%1-metasprites").arg(int(world));
 }
 
-const QVector<DoraemonAnimation>& doraemonAnimations() {
+QVector<DoraemonAnimation> doraemonAnimations() {
     // From the source reconstruction's runtime docs: World 1's player
-    // selects direction * 4 + frame and steps every five updates; enemy and
-    // item bases from the placement and descriptor tables; World 2's enemy
-    // states with their metasprites; World 3's 32 entity types with their
-    // bases and render-flag palettes.
-    static const QVector<DoraemonAnimation> kAnimations = [] {
+    // selects direction * 4 + frame and steps every five updates; enemies
+    // and items, and World 2's enemy states, come from the game's names and
+    // catalogs (its repository's names.json); World 3's 32 entity types take
+    // their bases and render-flag palettes from the game's tables.
+    const QVector<DoraemonAnimation> animations = [] {
         QVector<DoraemonAnimation> list;
         const World one = World::One;
         list << make(one, "Doraemon", rlTr("doraemon", "Walk down"), run(0x00, 4), 5)
@@ -152,43 +154,30 @@ const QVector<DoraemonAnimation>& doraemonAnimations() {
              << make(one, "Doraemon", rlTr("doraemon", "Walk left"), run(0x08, 4), 5)
              << make(one, "Doraemon", rlTr("doraemon", "Walk right"), run(0x0C, 4), 5)
              << make(one, "Doraemon", rlTr("doraemon", "Hurt"), run(0x10, 2), 4);
-        struct Enemy {
-            int base;
-            const char* name;
-        };
-        const Enemy enemies[] = {{0x3E, "W1Enemy3E"}, {0x4C, "W1Enemy4C"}, {0x54, "Nezumi"}, {0x56, "W1Enemy56"},
-                                 {0x58, "W1Enemy58"},    {0x5C, "W1Enemy5C"}, {0x60, "W1Enemy60"}, {0x64, "W1Enemy64"},
-                                 {0x6C, "W1Enemy6C"}, {0x70, "W1Enemy70"}};
-        for (int i = 0; i < 10; ++i) {
-            const int next = i + 1 < 10 ? enemies[i + 1].base : enemies[i].base + 4;
-            list << make(one, "Enemies", QString::fromLatin1(enemies[i].name),
-                         run(enemies[i].base, std::min(4, next - enemies[i].base)));
+        // World 1's enemies start at their metasprite bases (the game's
+        // world1_enemies names) and run up to the next base, four at most.
+        const QMap<int, QString> enemies = sdk::gameNames("world1_enemies");
+        for (auto it = enemies.begin(); it != enemies.end(); ++it) {
+            const auto following = std::next(it);
+            const int next = following != enemies.end() ? following.key() : it.key() + 4;
+            list << make(one, "Enemies", it.value(), run(it.key(), std::min(4, next - it.key())));
         }
-        struct Item {
-            int index;
-            const char* name;
-            int palette;
-        };
-        const Item items[] = {{0x29, "Manhole", 1},        {0x25, "Warp Door", 1}, {0x2E, "Stopwatch", 1},
-                              {0x2D, "Energy Candy", 0},    {0x2F, "1UP", 1},           {0x2A, "Shock Gun", 1},
-                              {0x2B, "Air Gun", 1},        {0x2C, "Power Fan", 1},     {0x30, "Pancake", 1},
-                              {0x34, "Rapid-Fire Drink", 1}, {0x16, "Shrink Light", 1}, {0x14, "Programmer's face", 1},
-                              {0x28, "Gold Bar", 1},       {0x17, "Diamond", 0},       {0x35, "Invulnerability", 3}};
-        for (const Item& item : items) list << make(one, "Items", QString::fromLatin1(item.name), {item.index}, 8, item.palette);
+        // Its items, each one frame in its palette, and World 2's enemies by
+        // their frames, as the game's catalogs list them.
+        for (const QJsonValue& value : sdk::gameCatalog("world1_item_animations").toArray()) {
+            const QJsonObject item = value.toObject();
+            list << make(one, "Items", item.value(QStringLiteral("name")).toString(),
+                         {item.value(QStringLiteral("frame")).toInt()}, 8, item.value(QStringLiteral("palette")).toInt());
+        }
         list << make(one, "Frames", rlTr("doraemon", "World 1 · all frames"), run(0, 115), 15);
 
         const World two = World::Two;
-        struct Foe {
-            const char* name;
+        for (const QJsonValue& value : sdk::gameCatalog("world2_animations").toArray()) {
+            const QJsonObject foe = value.toObject();
             QVector<int> frames;
-        };
-        const QVector<Foe> foes{{"W2Enemy1", {0, 1}},     {"W2Enemy2", {2, 3}},           {"W2Enemy3", {4, 5, 6}},
-                                {"W2Enemy4", {7, 8}},   {"W2Enemy5", {9, 10, 11}},    {"W2Enemy6", {12, 13}},
-                                {"W2Enemy7", {14, 15}},    {"W2Creature7", {17, 18}},         {"Jura", {23, 24, 25}},
-                                {"W2Enemy13", {30, 31}},      {"W2Enemy11", {32, 33, 34, 35}},   {"W2Enemy10", {36, 37}},
-                                {"W2Enemy12", {38, 39}},       {"Big Robot Ship", {40, 41, 42, 44, 45, 46}},
-                                {"Centaurus", {48, 49, 50, 52, 53, 54}}, {"Robot Ship", {56, 57}}};
-        for (const Foe& foe : foes) list << make(two, "Enemies", QString::fromLatin1(foe.name), foe.frames);
+            for (const QJsonValue& frame : foe.value(QStringLiteral("frames")).toArray()) frames << frame.toInt();
+            list << make(two, "Enemies", foe.value(QStringLiteral("name")).toString(), frames);
+        }
         list << make(two, "Frames", rlTr("doraemon", "World 2 · all frames"), run(0, 58), 15);
 
         const World three = World::Three;
@@ -204,7 +193,7 @@ const QVector<DoraemonAnimation>& doraemonAnimations() {
         list << make(three, "Frames", rlTr("doraemon", "World 3 · all frames"), run(0, 188), 15);
         return list;
     }();
-    return kAnimations;
+    return animations;
 }
 
 DoraemonAnimation resolvedAnimation(const DoraemonSession* session, int index) {

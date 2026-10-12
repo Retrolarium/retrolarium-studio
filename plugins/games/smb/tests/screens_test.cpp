@@ -79,21 +79,24 @@ int main(int argc, char** argv) {
         for (const SmbTextSlot& slot : textSlots(document)) {
             texts << slotText(document, slot);
         }
-        const QStringList expected{QStringLiteral("BROTHER"),     QStringLiteral("HERO"),
-                                   QStringLiteral("WORLD  TIME"), QStringLiteral("WORLD  -"),
-                                   QStringLiteral("TIME UP"),   QStringLiteral("GAME OVER"),
-                                   QStringLiteral("WELCOME TO WARP ZONE!")};
-        expect(texts == expected, QStringLiteral("text slots read %1").arg(texts.join(QStringLiteral(" | "))));
+        // The game's own text stays in the game; the slots read seven
+        // non-empty strings that fit their widths.
+        const QVector<SmbTextSlot> readSlots = textSlots(document);
+        bool fits = texts.size() == 7;
+        for (int i = 0; fits && i < texts.size(); ++i) {
+            fits = !texts.at(i).trimmed().isEmpty() && texts.at(i).size() <= readSlots.at(i).width;
+        }
+        expect(fits, QStringLiteral("text slots read %1").arg(texts.join(QStringLiteral(" | "))));
 
         // Editing text: folded to the font, padded, and kept in its slot.
         const QVector<SmbTextSlot> slotList = textSlots(document);
-        setSlotText(document, slotList.at(0), QStringLiteral("Wario"));
-        setSlotText(document, slotList.at(1), QStringLiteral("Princess"));
+        setSlotText(document, slotList.at(0), QStringLiteral("Hello"));
+        setSlotText(document, slotList.at(1), QStringLiteral("World"));
         setSlotText(document, slotList.at(6), QStringLiteral("HI"));
-        expect(slotText(document, slotList.at(0)) == QLatin1String("WARIO"), QStringLiteral("fixed text did not change"));
-        expect(slotText(document, slotList.at(1)) == QLatin1String("PRINCESS"), QStringLiteral("screen text did not change"));
+        expect(slotText(document, slotList.at(0)) == QLatin1String("HELLO"), QStringLiteral("fixed text did not change"));
+        expect(slotText(document, slotList.at(1)) == QLatin1String("WORLD"), QStringLiteral("screen text did not change"));
         expect(slotText(document, slotList.at(6)) == QLatin1String("HI"), QStringLiteral("short text was not padded"));
-        expectThrow([&] { setSlotText(document, slotList.at(0), QStringLiteral("RULER")); },
+        expectThrow([&] { setSlotText(document, slotList.at(0), QStringLiteral("TOO LONG TEXT")); },
                     QStringLiteral("text longer than its slot was accepted"));
         expectThrow([&] { setSlotText(document, slotList.at(0), QStringLiteral("a.b")); },
                     QStringLiteral("a character outside the font was accepted"));

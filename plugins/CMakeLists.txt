@@ -132,7 +132,7 @@ add_library(smb_data STATIC
     games/smb/src/smb/render/level_renderer.hpp
 )
 target_include_directories(smb_data PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/games/smb/src)
-target_link_libraries(smb_data PUBLIC platform_nes Qt5::Core Qt5::Gui)
+target_link_libraries(smb_data PUBLIC platform_nes studio_sdk Qt5::Core Qt5::Gui)
 studio_enable_warnings(smb_data)
 
 # Super Mario Bros. plugin: profile, document lists and editor models.

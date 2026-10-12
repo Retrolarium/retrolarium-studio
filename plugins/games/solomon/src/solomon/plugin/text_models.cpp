@@ -127,7 +127,7 @@ Surface surfaceOf(const SolomonText& text, const TextScreen& screen) {
             surface.writers[cell] = qMakePair(s.id, i);
         }
     }
-    // The intro's life line: the Wizard icon and the lives count.
+    // The intro's life line: the player icon and the lives count.
     if (screen.id == QLatin1String("intro")) {
         const QJsonObject run = text.root().value(QStringLiteral("room_intro")).toArray().at(2).toObject();
         const QJsonArray bytes = run.value(QStringLiteral("bytes")).toArray();

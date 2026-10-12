@@ -22,7 +22,7 @@ struct DoraemonAnimation {
                             // from the game's tables (resolvedAnimation)
 };
 
-const QVector<DoraemonAnimation>& doraemonAnimations();
+QVector<DoraemonAnimation> doraemonAnimations();
 // An entry of doraemonAnimations() with a World 3 type's frames and
 // palette filled in from the project.
 DoraemonAnimation resolvedAnimation(const DoraemonSession* session, int index);

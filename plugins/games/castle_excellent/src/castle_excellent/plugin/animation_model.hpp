@@ -27,7 +27,9 @@ struct CastleExcellentAnimation {
     QVector<CastleExcellentAnimationFrame> frames;
 };
 
-const QVector<CastleExcellentAnimation>& castleExcellentAnimations();
+// The game's animation catalog (its repository's names.json); empty
+// without it.
+QVector<CastleExcellentAnimation> castleExcellentAnimations();
 
 // An animation on the composition canvas: step or play its frames, select a
 // sprite to set its patterns, palette and flip, or drop a pattern pair on
@@ -65,6 +67,7 @@ private:
 
     CastleExcellentSession* session_;
     int index_;
+    CastleExcellentAnimation animation_;   // as the catalog had it when opened
     int frame_ = 0;
     int selected_ = -1;     // descriptor
 };

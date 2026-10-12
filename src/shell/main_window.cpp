@@ -8,6 +8,7 @@
 #include "runtime/process_runner.hpp"
 #include "runtime/tool_locator.hpp"
 #include "sdk/editor_model.hpp"
+#include "sdk/game_names.hpp"
 #include "sdk/i18n.hpp"
 #include "shell/about_dialog.hpp"
 #include "shell/bottom_panel.hpp"
@@ -719,14 +720,25 @@ bool MainWindow::openProjectFile(const QString& path) {
                 QFileInfo(path).fileName()));
         return false;
     }
+    // The game's own names (config/names.json in its repository) are in place
+    // before the session builds its catalogs; the open project keeps its own
+    // if this one does not open.
+    const sdk::GameNames previousNames = sdk::GameNames::current();
+    QString namesError;
+    sdk::GameNames::install(sdk::GameNames::forProject(project, &namesError));
+    if (!namesError.isEmpty()) {
+        report(message(sdk::Severity::Warning, plugin->id(), namesError, QFileInfo(path).fileName()));
+    }
     std::unique_ptr<sdk::Session> session = plugin->open(project, &error);
     if (!session) {
+        sdk::GameNames::install(previousNames);
         report(message(sdk::Severity::Error, plugin->id(), error, QFileInfo(path).fileName()));
         return false;
     }
     // Open ROM and version changes reach here after a download or a dialog,
     // with the current project still editable all the while.
     if (!confirmDiscard()) {
+        sdk::GameNames::install(previousNames);
         return false;
     }
 

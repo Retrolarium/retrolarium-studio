@@ -388,7 +388,7 @@ QJsonObject enemyFrame(const QJsonObject& animations, int type) {
     return frameForAction(animations, type, action);
 }
 
-QJsonObject wizardFrame(const QJsonObject& animations, bool facesLeft) {
+QJsonObject playerFrame(const QJsonObject& animations, bool facesLeft) {
     return frameForAction(animations, 0, facesLeft ? 0x17 : 0x16);
 }
 

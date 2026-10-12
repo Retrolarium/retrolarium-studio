@@ -27,7 +27,7 @@ constexpr int kItemArenaBytes = 1342;    // item streams of all rooms
 constexpr int kEnemyArenaBytes = 726;    // enemy streams of all rooms
 constexpr int kMaximumEnemies = 17;      // the runtime enemy pool
 
-// A Spawn Mirror enemy set: the enemies a mirror drops in turn; after the
+// A mirror enemy set: the enemies a mirror drops in turn; after the
 // last it goes on from loopOffset.
 struct SolomonMirrorSet {
     QVector<int> types;
@@ -35,7 +35,7 @@ struct SolomonMirrorSet {
     bool operator==(const SolomonMirrorSet& o) const { return types == o.types && loopOffset == o.loopOffset; }
 };
 
-// A Spawn Mirror drop schedule: bit schedules the mirror samples MSB first
+// A mirror drop schedule: bit schedules the mirror samples MSB first
 // as the frame counter steps, the four initial bytes once and then the four
 // looping ones; each set bit drops an enemy.
 struct SolomonSchedule {
@@ -86,7 +86,7 @@ public:
     void setEnemies(int room, const QVector<SolomonEnemy>& enemies);
     QJsonObject specialRooms() const { return root_.value(QStringLiteral("special_rooms")).toObject(); }
     // The fixed scripted cells of special rooms: the random bonus room's 32
-    // spots and 16 items, the Royal Seals, the princess room's hidden
+    // spots and 16 items, the seals, the princess room's hidden
     // cells and the symbols of rooms 20 and 30.
     void setSpecialRooms(const QJsonObject& special) { root_.insert(QStringLiteral("special_rooms"), special); }
 
@@ -146,9 +146,9 @@ SolomonPattern pattern(const QJsonObject& art, int index);
 int patternCount(const QJsonObject& art);
 int groupColor(const QJsonObject& art, int group);
 // The sprite frame (left_tile, right_tile, flags) the game shows first for
-// an enemy type ($18-$83) or for Wizard; empty when the tables do not say.
+// an enemy type ($18-$83) or for the player; empty when the tables do not say.
 QJsonObject enemyFrame(const QJsonObject& animations, int type);
-QJsonObject wizardFrame(const QJsonObject& animations, bool facesLeft);
+QJsonObject playerFrame(const QJsonObject& animations, bool facesLeft);
 
 QPoint point(const QJsonValue& value);
 QJsonObject pointJson(QPoint point);

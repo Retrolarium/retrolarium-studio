@@ -221,7 +221,7 @@ QVector<sdk::DocumentGroup> PacmanSession::documents(const QString& kind) const 
                 group = groups.end() - 1;
             }
             const bool dirty = std::any_of(a.frames.begin(), a.frames.end(), frameDirty);
-            group->documents << entry(QStringLiteral("anim:%1").arg(i), a.label,
+            group->documents << entry(QStringLiteral("anim:%1").arg(i), animationLabel(a),
                                       a.frames.size() > 1 ? tr("%1 fr").arg(a.frames.size()) : QString(), dirty);
         }
     } else if (kind == QLatin1String("screens")) {
@@ -509,9 +509,9 @@ QStringList PacmanSession::paletteRowLabels(const QString& table) const {
     const int rows = state_.bundle.contains(table) ? state_.bundle.tableValues(table).size() / 4 : 0;
     for (int r = 0; r < rows; ++r) {
         // Who draws with each row in a round (the round init's palette bytes).
-        static const char* const kGameplay[8] = {"BG 0", "Maze", "BG 2", "BG 3", "Pac-Man", "Pink", "Cyan", "Orange"};
-        labels << (table == ids::kGameplay ? QString::fromLatin1(kGameplay[r])
-                                           : (r < 4 ? tr("BG %1") : tr("SPR %1")).arg(r % 4));
+        static const char* const kGameplay[5] = {"BG 0", "Maze", "BG 2", "BG 3", "Pac-Man"};
+        const QString gameplay = r < 5 ? QString::fromLatin1(kGameplay[r]) : ghostName(r - 4);
+        labels << (table == ids::kGameplay ? gameplay : (r < 4 ? tr("BG %1") : tr("SPR %1")).arg(r % 4));
     }
     return labels;
 }

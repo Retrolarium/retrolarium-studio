@@ -2,6 +2,7 @@
 
 #include "nes/editors.hpp"
 #include "pacman/plugin/pacman_session.hpp"
+#include "sdk/game_names.hpp"
 #include "sdk/i18n.hpp"
 
 #include <QJsonArray>
@@ -50,12 +51,14 @@ PacmanAnimation ghost(const char* id, const char* label, int first) {
 }  // namespace
 
 QString ghostName(int palette) {
-    switch (palette & 3) {
-    case 0: return rlTr("pacman", "Red");
-    case 1: return rlTr("pacman", "Pink");
-    case 2: return rlTr("pacman", "Cyan");
-    default: return rlTr("pacman", "Orange");
-    }
+    const int ghost = palette & 3;
+    return sdk::gameName("ghosts", ghost, rlTr("pacman", "Ghost %1").arg(ghost + 1));
+}
+
+QString animationLabel(const PacmanAnimation& animation) {
+    if (animation.fruitIndex < 0) return animation.label;
+    return sdk::gameName("fruits", animation.fruitIndex,
+                         rlTr("pacman", "Fruit %1").arg(animation.fruitIndex + 1));
 }
 
 const QVector<PacmanAnimation>& pacmanAnimations() {
@@ -74,12 +77,11 @@ const QVector<PacmanAnimation>& pacmanAnimations() {
         PacmanAnimation eyes = animation("ghost:eyes", "Eyes going home", "Ghosts", run(32, 35, 16));
         eyes.ghost = true;
         list << eyes;
-        static const char* const kFruit[8] = {"Cherry", "Strawberry", "Orange", "Apple",
-                                              "Melon",  "Galaxian",   "Bell",   "Key"};
+        // The eight fruits, named by the game (animationLabel).
         for (int f = 0; f < 8; ++f) {
-            PacmanAnimation fruit = animation("fruit", kFruit[f], "Fruit", {{36 + f, false, 8}}, 3);
+            PacmanAnimation fruit = animation("fruit", "Fruit", "Fruit", {{36 + f, false, 8}}, 3);
             fruit.id = QStringLiteral("fruit:%1").arg(f);
-            fruit.label = QString::fromLatin1(kFruit[f]);
+            fruit.fruitIndex = f;
             fruit.fruit = true;
             list << fruit;
         }
@@ -113,7 +115,7 @@ QString PacmanAnimationModel::title() const {
     if (a.group == QLatin1String("Pac-Man") || a.group == QLatin1String("Ghosts")) {
         return QStringLiteral("%1 · %2").arg(a.group == QLatin1String("Ghosts") ? tr("Ghost") : a.group, a.label);
     }
-    return a.label;
+    return animationLabel(a);
 }
 
 int PacmanAnimationModel::palette() const {
@@ -381,8 +383,9 @@ sdk::Inspection PacmanAnimationModel::inspect() const {
                                tr("Both")};
     flip.value = flip.choices.at(((attributes & 0x40) ? 1 : 0) | ((attributes & 0x80) ? 2 : 0));
     inspection.fields = {tile, pal, priority, flip};
-    inspection.note = tr("The game ORs the actor's own palette (Pac-Man and Red 0, Pink 1, Cyan 2, "
-                         "Orange 3, fruit 3) into these bits.");
+    inspection.note = tr("The game ORs the actor's own palette into these bits: 0 for Pac-Man and "
+                         "%1, 1 for %2, 2 for %3, 3 for %4 and the fruit.")
+                          .arg(ghostName(0), ghostName(1), ghostName(2), ghostName(3));
     return inspection;
 }
 

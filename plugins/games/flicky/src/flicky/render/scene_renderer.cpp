@@ -743,11 +743,9 @@ QVector<FlickyLevelSceneRenderer::TitleSprite> FlickyLevelSceneRenderer::titleSp
             statics.at(index));
     // Obj_TitleBird: the first frame of each cast member's animation
     // (Title_BirdAnimIndexTable picks the pointer table's entry).
-    static const std::array<const char *, 4> birds {{
-        "Player_AnimWalk", "Chirp_AnimIdle", "Tiger_AnimRun", "Lizard_AnimRight"}};
     const auto cast = positions(QStringLiteral("cast"), "Title_BirdXTable", "Title_BirdYTable");
-    for (int index = 0; index < 4 && index < cast.size(); ++index) {
-        const auto frames = sequences_->animation(QString::fromLatin1(birds[index]))
+    for (int index = 0; index < titleCast_.size() && index < cast.size(); ++index) {
+        const auto frames = sequences_->animation(titleCast_.at(index).animation)
             .value(QStringLiteral("frames")).toArray();
         if (!frames.isEmpty()) add(QStringLiteral("cast"), index, frames.at(0).toString(), cast.at(index));
     }
@@ -1000,11 +998,11 @@ QVector<FlickyLevelSceneRenderer::ScreenText> FlickyLevelSceneRenderer::screenTe
 {
     const QDir source(sourceRoot_);
     QVector<ScreenText> result;
-    const auto at = [&](const QString &file, const char *label, const char *id, bool tall) {
-        const int address = tableWords(source.filePath(file), QString::fromLatin1(label)).value(0);
+    const auto at = [&](const QString &file, const QString &label, const QString &id, bool tall) {
+        const int address = tableWords(source.filePath(file), label).value(0);
         const int offset = address - 0xC000;
         ScreenText text;
-        text.id = QString::fromLatin1(id);
+        text.id = id;
         text.cell = QPoint((offset % 0x40) / 2, offset / 0x40);
         text.doubleHeight = tall;
         result.push_back(text);
@@ -1015,26 +1013,23 @@ QVector<FlickyLevelSceneRenderer::ScreenText> FlickyLevelSceneRenderer::screenTe
     case Screen::Title:
         // Title_TextPointersAlt (the overseas board this ROM reports): each
         // label is the plane A VRAM address the string is drawn at.
-        at(frontEnd, "Title_CastLabel", "Title_CastText", false);
-        at(frontEnd, "Title_FlickyLabel", "Title_FlickyText", false);
-        at(frontEnd, "Title_ChirpLabel", "Title_ChirpText", false);
-        at(frontEnd, "Title_TigerLabel", "Title_TigerText", false);
-        at(frontEnd, "Title_LizardLabel", "Title_LizardText", false);
-        at(frontEnd, "Title_CopyrightLabel", "Title_Sega1991Text", false);
-        at(frontEnd, "Title_TrademarkLabel", "Title_TmText", true);
+        at(frontEnd, QStringLiteral("Title_CastLabel"), QStringLiteral("Title_CastText"), false);
+        for (const CastMember &member : titleCast_) at(frontEnd, member.label, member.text, false);
+        at(frontEnd, QStringLiteral("Title_CopyrightLabel"), QStringLiteral("Title_Sega1991Text"), false);
+        at(frontEnd, QStringLiteral("Title_TrademarkLabel"), QStringLiteral("Title_TmText"), true);
         break;
     case Screen::Guide:
         // Guide_TextPointers, drawn with Text_DrawDoubleHeight.
-        at(frontEnd, "Guide_MoveLabel", "Guide_MakeYourMoveText", true);
-        at(frontEnd, "Guide_HelpLabel", "Guide_HelpText", true);
-        at(frontEnd, "Guide_GuideLabel", "Guide_GuideText", true);
-        at(frontEnd, "Guide_DoorLabel", "Guide_ToTheDoorText", true);
-        at(frontEnd, "Guide_ButtonLabel", "Guide_PressButtonToJumpText", true);
-        at(frontEnd, "Guide_ScoreLabel", "Guide_RackUpASuperText", true);
+        at(frontEnd, QStringLiteral("Guide_MoveLabel"), QStringLiteral("Guide_MakeYourMoveText"), true);
+        at(frontEnd, QStringLiteral("Guide_HelpLabel"), QStringLiteral("Guide_HelpText"), true);
+        at(frontEnd, QStringLiteral("Guide_GuideLabel"), QStringLiteral("Guide_GuideText"), true);
+        at(frontEnd, QStringLiteral("Guide_DoorLabel"), QStringLiteral("Guide_ToTheDoorText"), true);
+        at(frontEnd, QStringLiteral("Guide_ButtonLabel"), QStringLiteral("Guide_PressButtonToJumpText"), true);
+        at(frontEnd, QStringLiteral("Guide_ScoreLabel"), QStringLiteral("Guide_RackUpASuperText"), true);
         break;
     case Screen::Ending:
-        at(ending, "Ending_CongratsLabel", "Ending_CongratulationsText", false);
-        at(ending, "Ending_SuperPlayerLabel", "Ending_YouAreASuperText", false);
+        at(ending, QStringLiteral("Ending_CongratsLabel"), QStringLiteral("Ending_CongratulationsText"), false);
+        at(ending, QStringLiteral("Ending_SuperPlayerLabel"), QStringLiteral("Ending_YouAreASuperText"), false);
         break;
     case Screen::Credits: {
         // Ending_DrawCreditsLine writes line N at column 4 as the roll

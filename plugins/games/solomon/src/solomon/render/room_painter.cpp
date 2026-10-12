@@ -170,10 +170,10 @@ QImage SolomonPainter::spritePair(int tile, int bankIndex, int palette) const {
     return image;
 }
 
-QImage SolomonPainter::wizardIcon(int bankIndex, bool facesLeft) const {
+QImage SolomonPainter::playerIcon(int bankIndex, bool facesLeft) const {
     QImage image(kCell, kCell, QImage::Format_ARGB32);
     image.fill(Qt::transparent);
-    drawSprite(image, wizardFrame(state_->animations, facesLeft), bank(bankIndex), 0, 0);
+    drawSprite(image, playerFrame(state_->animations, facesLeft), bank(bankIndex), 0, 0);
     return image;
 }
 
@@ -325,7 +325,7 @@ QImage SolomonPainter::room(int index, const Options& options, const SolomonRoom
     if (options.start) {
         const QPoint start = rooms.metadataPosition(index, QStringLiteral("player_start"));
         if (visible(start)) {
-            drawSprite(image, wizardFrame(state_->animations, start.x() >= kWidth / 2), b, start.x(), start.y());
+            drawSprite(image, playerFrame(state_->animations, start.x() >= kWidth / 2), b, start.x(), start.y());
         }
     }
     if (options.enemies) {

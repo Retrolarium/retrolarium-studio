@@ -152,7 +152,7 @@ QWidget* typographySample() {
     auto* layout = new QVBoxLayout(box);
     layout->setContentsMargins(0, 0, 0, 0);
     layout->setSpacing(6);
-    layout->addWidget(new Label(QStringLiteral("Hero / start"), Label::Role::Title));
+    layout->addWidget(new Label(QStringLiteral("Player / start"), Label::Role::Title));
     layout->addWidget(new Label(QStringLiteral("Super Mario Bros."), Label::Role::Project));
     layout->addWidget(new Label(QStringLiteral("Tileset · Metatiles"), Label::Role::PanelTitle));
     layout->addWidget(new Label(QStringLiteral("Area object"), Label::Role::Caps));
@@ -376,10 +376,10 @@ QWidget* inspectorSample() {
     headLayout->setContentsMargins(14, 14, 14, 16);
     headLayout->setSpacing(10);
     headLayout->addWidget(new Label(QStringLiteral("Area object"), Label::Role::Caps));
-    headLayout->addWidget(new Label(QStringLiteral("Hero / start"), Label::Role::Title));
+    headLayout->addWidget(new Label(QStringLiteral("Player / start"), Label::Role::Title));
     auto* grid = new ui::PropertyGrid;
     grid->addChoice(QStringLiteral("Type"),
-                    {QStringLiteral("Hero / start"), QStringLiteral("? block"),
+                    {QStringLiteral("Player / start"), QStringLiteral("? block"),
                      QStringLiteral("Brick row"), QStringLiteral("Pipe")});
     grid->addField(QStringLiteral("Position"), QStringLiteral("3, 12"), QStringLiteral("metatile"));
     grid->addField(QStringLiteral("Size"), QStringLiteral("1 × 1"));
@@ -406,8 +406,8 @@ QWidget* inspectorSample() {
     libLayout->addLayout(libHead);
     auto* items = new QGridLayout;
     items->setSpacing(6);
-    const char* names[] = {"Hero / start", "? block", "Brick row", "Pipe",
-                           "Walker",        "Turtle", "Page jump", "Warp"};
+    const char* names[] = {"Player / start", "? block", "Brick row", "Pipe",
+                           "Walker",        "Shell walker", "Page jump", "Warp"};
     for (int i = 0; i < 8; ++i) {
         items->addWidget(new LibraryItem(QString::fromUtf8(names[i])), i / 2, i % 2);
     }
@@ -527,10 +527,10 @@ QWidget* tableSample() {
 
     const std::tuple<const char*, const char*, int, int> rows[] = {
         {"Status · world", "WORLD  TIME", 11, 11},
-        {"Status · lives", "HERO", 5, 8},
+        {"Status · lives", "PLAYER", 6, 8},
         {"Top score", "TOP-", 4, 4},
-        {"Thank you", "THANK YOU HERO!", 16, 16},
-        {"Princess", "BUT OUR PRINCESS IS IN", 22, 24},
+        {"Thank you", "THANK YOU!", 10, 16},
+        {"Ending", "THE QUEST GOES ON", 17, 24},
         {"Game over", "GAME OVER", 9, 12},
     };
     QFont mono = theme::font(theme::TextRole::Mono, 13.0);
@@ -777,15 +777,15 @@ protected:
         painter.drawRect(pipe.adjusted(0, 0, -1, -1));
 
         // The selected object: fill, 2px border and type tag.
-        const QRect hero(map.left() + 2 * cell, map.bottom() - cell * 3 + 1, cell, cell);
-        painter.fillRect(hero.adjusted(8, 4, -8, 0), QColor(0xb8, 0x10, 0x00));
-        painter.fillRect(hero, theme::canvas::kSelectionFill);
-        paint::hairlineRect(painter, hero, theme::canvas::kSelection, 2.0);
-        const QString tag = QStringLiteral("Hero / start");
+        const QRect player(map.left() + 2 * cell, map.bottom() - cell * 3 + 1, cell, cell);
+        painter.fillRect(player.adjusted(8, 4, -8, 0), QColor(0xb8, 0x10, 0x00));
+        painter.fillRect(player, theme::canvas::kSelectionFill);
+        paint::hairlineRect(painter, player, theme::canvas::kSelection, 2.0);
+        const QString tag = QStringLiteral("Player / start");
         const QFont tagFont = theme::font(theme::TextRole::Mono, 10.0);
         painter.setFont(tagFont);
         const int tagWidth = painter.fontMetrics().horizontalAdvance(tag) + 10;
-        const QRect tagRect(hero.left() - 2, hero.top() - 17, tagWidth, 14);
+        const QRect tagRect(player.left() - 2, player.top() - 17, tagWidth, 14);
         painter.fillRect(tagRect, theme::canvas::kTagFill);
         painter.setPen(theme::canvas::kTagText);
         painter.drawText(tagRect, Qt::AlignCenter, tag);

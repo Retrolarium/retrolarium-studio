@@ -21,7 +21,7 @@ QString titleLabel(const QString& id) {
     if (id == QLatin1String("push_start_button")) return rlTr("doraemon", "Title: start prompt");
     if (id == QLatin1String("hiscore")) return rlTr("doraemon", "Title: high score");
     if (id == QLatin1String("score")) return rlTr("doraemon", "Title: score");
-    if (id == QLatin1String("hudson_copyright")) return rlTr("doraemon", "Title: Hudson copyright");
+    if (id == QLatin1String("hudson_copyright")) return rlTr("doraemon", "Title: publisher copyright");
     if (id == QLatin1String("license_copyright")) return rlTr("doraemon", "Title: licence line");
     return rlTr("doraemon", "Title: %1").arg(id);
 }

@@ -18,7 +18,7 @@ bool isFirebar(int id) { return id >= 0x1b && id <= 0x1f; }
 bool isLargeLift(int id) { return id >= 0x24 && id <= 0x2a; }
 bool isSmallLift(int id) { return id == 0x2b || id == 0x2c; }
 
-// Walker and Turtle groups repeat one enemy two or three times.
+// Enemy groups ($37-$3E) repeat one enemy two or three times.
 int groupMember(int id) {
     if (id == 0x37 || id == 0x38) return 0x06;
     if (id == 0x3b || id == 0x3c) return 0x00;
@@ -31,7 +31,7 @@ int groupCount(int id) {
 
 // Six 8x8 tiles, two wide and three tall, from the game's enemy graphics
 // table at the enemy's offset; 0xfc is the game's blank sprite. Enemies the
-// level view does not draw (frenzies, Boss's fire) and offset 0xff have
+// level view does not draw (frenzies, the boss's fire) and offset 0xff have
 // none; the jumpspring object draws like the jumpspring enemy, and the
 // retainer is the row after the princess.
 QVector<int> enemyTiles(int id, const QVector<int>& graphics, const QVector<int>& offsets) {
@@ -85,7 +85,7 @@ int enemyTop(const SmbEnemyRecord& record) {
     return std::max(0, (record.row - 2) * 16 + engineOffset);
 }
 
-// Small Hero standing: player frame 23 of the game's table.
+// The small player standing: player frame 23 of the game's table.
 constexpr int kStandingFrame = 23;
 
 }  // namespace
@@ -233,7 +233,7 @@ QImage SmbLevelPainter::enemy(int id, const QString& areaType) const {
         for (int s = 0; s < segments; ++s) {
             drawTile(image, platform.at(0), QPoint(s * 8, 0));
         }
-    } else if (id == 0x2d) {  // Boss: rear and front halves, his enemy rows
+    } else if (id == 0x2d) {  // The boss: rear and front halves, its enemy rows
         const QVector<int> rear = graphics.mid(offsets.at(0x17), 6);
         const QVector<int> front = graphics.mid(offsets.at(0x16), 6);
         image = QImage(32, 24, QImage::Format_ARGB32);
@@ -279,8 +279,8 @@ QRect SmbLevelPainter::enemyBounds(const SmbPositionedEnemy& enemy, const QStrin
     return {enemy.x * kCell + inset, enemyTop(enemy.record) + inset, size.width(), size.height()};
 }
 
-QImage SmbLevelPainter::hero() const {
-    const QString key = QStringLiteral("hero");
+QImage SmbLevelPainter::player() const {
+    const QString key = QStringLiteral("player");
     const auto found = cache_.constFind(key);
     if (found != cache_.constEnd()) {
         return *found;
@@ -327,8 +327,8 @@ QImage SmbLevelPainter::hero() const {
     return image;
 }
 
-QRect SmbLevelPainter::heroBounds(QPoint cell) const {
-    const QImage image = hero();
+QRect SmbLevelPainter::playerBounds(QPoint cell) const {
+    const QImage image = player();
     const QSize size = image.isNull() ? QSize(16, 32) : image.size();
     return {cell.x() * kCell, (cell.y() + 1) * kCell - size.height(), size.width(), size.height()};
 }

@@ -36,7 +36,7 @@ const char* const kPrograms[26] = {
     "NTSC resume",
     "Fairy collected",
     "Ending input prompt",
-    "Wizard head collision",
+    "Player head collision",
     "Remove solid block",
     "Room-clear countdown / ending phase",
     "Room entry / ending convergence",
