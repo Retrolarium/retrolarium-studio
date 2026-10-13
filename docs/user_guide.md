@@ -64,8 +64,8 @@ disassembly writes them.
 
 The simplest way is File → Open ROM… (Ctrl+Shift+O, or the first button on the
 start screen): choose your ROM and the studio finds its game and version. The
-first time, it downloads the game's disassembly as an archive from the
-RetrolariumLab organisation on GitHub (no Git needed) into
+first time, it downloads the game's disassembly as an archive of its release tag
+from the RetrolariumLab organisation on GitHub (no Git needed) into
 `Documents\Retrolarium\<repository>`; later it reuses that folder, or any
 disassembly whose `.rlj` you opened before. A ROM the studio does not know (a
 hack, a translation, a bad dump) or a game it cannot edit yet is named as such.
