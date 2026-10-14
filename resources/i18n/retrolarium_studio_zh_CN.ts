@@ -7747,10 +7747,6 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>  %1 finished.</source>
-        <translation>  %1 已完成。</translation>
-    </message>
-    <message>
         <source>  %1 cancelled.</source>
         <translation>  %1 已取消。</translation>
     </message>
@@ -8231,6 +8227,14 @@
     <message>
         <source>Building this version from the game&apos;s sources failed: %1</source>
         <translation>无法从游戏源代码构建此版本：%1</translation>
+    </message>
+    <message>
+        <source>  %1 finished in %2 s.</source>
+        <translation>  %1 已完成，用时 %2 秒。</translation>
+    </message>
+    <message>
+        <source>%1… %2 s</source>
+        <translation>%1… %2 秒</translation>
     </message>
 </context>
 <context>

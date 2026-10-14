@@ -3,6 +3,7 @@
 #include "frame/studio_window.hpp"
 #include "sdk/plugin.hpp"
 
+#include <QElapsedTimer>
 #include <QHash>
 #include <QString>
 
@@ -11,6 +12,7 @@
 class QAction;
 class QLabel;
 class QMenu;
+class QProgressBar;
 class QPushButton;
 class QStackedWidget;
 class QTimer;
@@ -87,6 +89,11 @@ private:
     QWidget* buildCenter();
     QWidget* buildStatusBar();
     QWidget* buildWelcome();
+    // The running kit task on screen: its name and how long it has run, in
+    // the status bar and on the welcome page, whose buttons wait for it.
+    void showTask(const QString& label);
+    void tickTask();
+    void hideTask();
 
     void closeProject();
     bool confirmDiscard();
@@ -195,6 +202,14 @@ private:
 
     // Status bar.
     ui::Label* statusLeft_ = nullptr;
+    QWidget* taskStatus_ = nullptr;
+    ui::Label* taskStatusLabel_ = nullptr;
+    QWidget* welcomeTask_ = nullptr;
+    ui::Label* welcomeTaskLabel_ = nullptr;
+    QVector<QWidget*> welcomeButtons_;
+    QTimer* taskTimer_ = nullptr;
+    QElapsedTimer taskClock_;
+    QString taskLabel_;
     QPushButton* statusSummary_ = nullptr;
     ui::Label* statusRight_ = nullptr;
 

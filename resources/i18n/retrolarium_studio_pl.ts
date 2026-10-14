@@ -7813,10 +7813,6 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>  %1 finished.</source>
-        <translation>  %1 — zakończono.</translation>
-    </message>
-    <message>
         <source>  %1 cancelled.</source>
         <translation>  %1 — anulowano.</translation>
     </message>
@@ -8299,6 +8295,14 @@
     <message>
         <source>Building this version from the game&apos;s sources failed: %1</source>
         <translation>Nie udało się zbudować tej wersji ze źródeł gry: %1</translation>
+    </message>
+    <message>
+        <source>  %1 finished in %2 s.</source>
+        <translation>  %1 — zakończono w %2 s.</translation>
+    </message>
+    <message>
+        <source>%1… %2 s</source>
+        <translation>%1… %2 s</translation>
     </message>
 </context>
 <context>

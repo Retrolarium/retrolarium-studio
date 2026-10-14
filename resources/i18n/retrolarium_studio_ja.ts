@@ -7747,10 +7747,6 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>  %1 finished.</source>
-        <translation>  %1 が完了しました。</translation>
-    </message>
-    <message>
         <source>  %1 cancelled.</source>
         <translation>  %1 がキャンセルされました。</translation>
     </message>
@@ -8231,6 +8227,14 @@
     <message>
         <source>Building this version from the game&apos;s sources failed: %1</source>
         <translation>このバージョンをゲームのソースからビルドできませんでした: %1</translation>
+    </message>
+    <message>
+        <source>  %1 finished in %2 s.</source>
+        <translation>  %1 が %2 秒で完了しました。</translation>
+    </message>
+    <message>
+        <source>%1… %2 s</source>
+        <translation>%1… %2 秒</translation>
     </message>
 </context>
 <context>

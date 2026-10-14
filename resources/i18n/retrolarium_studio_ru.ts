@@ -7813,10 +7813,6 @@
         <translation>Retrolarium Studio</translation>
     </message>
     <message>
-        <source>  %1 finished.</source>
-        <translation>  %1 — завершено.</translation>
-    </message>
-    <message>
         <source>  %1 cancelled.</source>
         <translation>  %1 — отменено.</translation>
     </message>
@@ -8299,6 +8295,14 @@
     <message>
         <source>Building this version from the game&apos;s sources failed: %1</source>
         <translation>Не удалось собрать эту версию из исходников игры: %1</translation>
+    </message>
+    <message>
+        <source>  %1 finished in %2 s.</source>
+        <translation>  %1 — завершено за %2 с.</translation>
+    </message>
+    <message>
+        <source>%1… %2 s</source>
+        <translation>%1… %2 с</translation>
     </message>
 </context>
 <context>

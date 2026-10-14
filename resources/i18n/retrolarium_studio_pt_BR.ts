@@ -7780,10 +7780,6 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>  %1 finished.</source>
-        <translation>  %1 concluído.</translation>
-    </message>
-    <message>
         <source>  %1 cancelled.</source>
         <translation>  %1 cancelado.</translation>
     </message>
@@ -8265,6 +8261,14 @@
     <message>
         <source>Building this version from the game&apos;s sources failed: %1</source>
         <translation>Falha ao compilar esta versão a partir das fontes do jogo: %1</translation>
+    </message>
+    <message>
+        <source>  %1 finished in %2 s.</source>
+        <translation>  %1 concluído em %2 s.</translation>
+    </message>
+    <message>
+        <source>%1… %2 s</source>
+        <translation>%1… %2 s</translation>
     </message>
 </context>
 <context>

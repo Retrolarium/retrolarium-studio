@@ -42,8 +42,10 @@
 #include <QJsonObject>
 #include <QMenu>
 #include <QMenuBar>
+#include <QLocale>
 #include <QPainter>
 #include <QProcess>
+#include <QProgressBar>
 #include <QPushButton>
 #include <QScrollArea>
 #include <QScrollBar>
@@ -195,18 +197,24 @@ MainWindow::MainWindow(QWidget* parent) : StudioWindow(parent) {
         }
     });
 
+    taskTimer_ = new QTimer(this);
+    taskTimer_->setInterval(1000);
+    connect(taskTimer_, &QTimer::timeout, this, &MainWindow::tickTask);
     connect(processes_, &runtime::ProcessRunner::started, this,
             [this](const QString& label, const QString& command) {
                 bottom_->showBuildOutput();
                 log(QStringLiteral("▸ %1").arg(label));
                 log(QStringLiteral("  %1").arg(command));
+                showTask(label);
                 updateActions();
             });
     connect(processes_, &runtime::ProcessRunner::outputLine, this, &MainWindow::log);
     connect(processes_, &runtime::ProcessRunner::finished, this,
             [this](const QString& label, const sdk::ProcessResult& result) {
+                const qint64 elapsed = taskClock_.isValid() ? taskClock_.elapsed() : 0;
+                hideTask();
                 if (result.succeeded()) {
-                    log(tr("  %1 finished.").arg(label));
+                    log(tr("  %1 finished in %2 s.").arg(label, QLocale().toString(elapsed / 1000.0, 'f', 1)));
                 } else if (result.cancelled) {
                     log(tr("  %1 cancelled.").arg(label));
                 } else if (!result.error.isEmpty()) {
@@ -594,11 +602,13 @@ QWidget* MainWindow::buildWelcome() {
     auto* rom = new ui::PrimaryButton(tr("Open ROM…"), QStringLiteral("folder"), column);
     connect(rom, &QAbstractButton::clicked, this, &MainWindow::openRom);
     buttons->addWidget(rom);
+    welcomeButtons_ << rom;
     auto* open = new QPushButton(tr("Open project…"), column);
     open->setProperty("size", QStringLiteral("large"));
     open->setFont(theme::font(theme::TextRole::Body, 12.5));
     connect(open, &QPushButton::clicked, this, &MainWindow::chooseProject);
     buttons->addWidget(open);
+    welcomeButtons_ << open;
     for (const auto& plugin : sdk::PluginRegistry::instance().plugins()) {
         for (const sdk::ProjectAction& action : plugin->projectActions()) {
             auto* button = new QPushButton(action.text, column);
@@ -607,10 +617,26 @@ QWidget* MainWindow::buildWelcome() {
             const auto run = action.run;
             connect(button, &QPushButton::clicked, this, [this, run] { run(*this); });
             buttons->addWidget(button);
+            welcomeButtons_ << button;
         }
     }
     buttons->addStretch(1);
     layout->addLayout(buttons);
+    // Opening a game runs the kit for a while (reading the versions,
+    // downloading, splitting the assets): this says so, and for how long.
+    welcomeTask_ = new QWidget(column);
+    auto* task = new QVBoxLayout(welcomeTask_);
+    task->setContentsMargins(0, 10, 0, 0);
+    task->setSpacing(6);
+    welcomeTaskLabel_ = new ui::Label(QString(), ui::Label::Role::Small, welcomeTask_);
+    welcomeTaskLabel_->setWordWrap(true);
+    task->addWidget(welcomeTaskLabel_);
+    auto* welcomeBar = new QProgressBar(welcomeTask_);
+    welcomeBar->setRange(0, 0);
+    welcomeBar->setTextVisible(false);
+    task->addWidget(welcomeBar);
+    welcomeTask_->hide();
+    layout->addWidget(welcomeTask_);
     outer->addWidget(column);
     return page;
 }
@@ -625,6 +651,20 @@ QWidget* MainWindow::buildStatusBar() {
     auto* row = new QHBoxLayout;
     row->setContentsMargins(12, 0, 12, 0);
     row->setSpacing(16);
+    taskStatus_ = new QWidget(bar);
+    auto* task = new QHBoxLayout(taskStatus_);
+    task->setContentsMargins(0, 0, 0, 0);
+    task->setSpacing(8);
+    auto* taskBar = new QProgressBar(taskStatus_);
+    taskBar->setRange(0, 0);
+    taskBar->setTextVisible(false);
+    taskBar->setFixedWidth(96);
+    task->addWidget(taskBar, 0, Qt::AlignVCenter);
+    taskStatusLabel_ = new ui::Label(QString(), ui::Label::Role::Small, taskStatus_);
+    taskStatusLabel_->setFont(theme::font(theme::TextRole::Body, theme::size::kStatus));
+    task->addWidget(taskStatusLabel_);
+    taskStatus_->hide();
+    row->addWidget(taskStatus_);
     statusLeft_ = new ui::Label(QString(), ui::Label::Role::Small, bar);
     statusLeft_->setFont(theme::font(theme::TextRole::Body, theme::size::kStatus));
     row->addWidget(statusLeft_, 1);
@@ -641,6 +681,34 @@ QWidget* MainWindow::buildStatusBar() {
     row->addWidget(statusRight_);
     outer->addLayout(row, 1);
     return bar;
+}
+
+void MainWindow::showTask(const QString& label) {
+    taskLabel_ = label;
+    taskClock_.start();
+    tickTask();
+    taskStatus_->show();
+    welcomeTask_->show();
+    for (QWidget* button : welcomeButtons_) {
+        button->setEnabled(false);
+    }
+    taskTimer_->start();
+}
+
+void MainWindow::tickTask() {
+    const QString text = tr("%1… %2 s").arg(taskLabel_).arg(taskClock_.elapsed() / 1000);
+    taskStatusLabel_->setText(text);
+    welcomeTaskLabel_->setText(text);
+}
+
+void MainWindow::hideTask() {
+    taskTimer_->stop();
+    taskClock_.invalidate();
+    taskStatus_->hide();
+    welcomeTask_->hide();
+    for (QWidget* button : welcomeButtons_) {
+        button->setEnabled(true);
+    }
 }
 
 // ---------------------------------------------------------------- projects
