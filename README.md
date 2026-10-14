@@ -110,7 +110,9 @@ Bug reports and pull requests are welcome. A change to a game's editor should
 keep a build of the unchanged project byte-identical to the original ROM: the
 kit's tests check that. Interface text goes through `tr()`, and new text needs
 its translations in every `resources/i18n/*.ts` (`tools/update-translations.ps1`
-brings them in).
+brings them in). Run `make hooks` once per clone: Git then checks every commit
+and push for stop words and runs `make lint` and `make format-check` first (see
+Retrolarium Core's README, "Stop words and Git hooks").
 
 ## Trademarks
 

@@ -72,6 +72,20 @@ if ($python -and (Test-Path -LiteralPath (Join-Path $coreModules "retrolarium_co
             & $python.Source -m retrolarium_core.name_guard $check $projectRoot
             if ($LASTEXITCODE -ne 0) { $failed += "name guard ($check)" }
         }
+        # No private words in the tree, nor in the history when this is a
+        # clone of the studio's own repository. The list lives outside the
+        # repositories (.stopwords); without it the check says it did not run.
+        if (Test-Path -LiteralPath (Join-Path $coreModules "retrolarium_core\stop_words.py")) {
+            Write-Host "== stop words: check"
+            & $python.Source -m retrolarium_core.stop_words check $projectRoot
+            if ($LASTEXITCODE -ne 0) { $failed += "stop words (check)" }
+            $top = (& git -C $projectRoot rev-parse --show-toplevel 2>$null)
+            if ($top -and ((Resolve-Path -LiteralPath $top).Path -eq $projectRoot)) {
+                Write-Host "== stop words: history"
+                & $python.Source -m retrolarium_core.stop_words history $projectRoot
+                if ($LASTEXITCODE -ne 0) { $failed += "stop words (history)" }
+            }
+        }
     } finally {
         $env:PYTHONPATH = $savedPath
     }
