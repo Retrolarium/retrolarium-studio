@@ -342,7 +342,8 @@ EmulatorView::EmulatorView(sdk::EmulatorModel* model, runtime::EmulatorRunner* r
             busyStep_ = tr("Working");
         }
     }
-    connect(stage_->surface(), &runtime::EmulatorSurface::focusChanged, this, &EditorView::toolbarChanged);
+    // Focus only changes the status text (see createToolbar): a new toolbar
+    // here would take the button being clicked away mid-click.
     connect(emulator_, &sdk::EditorModel::contentChanged, stage_, [this] { stage_->refresh(); });
     connect(emulator_, &sdk::EditorModel::toolsChanged, this, &EditorView::toolbarChanged);
     updateState();
@@ -453,20 +454,51 @@ QWidget* EmulatorView::createToolbar(QWidget* parent) {
     layout->addWidget(colours);
     layout->addWidget(new ui::ViewChip(tr("Core"), emulator_->coreLabel(), bar));
     layout->addStretch(1);
-    QString status = tr("Idle");
-    if (!busyStep_.isEmpty()) {
-        status = busyStep_ + QStringLiteral("…");
-    } else if (phase == Phase::Starting) {
-        status = tr("Starting…");
-    } else if (phase == Phase::Stopping) {
-        status = tr("Stopping…");
-    } else if (running) {
-        status = runner_->isPaused()                 ? tr("Paused")
-                 : stage_->surface()->hasFocus() ? tr("Running · arrows, Z X, Enter, right Shift or a game pad · hold Tab to fast-forward")
-                                                 : tr("Running · click the picture for the keyboard");
-    }
-    auto* state = new ui::Label(status, ui::Label::Role::Small, bar);
+    auto* state = new ui::Label(QString(), ui::Label::Role::Small, bar);
+    const auto status = [this, state, phase, running] {
+        QString text = tr("Idle");
+        if (!busyStep_.isEmpty()) {
+            text = busyStep_ + QStringLiteral("…");
+        } else if (phase == Phase::Starting) {
+            text = tr("Starting…");
+        } else if (phase == Phase::Stopping) {
+            text = tr("Stopping…");
+        } else if (running) {
+            text = runner_->isPaused()                 ? tr("Paused")
+                   : stage_->surface()->hasFocus() ? tr("Running · arrows, Z X, Enter, right Shift or a game pad · hold Tab to fast-forward")
+                                                   : tr("Running · click the picture for the keyboard");
+        }
+        state->setText(text);
+    };
+    status();
+    connect(stage_->surface(), &runtime::EmulatorSurface::focusChanged, state, status);
     layout->addWidget(state);
+    // The movie, speed and state slot, kept current without a new toolbar.
+    auto* emulation = new ui::Label(QString(), ui::Label::Role::Small, bar);
+    emulation->setTone(QStringLiteral("accent"));
+    layout->addWidget(emulation);
+    const auto refresh = [this, emulation] {
+        QStringList parts;
+        const auto clock = [](int frames) {
+            const int seconds = int(frames / 60.0 + 0.5);
+            return QStringLiteral("%1:%2").arg(seconds / 60).arg(seconds % 60, 2, 10, QLatin1Char('0'));
+        };
+        const QString mode = runner_->movieMode();
+        if (runner_->isRunning() && mode == QLatin1String("record")) {
+            parts << tr("● Recording movie %1 · frame %2").arg(clock(runner_->movieFrame())).arg(runner_->movieFrame());
+        } else if (runner_->isRunning() && mode == QLatin1String("play")) {
+            parts << tr("▶ Movie %1 / %2").arg(clock(runner_->movieFrame()), clock(runner_->movieLength()));
+        }
+        if (runner_->speed() != 100) {
+            parts << (runner_->speed() == 0 ? tr("No speed limit") : tr("Speed %1%").arg(runner_->speed()));
+        }
+        if (runner_->hasControls() && runner_->isRunning()) {
+            parts << tr("Slot %1").arg(runner_->stateSlot());
+        }
+        emulation->setText(parts.join(QStringLiteral(" · ")));
+    };
+    refresh();
+    connect(runner_, &runtime::EmulatorRunner::emulationChanged, emulation, refresh);
     return bar;
 }
 

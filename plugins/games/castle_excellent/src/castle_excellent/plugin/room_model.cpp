@@ -556,7 +556,7 @@ sdk::Inspection CastleExcellentRoomModel::inspect() const {
                                      QStringLiteral("px")),
                              integer(QStringLiteral("start_y"), QStringLiteral("Y"), start.pixel.y(), 0, 159,
                                      QStringLiteral("px"))};
-        inspection.note = tr("Play from selected (F5) builds the ROM, enters this room through the "
+        inspection.note = tr("Play from selected (F4) builds the ROM, enters this room through the "
                              "game's own room loader and puts the player here. Delete takes the marker "
                              "away: the player then starts at the bottom of the room.");
         inspection.engineTag = QStringLiteral("castle-excellent-point-playtest");

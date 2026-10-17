@@ -10,6 +10,8 @@
 #include <memory>
 
 class QAction;
+class QActionGroup;
+class QJsonObject;
 class QLabel;
 class QMenu;
 class QProgressBar;
@@ -82,6 +84,8 @@ public:
 
 protected:
     void closeEvent(QCloseEvent* event) override;
+    void dragEnterEvent(QDragEnterEvent* event) override;
+    void dropEvent(QDropEvent* event) override;
 
 private:
     void buildMenus();
@@ -129,6 +133,7 @@ private:
     // Open ROM: the kit finds the ROM's game, downloads its repository when
     // none is on disk yet, and readies the version the ROM is.
     void openRom();
+    void openRomFile(const QString& rom);
     void rememberRepository(const QString& descriptor);
     void prepareRevision(const QString& descriptor, const QString& revision, const QString& rom);
     // The repository .rlj of a generated revision project, or empty.
@@ -138,6 +143,17 @@ private:
     void createPatch();
     void updateActions();
     void togglePlaytestPause();
+    // Run > Speed: a step of kSpeeds, or the next one up or down.
+    void setEmulationSpeed(int percent);
+    void stepEmulationSpeed(int direction);
+    void stepStateSlot(int direction);
+    void notifyEmulation(const QString& text);
+    // Run > Movie: asks the kit how this version runs from power-on and what
+    // movies it has, then records, resumes or plays one.
+    void startMovie(int mode);
+    void launchMovie(const QJsonObject& answer, int mode, const QString& file, const QString& header,
+                     int stopAt, bool closeAtEnd);
+    void showEmulationEvent(const QString& event);
     void showPlaytest();
     QString emulatorKind() const;
     void releaseEditor();
@@ -226,6 +242,19 @@ private:
     QAction* playSelectedAction_ = nullptr;
     QAction* pauseGameAction_ = nullptr;
     QAction* stopGameAction_ = nullptr;
+    QAction* frameAdvanceAction_ = nullptr;
+    QMenu* speedMenu_ = nullptr;
+    QActionGroup* speedGroup_ = nullptr;
+    QAction* slowerAction_ = nullptr;
+    QAction* fasterAction_ = nullptr;
+    QAction* saveStateAction_ = nullptr;
+    QAction* loadStateAction_ = nullptr;
+    QAction* previousSlotAction_ = nullptr;
+    QAction* nextSlotAction_ = nullptr;
+    QAction* recordMovieAction_ = nullptr;
+    QAction* resumeMovieAction_ = nullptr;
+    QAction* playMovieAction_ = nullptr;
+    QAction* stopMovieAction_ = nullptr;
     QMenu* recentMenu_ = nullptr;
 };
 

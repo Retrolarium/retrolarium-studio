@@ -10,9 +10,12 @@
 #include "sdk/editor_model.hpp"
 #include "sdk/game_names.hpp"
 #include "sdk/i18n.hpp"
+#include "sdk/kit_session.hpp"
+#include "nes/palette.hpp"
 #include "shell/about_dialog.hpp"
 #include "shell/bottom_panel.hpp"
 #include "shell/inspector_panel.hpp"
+#include "shell/movie_dialogs.hpp"
 #include "shell/project_links.hpp"
 #include "shell/revision_dialog.hpp"
 #include "shell/settings_dialog.hpp"
@@ -33,6 +36,9 @@
 #include <QCloseEvent>
 #include <QCoreApplication>
 #include <QDesktopServices>
+#include <QDragEnterEvent>
+#include <QDropEvent>
+#include <QMimeData>
 #include <QDir>
 #include <QFileDialog>
 #include <QFileInfo>
@@ -47,6 +53,7 @@
 #include <QProcess>
 #include <QProgressBar>
 #include <QPushButton>
+#include <QRegularExpression>
 #include <QScrollArea>
 #include <QScrollBar>
 #include <QSettings>
@@ -59,11 +66,16 @@
 #include <QVBoxLayout>
 #include <QWheelEvent>
 
+#include <algorithm>
+#include <iterator>
+
 namespace rl::shell {
 
 namespace {
 
 constexpr int kMaxRecent = 8;
+// Run > Speed, in percent (0: no limit).
+constexpr int kSpeeds[] = {10, 25, 50, 75, 100, 150, 200, 300, 400, 0};
 const char* kRecentKey = "recentProjects";
 // The game repositories (.rlj descriptors) opened so far: Open ROM looks
 // in them before it downloads one.
@@ -149,6 +161,8 @@ MainWindow::MainWindow(QWidget* parent) : StudioWindow(parent) {
     setWindowTitle(tr("Retrolarium"));
     titleBar()->setTitle(tr("Retrolarium Studio"));
     setMinimumSize(1280, 780);
+    // A ROM or a project dropped on the window opens (see dropEvent).
+    setAcceptDrops(true);
     buildMenus();
 
     auto* root = surface("chrome", this);
@@ -225,6 +239,8 @@ MainWindow::MainWindow(QWidget* parent) : StudioWindow(parent) {
                 updateActions();
             });
     connect(emulator_, &runtime::EmulatorRunner::stateChanged, this, &MainWindow::updateActions);
+    connect(emulator_, &runtime::EmulatorRunner::emulationEvent, this, &MainWindow::showEmulationEvent);
+    connect(emulator_, &runtime::EmulatorRunner::emulationChanged, this, &MainWindow::updateActions);
 
     closeProject();
 }
@@ -352,7 +368,7 @@ void MainWindow::buildMenus() {
         }
     });
     playSelectedAction_ = build->addAction(tr("Play from selected"));
-    playSelectedAction_->setShortcut(QKeySequence(QStringLiteral("F5")));
+    playSelectedAction_->setShortcut(QKeySequence(QStringLiteral("F4")));
     connect(playSelectedAction_, &QAction::triggered, this, [this] {
         if (session_ && session_->canPlay() && !session_->selectedStart().isEmpty() && !isBusy()) {
             // The session reads its start before the Playtest view replaces
@@ -370,6 +386,76 @@ void MainWindow::buildMenus() {
     connect(stopGameAction_, &QAction::triggered, this, [this] { emulator_->stop(); });
     pauseGameAction_->setEnabled(false);
     stopGameAction_->setEnabled(false);
+
+    // Emulation controls, the way FCEUX has them: frame advance, speed in
+    // steps, numbered save states. None of them changes a movie being
+    // recorded: it keeps the input of every frame.
+    frameAdvanceAction_ = build->addAction(tr("Frame advance"));
+    frameAdvanceAction_->setShortcut(QKeySequence(Qt::Key_Backslash));
+    connect(frameAdvanceAction_, &QAction::triggered, this, [this] {
+        // The first press pauses; each one after it runs one frame.
+        const bool paused = emulator_->isPaused();
+        emulator_->frameAdvance();
+        notifyEmulation(paused ? tr("Frame %1").arg(emulator_->movieFrame() + 1) : tr("Paused"));
+    });
+    speedMenu_ = build->addMenu(tr("Speed"));
+    speedMenu_->setFont(menuFont);
+    speedGroup_ = new QActionGroup(this);
+    for (const int percent : kSpeeds) {
+        QAction* action = speedMenu_->addAction(percent == 0 ? tr("No limit") : tr("%1%").arg(percent));
+        action->setCheckable(true);
+        action->setData(percent);
+        action->setChecked(percent == emulator_->speed());
+        speedGroup_->addAction(action);
+        connect(action, &QAction::triggered, this, [this, percent] { setEmulationSpeed(percent); });
+    }
+    speedMenu_->addSeparator();
+    slowerAction_ = speedMenu_->addAction(tr("Slower"));
+    slowerAction_->setShortcut(QKeySequence(Qt::Key_Minus));
+    connect(slowerAction_, &QAction::triggered, this, [this] { stepEmulationSpeed(-1); });
+    fasterAction_ = speedMenu_->addAction(tr("Faster"));
+    fasterAction_->setShortcut(QKeySequence(Qt::Key_Equal));
+    connect(fasterAction_, &QAction::triggered, this, [this] { stepEmulationSpeed(1); });
+    build->addSeparator();
+    saveStateAction_ = build->addAction(tr("Save state"));
+    saveStateAction_->setShortcut(QKeySequence(Qt::Key_F5));
+    connect(saveStateAction_, &QAction::triggered, this, [this] {
+        const int slot = emulator_->stateSlot();
+        const bool replaced = emulator_->slotHasState(slot);
+        emulator_->saveState();
+        notifyEmulation(replaced ? tr("State %1 saved (replaced)").arg(slot) : tr("State %1 saved").arg(slot));
+    });
+    loadStateAction_ = build->addAction(tr("Load state"));
+    loadStateAction_->setShortcut(QKeySequence(Qt::Key_F8));
+    connect(loadStateAction_, &QAction::triggered, this, [this] {
+        const int slot = emulator_->stateSlot();
+        if (!emulator_->slotHasState(slot)) {
+            notifyEmulation(tr("State %1 is empty").arg(slot));
+            return;
+        }
+        emulator_->loadState();
+        notifyEmulation(tr("State %1 loaded").arg(slot));
+    });
+    previousSlotAction_ = build->addAction(tr("Previous state slot"));
+    previousSlotAction_->setShortcut(QKeySequence(Qt::Key_F6));
+    connect(previousSlotAction_, &QAction::triggered, this, [this] { stepStateSlot(-1); });
+    nextSlotAction_ = build->addAction(tr("Next state slot"));
+    nextSlotAction_->setShortcut(QKeySequence(Qt::Key_F7));
+    connect(nextSlotAction_, &QAction::triggered, this, [this] { stepStateSlot(1); });
+    build->addSeparator();
+    QMenu* movie = build->addMenu(tr("Movie"));
+    movie->setFont(menuFont);
+    recordMovieAction_ = movie->addAction(tr("Record movie…"));
+    connect(recordMovieAction_, &QAction::triggered, this,
+            [this] { startMovie(int(runtime::MovieRequest::Mode::Record)); });
+    resumeMovieAction_ = movie->addAction(tr("Resume movie recording…"));
+    connect(resumeMovieAction_, &QAction::triggered, this,
+            [this] { startMovie(int(runtime::MovieRequest::Mode::Resume)); });
+    playMovieAction_ = movie->addAction(tr("Play movie…"));
+    connect(playMovieAction_, &QAction::triggered, this, [this] { startMovie(int(runtime::MovieRequest::Mode::Play)); });
+    movie->addSeparator();
+    stopMovieAction_ = movie->addAction(tr("Stop movie"));
+    connect(stopMovieAction_, &QAction::triggered, this, [this] { emulator_->stopMovie(); });
 
     QMenu* help = bar->addMenu(tr("Help"));
     help->setFont(menuFont);
@@ -594,6 +680,10 @@ QWidget* MainWindow::buildWelcome() {
         ui::Label::Role::Small, column);
     note->setWordWrap(true);
     layout->addWidget(note);
+    auto* drop = new ui::Label(tr("Or drop a ROM or an .rlj file on this window."), ui::Label::Role::Small, column);
+    drop->setTone(QStringLiteral("faint"));
+    drop->setWordWrap(true);
+    layout->addWidget(drop);
     layout->addSpacing(8);
     auto* buttons = new QHBoxLayout;
     buttons->setSpacing(10);
@@ -934,6 +1024,36 @@ void MainWindow::openRom() {
         this, tr("Open ROM"), QDir::homePath(),
         tr("ROM images (*.nes *.fds *.bin *.md *.gen *.sfc *.smc);;All files (*)"));
     if (rom.isEmpty()) return;
+    openRomFile(rom);
+}
+
+// A file dropped on the window: a project opens, any other file is taken
+// for a ROM, as Open ROM does.
+void MainWindow::dragEnterEvent(QDragEnterEvent* event) {
+    const QList<QUrl> urls = event->mimeData()->urls();
+    if (urls.size() == 1 && urls.first().isLocalFile() && QFileInfo(urls.first().toLocalFile()).isFile() &&
+        !isBusy()) {
+        event->acceptProposedAction();
+    }
+}
+
+void MainWindow::dropEvent(QDropEvent* event) {
+    const QList<QUrl> urls = event->mimeData()->urls();
+    if (urls.size() != 1 || !urls.first().isLocalFile()) return;
+    const QString path = urls.first().toLocalFile();
+    event->acceptProposedAction();
+    // Opened once the drop is over: a dialog may come up.
+    QTimer::singleShot(0, this, [this, path] {
+        if (isBusy()) return;
+        if (path.endsWith(QLatin1String(".rlj"), Qt::CaseInsensitive)) {
+            openProject(path);
+        } else if (confirmDiscard()) {
+            openRomFile(path);
+        }
+    });
+}
+
+void MainWindow::openRomFile(const QString& rom) {
     // Downloaded games go where the user finds them: their edits live there.
     const QString games =
         QDir(QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation)).filePath(QStringLiteral("Retrolarium"));
@@ -1394,12 +1514,12 @@ void MainWindow::updateToolbarRow() {
         const QString start = model_ ? model_->startPoint() : QString();
         if (!start.isEmpty()) {
             auto* chip = new ui::ViewChip(tr("Start point"), start, content);
-            chip->setToolTip(tr("Play from selected (F5) starts here"));
+            chip->setToolTip(tr("Play from selected (F4) starts here"));
             // Where the start is put by hand, a click picks it for the Add
             // tool: it follows the cursor until a click sets it down.
             const QString item = model_->startLibraryItem();
             if (!item.isEmpty()) {
-                chip->setToolTip(tr("Play from selected (F5) starts here. Click, then click the map to move it."));
+                chip->setToolTip(tr("Play from selected (F4) starts here. Click, then click the map to move it."));
                 connect(chip, &QAbstractButton::clicked, this, [this, item] {
                     if (editor_) editor_->armPlacement(item);
                 });
@@ -1712,8 +1832,8 @@ void MainWindow::updateActions() {
     playButton_->setEnabled(canPlay && !busy);
     playSelectedButton_->setEnabled(!start.isEmpty() && !busy);
     playSelectedButton_->setToolTip(start.isEmpty()
-                                        ? tr("Pick a start point in an editor (F5)")
-                                        : tr("Save, build and play from %1 (F5)").arg(start));
+                                        ? tr("Pick a start point in an editor (F4)")
+                                        : tr("Save, build and play from %1 (F4)").arg(start));
 
     using Phase = runtime::EmulatorRunner::Phase;
     const Phase phase = emulator_->phase();
@@ -1728,13 +1848,319 @@ void MainWindow::updateActions() {
                                     : tr("Pause the playtest (Pause)"));
     stopGameAction_->setEnabled(live);
     stopButton_->setEnabled(live);
+
+    const bool controls = running && emulator_->hasControls();
+    frameAdvanceAction_->setEnabled(controls);
+    saveStateAction_->setEnabled(controls);
+    loadStateAction_->setEnabled(controls);
+    previousSlotAction_->setEnabled(controls);
+    nextSlotAction_->setEnabled(controls);
+    saveStateAction_->setText(tr("Save state (slot %1)").arg(emulator_->stateSlot()));
+    loadStateAction_->setText(tr("Load state (slot %1)").arg(emulator_->stateSlot()));
+    for (QAction* speed : speedGroup_->actions()) {
+        speed->setChecked(speed->data().toInt() == emulator_->speed());
+    }
+    const bool movies = open && !emulatorKind().isEmpty() && !busy;
+    recordMovieAction_->setEnabled(movies);
+    resumeMovieAction_->setEnabled(movies);
+    playMovieAction_->setEnabled(movies);
+    stopMovieAction_->setEnabled(running && emulator_->movieMode() != QLatin1String("none"));
 }
 
 void MainWindow::togglePlaytestPause() {
-    if (emulator_->phase() == runtime::EmulatorRunner::Phase::Running && !emulator_->togglePause()) {
+    if (emulator_->phase() != runtime::EmulatorRunner::Phase::Running) return;
+    if (!emulator_->togglePause()) {
         report(message(sdk::Severity::Warning, QStringLiteral("playtest"),
                        tr("The emulator could not be paused."), QString()));
+        return;
     }
+    notifyEmulation(emulator_->isPaused() ? tr("Paused") : tr("Resumed"));
+}
+
+void MainWindow::setEmulationSpeed(int percent) {
+    emulator_->setSpeed(percent);
+    // The ends of the scale say so.
+    const int slowest = kSpeeds[0];
+    if (percent == 0) {
+        notifyEmulation(tr("Speed: no limit"));
+    } else {
+        notifyEmulation(percent == slowest ? tr("Speed %1% (slowest)").arg(percent) : tr("Speed %1%").arg(percent));
+    }
+}
+
+void MainWindow::stepStateSlot(int direction) {
+    emulator_->setStateSlot(emulator_->stateSlot() + direction);
+    const int slot = emulator_->stateSlot();
+    const int frame = emulator_->slotFrame(slot);
+    if (!emulator_->slotHasState(slot)) {
+        notifyEmulation(tr("State %1 selected (empty)").arg(slot));
+    } else if (frame < 0 || emulator_->movieMode() == QLatin1String("none")) {
+        // A time is a movie's: outside one it would say nothing.
+        notifyEmulation(tr("State %1 selected (used)").arg(slot));
+    } else {
+        // When in the movie it was saved.
+        const int seconds = int(frame / 60.0 + 0.5);
+        notifyEmulation(tr("State %1 selected (used, %2)")
+                            .arg(slot)
+                            .arg(QStringLiteral("%1:%2").arg(seconds / 60).arg(seconds % 60, 2, 10, QLatin1Char('0'))));
+    }
+}
+
+// Over the game's picture, as FCEUX shows it; a toast when no game runs.
+void MainWindow::notifyEmulation(const QString& text) {
+    if (!emulator_->showMessage(text) && toast_) toast_->showMessage(text);
+}
+
+void MainWindow::stepEmulationSpeed(int direction) {
+    // No limit counts as the fastest step.
+    const int count = int(std::size(kSpeeds));
+    int index = int(std::find(std::begin(kSpeeds), std::end(kSpeeds), emulator_->speed()) - std::begin(kSpeeds));
+    if (index >= count) index = int(std::find(std::begin(kSpeeds), std::end(kSpeeds), 100) - std::begin(kSpeeds));
+    const int next = std::clamp(index + direction, 0, count - 1);
+    if (next == index && kSpeeds[next] == 0) {
+        emulator_->setSpeed(0);
+        notifyEmulation(tr("Speed: no limit (fastest)"));
+        return;
+    }
+    setEmulationSpeed(kSpeeds[next]);
+}
+
+void MainWindow::showEmulationEvent(const QString& event) {
+    const int slot = emulator_->stateSlot();
+    QString text;
+    // Saved and loaded were shown when asked for.
+    if (event == QLatin1String("saved") || event == QLatin1String("loaded")) {
+        return;
+    } else if (event == QLatin1String("no-state")) {
+        text = tr("State %1 is empty").arg(slot);
+    } else if (event == QLatin1String("ended")) {
+        text = tr("Movie ended: you have control");
+    } else if (event == QLatin1String("stopped")) {
+        text = emulator_->movie().mode == runtime::MovieRequest::Mode::Play ? tr("Movie stopped")
+                                                                             : tr("Movie stopped and saved");
+    } else if (event == QLatin1String("recording")) {
+        text = tr("End of movie: paused, recording on (Pause to go on)");
+    } else if (event == QLatin1String("foreign-state")) {
+        text = tr("State %1 is not from this movie: movie stopped").arg(slot);
+    }
+    if (text.isEmpty()) return;
+    notifyEmulation(text);
+    log(QStringLiteral("  %1").arg(text));
+}
+
+namespace {
+
+// A recording's file in its folder: the title as a file name, numbered when
+// it is taken.
+QString movieFileName(const QString& folder, const QString& title) {
+    QString stem = title.toLower();
+    stem.replace(QRegularExpression(QStringLiteral("[^\\w]+"), QRegularExpression::UseUnicodePropertiesOption),
+                 QStringLiteral("-"));
+    stem.remove(QRegularExpression(QStringLiteral("^-+|-+$")));
+    if (stem.isEmpty()) stem = QStringLiteral("movie");
+    QString path = QDir(folder).filePath(stem + QStringLiteral(".rlmovie"));
+    for (int n = 2; QFileInfo::exists(path); ++n) {
+        path = QDir(folder).filePath(QStringLiteral("%1-%2.rlmovie").arg(stem).arg(n));
+    }
+    return path;
+}
+
+// A Retrolarium movie's header lines (its description), without the frame
+// count the recording writes itself; empty when it is not a movie recorded
+// in the studio, which cannot be resumed.
+QString studioMovieHeader(const QString& path) {
+    QFile file(path);
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) return {};
+    QString header;
+    bool studio = false;
+    const QStringList lines = QString::fromUtf8(file.readAll()).split(QLatin1Char('\n'));
+    if (lines.value(0).trimmed() != QLatin1String("# retrolarium movie 1")) return {};
+    for (int i = 1; i < lines.size() && lines.at(i).trimmed() != QLatin1String("---"); ++i) {
+        const QString line = lines.at(i).trimmed();
+        if (line.startsWith(QLatin1String("frames ")) || line.startsWith(QLatin1String("offset "))) continue;
+        if (line == QLatin1String("source mame")) studio = true;
+        header += line + QLatin1Char('\n');
+    }
+    return studio ? header : QString();
+}
+
+QVector<MovieChoice> movieChoices(const QJsonArray& movies) {
+    QVector<MovieChoice> choices;
+    for (const QJsonValue& value : movies) {
+        const QJsonObject m = value.toObject();
+        MovieChoice choice;
+        choice.path = m.value(QStringLiteral("path")).toString();
+        choice.file = m.value(QStringLiteral("file")).toString();
+        choice.title = m.value(QStringLiteral("title")).toString();
+        choice.kind = m.value(QStringLiteral("kind")).toString();
+        choice.author = m.value(QStringLiteral("author")).toString();
+        choice.description = m.value(QStringLiteral("description")).toString();
+        choice.source = m.value(QStringLiteral("source")).toString();
+        choice.frames = m.value(QStringLiteral("frames")).toInt();
+        choice.seconds = m.value(QStringLiteral("seconds")).toDouble();
+        choices << choice;
+    }
+    return choices;
+}
+
+}  // namespace
+
+void MainWindow::startMovie(int mode) {
+    using Mode = runtime::MovieRequest::Mode;
+    if (!session_ || emulatorKind().isEmpty() || isBusy()) return;
+    const QString mame = runtime::ToolLocator::emulatorPath(QStringLiteral("mame"));
+    if (mame.isEmpty()) {
+        report(message(sdk::Severity::Error, QStringLiteral("playtest"),
+                       tr("MAME is not found: choose it in Settings."), QString()));
+        return;
+    }
+    // A game repository's version runs its own ROM on its own machine and
+    // keeps its movies in the repository; any other project its ROM, with
+    // the movies the studio keeps for that image.
+    QStringList arguments{QStringLiteral("movie"), QStringLiteral("plan"), QStringLiteral("--mame"), mame};
+    const QString descriptor = currentDescriptor();
+    QString directory;
+    if (!descriptor.isEmpty()) {
+        arguments << QStringLiteral("--descriptor") << descriptor << QStringLiteral("--revision")
+                  << QFileInfo(projectPath_).absoluteDir().dirName();
+        directory = QFileInfo(descriptor).absolutePath();
+    } else {
+        QString error;
+        const sdk::ProjectFile project = sdk::ProjectFile::load(projectPath_, &error);
+        const QString rom = QFileInfo(projectPath_).absoluteDir().absoluteFilePath(
+            project.string(QStringLiteral("source.rom")));
+        arguments << QStringLiteral("--rom") << rom << QStringLiteral("--movies-root")
+                  << QDir(QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation))
+                         .filePath(QStringLiteral("movies"));
+        directory = QFileInfo(projectPath_).absolutePath();
+    }
+    QString error;
+    sdk::ProcessSpec spec = kitCommand(arguments, directory, &error);
+    if (spec.program.isEmpty()) {
+        report(message(sdk::Severity::Error, QStringLiteral("playtest"), error, QString()));
+        return;
+    }
+    spec.label = tr("Find the movies");
+    const QString game = session_->profile().name;
+    runProcess(spec, [this, mode, arguments, directory, game](const sdk::ProcessResult& result) {
+        if (!result.succeeded()) {
+            if (!result.cancelled) {
+                report(message(sdk::Severity::Error, QStringLiteral("playtest"),
+                               tr("The movie cannot start: %1").arg(processError(result)), QString()));
+            }
+            return;
+        }
+        const QJsonObject answer = QJsonDocument::fromJson(result.standardOutput).object();
+        const QString folder = answer.value(QStringLiteral("movies_dir")).toString();
+        if (mode == int(Mode::Record)) {
+            RecordMovieDialog dialog(game, QDir::toNativeSeparators(folder), this);
+            if (dialog.exec() != QDialog::Accepted) return;
+            const MovieDescription description = dialog.description();
+            QDir().mkpath(folder);
+            QString header = QStringLiteral("platform %1\nsource mame\nrom %2\n")
+                                 .arg(answer.value(QStringLiteral("platform")).toString(),
+                                      answer.value(QStringLiteral("rom")).toObject().value(QStringLiteral("sha1")).toString());
+            const QList<QPair<QString, QString>> fields{{QStringLiteral("title"), description.title},
+                                                         {QStringLiteral("kind"), description.kind},
+                                                         {QStringLiteral("author"), description.author},
+                                                         {QStringLiteral("description"), description.description}};
+            for (const auto& field : fields) {
+                QString value = field.second;
+                value.remove(QStringLiteral("]==]"));
+                if (!value.isEmpty()) header += QStringLiteral("%1 %2\n").arg(field.first, value);
+            }
+            launchMovie(answer, mode, movieFileName(folder, description.title), header, 0, false);
+            return;
+        }
+        const auto purpose = mode == int(Mode::Play) ? PickMovieDialog::Purpose::Play
+                                                     : PickMovieDialog::Purpose::Resume;
+        PickMovieDialog dialog(purpose, game, movieChoices(answer.value(QStringLiteral("movies")).toArray()), this);
+        if (dialog.exec() != QDialog::Accepted || dialog.path().isEmpty()) return;
+        const QString path = dialog.path();
+        if (mode == int(Mode::Resume)) {
+            const QString header = studioMovieHeader(path);
+            if (header.isEmpty()) {
+                report(message(sdk::Severity::Error, QStringLiteral("playtest"),
+                               tr("%1 was not recorded in the studio: it can play, not go on.")
+                                   .arg(QFileInfo(path).fileName()),
+                               QString()));
+                return;
+            }
+            launchMovie(answer, mode, path, header, 0, false);
+            return;
+        }
+        // Played as MAME plays it: the kit lines another emulator's movie up
+        // with MAME's frames and power-on state.
+        const QString prepared = QDir(QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation))
+                                     .filePath(QStringLiteral("movies/playing.rlmovie"));
+        QDir().mkpath(QFileInfo(prepared).absolutePath());
+        QString error;
+        sdk::ProcessSpec again = kitCommand(arguments + QStringList{QStringLiteral("--movie"), path,
+                                                                    QStringLiteral("--prepared"), prepared},
+                                            directory, &error);
+        again.label = tr("Prepare %1").arg(QFileInfo(path).fileName());
+        const int stopAt = dialog.stopAt();
+        const bool closeAtEnd = dialog.closeAtEnd();
+        runProcess(again, [this, mode, prepared, path, stopAt, closeAtEnd](const sdk::ProcessResult& played) {
+            if (!played.succeeded()) {
+                if (!played.cancelled) {
+                    report(message(sdk::Severity::Error, QStringLiteral("playtest"),
+                                   tr("%1 cannot play: %2").arg(QFileInfo(path).fileName(), processError(played)),
+                                   QString()));
+                }
+                return;
+            }
+            launchMovie(QJsonDocument::fromJson(played.standardOutput).object(), mode, prepared, QString(), stopAt,
+                        closeAtEnd);
+        });
+    });
+}
+
+void MainWindow::launchMovie(const QJsonObject& answer, int mode, const QString& file, const QString& header,
+                             int stopAt, bool closeAtEnd) {
+    using Mode = runtime::MovieRequest::Mode;
+    if (emulatorKind().isEmpty()) return;
+    runtime::MovieRequest movie;
+    movie.mode = Mode(mode);
+    movie.file = file;
+    movie.header = header;
+    movie.stateKey = answer.value(QStringLiteral("rom")).toObject().value(QStringLiteral("sha1")).toString();
+    movie.stopAt = stopAt;
+    movie.closeAtEnd = closeAtEnd;
+    const QJsonObject plan = answer.value(QStringLiteral("plan")).toObject();
+    sdk::ProcessSpec spec = sdk::specFromPlan(plan);
+    // A console NES in the studio's colours, as the game's own playtest has
+    // it (a Vs. System board keeps its palette).
+    static const QStringList consoles{QStringLiteral("nes"), QStringLiteral("nespal"), QStringLiteral("famicom"),
+                                      QStringLiteral("fds")};
+    if (answer.value(QStringLiteral("platform")).toString() == QLatin1String("nes") &&
+        consoles.contains(plan.value(QStringLiteral("machine")).toString())) {
+        for (int i = 0; i < 64; ++i) spec.palette << QRgb(nes::masterColor(i));
+    }
+    const QString name = QFileInfo(file).fileName();
+    const QString title = mode == int(Mode::Record)   ? tr("Recording %1").arg(name)
+                          : mode == int(Mode::Resume) ? tr("Resuming %1").arg(name)
+                                                      : tr("Playing a movie");
+    showPlaytest();
+    log(QStringLiteral("▸ %1").arg(title));
+    log(QStringLiteral("  %1").arg(runtime::displayCommand(spec)));
+    const bool recording = mode != int(Mode::Play);
+    emulator_->start(spec, title, [this, recording, file](const sdk::ProcessResult&) {
+        if (recording && QFileInfo::exists(file)) {
+            const QString text = tr("Movie saved: %1").arg(QDir::toNativeSeparators(file));
+            if (toast_) toast_->showMessage(text);
+            report(message(sdk::Severity::Info, QStringLiteral("playtest"), text, QFileInfo(file).fileName()));
+        }
+    }, movie);
+    // The movie's title over the picture as it starts.
+    QString movieTitle = QFileInfo(file).completeBaseName();
+    QFile text(file);
+    const QString lines = !header.isEmpty() ? header
+                          : text.open(QIODevice::ReadOnly) ? QString::fromUtf8(text.read(4096)) : QString();
+    for (const QString& line : lines.split(QLatin1Char('\n'))) {
+        if (line.startsWith(QLatin1String("title "))) movieTitle = line.mid(6).trimmed();
+    }
+    notifyEmulation(recording ? tr("Recording movie «%1»").arg(movieTitle) : tr("Playing movie «%1»").arg(movieTitle));
 }
 
 }  // namespace rl::shell

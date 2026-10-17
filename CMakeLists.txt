@@ -180,6 +180,8 @@ add_library(studio_shell STATIC
     src/shell/inspector_panel.hpp
     src/shell/main_window.cpp
     src/shell/main_window.hpp
+    src/shell/movie_dialogs.cpp
+    src/shell/movie_dialogs.hpp
     src/shell/revision_dialog.cpp
     src/shell/revision_dialog.hpp
     src/shell/settings_dialog.cpp
@@ -190,6 +192,8 @@ add_library(studio_shell STATIC
 )
 target_link_libraries(studio_shell PUBLIC studio_editors studio_gallery studio_runtime studio_sdk studio_ui)
 studio_enable_warnings(studio_shell)
+# Run > Movie shows a console NES in the studio's colours (header only).
+target_include_directories(studio_shell PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/plugins/platforms/nes/src)
 
 # The shared, Qt-free core (codecs with golden tests, also shipped with the
 # kit as rlcore). Platform plugins wrap what they need from it.

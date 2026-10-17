@@ -345,7 +345,7 @@ sdk::Inspection SmbRoutesModel::inspect() const {
     inspection.fields = {area, alternate, step};
     inspection.note = tr("Each world plays its steps in order; a pipe intro (an area whose entrance "
                          "walks the player into a pipe) shares the level number of the next step. The "
-                         "steps per world are fixed. F5 plays the selected step's area.");
+                         "steps per world are fixed. F4 plays the selected step's area.");
     inspection.engineTag = QStringLiteral("smb.world.v1");
     inspection.engine = {{tr("Route byte"), cell(row_, 4)},
                          {tr("Area type"), QString::number(route.areaType)},

@@ -3,7 +3,9 @@
 #include "runtime/mame_config.hpp"
 
 #include <QApplication>
+#include <QCryptographicHash>
 #include <QDateTime>
+#include <QElapsedTimer>
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
@@ -16,9 +18,13 @@
 #include <QRegularExpression>
 #include <QScreen>
 #include <QSettings>
+#include <QStandardPaths>
 #include <QTemporaryDir>
+#include <QThread>
 #include <QTimer>
 #include <QWindow>
+
+#include <algorithm>
 
 #ifdef Q_OS_WIN
 #include <windows.h>
@@ -32,6 +38,9 @@ constexpr int kStartupPollMs = 150;
 constexpr int kStartupPolls = 200;      // up anyway after 30 s without the ready file
 constexpr int kQuietStartPolls = 10;    // no ready file named: up after 1.5 s
 constexpr int kStopGraceMs = 2000;      // then the process is killed
+constexpr int kStatusPollMs = 200;      // the control script's status file
+constexpr int kMovieFlushMs = 3000;
+constexpr int kRewriteMs = 15;          // a control file the script was reading     // a recording written before the emulator stops
 
 // MAME runs this as its autoboot script on every machine start, a hard reset
 // included, reading it from disk each time; the runner rewrites it before a
@@ -58,6 +67,14 @@ local studio_palette = {@PALETTE@}
 local ready_file = [==[@READY@]==]
 local ready_when = [==[@READYWHEN@]==]
 local game_scripts = {@SCRIPTS@}
+local actions_file = [==[@ACTIONS@]==]
+local status_file = [==[@STATUS@]==]
+local movie_mode = [==[@MOVIEMODE@]==]
+local movie_file = [==[@MOVIEFILE@]==]
+local movie_header = [==[@MOVIEHEADER@]==]
+-- A movie that plays may end the run at a frame, or when it ends.
+local movie_stop_at = tonumber([==[@MOVIESTOPAT@]==]) or 0
+local movie_close = [==[@MOVIECLOSE@]==] == "1"
 local environment = {
 @ENVIRONMENT@}
 local machine = manager.machine
@@ -81,6 +98,9 @@ local function on_frame(callback)
     return subscription
 end
 -- The game's script hooks frames through these; route them to on_frame.
+-- MAME's own frame-done callback runs before each frame is drawn, the moment
+-- to draw over the picture: kept from the first run for the movie counter.
+_G.retrolarium_draw_hook = _G.retrolarium_draw_hook or emu.register_frame_done
 emu.register_frame_done = function(callback) return on_frame(callback) end
 emu.register_frame = emu.register_frame_done
 -- A hard reset (the Disk System BIOS start does one) brings up the next
@@ -144,7 +164,8 @@ local key_aliases = {
 local held, keys_text = {}, ""
 -- Holding Tab runs the game unthrottled and muted (fast forward).
 local fast_forward = false
-local function apply_keys()
+-- A movie that plays owns the pads: the keys then only fast-forward.
+local function apply_keys(press)
     local file = io.open(keys_file, "r")
     local text = ""
     if file ~= nil then
@@ -152,6 +173,11 @@ local function apply_keys()
         file:close()
     end
     fast_forward = string.find(text, "KEYCODE_TAB", 1, true) ~= nil
+    if not press then
+        for field in pairs(held) do field:clear_value() end
+        held, keys_text = {}, ""
+        return
+    end
     if text == keys_text then return end
     keys_text = text
     local wanted = {}
@@ -245,9 +271,347 @@ if fast then
     sound.ui_mute = true
 end
 
+-- Emulation controls from the Run menu: speed, pause and frame advance, save
+-- states, and an input movie recorded or played from power-on. The studio
+-- writes "<serial> <verb> <argument>" lines to the actions file, each serial
+-- runs once, and the status file tells the studio where things stand.
+local screen = nil
+for _, candidate in pairs(machine.screens) do
+    screen = candidate
+    break
+end
+-- Frame notifiers also run while the machine is paused (it redraws), so a
+-- frame counts when emulated time moved.
+local function now_time()
+    return machine.time:as_double()
+end
+
+local speed = 100           -- percent; 0 runs without a limit
+local function apply_speed()
+    local unlimited = forwarding or speed == 0
+    video.throttled = was_throttled and not unlimited
+    video.throttle_rate = (speed > 0 and speed or 100) / 100
+    video.frameskip = unlimited and 10 or was_frameskip
+    sound.ui_mute = was_muted or unlimited or speed ~= 100
+end
+
+-- The pads by mask, every field of a mask (MAME lists some twice).
+local pads = {{}, {}}
+local pad_ports = {}
+for tag, port in pairs(machine.ioport.ports) do
+    local index = tonumber(tag:match("^:ctrl(%d):"))
+    if index == 1 or index == 2 then
+        pad_ports[index] = pad_ports[index] or {}
+        table.insert(pad_ports[index], port)
+        for _, field in pairs(port.fields) do
+            pads[index][field.mask] = pads[index][field.mask] or {}
+            table.insert(pads[index][field.mask], field)
+        end
+    end
+end
+-- What the game read from a pad during the frame that just ended: a port
+-- read in the frame notifier still holds that frame's input, whatever gave
+-- it (the studio's keys, a game pad, a movie).
+local function pad_mask(index)
+    local mask = 0
+    for _, port in ipairs(pad_ports[index] or {}) do
+        local value = port:read()
+        for bit, fields in pairs(pads[index]) do
+            local field = fields[1]
+            if ((value ~ field.defvalue) & bit) ~= 0 then mask = mask | bit end
+        end
+    end
+    return mask
+end
+local function set_pads(entry)
+    for index = 1, 2 do
+        local mask = entry ~= nil and entry[index] or 0
+        for bit, fields in pairs(pads[index]) do
+            for _, field in ipairs(fields) do
+                if mask & bit ~= 0 then field:set_value(1) else field:clear_value() end
+            end
+        end
+    end
+end
+
+-- The movie: log[k] is the input of movie frame k, the k-th frame emulated
+-- after the script started (before the first frame); done counts the frames
+-- emulated so far, and a save state keeps its count beside it.
+local log, last_time, done = {}, now_time(), 0
+_G.retrolarium_movie = {frame = 0}
+local event, events, ack = "", 0, 0
+-- Each event counts, so the studio sees two saves in a row.
+local function set_event(name)
+    event, events = name, events + 1
+end
+
+local function runs_text(count)
+    local lines, i = {}, 1
+    while i <= count do
+        local entry = log[i]
+        local j = i
+        while j < count and log[j + 1][1] == entry[1] and log[j + 1][2] == entry[2] do j = j + 1 end
+        lines[#lines + 1] = string.format("%d %02x %02x", j - i + 1, entry[1], entry[2])
+        i = j + 1
+    end
+    return table.concat(lines, "\n")
+end
+local function read_runs(path)
+    local file = io.open(path, "r")
+    if file == nil then return nil end
+    local entries, body, frame = {}, false, nil
+    for line in file:lines() do
+        if line == "---" then
+            body = true
+        elseif line:find("^frame %d+$") then
+            frame = tonumber(line:match("%d+"))
+        elseif body or not line:find("^[#%a]") then
+            local count, one, two = line:match("^(%d+) (%x+) (%x+)")
+            if count ~= nil then
+                for _ = 1, tonumber(count) do entries[#entries + 1] = {tonumber(one, 16), tonumber(two, 16)} end
+            end
+        end
+    end
+    file:close()
+    return entries, frame
+end
+local function write_movie()
+    if movie_file == "" or movie_mode ~= "record" then return end
+    local file = io.open(movie_file .. ".tmp", "w")
+    if file == nil then return end
+    file:write("# retrolarium movie 1\n", movie_header, "frames ", #log, "\noffset 0\n---\n")
+    if #log > 0 then file:write(runs_text(#log), "\n") end
+    file:close()
+    os.remove(movie_file)
+    os.rename(movie_file .. ".tmp", movie_file)
+end
+
+if movie_mode == "play" or movie_mode == "resume" then
+    log = read_runs(movie_file) or {}
+    set_pads(log[1])
+end
+
+local function write_status()
+    local file = io.open(status_file .. ".tmp", "w")
+    if file == nil then return end
+    local mode = movie_mode == "resume" and "play" or movie_mode
+    file:write(string.format("mode %s\nframe %d\nlength %d\nspeed %d\npaused %d\nack %d\nevent %d %s\n",
+        mode == "" and "none" or mode, done, #log, speed, machine.paused and 1 or 0, ack,
+        events, event))
+    file:close()
+    os.remove(status_file)
+    os.rename(status_file .. ".tmp", status_file)
+end
+
+-- Save states carry their frame count and the movie up to it beside them
+-- (<state>.input), so loading one while recording goes back to that point
+-- of the movie.
+local pending_save = nil
+local pending_osd, osd_wait = nil, 0
+table.insert(_G.retrolarium_subscriptions, emu.add_machine_pre_save_notifier(function()
+    if _G.retrolarium_generation ~= generation or pending_save == nil then return end
+    local count = math.min(done, #log)
+    local file = io.open(pending_save .. ".input", "w")
+    if file ~= nil then
+        file:write("frame ", done, "\n")
+        if movie_mode ~= "" and count > 0 then file:write(runs_text(count), "\n") end
+        file:close()
+    end
+    set_event("saved")
+    pending_save = nil
+end))
+local pending_load, latched_load, load_paused = nil, nil, false
+table.insert(_G.retrolarium_subscriptions, emu.add_machine_post_load_notifier(function()
+    if _G.retrolarium_generation ~= generation or pending_load == nil then return end
+    local path = pending_load
+    pending_load, last_time = nil, now_time()
+    local saved, frame = read_runs(path .. ".input")
+    local recording = movie_mode == "record"
+    local playing = movie_mode == "play" or movie_mode == "resume"
+    -- A state carries the input that led to it only when it was saved in a
+    -- movie (recorded or played). A recording goes on from such a state,
+    -- taking its input; a movie plays on from one of its own frames. Any
+    -- other state ends the movie (a recording keeps what it had).
+    local own = frame ~= nil and saved ~= nil and #saved == frame
+    if playing and own then
+        for i = 1, frame do
+            if log[i] == nil or log[i][1] ~= saved[i][1] or log[i][2] ~= saved[i][2] then
+                own = false
+                break
+            end
+        end
+    end
+    if (recording or playing) and not own then
+        write_movie()
+        set_pads(nil)
+        movie_mode = ""
+        done = frame or 0
+        set_event("foreign-state")
+        return
+    end
+    done = frame or 0
+    _G.retrolarium_movie.frame = done
+    if recording then
+        log = saved
+        -- The keys take the pads again from the next frame.
+        set_pads(nil)
+    elseif playing then
+        set_pads(log[done + 1])
+    else
+        set_pads(nil)
+    end
+    set_event("loaded")
+end))
+-- The movie is kept when the machine stops (the window closed). The
+-- generation already ended in the stop notifier above, and this one only
+-- ever sees its own machine stop: the next script drops it before it runs.
+table.insert(_G.retrolarium_subscriptions, emu.add_machine_stop_notifier(function()
+    write_movie()
+end))
+
+local function run_action(verb, argument)
+    if verb == "speed" then
+        speed = math.max(0, tonumber(argument) or 100)
+        apply_speed()
+    elseif verb == "pause" then
+        if not machine.paused then emu.pause() end
+    elseif verb == "resume" then
+        if machine.paused then emu.unpause() end
+    elseif verb == "step" then
+        if machine.paused then emu.step() else emu.pause() end
+    elseif verb == "save" then
+        pending_save = argument
+        -- Asking MAME to save (or load) lifts its pause; a paused game
+        -- stays paused, and the state is still written.
+        local paused = machine.paused
+        machine:save(argument)
+        if paused then emu.pause() end
+    elseif verb == "load" then
+        local file = io.open(argument, "r")
+        if file == nil then
+            set_event("no-state")
+        else
+            file:close()
+            -- A state holds the machine, not the pads' latch, which the game
+            -- may still read in the frame the state was taken in. So the pads
+            -- first hold the buttons of that frame for one frame, and the
+            -- state loads at the end of it: the game then reads what it read
+            -- when the state was saved, not the keys held at F8.
+            local saved, frame = read_runs(argument .. ".input")
+            for field in pairs(held) do field:clear_value() end
+            held, keys_text = {}, ""
+            set_pads(saved ~= nil and frame ~= nil and frame > 0 and saved[frame] or nil)
+            latched_load, load_paused = argument, machine.paused
+            if machine.paused then emu.step() end
+        end
+    elseif verb == "stopmovie" then
+        write_movie()
+        if movie_mode == "play" or movie_mode == "resume" then set_pads(nil) end
+        movie_mode = ""
+        set_event("stopped")
+    elseif verb == "flush" then
+        write_movie()
+    elseif verb == "exit" then
+        -- The studio stops the game: MAME embedded in it gets no close
+        -- message of its own, so it ends from here (the movie is written).
+        write_movie()
+        machine:exit()
+    elseif verb == "osd" then
+        -- A note over the picture ("State 3 saved"), as FCEUX shows one,
+        -- shown once a save or load in progress is done: MAME then posts
+        -- its own note with the state's whole path, which this replaces.
+        pending_osd, osd_wait = argument, 2
+    end
+end
+
+local function take_actions()
+    local file = io.open(actions_file, "r")
+    if file == nil then return end
+    local text = file:read("a") or ""
+    file:close()
+    for line in text:gmatch("[^\n]+") do
+        local serial, verb, argument = line:match("^(%d+) (%S+) ?(.*)$")
+        serial = tonumber(serial)
+        if serial ~= nil and serial > ack then
+            ack = serial
+            run_action(verb, argument)
+        end
+    end
+end
+
+-- The movie's frame over the picture, as Gens shows it: frame/length while
+-- it plays, REC and the frame while it records. Drawn in MAME's frame-done
+-- callback (a frame notifier is too late), in the screen's pixels.
+if screen ~= nil and _G.retrolarium_draw_hook ~= nil then
+    _G.retrolarium_draw_hook(function()
+        if _G.retrolarium_generation ~= generation or movie_mode == "" then return end
+        local text = movie_mode == "record" and string.format("REC %d", done)
+            or string.format("%d/%d", done, #log)
+        screen:draw_text("left", screen.height - 9, text, 0xffffffff, 0xc0000000)
+    end)
+end
+
+local status_count = 0
+local function control_tick()
+    local now = now_time()
+    if now ~= last_time and latched_load ~= nil then
+        -- The pads' latch now holds the state's frame: load it (the frame
+        -- that just ran is dropped with the rest of this branch).
+        last_time = now
+        pending_load, latched_load = latched_load, nil
+        machine:load(pending_load)
+        if load_paused then emu.pause() end
+    elseif now ~= last_time then
+        last_time = now
+        done = done + 1
+        _G.retrolarium_movie.frame = done
+        if movie_mode == "record" then
+            log[done] = {pad_mask(1), pad_mask(2)}
+            if done % 600 == 0 then write_movie() end
+        elseif movie_mode == "play" or movie_mode == "resume" then
+            if movie_mode == "play" and movie_stop_at > 0 and done >= movie_stop_at then
+                write_status()
+                machine:exit()
+                return
+            end
+            if done >= #log then
+                set_pads(nil)
+                if movie_mode == "resume" then
+                    -- The recording goes on from the end of the movie.
+                    movie_mode = "record"
+                    set_event("recording")
+                    emu.pause()
+                else
+                    movie_mode = ""
+                    set_event("ended")
+                    if movie_close then
+                        write_status()
+                        machine:exit()
+                        return
+                    end
+                end
+            else
+                set_pads(log[done + 1])
+            end
+        end
+    end
+    -- Actions after the frame is counted: a save then holds that frame, and
+    -- a load waits a whole frame for the pads' latch.
+    take_actions()
+    if pending_osd ~= nil and pending_save == nil and pending_load == nil and latched_load == nil then
+        osd_wait = osd_wait - 1
+        if osd_wait <= 0 then
+            machine:popmessage(pending_osd)
+            pending_osd = nil
+        end
+    end
+    status_count = status_count + 1
+    if status_count % 4 == 0 then write_status() end
+end
+
 on_frame(function()
     frames = frames + 1
-    apply_keys()
+    apply_keys(movie_mode ~= "play" and movie_mode ~= "resume" and latched_load == nil)
     if frames % 6 == 0 then take_command() end
     if frames == 1 or frames % 15 == 0 then apply_picture() end
     if hidden and ready_check ~= nil then
@@ -280,10 +644,9 @@ on_frame(function()
     end
     if not hidden and fast_forward ~= forwarding then
         forwarding = fast_forward
-        video.throttled = was_throttled and not forwarding
-        video.frameskip = forwarding and 10 or was_frameskip
-        sound.ui_mute = forwarding or was_muted
+        apply_speed()
     end
+    control_tick()
 end)
 
 for _, script in ipairs(game_scripts) do dofile(script) end
@@ -347,10 +710,13 @@ QString mameKey(const QKeyEvent* event) {
     }
 }
 
-// Keys the studio keeps while the game has the keyboard: playtest controls.
+// Keys the studio keeps while the game has the keyboard: playtest controls,
+// and frame advance and speed (\ - =, as FCEUX has them).
 bool isStudioKey(const QKeyEvent* event) {
     const int key = event->key();
-    return (key >= Qt::Key_F1 && key <= Qt::Key_F35) || key == Qt::Key_Pause;
+    const bool keypad = event->modifiers() & Qt::KeypadModifier;
+    return (key >= Qt::Key_F1 && key <= Qt::Key_F35) || key == Qt::Key_Pause || key == Qt::Key_Backslash ||
+           (!keypad && (key == Qt::Key_Minus || key == Qt::Key_Equal));
 }
 
 QString luaPath(const QString& path) {
@@ -454,6 +820,9 @@ EmulatorRunner::EmulatorRunner(QObject* parent) : QObject(parent), startupTimer_
     studioColours_ = settings.value(QStringLiteral("playtest/studioColours"), true).toBool();
     startupTimer_->setInterval(kStartupPollMs);
     connect(startupTimer_, &QTimer::timeout, this, &EmulatorRunner::watchStartup);
+    statusTimer_ = new QTimer(this);
+    statusTimer_->setInterval(kStatusPollMs);
+    connect(statusTimer_, &QTimer::timeout, this, &EmulatorRunner::readStatus);
 }
 
 EmulatorRunner::~EmulatorRunner() {
@@ -549,32 +918,199 @@ void EmulatorRunner::writePicture() {
     }
 }
 
+namespace {
+// Replaces a file the control script reads each frame in one step.
+bool replaceFile(const QString& path, const QByteArray& data) {
+    QFile file(path + QStringLiteral(".tmp"));
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
+        return false;
+    }
+    file.write(data);
+    file.close();
+    // MoveFileEx replaces the file in one step. A replace that meets the
+    // script's read fails with a sharing violation: try again, or a released
+    // key would stay held in the game.
+#ifdef Q_OS_WIN
+    // The names outlive the call (a pointer into a temporary would not).
+    const QString source = QDir::toNativeSeparators(file.fileName());
+    const QString target = QDir::toNativeSeparators(path);
+    const auto from = reinterpret_cast<const wchar_t*>(source.utf16());
+    const auto to = reinterpret_cast<const wchar_t*>(target.utf16());
+    for (int attempt = 0; attempt < 20; ++attempt) {
+        if (MoveFileExW(from, to, MOVEFILE_REPLACE_EXISTING)) {
+            return true;
+        }
+        Sleep(1);
+    }
+    return false;
+#else
+    QFile::remove(path);
+    return QFile::rename(file.fileName(), path);
+#endif
+}
+
+// The SHA-1 of the image a run mounts, for its save-state folder.
+QString imageKey(const QStringList& arguments) {
+    for (int i = 0; i + 1 < arguments.size(); ++i) {
+        if (arguments.at(i) == QLatin1String("-cart") || arguments.at(i) == QLatin1String("-flop")) {
+            QFile file(arguments.at(i + 1));
+            if (file.open(QIODevice::ReadOnly)) {
+                return QString::fromLatin1(QCryptographicHash::hash(file.readAll(), QCryptographicHash::Sha1).toHex());
+            }
+        }
+    }
+    return QString::fromLatin1(
+        QCryptographicHash::hash(arguments.join(QLatin1Char('\n')).toUtf8(), QCryptographicHash::Sha1).toHex());
+}
+}  // namespace
+
 void EmulatorRunner::writeKeys() {
     if (!stage_ || !stage_->isValid()) {
         return;
     }
-    const QString path = stage_->filePath(QStringLiteral("keys.txt"));
-    QFile file(path + QStringLiteral(".tmp"));
-    if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
-        return;
-    }
     QStringList keys = keys_.values();
     keys.sort();
-    file.write(keys.join(QLatin1Char(' ')).toUtf8());
-    file.close();
-    // MoveFileEx replaces the file in one step; the script reads it each frame.
-    // A replace that meets the script's read fails with a sharing violation:
-    // try again, or a released key would stay held in the game.
-#ifdef Q_OS_WIN
-    const auto from = reinterpret_cast<const wchar_t*>(QDir::toNativeSeparators(file.fileName()).utf16());
-    const auto to = reinterpret_cast<const wchar_t*>(QDir::toNativeSeparators(path).utf16());
-    for (int attempt = 0; attempt < 20 && !MoveFileExW(from, to, MOVEFILE_REPLACE_EXISTING); ++attempt) {
-        Sleep(1);
+    if (!replaceFile(stage_->filePath(QStringLiteral("keys.txt")), keys.join(QLatin1Char(' ')).toUtf8())) {
+        // The script was reading it: a released key must not stay held.
+        QTimer::singleShot(kRewriteMs, this, &EmulatorRunner::writeKeys);
     }
-#else
-    QFile::remove(path);
-    QFile::rename(file.fileName(), path);
-#endif
+}
+
+void EmulatorRunner::writeActions() {
+    if (!controls_ || !stage_ || !stage_->isValid() || actions_.isEmpty()) {
+        return;
+    }
+    if (!replaceFile(stage_->filePath(QStringLiteral("actions.txt")),
+                     (actions_.join(QLatin1Char('\n')) + QLatin1Char('\n')).toUtf8())) {
+        QTimer::singleShot(kRewriteMs, this, &EmulatorRunner::writeActions);
+    }
+}
+
+void EmulatorRunner::sendAction(const QString& verb, const QString& argument) {
+    if (!controls_ || !stage_ || !stage_->isValid()) {
+        return;
+    }
+    actions_ << QStringLiteral("%1 %2 %3").arg(++actionSerial_).arg(verb, argument).trimmed();
+    writeActions();
+}
+
+void EmulatorRunner::readStatus() {
+    if (!controls_ || !stage_ || !stage_->isValid()) {
+        return;
+    }
+    QFile file(stage_->filePath(QStringLiteral("status.txt")));
+    if (!file.open(QIODevice::ReadOnly)) {
+        return;
+    }
+    QHash<QString, QString> status;
+    for (const QByteArray& line : file.readAll().split('\n')) {
+        const int space = line.indexOf(' ');
+        if (space > 0) {
+            status.insert(QString::fromUtf8(line.left(space)), QString::fromUtf8(line.mid(space + 1)).trimmed());
+        }
+    }
+    // Actions the script has taken leave the queue.
+    const int ack = status.value(QStringLiteral("ack")).toInt();
+    while (!actions_.isEmpty() && actions_.first().section(QLatin1Char(' '), 0, 0).toInt() <= ack) {
+        actions_.removeFirst();
+    }
+    const QString mode = status.value(QStringLiteral("mode"), QStringLiteral("none"));
+    const int frame = status.value(QStringLiteral("frame")).toInt();
+    const int length = status.value(QStringLiteral("length")).toInt();
+    if (mode != movieMode_ || frame != movieFrame_ || length != movieLength_) {
+        movieMode_ = mode;
+        movieFrame_ = frame;
+        movieLength_ = length;
+        emit emulationChanged();
+    }
+    // The script pauses by itself when Resume reaches the end of the movie;
+    // a pause or resume still on its way is not contradicted.
+    const bool scriptPaused = status.value(QStringLiteral("paused")) == QLatin1String("1");
+    const bool pending = std::any_of(actions_.cbegin(), actions_.cend(), [](const QString& action) {
+        const QString verb = action.section(QLatin1Char(' '), 1, 1);
+        return verb == QLatin1String("pause") || verb == QLatin1String("resume") || verb == QLatin1String("step");
+    });
+    if (!pending && scriptPaused != paused_) {
+        paused_ = scriptPaused;
+        emit stateChanged();
+    }
+    const QString event = status.value(QStringLiteral("event"));
+    const int serial = event.section(QLatin1Char(' '), 0, 0).toInt();
+    if (serial > eventSerial_) {
+        eventSerial_ = serial;
+        emit emulationEvent(event.section(QLatin1Char(' '), 1));
+    }
+}
+
+QString EmulatorRunner::statePath(int slot) const {
+    return QDir(stateDir_).filePath(QStringLiteral("slot%1.sta").arg(slot));
+}
+
+bool EmulatorRunner::slotHasState(int slot) const {
+    return !stateDir_.isEmpty() && QFile::exists(statePath(slot));
+}
+
+int EmulatorRunner::slotFrame(int slot) const {
+    QFile file(statePath(slot) + QStringLiteral(".input"));
+    if (stateDir_.isEmpty() || !file.open(QIODevice::ReadOnly)) {
+        return -1;
+    }
+    const QByteArray first = file.readLine().trimmed();
+    return first.startsWith("frame ") ? first.mid(6).toInt() : -1;
+}
+
+void EmulatorRunner::setSpeed(int percent) {
+    speed_ = std::max(0, percent);
+    sendAction(QStringLiteral("speed"), QString::number(speed_));
+    emit emulationChanged();
+}
+
+void EmulatorRunner::frameAdvance() {
+    if (!controls_ || !process_) {
+        return;
+    }
+    if (!paused_) {
+        // The first press pauses; each one after it runs one frame.
+        togglePause();
+        return;
+    }
+    sendAction(QStringLiteral("step"));
+}
+
+void EmulatorRunner::setStateSlot(int slot) {
+    slot_ = (slot % 10 + 10) % 10;
+    emit emulationChanged();
+}
+
+void EmulatorRunner::saveState() {
+    if (!controls_ || !process_ || stateDir_.isEmpty()) {
+        return;
+    }
+    QDir().mkpath(stateDir_);
+    sendAction(QStringLiteral("save"), QDir::fromNativeSeparators(statePath(slot_)));
+}
+
+void EmulatorRunner::loadState() {
+    if (!controls_ || !process_) {
+        return;
+    }
+    if (!slotHasState(slot_)) {
+        emit emulationEvent(QStringLiteral("no-state"));
+        return;
+    }
+    sendAction(QStringLiteral("load"), QDir::fromNativeSeparators(statePath(slot_)));
+}
+
+void EmulatorRunner::stopMovie() {
+    sendAction(QStringLiteral("stopmovie"));
+}
+
+bool EmulatorRunner::showMessage(const QString& text) {
+    if (!controls_ || !process_) {
+        return false;
+    }
+    sendAction(QStringLiteral("osd"), text.simplified());
+    return true;
 }
 
 void EmulatorRunner::append(const QString& line) {
@@ -611,6 +1147,15 @@ bool EmulatorRunner::writeControl(const sdk::ProcessSpec& spec, const QStringLis
         environment += QStringLiteral("    [\"%1\"] = [==[%2]==],\n").arg(it.key(), it.value());
         values << it.value();
     }
+    const QString actions = luaPath(stage_->filePath(QStringLiteral("actions.txt")));
+    const QString status = luaPath(stage_->filePath(QStringLiteral("status.txt")));
+    using Mode = MovieRequest::Mode;
+    const QString movieMode = movie_.mode == Mode::Record ? QStringLiteral("record")
+                              : movie_.mode == Mode::Play   ? QStringLiteral("play")
+                              : movie_.mode == Mode::Resume ? QStringLiteral("resume")
+                                                            : QString();
+    const QString movieFile = movieMode.isEmpty() ? QString() : luaPath(movie_.file);
+    values << actions << status << movieFile << movie_.header;
     for (const QString& value : values) {
         if (value.contains(QLatin1String("]==]"))) {
             *error = tr("a path or setting cannot be quoted for Lua");
@@ -631,7 +1176,15 @@ bool EmulatorRunner::writeControl(const sdk::ProcessSpec& spec, const QStringLis
         .replace(QLatin1String("@READYWHEN@"), values.at(4))
         .replace(QLatin1String("@READY@"), values.at(2))
         .replace(QLatin1String("@SCRIPTS@"), scripts.join(QStringLiteral(", ")))
-        .replace(QLatin1String("@ENVIRONMENT@"), environment);
+        .replace(QLatin1String("@ACTIONS@"), actions)
+        .replace(QLatin1String("@STATUS@"), status)
+        .replace(QLatin1String("@MOVIEMODE@"), movieMode)
+        .replace(QLatin1String("@MOVIEFILE@"), movieFile)
+        .replace(QLatin1String("@MOVIESTOPAT@"), QString::number(movie_.stopAt))
+        .replace(QLatin1String("@MOVIECLOSE@"), movie_.closeAtEnd ? QStringLiteral("1") : QString())
+        .replace(QLatin1String("@ENVIRONMENT@"), environment)
+        // Last: the header holds the user's own words.
+        .replace(QLatin1String("@MOVIEHEADER@"), movie_.header);
     file.write(text.toUtf8());
     return true;
 }
@@ -648,15 +1201,28 @@ QString EmulatorRunner::stageCart(const QString& source, QString* error) {
 }
 
 void EmulatorRunner::start(const sdk::ProcessSpec& requested, const QString& title,
-                           std::function<void(const sdk::ProcessResult&)> finished) {
+                           std::function<void(const sdk::ProcessResult&)> finished, const MovieRequest& movie) {
     sdk::ProcessSpec spec = requested;
     const Launch launch = parseLaunch(spec.arguments);
     const QStringList signature = QStringList{spec.program, spec.workingDirectory} + launch.arguments;
-    if (process_ && phase_ != Phase::Stopping && stage_ && !cart_.isEmpty() && !launch.cart.isEmpty() &&
-        signature == signature_ && reload(spec, launch.cart, launch.gameScripts, title, finished)) {
+    const bool movieRun = movie.mode != MovieRequest::Mode::None;
+    if (!movieRun && movie_.mode == MovieRequest::Mode::None && process_ && phase_ != Phase::Stopping && stage_ &&
+        !cart_.isEmpty() && !launch.cart.isEmpty() && signature == signature_ &&
+        reload(spec, launch.cart, launch.gameScripts, title, finished)) {
         return;
     }
     stopNow();
+    movie_ = movie;
+    actions_.clear();
+    actionSerial_ = 0;
+    eventSerial_ = 0;
+    movieMode_ = QStringLiteral("none");
+    movieFrame_ = movieLength_ = 0;
+    controls_ = false;
+    // Save states belong to the image: a rebuilt game gets its own.
+    stateDir_ = QDir(QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation))
+                    .filePath(QStringLiteral("states/") +
+                              (movie.stateKey.isEmpty() ? imageKey(spec.arguments) : movie.stateKey));
     if (!surface_) {
         sdk::ProcessResult result;
         result.error = tr("The Playtest view is not open.");
@@ -715,6 +1281,10 @@ void EmulatorRunner::start(const sdk::ProcessSpec& requested, const QString& tit
                   << luaPath(stage_->filePath(QStringLiteral("control.lua")));
         // A game that reports when it is up gets a fast, hidden start.
         fastStart_ = !readyFile_.isEmpty();
+        controls_ = true;
+        if (speed_ != 100) {
+            sendAction(QStringLiteral("speed"), QString::number(speed_));
+        }
     } else {
         append(tr("Fast start and hot reload are off: %1")
                    .arg(error.isEmpty() ? stage_->errorString() : error));
@@ -760,6 +1330,11 @@ void EmulatorRunner::start(const sdk::ProcessSpec& requested, const QString& tit
                 result.crashed = status == QProcess::CrashExit && !stopping_;
                 append(stopping_ ? tr("Stopped.")
                                  : tr("Exited with code %1.").arg(code));
+                // The script's last word, before its folder goes.
+                readStatus();
+                statusTimer_->stop();
+                controls_ = false;
+                movieMode_ = QStringLiteral("none");
                 process_->deleteLater();
                 process_ = nullptr;
                 paused_ = false;
@@ -789,6 +1364,8 @@ void EmulatorRunner::start(const sdk::ProcessSpec& requested, const QString& tit
         process_->deleteLater();
         process_ = nullptr;
         startupTimer_->stop();
+        statusTimer_->stop();
+        controls_ = false;
         phase_ = Phase::Idle;
         stage_.reset();
         cart_.clear();
@@ -804,6 +1381,9 @@ void EmulatorRunner::start(const sdk::ProcessSpec& requested, const QString& tit
     startupChecks_ = 0;
     process_->start();
     startupTimer_->start();
+    if (controls_) {
+        statusTimer_->start();
+    }
     emit stateChanged();
 }
 
@@ -909,17 +1489,45 @@ void EmulatorRunner::acknowledgeWarnings(const sdk::ProcessSpec& spec) {
     }
 }
 
+void EmulatorRunner::finishMovie() {
+    // MAME embedded in the studio may be ended before its own stop handler
+    // runs: a recording is written by the script first, and the studio waits
+    // (briefly) until the script says it has done it.
+    if (!controls_ || !process_ || movieMode_ != QLatin1String("record")) {
+        return;
+    }
+    sendAction(QStringLiteral("stopmovie"));
+    const int serial = actionSerial_;
+    QElapsedTimer clock;
+    clock.start();
+    while (clock.elapsed() < kMovieFlushMs) {
+        readStatus();
+        if (actions_.isEmpty() || actions_.first().section(QLatin1Char(' '), 0, 0).toInt() > serial) {
+            return;
+        }
+        QThread::msleep(20);
+    }
+    append(tr("The movie may have lost its last seconds: the emulator did not answer."));
+}
+
 void EmulatorRunner::stop() {
     if (!process_ || phase_ == Phase::Stopping) {
         return;
     }
+    finishMovie();
     stopping_ = true;
     if (paused_) {
         togglePause();
     }
     startupTimer_->stop();
     setPhase(Phase::Stopping);
-    process_->terminate();
+    // The control script ends MAME at once; a close message would not reach
+    // an embedded MAME, which is ended by force when it lingers.
+    if (controls_) {
+        sendAction(QStringLiteral("exit"));
+    } else {
+        process_->terminate();
+    }
     QPointer<QProcess> process = process_;
     QTimer::singleShot(kStopGraceMs, this, [process] {
         if (process && process->state() != QProcess::NotRunning) {
@@ -932,11 +1540,16 @@ void EmulatorRunner::stopNow() {
     if (!process_) {
         return;
     }
+    finishMovie();
     stopping_ = true;
     if (paused_) {
         togglePause();
     }
-    process_->terminate();
+    if (controls_) {
+        sendAction(QStringLiteral("exit"));
+    } else {
+        process_->terminate();
+    }
     if (!process_->waitForFinished(1500)) {
         process_->kill();
         process_->waitForFinished(1500);
@@ -950,6 +1563,9 @@ void EmulatorRunner::stopNow() {
         process_ = nullptr;
         paused_ = false;
         startupTimer_->stop();
+        statusTimer_->stop();
+        controls_ = false;
+        movieMode_ = QStringLiteral("none");
         phase_ = Phase::Idle;
         stage_.reset();
         cart_.clear();
@@ -967,10 +1583,20 @@ void EmulatorRunner::stopNow() {
 }
 
 bool EmulatorRunner::togglePause() {
-#ifdef Q_OS_WIN
     if (!process_) {
         return false;
     }
+    if (controls_) {
+        // The control script pauses the machine: it still draws, so the
+        // picture stays live, and frame advance steps from there.
+        sendAction(paused_ ? QStringLiteral("resume") : QStringLiteral("pause"));
+        pausedPicture_ = QImage();
+        paused_ = !paused_;
+        append(paused_ ? tr("Paused.") : tr("Resumed."));
+        emit stateChanged();
+        return true;
+    }
+#ifdef Q_OS_WIN
     // MAME's own pause key is not bound in every configuration, so the whole
     // process is suspended instead; the picture freezes on the last frame.
     using ProcessCall = LONG(WINAPI*)(HANDLE);

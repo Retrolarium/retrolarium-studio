@@ -42,6 +42,19 @@ protected:
     bool focusNextPrevChild(bool next) override;
 };
 
+// An input movie a run records or plays from power-on (Run > Movie). A
+// recording is written as it goes and when the run ends; Resume plays the
+// movie to its end, then pauses and records on.
+struct MovieRequest {
+    enum class Mode { None, Record, Play, Resume };
+    Mode mode = Mode::None;
+    QString file;      // the .rlmovie written or read
+    QString header;    // a recording's header lines, each ending in a newline
+    QString stateKey;  // the save-state folder for this image (its SHA-1)
+    int stopAt = 0;            // Play: end the run at this frame (0: no)
+    bool closeAtEnd = false;   // Play: end the run when the movie ends
+};
+
 // One emulator process at a time, rendering into a surface the Playtest view
 // shows. Game-agnostic: the plugin supplies the command, this adds embedding.
 class EmulatorRunner final : public QObject {
@@ -74,8 +87,10 @@ public:
     // and arguments apart from the cartridge file and the autoboot script),
     // it is hot-reloaded instead: the new build is mounted and the machine
     // hard-resets into it, with the new environment and ready file.
+    // A movie run is never a hot reload: it starts the machine from power-on.
     void start(const sdk::ProcessSpec& spec, const QString& title,
-               std::function<void(const sdk::ProcessResult&)> finished);
+               std::function<void(const sdk::ProcessResult&)> finished,
+               const MovieRequest& movie = {});
     // Asks the emulator to close and returns; it is killed if it lingers.
     void stop();
     // Ends the emulator before returning.
@@ -92,6 +107,31 @@ public:
     bool squarePixels() const { return squarePixels_; }
     bool studioColours() const { return studioColours_; }
     bool hasStudioPalette() const { return hasPalette_; }
+    // Emulation controls, through the control script (a run without it has
+    // only pause and stop). Speed in percent, 0 for no limit; a frame advance
+    // pauses first; save states go to numbered slots (0-9) per image. None of
+    // them changes what a movie records: it holds the input of every frame.
+    bool hasControls() const { return controls_; }
+    int speed() const { return speed_; }
+    void setSpeed(int percent);
+    void frameAdvance();
+    int stateSlot() const { return slot_; }
+    void setStateSlot(int slot);
+    void saveState();
+    void loadState();
+    bool slotHasState(int slot) const;
+    // The frame a slot's state was saved at (from power-on); -1 when unknown.
+    int slotFrame(int slot) const;
+    // The movie the run records or plays: "record", "play" or "none" (it
+    // ended, or was stopped), its current frame and length.
+    QString movieMode() const { return movieMode_; }
+    int movieFrame() const { return movieFrame_; }
+    int movieLength() const { return movieLength_; }
+    const MovieRequest& movie() const { return movie_; }
+    void stopMovie();
+    // A short note over the game's picture; false when nothing can show it.
+    bool showMessage(const QString& text);
+
     // The picture as it is on screen, or null when nothing runs.
     QImage picture() const;
     // Saves the emulator picture as PNG; returns the path or empty.
@@ -100,14 +140,25 @@ public:
 signals:
     void stateChanged();
     void outputLine(const QString& line);
+    // The movie's frame or mode, the speed or the slot changed.
+    void emulationChanged();
+    // Something the control script did: "saved", "loaded", "no-state",
+    // "ended", "stopped", "recording" (Resume reached the end) or
+    // "foreign-state" (a state from outside the movie ended it).
+    void emulationEvent(const QString& event);
 
 private:
     void append(const QString& line);
+    void sendAction(const QString& verb, const QString& argument = QString());
+    void readStatus();
+    QString statePath(int slot) const;
+    void finishMovie();
 
     QPointer<EmulatorSurface> surface_;
     void watchStartup();
     void setPhase(Phase phase);
     void writeKeys();
+    void writeActions();
     void writePicture();
     void acknowledgeWarnings(const sdk::ProcessSpec& spec);
     bool writeControl(const sdk::ProcessSpec& spec, const QStringList& gameScripts, QString* error);
@@ -138,6 +189,19 @@ private:
     bool hasPalette_ = false;
     QImage pausedPicture_;
     bool stopping_ = false;
+    // The control script's actions and status (see emulationChanged).
+    bool controls_ = false;
+    QTimer* statusTimer_;
+    QStringList actions_;
+    int actionSerial_ = 0;
+    int speed_ = 100;
+    int slot_ = 0;
+    QString stateDir_;
+    MovieRequest movie_;
+    QString movieMode_ = QStringLiteral("none");
+    int movieFrame_ = 0;
+    int movieLength_ = 0;
+    int eventSerial_ = 0;
 };
 
 }  // namespace rl::runtime

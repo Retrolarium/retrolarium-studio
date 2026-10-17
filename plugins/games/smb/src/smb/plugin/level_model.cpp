@@ -623,7 +623,7 @@ sdk::Library SmbLevelModel::library() const {
         sdk::LibraryItem start;
         start.id = QStringLiteral("start");
         start.label = tr("Test start");
-        start.hint = tr("drop where Play from selected (F5) puts the player; not level data");
+        start.hint = tr("drop where Play from selected (F4) puts the player; not level data");
         start.icon = session_->painter().player();
         library_ << start;
         const QVector<SmbObjectKind>& objects = objectCatalog();
@@ -819,7 +819,7 @@ sdk::Inspection SmbLevelModel::inspect() const {
                              readOnly(QStringLiteral("page"), tr("Page"), cell.x() / 16),
                              readOnly(QStringLiteral("course"), tr("Plays as"),
                                       tr("World %1-%2").arg(start.world).arg(start.level))};
-        inspection.note = tr("Drag the player to where Play from selected (F5) puts it. The start point "
+        inspection.note = tr("Drag the player to where Play from selected (F4) puts it. The start point "
                              "is a playtest setting, not level data.");
         return inspection;
     }
