@@ -7765,6 +7765,10 @@
         <source>Previous, next state slot</source>
         <translation>Slot di stato precedente, successivo</translation>
     </message>
+    <message>
+        <source>Rewind a frame, a second</source>
+        <translation>Indietro di un fotogramma, di un secondo</translation>
+    </message>
 </context>
 <context>
     <name>rl::shell::BottomPanel</name>
@@ -8521,6 +8525,26 @@
     <message>
         <source>Playing movie «%1»</source>
         <translation>Riproduzione del filmato «%1»</translation>
+    </message>
+    <message>
+        <source>Rewind a frame</source>
+        <translation>Fotogramma indietro</translation>
+    </message>
+    <message>
+        <source>Rewind a second</source>
+        <translation>Indietro di un secondo</translation>
+    </message>
+    <message>
+        <source>Show input</source>
+        <translation>Mostra i tasti premuti</translation>
+    </message>
+    <message>
+        <source>Show RAM watch</source>
+        <translation>Mostra i valori della RAM</translation>
+    </message>
+    <message>
+        <source>Cannot rewind further</source>
+        <translation>Impossibile tornare più indietro</translation>
     </message>
 </context>
 <context>

@@ -243,6 +243,10 @@ private:
     QAction* pauseGameAction_ = nullptr;
     QAction* stopGameAction_ = nullptr;
     QAction* frameAdvanceAction_ = nullptr;
+    QAction* rewindAction_ = nullptr;
+    QAction* rewindSecondAction_ = nullptr;
+    QAction* showInputAction_ = nullptr;
+    QAction* showWatchAction_ = nullptr;
     QMenu* speedMenu_ = nullptr;
     QActionGroup* speedGroup_ = nullptr;
     QAction* slowerAction_ = nullptr;

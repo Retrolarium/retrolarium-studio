@@ -55,6 +55,13 @@ struct MovieRequest {
     bool closeAtEnd = false;   // Play: end the run when the movie ends
 };
 
+// A RAM cell the watch overlay shows: its name and bytes of the main CPU.
+struct WatchCell {
+    QString name;
+    quint32 address = 0;
+    int length = 1;
+};
+
 // One emulator process at a time, rendering into a surface the Playtest view
 // shows. Game-agnostic: the plugin supplies the command, this adds embedding.
 class EmulatorRunner final : public QObject {
@@ -129,6 +136,15 @@ public:
     int movieLength() const { return movieLength_; }
     const MovieRequest& movie() const { return movie_; }
     void stopMovie();
+    // Back by frames, paused there: the run keeps states of its last
+    // seconds and plays the frames after one again.
+    void rewind(int frames);
+    // Over the picture: pad one's buttons, and the RAM cells to watch (set
+    // before a run starts; a game's movie checks name them).
+    void setOverlay(bool input, bool watch);
+    bool showsInput() const { return showInput_; }
+    bool showsWatch() const { return showWatch_; }
+    void setWatch(const QVector<WatchCell>& cells) { watch_ = cells; }
     // A short note over the game's picture; false when nothing can show it.
     bool showMessage(const QString& text);
 
@@ -198,6 +214,9 @@ private:
     int slot_ = 0;
     QString stateDir_;
     MovieRequest movie_;
+    bool showInput_ = false;
+    bool showWatch_ = false;
+    QVector<WatchCell> watch_;
     QString movieMode_ = QStringLiteral("none");
     int movieFrame_ = 0;
     int movieLength_ = 0;

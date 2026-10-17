@@ -56,6 +56,7 @@
 #include <QRegularExpression>
 #include <QScrollArea>
 #include <QScrollBar>
+#include <QSet>
 #include <QSettings>
 #include <QStandardPaths>
 #include <QStackedWidget>
@@ -151,6 +152,29 @@ protected:
         event->accept();
     }
 };
+
+// The RAM cells a game repository's movie checks read (movies/*.check.json),
+// for the watch overlay: main CPU cells, the first of each name.
+QVector<runtime::WatchCell> watchCells(const QString& repository) {
+    QVector<runtime::WatchCell> cells;
+    QSet<QString> names;
+    const QDir movies(QDir(repository).filePath(QStringLiteral("movies")));
+    for (const QFileInfo& info : movies.entryInfoList({QStringLiteral("*.check.json")}, QDir::Files, QDir::Name)) {
+        QFile file(info.absoluteFilePath());
+        if (!file.open(QIODevice::ReadOnly)) continue;
+        const QJsonObject all = QJsonDocument::fromJson(file.readAll()).object().value(QStringLiteral("cells")).toObject();
+        for (auto it = all.begin(); it != all.end(); ++it) {
+            const QJsonObject cell = it.value().toObject();
+            const QString space = cell.value(QStringLiteral("space")).toString(QStringLiteral("program"));
+            bool ok = false;
+            const quint32 address = cell.value(QStringLiteral("address")).toString().toUInt(&ok, 0);
+            if (!ok || space != QLatin1String("program") || names.contains(it.key())) continue;
+            names.insert(it.key());
+            cells.append({it.key(), address, qBound(1, cell.value(QStringLiteral("length")).toInt(1), 8)});
+        }
+    }
+    return cells;
+}
 
 }  // namespace
 
@@ -398,6 +422,14 @@ void MainWindow::buildMenus() {
         emulator_->frameAdvance();
         notifyEmulation(paused ? tr("Frame %1").arg(emulator_->movieFrame() + 1) : tr("Paused"));
     });
+    // Rewind, as TAS tools have it: back a frame (or a second) at a press,
+    // paused there; the run keeps its last seconds.
+    rewindAction_ = build->addAction(tr("Rewind a frame"));
+    rewindAction_->setShortcut(QKeySequence(Qt::Key_Backspace));
+    connect(rewindAction_, &QAction::triggered, this, [this] { emulator_->rewind(1); });
+    rewindSecondAction_ = build->addAction(tr("Rewind a second"));
+    rewindSecondAction_->setShortcut(QKeySequence(QStringLiteral("Shift+Backspace")));
+    connect(rewindSecondAction_, &QAction::triggered, this, [this] { emulator_->rewind(60); });
     speedMenu_ = build->addMenu(tr("Speed"));
     speedMenu_->setFont(menuFont);
     speedGroup_ = new QActionGroup(this);
@@ -416,6 +448,25 @@ void MainWindow::buildMenus() {
     fasterAction_ = speedMenu_->addAction(tr("Faster"));
     fasterAction_->setShortcut(QKeySequence(Qt::Key_Equal));
     connect(fasterAction_, &QAction::triggered, this, [this] { stepEmulationSpeed(1); });
+    // Over the picture: the buttons held and the game's RAM cells.
+    showInputAction_ = build->addAction(tr("Show input"));
+    showInputAction_->setCheckable(true);
+    showWatchAction_ = build->addAction(tr("Show RAM watch"));
+    showWatchAction_->setCheckable(true);
+    {
+        QSettings settings;
+        showInputAction_->setChecked(settings.value(QStringLiteral("emulation/showInput"), false).toBool());
+        showWatchAction_->setChecked(settings.value(QStringLiteral("emulation/showWatch"), false).toBool());
+        emulator_->setOverlay(showInputAction_->isChecked(), showWatchAction_->isChecked());
+    }
+    const auto applyOverlay = [this] {
+        QSettings settings;
+        settings.setValue(QStringLiteral("emulation/showInput"), showInputAction_->isChecked());
+        settings.setValue(QStringLiteral("emulation/showWatch"), showWatchAction_->isChecked());
+        emulator_->setOverlay(showInputAction_->isChecked(), showWatchAction_->isChecked());
+    };
+    connect(showInputAction_, &QAction::toggled, this, applyOverlay);
+    connect(showWatchAction_, &QAction::toggled, this, applyOverlay);
     build->addSeparator();
     saveStateAction_ = build->addAction(tr("Save state"));
     saveStateAction_->setShortcut(QKeySequence(Qt::Key_F5));
@@ -905,6 +956,9 @@ bool MainWindow::openProjectFile(const QString& path) {
     session_->attachHost(this);
     projectPath_ = project.path();
     rememberRecent(projectPath_);
+    const QString descriptor = currentDescriptor();
+    emulator_->setWatch(descriptor.isEmpty() ? QVector<runtime::WatchCell>()
+                                             : watchCells(QFileInfo(descriptor).absolutePath()));
 
     QUndoStack* undo = session_->undoStack();
     connect(undo, &QUndoStack::indexChanged, this, [this] {
@@ -1851,6 +1905,8 @@ void MainWindow::updateActions() {
 
     const bool controls = running && emulator_->hasControls();
     frameAdvanceAction_->setEnabled(controls);
+    rewindAction_->setEnabled(controls);
+    rewindSecondAction_->setEnabled(controls);
     saveStateAction_->setEnabled(controls);
     loadStateAction_->setEnabled(controls);
     previousSlotAction_->setEnabled(controls);
@@ -1940,6 +1996,10 @@ void MainWindow::showEmulationEvent(const QString& event) {
                                                                              : tr("Movie stopped and saved");
     } else if (event == QLatin1String("recording")) {
         text = tr("End of movie: paused, recording on (Pause to go on)");
+    } else if (event == QLatin1String("rewound")) {
+        text = tr("Frame %1").arg(emulator_->movieFrame());
+    } else if (event == QLatin1String("rewind-limit")) {
+        text = tr("Cannot rewind further");
     } else if (event == QLatin1String("foreign-state")) {
         text = tr("State %1 is not from this movie: movie stopped").arg(slot);
     }

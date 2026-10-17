@@ -7796,6 +7796,10 @@
         <source>Previous, next state slot</source>
         <translation>Предыдущий, следующий слот сейва</translation>
     </message>
+    <message>
+        <source>Rewind a frame, a second</source>
+        <translation>Кадр назад, секунда назад</translation>
+    </message>
 </context>
 <context>
     <name>rl::shell::BottomPanel</name>
@@ -8555,6 +8559,26 @@
     <message>
         <source>Playing movie «%1»</source>
         <translation>Воспроизведение ролика «%1»</translation>
+    </message>
+    <message>
+        <source>Rewind a frame</source>
+        <translation>Кадр назад</translation>
+    </message>
+    <message>
+        <source>Rewind a second</source>
+        <translation>Секунда назад</translation>
+    </message>
+    <message>
+        <source>Show input</source>
+        <translation>Показывать нажатые кнопки</translation>
+    </message>
+    <message>
+        <source>Show RAM watch</source>
+        <translation>Показывать ячейки RAM</translation>
+    </message>
+    <message>
+        <source>Cannot rewind further</source>
+        <translation>Дальше назад нельзя</translation>
     </message>
 </context>
 <context>

@@ -7734,6 +7734,10 @@
         <source>Previous, next state slot</source>
         <translation>前、次のステートスロット</translation>
     </message>
+    <message>
+        <source>Rewind a frame, a second</source>
+        <translation>1コマ戻す、1秒戻す</translation>
+    </message>
 </context>
 <context>
     <name>rl::shell::BottomPanel</name>
@@ -8487,6 +8491,26 @@
     <message>
         <source>Playing movie «%1»</source>
         <translation>ムービー「%1」を再生中</translation>
+    </message>
+    <message>
+        <source>Rewind a frame</source>
+        <translation>1コマ戻す</translation>
+    </message>
+    <message>
+        <source>Rewind a second</source>
+        <translation>1秒戻す</translation>
+    </message>
+    <message>
+        <source>Show input</source>
+        <translation>押したボタンを表示</translation>
+    </message>
+    <message>
+        <source>Show RAM watch</source>
+        <translation>RAMウォッチを表示</translation>
+    </message>
+    <message>
+        <source>Cannot rewind further</source>
+        <translation>これ以上戻せません</translation>
     </message>
 </context>
 <context>

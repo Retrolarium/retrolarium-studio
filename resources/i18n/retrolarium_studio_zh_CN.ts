@@ -7734,6 +7734,10 @@
         <source>Previous, next state slot</source>
         <translation>上一个、下一个存档槽</translation>
     </message>
+    <message>
+        <source>Rewind a frame, a second</source>
+        <translation>后退一帧、后退一秒</translation>
+    </message>
 </context>
 <context>
     <name>rl::shell::BottomPanel</name>
@@ -8487,6 +8491,26 @@
     <message>
         <source>Playing movie «%1»</source>
         <translation>正在播放录像“%1”</translation>
+    </message>
+    <message>
+        <source>Rewind a frame</source>
+        <translation>后退一帧</translation>
+    </message>
+    <message>
+        <source>Rewind a second</source>
+        <translation>后退一秒</translation>
+    </message>
+    <message>
+        <source>Show input</source>
+        <translation>显示按下的按键</translation>
+    </message>
+    <message>
+        <source>Show RAM watch</source>
+        <translation>显示内存监视</translation>
+    </message>
+    <message>
+        <source>Cannot rewind further</source>
+        <translation>无法再后退</translation>
     </message>
 </context>
 <context>

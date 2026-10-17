@@ -120,6 +120,7 @@ AboutDialog::AboutDialog(QWidget* parent) : StudioDialog(tr("About"), parent) {
                                  {tr("Pause"), tr("Pause or resume the game")},
                                  {QStringLiteral("Shift+F5"), tr("Stop the game")},
                                  {QStringLiteral("\\"), tr("Frame advance")},
+                                 {QStringLiteral("Backspace  Shift+Backspace"), tr("Rewind a frame, a second")},
                                  {QStringLiteral("-  ="), tr("Slower, faster")},
                                  {QStringLiteral("Tab"), tr("Fast-forward while held")},
                                  {QStringLiteral("F5  F8"), tr("Save state, load state")},

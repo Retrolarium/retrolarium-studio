@@ -339,6 +339,33 @@ end
 -- emulated so far, and a save state keeps its count beside it.
 local log, last_time, done = {}, now_time(), 0
 _G.retrolarium_movie = {frame = 0}
+
+-- Rewind: states in memory, near and far. Near, one every rewind_every
+-- frames, the last rewind_keep of them (15 seconds): a step back runs at most
+-- that many frames again. Far, one every far_every frames, the last far_keep
+-- of them (5 minutes), for going back further a second at a time. Plus the
+-- pads of every frame since the oldest. Going back to a frame loads the state
+-- before it and runs the frames after it again with the same pads,
+-- unthrottled, then pauses there. (A state is 2 MB or so: one a frame would
+-- not fit.)
+local rewind_every, rewind_keep = 20, 45
+local far_every, far_keep = 300, 60
+local ring, far, inputs, inputs_from = {}, {}, {}, 1
+local replay_to = nil
+-- A state in memory is only right taken or loaded while the machine is
+-- paused (during a frame MAME is inside its scheduler, and a state from there
+-- comes back subtly wrong). So a capture pauses for one redraw, unthrottled,
+-- and a rewind pauses, loads, and goes on from the next redraw (MAME runs no
+-- frames after a load and an unpause in one call). user_paused is the pause
+-- someone asked for, which a capture keeps.
+local capture_pending, rewind_pending, unpause_next = false, nil, false
+local user_paused, stepping = false, false
+
+-- Over the picture, when the Run menu asks: the pads' buttons of the frame
+-- shown, and the game's RAM cells its movie checks watch.
+local overlay = [==[@OVERLAY@]==]
+local show_input, show_watch = overlay:find("input", 1, true) ~= nil, overlay:find("watch", 1, true) ~= nil
+local watch = {@WATCH@}
 local event, events, ack = "", 0, 0
 -- Each event counts, so the studio sees two saves in a row.
 local function set_event(name)
@@ -396,7 +423,9 @@ local function write_status()
     if file == nil then return end
     local mode = movie_mode == "resume" and "play" or movie_mode
     file:write(string.format("mode %s\nframe %d\nlength %d\nspeed %d\npaused %d\nack %d\nevent %d %s\n",
-        mode == "" and "none" or mode, done, #log, speed, machine.paused and 1 or 0, ack,
+        mode == "" and "none" or mode, done, #log, speed,
+        -- the pauses a capture or a rewind makes are not the game's
+        machine.paused and not capture_pending and rewind_pending == nil and not unpause_next and 1 or 0, ack,
         events, event))
     file:close()
     os.remove(status_file)
@@ -425,6 +454,8 @@ table.insert(_G.retrolarium_subscriptions, emu.add_machine_post_load_notifier(fu
     if _G.retrolarium_generation ~= generation or pending_load == nil then return end
     local path = pending_load
     pending_load, last_time = nil, now_time()
+    -- The rewind states belong to the frames before the load.
+    ring, far, inputs, inputs_from = {}, {}, {}, 1
     local saved, frame = read_runs(path .. ".input")
     local recording = movie_mode == "record"
     local playing = movie_mode == "play" or movie_mode == "resume"
@@ -469,16 +500,137 @@ table.insert(_G.retrolarium_subscriptions, emu.add_machine_stop_notifier(functio
     write_movie()
 end))
 
+-- The pads for the frame after `done`: the movie's while one plays, else
+-- the ones that frame had before (a rewind runs it again).
+local function pads_of(frame)
+    if movie_mode == "play" or movie_mode == "resume" then return log[frame] end
+    return inputs[frame]
+end
+local function replay_pads()
+    return pads_of(done + 1)
+end
+
+-- Back at the frame a rewind went to: paused, a recording drops what came
+-- after it, and the keys or the movie take the pads again.
+local function finish_rewind()
+    replay_to = nil
+    apply_speed()
+    if movie_mode == "record" then
+        for i = #log, done + 1, -1 do log[i] = nil end
+        set_pads(nil)
+    elseif movie_mode == "play" or movie_mode == "resume" then
+        set_pads(log[done + 1])
+    else
+        set_pads(nil)
+    end
+    user_paused = true
+    emu.pause()
+    set_event("rewound")
+end
+
+-- Called while paused: the frame `done` just ended.
+local function capture_state()
+    local entry = {frame = done, state = machine:buffer_save()}
+    ring[#ring + 1] = entry
+    if #ring > rewind_keep then table.remove(ring, 1) end
+    if done % far_every == 0 then
+        far[#far + 1] = entry
+        if #far > far_keep then table.remove(far, 1) end
+    end
+    -- The pads from before the oldest state are not run again.
+    local oldest = math.min(ring[1].frame, far[1] ~= nil and far[1].frame or ring[1].frame)
+    for i = inputs_from, oldest do inputs[i] = nil end
+    inputs_from = math.max(inputs_from, oldest + 1)
+end
+
+-- The latest state at or before a frame, near or far; the oldest one.
+local function state_before(frame)
+    local found = nil
+    for _, list in ipairs({ring, far}) do
+        for i = #list, 1, -1 do
+            if list[i].frame <= frame then
+                if found == nil or list[i].frame > found.frame then found = list[i] end
+                break
+            end
+        end
+    end
+    return found
+end
+local function oldest_state()
+    if ring[1] == nil or (far[1] ~= nil and far[1].frame < ring[1].frame) then return far[1] end
+    return ring[1]
+end
+
+local function rewind(count)
+    if latched_load ~= nil or replay_to ~= nil or rewind_pending ~= nil then return end
+    local target = math.max(done - count, 0)
+    local entry = state_before(target)
+    if entry == nil then
+        -- As far back as the states go.
+        entry = oldest_state()
+        if entry == nil or entry.frame >= done then
+            user_paused = true
+            emu.pause()
+            set_event("rewind-limit")
+            return
+        end
+        target = entry.frame
+    end
+    -- The pads hold the buttons of the state's next frame for one frame
+    -- first (a paused machine does not take them in): the first frame after
+    -- the load reads those, not the keys held now. That frame then pauses,
+    -- and the state loads on the redraw after it.
+    rewind_pending, capture_pending = {entry, target, "latch"}, false
+    for _, list in ipairs({ring, far}) do
+        for i = #list, 1, -1 do
+            if list[i].frame > entry.frame then table.remove(list, i) end
+        end
+    end
+    for field in pairs(held) do field:clear_value() end
+    held, keys_text = {}, ""
+    set_pads(pads_of(entry.frame + 1))
+    video.throttled = false
+    if machine.paused then emu.unpause() end
+end
+
+-- Paused: load the state, then pause there or run on to the frame asked for.
+local function rewind_load()
+    local entry, target = rewind_pending[1], rewind_pending[2]
+    rewind_pending = nil
+    machine:buffer_load(entry.state)
+    -- The machine's time shows the state's from the next redraw on.
+    done, last_time = entry.frame, nil
+    _G.retrolarium_movie.frame = done
+    for field in pairs(held) do field:clear_value() end
+    held, keys_text = {}, ""
+    if done >= target then
+        finish_rewind()
+        return
+    end
+    replay_to = target
+    set_pads(replay_pads())
+    video.throttled, video.frameskip = false, 10
+    unpause_next = true
+end
+
 local function run_action(verb, argument)
     if verb == "speed" then
         speed = math.max(0, tonumber(argument) or 100)
         apply_speed()
     elseif verb == "pause" then
+        user_paused = true
         if not machine.paused then emu.pause() end
     elseif verb == "resume" then
+        user_paused = false
         if machine.paused then emu.unpause() end
     elseif verb == "step" then
-        if machine.paused then emu.step() else emu.pause() end
+        user_paused = true
+        if machine.paused then
+            stepping = true
+            emu.step()
+        else
+            emu.pause()
+        end
     elseif verb == "save" then
         pending_save = argument
         -- Asking MAME to save (or load) lifts its pause; a paused game
@@ -516,6 +668,11 @@ local function run_action(verb, argument)
         -- message of its own, so it ends from here (the movie is written).
         write_movie()
         machine:exit()
+    elseif verb == "rewind" then
+        rewind(tonumber(argument) or 1)
+    elseif verb == "overlay" then
+        show_input = argument:find("input", 1, true) ~= nil
+        show_watch = argument:find("watch", 1, true) ~= nil
     elseif verb == "osd" then
         -- A note over the picture ("State 3 saved"), as FCEUX shows one,
         -- shown once a save or load in progress is done: MAME then posts
@@ -542,9 +699,52 @@ end
 -- The movie's frame over the picture, as Gens shows it: frame/length while
 -- it plays, REC and the frame while it records. Drawn in MAME's frame-done
 -- callback (a frame notifier is too late), in the screen's pixels.
+-- The input overlay draws pad one: the d-pad as a cross, the other buttons
+-- held as their names; the watch overlay the RAM cells, one a line.
+local directions, buttons = {}, {}
+for mask, fields in pairs(pads[1]) do
+    local name = fields[1].name:gsub("^P%d+%s+", "")
+    local lower = name:lower()
+    local direction = lower:match("up") or lower:match("down") or lower:match("left") or lower:match("right")
+    if direction ~= nil then
+        directions[direction] = mask
+    else
+        table.insert(buttons, {mask = mask, name = name})
+    end
+end
+table.sort(buttons, function(a, b) return a.mask < b.mask end)
+local memory_space = machine.devices[":maincpu"] ~= nil and machine.devices[":maincpu"].spaces["program"] or nil
+local function draw_input(mask)
+    local w, h = screen.width, screen.height
+    local x, y = w - 15, h - 15
+    local arms = {up = {4, 0}, down = {4, 8}, left = {0, 4}, right = {8, 4}}
+    screen:draw_box(x + 4, y + 4, x + 8, y + 8, 0xffa0a0a0, 0x80000000)
+    for direction, at in pairs(arms) do
+        local held_now = directions[direction] ~= nil and mask & directions[direction] ~= 0
+        screen:draw_box(x + at[1], y + at[2], x + at[1] + 4, y + at[2] + 4, 0xffa0a0a0,
+            held_now and 0xffffffff or 0x80000000)
+    end
+    local names = {}
+    for _, button in ipairs(buttons) do
+        if mask & button.mask ~= 0 then names[#names + 1] = button.name end
+    end
+    if #names > 0 then screen:draw_text("right", h - 25, table.concat(names, " "), 0xffffffff, 0xc0000000) end
+end
+local function draw_watch()
+    if memory_space == nil then return end
+    for i, cell in ipairs(watch) do
+        local bytes = {}
+        for k = 0, cell[3] - 1 do bytes[#bytes + 1] = string.format("%02X", memory_space:read_u8(cell[2] + k)) end
+        screen:draw_text("left", (i - 1) * 9, cell[1] .. " " .. table.concat(bytes), 0xffffffff, 0xc0000000)
+    end
+end
+
 if screen ~= nil and _G.retrolarium_draw_hook ~= nil then
     _G.retrolarium_draw_hook(function()
-        if _G.retrolarium_generation ~= generation or movie_mode == "" then return end
+        if _G.retrolarium_generation ~= generation then return end
+        if show_input then draw_input(inputs[done] ~= nil and inputs[done][1] or 0) end
+        if show_watch then draw_watch() end
+        if movie_mode == "" then return end
         local text = movie_mode == "record" and string.format("REC %d", done)
             or string.format("%d/%d", done, #log)
         screen:draw_text("left", screen.height - 9, text, 0xffffffff, 0xc0000000)
@@ -554,6 +754,22 @@ end
 local status_count = 0
 local function control_tick()
     local now = now_time()
+    if last_time == nil then last_time = now end
+    if machine.paused and now == last_time then
+        if unpause_next then
+            unpause_next = false
+            emu.unpause()
+        elseif rewind_pending ~= nil and rewind_pending[3] == "load" then
+            -- The frames count again from the state's on the next redraw.
+            rewind_load()
+            return
+        elseif capture_pending then
+            capture_pending = false
+            capture_state()
+            if replay_to == nil then apply_speed() end
+            if not user_paused then emu.unpause() end
+        end
+    end
     if now ~= last_time and latched_load ~= nil then
         -- The pads' latch now holds the state's frame: load it (the frame
         -- that just ran is dropped with the rest of this branch).
@@ -565,8 +781,20 @@ local function control_tick()
         last_time = now
         done = done + 1
         _G.retrolarium_movie.frame = done
+        inputs[done] = {pad_mask(1), pad_mask(2)}
+        if rewind_pending ~= nil then
+            -- The frame that took the state's buttons in: load next.
+            rewind_pending[3] = "load"
+            emu.pause()
+        -- A frame advance pauses by itself; its frame is not captured.
+        elseif done % rewind_every == 0 and not stepping then
+            capture_pending = true
+            video.throttled = false
+            emu.pause()
+        end
+        stepping = false
         if movie_mode == "record" then
-            log[done] = {pad_mask(1), pad_mask(2)}
+            log[done] = inputs[done]
             if done % 600 == 0 then write_movie() end
         elseif movie_mode == "play" or movie_mode == "resume" then
             if movie_mode == "play" and movie_stop_at > 0 and done >= movie_stop_at then
@@ -580,6 +808,7 @@ local function control_tick()
                     -- The recording goes on from the end of the movie.
                     movie_mode = "record"
                     set_event("recording")
+                    user_paused = true
                     emu.pause()
                 else
                     movie_mode = ""
@@ -592,6 +821,13 @@ local function control_tick()
                 end
             else
                 set_pads(log[done + 1])
+            end
+        end
+        if replay_to ~= nil then
+            if done >= replay_to then
+                finish_rewind()
+            elseif movie_mode ~= "play" and movie_mode ~= "resume" then
+                set_pads(inputs[done + 1])
             end
         end
     end
@@ -611,7 +847,8 @@ end
 
 on_frame(function()
     frames = frames + 1
-    apply_keys(movie_mode ~= "play" and movie_mode ~= "resume" and latched_load == nil)
+    apply_keys(movie_mode ~= "play" and movie_mode ~= "resume" and latched_load == nil and replay_to == nil
+        and rewind_pending == nil)
     if frames % 6 == 0 then take_command() end
     if frames == 1 or frames % 15 == 0 then apply_picture() end
     if hidden and ready_check ~= nil then
@@ -1105,6 +1342,32 @@ void EmulatorRunner::stopMovie() {
     sendAction(QStringLiteral("stopmovie"));
 }
 
+void EmulatorRunner::rewind(int frames) {
+    if (!controls_ || !process_) {
+        return;
+    }
+    sendAction(QStringLiteral("rewind"), QString::number(frames));
+}
+
+namespace {
+
+QString overlayText(bool input, bool watch) {
+    QStringList parts;
+    if (input) parts << QStringLiteral("input");
+    if (watch) parts << QStringLiteral("watch");
+    return parts.join(QLatin1Char(' '));
+}
+
+}  // namespace
+
+void EmulatorRunner::setOverlay(bool input, bool watch) {
+    showInput_ = input;
+    showWatch_ = watch;
+    if (controls_ && process_) {
+        sendAction(QStringLiteral("overlay"), overlayText(input, watch));
+    }
+}
+
 bool EmulatorRunner::showMessage(const QString& text) {
     if (!controls_ || !process_) {
         return false;
@@ -1155,6 +1418,11 @@ bool EmulatorRunner::writeControl(const sdk::ProcessSpec& spec, const QStringLis
                               : movie_.mode == Mode::Resume ? QStringLiteral("resume")
                                                             : QString();
     const QString movieFile = movieMode.isEmpty() ? QString() : luaPath(movie_.file);
+    QStringList cells;
+    for (const WatchCell& cell : watch_) {
+        values << cell.name;
+        cells << QStringLiteral("{[==[%1]==], %2, %3}").arg(cell.name).arg(cell.address).arg(cell.length);
+    }
     values << actions << status << movieFile << movie_.header;
     for (const QString& value : values) {
         if (value.contains(QLatin1String("]==]"))) {
@@ -1183,6 +1451,8 @@ bool EmulatorRunner::writeControl(const sdk::ProcessSpec& spec, const QStringLis
         .replace(QLatin1String("@MOVIESTOPAT@"), QString::number(movie_.stopAt))
         .replace(QLatin1String("@MOVIECLOSE@"), movie_.closeAtEnd ? QStringLiteral("1") : QString())
         .replace(QLatin1String("@ENVIRONMENT@"), environment)
+        .replace(QLatin1String("@OVERLAY@"), overlayText(showInput_, showWatch_))
+        .replace(QLatin1String("@WATCH@"), cells.join(QStringLiteral(", ")))
         // Last: the header holds the user's own words.
         .replace(QLatin1String("@MOVIEHEADER@"), movie_.header);
     file.write(text.toUtf8());
