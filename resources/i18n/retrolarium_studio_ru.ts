@@ -1944,12 +1944,12 @@
         <translation>откуда стартует «Играть с выбранного»</translation>
     </message>
     <message>
-        <source>Play from selected (F5) builds the ROM, enters this room through the game&apos;s own room loader and puts the player here. Delete takes the marker away: the player then starts at the bottom of the room.</source>
-        <translation>«Играть с выбранного» (F5) собирает ROM, входит в эту комнату через загрузчик комнат самой игры и ставит игрока сюда. Delete убирает маркер: тогда игрок стартует внизу комнаты.</translation>
-    </message>
-    <message>
         <source>Pick an object in the library and click the room to add it, or drag it there. Pick Player start (or click the start point above) and click the room to choose where Play from selected puts the player; without it he starts at the bottom of the room.</source>
         <translation>Выберите объект в библиотеке и щёлкните по комнате, чтобы добавить его, или перетащите его туда. Выберите «Старт игрока» (или щёлкните по точке старта сверху) и щёлкните по комнате, чтобы выбрать, куда «Играть с выбранного» поставит игрока; без него игрок стартует внизу комнаты.</translation>
+    </message>
+    <message>
+        <source>Play from selected (F4) builds the ROM, enters this room through the game&apos;s own room loader and puts the player here. Delete takes the marker away: the player then starts at the bottom of the room.</source>
+        <translation>«Играть с выбранного» (F4) собирает ROM, входит в эту комнату через загрузчик комнат самой игры и ставит игрока сюда. Delete убирает маркер: тогда игрок стартует внизу комнаты.</translation>
     </message>
 </context>
 <context>
@@ -4412,6 +4412,26 @@
     <message>
         <source>View</source>
         <translation>Вид</translation>
+    </message>
+    <message>
+        <source>● Recording movie %1 · frame %2</source>
+        <translation>● Запись ролика %1 · кадр %2</translation>
+    </message>
+    <message>
+        <source>▶ Movie %1 / %2</source>
+        <translation>▶ Ролик %1 / %2</translation>
+    </message>
+    <message>
+        <source>No speed limit</source>
+        <translation>Скорость без ограничения</translation>
+    </message>
+    <message>
+        <source>Speed %1%</source>
+        <translation>Скорость %1%</translation>
+    </message>
+    <message>
+        <source>Slot %1</source>
+        <translation>Слот %1</translation>
     </message>
 </context>
 <context>
@@ -7471,6 +7491,10 @@
         <source>MAME&apos;s skip_warnings option is turned on in its ui.ini, so it honours that mark.</source>
         <translation>В ui.ini MAME включена настройка skip_warnings, чтобы MAME учитывал эту отметку.</translation>
     </message>
+    <message>
+        <source>The movie may have lost its last seconds: the emulator did not answer.</source>
+        <translation>Ролик мог потерять последние секунды: эмулятор не ответил.</translation>
+    </message>
 </context>
 <context>
     <name>rl::runtime::ProcessRunner</name>
@@ -7752,6 +7776,26 @@
         <source>The games are named only to say which ones the studio works with. Their titles and characters are trademarks of their owners, who have not made or endorsed Retrolarium. You need your own copy of each game.</source>
         <translation>Игры названы только для того, чтобы было понятно, с какими из них работает студия. Их названия и персонажи — товарные знаки их владельцев, которые не создавали и не одобряли Retrolarium. Для каждой игры нужна ваша собственная копия.</translation>
     </message>
+    <message>
+        <source>Frame advance</source>
+        <translation>Кадр вперёд</translation>
+    </message>
+    <message>
+        <source>Slower, faster</source>
+        <translation>Медленнее, быстрее</translation>
+    </message>
+    <message>
+        <source>Fast-forward while held</source>
+        <translation>Перемотка, пока нажато</translation>
+    </message>
+    <message>
+        <source>Save state, load state</source>
+        <translation>Сохранить сейв, загрузить сейв</translation>
+    </message>
+    <message>
+        <source>Previous, next state slot</source>
+        <translation>Предыдущий, следующий слот сейва</translation>
+    </message>
 </context>
 <context>
     <name>rl::shell::BottomPanel</name>
@@ -7782,6 +7826,18 @@
             <numerusform>%n предупреждения</numerusform>
             <numerusform>%n предупреждений</numerusform>
         </translation>
+    </message>
+    <message>
+        <source>Copy</source>
+        <translation>Копировать</translation>
+    </message>
+    <message>
+        <source>Copy all</source>
+        <translation>Копировать все</translation>
+    </message>
+    <message>
+        <source>Select all</source>
+        <translation>Выделить все</translation>
     </message>
 </context>
 <context>
@@ -8133,10 +8189,6 @@
         <translation>Точка старта</translation>
     </message>
     <message>
-        <source>Play from selected (F5) starts here</source>
-        <translation>«Играть с выбранного» (F5) начинает отсюда</translation>
-    </message>
-    <message>
         <source> — Retrolarium</source>
         <translation> — Retrolarium</translation>
     </message>
@@ -8183,14 +8235,6 @@
     <message>
         <source>Play from %1</source>
         <translation>Играть с %1</translation>
-    </message>
-    <message>
-        <source>Pick a start point in an editor (F5)</source>
-        <translation>Выберите точку старта в редакторе (F5)</translation>
-    </message>
-    <message>
-        <source>Save, build and play from %1 (F5)</source>
-        <translation>Сохранить, собрать и играть с %1 (F5)</translation>
     </message>
     <message>
         <source>Resume</source>
@@ -8289,10 +8333,6 @@
         <translation>Сообщить о проблеме</translation>
     </message>
     <message>
-        <source>Play from selected (F5) starts here. Click, then click the map to move it.</source>
-        <translation>«Играть с выбранного» (F5) начинает отсюда. Щёлкните, затем щёлкните по карте, чтобы перенести.</translation>
-    </message>
-    <message>
         <source>Building this version from the game&apos;s sources failed: %1</source>
         <translation>Не удалось собрать эту версию из исходников игры: %1</translation>
     </message>
@@ -8303,6 +8343,348 @@
     <message>
         <source>%1… %2 s</source>
         <translation>%1… %2 с</translation>
+    </message>
+    <message>
+        <source>Frame advance</source>
+        <translation>Кадр вперёд</translation>
+    </message>
+    <message>
+        <source>Frame %1</source>
+        <translation>Кадр %1</translation>
+    </message>
+    <message>
+        <source>Paused</source>
+        <translation>Пауза</translation>
+    </message>
+    <message>
+        <source>Speed</source>
+        <translation>Скорость</translation>
+    </message>
+    <message>
+        <source>No limit</source>
+        <translation>Без ограничения</translation>
+    </message>
+    <message>
+        <source>%1%</source>
+        <translation>%1%</translation>
+    </message>
+    <message>
+        <source>Slower</source>
+        <translation>Медленнее</translation>
+    </message>
+    <message>
+        <source>Faster</source>
+        <translation>Быстрее</translation>
+    </message>
+    <message>
+        <source>Save state</source>
+        <translation>Сохранить сейв</translation>
+    </message>
+    <message>
+        <source>State %1 saved (replaced)</source>
+        <translation>Сейв %1 перезаписан</translation>
+    </message>
+    <message>
+        <source>State %1 saved</source>
+        <translation>Сейв %1 сохранён</translation>
+    </message>
+    <message>
+        <source>Load state</source>
+        <translation>Загрузить сейв</translation>
+    </message>
+    <message>
+        <source>State %1 is empty</source>
+        <translation>Сейв %1 пуст</translation>
+    </message>
+    <message>
+        <source>State %1 loaded</source>
+        <translation>Сейв %1 загружен</translation>
+    </message>
+    <message>
+        <source>Previous state slot</source>
+        <translation>Предыдущий слот сейва</translation>
+    </message>
+    <message>
+        <source>Next state slot</source>
+        <translation>Следующий слот сейва</translation>
+    </message>
+    <message>
+        <source>Movie</source>
+        <translation>Ролик</translation>
+    </message>
+    <message>
+        <source>Record movie…</source>
+        <translation>Записать ролик…</translation>
+    </message>
+    <message>
+        <source>Resume movie recording…</source>
+        <translation>Продолжить запись ролика…</translation>
+    </message>
+    <message>
+        <source>Play movie…</source>
+        <translation>Воспроизвести ролик…</translation>
+    </message>
+    <message>
+        <source>Stop movie</source>
+        <translation>Остановить ролик</translation>
+    </message>
+    <message>
+        <source>Or drop a ROM or an .rlj file on this window.</source>
+        <translation>Или перетащите ROM или файл .rlj в это окно.</translation>
+    </message>
+    <message>
+        <source>Play from selected (F4) starts here</source>
+        <translation>«Играть с выбранного» (F4) начинает отсюда</translation>
+    </message>
+    <message>
+        <source>Play from selected (F4) starts here. Click, then click the map to move it.</source>
+        <translation>«Играть с выбранного» (F4) начинает отсюда. Щёлкните, затем щёлкните по карте, чтобы перенести.</translation>
+    </message>
+    <message>
+        <source>Pick a start point in an editor (F4)</source>
+        <translation>Выберите точку старта в редакторе (F4)</translation>
+    </message>
+    <message>
+        <source>Save, build and play from %1 (F4)</source>
+        <translation>Сохранить, собрать и играть с %1 (F4)</translation>
+    </message>
+    <message>
+        <source>Save state (slot %1)</source>
+        <translation>Сохранить сейв (слот %1)</translation>
+    </message>
+    <message>
+        <source>Load state (slot %1)</source>
+        <translation>Загрузить сейв (слот %1)</translation>
+    </message>
+    <message>
+        <source>Resumed</source>
+        <translation>Продолжение</translation>
+    </message>
+    <message>
+        <source>Speed: no limit</source>
+        <translation>Скорость: без ограничения</translation>
+    </message>
+    <message>
+        <source>Speed %1% (slowest)</source>
+        <translation>Скорость %1% (минимум)</translation>
+    </message>
+    <message>
+        <source>Speed %1%</source>
+        <translation>Скорость %1%</translation>
+    </message>
+    <message>
+        <source>State %1 selected (empty)</source>
+        <translation>Сейв %1 выбран (пуст)</translation>
+    </message>
+    <message>
+        <source>State %1 selected (used)</source>
+        <translation>Сейв %1 выбран (занят)</translation>
+    </message>
+    <message>
+        <source>State %1 selected (used, %2)</source>
+        <translation>Сейв %1 выбран (занят, %2)</translation>
+    </message>
+    <message>
+        <source>Speed: no limit (fastest)</source>
+        <translation>Скорость: без ограничения (максимум)</translation>
+    </message>
+    <message>
+        <source>Movie ended: you have control</source>
+        <translation>Ролик закончился: управление у вас</translation>
+    </message>
+    <message>
+        <source>Movie stopped</source>
+        <translation>Ролик остановлен</translation>
+    </message>
+    <message>
+        <source>Movie stopped and saved</source>
+        <translation>Ролик остановлен и сохранён</translation>
+    </message>
+    <message>
+        <source>End of movie: paused, recording on (Pause to go on)</source>
+        <translation>Конец ролика: пауза, дальше запись (Pause — продолжить)</translation>
+    </message>
+    <message>
+        <source>State %1 is not from this movie: movie stopped</source>
+        <translation>Сейв %1 не из этого ролика: ролик остановлен</translation>
+    </message>
+    <message>
+        <source>MAME is not found: choose it in Settings.</source>
+        <translation>MAME не найден: выберите его в настройках.</translation>
+    </message>
+    <message>
+        <source>Find the movies</source>
+        <translation>Поиск роликов</translation>
+    </message>
+    <message>
+        <source>The movie cannot start: %1</source>
+        <translation>Ролик не запускается: %1</translation>
+    </message>
+    <message>
+        <source>%1 was not recorded in the studio: it can play, not go on.</source>
+        <translation>%1 записан не в студии: его можно воспроизвести, но не продолжить.</translation>
+    </message>
+    <message>
+        <source>Prepare %1</source>
+        <translation>Подготовка %1</translation>
+    </message>
+    <message>
+        <source>%1 cannot play: %2</source>
+        <translation>%1 не воспроизводится: %2</translation>
+    </message>
+    <message>
+        <source>Recording %1</source>
+        <translation>Запись %1</translation>
+    </message>
+    <message>
+        <source>Resuming %1</source>
+        <translation>Продолжение %1</translation>
+    </message>
+    <message>
+        <source>Playing a movie</source>
+        <translation>Воспроизведение ролика</translation>
+    </message>
+    <message>
+        <source>Movie saved: %1</source>
+        <translation>Ролик сохранён: %1</translation>
+    </message>
+    <message>
+        <source>Recording movie «%1»</source>
+        <translation>Запись ролика «%1»</translation>
+    </message>
+    <message>
+        <source>Playing movie «%1»</source>
+        <translation>Воспроизведение ролика «%1»</translation>
+    </message>
+</context>
+<context>
+    <name>rl::shell::PickMovieDialog</name>
+    <message>
+        <source>Play movie</source>
+        <translation>Воспроизвести ролик</translation>
+    </message>
+    <message>
+        <source>Resume movie recording</source>
+        <translation>Продолжение записи ролика</translation>
+    </message>
+    <message>
+        <source>%1 from power-on with the movie&apos;s input. Pause, speed and save states work as usual; your own keys wait until the movie ends.</source>
+        <translation>%1 с включения, с вводом из ролика. Пауза, скорость и сейвы работают как обычно; ваши клавиши подключатся, когда ролик закончится.</translation>
+    </message>
+    <message>
+        <source>%1 plays the movie to its end, pauses, and records on from there. Only movies recorded in the studio can go on.</source>
+        <translation>%1 проигрывает ролик до конца, встаёт на паузу и продолжает запись с этого места. Продолжить можно только ролики, записанные в студии.</translation>
+    </message>
+    <message>
+        <source>Movie</source>
+        <translation>Ролик</translation>
+    </message>
+    <message>
+        <source>Kind</source>
+        <translation>Тип</translation>
+    </message>
+    <message>
+        <source>Length</source>
+        <translation>Длина</translation>
+    </message>
+    <message>
+        <source>Author</source>
+        <translation>Автор</translation>
+    </message>
+    <message>
+        <source>Description</source>
+        <translation>Описание</translation>
+    </message>
+    <message>
+        <source>Recorded in another emulator: it can play, not go on</source>
+        <translation>Записан в другом эмуляторе: можно воспроизвести, но не продолжить</translation>
+    </message>
+    <message>
+        <source>The game has no movies yet.</source>
+        <translation>У игры пока нет роликов.</translation>
+    </message>
+    <message>
+        <source>Stop the emulator at frame</source>
+        <translation>Остановить эмулятор на кадре</translation>
+    </message>
+    <message>
+        <source>never</source>
+        <translation>никогда</translation>
+    </message>
+    <message>
+        <source>Close the emulator when the movie ends</source>
+        <translation>Закрыть эмулятор, когда ролик закончится</translation>
+    </message>
+    <message>
+        <source>Choose file…</source>
+        <translation>Выбрать файл…</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>Отмена</translation>
+    </message>
+    <message>
+        <source>Play</source>
+        <translation>Воспроизвести</translation>
+    </message>
+    <message>
+        <source>Resume</source>
+        <translation>Продолжить</translation>
+    </message>
+    <message>
+        <source>Movies (*.rlmovie *.fm2 *.gmv)</source>
+        <translation>Ролики (*.rlmovie *.fm2 *.gmv)</translation>
+    </message>
+    <message>
+        <source>Retrolarium movies (*.rlmovie)</source>
+        <translation>Ролики Retrolarium (*.rlmovie)</translation>
+    </message>
+</context>
+<context>
+    <name>rl::shell::RecordMovieDialog</name>
+    <message>
+        <source>Record movie</source>
+        <translation>Запись ролика</translation>
+    </message>
+    <message>
+        <source>%1 starts from power-on and every frame of your input is recorded: the movie plays back the same way in the studio, in make play and in the checks. Save states (F5, F8 to load), pause and speed do not change it. This is not the game&apos;s own demo: that one is in the Demo view.</source>
+        <translation>%1 запускается с включения, и ваш ввод записывается в каждом кадре: ролик воспроизводится одинаково в студии, в make play и в проверках. Сейвы (F5, загрузка — F8), пауза и скорость его не меняют. Это не демо самой игры: оно во вкладке «Демо».</translation>
+    </message>
+    <message>
+        <source>Longplay, all rooms</source>
+        <translation>Лонгплей, все комнаты</translation>
+    </message>
+    <message>
+        <source>Title</source>
+        <translation>Название</translation>
+    </message>
+    <message>
+        <source>Kind</source>
+        <translation>Тип</translation>
+    </message>
+    <message>
+        <source>Author</source>
+        <translation>Автор</translation>
+    </message>
+    <message>
+        <source>What it plays: the route, the ending it reaches</source>
+        <translation>Что в нём: маршрут, до какой концовки доходит</translation>
+    </message>
+    <message>
+        <source>Description</source>
+        <translation>Описание</translation>
+    </message>
+    <message>
+        <source>It is saved in %1.</source>
+        <translation>Он сохранится в %1.</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>Отмена</translation>
+    </message>
+    <message>
+        <source>Record</source>
+        <translation>Записать</translation>
     </message>
 </context>
 <context>
@@ -8717,16 +9099,16 @@
         <translation>Игрок — точка старта; передвиньте его.</translation>
     </message>
     <message>
-        <source>drop where Play from selected (F5) puts the player; not level data</source>
-        <translation>бросьте туда, где «Играть с выбранного» (F5) поставит игрока; это не данные уровня</translation>
-    </message>
-    <message>
         <source>Player</source>
         <translation>Игрок</translation>
     </message>
     <message>
-        <source>Drag the player to where Play from selected (F5) puts it. The start point is a playtest setting, not level data.</source>
-        <translation>Перетащите игрока туда, куда его поставит «Играть с выбранного» (F5). Точка старта — настройка теста, а не данные уровня.</translation>
+        <source>drop where Play from selected (F4) puts the player; not level data</source>
+        <translation>бросьте туда, где «Играть с выбранного» (F4) поставит игрока; это не данные уровня</translation>
+    </message>
+    <message>
+        <source>Drag the player to where Play from selected (F4) puts it. The start point is a playtest setting, not level data.</source>
+        <translation>Перетащите игрока туда, куда его поставит «Играть с выбранного» (F4). Точка старта — настройка теста, а не данные уровня.</translation>
     </message>
 </context>
 <context>
@@ -9412,8 +9794,8 @@
         <translation>Маршруты миров</translation>
     </message>
     <message>
-        <source>Each world plays its steps in order; a pipe intro (an area whose entrance walks the player into a pipe) shares the level number of the next step. The steps per world are fixed. F5 plays the selected step&apos;s area.</source>
-        <translation>Каждый мир проходит свои шаги по порядку; вход через трубу (зона, где игрок входит в трубу) делит номер уровня со следующим шагом. Число шагов в мире фиксировано. F5 запускает зону выбранного шага.</translation>
+        <source>Each world plays its steps in order; a pipe intro (an area whose entrance walks the player into a pipe) shares the level number of the next step. The steps per world are fixed. F4 plays the selected step&apos;s area.</source>
+        <translation>Каждый мир проходит свои шаги по порядку; вход через трубу (зона, где игрок входит в трубу) делит номер уровня со следующим шагом. Число шагов в мире фиксировано. F4 запускает зону выбранного шага.</translation>
     </message>
 </context>
 <context>
@@ -12626,6 +13008,22 @@
     <message>
         <source>Built from %1: you will be asked for its ROM</source>
         <translation>Собирается из %1 — понадобится ROM этой версии</translation>
+    </message>
+    <message>
+        <source>TAS</source>
+        <translation>TAS</translation>
+    </message>
+    <message>
+        <source>Longplay</source>
+        <translation>Лонгплей</translation>
+    </message>
+    <message>
+        <source>Attract mode</source>
+        <translation>Демо-режим</translation>
+    </message>
+    <message>
+        <source>Other</source>
+        <translation>Другое</translation>
     </message>
 </context>
 </TS>

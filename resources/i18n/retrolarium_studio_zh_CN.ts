@@ -1942,12 +1942,12 @@
         <translation>“从所选处游玩”的起点</translation>
     </message>
     <message>
-        <source>Play from selected (F5) builds the ROM, enters this room through the game&apos;s own room loader and puts the player here. Delete takes the marker away: the player then starts at the bottom of the room.</source>
-        <translation>“从所选处游玩”（F5）会构建 ROM，通过游戏自己的房间加载器进入此房间，并把玩家放在这里。按 Delete 移除标记后，玩家会从房间底部开始。</translation>
-    </message>
-    <message>
         <source>Pick an object in the library and click the room to add it, or drag it there. Pick Player start (or click the start point above) and click the room to choose where Play from selected puts the player; without it he starts at the bottom of the room.</source>
         <translation>在库中选择一个物件，再单击房间即可添加，也可以把它拖进去。选择“玩家起点”（或单击上方的起点），再单击房间，即可选择“从所选处游玩”放置玩家的位置；不放的话，玩家从房间底部开始。</translation>
+    </message>
+    <message>
+        <source>Play from selected (F4) builds the ROM, enters this room through the game&apos;s own room loader and puts the player here. Delete takes the marker away: the player then starts at the bottom of the room.</source>
+        <translation>“从所选处游玩”（F4）会构建 ROM，通过游戏自己的房间加载器进入此房间，并把玩家放在这里。按 Delete 移除标记后，玩家会从房间底部开始。</translation>
     </message>
 </context>
 <context>
@@ -4382,6 +4382,26 @@
     <message>
         <source>Running · click the picture for the keyboard</source>
         <translation>运行中 · 单击画面以使用键盘</translation>
+    </message>
+    <message>
+        <source>● Recording movie %1 · frame %2</source>
+        <translation>● 正在录制录像 %1 · 第 %2 帧</translation>
+    </message>
+    <message>
+        <source>▶ Movie %1 / %2</source>
+        <translation>▶ 录像 %1 / %2</translation>
+    </message>
+    <message>
+        <source>No speed limit</source>
+        <translation>不限速</translation>
+    </message>
+    <message>
+        <source>Speed %1%</source>
+        <translation>速度 %1%</translation>
+    </message>
+    <message>
+        <source>Slot %1</source>
+        <translation>槽 %1</translation>
     </message>
 </context>
 <context>
@@ -7409,6 +7429,10 @@
         <source>MAME&apos;s skip_warnings option is turned on in its ui.ini, so it honours that mark.</source>
         <translation>已在 MAME 的 ui.ini 中启用 skip_warnings，让 MAME 认可这个标记。</translation>
     </message>
+    <message>
+        <source>The movie may have lost its last seconds: the emulator did not answer.</source>
+        <translation>录像可能丢失了最后几秒：模拟器没有响应。</translation>
+    </message>
 </context>
 <context>
     <name>rl::runtime::ProcessRunner</name>
@@ -7690,6 +7714,26 @@
         <source>The games are named only to say which ones the studio works with. Their titles and characters are trademarks of their owners, who have not made or endorsed Retrolarium. You need your own copy of each game.</source>
         <translation>列出这些游戏只是为了说明工作室支持哪些游戏。游戏名称和角色是其各自所有者的商标，所有者并未制作或认可 Retrolarium。每款游戏都需要您自己拥有的副本。</translation>
     </message>
+    <message>
+        <source>Frame advance</source>
+        <translation>逐帧前进</translation>
+    </message>
+    <message>
+        <source>Slower, faster</source>
+        <translation>减慢，加快</translation>
+    </message>
+    <message>
+        <source>Fast-forward while held</source>
+        <translation>按住时快进</translation>
+    </message>
+    <message>
+        <source>Save state, load state</source>
+        <translation>即时存档，读取存档</translation>
+    </message>
+    <message>
+        <source>Previous, next state slot</source>
+        <translation>上一个、下一个存档槽</translation>
+    </message>
 </context>
 <context>
     <name>rl::shell::BottomPanel</name>
@@ -7716,6 +7760,18 @@
         <translation>
             <numerusform>%n 个警告</numerusform>
         </translation>
+    </message>
+    <message>
+        <source>Copy</source>
+        <translation>复制</translation>
+    </message>
+    <message>
+        <source>Copy all</source>
+        <translation>全部复制</translation>
+    </message>
+    <message>
+        <source>Select all</source>
+        <translation>全选</translation>
     </message>
 </context>
 <context>
@@ -8123,10 +8179,6 @@
         <translation>起点</translation>
     </message>
     <message>
-        <source>Play from selected (F5) starts here</source>
-        <translation>“从所选处游玩”（F5）从这里开始</translation>
-    </message>
-    <message>
         <source> — Retrolarium</source>
         <translation> — Retrolarium</translation>
     </message>
@@ -8175,14 +8227,6 @@
         <translation>从 %1 游玩</translation>
     </message>
     <message>
-        <source>Pick a start point in an editor (F5)</source>
-        <translation>请在编辑器中选择起点（F5）</translation>
-    </message>
-    <message>
-        <source>Save, build and play from %1 (F5)</source>
-        <translation>保存、构建并从 %1 游玩（F5）</translation>
-    </message>
-    <message>
         <source>Resume</source>
         <translation>继续</translation>
     </message>
@@ -8221,10 +8265,6 @@
         <translation>报告问题</translation>
     </message>
     <message>
-        <source>Play from selected (F5) starts here. Click, then click the map to move it.</source>
-        <translation>“从所选处游玩”（F5）从这里开始。单击，再单击地图即可移动它。</translation>
-    </message>
-    <message>
         <source>Building this version from the game&apos;s sources failed: %1</source>
         <translation>无法从游戏源代码构建此版本：%1</translation>
     </message>
@@ -8235,6 +8275,348 @@
     <message>
         <source>%1… %2 s</source>
         <translation>%1… %2 秒</translation>
+    </message>
+    <message>
+        <source>Frame advance</source>
+        <translation>逐帧前进</translation>
+    </message>
+    <message>
+        <source>Frame %1</source>
+        <translation>第 %1 帧</translation>
+    </message>
+    <message>
+        <source>Paused</source>
+        <translation>已暂停</translation>
+    </message>
+    <message>
+        <source>Speed</source>
+        <translation>速度</translation>
+    </message>
+    <message>
+        <source>No limit</source>
+        <translation>不限速</translation>
+    </message>
+    <message>
+        <source>%1%</source>
+        <translation>%1%</translation>
+    </message>
+    <message>
+        <source>Slower</source>
+        <translation>减慢</translation>
+    </message>
+    <message>
+        <source>Faster</source>
+        <translation>加快</translation>
+    </message>
+    <message>
+        <source>Save state</source>
+        <translation>即时存档</translation>
+    </message>
+    <message>
+        <source>State %1 saved (replaced)</source>
+        <translation>已保存存档 %1（已覆盖）</translation>
+    </message>
+    <message>
+        <source>State %1 saved</source>
+        <translation>已保存存档 %1</translation>
+    </message>
+    <message>
+        <source>Load state</source>
+        <translation>读取即时存档</translation>
+    </message>
+    <message>
+        <source>State %1 is empty</source>
+        <translation>存档 %1 为空</translation>
+    </message>
+    <message>
+        <source>State %1 loaded</source>
+        <translation>已读取存档 %1</translation>
+    </message>
+    <message>
+        <source>Previous state slot</source>
+        <translation>上一个存档槽</translation>
+    </message>
+    <message>
+        <source>Next state slot</source>
+        <translation>下一个存档槽</translation>
+    </message>
+    <message>
+        <source>Movie</source>
+        <translation>录像</translation>
+    </message>
+    <message>
+        <source>Record movie…</source>
+        <translation>录制录像…</translation>
+    </message>
+    <message>
+        <source>Resume movie recording…</source>
+        <translation>继续录制录像…</translation>
+    </message>
+    <message>
+        <source>Play movie…</source>
+        <translation>播放录像…</translation>
+    </message>
+    <message>
+        <source>Stop movie</source>
+        <translation>停止录像</translation>
+    </message>
+    <message>
+        <source>Or drop a ROM or an .rlj file on this window.</source>
+        <translation>或将 ROM 或 .rlj 文件拖到此窗口。</translation>
+    </message>
+    <message>
+        <source>Play from selected (F4) starts here</source>
+        <translation>“从所选处游玩”（F4）从这里开始</translation>
+    </message>
+    <message>
+        <source>Play from selected (F4) starts here. Click, then click the map to move it.</source>
+        <translation>“从所选处游玩”（F4）从这里开始。单击，再单击地图即可移动它。</translation>
+    </message>
+    <message>
+        <source>Pick a start point in an editor (F4)</source>
+        <translation>请在编辑器中选择起点（F4）</translation>
+    </message>
+    <message>
+        <source>Save, build and play from %1 (F4)</source>
+        <translation>保存、构建并从 %1 游玩（F4）</translation>
+    </message>
+    <message>
+        <source>Save state (slot %1)</source>
+        <translation>即时存档（槽 %1）</translation>
+    </message>
+    <message>
+        <source>Load state (slot %1)</source>
+        <translation>读取即时存档（槽 %1）</translation>
+    </message>
+    <message>
+        <source>Resumed</source>
+        <translation>已继续</translation>
+    </message>
+    <message>
+        <source>Speed: no limit</source>
+        <translation>速度：不限速</translation>
+    </message>
+    <message>
+        <source>Speed %1% (slowest)</source>
+        <translation>速度 %1%（最慢）</translation>
+    </message>
+    <message>
+        <source>Speed %1%</source>
+        <translation>速度 %1%</translation>
+    </message>
+    <message>
+        <source>State %1 selected (empty)</source>
+        <translation>已选择存档 %1（空）</translation>
+    </message>
+    <message>
+        <source>State %1 selected (used)</source>
+        <translation>已选择存档 %1（已占用）</translation>
+    </message>
+    <message>
+        <source>State %1 selected (used, %2)</source>
+        <translation>已选择存档 %1（已占用，%2）</translation>
+    </message>
+    <message>
+        <source>Speed: no limit (fastest)</source>
+        <translation>速度：不限速（最快）</translation>
+    </message>
+    <message>
+        <source>Movie ended: you have control</source>
+        <translation>录像结束：由你操作</translation>
+    </message>
+    <message>
+        <source>Movie stopped</source>
+        <translation>录像已停止</translation>
+    </message>
+    <message>
+        <source>Movie stopped and saved</source>
+        <translation>录像已停止并保存</translation>
+    </message>
+    <message>
+        <source>End of movie: paused, recording on (Pause to go on)</source>
+        <translation>录像结束：已暂停，接着录制（按 Pause 继续）</translation>
+    </message>
+    <message>
+        <source>State %1 is not from this movie: movie stopped</source>
+        <translation>存档 %1 不属于此录像：录像已停止</translation>
+    </message>
+    <message>
+        <source>MAME is not found: choose it in Settings.</source>
+        <translation>找不到 MAME：请在设置中选择。</translation>
+    </message>
+    <message>
+        <source>Find the movies</source>
+        <translation>查找录像</translation>
+    </message>
+    <message>
+        <source>The movie cannot start: %1</source>
+        <translation>录像无法开始：%1</translation>
+    </message>
+    <message>
+        <source>%1 was not recorded in the studio: it can play, not go on.</source>
+        <translation>%1 不是在工作室中录制的：可以播放，但不能继续录制。</translation>
+    </message>
+    <message>
+        <source>Prepare %1</source>
+        <translation>准备 %1</translation>
+    </message>
+    <message>
+        <source>%1 cannot play: %2</source>
+        <translation>无法播放 %1：%2</translation>
+    </message>
+    <message>
+        <source>Recording %1</source>
+        <translation>正在录制 %1</translation>
+    </message>
+    <message>
+        <source>Resuming %1</source>
+        <translation>正在继续 %1</translation>
+    </message>
+    <message>
+        <source>Playing a movie</source>
+        <translation>正在播放录像</translation>
+    </message>
+    <message>
+        <source>Movie saved: %1</source>
+        <translation>录像已保存：%1</translation>
+    </message>
+    <message>
+        <source>Recording movie «%1»</source>
+        <translation>正在录制录像“%1”</translation>
+    </message>
+    <message>
+        <source>Playing movie «%1»</source>
+        <translation>正在播放录像“%1”</translation>
+    </message>
+</context>
+<context>
+    <name>rl::shell::PickMovieDialog</name>
+    <message>
+        <source>Play movie</source>
+        <translation>播放录像</translation>
+    </message>
+    <message>
+        <source>Resume movie recording</source>
+        <translation>继续录制录像</translation>
+    </message>
+    <message>
+        <source>%1 from power-on with the movie&apos;s input. Pause, speed and save states work as usual; your own keys wait until the movie ends.</source>
+        <translation>%1 从开机起按录像的输入运行。暂停、速度和即时存档照常可用；你的按键要等录像结束后才生效。</translation>
+    </message>
+    <message>
+        <source>%1 plays the movie to its end, pauses, and records on from there. Only movies recorded in the studio can go on.</source>
+        <translation>%1 将录像播放到结尾后暂停，并从那里继续录制。只有在工作室中录制的录像才能继续。</translation>
+    </message>
+    <message>
+        <source>Movie</source>
+        <translation>录像</translation>
+    </message>
+    <message>
+        <source>Kind</source>
+        <translation>种类</translation>
+    </message>
+    <message>
+        <source>Length</source>
+        <translation>时长</translation>
+    </message>
+    <message>
+        <source>Author</source>
+        <translation>作者</translation>
+    </message>
+    <message>
+        <source>Description</source>
+        <translation>描述</translation>
+    </message>
+    <message>
+        <source>Recorded in another emulator: it can play, not go on</source>
+        <translation>在其他模拟器中录制：可以播放，不能继续录制</translation>
+    </message>
+    <message>
+        <source>The game has no movies yet.</source>
+        <translation>这个游戏还没有录像。</translation>
+    </message>
+    <message>
+        <source>Stop the emulator at frame</source>
+        <translation>在此帧停止模拟器</translation>
+    </message>
+    <message>
+        <source>never</source>
+        <translation>从不</translation>
+    </message>
+    <message>
+        <source>Close the emulator when the movie ends</source>
+        <translation>录像结束时关闭模拟器</translation>
+    </message>
+    <message>
+        <source>Choose file…</source>
+        <translation>选择文件…</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>取消</translation>
+    </message>
+    <message>
+        <source>Play</source>
+        <translation>播放</translation>
+    </message>
+    <message>
+        <source>Resume</source>
+        <translation>继续</translation>
+    </message>
+    <message>
+        <source>Movies (*.rlmovie *.fm2 *.gmv)</source>
+        <translation>录像 (*.rlmovie *.fm2 *.gmv)</translation>
+    </message>
+    <message>
+        <source>Retrolarium movies (*.rlmovie)</source>
+        <translation>Retrolarium 录像 (*.rlmovie)</translation>
+    </message>
+</context>
+<context>
+    <name>rl::shell::RecordMovieDialog</name>
+    <message>
+        <source>Record movie</source>
+        <translation>录制录像</translation>
+    </message>
+    <message>
+        <source>%1 starts from power-on and every frame of your input is recorded: the movie plays back the same way in the studio, in make play and in the checks. Save states (F5, F8 to load), pause and speed do not change it. This is not the game&apos;s own demo: that one is in the Demo view.</source>
+        <translation>%1 从开机开始运行，每一帧的输入都会被录下：录像在工作室、make play 和检查中都会同样回放。即时存档（F5，F8 读取）、暂停和速度都不会改变它。这不是游戏自带的演示：那个在“演示”视图中。</translation>
+    </message>
+    <message>
+        <source>Longplay, all rooms</source>
+        <translation>完整通关，所有房间</translation>
+    </message>
+    <message>
+        <source>Title</source>
+        <translation>标题</translation>
+    </message>
+    <message>
+        <source>Kind</source>
+        <translation>种类</translation>
+    </message>
+    <message>
+        <source>Author</source>
+        <translation>作者</translation>
+    </message>
+    <message>
+        <source>What it plays: the route, the ending it reaches</source>
+        <translation>内容：路线、到达的结局</translation>
+    </message>
+    <message>
+        <source>Description</source>
+        <translation>描述</translation>
+    </message>
+    <message>
+        <source>It is saved in %1.</source>
+        <translation>它会保存在 %1。</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>取消</translation>
+    </message>
+    <message>
+        <source>Record</source>
+        <translation>录制</translation>
     </message>
 </context>
 <context>
@@ -8649,16 +9031,16 @@
         <translation>玩家角色是起点；请移动它。</translation>
     </message>
     <message>
-        <source>drop where Play from selected (F5) puts the player; not level data</source>
-        <translation>放到“从所选处游玩”（F5）放置玩家角色的位置；不属于关卡数据</translation>
-    </message>
-    <message>
         <source>Player</source>
         <translation>玩家角色</translation>
     </message>
     <message>
-        <source>Drag the player to where Play from selected (F5) puts it. The start point is a playtest setting, not level data.</source>
-        <translation>把玩家角色拖到“从所选处游玩”（F5）放置它的位置。起点是试玩设置，不是关卡数据。</translation>
+        <source>drop where Play from selected (F4) puts the player; not level data</source>
+        <translation>放到“从所选处游玩”（F4）放置玩家角色的位置；不属于关卡数据</translation>
+    </message>
+    <message>
+        <source>Drag the player to where Play from selected (F4) puts it. The start point is a playtest setting, not level data.</source>
+        <translation>把玩家角色拖到“从所选处游玩”（F4）放置它的位置。起点是试玩设置，不是关卡数据。</translation>
     </message>
 </context>
 <context>
@@ -9342,8 +9724,8 @@
         <translation>世界路线</translation>
     </message>
     <message>
-        <source>Each world plays its steps in order; a pipe intro (an area whose entrance walks the player into a pipe) shares the level number of the next step. The steps per world are fixed. F5 plays the selected step&apos;s area.</source>
-        <translation>每个世界按顺序进行其步骤；水管入场（入口让玩家角色走进水管的区域）与下一步骤共用关卡编号。每个世界的步骤数是固定的。按 F5 运行所选步骤的区域。</translation>
+        <source>Each world plays its steps in order; a pipe intro (an area whose entrance walks the player into a pipe) shares the level number of the next step. The steps per world are fixed. F4 plays the selected step&apos;s area.</source>
+        <translation>每个世界按顺序进行其步骤；水管入场（入口让玩家角色走进水管的区域）与下一步骤共用关卡编号。每个世界的步骤数是固定的。按 F4 运行所选步骤的区域。</translation>
     </message>
 </context>
 <context>
@@ -12524,6 +12906,22 @@
     <message>
         <source>Built from %1: you will be asked for its ROM</source>
         <translation>由 %1 构建：将要求提供该版本的 ROM</translation>
+    </message>
+    <message>
+        <source>TAS</source>
+        <translation>TAS</translation>
+    </message>
+    <message>
+        <source>Longplay</source>
+        <translation>完整通关</translation>
+    </message>
+    <message>
+        <source>Attract mode</source>
+        <translation>演示模式</translation>
+    </message>
+    <message>
+        <source>Other</source>
+        <translation>其他</translation>
     </message>
 </context>
 </TS>

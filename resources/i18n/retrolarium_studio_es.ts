@@ -1943,12 +1943,12 @@
         <translation>donde empieza Jugar desde la selección</translation>
     </message>
     <message>
-        <source>Play from selected (F5) builds the ROM, enters this room through the game&apos;s own room loader and puts the player here. Delete takes the marker away: the player then starts at the bottom of the room.</source>
-        <translation>Jugar desde la selección (F5) compila la ROM, entra en esta sala con el propio cargador de salas del juego y coloca aquí al jugador. Supr quita el marcador: el jugador empieza entonces abajo en la sala.</translation>
-    </message>
-    <message>
         <source>Pick an object in the library and click the room to add it, or drag it there. Pick Player start (or click the start point above) and click the room to choose where Play from selected puts the player; without it he starts at the bottom of the room.</source>
         <translation>Elige un objeto en la biblioteca y haz clic en la sala para añadirlo, o arrástralo allí. Elige Inicio del jugador (o haz clic en el punto de inicio de arriba) y haz clic en la sala para elegir dónde coloca al jugador Jugar desde la selección; sin él, empieza abajo en la sala.</translation>
+    </message>
+    <message>
+        <source>Play from selected (F4) builds the ROM, enters this room through the game&apos;s own room loader and puts the player here. Delete takes the marker away: the player then starts at the bottom of the room.</source>
+        <translation>Jugar desde la selección (F4) compila la ROM, entra en esta sala con el propio cargador de salas del juego y coloca aquí al jugador. Supr quita el marcador: el jugador empieza entonces abajo en la sala.</translation>
     </message>
 </context>
 <context>
@@ -4397,6 +4397,26 @@
     <message>
         <source>Running · click the picture for the keyboard</source>
         <translation>En marcha · haz clic en la imagen para usar el teclado</translation>
+    </message>
+    <message>
+        <source>● Recording movie %1 · frame %2</source>
+        <translation>● Grabando película %1 · fotograma %2</translation>
+    </message>
+    <message>
+        <source>▶ Movie %1 / %2</source>
+        <translation>▶ Película %1 / %2</translation>
+    </message>
+    <message>
+        <source>No speed limit</source>
+        <translation>Velocidad sin límite</translation>
+    </message>
+    <message>
+        <source>Speed %1%</source>
+        <translation>Velocidad %1 %</translation>
+    </message>
+    <message>
+        <source>Slot %1</source>
+        <translation>Ranura %1</translation>
     </message>
 </context>
 <context>
@@ -7440,6 +7460,10 @@
         <source>MAME&apos;s skip_warnings option is turned on in its ui.ini, so it honours that mark.</source>
         <translation>La opción skip_warnings está activada en el ui.ini de MAME, para que respete esa marca.</translation>
     </message>
+    <message>
+        <source>The movie may have lost its last seconds: the emulator did not answer.</source>
+        <translation>Puede que la película haya perdido sus últimos segundos: el emulador no respondió.</translation>
+    </message>
 </context>
 <context>
     <name>rl::runtime::ProcessRunner</name>
@@ -7721,6 +7745,26 @@
         <source>The games are named only to say which ones the studio works with. Their titles and characters are trademarks of their owners, who have not made or endorsed Retrolarium. You need your own copy of each game.</source>
         <translation>Los juegos se nombran solo para indicar con cuáles funciona el estudio. Sus títulos y personajes son marcas de sus propietarios, que no han creado ni respaldado Retrolarium. Necesitas tu propia copia de cada juego.</translation>
     </message>
+    <message>
+        <source>Frame advance</source>
+        <translation>Avanzar un fotograma</translation>
+    </message>
+    <message>
+        <source>Slower, faster</source>
+        <translation>Más lento, más rápido</translation>
+    </message>
+    <message>
+        <source>Fast-forward while held</source>
+        <translation>Avance rápido mientras se mantiene</translation>
+    </message>
+    <message>
+        <source>Save state, load state</source>
+        <translation>Guardar estado, cargar estado</translation>
+    </message>
+    <message>
+        <source>Previous, next state slot</source>
+        <translation>Ranura de estado anterior, siguiente</translation>
+    </message>
 </context>
 <context>
     <name>rl::shell::BottomPanel</name>
@@ -7749,6 +7793,18 @@
             <numerusform>%n aviso</numerusform>
             <numerusform>%n avisos</numerusform>
         </translation>
+    </message>
+    <message>
+        <source>Copy</source>
+        <translation>Copiar</translation>
+    </message>
+    <message>
+        <source>Copy all</source>
+        <translation>Copiar todo</translation>
+    </message>
+    <message>
+        <source>Select all</source>
+        <translation>Seleccionar todo</translation>
     </message>
 </context>
 <context>
@@ -8156,10 +8212,6 @@
         <translation>Punto de inicio</translation>
     </message>
     <message>
-        <source>Play from selected (F5) starts here</source>
-        <translation>Jugar desde la selección (F5) empieza aquí</translation>
-    </message>
-    <message>
         <source> — Retrolarium</source>
         <translation> — Retrolarium</translation>
     </message>
@@ -8208,14 +8260,6 @@
         <translation>Jugar desde %1</translation>
     </message>
     <message>
-        <source>Pick a start point in an editor (F5)</source>
-        <translation>Elige un punto de inicio en un editor (F5)</translation>
-    </message>
-    <message>
-        <source>Save, build and play from %1 (F5)</source>
-        <translation>Guardar, compilar y jugar desde %1 (F5)</translation>
-    </message>
-    <message>
         <source>Resume</source>
         <translation>Reanudar</translation>
     </message>
@@ -8255,10 +8299,6 @@
         <translation>Informar de un problema</translation>
     </message>
     <message>
-        <source>Play from selected (F5) starts here. Click, then click the map to move it.</source>
-        <translation>Jugar desde la selección (F5) empieza aquí. Haz clic y luego haz clic en el mapa para moverlo.</translation>
-    </message>
-    <message>
         <source>Building this version from the game&apos;s sources failed: %1</source>
         <translation>Falló la compilación de esta versión a partir de las fuentes del juego: %1</translation>
     </message>
@@ -8269,6 +8309,348 @@
     <message>
         <source>%1… %2 s</source>
         <translation>%1… %2 s</translation>
+    </message>
+    <message>
+        <source>Frame advance</source>
+        <translation>Avanzar un fotograma</translation>
+    </message>
+    <message>
+        <source>Frame %1</source>
+        <translation>Fotograma %1</translation>
+    </message>
+    <message>
+        <source>Paused</source>
+        <translation>En pausa</translation>
+    </message>
+    <message>
+        <source>Speed</source>
+        <translation>Velocidad</translation>
+    </message>
+    <message>
+        <source>No limit</source>
+        <translation>Sin límite</translation>
+    </message>
+    <message>
+        <source>%1%</source>
+        <translation>%1 %</translation>
+    </message>
+    <message>
+        <source>Slower</source>
+        <translation>Más lento</translation>
+    </message>
+    <message>
+        <source>Faster</source>
+        <translation>Más rápido</translation>
+    </message>
+    <message>
+        <source>Save state</source>
+        <translation>Guardar estado</translation>
+    </message>
+    <message>
+        <source>State %1 saved (replaced)</source>
+        <translation>Estado %1 guardado (reemplazado)</translation>
+    </message>
+    <message>
+        <source>State %1 saved</source>
+        <translation>Estado %1 guardado</translation>
+    </message>
+    <message>
+        <source>Load state</source>
+        <translation>Cargar estado</translation>
+    </message>
+    <message>
+        <source>State %1 is empty</source>
+        <translation>El estado %1 está vacío</translation>
+    </message>
+    <message>
+        <source>State %1 loaded</source>
+        <translation>Estado %1 cargado</translation>
+    </message>
+    <message>
+        <source>Previous state slot</source>
+        <translation>Ranura de estado anterior</translation>
+    </message>
+    <message>
+        <source>Next state slot</source>
+        <translation>Ranura de estado siguiente</translation>
+    </message>
+    <message>
+        <source>Movie</source>
+        <translation>Película</translation>
+    </message>
+    <message>
+        <source>Record movie…</source>
+        <translation>Grabar película…</translation>
+    </message>
+    <message>
+        <source>Resume movie recording…</source>
+        <translation>Continuar grabación de película…</translation>
+    </message>
+    <message>
+        <source>Play movie…</source>
+        <translation>Reproducir película…</translation>
+    </message>
+    <message>
+        <source>Stop movie</source>
+        <translation>Detener película</translation>
+    </message>
+    <message>
+        <source>Or drop a ROM or an .rlj file on this window.</source>
+        <translation>O arrastra una ROM o un archivo .rlj a esta ventana.</translation>
+    </message>
+    <message>
+        <source>Play from selected (F4) starts here</source>
+        <translation>Jugar desde la selección (F4) empieza aquí</translation>
+    </message>
+    <message>
+        <source>Play from selected (F4) starts here. Click, then click the map to move it.</source>
+        <translation>Jugar desde la selección (F4) empieza aquí. Haz clic y luego haz clic en el mapa para moverlo.</translation>
+    </message>
+    <message>
+        <source>Pick a start point in an editor (F4)</source>
+        <translation>Elige un punto de inicio en un editor (F4)</translation>
+    </message>
+    <message>
+        <source>Save, build and play from %1 (F4)</source>
+        <translation>Guardar, compilar y jugar desde %1 (F4)</translation>
+    </message>
+    <message>
+        <source>Save state (slot %1)</source>
+        <translation>Guardar estado (ranura %1)</translation>
+    </message>
+    <message>
+        <source>Load state (slot %1)</source>
+        <translation>Cargar estado (ranura %1)</translation>
+    </message>
+    <message>
+        <source>Resumed</source>
+        <translation>Reanudado</translation>
+    </message>
+    <message>
+        <source>Speed: no limit</source>
+        <translation>Velocidad: sin límite</translation>
+    </message>
+    <message>
+        <source>Speed %1% (slowest)</source>
+        <translation>Velocidad %1 % (la más lenta)</translation>
+    </message>
+    <message>
+        <source>Speed %1%</source>
+        <translation>Velocidad %1 %</translation>
+    </message>
+    <message>
+        <source>State %1 selected (empty)</source>
+        <translation>Estado %1 seleccionado (vacío)</translation>
+    </message>
+    <message>
+        <source>State %1 selected (used)</source>
+        <translation>Estado %1 seleccionado (ocupado)</translation>
+    </message>
+    <message>
+        <source>State %1 selected (used, %2)</source>
+        <translation>Estado %1 seleccionado (ocupado, %2)</translation>
+    </message>
+    <message>
+        <source>Speed: no limit (fastest)</source>
+        <translation>Velocidad: sin límite (la más rápida)</translation>
+    </message>
+    <message>
+        <source>Movie ended: you have control</source>
+        <translation>Película terminada: ahora controlas tú</translation>
+    </message>
+    <message>
+        <source>Movie stopped</source>
+        <translation>Película detenida</translation>
+    </message>
+    <message>
+        <source>Movie stopped and saved</source>
+        <translation>Película detenida y guardada</translation>
+    </message>
+    <message>
+        <source>End of movie: paused, recording on (Pause to go on)</source>
+        <translation>Fin de la película: en pausa, se sigue grabando (Pause para continuar)</translation>
+    </message>
+    <message>
+        <source>State %1 is not from this movie: movie stopped</source>
+        <translation>El estado %1 no es de esta película: película detenida</translation>
+    </message>
+    <message>
+        <source>MAME is not found: choose it in Settings.</source>
+        <translation>No se encuentra MAME: elígelo en Configuración.</translation>
+    </message>
+    <message>
+        <source>Find the movies</source>
+        <translation>Buscar las películas</translation>
+    </message>
+    <message>
+        <source>The movie cannot start: %1</source>
+        <translation>La película no puede empezar: %1</translation>
+    </message>
+    <message>
+        <source>%1 was not recorded in the studio: it can play, not go on.</source>
+        <translation>%1 no se grabó en el estudio: se puede reproducir, pero no continuar.</translation>
+    </message>
+    <message>
+        <source>Prepare %1</source>
+        <translation>Preparar %1</translation>
+    </message>
+    <message>
+        <source>%1 cannot play: %2</source>
+        <translation>%1 no se puede reproducir: %2</translation>
+    </message>
+    <message>
+        <source>Recording %1</source>
+        <translation>Grabando %1</translation>
+    </message>
+    <message>
+        <source>Resuming %1</source>
+        <translation>Continuando %1</translation>
+    </message>
+    <message>
+        <source>Playing a movie</source>
+        <translation>Reproduciendo una película</translation>
+    </message>
+    <message>
+        <source>Movie saved: %1</source>
+        <translation>Película guardada: %1</translation>
+    </message>
+    <message>
+        <source>Recording movie «%1»</source>
+        <translation>Grabando la película «%1»</translation>
+    </message>
+    <message>
+        <source>Playing movie «%1»</source>
+        <translation>Reproduciendo la película «%1»</translation>
+    </message>
+</context>
+<context>
+    <name>rl::shell::PickMovieDialog</name>
+    <message>
+        <source>Play movie</source>
+        <translation>Reproducir película</translation>
+    </message>
+    <message>
+        <source>Resume movie recording</source>
+        <translation>Continuar grabación de película</translation>
+    </message>
+    <message>
+        <source>%1 from power-on with the movie&apos;s input. Pause, speed and save states work as usual; your own keys wait until the movie ends.</source>
+        <translation>%1 desde el encendido con las entradas de la película. La pausa, la velocidad y los estados guardados funcionan como siempre; tus teclas esperan a que termine la película.</translation>
+    </message>
+    <message>
+        <source>%1 plays the movie to its end, pauses, and records on from there. Only movies recorded in the studio can go on.</source>
+        <translation>%1 reproduce la película hasta el final, se pausa y sigue grabando desde ahí. Solo se pueden continuar las películas grabadas en el estudio.</translation>
+    </message>
+    <message>
+        <source>Movie</source>
+        <translation>Película</translation>
+    </message>
+    <message>
+        <source>Kind</source>
+        <translation>Tipo</translation>
+    </message>
+    <message>
+        <source>Length</source>
+        <translation>Duración</translation>
+    </message>
+    <message>
+        <source>Author</source>
+        <translation>Autor</translation>
+    </message>
+    <message>
+        <source>Description</source>
+        <translation>Descripción</translation>
+    </message>
+    <message>
+        <source>Recorded in another emulator: it can play, not go on</source>
+        <translation>Grabada en otro emulador: se puede reproducir, no continuar</translation>
+    </message>
+    <message>
+        <source>The game has no movies yet.</source>
+        <translation>El juego aún no tiene películas.</translation>
+    </message>
+    <message>
+        <source>Stop the emulator at frame</source>
+        <translation>Detener el emulador en el fotograma</translation>
+    </message>
+    <message>
+        <source>never</source>
+        <translation>nunca</translation>
+    </message>
+    <message>
+        <source>Close the emulator when the movie ends</source>
+        <translation>Cerrar el emulador al terminar la película</translation>
+    </message>
+    <message>
+        <source>Choose file…</source>
+        <translation>Elegir archivo…</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>Cancelar</translation>
+    </message>
+    <message>
+        <source>Play</source>
+        <translation>Reproducir</translation>
+    </message>
+    <message>
+        <source>Resume</source>
+        <translation>Continuar</translation>
+    </message>
+    <message>
+        <source>Movies (*.rlmovie *.fm2 *.gmv)</source>
+        <translation>Películas (*.rlmovie *.fm2 *.gmv)</translation>
+    </message>
+    <message>
+        <source>Retrolarium movies (*.rlmovie)</source>
+        <translation>Películas de Retrolarium (*.rlmovie)</translation>
+    </message>
+</context>
+<context>
+    <name>rl::shell::RecordMovieDialog</name>
+    <message>
+        <source>Record movie</source>
+        <translation>Grabar película</translation>
+    </message>
+    <message>
+        <source>%1 starts from power-on and every frame of your input is recorded: the movie plays back the same way in the studio, in make play and in the checks. Save states (F5, F8 to load), pause and speed do not change it. This is not the game&apos;s own demo: that one is in the Demo view.</source>
+        <translation>%1 arranca desde el encendido y se graban tus entradas en cada fotograma: la película se reproduce igual en el estudio, en make play y en las comprobaciones. Los estados guardados (F5, F8 para cargar), la pausa y la velocidad no la cambian. No es la demo del propio juego: esa está en la vista «Demo».</translation>
+    </message>
+    <message>
+        <source>Longplay, all rooms</source>
+        <translation>Partida completa, todas las salas</translation>
+    </message>
+    <message>
+        <source>Title</source>
+        <translation>Título</translation>
+    </message>
+    <message>
+        <source>Kind</source>
+        <translation>Tipo</translation>
+    </message>
+    <message>
+        <source>Author</source>
+        <translation>Autor</translation>
+    </message>
+    <message>
+        <source>What it plays: the route, the ending it reaches</source>
+        <translation>Qué juega: la ruta, el final al que llega</translation>
+    </message>
+    <message>
+        <source>Description</source>
+        <translation>Descripción</translation>
+    </message>
+    <message>
+        <source>It is saved in %1.</source>
+        <translation>Se guarda en %1.</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>Cancelar</translation>
+    </message>
+    <message>
+        <source>Record</source>
+        <translation>Grabar</translation>
     </message>
 </context>
 <context>
@@ -8683,16 +9065,16 @@
         <translation>El jugador es el punto de inicio; muévelo en su lugar.</translation>
     </message>
     <message>
-        <source>drop where Play from selected (F5) puts the player; not level data</source>
-        <translation>suelta donde Jugar desde la selección (F5) coloca al jugador; no son datos del nivel</translation>
-    </message>
-    <message>
         <source>Player</source>
         <translation>Jugador</translation>
     </message>
     <message>
-        <source>Drag the player to where Play from selected (F5) puts it. The start point is a playtest setting, not level data.</source>
-        <translation>Arrastra al jugador adonde Jugar desde la selección (F5) debe colocarlo. El punto de inicio es un ajuste de la prueba, no datos del nivel.</translation>
+        <source>drop where Play from selected (F4) puts the player; not level data</source>
+        <translation>suelta donde Jugar desde la selección (F4) coloca al jugador; no son datos del nivel</translation>
+    </message>
+    <message>
+        <source>Drag the player to where Play from selected (F4) puts it. The start point is a playtest setting, not level data.</source>
+        <translation>Arrastra al jugador adonde Jugar desde la selección (F4) debe colocarlo. El punto de inicio es un ajuste de la prueba, no datos del nivel.</translation>
     </message>
 </context>
 <context>
@@ -9377,8 +9759,8 @@
         <translation>Rutas de los mundos</translation>
     </message>
     <message>
-        <source>Each world plays its steps in order; a pipe intro (an area whose entrance walks the player into a pipe) shares the level number of the next step. The steps per world are fixed. F5 plays the selected step&apos;s area.</source>
-        <translation>Cada mundo recorre sus pasos en orden; una entrada por tubería (una zona cuya entrada lleva al jugador caminando a una tubería) comparte el número de nivel del paso siguiente. Los pasos por mundo son fijos. F5 juega la zona del paso seleccionado.</translation>
+        <source>Each world plays its steps in order; a pipe intro (an area whose entrance walks the player into a pipe) shares the level number of the next step. The steps per world are fixed. F4 plays the selected step&apos;s area.</source>
+        <translation>Cada mundo recorre sus pasos en orden; una entrada por tubería (una zona cuya entrada lleva al jugador caminando a una tubería) comparte el número de nivel del paso siguiente. Los pasos por mundo son fijos. F4 juega la zona del paso seleccionado.</translation>
     </message>
 </context>
 <context>
@@ -12575,6 +12957,22 @@
     <message>
         <source>Built from %1: you will be asked for its ROM</source>
         <translation>Se compila a partir de %1: se te pedirá su ROM</translation>
+    </message>
+    <message>
+        <source>TAS</source>
+        <translation>TAS</translation>
+    </message>
+    <message>
+        <source>Longplay</source>
+        <translation>Partida completa</translation>
+    </message>
+    <message>
+        <source>Attract mode</source>
+        <translation>Modo demostración</translation>
+    </message>
+    <message>
+        <source>Other</source>
+        <translation>Otro</translation>
     </message>
 </context>
 </TS>

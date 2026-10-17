@@ -1942,12 +1942,12 @@
         <translation>「選択位置からプレイ」の開始位置</translation>
     </message>
     <message>
-        <source>Play from selected (F5) builds the ROM, enters this room through the game&apos;s own room loader and puts the player here. Delete takes the marker away: the player then starts at the bottom of the room.</source>
-        <translation>「選択位置からプレイ」（F5）は ROM をビルドし、ゲーム自身のルームローダーでこのルームに入り、プレイヤーをここに置きます。Delete でマーカーを外すと、プレイヤーはルームの下から始まります。</translation>
-    </message>
-    <message>
         <source>Pick an object in the library and click the room to add it, or drag it there. Pick Player start (or click the start point above) and click the room to choose where Play from selected puts the player; without it he starts at the bottom of the room.</source>
         <translation>ライブラリでオブジェクトを選んでルームをクリックすると追加できます（ドラッグでも置けます）。「プレイヤーの開始位置」を選ぶ（または上の開始位置をクリックする）と、ルームのクリックで「選択位置からプレイ」でプレイヤーを置く場所を決められます。置かなければルームの下から始まります。</translation>
+    </message>
+    <message>
+        <source>Play from selected (F4) builds the ROM, enters this room through the game&apos;s own room loader and puts the player here. Delete takes the marker away: the player then starts at the bottom of the room.</source>
+        <translation>「選択位置からプレイ」（F4）は ROM をビルドし、ゲーム自身のルームローダーでこのルームに入り、プレイヤーをここに置きます。Delete でマーカーを外すと、プレイヤーはルームの下から始まります。</translation>
     </message>
 </context>
 <context>
@@ -4382,6 +4382,26 @@
     <message>
         <source>Running · click the picture for the keyboard</source>
         <translation>実行中 · 画面をクリックするとキーボードで操作できます</translation>
+    </message>
+    <message>
+        <source>● Recording movie %1 · frame %2</source>
+        <translation>● ムービー記録中 %1 · フレーム %2</translation>
+    </message>
+    <message>
+        <source>▶ Movie %1 / %2</source>
+        <translation>▶ ムービー %1 / %2</translation>
+    </message>
+    <message>
+        <source>No speed limit</source>
+        <translation>速度制限なし</translation>
+    </message>
+    <message>
+        <source>Speed %1%</source>
+        <translation>速度 %1%</translation>
+    </message>
+    <message>
+        <source>Slot %1</source>
+        <translation>スロット %1</translation>
     </message>
 </context>
 <context>
@@ -7409,6 +7429,10 @@
         <source>MAME&apos;s skip_warnings option is turned on in its ui.ini, so it honours that mark.</source>
         <translation>MAME がこの印を尊重するよう、ui.ini の skip_warnings を有効にしました。</translation>
     </message>
+    <message>
+        <source>The movie may have lost its last seconds: the emulator did not answer.</source>
+        <translation>ムービーの最後の数秒が失われた可能性があります。エミュレーターが応答しませんでした。</translation>
+    </message>
 </context>
 <context>
     <name>rl::runtime::ProcessRunner</name>
@@ -7690,6 +7714,26 @@
         <source>The games are named only to say which ones the studio works with. Their titles and characters are trademarks of their owners, who have not made or endorsed Retrolarium. You need your own copy of each game.</source>
         <translation>ゲーム名は、スタジオが対応するゲームを示すためだけに記載しています。タイトルとキャラクターは各権利者の商標であり、権利者は Retrolarium の制作にも推奨にも関わっていません。各ゲームはご自身でお持ちのものが必要です。</translation>
     </message>
+    <message>
+        <source>Frame advance</source>
+        <translation>コマ送り</translation>
+    </message>
+    <message>
+        <source>Slower, faster</source>
+        <translation>遅く、速く</translation>
+    </message>
+    <message>
+        <source>Fast-forward while held</source>
+        <translation>押している間は早送り</translation>
+    </message>
+    <message>
+        <source>Save state, load state</source>
+        <translation>ステートセーブ、ステートロード</translation>
+    </message>
+    <message>
+        <source>Previous, next state slot</source>
+        <translation>前、次のステートスロット</translation>
+    </message>
 </context>
 <context>
     <name>rl::shell::BottomPanel</name>
@@ -7716,6 +7760,18 @@
         <translation>
             <numerusform>警告 %n 件</numerusform>
         </translation>
+    </message>
+    <message>
+        <source>Copy</source>
+        <translation>コピー</translation>
+    </message>
+    <message>
+        <source>Copy all</source>
+        <translation>すべてコピー</translation>
+    </message>
+    <message>
+        <source>Select all</source>
+        <translation>すべて選択</translation>
     </message>
 </context>
 <context>
@@ -8123,10 +8179,6 @@
         <translation>開始位置</translation>
     </message>
     <message>
-        <source>Play from selected (F5) starts here</source>
-        <translation>「選択位置からプレイ」（F5）はここから始まります</translation>
-    </message>
-    <message>
         <source> — Retrolarium</source>
         <translation> — Retrolarium</translation>
     </message>
@@ -8175,14 +8227,6 @@
         <translation>%1 からプレイ</translation>
     </message>
     <message>
-        <source>Pick a start point in an editor (F5)</source>
-        <translation>エディタで開始位置を選んでください（F5）</translation>
-    </message>
-    <message>
-        <source>Save, build and play from %1 (F5)</source>
-        <translation>保存、ビルドして %1 からプレイ（F5）</translation>
-    </message>
-    <message>
         <source>Resume</source>
         <translation>再開</translation>
     </message>
@@ -8221,10 +8265,6 @@
         <translation>問題を報告</translation>
     </message>
     <message>
-        <source>Play from selected (F5) starts here. Click, then click the map to move it.</source>
-        <translation>「選択位置からプレイ」（F5）はここから始まります。クリックしてからマップをクリックすると移動します。</translation>
-    </message>
-    <message>
         <source>Building this version from the game&apos;s sources failed: %1</source>
         <translation>このバージョンをゲームのソースからビルドできませんでした: %1</translation>
     </message>
@@ -8235,6 +8275,348 @@
     <message>
         <source>%1… %2 s</source>
         <translation>%1… %2 秒</translation>
+    </message>
+    <message>
+        <source>Frame advance</source>
+        <translation>コマ送り</translation>
+    </message>
+    <message>
+        <source>Frame %1</source>
+        <translation>フレーム %1</translation>
+    </message>
+    <message>
+        <source>Paused</source>
+        <translation>一時停止中</translation>
+    </message>
+    <message>
+        <source>Speed</source>
+        <translation>速度</translation>
+    </message>
+    <message>
+        <source>No limit</source>
+        <translation>制限なし</translation>
+    </message>
+    <message>
+        <source>%1%</source>
+        <translation>%1%</translation>
+    </message>
+    <message>
+        <source>Slower</source>
+        <translation>遅く</translation>
+    </message>
+    <message>
+        <source>Faster</source>
+        <translation>速く</translation>
+    </message>
+    <message>
+        <source>Save state</source>
+        <translation>ステートセーブ</translation>
+    </message>
+    <message>
+        <source>State %1 saved (replaced)</source>
+        <translation>ステート %1 をセーブしました（上書き）</translation>
+    </message>
+    <message>
+        <source>State %1 saved</source>
+        <translation>ステート %1 をセーブしました</translation>
+    </message>
+    <message>
+        <source>Load state</source>
+        <translation>ステートロード</translation>
+    </message>
+    <message>
+        <source>State %1 is empty</source>
+        <translation>ステート %1 は空です</translation>
+    </message>
+    <message>
+        <source>State %1 loaded</source>
+        <translation>ステート %1 をロードしました</translation>
+    </message>
+    <message>
+        <source>Previous state slot</source>
+        <translation>前のステートスロット</translation>
+    </message>
+    <message>
+        <source>Next state slot</source>
+        <translation>次のステートスロット</translation>
+    </message>
+    <message>
+        <source>Movie</source>
+        <translation>ムービー</translation>
+    </message>
+    <message>
+        <source>Record movie…</source>
+        <translation>ムービーを記録…</translation>
+    </message>
+    <message>
+        <source>Resume movie recording…</source>
+        <translation>ムービーの記録を続ける…</translation>
+    </message>
+    <message>
+        <source>Play movie…</source>
+        <translation>ムービーを再生…</translation>
+    </message>
+    <message>
+        <source>Stop movie</source>
+        <translation>ムービーを停止</translation>
+    </message>
+    <message>
+        <source>Or drop a ROM or an .rlj file on this window.</source>
+        <translation>または ROM か .rlj ファイルをこのウィンドウにドロップしてください。</translation>
+    </message>
+    <message>
+        <source>Play from selected (F4) starts here</source>
+        <translation>「選択位置からプレイ」（F4）はここから始まります</translation>
+    </message>
+    <message>
+        <source>Play from selected (F4) starts here. Click, then click the map to move it.</source>
+        <translation>「選択位置からプレイ」（F4）はここから始まります。クリックしてからマップをクリックすると移動します。</translation>
+    </message>
+    <message>
+        <source>Pick a start point in an editor (F4)</source>
+        <translation>エディタで開始位置を選んでください（F4）</translation>
+    </message>
+    <message>
+        <source>Save, build and play from %1 (F4)</source>
+        <translation>保存、ビルドして %1 からプレイ（F4）</translation>
+    </message>
+    <message>
+        <source>Save state (slot %1)</source>
+        <translation>ステートセーブ（スロット %1）</translation>
+    </message>
+    <message>
+        <source>Load state (slot %1)</source>
+        <translation>ステートロード（スロット %1）</translation>
+    </message>
+    <message>
+        <source>Resumed</source>
+        <translation>再開</translation>
+    </message>
+    <message>
+        <source>Speed: no limit</source>
+        <translation>速度：制限なし</translation>
+    </message>
+    <message>
+        <source>Speed %1% (slowest)</source>
+        <translation>速度 %1%（最も遅い）</translation>
+    </message>
+    <message>
+        <source>Speed %1%</source>
+        <translation>速度 %1%</translation>
+    </message>
+    <message>
+        <source>State %1 selected (empty)</source>
+        <translation>ステート %1 を選択（空き）</translation>
+    </message>
+    <message>
+        <source>State %1 selected (used)</source>
+        <translation>ステート %1 を選択（使用中）</translation>
+    </message>
+    <message>
+        <source>State %1 selected (used, %2)</source>
+        <translation>ステート %1 を選択（使用中、%2）</translation>
+    </message>
+    <message>
+        <source>Speed: no limit (fastest)</source>
+        <translation>速度：制限なし（最も速い）</translation>
+    </message>
+    <message>
+        <source>Movie ended: you have control</source>
+        <translation>ムービー終了：操作できます</translation>
+    </message>
+    <message>
+        <source>Movie stopped</source>
+        <translation>ムービーを停止しました</translation>
+    </message>
+    <message>
+        <source>Movie stopped and saved</source>
+        <translation>ムービーを停止して保存しました</translation>
+    </message>
+    <message>
+        <source>End of movie: paused, recording on (Pause to go on)</source>
+        <translation>ムービー終了：一時停止中、ここから記録を続けます（Pause で再開）</translation>
+    </message>
+    <message>
+        <source>State %1 is not from this movie: movie stopped</source>
+        <translation>ステート %1 はこのムービーのものではありません：ムービーを停止しました</translation>
+    </message>
+    <message>
+        <source>MAME is not found: choose it in Settings.</source>
+        <translation>MAME が見つかりません。設定で選択してください。</translation>
+    </message>
+    <message>
+        <source>Find the movies</source>
+        <translation>ムービーを探す</translation>
+    </message>
+    <message>
+        <source>The movie cannot start: %1</source>
+        <translation>ムービーを開始できません: %1</translation>
+    </message>
+    <message>
+        <source>%1 was not recorded in the studio: it can play, not go on.</source>
+        <translation>%1 はスタジオで記録されたものではありません。再生はできますが、続きは記録できません。</translation>
+    </message>
+    <message>
+        <source>Prepare %1</source>
+        <translation>%1 を準備</translation>
+    </message>
+    <message>
+        <source>%1 cannot play: %2</source>
+        <translation>%1 を再生できません: %2</translation>
+    </message>
+    <message>
+        <source>Recording %1</source>
+        <translation>%1 を記録中</translation>
+    </message>
+    <message>
+        <source>Resuming %1</source>
+        <translation>%1 の続きを記録中</translation>
+    </message>
+    <message>
+        <source>Playing a movie</source>
+        <translation>ムービー再生中</translation>
+    </message>
+    <message>
+        <source>Movie saved: %1</source>
+        <translation>ムービーを保存しました: %1</translation>
+    </message>
+    <message>
+        <source>Recording movie «%1»</source>
+        <translation>ムービー「%1」を記録中</translation>
+    </message>
+    <message>
+        <source>Playing movie «%1»</source>
+        <translation>ムービー「%1」を再生中</translation>
+    </message>
+</context>
+<context>
+    <name>rl::shell::PickMovieDialog</name>
+    <message>
+        <source>Play movie</source>
+        <translation>ムービーを再生</translation>
+    </message>
+    <message>
+        <source>Resume movie recording</source>
+        <translation>ムービーの記録を続ける</translation>
+    </message>
+    <message>
+        <source>%1 from power-on with the movie&apos;s input. Pause, speed and save states work as usual; your own keys wait until the movie ends.</source>
+        <translation>%1 を電源投入からムービーの入力で動かします。一時停止、速度、ステートセーブは通常どおり使えます。自分のキー入力はムービーが終わるまで待機します。</translation>
+    </message>
+    <message>
+        <source>%1 plays the movie to its end, pauses, and records on from there. Only movies recorded in the studio can go on.</source>
+        <translation>%1 はムービーを最後まで再生して一時停止し、そこから記録を続けます。続きを記録できるのはスタジオで記録したムービーだけです。</translation>
+    </message>
+    <message>
+        <source>Movie</source>
+        <translation>ムービー</translation>
+    </message>
+    <message>
+        <source>Kind</source>
+        <translation>種類</translation>
+    </message>
+    <message>
+        <source>Length</source>
+        <translation>長さ</translation>
+    </message>
+    <message>
+        <source>Author</source>
+        <translation>作者</translation>
+    </message>
+    <message>
+        <source>Description</source>
+        <translation>説明</translation>
+    </message>
+    <message>
+        <source>Recorded in another emulator: it can play, not go on</source>
+        <translation>別のエミュレーターで記録：再生はできますが、続きは記録できません</translation>
+    </message>
+    <message>
+        <source>The game has no movies yet.</source>
+        <translation>このゲームにはまだムービーがありません。</translation>
+    </message>
+    <message>
+        <source>Stop the emulator at frame</source>
+        <translation>エミュレーターを止めるフレーム</translation>
+    </message>
+    <message>
+        <source>never</source>
+        <translation>しない</translation>
+    </message>
+    <message>
+        <source>Close the emulator when the movie ends</source>
+        <translation>ムービーが終わったらエミュレーターを閉じる</translation>
+    </message>
+    <message>
+        <source>Choose file…</source>
+        <translation>ファイルを選択…</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>キャンセル</translation>
+    </message>
+    <message>
+        <source>Play</source>
+        <translation>再生</translation>
+    </message>
+    <message>
+        <source>Resume</source>
+        <translation>続きを記録</translation>
+    </message>
+    <message>
+        <source>Movies (*.rlmovie *.fm2 *.gmv)</source>
+        <translation>ムービー (*.rlmovie *.fm2 *.gmv)</translation>
+    </message>
+    <message>
+        <source>Retrolarium movies (*.rlmovie)</source>
+        <translation>Retrolarium ムービー (*.rlmovie)</translation>
+    </message>
+</context>
+<context>
+    <name>rl::shell::RecordMovieDialog</name>
+    <message>
+        <source>Record movie</source>
+        <translation>ムービーを記録</translation>
+    </message>
+    <message>
+        <source>%1 starts from power-on and every frame of your input is recorded: the movie plays back the same way in the studio, in make play and in the checks. Save states (F5, F8 to load), pause and speed do not change it. This is not the game&apos;s own demo: that one is in the Demo view.</source>
+        <translation>%1 は電源投入から始まり、入力が毎フレーム記録されます。ムービーはスタジオでも make play でもチェックでも同じように再生されます。ステートセーブ（F5、ロードは F8）、一時停止、速度は記録に影響しません。これはゲーム自体のデモではありません。そちらは「デモ」ビューにあります。</translation>
+    </message>
+    <message>
+        <source>Longplay, all rooms</source>
+        <translation>ロングプレイ、全部屋</translation>
+    </message>
+    <message>
+        <source>Title</source>
+        <translation>タイトル</translation>
+    </message>
+    <message>
+        <source>Kind</source>
+        <translation>種類</translation>
+    </message>
+    <message>
+        <source>Author</source>
+        <translation>作者</translation>
+    </message>
+    <message>
+        <source>What it plays: the route, the ending it reaches</source>
+        <translation>内容：ルート、到達するエンディング</translation>
+    </message>
+    <message>
+        <source>Description</source>
+        <translation>説明</translation>
+    </message>
+    <message>
+        <source>It is saved in %1.</source>
+        <translation>%1 に保存されます。</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>キャンセル</translation>
+    </message>
+    <message>
+        <source>Record</source>
+        <translation>記録</translation>
     </message>
 </context>
 <context>
@@ -8649,16 +9031,16 @@
         <translation>プレイヤーは開始位置です。削除せずに移動してください。</translation>
     </message>
     <message>
-        <source>drop where Play from selected (F5) puts the player; not level data</source>
-        <translation>「選択位置からプレイ」（F5）でプレイヤーを置く場所にドロップ。ステージデータではありません</translation>
-    </message>
-    <message>
         <source>Player</source>
         <translation>プレイヤー</translation>
     </message>
     <message>
-        <source>Drag the player to where Play from selected (F5) puts it. The start point is a playtest setting, not level data.</source>
-        <translation>「選択位置からプレイ」（F5）でプレイヤーを置きたい場所へドラッグします。開始位置はテストプレイの設定で、ステージデータではありません。</translation>
+        <source>drop where Play from selected (F4) puts the player; not level data</source>
+        <translation>「選択位置からプレイ」（F4）でプレイヤーを置く場所にドロップ。ステージデータではありません</translation>
+    </message>
+    <message>
+        <source>Drag the player to where Play from selected (F4) puts it. The start point is a playtest setting, not level data.</source>
+        <translation>「選択位置からプレイ」（F4）でプレイヤーを置きたい場所へドラッグします。開始位置はテストプレイの設定で、ステージデータではありません。</translation>
     </message>
 </context>
 <context>
@@ -9342,8 +9724,8 @@
         <translation>ワールドのルート</translation>
     </message>
     <message>
-        <source>Each world plays its steps in order; a pipe intro (an area whose entrance walks the player into a pipe) shares the level number of the next step. The steps per world are fixed. F5 plays the selected step&apos;s area.</source>
-        <translation>各ワールドはステップを順に進みます。土管の導入（入口でプレイヤーが土管へ歩いて入るエリア）は次のステップとステージ番号を共有します。ワールドごとのステップ数は固定です。F5 で選択したステップのエリアをプレイします。</translation>
+        <source>Each world plays its steps in order; a pipe intro (an area whose entrance walks the player into a pipe) shares the level number of the next step. The steps per world are fixed. F4 plays the selected step&apos;s area.</source>
+        <translation>各ワールドはステップを順に進みます。土管の導入（入口でプレイヤーが土管へ歩いて入るエリア）は次のステップとステージ番号を共有します。ワールドごとのステップ数は固定です。F4 で選択したステップのエリアをプレイします。</translation>
     </message>
 </context>
 <context>
@@ -12524,6 +12906,22 @@
     <message>
         <source>Built from %1: you will be asked for its ROM</source>
         <translation>%1 からビルドされます。そのバージョンの ROM を求められます</translation>
+    </message>
+    <message>
+        <source>TAS</source>
+        <translation>TAS</translation>
+    </message>
+    <message>
+        <source>Longplay</source>
+        <translation>ロングプレイ</translation>
+    </message>
+    <message>
+        <source>Attract mode</source>
+        <translation>デモ画面</translation>
+    </message>
+    <message>
+        <source>Other</source>
+        <translation>その他</translation>
     </message>
 </context>
 </TS>
