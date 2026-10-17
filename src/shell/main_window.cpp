@@ -2038,7 +2038,9 @@ QString studioMovieHeader(const QString& path) {
     for (int i = 1; i < lines.size() && lines.at(i).trimmed() != QLatin1String("---"); ++i) {
         const QString line = lines.at(i).trimmed();
         if (line.startsWith(QLatin1String("frames ")) || line.startsWith(QLatin1String("offset "))) continue;
-        if (line == QLatin1String("source mame")) studio = true;
+        // MAME's own, or a port to MAME of another emulator's ("source mame
+        // from fm2 ..."): both go on in MAME.
+        if (line == QLatin1String("source mame") || line.startsWith(QLatin1String("source mame "))) studio = true;
         header += line + QLatin1Char('\n');
     }
     return studio ? header : QString();
@@ -2137,8 +2139,9 @@ void MainWindow::startMovie(int mode) {
         PickMovieDialog dialog(purpose, game, movieChoices(answer.value(QStringLiteral("movies")).toArray()), this);
         if (dialog.exec() != QDialog::Accepted || dialog.path().isEmpty()) return;
         const QString path = dialog.path();
+        QString header;
         if (mode == int(Mode::Resume)) {
-            const QString header = studioMovieHeader(path);
+            header = studioMovieHeader(path);
             if (header.isEmpty()) {
                 report(message(sdk::Severity::Error, QStringLiteral("playtest"),
                                tr("%1 was not recorded in the studio: it can play, not go on.")
@@ -2146,11 +2149,10 @@ void MainWindow::startMovie(int mode) {
                                QString()));
                 return;
             }
-            launchMovie(answer, mode, path, header, 0, false);
-            return;
         }
         // Played as MAME plays it: the kit lines another emulator's movie up
-        // with MAME's frames and power-on state.
+        // with MAME's frames and power-on state. A recording goes on in its
+        // own file, from the power-on state the kit gives it.
         const QString prepared = QDir(QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation))
                                      .filePath(QStringLiteral("movies/playing.rlmovie"));
         QDir().mkpath(QFileInfo(prepared).absolutePath());
@@ -2161,7 +2163,7 @@ void MainWindow::startMovie(int mode) {
         again.label = tr("Prepare %1").arg(QFileInfo(path).fileName());
         const int stopAt = dialog.stopAt();
         const bool closeAtEnd = dialog.closeAtEnd();
-        runProcess(again, [this, mode, prepared, path, stopAt, closeAtEnd](const sdk::ProcessResult& played) {
+        runProcess(again, [this, mode, prepared, path, header, stopAt, closeAtEnd](const sdk::ProcessResult& played) {
             if (!played.succeeded()) {
                 if (!played.cancelled) {
                     report(message(sdk::Severity::Error, QStringLiteral("playtest"),
@@ -2170,8 +2172,12 @@ void MainWindow::startMovie(int mode) {
                 }
                 return;
             }
-            launchMovie(QJsonDocument::fromJson(played.standardOutput).object(), mode, prepared, QString(), stopAt,
-                        closeAtEnd);
+            const QJsonObject planned = QJsonDocument::fromJson(played.standardOutput).object();
+            if (mode == int(Mode::Resume)) {
+                launchMovie(planned, mode, path, header, 0, false);
+            } else {
+                launchMovie(planned, mode, prepared, QString(), stopAt, closeAtEnd);
+            }
         });
     });
 }
