@@ -3,6 +3,7 @@
 #include "sdk/types.hpp"
 
 #include <QFrame>
+#include <QSet>
 
 class QPlainTextEdit;
 class QToolButton;
@@ -39,8 +40,16 @@ signals:
     void diagnosticActivated(const sdk::Diagnostic& diagnostic);
     void summaryChanged(const QString& summary);
 
+protected:
+    bool eventFilter(QObject* watched, QEvent* event) override;
+
 private:
     void updateChevron();
+    // Message selection: a click picks one, Ctrl adds, Shift a range.
+    void selectRow(int index, Qt::KeyboardModifiers modifiers);
+    void paintSelection();
+    void copyMessages(bool all);
+    void showMenu(const QPoint& at);
 
     ui::PanelTabs* tabs_;
     QToolButton* chevron_;
@@ -50,6 +59,8 @@ private:
     QVBoxLayout* messageLayout_;
     QPlainTextEdit* log_;
     QVector<sdk::Diagnostic> diagnostics_;
+    QSet<int> selected_;
+    int anchor_ = -1;
     int logLines_ = 0;
     bool expanded_ = true;
 };

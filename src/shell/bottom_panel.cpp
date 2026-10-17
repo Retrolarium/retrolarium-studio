@@ -8,7 +8,11 @@
 #include "widgets/label.hpp"
 #include "widgets/panel_tabs.hpp"
 
+#include <QApplication>
+#include <QClipboard>
 #include <QHBoxLayout>
+#include <QKeyEvent>
+#include <QMenu>
 #include <QMouseEvent>
 #include <QPainter>
 #include <QPlainTextEdit>
@@ -108,6 +112,17 @@ public:
     }
 
     std::function<void()> onActivate;
+    // A click with its modifiers selects (see BottomPanel::selectRow).
+    std::function<void(Qt::KeyboardModifiers)> onSelect;
+    std::function<void(const QPoint&)> onMenu;
+
+    void setSelected(bool selected) {
+        if (selected_ != selected) {
+            selected_ = selected;
+            update();
+        }
+    }
+    bool isSelected() const { return selected_; }
 
 protected:
     void enterEvent(QEvent*) override {
@@ -118,15 +133,29 @@ protected:
         hovered_ = false;
         update();
     }
+    void mousePressEvent(QMouseEvent* event) override {
+        if (onSelect && (event->button() == Qt::LeftButton ||
+                         (event->button() == Qt::RightButton && !selected_))) {
+            onSelect(event->button() == Qt::LeftButton ? event->modifiers() : Qt::NoModifier);
+        }
+    }
     void mouseReleaseEvent(QMouseEvent* event) override {
-        if (event->button() == Qt::LeftButton && onActivate) {
+        // A plain click still goes to the message's document; a click that
+        // adds to the selection only selects.
+        if (event->button() == Qt::LeftButton && onActivate &&
+            !(event->modifiers() & (Qt::ControlModifier | Qt::ShiftModifier))) {
             onActivate();
         }
+    }
+    void contextMenuEvent(QContextMenuEvent* event) override {
+        if (onMenu) onMenu(event->globalPos());
     }
     void paintEvent(QPaintEvent*) override {
         const theme::Tokens& t = theme::current();
         QPainter painter(this);
-        if (hovered_) {
+        if (selected_) {
+            painter.fillRect(rect(), t.accentSoft);
+        } else if (hovered_) {
             painter.fillRect(rect(), t.hover);
         }
         painter.fillRect(QRect(0, height() - 1, width(), 1), t.line);
@@ -134,7 +163,17 @@ protected:
 
 private:
     bool hovered_ = false;
+    bool selected_ = false;
 };
+
+// One message as text: severity, source, message, location.
+QString messageText(const sdk::Diagnostic& d) {
+    QStringList parts{severityName(d.severity)};
+    if (!d.source.isEmpty()) parts << d.source;
+    parts << d.message;
+    if (!d.location.isEmpty()) parts << d.location;
+    return parts.join(QLatin1Char('\t'));
+}
 
 }  // namespace
 
@@ -175,6 +214,9 @@ BottomPanel::BottomPanel(QWidget* parent) : QFrame(parent) {
     scroll->setFrameShape(QFrame::NoFrame);
     scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     messages_ = new QWidget(scroll);
+    // Rows select like a list: Ctrl+C copies them, Ctrl+A takes them all.
+    messages_->setFocusPolicy(Qt::ClickFocus);
+    messages_->installEventFilter(this);
     messageLayout_ = new QVBoxLayout(messages_);
     messageLayout_->setContentsMargins(0, 0, 0, 0);
     messageLayout_->setSpacing(0);
@@ -245,15 +287,95 @@ void BottomPanel::setDiagnostics(const QVector<sdk::Diagnostic>& diagnostics) {
         }
         delete item;
     }
+    selected_.clear();
+    anchor_ = -1;
     int index = 0;
     for (const sdk::Diagnostic& d : diagnostics_) {
         auto* row = new MessageRow(d, messages_);
         row->onActivate = [this, d] { emit diagnosticActivated(d); };
+        row->onSelect = [this, index](Qt::KeyboardModifiers modifiers) { selectRow(index, modifiers); };
+        row->onMenu = [this](const QPoint& at) { showMenu(at); };
         messageLayout_->insertWidget(index++, row);
     }
     tabs_->setCount(0, QString::number(diagnostics_.size()));
     summary_->setText(summary());
     emit summaryChanged(summary());
+}
+
+void BottomPanel::selectRow(int index, Qt::KeyboardModifiers modifiers) {
+    messages_->setFocus(Qt::MouseFocusReason);
+    if (modifiers & Qt::ShiftModifier && anchor_ >= 0) {
+        if (!(modifiers & Qt::ControlModifier)) selected_.clear();
+        for (int i = std::min(anchor_, index); i <= std::max(anchor_, index); ++i) selected_.insert(i);
+    } else if (modifiers & Qt::ControlModifier) {
+        if (selected_.contains(index)) selected_.remove(index); else selected_.insert(index);
+        anchor_ = index;
+    } else {
+        selected_ = {index};
+        anchor_ = index;
+    }
+    paintSelection();
+}
+
+void BottomPanel::paintSelection() {
+    for (int i = 0; i < messageLayout_->count(); ++i) {
+        if (auto* row = dynamic_cast<MessageRow*>(messageLayout_->itemAt(i)->widget())) {
+            row->setSelected(selected_.contains(i));
+        }
+    }
+}
+
+void BottomPanel::copyMessages(bool all) {
+    QStringList lines;
+    for (int i = 0; i < diagnostics_.size(); ++i) {
+        if (all || selected_.contains(i)) lines << messageText(diagnostics_.at(i));
+    }
+    if (!lines.isEmpty()) QApplication::clipboard()->setText(lines.join(QLatin1Char('\n')));
+}
+
+void BottomPanel::showMenu(const QPoint& at) {
+    QMenu menu(this);
+    QAction* copy = menu.addAction(tr("Copy"));
+    copy->setShortcut(QKeySequence::Copy);
+    copy->setEnabled(!selected_.isEmpty());
+    connect(copy, &QAction::triggered, this, [this] { copyMessages(false); });
+    QAction* copyAll = menu.addAction(tr("Copy all"));
+    copyAll->setEnabled(!diagnostics_.isEmpty());
+    connect(copyAll, &QAction::triggered, this, [this] { copyMessages(true); });
+    menu.addSeparator();
+    QAction* selectAll = menu.addAction(tr("Select all"));
+    selectAll->setShortcut(QKeySequence::SelectAll);
+    connect(selectAll, &QAction::triggered, this, [this] {
+        for (int i = 0; i < diagnostics_.size(); ++i) selected_.insert(i);
+        paintSelection();
+    });
+    menu.exec(at);
+}
+
+bool BottomPanel::eventFilter(QObject* watched, QEvent* event) {
+    if (watched == messages_ && (event->type() == QEvent::ShortcutOverride || event->type() == QEvent::KeyPress)) {
+        auto* key = static_cast<QKeyEvent*>(event);
+        const bool copy = key->matches(QKeySequence::Copy);
+        const bool all = key->matches(QKeySequence::SelectAll);
+        if (copy || all) {
+            // Ahead of the window's own shortcuts while the list has focus.
+            event->accept();
+            if (event->type() == QEvent::KeyPress) {
+                if (all) {
+                    for (int i = 0; i < diagnostics_.size(); ++i) selected_.insert(i);
+                    paintSelection();
+                } else {
+                    copyMessages(false);
+                }
+            }
+            return true;
+        }
+    }
+    if (watched == messages_ && event->type() == QEvent::ContextMenu) {
+        showMenu(static_cast<QContextMenuEvent*>(event)->globalPos());
+        return true;
+    }
+    return QFrame::eventFilter(watched, event);
 }
 
 void BottomPanel::appendLog(const QString& line) {
