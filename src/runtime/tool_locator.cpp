@@ -7,6 +7,9 @@
 #include <QFileInfo>
 #include <QSettings>
 #include <QStandardPaths>
+#include <QVersionNumber>
+
+#include <algorithm>
 
 namespace rl::runtime {
 
@@ -25,6 +28,37 @@ QString python() {
             return found;
         }
     }
+#ifdef Q_OS_WIN
+    // A studio started from a program that holds an older PATH (an editor,
+    // a shell opened before Python was installed) does not see Python on
+    // it: the installer's registry entries and its default folders still
+    // name it. The newest version first.
+    QStringList candidates;
+    for (const char* root : {"HKEY_CURRENT_USER", "HKEY_LOCAL_MACHINE"}) {
+        QSettings core(QStringLiteral("%1\\Software\\Python\\PythonCore").arg(QString::fromLatin1(root)),
+                       QSettings::NativeFormat);
+        QStringList versions = core.childGroups();
+        std::sort(versions.begin(), versions.end(), [](const QString& a, const QString& b) {
+            return QVersionNumber::fromString(a) > QVersionNumber::fromString(b);
+        });
+        for (const QString& version : versions) {
+            const QString executable = core.value(version + QStringLiteral("/InstallPath/ExecutablePath")).toString();
+            const QString folder = core.value(version + QStringLiteral("/InstallPath/Default")).toString();
+            candidates << executable << (folder.isEmpty() ? QString() : QDir(folder).filePath(QStringLiteral("python.exe")));
+        }
+    }
+    QDir programs(QDir(qEnvironmentVariable("LOCALAPPDATA")).filePath(QStringLiteral("Programs/Python")));
+    QStringList folders = programs.entryList({QStringLiteral("Python3*")}, QDir::Dirs, QDir::Name | QDir::Reversed);
+    for (const QString& folder : folders) {
+        candidates << programs.filePath(folder + QStringLiteral("/python.exe"));
+    }
+    candidates << QStringLiteral("C:/Windows/py.exe");
+    for (const QString& candidate : candidates) {
+        if (!candidate.isEmpty() && QFileInfo(candidate).isFile()) {
+            return QDir::toNativeSeparators(candidate);
+        }
+    }
+#endif
     return {};
 }
 }  // namespace
