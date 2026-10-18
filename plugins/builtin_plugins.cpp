@@ -4,6 +4,7 @@
 #include "doraemon/plugin/doraemon_plugin.hpp"
 #include "flicky/plugin/flicky_plugin.hpp"
 #include "pacman/plugin/pacman_plugin.hpp"
+#include "rom/rom_plugin.hpp"
 #include "smb/plugin/smb_plugin.hpp"
 #include "solomon/plugin/solomon_plugin.hpp"
 #include "sdk/plugin.hpp"
@@ -17,6 +18,7 @@ void registerBuiltinPlugins() {
     doraemon::registerPlugin(registry);
     flicky::registerPlugin(registry);
     pacman::registerPlugin(registry);
+    rom::registerPlugin(registry);
     smb::registerPlugin(registry);
     solomon::registerPlugin(registry);
 }

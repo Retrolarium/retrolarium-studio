@@ -323,12 +323,25 @@ target_link_libraries(solomon_plugin PUBLIC nes_editors studio_sdk)
 studio_enable_warnings(solomon_plugin)
 
 # The one translation unit that names concrete plugins.
+# Any ROM no game plugin knows: hex, raw tiles, header, playtest.
+add_library(rom_plugin STATIC
+    generic/src/rom/rom_models.cpp
+    generic/src/rom/rom_models.hpp
+    generic/src/rom/rom_plugin.cpp
+    generic/src/rom/rom_plugin.hpp
+    generic/src/rom/rom_session.cpp
+    generic/src/rom/rom_session.hpp
+)
+target_include_directories(rom_plugin PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/generic/src)
+target_link_libraries(rom_plugin PUBLIC studio_sdk)
+studio_enable_warnings(rom_plugin)
+
 add_library(studio_builtin_plugins STATIC
     builtin_plugins.cpp
     builtin_plugins.hpp
 )
 target_include_directories(studio_builtin_plugins PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(studio_builtin_plugins PUBLIC castle_excellent_plugin doraemon_plugin flicky_plugin pacman_plugin smb_plugin solomon_plugin studio_sdk)
+target_link_libraries(studio_builtin_plugins PUBLIC castle_excellent_plugin doraemon_plugin flicky_plugin pacman_plugin rom_plugin smb_plugin solomon_plugin studio_sdk)
 studio_enable_warnings(studio_builtin_plugins)
 
 # Tests against the projects the kit prepared in the game repositories
@@ -352,3 +365,9 @@ add_executable(solomon_text_and_rooms_test
 )
 target_link_libraries(solomon_text_and_rooms_test PRIVATE solomon_plugin)
 studio_add_test(solomon_text_and_rooms_test games:solomon_no_kagi_src/.retrolarium/usa/solomons-key-usa.rlj)
+
+add_executable(rom_project_test
+    generic/tests/rom_project_test.cpp
+)
+target_link_libraries(rom_project_test PRIVATE rom_plugin)
+studio_add_test(rom_project_test)

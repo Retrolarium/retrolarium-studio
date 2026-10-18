@@ -134,6 +134,10 @@ private:
     // none is on disk yet, and readies the version the ROM is.
     void openRom();
     void openRomFile(const QString& rom);
+    // A known game's ROM: its repository, downloaded and set up. Any other
+    // ROM (or a known one the user opens as it is): a ROM project.
+    void setUpGameSource(const QString& rom);
+    void openRomAsProject(const QString& rom);
     void rememberRepository(const QString& descriptor);
     void prepareRevision(const QString& descriptor, const QString& revision, const QString& rom);
     // The repository .rlj of a generated revision project, or empty.

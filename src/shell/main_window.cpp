@@ -40,6 +40,8 @@
 #include <QDragEnterEvent>
 #include <QDropEvent>
 #include <QMimeData>
+#include <QCheckBox>
+#include <QCryptographicHash>
 #include <QDir>
 #include <QFileDialog>
 #include <QFileInfo>
@@ -49,6 +51,7 @@
 #include <QJsonObject>
 #include <QMenu>
 #include <QMenuBar>
+#include <QLabel>
 #include <QLocale>
 #include <QPainter>
 #include <QProcess>
@@ -1137,7 +1140,166 @@ void MainWindow::dropEvent(QDropEvent* event) {
     });
 }
 
+namespace {
+
+QString fileSha256(const QString& path) {
+    QFile file(path);
+    if (!file.open(QIODevice::ReadOnly)) return {};
+    QCryptographicHash hash(QCryptographicHash::Sha256);
+    hash.addData(&file);
+    return QString::fromLatin1(hash.result().toHex());
+}
+
+// "nes" for an iNES image, "megadrive" for a cartridge with SEGA at $100,
+// empty for anything else (then only its bytes and header are shown).
+QString romPlatform(const QString& path) {
+    QFile file(path);
+    if (!file.open(QIODevice::ReadOnly)) return {};
+    const QByteArray head = file.read(0x200);
+    if (head.startsWith(QByteArray("NES\x1a", 4))) return QStringLiteral("nes");
+    if (head.size() >= 0x110 && head.mid(0x100, 16).contains("SEGA")) return QStringLiteral("megadrive");
+    return {};
+}
+
+QString tomlString(const QString& value) {
+    QString escaped = value;
+    escaped.replace(QLatin1Char('\\'), QStringLiteral("\\\\")).replace(QLatin1Char('"'), QStringLiteral("\\\""));
+    return QLatin1Char('"') + escaped + QLatin1Char('"');
+}
+
+// A known game's ROM: set up its source, or open it as it is? Asked unless
+// the answer was kept.
+bool askSetUpSource(QWidget* parent, const QString& name, bool* remember) {
+    frame::StudioDialog dialog(QObject::tr("Open ROM"), parent);
+    auto* layout = new QVBoxLayout(dialog.body());
+    layout->setContentsMargins(20, 16, 20, 16);
+    layout->setSpacing(12);
+    auto* heading = new QLabel(name, &dialog);
+    heading->setFont(theme::font(theme::TextRole::Heading, 18.0));
+    auto* text = new QLabel(QObject::tr("The studio knows this game. It can set up its source (download the game's "
+                                        "repository) and open it with the game's own editors, or open the ROM as it "
+                                        "is: its bytes, its tiles, its header and a playtest."),
+                            &dialog);
+    text->setWordWrap(true);
+    text->setFont(theme::font(theme::TextRole::Body, 13.0));
+    auto* keep = new QCheckBox(QObject::tr("Do not ask again"), &dialog);
+    keep->setFont(theme::font(theme::TextRole::Body, 13.0));
+    auto* buttons = new QHBoxLayout;
+    auto* asRom = new QPushButton(QObject::tr("Open the ROM"), &dialog);
+    asRom->setAutoDefault(false);
+    auto* source = new QPushButton(QObject::tr("Set up the source"), &dialog);
+    source->setDefault(true);
+    buttons->addStretch(1);
+    buttons->addWidget(asRom);
+    buttons->addWidget(source);
+    layout->addWidget(heading);
+    layout->addWidget(text);
+    layout->addWidget(keep);
+    layout->addLayout(buttons);
+    dialog.setMinimumWidth(460);
+    QObject::connect(source, &QPushButton::clicked, &dialog, &QDialog::accept);
+    QObject::connect(asRom, &QPushButton::clicked, &dialog, &QDialog::reject);
+    const bool setUp = dialog.exec() == QDialog::Accepted;
+    *remember = keep->isChecked();
+    return setUp;
+}
+
+}  // namespace
+
 void MainWindow::openRomFile(const QString& rom) {
+    // A ROM opened as it is before, or saved from such a project, opens that
+    // project again.
+    const QString digest = fileSha256(rom);
+    const QString remembered = QSettings().value(QStringLiteral("romProjects/") + digest).toString();
+    if (!remembered.isEmpty() && QFileInfo::exists(remembered)) {
+        openProjectFile(remembered);
+        return;
+    }
+    QString error;
+    sdk::ProcessSpec spec = kitCommand({QStringLiteral("studio"), QStringLiteral("identify"), rom},
+                                       QFileInfo(rom).absolutePath(), &error);
+    if (spec.program.isEmpty()) {
+        openRomAsProject(rom);
+        return;
+    }
+    spec.label = tr("Identify %1").arg(QFileInfo(rom).fileName());
+    runProcess(spec, [this, rom](const sdk::ProcessResult& result) {
+        const QJsonArray matches =
+            QJsonDocument::fromJson(result.standardOutput).object().value(QStringLiteral("matches")).toArray();
+        if (!result.succeeded() || matches.isEmpty()) {
+            openRomAsProject(rom);
+            return;
+        }
+        const QString choice = QSettings().value(QStringLiteral("openRom/choice")).toString();
+        bool setUp = choice == QLatin1String("source");
+        if (choice.isEmpty()) {
+            bool remember = false;
+            setUp = askSetUpSource(this, matches.first().toObject().value(QStringLiteral("name")).toString(),
+                                   &remember);
+            if (remember) {
+                QSettings().setValue(QStringLiteral("openRom/choice"),
+                                     setUp ? QStringLiteral("source") : QStringLiteral("rom"));
+            }
+        }
+        if (setUp) {
+            setUpGameSource(rom);
+        } else {
+            openRomAsProject(rom);
+        }
+    });
+}
+
+void MainWindow::openRomAsProject(const QString& rom) {
+    // Documents/Retrolarium/ROMs/<name>: the ROM to edit, the original
+    // beside it, and the project; the same ROM finds its folder again.
+    const QFileInfo info(rom);
+    const QString digest = fileSha256(rom);
+    const QDir root(QDir(QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation))
+                        .filePath(QStringLiteral("Retrolarium/ROMs")));
+    QString stem = info.completeBaseName();
+    stem.replace(QRegularExpression(QStringLiteral(R"([\\/:*?"<>|])")), QStringLiteral("_"));
+    QString folder = root.filePath(stem);
+    for (int n = 2; QFileInfo::exists(folder); ++n) {
+        const QString project = QDir(folder).filePath(stem + QStringLiteral(".rlj"));
+        QString error;
+        if (sdk::ProjectFile::load(project, &error).string(QStringLiteral("source.sha256")) == digest) {
+            QSettings().setValue(QStringLiteral("romProjects/") + digest, project);
+            openProjectFile(project);
+            return;
+        }
+        folder = root.filePath(QStringLiteral("%1-%2").arg(stem).arg(n));
+    }
+    const QString file = info.fileName();
+    const QDir dir(folder);
+    if (!QDir().mkpath(dir.filePath(QStringLiteral("original"))) ||
+        !QFile::copy(rom, dir.filePath(QStringLiteral("original/") + file)) || !QFile::copy(rom, dir.filePath(file))) {
+        report(message(sdk::Severity::Error, QStringLiteral("project"),
+                       tr("The ROM could not be copied into %1.").arg(QDir::toNativeSeparators(folder)), file));
+        return;
+    }
+    QFile::setPermissions(dir.filePath(file), QFile::permissions(dir.filePath(file)) | QFileDevice::WriteOwner);
+    const QString platform = romPlatform(rom);
+    const QString text = QStringLiteral("# A ROM opened as it is in Retrolarium Studio.\n"
+                                        "schema = \"retrolarium.project\"\nschema_version = 1\n\n"
+                                        "[project]\nid = %1\nname = %2\nplatform = %3\nprofile = \"rom.v1\"\n"
+                                        "source_mode = \"rom\"\n\n[source]\nrom = %4\noriginal = %5\nsha256 = \"%6\"\n")
+                             .arg(tomlString(stem), tomlString(info.completeBaseName()),
+                                  tomlString(platform.isEmpty() ? QStringLiteral("unknown") : platform),
+                                  tomlString(file), tomlString(QStringLiteral("original/") + file), digest);
+    const QString project = dir.filePath(stem + QStringLiteral(".rlj"));
+    QFile out(project);
+    if (!out.open(QIODevice::WriteOnly | QIODevice::Truncate) || out.write(text.toUtf8()) < 0) {
+        report(message(sdk::Severity::Error, QStringLiteral("project"), out.errorString(), file));
+        return;
+    }
+    out.close();
+    QSettings().setValue(QStringLiteral("romProjects/") + digest, project);
+    report(message(sdk::Severity::Info, QStringLiteral("project"),
+                   tr("Opened %1 as it is, in %2.").arg(file, QDir::toNativeSeparators(folder)), file));
+    openProjectFile(project);
+}
+
+void MainWindow::setUpGameSource(const QString& rom) {
     // Downloaded games go where the user finds them: their edits live there.
     const QString games =
         QDir(QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation)).filePath(QStringLiteral("Retrolarium"));
@@ -1153,7 +1315,7 @@ void MainWindow::openRomFile(const QString& rom) {
         return;
     }
     spec.label = tr("Open %1").arg(name);
-    runProcess(spec, [this, name](const sdk::ProcessResult& result) {
+    runProcess(spec, [this, name, rom](const sdk::ProcessResult& result) {
         if (!result.succeeded()) {
             if (!result.cancelled) {
                 frame::MessageDialog::inform(this, tr("Open ROM"), tr("The game could not be opened"),
@@ -1175,16 +1337,10 @@ void MainWindow::openRomFile(const QString& rom) {
                                name));
             }
             openProjectFile(r.value(QStringLiteral("project")).toString());
-        } else if (status == QLatin1String("unsupported")) {
-            frame::MessageDialog::inform(this, tr("Open ROM"), tr("This game is not supported yet"),
-                                         tr("%1 is a game the studio recognises, but it cannot edit it yet.")
-                                             .arg(r.value(QStringLiteral("name")).toString()));
         } else {
-            frame::MessageDialog::inform(
-                this, tr("Open ROM"), tr("The studio does not know this ROM"),
-                tr("%1 is not a version of a game the studio supports, or it was changed (a hack, a translation "
-                   "or a damaged dump). Choose the original ROM.")
-                    .arg(name));
+            // A game the studio has no editors for, or a ROM it does not
+            // know after all: it opens as it is.
+            openRomAsProject(rom);
         }
     });
 }
