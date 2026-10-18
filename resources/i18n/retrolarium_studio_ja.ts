@@ -2,6 +2,17 @@
 <!DOCTYPE TS>
 <TS version="2.1" language="ja">
 <context>
+    <name>QObject</name>
+    <message>
+        <source>not a Retrolarium movie</source>
+        <translation>Retrolarium のムービーではありません</translation>
+    </message>
+    <message>
+        <source>line %1 is not a run of frames</source>
+        <translation>%1 行目はフレームの並びではありません</translation>
+    </message>
+</context>
+<context>
     <name>Values</name>
     <message>
         <source>Levels</source>
@@ -8512,6 +8523,14 @@
         <source>Cannot rewind further</source>
         <translation>これ以上戻せません</translation>
     </message>
+    <message>
+        <source>TAS editor…</source>
+        <translation>TAS エディタ…</translation>
+    </message>
+    <message>
+        <source>The TAS editor cannot open the movie: %1</source>
+        <translation>TAS エディタでムービーを開けません: %1</translation>
+    </message>
 </context>
 <context>
     <name>rl::shell::PickMovieDialog</name>
@@ -8747,6 +8766,129 @@
     <message>
         <source>Restart now</source>
         <translation>今すぐ再起動</translation>
+    </message>
+</context>
+<context>
+    <name>rl::shell::TasEditorWindow</name>
+    <message>
+        <source>TAS editor</source>
+        <translation>TAS エディタ</translation>
+    </message>
+    <message>
+        <source>Save</source>
+        <translation>保存</translation>
+    </message>
+    <message>
+        <source>Write the movie to its file (Ctrl+S)</source>
+        <translation>ムービーをファイルに書き込む (Ctrl+S)</translation>
+    </message>
+    <message>
+        <source>Undo</source>
+        <translation>元に戻す</translation>
+    </message>
+    <message>
+        <source>Undo the last edit (Ctrl+Z)</source>
+        <translation>最後の編集を元に戻す (Ctrl+Z)</translation>
+    </message>
+    <message>
+        <source>Redo</source>
+        <translation>やり直す</translation>
+    </message>
+    <message>
+        <source>Redo (Ctrl+Y)</source>
+        <translation>やり直す (Ctrl+Y)</translation>
+    </message>
+    <message>
+        <source>Insert</source>
+        <translation>挿入</translation>
+    </message>
+    <message>
+        <source>Insert empty frames before the selected ones (Insert)</source>
+        <translation>選択したフレームの前に空のフレームを挿入 (Insert)</translation>
+    </message>
+    <message>
+        <source>Duplicate</source>
+        <translation>複製</translation>
+    </message>
+    <message>
+        <source>Insert a copy of the selected frames (Ctrl+Insert)</source>
+        <translation>選択したフレームのコピーを挿入 (Ctrl+Insert)</translation>
+    </message>
+    <message>
+        <source>Delete</source>
+        <translation>削除</translation>
+    </message>
+    <message>
+        <source>Delete the selected frames (Delete)</source>
+        <translation>選択したフレームを削除 (Delete)</translation>
+    </message>
+    <message>
+        <source>Go to frame</source>
+        <translation>フレームへ移動</translation>
+    </message>
+    <message>
+        <source>Show the selected frame in the game (Enter)</source>
+        <translation>選択したフレームをゲームで表示 (Enter)</translation>
+    </message>
+    <message>
+        <source>Run to</source>
+        <translation>ここまで進める</translation>
+    </message>
+    <message>
+        <source>Run the movie on until this happens, or to its end</source>
+        <translation>これが起きるか終わりまでムービーを進める</translation>
+    </message>
+    <message>
+        <source>Record from here</source>
+        <translation>ここから記録</translation>
+    </message>
+    <message>
+        <source>Record from the frame shown on, dropping the frames after it</source>
+        <translation>表示中のフレームから記録し、それ以降のフレームは捨てる</translation>
+    </message>
+    <message>
+        <source>Follow</source>
+        <translation>追従</translation>
+    </message>
+    <message>
+        <source>Keep the frame the game shows in view</source>
+        <translation>ゲームが表示しているフレームを常に表示</translation>
+    </message>
+    <message>
+        <source>Change buttons</source>
+        <translation>ボタンを変更</translation>
+    </message>
+    <message>
+        <source>TAS editor — %1</source>
+        <translation>TAS エディタ — %1</translation>
+    </message>
+    <message>
+        <source>The movie cannot be written: %1</source>
+        <translation>ムービーを書き込めません: %1</translation>
+    </message>
+    <message>
+        <source>Duplicate frames</source>
+        <translation>フレームを複製</translation>
+    </message>
+    <message>
+        <source>Insert frames</source>
+        <translation>フレームを挿入</translation>
+    </message>
+    <message>
+        <source>Delete frames</source>
+        <translation>フレームを削除</translation>
+    </message>
+    <message>
+        <source>stopped: %1 at frame %2</source>
+        <translation>停止: %1 (フレーム %2)</translation>
+    </message>
+    <message>
+        <source>Frame %1 of %2</source>
+        <translation>フレーム %1 / %2</translation>
+    </message>
+    <message>
+        <source>not saved</source>
+        <translation>未保存</translation>
     </message>
 </context>
 <context>

@@ -2,6 +2,17 @@
 <!DOCTYPE TS>
 <TS version="2.1" language="ru">
 <context>
+    <name>QObject</name>
+    <message>
+        <source>not a Retrolarium movie</source>
+        <translation>это не ролик Retrolarium</translation>
+    </message>
+    <message>
+        <source>line %1 is not a run of frames</source>
+        <translation>строка %1 — не серия кадров</translation>
+    </message>
+</context>
+<context>
     <name>Values</name>
     <message>
         <source>Levels</source>
@@ -8580,6 +8591,14 @@
         <source>Cannot rewind further</source>
         <translation>Дальше назад нельзя</translation>
     </message>
+    <message>
+        <source>TAS editor…</source>
+        <translation>Редактор TAS…</translation>
+    </message>
+    <message>
+        <source>The TAS editor cannot open the movie: %1</source>
+        <translation>Редактор TAS не может открыть ролик: %1</translation>
+    </message>
 </context>
 <context>
     <name>rl::shell::PickMovieDialog</name>
@@ -8815,6 +8834,129 @@
     <message>
         <source>Restart now</source>
         <translation>Перезапустить сейчас</translation>
+    </message>
+</context>
+<context>
+    <name>rl::shell::TasEditorWindow</name>
+    <message>
+        <source>TAS editor</source>
+        <translation>Редактор TAS</translation>
+    </message>
+    <message>
+        <source>Save</source>
+        <translation>Сохранить</translation>
+    </message>
+    <message>
+        <source>Write the movie to its file (Ctrl+S)</source>
+        <translation>Записать ролик в его файл (Ctrl+S)</translation>
+    </message>
+    <message>
+        <source>Undo</source>
+        <translation>Отменить</translation>
+    </message>
+    <message>
+        <source>Undo the last edit (Ctrl+Z)</source>
+        <translation>Отменить последнюю правку (Ctrl+Z)</translation>
+    </message>
+    <message>
+        <source>Redo</source>
+        <translation>Повторить</translation>
+    </message>
+    <message>
+        <source>Redo (Ctrl+Y)</source>
+        <translation>Повторить (Ctrl+Y)</translation>
+    </message>
+    <message>
+        <source>Insert</source>
+        <translation>Вставить</translation>
+    </message>
+    <message>
+        <source>Insert empty frames before the selected ones (Insert)</source>
+        <translation>Вставить пустые кадры перед выделенными (Insert)</translation>
+    </message>
+    <message>
+        <source>Duplicate</source>
+        <translation>Дублировать</translation>
+    </message>
+    <message>
+        <source>Insert a copy of the selected frames (Ctrl+Insert)</source>
+        <translation>Вставить копию выделенных кадров (Ctrl+Insert)</translation>
+    </message>
+    <message>
+        <source>Delete</source>
+        <translation>Удалить</translation>
+    </message>
+    <message>
+        <source>Delete the selected frames (Delete)</source>
+        <translation>Удалить выделенные кадры (Delete)</translation>
+    </message>
+    <message>
+        <source>Go to frame</source>
+        <translation>К кадру</translation>
+    </message>
+    <message>
+        <source>Show the selected frame in the game (Enter)</source>
+        <translation>Показать выделенный кадр в игре (Enter)</translation>
+    </message>
+    <message>
+        <source>Run to</source>
+        <translation>Бежать до</translation>
+    </message>
+    <message>
+        <source>Run the movie on until this happens, or to its end</source>
+        <translation>Проиграть ролик дальше, пока это не случится, или до конца</translation>
+    </message>
+    <message>
+        <source>Record from here</source>
+        <translation>Записывать отсюда</translation>
+    </message>
+    <message>
+        <source>Record from the frame shown on, dropping the frames after it</source>
+        <translation>Записывать с показанного кадра, отбросив кадры после него</translation>
+    </message>
+    <message>
+        <source>Follow</source>
+        <translation>Следить</translation>
+    </message>
+    <message>
+        <source>Keep the frame the game shows in view</source>
+        <translation>Держать на виду кадр, который показывает игра</translation>
+    </message>
+    <message>
+        <source>Change buttons</source>
+        <translation>Изменить кнопки</translation>
+    </message>
+    <message>
+        <source>TAS editor — %1</source>
+        <translation>Редактор TAS — %1</translation>
+    </message>
+    <message>
+        <source>The movie cannot be written: %1</source>
+        <translation>Не удаётся записать ролик: %1</translation>
+    </message>
+    <message>
+        <source>Duplicate frames</source>
+        <translation>Дублировать кадры</translation>
+    </message>
+    <message>
+        <source>Insert frames</source>
+        <translation>Вставить кадры</translation>
+    </message>
+    <message>
+        <source>Delete frames</source>
+        <translation>Удалить кадры</translation>
+    </message>
+    <message>
+        <source>stopped: %1 at frame %2</source>
+        <translation>остановка: %1 на кадре %2</translation>
+    </message>
+    <message>
+        <source>Frame %1 of %2</source>
+        <translation>Кадр %1 из %2</translation>
+    </message>
+    <message>
+        <source>not saved</source>
+        <translation>не сохранено</translation>
     </message>
 </context>
 <context>

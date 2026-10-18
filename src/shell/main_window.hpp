@@ -152,7 +152,10 @@ private:
     // movies it has, then records, resumes or plays one.
     void startMovie(int mode);
     void launchMovie(const QJsonObject& answer, int mode, const QString& file, const QString& header,
-                     int stopAt, bool closeAtEnd);
+                     int stopAt, bool closeAtEnd, const QString& origin = QString());
+    // Run > Movie > TAS editor: on the movie that plays, or on one chosen
+    // to play first.
+    void openTasEditor();
     void showEmulationEvent(const QString& event);
     void showPlaytest();
     QString emulatorKind() const;
@@ -259,6 +262,9 @@ private:
     QAction* resumeMovieAction_ = nullptr;
     QAction* playMovieAction_ = nullptr;
     QAction* stopMovieAction_ = nullptr;
+    QAction* tasEditorAction_ = nullptr;
+    class TasEditorWindow* tasEditor_ = nullptr;
+    bool openEditorOnLaunch_ = false;
     QMenu* recentMenu_ = nullptr;
 };
 

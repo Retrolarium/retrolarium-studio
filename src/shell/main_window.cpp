@@ -16,6 +16,7 @@
 #include "shell/bottom_panel.hpp"
 #include "shell/inspector_panel.hpp"
 #include "shell/movie_dialogs.hpp"
+#include "shell/tas_editor.hpp"
 #include "shell/project_links.hpp"
 #include "shell/revision_dialog.hpp"
 #include "shell/settings_dialog.hpp"
@@ -174,6 +175,23 @@ QVector<runtime::WatchCell> watchCells(const QString& repository) {
         }
     }
     return cells;
+}
+
+// What a game repository's TAS editor runs may stop at (config/tas.json:
+// {"stop_when": [{"name": "Player dies", "lua": "memory:read_u8(0x28) & 0x10 ~= 0"}]}).
+QVector<runtime::StopCondition> stopConditions(const QString& repository) {
+    QVector<runtime::StopCondition> stops;
+    QFile file(QDir(repository).filePath(QStringLiteral("config/tas.json")));
+    if (!file.open(QIODevice::ReadOnly)) return stops;
+    const QJsonArray all =
+        QJsonDocument::fromJson(file.readAll()).object().value(QStringLiteral("stop_when")).toArray();
+    for (const QJsonValue& value : all) {
+        const QJsonObject stop = value.toObject();
+        const QString name = stop.value(QStringLiteral("name")).toString();
+        const QString lua = stop.value(QStringLiteral("lua")).toString();
+        if (!name.isEmpty() && !lua.isEmpty()) stops.append({name, lua});
+    }
+    return stops;
 }
 
 }  // namespace
@@ -504,6 +522,16 @@ void MainWindow::buildMenus() {
             [this] { startMovie(int(runtime::MovieRequest::Mode::Resume)); });
     playMovieAction_ = movie->addAction(tr("Play movie…"));
     connect(playMovieAction_, &QAction::triggered, this, [this] { startMovie(int(runtime::MovieRequest::Mode::Play)); });
+    tasEditorAction_ = movie->addAction(tr("TAS editor…"));
+    connect(tasEditorAction_, &QAction::triggered, this, [this] {
+        if (emulator_->phase() == runtime::EmulatorRunner::Phase::Running &&
+            emulator_->movieMode() == QLatin1String("play")) {
+            openTasEditor();
+        } else {
+            openEditorOnLaunch_ = true;
+            startMovie(int(runtime::MovieRequest::Mode::Play));
+        }
+    });
     movie->addSeparator();
     stopMovieAction_ = movie->addAction(tr("Stop movie"));
     connect(stopMovieAction_, &QAction::triggered, this, [this] { emulator_->stopMovie(); });
@@ -959,6 +987,8 @@ bool MainWindow::openProjectFile(const QString& path) {
     const QString descriptor = currentDescriptor();
     emulator_->setWatch(descriptor.isEmpty() ? QVector<runtime::WatchCell>()
                                              : watchCells(QFileInfo(descriptor).absolutePath()));
+    emulator_->setStopConditions(descriptor.isEmpty() ? QVector<runtime::StopCondition>()
+                                                      : stopConditions(QFileInfo(descriptor).absolutePath()));
 
     QUndoStack* undo = session_->undoStack();
     connect(undo, &QUndoStack::indexChanged, this, [this] {
@@ -1920,6 +1950,7 @@ void MainWindow::updateActions() {
     recordMovieAction_->setEnabled(movies);
     resumeMovieAction_->setEnabled(movies);
     playMovieAction_->setEnabled(movies);
+    tasEditorAction_->setEnabled(movies);
     stopMovieAction_->setEnabled(running && emulator_->movieMode() != QLatin1String("none"));
 }
 
@@ -2137,7 +2168,10 @@ void MainWindow::startMovie(int mode) {
         const auto purpose = mode == int(Mode::Play) ? PickMovieDialog::Purpose::Play
                                                      : PickMovieDialog::Purpose::Resume;
         PickMovieDialog dialog(purpose, game, movieChoices(answer.value(QStringLiteral("movies")).toArray()), this);
-        if (dialog.exec() != QDialog::Accepted || dialog.path().isEmpty()) return;
+        if (dialog.exec() != QDialog::Accepted || dialog.path().isEmpty()) {
+            openEditorOnLaunch_ = false;
+            return;
+        }
         const QString path = dialog.path();
         QString header;
         if (mode == int(Mode::Resume)) {
@@ -2176,20 +2210,30 @@ void MainWindow::startMovie(int mode) {
             if (mode == int(Mode::Resume)) {
                 launchMovie(planned, mode, path, header, 0, false);
             } else {
-                launchMovie(planned, mode, prepared, QString(), stopAt, closeAtEnd);
+                launchMovie(planned, mode, prepared, QString(), stopAt, closeAtEnd, path);
             }
         });
     });
 }
 
 void MainWindow::launchMovie(const QJsonObject& answer, int mode, const QString& file, const QString& header,
-                             int stopAt, bool closeAtEnd) {
+                             int stopAt, bool closeAtEnd, const QString& origin) {
     using Mode = runtime::MovieRequest::Mode;
     if (emulatorKind().isEmpty()) return;
     runtime::MovieRequest movie;
     movie.mode = Mode(mode);
     movie.file = file;
+    movie.origin = origin;
     movie.header = header;
+    if (movie.header.isEmpty()) {
+        // A movie that plays may become a recording (the TAS editor's Record
+        // from here): it keeps its own header.
+        EditedMovie read;
+        QString error;
+        if (readMovie(file, &read, &error)) {
+            for (const QString& line : read.header) movie.header += line + QLatin1Char('\n');
+        }
+    }
     movie.stateKey = answer.value(QStringLiteral("rom")).toObject().value(QStringLiteral("sha1")).toString();
     movie.stopAt = stopAt;
     movie.closeAtEnd = closeAtEnd;
@@ -2227,6 +2271,23 @@ void MainWindow::launchMovie(const QJsonObject& answer, int mode, const QString&
         if (line.startsWith(QLatin1String("title "))) movieTitle = line.mid(6).trimmed();
     }
     notifyEmulation(recording ? tr("Recording movie «%1»").arg(movieTitle) : tr("Playing movie «%1»").arg(movieTitle));
+    if (openEditorOnLaunch_) {
+        openEditorOnLaunch_ = false;
+        if (mode == int(Mode::Play)) openTasEditor();
+    }
+}
+
+void MainWindow::openTasEditor() {
+    if (tasEditor_ == nullptr) tasEditor_ = new TasEditorWindow(emulator_, this);
+    QString error;
+    if (!tasEditor_->open(emulator_->movie().file, emulator_->movie().origin, &error)) {
+        report(message(sdk::Severity::Error, QStringLiteral("playtest"),
+                       tr("The TAS editor cannot open the movie: %1").arg(error), QString()));
+        return;
+    }
+    tasEditor_->show();
+    tasEditor_->raise();
+    tasEditor_->activateWindow();
 }
 
 }  // namespace rl::shell

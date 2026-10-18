@@ -182,6 +182,8 @@ add_library(studio_shell STATIC
     src/shell/main_window.hpp
     src/shell/movie_dialogs.cpp
     src/shell/movie_dialogs.hpp
+    src/shell/tas_editor.cpp
+    src/shell/tas_editor.hpp
     src/shell/revision_dialog.cpp
     src/shell/revision_dialog.hpp
     src/shell/settings_dialog.cpp
@@ -229,6 +231,12 @@ function(studio_add_test target)
 endfunction()
 
 add_subdirectory(plugins)
+
+# The TAS editor's movie file and table edits.
+add_executable(tas_editor_test tests/tas_editor_test.cpp)
+target_link_libraries(tas_editor_test PRIVATE studio_shell)
+target_include_directories(tas_editor_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+studio_add_test(tas_editor_test)
 
 add_executable(retrolarium-studio WIN32
     src/app/main.cpp

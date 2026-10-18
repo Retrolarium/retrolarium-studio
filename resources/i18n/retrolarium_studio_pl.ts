@@ -2,6 +2,17 @@
 <!DOCTYPE TS>
 <TS version="2.1" language="pl">
 <context>
+    <name>QObject</name>
+    <message>
+        <source>not a Retrolarium movie</source>
+        <translation>to nie jest film Retrolarium</translation>
+    </message>
+    <message>
+        <source>line %1 is not a run of frames</source>
+        <translation>wiersz %1 nie jest serią klatek</translation>
+    </message>
+</context>
+<context>
     <name>Values</name>
     <message>
         <source>Levels</source>
@@ -8580,6 +8591,14 @@
         <source>Cannot rewind further</source>
         <translation>Nie można cofnąć dalej</translation>
     </message>
+    <message>
+        <source>TAS editor…</source>
+        <translation>Edytor TAS…</translation>
+    </message>
+    <message>
+        <source>The TAS editor cannot open the movie: %1</source>
+        <translation>Edytor TAS nie może otworzyć filmu: %1</translation>
+    </message>
 </context>
 <context>
     <name>rl::shell::PickMovieDialog</name>
@@ -8815,6 +8834,129 @@
     <message>
         <source>Restart now</source>
         <translation>Uruchom ponownie teraz</translation>
+    </message>
+</context>
+<context>
+    <name>rl::shell::TasEditorWindow</name>
+    <message>
+        <source>TAS editor</source>
+        <translation>Edytor TAS</translation>
+    </message>
+    <message>
+        <source>Save</source>
+        <translation>Zapisz</translation>
+    </message>
+    <message>
+        <source>Write the movie to its file (Ctrl+S)</source>
+        <translation>Zapisz film do jego pliku (Ctrl+S)</translation>
+    </message>
+    <message>
+        <source>Undo</source>
+        <translation>Cofnij</translation>
+    </message>
+    <message>
+        <source>Undo the last edit (Ctrl+Z)</source>
+        <translation>Cofnij ostatnią zmianę (Ctrl+Z)</translation>
+    </message>
+    <message>
+        <source>Redo</source>
+        <translation>Ponów</translation>
+    </message>
+    <message>
+        <source>Redo (Ctrl+Y)</source>
+        <translation>Ponów (Ctrl+Y)</translation>
+    </message>
+    <message>
+        <source>Insert</source>
+        <translation>Wstaw</translation>
+    </message>
+    <message>
+        <source>Insert empty frames before the selected ones (Insert)</source>
+        <translation>Wstaw puste klatki przed zaznaczonymi (Insert)</translation>
+    </message>
+    <message>
+        <source>Duplicate</source>
+        <translation>Powiel</translation>
+    </message>
+    <message>
+        <source>Insert a copy of the selected frames (Ctrl+Insert)</source>
+        <translation>Wstaw kopię zaznaczonych klatek (Ctrl+Insert)</translation>
+    </message>
+    <message>
+        <source>Delete</source>
+        <translation>Usuń</translation>
+    </message>
+    <message>
+        <source>Delete the selected frames (Delete)</source>
+        <translation>Usuń zaznaczone klatki (Delete)</translation>
+    </message>
+    <message>
+        <source>Go to frame</source>
+        <translation>Do klatki</translation>
+    </message>
+    <message>
+        <source>Show the selected frame in the game (Enter)</source>
+        <translation>Pokaż zaznaczoną klatkę w grze (Enter)</translation>
+    </message>
+    <message>
+        <source>Run to</source>
+        <translation>Graj do</translation>
+    </message>
+    <message>
+        <source>Run the movie on until this happens, or to its end</source>
+        <translation>Odtwarzaj film, aż to się stanie, albo do końca</translation>
+    </message>
+    <message>
+        <source>Record from here</source>
+        <translation>Nagrywaj stąd</translation>
+    </message>
+    <message>
+        <source>Record from the frame shown on, dropping the frames after it</source>
+        <translation>Nagrywaj od pokazanej klatki, odrzucając klatki po niej</translation>
+    </message>
+    <message>
+        <source>Follow</source>
+        <translation>Śledź</translation>
+    </message>
+    <message>
+        <source>Keep the frame the game shows in view</source>
+        <translation>Trzymaj na widoku klatkę, którą pokazuje gra</translation>
+    </message>
+    <message>
+        <source>Change buttons</source>
+        <translation>Zmień przyciski</translation>
+    </message>
+    <message>
+        <source>TAS editor — %1</source>
+        <translation>Edytor TAS — %1</translation>
+    </message>
+    <message>
+        <source>The movie cannot be written: %1</source>
+        <translation>Nie można zapisać filmu: %1</translation>
+    </message>
+    <message>
+        <source>Duplicate frames</source>
+        <translation>Powiel klatki</translation>
+    </message>
+    <message>
+        <source>Insert frames</source>
+        <translation>Wstaw klatki</translation>
+    </message>
+    <message>
+        <source>Delete frames</source>
+        <translation>Usuń klatki</translation>
+    </message>
+    <message>
+        <source>stopped: %1 at frame %2</source>
+        <translation>zatrzymano: %1 na klatce %2</translation>
+    </message>
+    <message>
+        <source>Frame %1 of %2</source>
+        <translation>Klatka %1 z %2</translation>
+    </message>
+    <message>
+        <source>not saved</source>
+        <translation>niezapisane</translation>
     </message>
 </context>
 <context>

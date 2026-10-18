@@ -49,6 +49,7 @@ struct MovieRequest {
     enum class Mode { None, Record, Play, Resume };
     Mode mode = Mode::None;
     QString file;      // the .rlmovie written or read
+    QString origin;    // Play: the movie chosen, when `file` is a prepared copy
     QString header;    // a recording's header lines, each ending in a newline
     QString stateKey;  // the save-state folder for this image (its SHA-1)
     int stopAt = 0;            // Play: end the run at this frame (0: no)
@@ -60,6 +61,13 @@ struct WatchCell {
     QString name;
     quint32 address = 0;
     int length = 1;
+};
+
+// A condition a run to a stop waits for (the TAS editor): a name, and a Lua
+// expression over `memory`, the main CPU's program space ("Player dies").
+struct StopCondition {
+    QString name;
+    QString lua;
 };
 
 // One emulator process at a time, rendering into a surface the Playtest view
@@ -145,6 +153,15 @@ public:
     bool showsInput() const { return showInput_; }
     bool showsWatch() const { return showWatch_; }
     void setWatch(const QVector<WatchCell>& cells) { watch_ = cells; }
+    // The TAS editor, on a movie that plays: go to a frame (paused there),
+    // take the movie file in again after an edit, run on until a stop
+    // condition holds (by index), record from the frame shown on.
+    void setStopConditions(const QVector<StopCondition>& conditions) { stops_ = conditions; }
+    const QVector<StopCondition>& stopConditions() const { return stops_; }
+    void seek(int frame);
+    void reloadMovie();
+    void runUntil(int condition);
+    void recordFromHere();
     // A short note over the game's picture; false when nothing can show it.
     bool showMessage(const QString& text);
 
@@ -217,6 +234,7 @@ private:
     bool showInput_ = false;
     bool showWatch_ = false;
     QVector<WatchCell> watch_;
+    QVector<StopCondition> stops_;
     QString movieMode_ = QStringLiteral("none");
     int movieFrame_ = 0;
     int movieLength_ = 0;

@@ -2,6 +2,17 @@
 <!DOCTYPE TS>
 <TS version="2.1" language="zh_CN">
 <context>
+    <name>QObject</name>
+    <message>
+        <source>not a Retrolarium movie</source>
+        <translation>不是 Retrolarium 录像</translation>
+    </message>
+    <message>
+        <source>line %1 is not a run of frames</source>
+        <translation>第 %1 行不是帧序列</translation>
+    </message>
+</context>
+<context>
     <name>Values</name>
     <message>
         <source>Levels</source>
@@ -8512,6 +8523,14 @@
         <source>Cannot rewind further</source>
         <translation>无法再后退</translation>
     </message>
+    <message>
+        <source>TAS editor…</source>
+        <translation>TAS 编辑器…</translation>
+    </message>
+    <message>
+        <source>The TAS editor cannot open the movie: %1</source>
+        <translation>TAS 编辑器无法打开录像：%1</translation>
+    </message>
 </context>
 <context>
     <name>rl::shell::PickMovieDialog</name>
@@ -8747,6 +8766,129 @@
     <message>
         <source>Restart now</source>
         <translation>立即重启</translation>
+    </message>
+</context>
+<context>
+    <name>rl::shell::TasEditorWindow</name>
+    <message>
+        <source>TAS editor</source>
+        <translation>TAS 编辑器</translation>
+    </message>
+    <message>
+        <source>Save</source>
+        <translation>保存</translation>
+    </message>
+    <message>
+        <source>Write the movie to its file (Ctrl+S)</source>
+        <translation>将录像写入其文件 (Ctrl+S)</translation>
+    </message>
+    <message>
+        <source>Undo</source>
+        <translation>撤销</translation>
+    </message>
+    <message>
+        <source>Undo the last edit (Ctrl+Z)</source>
+        <translation>撤销上一次编辑 (Ctrl+Z)</translation>
+    </message>
+    <message>
+        <source>Redo</source>
+        <translation>重做</translation>
+    </message>
+    <message>
+        <source>Redo (Ctrl+Y)</source>
+        <translation>重做 (Ctrl+Y)</translation>
+    </message>
+    <message>
+        <source>Insert</source>
+        <translation>插入</translation>
+    </message>
+    <message>
+        <source>Insert empty frames before the selected ones (Insert)</source>
+        <translation>在所选帧之前插入空帧 (Insert)</translation>
+    </message>
+    <message>
+        <source>Duplicate</source>
+        <translation>复制</translation>
+    </message>
+    <message>
+        <source>Insert a copy of the selected frames (Ctrl+Insert)</source>
+        <translation>插入所选帧的副本 (Ctrl+Insert)</translation>
+    </message>
+    <message>
+        <source>Delete</source>
+        <translation>删除</translation>
+    </message>
+    <message>
+        <source>Delete the selected frames (Delete)</source>
+        <translation>删除所选帧 (Delete)</translation>
+    </message>
+    <message>
+        <source>Go to frame</source>
+        <translation>转到帧</translation>
+    </message>
+    <message>
+        <source>Show the selected frame in the game (Enter)</source>
+        <translation>在游戏中显示所选帧 (Enter)</translation>
+    </message>
+    <message>
+        <source>Run to</source>
+        <translation>运行到</translation>
+    </message>
+    <message>
+        <source>Run the movie on until this happens, or to its end</source>
+        <translation>让录像继续运行直到发生此事件或到结尾</translation>
+    </message>
+    <message>
+        <source>Record from here</source>
+        <translation>从此处录制</translation>
+    </message>
+    <message>
+        <source>Record from the frame shown on, dropping the frames after it</source>
+        <translation>从显示的帧开始录制，丢弃其后的帧</translation>
+    </message>
+    <message>
+        <source>Follow</source>
+        <translation>跟随</translation>
+    </message>
+    <message>
+        <source>Keep the frame the game shows in view</source>
+        <translation>始终显示游戏当前的帧</translation>
+    </message>
+    <message>
+        <source>Change buttons</source>
+        <translation>修改按键</translation>
+    </message>
+    <message>
+        <source>TAS editor — %1</source>
+        <translation>TAS 编辑器 — %1</translation>
+    </message>
+    <message>
+        <source>The movie cannot be written: %1</source>
+        <translation>无法写入录像：%1</translation>
+    </message>
+    <message>
+        <source>Duplicate frames</source>
+        <translation>复制帧</translation>
+    </message>
+    <message>
+        <source>Insert frames</source>
+        <translation>插入帧</translation>
+    </message>
+    <message>
+        <source>Delete frames</source>
+        <translation>删除帧</translation>
+    </message>
+    <message>
+        <source>stopped: %1 at frame %2</source>
+        <translation>已停止：%1（第 %2 帧）</translation>
+    </message>
+    <message>
+        <source>Frame %1 of %2</source>
+        <translation>第 %1 帧，共 %2 帧</translation>
+    </message>
+    <message>
+        <source>not saved</source>
+        <translation>未保存</translation>
     </message>
 </context>
 <context>

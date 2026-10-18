@@ -2,6 +2,17 @@
 <!DOCTYPE TS>
 <TS version="2.1" language="de">
 <context>
+    <name>QObject</name>
+    <message>
+        <source>not a Retrolarium movie</source>
+        <translation>kein Retrolarium-Film</translation>
+    </message>
+    <message>
+        <source>line %1 is not a run of frames</source>
+        <translation>Zeile %1 ist keine Folge von Einzelbildern</translation>
+    </message>
+</context>
+<context>
     <name>Values</name>
     <message>
         <source>Levels</source>
@@ -8546,6 +8557,14 @@
         <source>Cannot rewind further</source>
         <translation>Weiter zurück geht es nicht</translation>
     </message>
+    <message>
+        <source>TAS editor…</source>
+        <translation>TAS-Editor…</translation>
+    </message>
+    <message>
+        <source>The TAS editor cannot open the movie: %1</source>
+        <translation>Der TAS-Editor kann den Film nicht öffnen: %1</translation>
+    </message>
 </context>
 <context>
     <name>rl::shell::PickMovieDialog</name>
@@ -8781,6 +8800,129 @@
     <message>
         <source>Restart now</source>
         <translation>Jetzt neu starten</translation>
+    </message>
+</context>
+<context>
+    <name>rl::shell::TasEditorWindow</name>
+    <message>
+        <source>TAS editor</source>
+        <translation>TAS-Editor</translation>
+    </message>
+    <message>
+        <source>Save</source>
+        <translation>Speichern</translation>
+    </message>
+    <message>
+        <source>Write the movie to its file (Ctrl+S)</source>
+        <translation>Den Film in seine Datei schreiben (Strg+S)</translation>
+    </message>
+    <message>
+        <source>Undo</source>
+        <translation>Rückgängig</translation>
+    </message>
+    <message>
+        <source>Undo the last edit (Ctrl+Z)</source>
+        <translation>Die letzte Änderung rückgängig machen (Strg+Z)</translation>
+    </message>
+    <message>
+        <source>Redo</source>
+        <translation>Wiederholen</translation>
+    </message>
+    <message>
+        <source>Redo (Ctrl+Y)</source>
+        <translation>Wiederholen (Strg+Y)</translation>
+    </message>
+    <message>
+        <source>Insert</source>
+        <translation>Einfügen</translation>
+    </message>
+    <message>
+        <source>Insert empty frames before the selected ones (Insert)</source>
+        <translation>Leere Einzelbilder vor den ausgewählten einfügen (Einfg)</translation>
+    </message>
+    <message>
+        <source>Duplicate</source>
+        <translation>Duplizieren</translation>
+    </message>
+    <message>
+        <source>Insert a copy of the selected frames (Ctrl+Insert)</source>
+        <translation>Eine Kopie der ausgewählten Einzelbilder einfügen (Strg+Einfg)</translation>
+    </message>
+    <message>
+        <source>Delete</source>
+        <translation>Löschen</translation>
+    </message>
+    <message>
+        <source>Delete the selected frames (Delete)</source>
+        <translation>Die ausgewählten Einzelbilder löschen (Entf)</translation>
+    </message>
+    <message>
+        <source>Go to frame</source>
+        <translation>Zum Einzelbild</translation>
+    </message>
+    <message>
+        <source>Show the selected frame in the game (Enter)</source>
+        <translation>Das ausgewählte Einzelbild im Spiel zeigen (Eingabe)</translation>
+    </message>
+    <message>
+        <source>Run to</source>
+        <translation>Laufen bis</translation>
+    </message>
+    <message>
+        <source>Run the movie on until this happens, or to its end</source>
+        <translation>Den Film weiterlaufen lassen, bis das eintritt, oder bis zum Ende</translation>
+    </message>
+    <message>
+        <source>Record from here</source>
+        <translation>Ab hier aufnehmen</translation>
+    </message>
+    <message>
+        <source>Record from the frame shown on, dropping the frames after it</source>
+        <translation>Ab dem gezeigten Einzelbild aufnehmen, die Einzelbilder danach verwerfen</translation>
+    </message>
+    <message>
+        <source>Follow</source>
+        <translation>Folgen</translation>
+    </message>
+    <message>
+        <source>Keep the frame the game shows in view</source>
+        <translation>Das Einzelbild, das das Spiel zeigt, im Blick behalten</translation>
+    </message>
+    <message>
+        <source>Change buttons</source>
+        <translation>Tasten ändern</translation>
+    </message>
+    <message>
+        <source>TAS editor — %1</source>
+        <translation>TAS-Editor — %1</translation>
+    </message>
+    <message>
+        <source>The movie cannot be written: %1</source>
+        <translation>Der Film kann nicht geschrieben werden: %1</translation>
+    </message>
+    <message>
+        <source>Duplicate frames</source>
+        <translation>Einzelbilder duplizieren</translation>
+    </message>
+    <message>
+        <source>Insert frames</source>
+        <translation>Einzelbilder einfügen</translation>
+    </message>
+    <message>
+        <source>Delete frames</source>
+        <translation>Einzelbilder löschen</translation>
+    </message>
+    <message>
+        <source>stopped: %1 at frame %2</source>
+        <translation>angehalten: %1 bei Einzelbild %2</translation>
+    </message>
+    <message>
+        <source>Frame %1 of %2</source>
+        <translation>Einzelbild %1 von %2</translation>
+    </message>
+    <message>
+        <source>not saved</source>
+        <translation>nicht gespeichert</translation>
     </message>
 </context>
 <context>
