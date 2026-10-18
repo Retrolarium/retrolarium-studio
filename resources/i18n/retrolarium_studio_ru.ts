@@ -11,6 +11,26 @@
         <source>line %1 is not a run of frames</source>
         <translation>строка %1 — не серия кадров</translation>
     </message>
+    <message>
+        <source>Open ROM</source>
+        <translation>Открыть ROM</translation>
+    </message>
+    <message>
+        <source>The studio knows this game. It can set up its source (download the game&apos;s repository) and open it with the game&apos;s own editors, or open the ROM as it is: its bytes, its tiles, its header and a playtest.</source>
+        <translation>Студия знает эту игру. Она может настроить её исходник (скачать репозиторий игры) и открыть его в редакторах самой игры или открыть ROM как есть: байты, тайлы, заголовок и плейтест.</translation>
+    </message>
+    <message>
+        <source>Do not ask again</source>
+        <translation>Больше не спрашивать</translation>
+    </message>
+    <message>
+        <source>Open the ROM</source>
+        <translation>Открыть ROM</translation>
+    </message>
+    <message>
+        <source>Set up the source</source>
+        <translation>Настроить исходник</translation>
+    </message>
 </context>
 <context>
     <name>Values</name>
@@ -7421,6 +7441,377 @@
     </message>
 </context>
 <context>
+    <name>rl::rom::HeaderModel</name>
+    <message>
+        <source>Header</source>
+        <translation>Заголовок</translation>
+    </message>
+    <message>
+        <source>Field</source>
+        <translation>Поле</translation>
+    </message>
+    <message>
+        <source>Value</source>
+        <translation>Значение</translation>
+    </message>
+    <message>
+        <source>File size</source>
+        <translation>Размер файла</translation>
+    </message>
+    <message>
+        <source>%1 bytes ($%2)</source>
+        <translation>%1 байт ($%2)</translation>
+    </message>
+    <message>
+        <source>SHA-1 of the original</source>
+        <translation>SHA-1 оригинала</translation>
+    </message>
+    <message>
+        <source>Changed</source>
+        <translation>Изменено</translation>
+    </message>
+    <message>
+        <source>no</source>
+        <translation>нет</translation>
+    </message>
+    <message>
+        <source>yes</source>
+        <translation>да</translation>
+    </message>
+    <message>
+        <source>PRG ROM</source>
+        <translation>PRG ROM</translation>
+    </message>
+    <message>
+        <source>%1 KB</source>
+        <translation>%1 КБ</translation>
+    </message>
+    <message>
+        <source>CHR ROM</source>
+        <translation>CHR ROM</translation>
+    </message>
+    <message>
+        <source>none (CHR RAM)</source>
+        <translation>нет (CHR RAM)</translation>
+    </message>
+    <message>
+        <source>Mapper</source>
+        <translation>Маппер</translation>
+    </message>
+    <message>
+        <source>Mirroring</source>
+        <translation>Зеркалирование</translation>
+    </message>
+    <message>
+        <source>four-screen</source>
+        <translation>четыре экрана</translation>
+    </message>
+    <message>
+        <source>vertical</source>
+        <translation>вертикальное</translation>
+    </message>
+    <message>
+        <source>horizontal</source>
+        <translation>горизонтальное</translation>
+    </message>
+    <message>
+        <source>Battery</source>
+        <translation>Батарейка</translation>
+    </message>
+    <message>
+        <source>Trainer</source>
+        <translation>Трейнер</translation>
+    </message>
+    <message>
+        <source>512 bytes</source>
+        <translation>512 байт</translation>
+    </message>
+    <message>
+        <source>System</source>
+        <translation>Система</translation>
+    </message>
+    <message>
+        <source>Copyright</source>
+        <translation>Копирайт</translation>
+    </message>
+    <message>
+        <source>Domestic title</source>
+        <translation>Название (Япония)</translation>
+    </message>
+    <message>
+        <source>Overseas title</source>
+        <translation>Название (за рубежом)</translation>
+    </message>
+    <message>
+        <source>Serial</source>
+        <translation>Серийный номер</translation>
+    </message>
+    <message>
+        <source>Checksum</source>
+        <translation>Контрольная сумма</translation>
+    </message>
+    <message>
+        <source>$%1 (right)</source>
+        <translation>$%1 (верная)</translation>
+    </message>
+    <message>
+        <source>$%1 (the bytes add up to $%2)</source>
+        <translation>$%1 (байты дают в сумме $%2)</translation>
+    </message>
+    <message>
+        <source>Devices</source>
+        <translation>Устройства</translation>
+    </message>
+    <message>
+        <source>Regions</source>
+        <translation>Регионы</translation>
+    </message>
+    <message>
+        <source>not recognised</source>
+        <translation>не опознан</translation>
+    </message>
+    <message>
+        <source>Fix the checksum</source>
+        <translation>Исправить контрольную сумму</translation>
+    </message>
+    <message>
+        <source>Write the sum of the ROM&apos;s words into the header, as the console&apos;s check expects</source>
+        <translation>Записать в заголовок сумму слов ROM, как того ждёт проверка консоли</translation>
+    </message>
+    <message>
+        <source>ROM header</source>
+        <translation>Заголовок ROM</translation>
+    </message>
+    <message>
+        <source>What the ROM says about itself. Edit the bytes in Hex.</source>
+        <translation>Что ROM говорит о себе. Байты правятся в Hex.</translation>
+    </message>
+</context>
+<context>
+    <name>rl::rom::HexModel</name>
+    <message>
+        <source>Hex</source>
+        <translation>Hex</translation>
+    </message>
+    <message>
+        <source>Offset</source>
+        <translation>Смещение</translation>
+    </message>
+    <message>
+        <source>Text</source>
+        <translation>Текст</translation>
+    </message>
+    <message>
+        <source>Type a byte in hexadecimal, 00-FF.</source>
+        <translation>Введите байт в шестнадцатеричном виде, 00-FF.</translation>
+    </message>
+    <message>
+        <source>Edit byte at $%1</source>
+        <translation>Правка байта по адресу $%1</translation>
+    </message>
+    <message>
+        <source>ROM bytes</source>
+        <translation>Байты ROM</translation>
+    </message>
+    <message>
+        <source>Offset $%1</source>
+        <translation>Смещение $%1</translation>
+    </message>
+    <message>
+        <source>Go to offset</source>
+        <translation>Перейти к смещению</translation>
+    </message>
+    <message>
+        <source>hex</source>
+        <translation>hex</translation>
+    </message>
+    <message>
+        <source>Size</source>
+        <translation>Размер</translation>
+    </message>
+    <message>
+        <source>%1 bytes ($%2)</source>
+        <translation>%1 байт ($%2)</translation>
+    </message>
+    <message>
+        <source>In the cartridge</source>
+        <translation>В картридже</translation>
+    </message>
+    <message>
+        <source>CHR ROM $%1</source>
+        <translation>CHR ROM $%1</translation>
+    </message>
+    <message>
+        <source>PRG bank %1, $%2</source>
+        <translation>Банк PRG %1, $%2</translation>
+    </message>
+    <message>
+        <source>Each cell is a byte in hexadecimal: type 00-FF to change it. Rows that differ from the original ROM are marked. Save writes the ROM in the project; the original stays beside it.</source>
+        <translation>Каждая ячейка — байт в шестнадцатеричном виде: введите 00-FF, чтобы его изменить. Строки, которые отличаются от оригинального ROM, помечены. Сохранение записывает ROM в проекте; оригинал лежит рядом.</translation>
+    </message>
+    <message>
+        <source>An offset in the ROM, in hexadecimal: 0-%1.</source>
+        <translation>Смещение в ROM в шестнадцатеричном виде: 0-%1.</translation>
+    </message>
+</context>
+<context>
+    <name>rl::rom::RomPlaytestModel</name>
+    <message>
+        <source>Session</source>
+        <translation>Сеанс</translation>
+    </message>
+    <message>
+        <source>Core</source>
+        <translation>Ядро</translation>
+    </message>
+    <message>
+        <source>Play runs the ROM as it is now, edits not yet saved included, from power-on.</source>
+        <translation>Play запускает ROM таким, какой он сейчас, вместе с несохранёнными правками, с включения.</translation>
+    </message>
+    <message>
+        <source>Run the ROM</source>
+        <translation>Запустить ROM</translation>
+    </message>
+</context>
+<context>
+    <name>rl::rom::RomSession</name>
+    <message>
+        <source>Cannot read the ROM %1: %2</source>
+        <translation>Не удаётся прочитать ROM %1: %2</translation>
+    </message>
+    <message>
+        <source>Unknown system</source>
+        <translation>Неизвестная система</translation>
+    </message>
+    <message>
+        <source>ROM</source>
+        <translation>ROM</translation>
+    </message>
+    <message>
+        <source>Hex</source>
+        <translation>Hex</translation>
+    </message>
+    <message>
+        <source>Tiles</source>
+        <translation>Тайлы</translation>
+    </message>
+    <message>
+        <source>Header</source>
+        <translation>Заголовок</translation>
+    </message>
+    <message>
+        <source>Playtest</source>
+        <translation>Тест</translation>
+    </message>
+    <message>
+        <source>%1 KB</source>
+        <translation>%1 КБ</translation>
+    </message>
+    <message>
+        <source>%1 tiles</source>
+        <translation>%1 тайлов</translation>
+    </message>
+    <message>
+        <source>Run</source>
+        <translation>Запуск</translation>
+    </message>
+    <message>
+        <source>Back to the original ROM</source>
+        <translation>Вернуть оригинальный ROM</translation>
+    </message>
+    <message>
+        <source>MAME was not found. Choose it in File → Settings.</source>
+        <translation>MAME не найден. Укажите его в Файл → Настройки.</translation>
+    </message>
+    <message>
+        <source>Cannot write the ROM to run: %1</source>
+        <translation>Не удаётся записать ROM для запуска: %1</translation>
+    </message>
+    <message>
+        <source>Plan the playtest</source>
+        <translation>Подготовка плейтеста</translation>
+    </message>
+    <message>
+        <source>Playtest plan failed: %1</source>
+        <translation>Подготовка теста не удалась: %1</translation>
+    </message>
+    <message>
+        <source>The kit returned no emulator command.</source>
+        <translation>Кит не вернул команду эмулятора.</translation>
+    </message>
+</context>
+<context>
+    <name>rl::rom::RomTileModel</name>
+    <message>
+        <source>Tiles</source>
+        <translation>Тайлы</translation>
+    </message>
+    <message>
+        <source>Bank %1 · $%2</source>
+        <translation>Банк %1 · $%2</translation>
+    </message>
+    <message>
+        <source>Bank</source>
+        <translation>Банк</translation>
+    </message>
+    <message>
+        <source>Colours</source>
+        <translation>Цвета</translation>
+    </message>
+    <message>
+        <source>Grey</source>
+        <translation>Серые</translation>
+    </message>
+    <message>
+        <source>Warm</source>
+        <translation>Тёплые</translation>
+    </message>
+    <message>
+        <source>Paint tile $%1</source>
+        <translation>Рисование в тайле $%1</translation>
+    </message>
+    <message>
+        <source>Fill inside the tile.</source>
+        <translation>Заливайте внутри тайла.</translation>
+    </message>
+    <message>
+        <source>Fill tile $%1</source>
+        <translation>Заливка тайла $%1</translation>
+    </message>
+    <message>
+        <source>Tile</source>
+        <translation>Тайл</translation>
+    </message>
+    <message>
+        <source>Tile $%1</source>
+        <translation>Тайл $%1</translation>
+    </message>
+    <message>
+        <source>Offset</source>
+        <translation>Смещение</translation>
+    </message>
+    <message>
+        <source>Format</source>
+        <translation>Формат</translation>
+    </message>
+    <message>
+        <source>NES · 2 bits a pixel, 16 bytes a tile</source>
+        <translation>NES · 2 бита на пиксель, 16 байт на тайл</translation>
+    </message>
+    <message>
+        <source>Mega Drive · 4 bits a pixel, 32 bytes a tile</source>
+        <translation>Mega Drive · 4 бита на пиксель, 32 байта на тайл</translation>
+    </message>
+    <message>
+        <source>Raw patterns, as the hardware reads them. Graphics a game packs or compresses show as noise; the colours are a preview, not the game&apos;s palette.</source>
+        <translation>Сырые шаблоны, как их читает железо. Графика, которую игра пакует или сжимает, выглядит как шум; цвета — предпросмотр, а не палитра игры.</translation>
+    </message>
+    <message>
+        <source>Tile $%1 · $%2</source>
+        <translation>Тайл $%1 · $%2</translation>
+    </message>
+</context>
+<context>
     <name>rl::runtime::EmulatorRunner</name>
     <message>
         <source>a path or setting cannot be quoted for Lua</source>
@@ -8300,22 +8691,6 @@
         <translation>Файлы игры скачаны в %1.</translation>
     </message>
     <message>
-        <source>This game is not supported yet</source>
-        <translation>Эта игра пока не поддерживается</translation>
-    </message>
-    <message>
-        <source>%1 is a game the studio recognises, but it cannot edit it yet.</source>
-        <translation>Студия узнаёт игру %1, но пока не умеет её править.</translation>
-    </message>
-    <message>
-        <source>The studio does not know this ROM</source>
-        <translation>Студия не знает этот ROM</translation>
-    </message>
-    <message>
-        <source>%1 is not a version of a game the studio supports, or it was changed (a hack, a translation or a damaged dump). Choose the original ROM.</source>
-        <translation>%1 — не версия игры, которую поддерживает студия, или файл изменён (хак, перевод или повреждённый дамп). Выберите оригинальный ROM.</translation>
-    </message>
-    <message>
         <source>Open a game to start</source>
         <translation>Откройте игру, чтобы начать</translation>
     </message>
@@ -8598,6 +8973,18 @@
     <message>
         <source>The TAS editor cannot open the movie: %1</source>
         <translation>Редактор TAS не может открыть ролик: %1</translation>
+    </message>
+    <message>
+        <source>Identify %1</source>
+        <translation>Опознать %1</translation>
+    </message>
+    <message>
+        <source>The ROM could not be copied into %1.</source>
+        <translation>Не удалось скопировать ROM в %1.</translation>
+    </message>
+    <message>
+        <source>Opened %1 as it is, in %2.</source>
+        <translation>%1 открыт как есть, в %2.</translation>
     </message>
 </context>
 <context>

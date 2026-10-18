@@ -11,6 +11,26 @@
         <source>line %1 is not a run of frames</source>
         <translation>第 %1 行不是帧序列</translation>
     </message>
+    <message>
+        <source>Open ROM</source>
+        <translation>打开 ROM</translation>
+    </message>
+    <message>
+        <source>The studio knows this game. It can set up its source (download the game&apos;s repository) and open it with the game&apos;s own editors, or open the ROM as it is: its bytes, its tiles, its header and a playtest.</source>
+        <translation>工作室认识这个游戏。它可以设置游戏的源代码（下载游戏的仓库）并用游戏专用的编辑器打开，或者按原样打开 ROM：字节、图块、文件头和试玩。</translation>
+    </message>
+    <message>
+        <source>Do not ask again</source>
+        <translation>不再询问</translation>
+    </message>
+    <message>
+        <source>Open the ROM</source>
+        <translation>打开 ROM</translation>
+    </message>
+    <message>
+        <source>Set up the source</source>
+        <translation>设置源代码</translation>
+    </message>
 </context>
 <context>
     <name>Values</name>
@@ -7359,6 +7379,377 @@
     </message>
 </context>
 <context>
+    <name>rl::rom::HeaderModel</name>
+    <message>
+        <source>Header</source>
+        <translation>头部</translation>
+    </message>
+    <message>
+        <source>Field</source>
+        <translation>字段</translation>
+    </message>
+    <message>
+        <source>Value</source>
+        <translation>值</translation>
+    </message>
+    <message>
+        <source>File size</source>
+        <translation>文件大小</translation>
+    </message>
+    <message>
+        <source>%1 bytes ($%2)</source>
+        <translation>%1 字节 ($%2)</translation>
+    </message>
+    <message>
+        <source>SHA-1 of the original</source>
+        <translation>原始文件的 SHA-1</translation>
+    </message>
+    <message>
+        <source>Changed</source>
+        <translation>已修改</translation>
+    </message>
+    <message>
+        <source>no</source>
+        <translation>否</translation>
+    </message>
+    <message>
+        <source>yes</source>
+        <translation>是</translation>
+    </message>
+    <message>
+        <source>PRG ROM</source>
+        <translation>PRG ROM</translation>
+    </message>
+    <message>
+        <source>%1 KB</source>
+        <translation>%1 KB</translation>
+    </message>
+    <message>
+        <source>CHR ROM</source>
+        <translation>CHR ROM</translation>
+    </message>
+    <message>
+        <source>none (CHR RAM)</source>
+        <translation>无 (CHR RAM)</translation>
+    </message>
+    <message>
+        <source>Mapper</source>
+        <translation>Mapper</translation>
+    </message>
+    <message>
+        <source>Mirroring</source>
+        <translation>镜像</translation>
+    </message>
+    <message>
+        <source>four-screen</source>
+        <translation>四屏</translation>
+    </message>
+    <message>
+        <source>vertical</source>
+        <translation>垂直</translation>
+    </message>
+    <message>
+        <source>horizontal</source>
+        <translation>水平</translation>
+    </message>
+    <message>
+        <source>Battery</source>
+        <translation>电池</translation>
+    </message>
+    <message>
+        <source>Trainer</source>
+        <translation>Trainer</translation>
+    </message>
+    <message>
+        <source>512 bytes</source>
+        <translation>512 字节</translation>
+    </message>
+    <message>
+        <source>System</source>
+        <translation>系统</translation>
+    </message>
+    <message>
+        <source>Copyright</source>
+        <translation>版权</translation>
+    </message>
+    <message>
+        <source>Domestic title</source>
+        <translation>标题（日本）</translation>
+    </message>
+    <message>
+        <source>Overseas title</source>
+        <translation>标题（海外）</translation>
+    </message>
+    <message>
+        <source>Serial</source>
+        <translation>序列号</translation>
+    </message>
+    <message>
+        <source>Checksum</source>
+        <translation>校验和</translation>
+    </message>
+    <message>
+        <source>$%1 (right)</source>
+        <translation>$%1（正确）</translation>
+    </message>
+    <message>
+        <source>$%1 (the bytes add up to $%2)</source>
+        <translation>$%1（字节之和为 $%2）</translation>
+    </message>
+    <message>
+        <source>Devices</source>
+        <translation>设备</translation>
+    </message>
+    <message>
+        <source>Regions</source>
+        <translation>地区</translation>
+    </message>
+    <message>
+        <source>not recognised</source>
+        <translation>无法识别</translation>
+    </message>
+    <message>
+        <source>Fix the checksum</source>
+        <translation>修正校验和</translation>
+    </message>
+    <message>
+        <source>Write the sum of the ROM&apos;s words into the header, as the console&apos;s check expects</source>
+        <translation>按主机校验的要求，将 ROM 各字之和写入文件头</translation>
+    </message>
+    <message>
+        <source>ROM header</source>
+        <translation>ROM 文件头</translation>
+    </message>
+    <message>
+        <source>What the ROM says about itself. Edit the bytes in Hex.</source>
+        <translation>ROM 关于自身的说明。字节在 Hex 中编辑。</translation>
+    </message>
+</context>
+<context>
+    <name>rl::rom::HexModel</name>
+    <message>
+        <source>Hex</source>
+        <translation>Hex</translation>
+    </message>
+    <message>
+        <source>Offset</source>
+        <translation>偏移</translation>
+    </message>
+    <message>
+        <source>Text</source>
+        <translation>文本</translation>
+    </message>
+    <message>
+        <source>Type a byte in hexadecimal, 00-FF.</source>
+        <translation>请输入十六进制字节，00-FF。</translation>
+    </message>
+    <message>
+        <source>Edit byte at $%1</source>
+        <translation>编辑 $%1 处的字节</translation>
+    </message>
+    <message>
+        <source>ROM bytes</source>
+        <translation>ROM 字节</translation>
+    </message>
+    <message>
+        <source>Offset $%1</source>
+        <translation>偏移 $%1</translation>
+    </message>
+    <message>
+        <source>Go to offset</source>
+        <translation>转到偏移</translation>
+    </message>
+    <message>
+        <source>hex</source>
+        <translation>十六进制</translation>
+    </message>
+    <message>
+        <source>Size</source>
+        <translation>大小</translation>
+    </message>
+    <message>
+        <source>%1 bytes ($%2)</source>
+        <translation>%1 字节 ($%2)</translation>
+    </message>
+    <message>
+        <source>In the cartridge</source>
+        <translation>在卡带中</translation>
+    </message>
+    <message>
+        <source>CHR ROM $%1</source>
+        <translation>CHR ROM $%1</translation>
+    </message>
+    <message>
+        <source>PRG bank %1, $%2</source>
+        <translation>PRG 存储体 %1，$%2</translation>
+    </message>
+    <message>
+        <source>Each cell is a byte in hexadecimal: type 00-FF to change it. Rows that differ from the original ROM are marked. Save writes the ROM in the project; the original stays beside it.</source>
+        <translation>每个单元格是一个十六进制字节：输入 00-FF 即可修改。与原始 ROM 不同的行会被标记。保存会写入项目中的 ROM，原始文件保留在旁边。</translation>
+    </message>
+    <message>
+        <source>An offset in the ROM, in hexadecimal: 0-%1.</source>
+        <translation>ROM 中的偏移（十六进制）：0-%1。</translation>
+    </message>
+</context>
+<context>
+    <name>rl::rom::RomPlaytestModel</name>
+    <message>
+        <source>Session</source>
+        <translation>会话</translation>
+    </message>
+    <message>
+        <source>Core</source>
+        <translation>核心</translation>
+    </message>
+    <message>
+        <source>Play runs the ROM as it is now, edits not yet saved included, from power-on.</source>
+        <translation>Play 从开机开始运行当前的 ROM，包括尚未保存的编辑。</translation>
+    </message>
+    <message>
+        <source>Run the ROM</source>
+        <translation>运行 ROM</translation>
+    </message>
+</context>
+<context>
+    <name>rl::rom::RomSession</name>
+    <message>
+        <source>Cannot read the ROM %1: %2</source>
+        <translation>无法读取 ROM %1：%2</translation>
+    </message>
+    <message>
+        <source>Unknown system</source>
+        <translation>未知系统</translation>
+    </message>
+    <message>
+        <source>ROM</source>
+        <translation>ROM</translation>
+    </message>
+    <message>
+        <source>Hex</source>
+        <translation>Hex</translation>
+    </message>
+    <message>
+        <source>Tiles</source>
+        <translation>图块</translation>
+    </message>
+    <message>
+        <source>Header</source>
+        <translation>头部</translation>
+    </message>
+    <message>
+        <source>Playtest</source>
+        <translation>试玩</translation>
+    </message>
+    <message>
+        <source>%1 KB</source>
+        <translation>%1 KB</translation>
+    </message>
+    <message>
+        <source>%1 tiles</source>
+        <translation>%1 个图块</translation>
+    </message>
+    <message>
+        <source>Run</source>
+        <translation>运行</translation>
+    </message>
+    <message>
+        <source>Back to the original ROM</source>
+        <translation>恢复原始 ROM</translation>
+    </message>
+    <message>
+        <source>MAME was not found. Choose it in File → Settings.</source>
+        <translation>未找到 MAME。请在 文件 → 设置 中选择。</translation>
+    </message>
+    <message>
+        <source>Cannot write the ROM to run: %1</source>
+        <translation>无法写入要运行的 ROM：%1</translation>
+    </message>
+    <message>
+        <source>Plan the playtest</source>
+        <translation>准备试玩</translation>
+    </message>
+    <message>
+        <source>Playtest plan failed: %1</source>
+        <translation>准备试玩失败：%1</translation>
+    </message>
+    <message>
+        <source>The kit returned no emulator command.</source>
+        <translation>工具包没有返回模拟器命令。</translation>
+    </message>
+</context>
+<context>
+    <name>rl::rom::RomTileModel</name>
+    <message>
+        <source>Tiles</source>
+        <translation>图块</translation>
+    </message>
+    <message>
+        <source>Bank %1 · $%2</source>
+        <translation>存储体 %1 · $%2</translation>
+    </message>
+    <message>
+        <source>Bank</source>
+        <translation>库</translation>
+    </message>
+    <message>
+        <source>Colours</source>
+        <translation>颜色</translation>
+    </message>
+    <message>
+        <source>Grey</source>
+        <translation>灰色</translation>
+    </message>
+    <message>
+        <source>Warm</source>
+        <translation>暖色</translation>
+    </message>
+    <message>
+        <source>Paint tile $%1</source>
+        <translation>绘制图块 $%1</translation>
+    </message>
+    <message>
+        <source>Fill inside the tile.</source>
+        <translation>请在图块内填充。</translation>
+    </message>
+    <message>
+        <source>Fill tile $%1</source>
+        <translation>填充图块 $%1</translation>
+    </message>
+    <message>
+        <source>Tile</source>
+        <translation>图块</translation>
+    </message>
+    <message>
+        <source>Tile $%1</source>
+        <translation>图块 $%1</translation>
+    </message>
+    <message>
+        <source>Offset</source>
+        <translation>偏移</translation>
+    </message>
+    <message>
+        <source>Format</source>
+        <translation>格式</translation>
+    </message>
+    <message>
+        <source>NES · 2 bits a pixel, 16 bytes a tile</source>
+        <translation>NES · 每像素 2 位，每图块 16 字节</translation>
+    </message>
+    <message>
+        <source>Mega Drive · 4 bits a pixel, 32 bytes a tile</source>
+        <translation>Mega Drive · 每像素 4 位，每图块 32 字节</translation>
+    </message>
+    <message>
+        <source>Raw patterns, as the hardware reads them. Graphics a game packs or compresses show as noise; the colours are a preview, not the game&apos;s palette.</source>
+        <translation>硬件读取的原始图案。游戏打包或压缩的图形会显示为噪点；颜色只是预览，不是游戏的调色板。</translation>
+    </message>
+    <message>
+        <source>Tile $%1 · $%2</source>
+        <translation>图块 $%1 · $%2</translation>
+    </message>
+</context>
+<context>
     <name>rl::runtime::EmulatorRunner</name>
     <message>
         <source>a path or setting cannot be quoted for Lua</source>
@@ -8042,22 +8433,6 @@
         <translation>游戏文件已下载到 %1。</translation>
     </message>
     <message>
-        <source>This game is not supported yet</source>
-        <translation>暂不支持此游戏</translation>
-    </message>
-    <message>
-        <source>%1 is a game the studio recognises, but it cannot edit it yet.</source>
-        <translation>工作室能识别 %1，但暂时还不能编辑它。</translation>
-    </message>
-    <message>
-        <source>The studio does not know this ROM</source>
-        <translation>工作室不认识这个 ROM</translation>
-    </message>
-    <message>
-        <source>%1 is not a version of a game the studio supports, or it was changed (a hack, a translation or a damaged dump). Choose the original ROM.</source>
-        <translation>%1 不是工作室支持的游戏的任何版本，或者已被修改（改版、汉化或损坏的转储）。请选择原始 ROM。</translation>
-    </message>
-    <message>
         <source>Get %1 ready</source>
         <translation>准备 %1</translation>
     </message>
@@ -8530,6 +8905,18 @@
     <message>
         <source>The TAS editor cannot open the movie: %1</source>
         <translation>TAS 编辑器无法打开录像：%1</translation>
+    </message>
+    <message>
+        <source>Identify %1</source>
+        <translation>识别 %1</translation>
+    </message>
+    <message>
+        <source>The ROM could not be copied into %1.</source>
+        <translation>无法将 ROM 复制到 %1。</translation>
+    </message>
+    <message>
+        <source>Opened %1 as it is, in %2.</source>
+        <translation>已按原样打开 %1，位于 %2。</translation>
     </message>
 </context>
 <context>

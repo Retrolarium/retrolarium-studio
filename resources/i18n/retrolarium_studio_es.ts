@@ -11,6 +11,26 @@
         <source>line %1 is not a run of frames</source>
         <translation>la línea %1 no es una serie de fotogramas</translation>
     </message>
+    <message>
+        <source>Open ROM</source>
+        <translation>Abrir ROM</translation>
+    </message>
+    <message>
+        <source>The studio knows this game. It can set up its source (download the game&apos;s repository) and open it with the game&apos;s own editors, or open the ROM as it is: its bytes, its tiles, its header and a playtest.</source>
+        <translation>El estudio conoce este juego. Puede preparar su código fuente (descargar el repositorio del juego) y abrirlo con los editores del propio juego, o abrir la ROM tal cual: sus bytes, sus teselas, su cabecera y una prueba.</translation>
+    </message>
+    <message>
+        <source>Do not ask again</source>
+        <translation>No volver a preguntar</translation>
+    </message>
+    <message>
+        <source>Open the ROM</source>
+        <translation>Abrir la ROM</translation>
+    </message>
+    <message>
+        <source>Set up the source</source>
+        <translation>Preparar el código fuente</translation>
+    </message>
 </context>
 <context>
     <name>Values</name>
@@ -7390,6 +7410,377 @@
     </message>
 </context>
 <context>
+    <name>rl::rom::HeaderModel</name>
+    <message>
+        <source>Header</source>
+        <translation>Cabecera</translation>
+    </message>
+    <message>
+        <source>Field</source>
+        <translation>Campo</translation>
+    </message>
+    <message>
+        <source>Value</source>
+        <translation>Valor</translation>
+    </message>
+    <message>
+        <source>File size</source>
+        <translation>Tamaño del archivo</translation>
+    </message>
+    <message>
+        <source>%1 bytes ($%2)</source>
+        <translation>%1 bytes ($%2)</translation>
+    </message>
+    <message>
+        <source>SHA-1 of the original</source>
+        <translation>SHA-1 del original</translation>
+    </message>
+    <message>
+        <source>Changed</source>
+        <translation>Modificado</translation>
+    </message>
+    <message>
+        <source>no</source>
+        <translation>no</translation>
+    </message>
+    <message>
+        <source>yes</source>
+        <translation>sí</translation>
+    </message>
+    <message>
+        <source>PRG ROM</source>
+        <translation>PRG ROM</translation>
+    </message>
+    <message>
+        <source>%1 KB</source>
+        <translation>%1 KB</translation>
+    </message>
+    <message>
+        <source>CHR ROM</source>
+        <translation>CHR ROM</translation>
+    </message>
+    <message>
+        <source>none (CHR RAM)</source>
+        <translation>ninguna (CHR RAM)</translation>
+    </message>
+    <message>
+        <source>Mapper</source>
+        <translation>Mapper</translation>
+    </message>
+    <message>
+        <source>Mirroring</source>
+        <translation>Espejado</translation>
+    </message>
+    <message>
+        <source>four-screen</source>
+        <translation>cuatro pantallas</translation>
+    </message>
+    <message>
+        <source>vertical</source>
+        <translation>vertical</translation>
+    </message>
+    <message>
+        <source>horizontal</source>
+        <translation>horizontal</translation>
+    </message>
+    <message>
+        <source>Battery</source>
+        <translation>Batería</translation>
+    </message>
+    <message>
+        <source>Trainer</source>
+        <translation>Trainer</translation>
+    </message>
+    <message>
+        <source>512 bytes</source>
+        <translation>512 bytes</translation>
+    </message>
+    <message>
+        <source>System</source>
+        <translation>Sistema</translation>
+    </message>
+    <message>
+        <source>Copyright</source>
+        <translation>Copyright</translation>
+    </message>
+    <message>
+        <source>Domestic title</source>
+        <translation>Título (Japón)</translation>
+    </message>
+    <message>
+        <source>Overseas title</source>
+        <translation>Título (extranjero)</translation>
+    </message>
+    <message>
+        <source>Serial</source>
+        <translation>Número de serie</translation>
+    </message>
+    <message>
+        <source>Checksum</source>
+        <translation>Suma de comprobación</translation>
+    </message>
+    <message>
+        <source>$%1 (right)</source>
+        <translation>$%1 (correcta)</translation>
+    </message>
+    <message>
+        <source>$%1 (the bytes add up to $%2)</source>
+        <translation>$%1 (los bytes suman $%2)</translation>
+    </message>
+    <message>
+        <source>Devices</source>
+        <translation>Dispositivos</translation>
+    </message>
+    <message>
+        <source>Regions</source>
+        <translation>Regiones</translation>
+    </message>
+    <message>
+        <source>not recognised</source>
+        <translation>no reconocida</translation>
+    </message>
+    <message>
+        <source>Fix the checksum</source>
+        <translation>Corregir la suma de comprobación</translation>
+    </message>
+    <message>
+        <source>Write the sum of the ROM&apos;s words into the header, as the console&apos;s check expects</source>
+        <translation>Escribir en la cabecera la suma de las palabras de la ROM, como espera la comprobación de la consola</translation>
+    </message>
+    <message>
+        <source>ROM header</source>
+        <translation>Cabecera de la ROM</translation>
+    </message>
+    <message>
+        <source>What the ROM says about itself. Edit the bytes in Hex.</source>
+        <translation>Lo que la ROM dice de sí misma. Los bytes se editan en Hex.</translation>
+    </message>
+</context>
+<context>
+    <name>rl::rom::HexModel</name>
+    <message>
+        <source>Hex</source>
+        <translation>Hex</translation>
+    </message>
+    <message>
+        <source>Offset</source>
+        <translation>Desplazamiento</translation>
+    </message>
+    <message>
+        <source>Text</source>
+        <translation>Texto</translation>
+    </message>
+    <message>
+        <source>Type a byte in hexadecimal, 00-FF.</source>
+        <translation>Escribe un byte en hexadecimal, 00-FF.</translation>
+    </message>
+    <message>
+        <source>Edit byte at $%1</source>
+        <translation>Editar el byte en $%1</translation>
+    </message>
+    <message>
+        <source>ROM bytes</source>
+        <translation>Bytes de la ROM</translation>
+    </message>
+    <message>
+        <source>Offset $%1</source>
+        <translation>Desplazamiento $%1</translation>
+    </message>
+    <message>
+        <source>Go to offset</source>
+        <translation>Ir al desplazamiento</translation>
+    </message>
+    <message>
+        <source>hex</source>
+        <translation>hex</translation>
+    </message>
+    <message>
+        <source>Size</source>
+        <translation>Tamaño</translation>
+    </message>
+    <message>
+        <source>%1 bytes ($%2)</source>
+        <translation>%1 bytes ($%2)</translation>
+    </message>
+    <message>
+        <source>In the cartridge</source>
+        <translation>En el cartucho</translation>
+    </message>
+    <message>
+        <source>CHR ROM $%1</source>
+        <translation>CHR ROM $%1</translation>
+    </message>
+    <message>
+        <source>PRG bank %1, $%2</source>
+        <translation>Banco PRG %1, $%2</translation>
+    </message>
+    <message>
+        <source>Each cell is a byte in hexadecimal: type 00-FF to change it. Rows that differ from the original ROM are marked. Save writes the ROM in the project; the original stays beside it.</source>
+        <translation>Cada celda es un byte en hexadecimal: escribe 00-FF para cambiarlo. Las filas que difieren de la ROM original están marcadas. Guardar escribe la ROM del proyecto; el original queda al lado.</translation>
+    </message>
+    <message>
+        <source>An offset in the ROM, in hexadecimal: 0-%1.</source>
+        <translation>Un desplazamiento en la ROM, en hexadecimal: 0-%1.</translation>
+    </message>
+</context>
+<context>
+    <name>rl::rom::RomPlaytestModel</name>
+    <message>
+        <source>Session</source>
+        <translation>Sesión</translation>
+    </message>
+    <message>
+        <source>Core</source>
+        <translation>Núcleo</translation>
+    </message>
+    <message>
+        <source>Play runs the ROM as it is now, edits not yet saved included, from power-on.</source>
+        <translation>Play ejecuta la ROM tal como está ahora, con los cambios sin guardar, desde el encendido.</translation>
+    </message>
+    <message>
+        <source>Run the ROM</source>
+        <translation>Ejecutar la ROM</translation>
+    </message>
+</context>
+<context>
+    <name>rl::rom::RomSession</name>
+    <message>
+        <source>Cannot read the ROM %1: %2</source>
+        <translation>No se puede leer la ROM %1: %2</translation>
+    </message>
+    <message>
+        <source>Unknown system</source>
+        <translation>Sistema desconocido</translation>
+    </message>
+    <message>
+        <source>ROM</source>
+        <translation>ROM</translation>
+    </message>
+    <message>
+        <source>Hex</source>
+        <translation>Hex</translation>
+    </message>
+    <message>
+        <source>Tiles</source>
+        <translation>Tiles</translation>
+    </message>
+    <message>
+        <source>Header</source>
+        <translation>Cabecera</translation>
+    </message>
+    <message>
+        <source>Playtest</source>
+        <translation>Prueba</translation>
+    </message>
+    <message>
+        <source>%1 KB</source>
+        <translation>%1 KB</translation>
+    </message>
+    <message>
+        <source>%1 tiles</source>
+        <translation>%1 teselas</translation>
+    </message>
+    <message>
+        <source>Run</source>
+        <translation>Ejecutar</translation>
+    </message>
+    <message>
+        <source>Back to the original ROM</source>
+        <translation>Volver a la ROM original</translation>
+    </message>
+    <message>
+        <source>MAME was not found. Choose it in File → Settings.</source>
+        <translation>No se encontró MAME. Elígelo en Archivo → Ajustes.</translation>
+    </message>
+    <message>
+        <source>Cannot write the ROM to run: %1</source>
+        <translation>No se puede escribir la ROM para ejecutarla: %1</translation>
+    </message>
+    <message>
+        <source>Plan the playtest</source>
+        <translation>Preparar la prueba</translation>
+    </message>
+    <message>
+        <source>Playtest plan failed: %1</source>
+        <translation>Error al preparar la prueba: %1</translation>
+    </message>
+    <message>
+        <source>The kit returned no emulator command.</source>
+        <translation>El kit no devolvió ningún comando de emulador.</translation>
+    </message>
+</context>
+<context>
+    <name>rl::rom::RomTileModel</name>
+    <message>
+        <source>Tiles</source>
+        <translation>Tiles</translation>
+    </message>
+    <message>
+        <source>Bank %1 · $%2</source>
+        <translation>Banco %1 · $%2</translation>
+    </message>
+    <message>
+        <source>Bank</source>
+        <translation>Banco</translation>
+    </message>
+    <message>
+        <source>Colours</source>
+        <translation>Colores</translation>
+    </message>
+    <message>
+        <source>Grey</source>
+        <translation>Gris</translation>
+    </message>
+    <message>
+        <source>Warm</source>
+        <translation>Cálido</translation>
+    </message>
+    <message>
+        <source>Paint tile $%1</source>
+        <translation>Pintar la tesela $%1</translation>
+    </message>
+    <message>
+        <source>Fill inside the tile.</source>
+        <translation>Rellena dentro de la tesela.</translation>
+    </message>
+    <message>
+        <source>Fill tile $%1</source>
+        <translation>Rellenar la tesela $%1</translation>
+    </message>
+    <message>
+        <source>Tile</source>
+        <translation>Tile</translation>
+    </message>
+    <message>
+        <source>Tile $%1</source>
+        <translation>Tesela $%1</translation>
+    </message>
+    <message>
+        <source>Offset</source>
+        <translation>Desplazamiento</translation>
+    </message>
+    <message>
+        <source>Format</source>
+        <translation>Formato</translation>
+    </message>
+    <message>
+        <source>NES · 2 bits a pixel, 16 bytes a tile</source>
+        <translation>NES · 2 bits por píxel, 16 bytes por tesela</translation>
+    </message>
+    <message>
+        <source>Mega Drive · 4 bits a pixel, 32 bytes a tile</source>
+        <translation>Mega Drive · 4 bits por píxel, 32 bytes por tesela</translation>
+    </message>
+    <message>
+        <source>Raw patterns, as the hardware reads them. Graphics a game packs or compresses show as noise; the colours are a preview, not the game&apos;s palette.</source>
+        <translation>Patrones en bruto, tal como los lee el hardware. Los gráficos que un juego empaqueta o comprime se ven como ruido; los colores son una vista previa, no la paleta del juego.</translation>
+    </message>
+    <message>
+        <source>Tile $%1 · $%2</source>
+        <translation>Tesela $%1 · $%2</translation>
+    </message>
+</context>
+<context>
     <name>rl::runtime::EmulatorRunner</name>
     <message>
         <source>a path or setting cannot be quoted for Lua</source>
@@ -8075,22 +8466,6 @@
         <translation>Los archivos del juego se descargaron en %1.</translation>
     </message>
     <message>
-        <source>This game is not supported yet</source>
-        <translation>Este juego aún no es compatible</translation>
-    </message>
-    <message>
-        <source>%1 is a game the studio recognises, but it cannot edit it yet.</source>
-        <translation>%1 es un juego que el estudio reconoce, pero todavía no puede editarlo.</translation>
-    </message>
-    <message>
-        <source>The studio does not know this ROM</source>
-        <translation>El estudio no conoce esta ROM</translation>
-    </message>
-    <message>
-        <source>%1 is not a version of a game the studio supports, or it was changed (a hack, a translation or a damaged dump). Choose the original ROM.</source>
-        <translation>%1 no es una versión de un juego compatible con el estudio, o fue modificada (un hack, una traducción o un volcado dañado). Elige la ROM original.</translation>
-    </message>
-    <message>
         <source>Get %1 ready</source>
         <translation>Preparar %1</translation>
     </message>
@@ -8564,6 +8939,18 @@
     <message>
         <source>The TAS editor cannot open the movie: %1</source>
         <translation>El editor TAS no puede abrir la película: %1</translation>
+    </message>
+    <message>
+        <source>Identify %1</source>
+        <translation>Identificar %1</translation>
+    </message>
+    <message>
+        <source>The ROM could not be copied into %1.</source>
+        <translation>No se pudo copiar la ROM en %1.</translation>
+    </message>
+    <message>
+        <source>Opened %1 as it is, in %2.</source>
+        <translation>%1 abierta tal cual, en %2.</translation>
     </message>
 </context>
 <context>
