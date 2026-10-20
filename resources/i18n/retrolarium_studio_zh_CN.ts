@@ -9415,6 +9415,38 @@
         <source>not saved</source>
         <translation>未保存</translation>
     </message>
+    <message>
+        <source>Play from here</source>
+        <translation>从此处播放</translation>
+    </message>
+    <message>
+        <source>Play on from the selected frame at the game&apos;s speed, from the nearest state kept (Ctrl+P)</source>
+        <translation>从所选帧开始以游戏速度继续播放，使用最近保存的状态 (Ctrl+P)</translation>
+    </message>
+    <message>
+        <source>Pause</source>
+        <translation>暂停</translation>
+    </message>
+    <message>
+        <source>Pause the game and come back to the frame played from (Pause)</source>
+        <translation>暂停游戏并回到开始播放的帧 (Pause)</translation>
+    </message>
+    <message>
+        <source>Frame shown</source>
+        <translation>当前帧</translation>
+    </message>
+    <message>
+        <source>Select the frame the game shows now (Ctrl+F)</source>
+        <translation>选择游戏当前显示的帧 (Ctrl+F)</translation>
+    </message>
+    <message>
+        <source>Insert this many frames with the buttons chosen held, before the selected frame</source>
+        <translation>在所选帧之前插入这么多按住所选按钮的帧</translation>
+    </message>
+    <message>
+        <source>frames holding</source>
+        <translation>帧，按住：</translation>
+    </message>
 </context>
 <context>
     <name>rl::smb::SmbDemoModel</name>

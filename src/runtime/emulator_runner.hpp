@@ -153,13 +153,15 @@ public:
     bool showsInput() const { return showInput_; }
     bool showsWatch() const { return showWatch_; }
     void setWatch(const QVector<WatchCell>& cells) { watch_ = cells; }
-    // The TAS editor, on a movie that plays: go to a frame (paused there),
-    // take the movie file in again after an edit, run on until a stop
+    // The TAS editor, on a movie that plays: go to a frame (paused there) or
+    // play on from it, take the movie file in again after an edit (the states
+    // from the first frame it changed on are dropped), run on until a stop
     // condition holds (by index), record from the frame shown on.
     void setStopConditions(const QVector<StopCondition>& conditions) { stops_ = conditions; }
     const QVector<StopCondition>& stopConditions() const { return stops_; }
     void seek(int frame);
-    void reloadMovie();
+    void playFrom(int frame);
+    void reloadMovie(int changedFrom = -1);
     void runUntil(int condition);
     void recordFromHere();
     // A short note over the game's picture; false when nothing can show it.

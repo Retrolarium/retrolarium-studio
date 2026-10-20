@@ -8,8 +8,10 @@
 
 class QCheckBox;
 class QComboBox;
+class QHBoxLayout;
 class QLabel;
 class QPushButton;
+class QSpinBox;
 class QUndoStack;
 
 namespace rl::runtime {
@@ -102,9 +104,12 @@ private:
 };
 
 // Run > Movie > TAS editor: the movie that plays, frame by frame. A frame
-// clicked is shown in the game (the run goes back or forward to it); an edit
-// is saved to the movie at once and the game goes back to the frame before
-// it; a run goes on to the game's stop condition (a death) or the end.
+// clicked is shown in the game (the run goes back or forward to it, from the
+// nearest state it kept); Play from here plays on from the selected frame,
+// and Pause comes back to it; an edit is saved to the movie at once, the
+// states from the edited frame on are dropped and the game goes back to the
+// frame before it; a run goes on to the game's stop condition (a death) or the
+// end. Frames are inserted empty, as copies, or with chosen buttons held.
 class TasEditorWindow final : public frame::StudioDialog {
     Q_OBJECT
 
@@ -123,7 +128,13 @@ private:
     void edit(int row, int count, const QVector<MovieFrame>& frames, const QString& text);
     void applied(int row);
     void insertFrames(bool copy);
+    void insertHeld();
     void removeFrames();
+    void playFromSelection();
+    void pause();
+    void selectFrameShown();
+    // The toggles of Insert holding, one per button of the movie's pad.
+    void buildHoldButtons();
     QVector<int> selectedRows() const;
     void save();
     void followEmulator();
@@ -137,6 +148,12 @@ private:
     QComboBox* stops_;
     QCheckBox* follow_;
     QLabel* status_;
+    QSpinBox* holdCount_;
+    QHBoxLayout* holdRow_;
+    QVector<QPushButton*> holdButtons_;
+    int playedFrom_ = -1;   // the row Play from here started at
+    int followed_ = -1;     // the frame Follow last brought into view
+    bool wasPaused_ = true;
     QString working_;
     QString origin_;
     QString note_;          // what the last run to a stop found

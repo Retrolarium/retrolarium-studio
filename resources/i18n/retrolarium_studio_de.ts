@@ -9451,6 +9451,38 @@
         <source>not saved</source>
         <translation>nicht gespeichert</translation>
     </message>
+    <message>
+        <source>Play from here</source>
+        <translation>Ab hier spielen</translation>
+    </message>
+    <message>
+        <source>Play on from the selected frame at the game&apos;s speed, from the nearest state kept (Ctrl+P)</source>
+        <translation>Ab dem ausgewählten Einzelbild im Spieltempo weiterspielen, vom nächsten gespeicherten Zustand aus (Strg+P)</translation>
+    </message>
+    <message>
+        <source>Pause</source>
+        <translation>Pause</translation>
+    </message>
+    <message>
+        <source>Pause the game and come back to the frame played from (Pause)</source>
+        <translation>Das Spiel anhalten und zum Einzelbild zurückkehren, ab dem gespielt wurde (Pause)</translation>
+    </message>
+    <message>
+        <source>Frame shown</source>
+        <translation>Gezeigtes Bild</translation>
+    </message>
+    <message>
+        <source>Select the frame the game shows now (Ctrl+F)</source>
+        <translation>Das Einzelbild auswählen, das das Spiel gerade zeigt (Strg+F)</translation>
+    </message>
+    <message>
+        <source>Insert this many frames with the buttons chosen held, before the selected frame</source>
+        <translation>So viele Einzelbilder mit den gewählten gedrückten Tasten vor dem ausgewählten einfügen</translation>
+    </message>
+    <message>
+        <source>frames holding</source>
+        <translation>Einzelbilder, gedrückt:</translation>
+    </message>
 </context>
 <context>
     <name>rl::smb::SmbDemoModel</name>

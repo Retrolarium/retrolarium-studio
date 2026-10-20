@@ -9451,6 +9451,38 @@
         <source>not saved</source>
         <translation>não salvo</translation>
     </message>
+    <message>
+        <source>Play from here</source>
+        <translation>Jogar daqui</translation>
+    </message>
+    <message>
+        <source>Play on from the selected frame at the game&apos;s speed, from the nearest state kept (Ctrl+P)</source>
+        <translation>Continuar jogando a partir do quadro selecionado na velocidade do jogo, do estado guardado mais próximo (Ctrl+P)</translation>
+    </message>
+    <message>
+        <source>Pause</source>
+        <translation>Pausar</translation>
+    </message>
+    <message>
+        <source>Pause the game and come back to the frame played from (Pause)</source>
+        <translation>Pausar o jogo e voltar ao quadro de onde se jogou (Pause)</translation>
+    </message>
+    <message>
+        <source>Frame shown</source>
+        <translation>Quadro atual</translation>
+    </message>
+    <message>
+        <source>Select the frame the game shows now (Ctrl+F)</source>
+        <translation>Selecionar o quadro que o jogo mostra agora (Ctrl+F)</translation>
+    </message>
+    <message>
+        <source>Insert this many frames with the buttons chosen held, before the selected frame</source>
+        <translation>Inserir tantos quadros com os botões escolhidos pressionados antes do quadro selecionado</translation>
+    </message>
+    <message>
+        <source>frames holding</source>
+        <translation>quadros segurando</translation>
+    </message>
 </context>
 <context>
     <name>rl::smb::SmbDemoModel</name>

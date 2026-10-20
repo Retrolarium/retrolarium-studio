@@ -9487,6 +9487,38 @@
         <source>not saved</source>
         <translation>niezapisane</translation>
     </message>
+    <message>
+        <source>Play from here</source>
+        <translation>Graj stąd</translation>
+    </message>
+    <message>
+        <source>Play on from the selected frame at the game&apos;s speed, from the nearest state kept (Ctrl+P)</source>
+        <translation>Graj dalej od zaznaczonej klatki z prędkością gry, od najbliższego zapisanego stanu (Ctrl+P)</translation>
+    </message>
+    <message>
+        <source>Pause</source>
+        <translation>Pauza</translation>
+    </message>
+    <message>
+        <source>Pause the game and come back to the frame played from (Pause)</source>
+        <translation>Wstrzymaj grę i wróć do klatki, od której grano (Pause)</translation>
+    </message>
+    <message>
+        <source>Frame shown</source>
+        <translation>Bieżąca klatka</translation>
+    </message>
+    <message>
+        <source>Select the frame the game shows now (Ctrl+F)</source>
+        <translation>Zaznacz klatkę, którą gra teraz pokazuje (Ctrl+F)</translation>
+    </message>
+    <message>
+        <source>Insert this many frames with the buttons chosen held, before the selected frame</source>
+        <translation>Wstaw tyle klatek z wybranymi wciśniętymi przyciskami przed zaznaczoną klatką</translation>
+    </message>
+    <message>
+        <source>frames holding</source>
+        <translation>klatek, wciśnięte:</translation>
+    </message>
 </context>
 <context>
     <name>rl::smb::SmbDemoModel</name>

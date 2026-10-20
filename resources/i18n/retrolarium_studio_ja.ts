@@ -9415,6 +9415,38 @@
         <source>not saved</source>
         <translation>未保存</translation>
     </message>
+    <message>
+        <source>Play from here</source>
+        <translation>ここから再生</translation>
+    </message>
+    <message>
+        <source>Play on from the selected frame at the game&apos;s speed, from the nearest state kept (Ctrl+P)</source>
+        <translation>選択したフレームから、保存済みの最も近いステートを使ってゲーム速度で再生を続けます (Ctrl+P)</translation>
+    </message>
+    <message>
+        <source>Pause</source>
+        <translation>一時停止</translation>
+    </message>
+    <message>
+        <source>Pause the game and come back to the frame played from (Pause)</source>
+        <translation>ゲームを一時停止し、再生を始めたフレームに戻ります (Pause)</translation>
+    </message>
+    <message>
+        <source>Frame shown</source>
+        <translation>表示中のフレーム</translation>
+    </message>
+    <message>
+        <source>Select the frame the game shows now (Ctrl+F)</source>
+        <translation>ゲームが今表示しているフレームを選択 (Ctrl+F)</translation>
+    </message>
+    <message>
+        <source>Insert this many frames with the buttons chosen held, before the selected frame</source>
+        <translation>選択したボタンを押したままのフレームを、選択したフレームの前にこの数だけ挿入</translation>
+    </message>
+    <message>
+        <source>frames holding</source>
+        <translation>フレーム、押すボタン:</translation>
+    </message>
 </context>
 <context>
     <name>rl::smb::SmbDemoModel</name>

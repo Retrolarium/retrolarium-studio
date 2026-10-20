@@ -344,16 +344,24 @@ end
 local log, last_time, done = {}, now_time(), 0
 _G.retrolarium_movie = {frame = 0}
 
--- Rewind: states in memory, near and far. Near, one every rewind_every
--- frames, the last rewind_keep of them (15 seconds): a step back runs at most
--- that many frames again. Far, one every far_every frames, the last far_keep
--- of them (5 minutes), for going back further a second at a time. Plus the
--- pads of every frame since the oldest. Going back to a frame loads the state
--- before it and runs the frames after it again with the same pads,
--- unthrottled, then pauses there. (A state is 2 MB or so: one a frame would
--- not fit.)
+-- Rewind: states in memory, near and far, each list in frame order. Near,
+-- one every rewind_every frames, the rewind_keep of them nearest the frame
+-- shown (15 seconds): a step back runs at most that many frames again. Far,
+-- one every far_every frames, the last far_keep of them (5 minutes), for going
+-- back further a second at a time. Plus the pads of every frame since the
+-- oldest. Going back to a frame loads the state before it and runs the frames
+-- after it again with the same pads, unthrottled, then pauses there. (A state
+-- is 2 MB or so: one a frame would not fit.)
+--
+-- While a movie plays its future is known, so going back keeps the states
+-- after it, and the far ones cover the whole movie (the TAS editor's
+-- greenzone): past far_budget bytes every other one goes, so they thin out
+-- evenly instead of forgetting the start. A seek forward starts from the
+-- latest state before its frame too. An edit of the movie drops the states
+-- from the edited frame on ("invalidate").
 local rewind_every, rewind_keep = 60, 15
 local far_every, far_keep = 300, 60
+local far_budget = 768 * 1024 * 1024
 local ring, far, inputs, inputs_from = {}, {}, {}, 1
 local replay_to = nil
 -- A state in memory is only right taken or loaded while the machine is
@@ -548,14 +556,49 @@ local function finish_rewind()
     set_event("rewound")
 end
 
+local function movie_playing()
+    return movie_mode == "play" or movie_mode == "resume"
+end
+
+-- Into a list in frame order, one state a frame.
+local function insert_state(list, entry)
+    for i = #list, 1, -1 do
+        if list[i].frame == entry.frame then
+            list[i] = entry
+            return
+        elseif list[i].frame < entry.frame then
+            table.insert(list, i + 1, entry)
+            return
+        end
+    end
+    table.insert(list, 1, entry)
+end
+
 -- Called while paused: the frame `done` just ended.
 local function capture_state()
     local entry = {frame = done, state = machine:buffer_save()}
-    ring[#ring + 1] = entry
-    if #ring > rewind_keep then table.remove(ring, 1) end
+    insert_state(ring, entry)
+    if #ring > rewind_keep then
+        -- The one furthest from the frame shown goes.
+        local worst, distance = 1, -1
+        for i, kept in ipairs(ring) do
+            if math.abs(kept.frame - done) > distance then worst, distance = i, math.abs(kept.frame - done) end
+        end
+        table.remove(ring, worst)
+    end
     if done % far_every == 0 then
-        far[#far + 1] = entry
-        if #far > far_keep then table.remove(far, 1) end
+        insert_state(far, entry)
+        if movie_playing() then
+            local bytes = 0
+            for _, kept in ipairs(far) do bytes = bytes + #kept.state end
+            if bytes > far_budget and #far > 2 then
+                local thinned = {}
+                for i = 1, #far, 2 do thinned[#thinned + 1] = far[i] end
+                far = thinned
+            end
+        elseif #far > far_keep then
+            table.remove(far, 1)
+        end
     end
     -- The pads from before the oldest state are not run again.
     local oldest = math.min(ring[1].frame, far[1] ~= nil and far[1].frame or ring[1].frame)
@@ -581,6 +624,28 @@ local function oldest_state()
     return ring[1]
 end
 
+-- Load a state and run on from it to `target`, paused there.
+local function go_to(entry, target)
+    -- The pads hold the buttons of the state's next frame for one frame
+    -- first (a paused machine does not take them in): the first frame after
+    -- the load reads those, not the keys held now. That frame then pauses,
+    -- and the state loads on the redraw after it.
+    rewind_pending, capture_pending = {entry, target, "latch"}, false
+    if not movie_playing() then
+        -- Played by hand, what comes after is played anew.
+        for _, list in ipairs({ring, far}) do
+            for i = #list, 1, -1 do
+                if list[i].frame > entry.frame then table.remove(list, i) end
+            end
+        end
+    end
+    for field in pairs(held) do field:clear_value() end
+    held, keys_text = {}, ""
+    set_pads(pads_of(entry.frame + 1))
+    video.throttled = false
+    if machine.paused then emu.unpause() end
+end
+
 local function rewind(count)
     if latched_load ~= nil or replay_to ~= nil or rewind_pending ~= nil then return end
     local target = math.max(done - count, 0)
@@ -596,21 +661,7 @@ local function rewind(count)
         end
         target = entry.frame
     end
-    -- The pads hold the buttons of the state's next frame for one frame
-    -- first (a paused machine does not take them in): the first frame after
-    -- the load reads those, not the keys held now. That frame then pauses,
-    -- and the state loads on the redraw after it.
-    rewind_pending, capture_pending = {entry, target, "latch"}, false
-    for _, list in ipairs({ring, far}) do
-        for i = #list, 1, -1 do
-            if list[i].frame > entry.frame then table.remove(list, i) end
-        end
-    end
-    for field in pairs(held) do field:clear_value() end
-    held, keys_text = {}, ""
-    set_pads(pads_of(entry.frame + 1))
-    video.throttled = false
-    if machine.paused then emu.unpause() end
+    go_to(entry, target)
 end
 
 -- Paused: load the state, then pause there or run on to the frame asked for.
@@ -641,9 +692,16 @@ local function seek(target)
     if target < done then
         rewind(done - target)
     elseif target > done and playing then
-        replay_to = target
-        video.throttled, video.frameskip = false, 10
-        if machine.paused then emu.unpause() end
+        -- From the latest state before the frame when it lies ahead (the
+        -- movie played that far before), else on from here.
+        local entry = state_before(target)
+        if entry ~= nil and entry.frame > done then
+            go_to(entry, target)
+        else
+            replay_to = target
+            video.throttled, video.frameskip = false, 10
+            if machine.paused then emu.unpause() end
+        end
     end
 end
 
@@ -719,6 +777,28 @@ local function run_action(verb, argument)
         rewind(tonumber(argument) or 1)
     elseif verb == "seek" then
         seek(tonumber(argument) or done)
+    elseif verb == "playfrom" then
+        -- Go to a frame of the movie and play on from it at the game's speed.
+        local target = tonumber(argument) or done
+        if movie_playing() then target = math.min(target, #log) end
+        user_paused = false
+        if target == done then
+            if machine.paused then emu.unpause() end
+        else
+            resume_after = true
+            seek(target)
+        end
+    elseif verb == "invalidate" then
+        -- The movie changed from this frame on: the states from it on show
+        -- what the old frames did.
+        local from = tonumber(argument)
+        if from ~= nil then
+            for _, list in ipairs({ring, far}) do
+                for i = #list, 1, -1 do
+                    if list[i].frame >= from then table.remove(list, i) end
+                end
+            end
+        end
     elseif verb == "until" then
         local index = tonumber(argument)
         if index ~= nil and stop_when[index] ~= nil and replay_to == nil and rewind_pending == nil
@@ -1428,8 +1508,13 @@ void EmulatorRunner::seek(int frame) {
     if (controls_ && process_) sendAction(QStringLiteral("seek"), QString::number(std::max(0, frame)));
 }
 
-void EmulatorRunner::reloadMovie() {
+void EmulatorRunner::playFrom(int frame) {
+    if (controls_ && process_) sendAction(QStringLiteral("playfrom"), QString::number(std::max(0, frame)));
+}
+
+void EmulatorRunner::reloadMovie(int changedFrom) {
     if (controls_ && process_ && !movie_.file.isEmpty()) {
+        if (changedFrom >= 0) sendAction(QStringLiteral("invalidate"), QString::number(changedFrom));
         sendAction(QStringLiteral("reload"), QDir::fromNativeSeparators(movie_.file));
     }
 }
