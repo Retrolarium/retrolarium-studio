@@ -170,7 +170,7 @@ public:
     EditorType type() const override { return EditorType::Tile; }
 
     virtual int tileCount() const = 0;
-    virtual int penCount() const = 0;                   // 2, 4, 16 or 256
+    virtual int penCount() const = 0;                   // 2 to 256
     virtual QVector<QColor> penColors() const = 0;
     // Pixels per tile: 8x8, or 8x16 for sprite pattern pairs.
     virtual QSize tileSize() const { return {8, 8}; }

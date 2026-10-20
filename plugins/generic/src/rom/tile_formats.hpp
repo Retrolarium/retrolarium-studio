@@ -13,11 +13,22 @@ namespace rl::rom::tiles {
 //   1bpp   one byte a row, bit 7 the left pixel
 //   nes    two planes of eight bytes (NES, Famicom)
 //   gb     the two planes interleaved row by row (Game Boy, SNES 2bpp)
+//   vb     a little-endian word a row, bits 1-0 the left pixel (Virtual Boy)
+//   ngp    a little-endian word a row, bits 15-14 the left pixel (Neo Geo
+//          Pocket)
+//   snes3  the gb planes, then a third plane a byte a row (how some SNES
+//          games keep 3bpp graphics in ROM, widened to 4bpp when loaded)
 //   snes4  two interleaved plane pairs (SNES, PC Engine 4bpp)
+//   sms    four bytes a row, one a plane (Master System, Game Gear)
 //   md     four bytes a row, the high nibble the left pixel (Mega Drive)
 //   gba    four bytes a row, the low nibble the left pixel (Game Boy Advance)
+//   snes8  four interleaved plane pairs (SNES 8bpp backgrounds)
+//   mode7  a pixel in every odd byte, the even ones the tile map's (SNES
+//          Mode 7 as it sits in VRAM)
 //   8bpp   one byte a pixel
-enum class Layout { OneBit, Nes, GameBoy, Snes4, MegaDrive, Gba, EightBit };
+enum class Layout {
+    OneBit, Nes, GameBoy, VirtualBoy, NeoGeoPocket, Snes3, Snes4, MasterSystem, MegaDrive, Gba, Snes8, Mode7, EightBit
+};
 
 struct Format {
     QString id;

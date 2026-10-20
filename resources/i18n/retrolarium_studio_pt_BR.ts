@@ -7818,6 +7818,30 @@
         <source>Raw patterns, as the hardware reads them. The tile groups after the whole ROM are runs of bytes that read as pictures; graphics a game packs or compresses show as noise, and the colours are a preview, not the game&apos;s palette.</source>
         <translation>Padrões brutos, como o hardware os lê. Os grupos de tiles sob a ROM inteira são trechos de bytes que se leem como imagens; gráficos que um jogo empacota ou comprime aparecem como ruído, e as cores são uma prévia, não a paleta do jogo.</translation>
     </message>
+    <message>
+        <source>Virtual Boy · 2 bits a pixel</source>
+        <translation>Virtual Boy · 2 bits por pixel</translation>
+    </message>
+    <message>
+        <source>Neo Geo Pocket · 2 bits a pixel</source>
+        <translation>Neo Geo Pocket · 2 bits por pixel</translation>
+    </message>
+    <message>
+        <source>SNES, kept in ROM · 3 bits a pixel</source>
+        <translation>SNES, guardado na ROM · 3 bits por pixel</translation>
+    </message>
+    <message>
+        <source>Master System, Game Gear · 4 bits a pixel</source>
+        <translation>Master System, Game Gear · 4 bits por pixel</translation>
+    </message>
+    <message>
+        <source>SNES · 8 bits a pixel</source>
+        <translation>SNES · 8 bits por pixel</translation>
+    </message>
+    <message>
+        <source>SNES Mode 7 · 8 bits a pixel</source>
+        <translation>SNES Mode 7 · 8 bits por pixel</translation>
+    </message>
 </context>
 <context>
     <name>rl::runtime::EmulatorRunner</name>

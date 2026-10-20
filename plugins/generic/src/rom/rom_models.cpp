@@ -161,6 +161,10 @@ QVector<QColor> vividPens(int count) {
         for (quint32 c : {0x14101eu, 0xf8d878u}) pens << rgb(c);
     } else if (count == 4) {
         for (quint32 c : {0x000000u, 0x2038ecu, 0xe45c10u, 0xfce4a0u}) pens << rgb(c);
+    } else if (count == 8) {
+        for (quint32 c : {0x000000u, 0xff004du, 0xffa300u, 0xffec27u, 0x00e436u, 0x29adffu, 0x83769cu, 0xfff1e8u}) {
+            pens << rgb(c);
+        }
     } else if (count == 16) {
         for (quint32 c : {0x000000u, 0x1d2b53u, 0x7e2553u, 0x008751u, 0xab5236u, 0x5f574fu, 0xc2c3c7u, 0xfff1e8u,
                           0xff004du, 0xffa300u, 0xffec27u, 0x00e436u, 0x29adffu, 0x83769cu, 0xff77a8u, 0xffccaau}) {
@@ -204,9 +208,15 @@ QString RomTileModel::formatLabel(const QString& id) const {
     if (id == QLatin1String("1bpp")) label = tr("1 bit a pixel");
     else if (id == QLatin1String("nes")) label = tr("NES · 2 bits a pixel");
     else if (id == QLatin1String("gb")) label = tr("Game Boy, SNES · 2 bits a pixel");
+    else if (id == QLatin1String("vb")) label = tr("Virtual Boy · 2 bits a pixel");
+    else if (id == QLatin1String("ngp")) label = tr("Neo Geo Pocket · 2 bits a pixel");
+    else if (id == QLatin1String("snes3")) label = tr("SNES, kept in ROM · 3 bits a pixel");
     else if (id == QLatin1String("snes4")) label = tr("SNES, PC Engine · 4 bits a pixel");
+    else if (id == QLatin1String("sms")) label = tr("Master System, Game Gear · 4 bits a pixel");
     else if (id == QLatin1String("md")) label = tr("Mega Drive · 4 bits a pixel");
     else if (id == QLatin1String("gba")) label = tr("Game Boy Advance · 4 bits a pixel");
+    else if (id == QLatin1String("snes8")) label = tr("SNES · 8 bits a pixel");
+    else if (id == QLatin1String("mode7")) label = tr("SNES Mode 7 · 8 bits a pixel");
     else label = tr("8 bits a pixel");
     return id == session_->detectedTileFormat() ? tr("%1 (detected)").arg(label) : label;
 }

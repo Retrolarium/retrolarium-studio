@@ -29,24 +29,47 @@ int bit(const char* data, int index, int shift) {
     return (quint8(data[index]) >> shift) & 1;
 }
 
-// Mega Drive and Game Boy Advance tiles differ only in which nibble is the
-// left pixel, so they often score alike: the rarer one loses a close call.
+// Layouts that differ only in the order of the same bits (Mega Drive and
+// Game Boy Advance nibbles, say) score alike: the rarer one loses a close
+// call.
 double prior(const Format& format) {
-    return format.layout == Layout::Gba ? 0.95 : 1.0;
+    switch (format.layout) {
+    case Layout::Gba:
+    case Layout::VirtualBoy:
+    case Layout::NeoGeoPocket:
+    case Layout::Snes3:
+    case Layout::Snes8:
+    case Layout::Mode7: return 0.95;
+    default: return 1.0;
+    }
 }
 
-// Deeper tiles read in a shallower layout still look like pictures (a SNES
-// 4bpp tile is two Game Boy tiles side by side), shallower ones in a deeper
-// layout do not: a deeper layout this close to the best wins.
+// A SNES 4bpp tile read as Game Boy tiles is two pictures side by side, and
+// scores as well; Game Boy tiles read as SNES 4bpp do not. So SNES 4bpp this
+// close to Game Boy wins. (Other layouts that score alike are the same bits
+// in another order, which the priors settle.)
 constexpr double kDeeperShare = 0.95;
+
+bool widens(const Format& deeper, const Format& shallower) {
+    return deeper.layout == Layout::Snes4 && shallower.layout == Layout::GameBoy;
+}
 
 }  // namespace
 
 const QVector<Format>& formats() {
     static const QVector<Format> all{
-        {QStringLiteral("1bpp"), Layout::OneBit, 1, 8},     {QStringLiteral("nes"), Layout::Nes, 2, 16},
-        {QStringLiteral("gb"), Layout::GameBoy, 2, 16},     {QStringLiteral("snes4"), Layout::Snes4, 4, 32},
-        {QStringLiteral("md"), Layout::MegaDrive, 4, 32},   {QStringLiteral("gba"), Layout::Gba, 4, 32},
+        {QStringLiteral("1bpp"), Layout::OneBit, 1, 8},
+        {QStringLiteral("nes"), Layout::Nes, 2, 16},
+        {QStringLiteral("gb"), Layout::GameBoy, 2, 16},
+        {QStringLiteral("vb"), Layout::VirtualBoy, 2, 16},
+        {QStringLiteral("ngp"), Layout::NeoGeoPocket, 2, 16},
+        {QStringLiteral("snes3"), Layout::Snes3, 3, 24},
+        {QStringLiteral("snes4"), Layout::Snes4, 4, 32},
+        {QStringLiteral("sms"), Layout::MasterSystem, 4, 32},
+        {QStringLiteral("md"), Layout::MegaDrive, 4, 32},
+        {QStringLiteral("gba"), Layout::Gba, 4, 32},
+        {QStringLiteral("snes8"), Layout::Snes8, 8, 64},
+        {QStringLiteral("mode7"), Layout::Mode7, 8, 128},
         {QStringLiteral("8bpp"), Layout::EightBit, 8, 64},
     };
     return all;
@@ -69,6 +92,26 @@ Pixels decode(const Format& format, const char* data) {
             case Layout::OneBit: pen = bit(data, y, shift); break;
             case Layout::Nes: pen = bit(data, y, shift) | bit(data, 8 + y, shift) << 1; break;
             case Layout::GameBoy: pen = bit(data, 2 * y, shift) | bit(data, 2 * y + 1, shift) << 1; break;
+            case Layout::VirtualBoy:
+            case Layout::NeoGeoPocket: {
+                const int word = quint8(data[2 * y]) | quint8(data[2 * y + 1]) << 8;
+                pen = (word >> (format.layout == Layout::VirtualBoy ? 2 * x : 14 - 2 * x)) & 3;
+                break;
+            }
+            case Layout::Snes3:
+                pen = bit(data, 2 * y, shift) | bit(data, 2 * y + 1, shift) << 1 | bit(data, 16 + y, shift) << 2;
+                break;
+            case Layout::MasterSystem:
+                pen = bit(data, 4 * y, shift) | bit(data, 4 * y + 1, shift) << 1 | bit(data, 4 * y + 2, shift) << 2 |
+                      bit(data, 4 * y + 3, shift) << 3;
+                break;
+            case Layout::Snes8:
+                for (int pair = 0; pair < 4; ++pair) {
+                    pen |= bit(data, 16 * pair + 2 * y, shift) << (2 * pair) |
+                           bit(data, 16 * pair + 2 * y + 1, shift) << (2 * pair + 1);
+                }
+                break;
+            case Layout::Mode7: pen = quint8(data[2 * (y * 8 + x) + 1]); break;
             case Layout::Snes4:
                 pen = bit(data, 2 * y, shift) | bit(data, 2 * y + 1, shift) << 1 | bit(data, 16 + 2 * y, shift) << 2 |
                       bit(data, 17 + 2 * y, shift) << 3;
@@ -107,6 +150,29 @@ void encode(const Format& format, const Pixels& pixels, char* data) {
                 set(2 * y, 0);
                 set(2 * y + 1, 1);
                 break;
+            case Layout::VirtualBoy:
+            case Layout::NeoGeoPocket: {
+                const int place = format.layout == Layout::VirtualBoy ? 2 * x : 14 - 2 * x;
+                const int bits = (pen & 3) << place;
+                data[2 * y] = char(quint8(data[2 * y]) | (bits & 0xff));
+                data[2 * y + 1] = char(quint8(data[2 * y + 1]) | (bits >> 8));
+                break;
+            }
+            case Layout::Snes3:
+                set(2 * y, 0);
+                set(2 * y + 1, 1);
+                set(16 + y, 2);
+                break;
+            case Layout::MasterSystem:
+                for (int plane = 0; plane < 4; ++plane) set(4 * y + plane, plane);
+                break;
+            case Layout::Snes8:
+                for (int pair = 0; pair < 4; ++pair) {
+                    set(16 * pair + 2 * y, 2 * pair);
+                    set(16 * pair + 2 * y + 1, 2 * pair + 1);
+                }
+                break;
+            case Layout::Mode7: data[2 * (y * 8 + x) + 1] = char(pen); break;
             case Layout::Snes4:
                 set(2 * y, 0);
                 set(2 * y + 1, 1);
@@ -239,7 +305,7 @@ QVector<Group> groups(const QByteArray& bytes, int from, const QStringList& layo
     from = std::max(0, from);
     struct Candidate {
         Group group;
-        int bits = 0;
+        int order = 0;  // in formats(): the commoner layout wins a tie
         double score = 0.0;
         int end() const { return group.offset + group.tiles * format(group.format).bytes; }
     };
@@ -286,15 +352,15 @@ QVector<Group> groups(const QByteArray& bytes, int from, const QStringList& layo
             while (picture(found.group.offset + found.group.tiles * candidate.bytes)) ++found.group.tiles;
             found.group.format = candidate.id;
             found.group.pictures = run.pictures;
-            found.bits = candidate.bits;
+            found.order = int(&candidate - formats().constData());
             found.score = prior(candidate) * double(run.pictures) * candidate.bytes;
             candidates.append(found);
         }
     }
     // Where layouts overlap the one covering more bytes in pictures stays, a
-    // deeper one on a near tie when it spans the other.
+    // wider one (widens) on a near tie when it spans the other.
     std::sort(candidates.begin(), candidates.end(), [](const Candidate& a, const Candidate& b) {
-        return a.score != b.score ? a.score > b.score : a.bits > b.bits;
+        return a.score != b.score ? a.score > b.score : a.order < b.order;
     });
     QVector<Candidate> chosen;
     for (const Candidate& candidate : candidates) {
@@ -302,7 +368,8 @@ QVector<Group> groups(const QByteArray& bytes, int from, const QStringList& layo
         for (int i = 0; i < chosen.size(); ++i) {
             const Candidate& other = chosen.at(i);
             if (candidate.group.offset >= other.end() || other.group.offset >= candidate.end()) continue;
-            if (candidate.bits > other.bits && candidate.score >= kDeeperShare * other.score &&
+            if (widens(format(candidate.group.format), format(other.group.format)) &&
+                candidate.score >= kDeeperShare * other.score &&
                 candidate.group.offset <= other.group.offset && other.end() <= candidate.end()) {
                 chosen.removeAt(i);
                 --i;
@@ -336,7 +403,7 @@ QString detect(const QByteArray& bytes, int from) {
     if (best < 0 || scores.at(best) < kDetectShare) return {};
     const int top = best;
     for (int i = 0; i < formats().size(); ++i) {
-        if (formats().at(i).bits > formats().at(best).bits && scores.at(i) >= kDeeperShare * scores.at(top)) best = i;
+        if (widens(formats().at(i), formats().at(best)) && scores.at(i) >= kDeeperShare * scores.at(top)) best = i;
     }
     return formats().at(best).id;
 }
