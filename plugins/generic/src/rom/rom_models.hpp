@@ -1,5 +1,6 @@
 #pragma once
 
+#include "rom/tile_formats.hpp"
 #include "sdk/editor_model.hpp"
 
 #include <QByteArray>
@@ -35,8 +36,10 @@ private:
     int row_ = 0;
 };
 
-// Raw 8x8 patterns: NES 2 bits a pixel (CHR), Mega Drive 4 bits, a bank of
-// 256 at a time. Graphics the game packs or compresses do not show here.
+// Raw 8x8 patterns across the whole file, in a layout chosen from
+// tiles::formats() (the system's own, or the one the bytes look like most),
+// with the runs that read as pictures listed to jump to. Graphics the game
+// packs or compresses do not show here.
 class RomTileModel final : public sdk::TileModel {
     Q_OBJECT
 
@@ -50,7 +53,7 @@ public:
     void setViewOption(const QString& key, const QString& value) override;
 
     int tileCount() const override;
-    int penCount() const override { return bits_ == 2 ? 4 : 16; }
+    int penCount() const override { return 1 << format().bits; }
     QVector<QColor> penColors() const override;
     QVector<quint8> tilePixels(int tile) const override;
     bool isTileDirty(int tile) const override;
@@ -64,16 +67,28 @@ public:
     void endStroke() override;
     bool fill(QPoint pixel, int pen, QString* error) override;
 
+    // The layout shown (a tiles::formats() id) and the runs found in it.
+    QString formatId() const { return format_; }
+    void setFormat(const QString& id);
+    struct Jump {
+        QString label;
+        int tile = 0;
+        int count = 0;  // tiles in the run (0: just a place)
+    };
+    QVector<Jump> jumps() const { return jumps_; }
+
 private:
-    int tileBytes() const { return bits_ * 8; }
-    int bankOffset() const;
-    int tileOffset(int tile) const { return bankOffset() + tile * tileBytes(); }
-    QStringList bankLabels() const;
+    const tiles::Format& format() const;
+    int tileOffset(int tile) const;
+    QString formatLabel(const QString& id) const;
+    QStringList colorChoices() const;
+    void findJumps();
+    int jumpAt(int tile) const;
     void writePixels(QByteArray* bytes, int tile, const QVector<quint8>& pixels) const;
 
     RomSession* session_;
-    int bits_ = 2;
-    int bank_ = 0;
+    QString format_;
+    QVector<Jump> jumps_;
     int tile_ = 0;
     int pen_ = 3;
     int colors_ = 0;

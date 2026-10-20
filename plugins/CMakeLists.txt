@@ -331,6 +331,8 @@ add_library(rom_plugin STATIC
     generic/src/rom/rom_plugin.hpp
     generic/src/rom/rom_session.cpp
     generic/src/rom/rom_session.hpp
+    generic/src/rom/tile_formats.cpp
+    generic/src/rom/tile_formats.hpp
 )
 target_include_directories(rom_plugin PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/generic/src)
 target_link_libraries(rom_plugin PUBLIC studio_sdk)

@@ -7716,14 +7716,6 @@
         <translation>Tiles</translation>
     </message>
     <message>
-        <source>Bank %1 · $%2</source>
-        <translation>Banco %1 · $%2</translation>
-    </message>
-    <message>
-        <source>Bank</source>
-        <translation>Banco</translation>
-    </message>
-    <message>
         <source>Colours</source>
         <translation>Cores</translation>
     </message>
@@ -7764,20 +7756,74 @@
         <translation>Formato</translation>
     </message>
     <message>
-        <source>NES · 2 bits a pixel, 16 bytes a tile</source>
-        <translation>NES · 2 bits por pixel, 16 bytes por tile</translation>
-    </message>
-    <message>
-        <source>Mega Drive · 4 bits a pixel, 32 bytes a tile</source>
-        <translation>Mega Drive · 4 bits por pixel, 32 bytes por tile</translation>
-    </message>
-    <message>
-        <source>Raw patterns, as the hardware reads them. Graphics a game packs or compresses show as noise; the colours are a preview, not the game&apos;s palette.</source>
-        <translation>Padrões brutos, como o hardware os lê. Gráficos que um jogo empacota ou comprime aparecem como ruído; as cores são uma prévia, não a paleta do jogo.</translation>
-    </message>
-    <message>
         <source>Tile $%1 · $%2</source>
         <translation>Tile $%1 · $%2</translation>
+    </message>
+    <message>
+        <source>1 bit a pixel</source>
+        <translation>1 bit por pixel</translation>
+    </message>
+    <message>
+        <source>NES · 2 bits a pixel</source>
+        <translation>NES · 2 bits por pixel</translation>
+    </message>
+    <message>
+        <source>Game Boy, SNES · 2 bits a pixel</source>
+        <translation>Game Boy, SNES · 2 bits por pixel</translation>
+    </message>
+    <message>
+        <source>SNES, PC Engine · 4 bits a pixel</source>
+        <translation>SNES, PC Engine · 4 bits por pixel</translation>
+    </message>
+    <message>
+        <source>Mega Drive · 4 bits a pixel</source>
+        <translation>Mega Drive · 4 bits por pixel</translation>
+    </message>
+    <message>
+        <source>Game Boy Advance · 4 bits a pixel</source>
+        <translation>Game Boy Advance · 4 bits por pixel</translation>
+    </message>
+    <message>
+        <source>8 bits a pixel</source>
+        <translation>8 bits por pixel</translation>
+    </message>
+    <message>
+        <source>%1 (detected)</source>
+        <translation>%1 (detectado)</translation>
+    </message>
+    <message>
+        <source>Start of the file</source>
+        <translation>Início do arquivo</translation>
+    </message>
+    <message>
+        <source>Section</source>
+        <translation>Seção</translation>
+    </message>
+    <message>
+        <source>Vivid</source>
+        <translation>Vivo</translation>
+    </message>
+    <message>
+        <source>%1, %2 bytes a tile</source>
+        <translation>%1, %2 bytes por tile</translation>
+    </message>
+    <message>
+        <source>Raw patterns, as the hardware reads them. The sections are runs of bytes that read as pictures in this format; graphics a game packs or compresses show as noise, and the colours are a preview, not the game&apos;s palette.</source>
+        <translation>Padrões brutos, como o hardware os lê. As seções são trechos de bytes que, neste formato, se leem como imagens; gráficos que um jogo empacota ou comprime aparecem como ruído, e as cores são uma prévia, não a paleta do jogo.</translation>
+    </message>
+    <message numerus="yes">
+        <source>CHR ROM · $%1 · %n tiles</source>
+        <translation>
+            <numerusform>CHR ROM · $%1 · %n tile</numerusform>
+            <numerusform>CHR ROM · $%1 · %n tiles</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>$%1 · %n tiles</source>
+        <translation>
+            <numerusform>$%1 · %n tile</numerusform>
+            <numerusform>$%1 · %n tiles</numerusform>
+        </translation>
     </message>
 </context>
 <context>

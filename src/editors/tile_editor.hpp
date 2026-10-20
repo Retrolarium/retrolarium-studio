@@ -2,7 +2,6 @@
 
 #include "editors/editor_view.hpp"
 
-#include <QImage>
 #include <QPoint>
 
 class QScrollArea;
@@ -30,15 +29,19 @@ public:
 
 private:
     void chooseTool(const QString& id);
+    // Scrolls the atlas to the selected tile.
+    void showCurrentTile();
 
     sdk::TileModel* tiles_;
     TileAtlas* atlas_;
+    QScrollArea* scroll_ = nullptr;
     PixelCanvas* canvas_;
     PenRow* pens_;
     QString tool_ = QStringLiteral("pencil");
 };
 
-// Every tile of the bank, 16 per row; tall tiles take tall cells.
+// Every tile, 16 per row, painted as it scrolls into view (a ROM may hold
+// half a million); tall tiles take tall cells.
 class TileAtlas final : public QWidget {
     Q_OBJECT
 
@@ -59,11 +62,9 @@ protected:
 
 private:
     sdk::TileModel* model_;
-    void renderNow();
-
-    QImage image_;  // all tiles at 1x, 16 per row
-    // A stroke changes the bank once per pixel: rebuild once after them.
-    bool renderPending_ = false;
+    // A stroke changes the tiles once per pixel: resize and repaint once
+    // after them.
+    bool refreshPending_ = false;
 };
 
 // The selected tile as a grid of large pixels.
@@ -102,7 +103,8 @@ private:
     QPoint last_;
 };
 
-// The pens of the bank, labelled with their index.
+// The pens, labelled with their index: one row of up to sixteen, more
+// rows for deeper tiles.
 class PenRow final : public QWidget {
     Q_OBJECT
 
@@ -113,6 +115,8 @@ public:
 
     static constexpr int kWidth = 329;
     static constexpr int kHeight = 24;
+    static constexpr int kColumns = 16;
+    static constexpr int kShortHeight = 18;  // a row when there are several
 
 protected:
     void paintEvent(QPaintEvent* event) override;
@@ -120,6 +124,7 @@ protected:
 
 private:
     QRect penRect(int pen) const;
+    int rowHeight() const;
 
     sdk::TileModel* model_;
 };

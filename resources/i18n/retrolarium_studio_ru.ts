@@ -7747,14 +7747,6 @@
         <translation>Тайлы</translation>
     </message>
     <message>
-        <source>Bank %1 · $%2</source>
-        <translation>Банк %1 · $%2</translation>
-    </message>
-    <message>
-        <source>Bank</source>
-        <translation>Банк</translation>
-    </message>
-    <message>
         <source>Colours</source>
         <translation>Цвета</translation>
     </message>
@@ -7795,20 +7787,76 @@
         <translation>Формат</translation>
     </message>
     <message>
-        <source>NES · 2 bits a pixel, 16 bytes a tile</source>
-        <translation>NES · 2 бита на пиксель, 16 байт на тайл</translation>
-    </message>
-    <message>
-        <source>Mega Drive · 4 bits a pixel, 32 bytes a tile</source>
-        <translation>Mega Drive · 4 бита на пиксель, 32 байта на тайл</translation>
-    </message>
-    <message>
-        <source>Raw patterns, as the hardware reads them. Graphics a game packs or compresses show as noise; the colours are a preview, not the game&apos;s palette.</source>
-        <translation>Сырые шаблоны, как их читает железо. Графика, которую игра пакует или сжимает, выглядит как шум; цвета — предпросмотр, а не палитра игры.</translation>
-    </message>
-    <message>
         <source>Tile $%1 · $%2</source>
         <translation>Тайл $%1 · $%2</translation>
+    </message>
+    <message>
+        <source>1 bit a pixel</source>
+        <translation>1 бит на пиксель</translation>
+    </message>
+    <message>
+        <source>NES · 2 bits a pixel</source>
+        <translation>NES · 2 бита на пиксель</translation>
+    </message>
+    <message>
+        <source>Game Boy, SNES · 2 bits a pixel</source>
+        <translation>Game Boy, SNES · 2 бита на пиксель</translation>
+    </message>
+    <message>
+        <source>SNES, PC Engine · 4 bits a pixel</source>
+        <translation>SNES, PC Engine · 4 бита на пиксель</translation>
+    </message>
+    <message>
+        <source>Mega Drive · 4 bits a pixel</source>
+        <translation>Mega Drive · 4 бита на пиксель</translation>
+    </message>
+    <message>
+        <source>Game Boy Advance · 4 bits a pixel</source>
+        <translation>Game Boy Advance · 4 бита на пиксель</translation>
+    </message>
+    <message>
+        <source>8 bits a pixel</source>
+        <translation>8 бит на пиксель</translation>
+    </message>
+    <message>
+        <source>%1 (detected)</source>
+        <translation>%1 (определён)</translation>
+    </message>
+    <message>
+        <source>Start of the file</source>
+        <translation>Начало файла</translation>
+    </message>
+    <message>
+        <source>Section</source>
+        <translation>Раздел</translation>
+    </message>
+    <message>
+        <source>Vivid</source>
+        <translation>Яркие</translation>
+    </message>
+    <message>
+        <source>%1, %2 bytes a tile</source>
+        <translation>%1, байт на тайл: %2</translation>
+    </message>
+    <message>
+        <source>Raw patterns, as the hardware reads them. The sections are runs of bytes that read as pictures in this format; graphics a game packs or compresses show as noise, and the colours are a preview, not the game&apos;s palette.</source>
+        <translation>Сырые шаблоны, как их читает железо. Разделы — участки байтов, которые в этом формате читаются как картинки; графика, которую игра пакует или сжимает, выглядит как шум, а цвета — предпросмотр, а не палитра игры.</translation>
+    </message>
+    <message numerus="yes">
+        <source>CHR ROM · $%1 · %n tiles</source>
+        <translation>
+            <numerusform>CHR ROM · $%1 · %n тайл</numerusform>
+            <numerusform>CHR ROM · $%1 · %n тайла</numerusform>
+            <numerusform>CHR ROM · $%1 · %n тайлов</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>$%1 · %n tiles</source>
+        <translation>
+            <numerusform>$%1 · %n тайл</numerusform>
+            <numerusform>$%1 · %n тайла</numerusform>
+            <numerusform>$%1 · %n тайлов</numerusform>
+        </translation>
     </message>
 </context>
 <context>

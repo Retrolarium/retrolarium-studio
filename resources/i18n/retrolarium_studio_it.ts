@@ -7716,14 +7716,6 @@
         <translation>Tile</translation>
     </message>
     <message>
-        <source>Bank %1 · $%2</source>
-        <translation>Banco %1 · $%2</translation>
-    </message>
-    <message>
-        <source>Bank</source>
-        <translation>Banco</translation>
-    </message>
-    <message>
         <source>Colours</source>
         <translation>Colori</translation>
     </message>
@@ -7764,20 +7756,74 @@
         <translation>Formato</translation>
     </message>
     <message>
-        <source>NES · 2 bits a pixel, 16 bytes a tile</source>
-        <translation>NES · 2 bit per pixel, 16 byte per tile</translation>
-    </message>
-    <message>
-        <source>Mega Drive · 4 bits a pixel, 32 bytes a tile</source>
-        <translation>Mega Drive · 4 bit per pixel, 32 byte per tile</translation>
-    </message>
-    <message>
-        <source>Raw patterns, as the hardware reads them. Graphics a game packs or compresses show as noise; the colours are a preview, not the game&apos;s palette.</source>
-        <translation>Pattern grezzi, come li legge l&apos;hardware. La grafica che un gioco impacchetta o comprime appare come rumore; i colori sono un&apos;anteprima, non la palette del gioco.</translation>
-    </message>
-    <message>
         <source>Tile $%1 · $%2</source>
         <translation>Tile $%1 · $%2</translation>
+    </message>
+    <message>
+        <source>1 bit a pixel</source>
+        <translation>1 bit per pixel</translation>
+    </message>
+    <message>
+        <source>NES · 2 bits a pixel</source>
+        <translation>NES · 2 bit per pixel</translation>
+    </message>
+    <message>
+        <source>Game Boy, SNES · 2 bits a pixel</source>
+        <translation>Game Boy, SNES · 2 bit per pixel</translation>
+    </message>
+    <message>
+        <source>SNES, PC Engine · 4 bits a pixel</source>
+        <translation>SNES, PC Engine · 4 bit per pixel</translation>
+    </message>
+    <message>
+        <source>Mega Drive · 4 bits a pixel</source>
+        <translation>Mega Drive · 4 bit per pixel</translation>
+    </message>
+    <message>
+        <source>Game Boy Advance · 4 bits a pixel</source>
+        <translation>Game Boy Advance · 4 bit per pixel</translation>
+    </message>
+    <message>
+        <source>8 bits a pixel</source>
+        <translation>8 bit per pixel</translation>
+    </message>
+    <message>
+        <source>%1 (detected)</source>
+        <translation>%1 (rilevato)</translation>
+    </message>
+    <message>
+        <source>Start of the file</source>
+        <translation>Inizio del file</translation>
+    </message>
+    <message>
+        <source>Section</source>
+        <translation>Sezione</translation>
+    </message>
+    <message>
+        <source>Vivid</source>
+        <translation>Vivaci</translation>
+    </message>
+    <message>
+        <source>%1, %2 bytes a tile</source>
+        <translation>%1, %2 byte per tile</translation>
+    </message>
+    <message>
+        <source>Raw patterns, as the hardware reads them. The sections are runs of bytes that read as pictures in this format; graphics a game packs or compresses show as noise, and the colours are a preview, not the game&apos;s palette.</source>
+        <translation>Pattern grezzi, come li legge l&apos;hardware. Le sezioni sono tratti di byte che in questo formato si leggono come immagini; la grafica che un gioco impacchetta o comprime appare come rumore, e i colori sono un&apos;anteprima, non la palette del gioco.</translation>
+    </message>
+    <message numerus="yes">
+        <source>CHR ROM · $%1 · %n tiles</source>
+        <translation>
+            <numerusform>CHR ROM · $%1 · %n tile</numerusform>
+            <numerusform>CHR ROM · $%1 · %n tile</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>$%1 · %n tiles</source>
+        <translation>
+            <numerusform>$%1 · %n tile</numerusform>
+            <numerusform>$%1 · %n tile</numerusform>
+        </translation>
     </message>
 </context>
 <context>

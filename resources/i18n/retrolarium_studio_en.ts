@@ -273,6 +273,23 @@
     </message>
 </context>
 <context>
+    <name>rl::rom::RomTileModel</name>
+    <message numerus="yes">
+        <source>CHR ROM · $%1 · %n tiles</source>
+        <translation>
+            <numerusform>CHR ROM · $%1 · %n tile</numerusform>
+            <numerusform>CHR ROM · $%1 · %n tiles</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>$%1 · %n tiles</source>
+        <translation>
+            <numerusform>$%1 · %n tile</numerusform>
+            <numerusform>$%1 · %n tiles</numerusform>
+        </translation>
+    </message>
+</context>
+<context>
     <name>rl::shell::BottomPanel</name>
     <message numerus="yes">
         <source>%n errors</source>

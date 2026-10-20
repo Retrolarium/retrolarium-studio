@@ -7747,14 +7747,6 @@
         <translation>Kafelki</translation>
     </message>
     <message>
-        <source>Bank %1 · $%2</source>
-        <translation>Bank %1 · $%2</translation>
-    </message>
-    <message>
-        <source>Bank</source>
-        <translation>Bank</translation>
-    </message>
-    <message>
         <source>Colours</source>
         <translation>Kolory</translation>
     </message>
@@ -7795,20 +7787,76 @@
         <translation>Format</translation>
     </message>
     <message>
-        <source>NES · 2 bits a pixel, 16 bytes a tile</source>
-        <translation>NES · 2 bity na piksel, 16 bajtów na kafelek</translation>
-    </message>
-    <message>
-        <source>Mega Drive · 4 bits a pixel, 32 bytes a tile</source>
-        <translation>Mega Drive · 4 bity na piksel, 32 bajty na kafelek</translation>
-    </message>
-    <message>
-        <source>Raw patterns, as the hardware reads them. Graphics a game packs or compresses show as noise; the colours are a preview, not the game&apos;s palette.</source>
-        <translation>Surowe wzory, tak jak czyta je sprzęt. Grafika, którą gra pakuje lub kompresuje, wygląda jak szum; kolory to podgląd, nie paleta gry.</translation>
-    </message>
-    <message>
         <source>Tile $%1 · $%2</source>
         <translation>Kafelek $%1 · $%2</translation>
+    </message>
+    <message>
+        <source>1 bit a pixel</source>
+        <translation>1 bit na piksel</translation>
+    </message>
+    <message>
+        <source>NES · 2 bits a pixel</source>
+        <translation>NES · 2 bity na piksel</translation>
+    </message>
+    <message>
+        <source>Game Boy, SNES · 2 bits a pixel</source>
+        <translation>Game Boy, SNES · 2 bity na piksel</translation>
+    </message>
+    <message>
+        <source>SNES, PC Engine · 4 bits a pixel</source>
+        <translation>SNES, PC Engine · 4 bity na piksel</translation>
+    </message>
+    <message>
+        <source>Mega Drive · 4 bits a pixel</source>
+        <translation>Mega Drive · 4 bity na piksel</translation>
+    </message>
+    <message>
+        <source>Game Boy Advance · 4 bits a pixel</source>
+        <translation>Game Boy Advance · 4 bity na piksel</translation>
+    </message>
+    <message>
+        <source>8 bits a pixel</source>
+        <translation>8 bitów na piksel</translation>
+    </message>
+    <message>
+        <source>%1 (detected)</source>
+        <translation>%1 (wykryty)</translation>
+    </message>
+    <message>
+        <source>Start of the file</source>
+        <translation>Początek pliku</translation>
+    </message>
+    <message>
+        <source>Section</source>
+        <translation>Sekcja</translation>
+    </message>
+    <message>
+        <source>Vivid</source>
+        <translation>Żywe</translation>
+    </message>
+    <message>
+        <source>%1, %2 bytes a tile</source>
+        <translation>%1, bajtów na kafelek: %2</translation>
+    </message>
+    <message>
+        <source>Raw patterns, as the hardware reads them. The sections are runs of bytes that read as pictures in this format; graphics a game packs or compresses show as noise, and the colours are a preview, not the game&apos;s palette.</source>
+        <translation>Surowe wzory, tak jak czyta je sprzęt. Sekcje to ciągi bajtów, które w tym formacie wyglądają jak obrazki; grafika, którą gra pakuje lub kompresuje, wygląda jak szum, a kolory to podgląd, nie paleta gry.</translation>
+    </message>
+    <message numerus="yes">
+        <source>CHR ROM · $%1 · %n tiles</source>
+        <translation>
+            <numerusform>CHR ROM · $%1 · %n kafelek</numerusform>
+            <numerusform>CHR ROM · $%1 · %n kafelki</numerusform>
+            <numerusform>CHR ROM · $%1 · %n kafelków</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>$%1 · %n tiles</source>
+        <translation>
+            <numerusform>$%1 · %n kafelek</numerusform>
+            <numerusform>$%1 · %n kafelki</numerusform>
+            <numerusform>$%1 · %n kafelków</numerusform>
+        </translation>
     </message>
 </context>
 <context>

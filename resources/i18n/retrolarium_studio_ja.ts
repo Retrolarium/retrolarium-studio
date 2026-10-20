@@ -7685,14 +7685,6 @@
         <translation>タイル</translation>
     </message>
     <message>
-        <source>Bank %1 · $%2</source>
-        <translation>バンク %1 · $%2</translation>
-    </message>
-    <message>
-        <source>Bank</source>
-        <translation>バンク</translation>
-    </message>
-    <message>
         <source>Colours</source>
         <translation>色</translation>
     </message>
@@ -7733,20 +7725,72 @@
         <translation>形式</translation>
     </message>
     <message>
-        <source>NES · 2 bits a pixel, 16 bytes a tile</source>
-        <translation>NES · 1 ピクセル 2 ビット、1 タイル 16 バイト</translation>
-    </message>
-    <message>
-        <source>Mega Drive · 4 bits a pixel, 32 bytes a tile</source>
-        <translation>メガドライブ · 1 ピクセル 4 ビット、1 タイル 32 バイト</translation>
-    </message>
-    <message>
-        <source>Raw patterns, as the hardware reads them. Graphics a game packs or compresses show as noise; the colours are a preview, not the game&apos;s palette.</source>
-        <translation>ハードウェアが読むままの生のパターンです。ゲームが圧縮したグラフィックはノイズに見えます。色はプレビューで、ゲームのパレットではありません。</translation>
-    </message>
-    <message>
         <source>Tile $%1 · $%2</source>
         <translation>タイル $%1 · $%2</translation>
+    </message>
+    <message>
+        <source>1 bit a pixel</source>
+        <translation>1 ピクセル 1 ビット</translation>
+    </message>
+    <message>
+        <source>NES · 2 bits a pixel</source>
+        <translation>NES · 1 ピクセル 2 ビット</translation>
+    </message>
+    <message>
+        <source>Game Boy, SNES · 2 bits a pixel</source>
+        <translation>ゲームボーイ、SNES · 1 ピクセル 2 ビット</translation>
+    </message>
+    <message>
+        <source>SNES, PC Engine · 4 bits a pixel</source>
+        <translation>SNES、PC エンジン · 1 ピクセル 4 ビット</translation>
+    </message>
+    <message>
+        <source>Mega Drive · 4 bits a pixel</source>
+        <translation>メガドライブ · 1 ピクセル 4 ビット</translation>
+    </message>
+    <message>
+        <source>Game Boy Advance · 4 bits a pixel</source>
+        <translation>ゲームボーイアドバンス · 1 ピクセル 4 ビット</translation>
+    </message>
+    <message>
+        <source>8 bits a pixel</source>
+        <translation>1 ピクセル 8 ビット</translation>
+    </message>
+    <message>
+        <source>%1 (detected)</source>
+        <translation>%1（検出）</translation>
+    </message>
+    <message>
+        <source>Start of the file</source>
+        <translation>ファイルの先頭</translation>
+    </message>
+    <message>
+        <source>Section</source>
+        <translation>セクション</translation>
+    </message>
+    <message>
+        <source>Vivid</source>
+        <translation>鮮やか</translation>
+    </message>
+    <message>
+        <source>%1, %2 bytes a tile</source>
+        <translation>%1、1 タイル %2 バイト</translation>
+    </message>
+    <message>
+        <source>Raw patterns, as the hardware reads them. The sections are runs of bytes that read as pictures in this format; graphics a game packs or compresses show as noise, and the colours are a preview, not the game&apos;s palette.</source>
+        <translation>ハードウェアが読むままの生のパターンです。セクションは、この形式で絵として読めるバイトの並びです。ゲームが圧縮したグラフィックはノイズに見え、色はプレビューで、ゲームのパレットではありません。</translation>
+    </message>
+    <message numerus="yes">
+        <source>CHR ROM · $%1 · %n tiles</source>
+        <translation>
+            <numerusform>CHR ROM · $%1 · %n タイル</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>$%1 · %n tiles</source>
+        <translation>
+            <numerusform>$%1 · %n タイル</numerusform>
+        </translation>
     </message>
 </context>
 <context>

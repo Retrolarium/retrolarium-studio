@@ -36,8 +36,17 @@ public:
     // The iNES header and trainer before PRG ROM (NES); 0 otherwise.
     int headerSize() const;
     // The raw graphics: NES CHR ROM (or PRG when the cartridge has CHR RAM),
-    // the whole image on a Mega Drive. Offset and length in the file.
+    // the whole image on a Mega Drive or an unknown system. Offset and length
+    // in the file.
     QPair<int, int> graphicsArea() const;
+    // Where the tile view starts counting tiles: after the iNES header.
+    int tileBase() const { return platform_ == QLatin1String("nes") ? headerSize() : 0; }
+    // The tile layout the view opens with (a tiles::formats() id): the
+    // system's own, or for an unknown system the one the bytes look like
+    // most, else Mega Drive-style 4 bits a pixel.
+    QString tileFormat() const;
+    // What the bytes look like (tiles::detect), worked out once.
+    QString detectedTileFormat() const;
 
     // One undo step from the bytes now to `next`.
     void edit(const QString& text, const QByteArray& next);
@@ -57,6 +66,8 @@ private:
     QByteArray original_;
     quint64 revision_ = 0;
     quint64 nextRevision_ = 0;
+    mutable QString detected_;
+    mutable bool detectedKnown_ = false;
 };
 
 }  // namespace rl::rom

@@ -1,6 +1,7 @@
 #include "rom/rom_session.hpp"
 
 #include "rom/rom_models.hpp"
+#include "rom/tile_formats.hpp"
 #include "sdk/i18n.hpp"
 #include "sdk/kit_session.hpp"
 #include "sdk/plugin.hpp"
@@ -84,9 +85,7 @@ sdk::Profile RomSession::profile() const {
 
 QVector<sdk::Kind> RomSession::kinds() const {
     QVector<sdk::Kind> kinds{kind(QStringLiteral("hex"), tr("Hex"), QStringLiteral("text"), sdk::EditorType::Table)};
-    if (!platform_.isEmpty()) {
-        kinds << kind(QStringLiteral("tiles"), tr("Tiles"), QStringLiteral("tiles"), sdk::EditorType::Tile);
-    }
+    kinds << kind(QStringLiteral("tiles"), tr("Tiles"), QStringLiteral("tiles"), sdk::EditorType::Tile);
     kinds << kind(QStringLiteral("header"), tr("Header"), QStringLiteral("levels"), sdk::EditorType::Table);
     if (canPlay()) {
         kinds << kind(QStringLiteral("playtest"), tr("Playtest"), QStringLiteral("playtest"),
@@ -103,8 +102,7 @@ QVector<sdk::DocumentGroup> RomSession::documents(const QString& kind) const {
     if (kind == QLatin1String("hex")) {
         entry.meta = tr("%1 KB").arg(rom_.size() / 1024);
     } else if (kind == QLatin1String("tiles")) {
-        const QPair<int, int> area = graphicsArea();
-        entry.meta = tr("%1 tiles").arg(area.second / (platform_ == QLatin1String("nes") ? 16 : 32));
+        entry.meta = tr("%1 tiles").arg((rom_.size() - tileBase()) / tiles::format(tileFormat()).bytes);
     } else if (kind == QLatin1String("playtest")) {
         entry.label = tr("Run");
         entry.dirty = false;
@@ -120,7 +118,7 @@ QVector<sdk::DocumentGroup> RomSession::documents(const QString& kind) const {
 
 std::unique_ptr<sdk::EditorModel> RomSession::openEditor(const QString& kind, const QString&) {
     if (kind == QLatin1String("hex")) return std::make_unique<HexModel>(this);
-    if (kind == QLatin1String("tiles") && !platform_.isEmpty()) return std::make_unique<RomTileModel>(this);
+    if (kind == QLatin1String("tiles")) return std::make_unique<RomTileModel>(this);
     if (kind == QLatin1String("header")) return std::make_unique<HeaderModel>(this);
     if (kind == QLatin1String("playtest") && canPlay()) return std::make_unique<RomPlaytestModel>(this);
     return nullptr;
@@ -166,6 +164,21 @@ QPair<int, int> RomSession::graphicsArea() const {
         return {header, rom_.size() - header};
     }
     return {0, rom_.size()};
+}
+
+QString RomSession::tileFormat() const {
+    if (platform_ == QLatin1String("nes")) return QStringLiteral("nes");
+    if (platform_ == QLatin1String("megadrive")) return QStringLiteral("md");
+    const QString detected = detectedTileFormat();
+    return detected.isEmpty() ? QStringLiteral("md") : detected;
+}
+
+QString RomSession::detectedTileFormat() const {
+    if (!detectedKnown_) {
+        detected_ = tiles::detect(original_, tileBase());
+        detectedKnown_ = true;
+    }
+    return detected_;
 }
 
 void RomSession::apply(const QByteArray& bytes, quint64 revision) {

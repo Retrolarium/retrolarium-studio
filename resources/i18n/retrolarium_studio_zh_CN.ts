@@ -7685,14 +7685,6 @@
         <translation>图块</translation>
     </message>
     <message>
-        <source>Bank %1 · $%2</source>
-        <translation>存储体 %1 · $%2</translation>
-    </message>
-    <message>
-        <source>Bank</source>
-        <translation>库</translation>
-    </message>
-    <message>
         <source>Colours</source>
         <translation>颜色</translation>
     </message>
@@ -7733,20 +7725,72 @@
         <translation>格式</translation>
     </message>
     <message>
-        <source>NES · 2 bits a pixel, 16 bytes a tile</source>
-        <translation>NES · 每像素 2 位，每图块 16 字节</translation>
-    </message>
-    <message>
-        <source>Mega Drive · 4 bits a pixel, 32 bytes a tile</source>
-        <translation>Mega Drive · 每像素 4 位，每图块 32 字节</translation>
-    </message>
-    <message>
-        <source>Raw patterns, as the hardware reads them. Graphics a game packs or compresses show as noise; the colours are a preview, not the game&apos;s palette.</source>
-        <translation>硬件读取的原始图案。游戏打包或压缩的图形会显示为噪点；颜色只是预览，不是游戏的调色板。</translation>
-    </message>
-    <message>
         <source>Tile $%1 · $%2</source>
         <translation>图块 $%1 · $%2</translation>
+    </message>
+    <message>
+        <source>1 bit a pixel</source>
+        <translation>每像素 1 位</translation>
+    </message>
+    <message>
+        <source>NES · 2 bits a pixel</source>
+        <translation>NES · 每像素 2 位</translation>
+    </message>
+    <message>
+        <source>Game Boy, SNES · 2 bits a pixel</source>
+        <translation>Game Boy、SNES · 每像素 2 位</translation>
+    </message>
+    <message>
+        <source>SNES, PC Engine · 4 bits a pixel</source>
+        <translation>SNES、PC Engine · 每像素 4 位</translation>
+    </message>
+    <message>
+        <source>Mega Drive · 4 bits a pixel</source>
+        <translation>Mega Drive · 每像素 4 位</translation>
+    </message>
+    <message>
+        <source>Game Boy Advance · 4 bits a pixel</source>
+        <translation>Game Boy Advance · 每像素 4 位</translation>
+    </message>
+    <message>
+        <source>8 bits a pixel</source>
+        <translation>每像素 8 位</translation>
+    </message>
+    <message>
+        <source>%1 (detected)</source>
+        <translation>%1（已识别）</translation>
+    </message>
+    <message>
+        <source>Start of the file</source>
+        <translation>文件开头</translation>
+    </message>
+    <message>
+        <source>Section</source>
+        <translation>区段</translation>
+    </message>
+    <message>
+        <source>Vivid</source>
+        <translation>鲜艳</translation>
+    </message>
+    <message>
+        <source>%1, %2 bytes a tile</source>
+        <translation>%1，每图块 %2 字节</translation>
+    </message>
+    <message>
+        <source>Raw patterns, as the hardware reads them. The sections are runs of bytes that read as pictures in this format; graphics a game packs or compresses show as noise, and the colours are a preview, not the game&apos;s palette.</source>
+        <translation>硬件读取的原始图案。区段是在此格式下读起来像图片的连续字节；游戏打包或压缩的图形会显示为噪点，颜色只是预览，不是游戏的调色板。</translation>
+    </message>
+    <message numerus="yes">
+        <source>CHR ROM · $%1 · %n tiles</source>
+        <translation>
+            <numerusform>CHR ROM · $%1 · %n 个图块</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>$%1 · %n tiles</source>
+        <translation>
+            <numerusform>$%1 · %n 个图块</numerusform>
+        </translation>
     </message>
 </context>
 <context>

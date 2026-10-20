@@ -10,6 +10,7 @@
 
 #include <QHBoxLayout>
 #include <QHash>
+#include <QImage>
 #include <QKeyEvent>
 #include <QMouseEvent>
 #include <QPainter>
@@ -53,40 +54,19 @@ TileAtlas::TileAtlas(sdk::TileModel* model, QWidget* parent) : QWidget(parent), 
     connect(model_, &sdk::EditorModel::contentChanged, this, &TileAtlas::refresh);
     connect(model_, &sdk::EditorModel::selectionChanged, this, qOverload<>(&QWidget::update));
     connect(model_, &sdk::EditorModel::toolsChanged, this, &TileAtlas::refresh);
-    renderNow();
+    setFixedSize(sizeHint());
 }
 
 void TileAtlas::refresh() {
-    if (renderPending_) {
+    if (refreshPending_) {
         return;
     }
-    renderPending_ = true;
+    refreshPending_ = true;
     QTimer::singleShot(0, this, [this] {
-        renderPending_ = false;
-        renderNow();
+        refreshPending_ = false;
+        setFixedSize(sizeHint());
+        update();
     });
-}
-
-void TileAtlas::renderNow() {
-    const int count = model_->tileCount();
-    const QSize size = model_->tileSize();
-    const int rows = std::max(1, (count + kColumns - 1) / kColumns);
-    image_ = QImage(kColumns * size.width(), rows * size.height(), QImage::Format_RGB32);
-    image_.fill(QColor(0x0e, 0x10, 0x12));
-    const QVector<QColor> colors = model_->penColors();
-    const int area = size.width() * size.height();
-    for (int tile = 0; tile < count; ++tile) {
-        const QVector<quint8> pixels = model_->tilePixels(tile);
-        const int ox = (tile % kColumns) * size.width();
-        const int oy = (tile / kColumns) * size.height();
-        for (int i = 0; i < area && i < pixels.size(); ++i) {
-            const int pen = pixels.at(i);
-            image_.setPixel(ox + i % size.width(), oy + i / size.width(),
-                            (pen < colors.size() ? colors.at(pen) : QColor(Qt::black)).rgb());
-        }
-    }
-    setFixedSize(sizeHint());
-    update();
 }
 
 int TileAtlas::cellHeight() const {
@@ -107,14 +87,23 @@ void TileAtlas::paintEvent(QPaintEvent* event) {
     const QRect dirty = event->rect();
     const QSize size = model_->tileSize();
     const int height = cellHeight();
-    for (int tile = 0; tile < count; ++tile) {
+    QVector<QRgb> colors;
+    for (const QColor& color : model_->penColors()) colors.append(color.rgb());
+    QImage image(size, QImage::Format_RGB32);
+    // Only the rows in view: a ROM's worth of tiles is too many to draw.
+    const int firstRow = std::max(0, dirty.top() / height);
+    const int lastRow = dirty.bottom() / height;
+    for (int tile = firstRow * kColumns; tile < count && tile < (lastRow + 1) * kColumns; ++tile) {
         const QRect cell((tile % kColumns) * kCell, (tile / kColumns) * height, kCell, height);
         if (!cell.intersects(dirty)) {
             continue;
         }
-        const QRect source((tile % kColumns) * size.width(), (tile / kColumns) * size.height(), size.width(),
-                           size.height());
-        painter.drawImage(cell.adjusted(1, 1, -1, -1), image_, source);
+        const QVector<quint8> pixels = model_->tilePixels(tile);
+        for (int i = 0; i < size.width() * size.height(); ++i) {
+            const int pen = i < pixels.size() ? pixels.at(i) : 0;
+            image.setPixel(i % size.width(), i / size.width(), pen < colors.size() ? colors.at(pen) : qRgb(0, 0, 0));
+        }
+        painter.drawImage(cell.adjusted(1, 1, -1, -1), image);
         if (model_->isTileDirty(tile)) {
             painter.fillRect(QRect(cell.left() + 2, cell.top() + 2, 4, 4), t.accent);
         }
@@ -295,24 +284,32 @@ PenRow::PenRow(sdk::TileModel* model, QWidget* parent) : QWidget(parent), model_
     connect(model_, &sdk::EditorModel::selectionChanged, this, qOverload<>(&QWidget::update));
     connect(model_, &sdk::EditorModel::toolsChanged, this, qOverload<>(&QWidget::update));
     connect(model_, &sdk::EditorModel::contentChanged, this, qOverload<>(&QWidget::update));
+    // Another tile depth brings another number of pens.
+    connect(model_, &sdk::EditorModel::toolsChanged, this, [this] { setFixedSize(sizeHint()); });
+}
+
+int PenRow::rowHeight() const {
+    return model_->penCount() > kColumns ? kShortHeight : kHeight;
 }
 
 QSize PenRow::sizeHint() const {
-    return QSize(kWidth + 6, kHeight + 6);
+    const int rows = (std::max(1, model_->penCount()) + kColumns - 1) / kColumns;
+    return QSize(kWidth + 6, rows * rowHeight() + (rows - 1) * 3 + 6);
 }
 
 QRect PenRow::penRect(int pen) const {
-    const int count = std::max(1, model_->penCount());
+    const int columns = std::clamp(model_->penCount(), 1, int(kColumns));
     const int gap = 3;
-    const double width = (kWidth - gap * (count - 1)) / static_cast<double>(count);
-    const int left = static_cast<int>(pen * (width + gap));
-    const int right = static_cast<int>((pen + 1) * (width + gap) - gap);
-    return QRect(3 + left, 3, right - left, kHeight);
+    const double width = (kWidth - gap * (columns - 1)) / static_cast<double>(columns);
+    const int column = pen % columns;
+    const int left = static_cast<int>(column * (width + gap));
+    const int right = static_cast<int>((column + 1) * (width + gap) - gap);
+    return QRect(3 + left, 3 + (pen / columns) * (rowHeight() + gap), right - left, rowHeight());
 }
 
 void PenRow::paintEvent(QPaintEvent*) {
     QPainter painter(this);
-    painter.setFont(theme::font(theme::TextRole::Mono, 10.0));
+    painter.setFont(theme::font(theme::TextRole::Mono, model_->penCount() > kColumns ? 8.0 : 10.0));
     const QVector<QColor> colors = model_->penColors();
     for (int pen = 0; pen < model_->penCount(); ++pen) {
         const QRect r = penRect(pen);
@@ -387,12 +384,29 @@ TileEditor::TileEditor(sdk::TileModel* model, QWidget* parent)
 
     connect(canvas_, &PixelCanvas::actionFailed, this, &EditorView::actionFailed);
     connect(tiles_, &sdk::EditorModel::toolsChanged, this, &EditorView::toolbarChanged);
-    // Keep the selected tile in view when it changes from the keyboard.
-    connect(tiles_, &sdk::EditorModel::selectionChanged, this, [scroll, this] {
-        const int tile = tiles_->currentTile();
-        const int y = (tile / TileAtlas::kColumns) * atlas_->cellHeight();
-        scroll->ensureVisible(0, y + atlas_->cellHeight() / 2, 0, atlas_->cellHeight());
-    });
+    scroll_ = scroll;
+    connect(tiles_, &sdk::EditorModel::selectionChanged, this, &TileEditor::showCurrentTile);
+    // A model may open on a tile far down (a ROM's graphics): once laid out.
+    QTimer::singleShot(0, this, &TileEditor::showCurrentTile);
+}
+
+void TileEditor::showCurrentTile() {
+    // A step from the keyboard scrolls a row; a tile further away (a jump
+    // to a section) comes in as the top row.
+    const int height = atlas_->cellHeight();
+    const int y = (tiles_->currentTile() / TileAtlas::kColumns) * height;
+    QScrollBar* bar = scroll_->verticalScrollBar();
+    const int top = bar->value();
+    const int bottom = top + scroll_->viewport()->height();
+    if (y >= top && y + height <= bottom) {
+        return;
+    }
+    if (y + height > top - height && y < bottom + height) {
+        scroll_->ensureVisible(0, y + height / 2, 0, height);
+        return;
+    }
+    atlas_->setFixedSize(atlas_->sizeHint());
+    bar->setValue(y);
 }
 
 void TileEditor::chooseTool(const QString& id) {

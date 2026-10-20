@@ -7716,14 +7716,6 @@
         <translation>Tiles</translation>
     </message>
     <message>
-        <source>Bank %1 · $%2</source>
-        <translation>Banco %1 · $%2</translation>
-    </message>
-    <message>
-        <source>Bank</source>
-        <translation>Banco</translation>
-    </message>
-    <message>
         <source>Colours</source>
         <translation>Colores</translation>
     </message>
@@ -7764,20 +7756,74 @@
         <translation>Formato</translation>
     </message>
     <message>
-        <source>NES · 2 bits a pixel, 16 bytes a tile</source>
-        <translation>NES · 2 bits por píxel, 16 bytes por tesela</translation>
-    </message>
-    <message>
-        <source>Mega Drive · 4 bits a pixel, 32 bytes a tile</source>
-        <translation>Mega Drive · 4 bits por píxel, 32 bytes por tesela</translation>
-    </message>
-    <message>
-        <source>Raw patterns, as the hardware reads them. Graphics a game packs or compresses show as noise; the colours are a preview, not the game&apos;s palette.</source>
-        <translation>Patrones en bruto, tal como los lee el hardware. Los gráficos que un juego empaqueta o comprime se ven como ruido; los colores son una vista previa, no la paleta del juego.</translation>
-    </message>
-    <message>
         <source>Tile $%1 · $%2</source>
         <translation>Tesela $%1 · $%2</translation>
+    </message>
+    <message>
+        <source>1 bit a pixel</source>
+        <translation>1 bit por píxel</translation>
+    </message>
+    <message>
+        <source>NES · 2 bits a pixel</source>
+        <translation>NES · 2 bits por píxel</translation>
+    </message>
+    <message>
+        <source>Game Boy, SNES · 2 bits a pixel</source>
+        <translation>Game Boy, SNES · 2 bits por píxel</translation>
+    </message>
+    <message>
+        <source>SNES, PC Engine · 4 bits a pixel</source>
+        <translation>SNES, PC Engine · 4 bits por píxel</translation>
+    </message>
+    <message>
+        <source>Mega Drive · 4 bits a pixel</source>
+        <translation>Mega Drive · 4 bits por píxel</translation>
+    </message>
+    <message>
+        <source>Game Boy Advance · 4 bits a pixel</source>
+        <translation>Game Boy Advance · 4 bits por píxel</translation>
+    </message>
+    <message>
+        <source>8 bits a pixel</source>
+        <translation>8 bits por píxel</translation>
+    </message>
+    <message>
+        <source>%1 (detected)</source>
+        <translation>%1 (detectado)</translation>
+    </message>
+    <message>
+        <source>Start of the file</source>
+        <translation>Inicio del archivo</translation>
+    </message>
+    <message>
+        <source>Section</source>
+        <translation>Sección</translation>
+    </message>
+    <message>
+        <source>Vivid</source>
+        <translation>Vivo</translation>
+    </message>
+    <message>
+        <source>%1, %2 bytes a tile</source>
+        <translation>%1, %2 bytes por tesela</translation>
+    </message>
+    <message>
+        <source>Raw patterns, as the hardware reads them. The sections are runs of bytes that read as pictures in this format; graphics a game packs or compresses show as noise, and the colours are a preview, not the game&apos;s palette.</source>
+        <translation>Patrones en bruto, tal como los lee el hardware. Las secciones son tramos de bytes que en este formato se leen como imágenes; los gráficos que un juego empaqueta o comprime se ven como ruido, y los colores son una vista previa, no la paleta del juego.</translation>
+    </message>
+    <message numerus="yes">
+        <source>CHR ROM · $%1 · %n tiles</source>
+        <translation>
+            <numerusform>CHR ROM · $%1 · %n tesela</numerusform>
+            <numerusform>CHR ROM · $%1 · %n teselas</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>$%1 · %n tiles</source>
+        <translation>
+            <numerusform>$%1 · %n tesela</numerusform>
+            <numerusform>$%1 · %n teselas</numerusform>
+        </translation>
     </message>
 </context>
 <context>
