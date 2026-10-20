@@ -4407,10 +4407,6 @@
         <translation>已暂停</translation>
     </message>
     <message>
-        <source>Running · arrows, Z X, Enter, right Shift or a game pad · hold Tab to fast-forward</source>
-        <translation>运行中 · 方向键、Z X、Enter、右 Shift 或手柄 · 按住 Tab 快进</translation>
-    </message>
-    <message>
         <source>Running · click the picture for the keyboard</source>
         <translation>运行中 · 单击画面以使用键盘</translation>
     </message>
@@ -4433,6 +4429,10 @@
     <message>
         <source>Slot %1</source>
         <translation>槽 %1</translation>
+    </message>
+    <message>
+        <source>Running · arrows, Z X, Enter, right Shift or a game pad · hold Tab to fast-forward · Backspace rewinds</source>
+        <translation>运行中 · 方向键、Z X、Enter、右 Shift 或手柄 · 按住 Tab 快进 · Backspace 倒回</translation>
     </message>
 </context>
 <context>
@@ -7677,6 +7677,20 @@
         <source>The kit returned no emulator command.</source>
         <translation>工具包没有返回模拟器命令。</translation>
     </message>
+    <message>
+        <source>Whole ROM</source>
+        <translation>整个 ROM</translation>
+    </message>
+    <message>
+        <source>Tiles %1</source>
+        <translation>图块 %1</translation>
+    </message>
+    <message numerus="yes">
+        <source>$%1 · %n tiles</source>
+        <translation>
+            <numerusform>$%1 · %n 个图块</numerusform>
+        </translation>
+    </message>
 </context>
 <context>
     <name>rl::rom::RomTileModel</name>
@@ -7761,14 +7775,6 @@
         <translation>%1（已识别）</translation>
     </message>
     <message>
-        <source>Start of the file</source>
-        <translation>文件开头</translation>
-    </message>
-    <message>
-        <source>Section</source>
-        <translation>区段</translation>
-    </message>
-    <message>
         <source>Vivid</source>
         <translation>鲜艳</translation>
     </message>
@@ -7777,20 +7783,8 @@
         <translation>%1，每图块 %2 字节</translation>
     </message>
     <message>
-        <source>Raw patterns, as the hardware reads them. The sections are runs of bytes that read as pictures in this format; graphics a game packs or compresses show as noise, and the colours are a preview, not the game&apos;s palette.</source>
-        <translation>硬件读取的原始图案。区段是在此格式下读起来像图片的连续字节；游戏打包或压缩的图形会显示为噪点，颜色只是预览，不是游戏的调色板。</translation>
-    </message>
-    <message numerus="yes">
-        <source>CHR ROM · $%1 · %n tiles</source>
-        <translation>
-            <numerusform>CHR ROM · $%1 · %n 个图块</numerusform>
-        </translation>
-    </message>
-    <message numerus="yes">
-        <source>$%1 · %n tiles</source>
-        <translation>
-            <numerusform>$%1 · %n 个图块</numerusform>
-        </translation>
+        <source>Raw patterns, as the hardware reads them. The tile groups after the whole ROM are runs of bytes that read as pictures; graphics a game packs or compresses show as noise, and the colours are a preview, not the game&apos;s palette.</source>
+        <translation>硬件读取的原始图案。“整个 ROM”下方的图块组是读起来像图片的连续字节；游戏打包或压缩的图形会显示为噪点，颜色只是预览，不是游戏的调色板。</translation>
     </message>
 </context>
 <context>

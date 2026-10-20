@@ -4422,10 +4422,6 @@
         <translation>En pausa</translation>
     </message>
     <message>
-        <source>Running · arrows, Z X, Enter, right Shift or a game pad · hold Tab to fast-forward</source>
-        <translation>En marcha · flechas, Z X, Intro, Mayús derecha o un mando · mantén Tab para avanzar rápido</translation>
-    </message>
-    <message>
         <source>Running · click the picture for the keyboard</source>
         <translation>En marcha · haz clic en la imagen para usar el teclado</translation>
     </message>
@@ -4448,6 +4444,10 @@
     <message>
         <source>Slot %1</source>
         <translation>Ranura %1</translation>
+    </message>
+    <message>
+        <source>Running · arrows, Z X, Enter, right Shift or a game pad · hold Tab to fast-forward · Backspace rewinds</source>
+        <translation>En marcha · flechas, Z X, Intro, Mayús derecha o un mando · mantén Tab para avanzar rápido · Retroceso rebobina</translation>
     </message>
 </context>
 <context>
@@ -7708,6 +7708,21 @@
         <source>The kit returned no emulator command.</source>
         <translation>El kit no devolvió ningún comando de emulador.</translation>
     </message>
+    <message>
+        <source>Whole ROM</source>
+        <translation>ROM completa</translation>
+    </message>
+    <message>
+        <source>Tiles %1</source>
+        <translation>Teselas %1</translation>
+    </message>
+    <message numerus="yes">
+        <source>$%1 · %n tiles</source>
+        <translation>
+            <numerusform>$%1 · %n tesela</numerusform>
+            <numerusform>$%1 · %n teselas</numerusform>
+        </translation>
+    </message>
 </context>
 <context>
     <name>rl::rom::RomTileModel</name>
@@ -7792,14 +7807,6 @@
         <translation>%1 (detectado)</translation>
     </message>
     <message>
-        <source>Start of the file</source>
-        <translation>Inicio del archivo</translation>
-    </message>
-    <message>
-        <source>Section</source>
-        <translation>Sección</translation>
-    </message>
-    <message>
         <source>Vivid</source>
         <translation>Vivo</translation>
     </message>
@@ -7808,22 +7815,8 @@
         <translation>%1, %2 bytes por tesela</translation>
     </message>
     <message>
-        <source>Raw patterns, as the hardware reads them. The sections are runs of bytes that read as pictures in this format; graphics a game packs or compresses show as noise, and the colours are a preview, not the game&apos;s palette.</source>
-        <translation>Patrones en bruto, tal como los lee el hardware. Las secciones son tramos de bytes que en este formato se leen como imágenes; los gráficos que un juego empaqueta o comprime se ven como ruido, y los colores son una vista previa, no la paleta del juego.</translation>
-    </message>
-    <message numerus="yes">
-        <source>CHR ROM · $%1 · %n tiles</source>
-        <translation>
-            <numerusform>CHR ROM · $%1 · %n tesela</numerusform>
-            <numerusform>CHR ROM · $%1 · %n teselas</numerusform>
-        </translation>
-    </message>
-    <message numerus="yes">
-        <source>$%1 · %n tiles</source>
-        <translation>
-            <numerusform>$%1 · %n tesela</numerusform>
-            <numerusform>$%1 · %n teselas</numerusform>
-        </translation>
+        <source>Raw patterns, as the hardware reads them. The tile groups after the whole ROM are runs of bytes that read as pictures; graphics a game packs or compresses show as noise, and the colours are a preview, not the game&apos;s palette.</source>
+        <translation>Patrones en bruto, tal como los lee el hardware. Los grupos de teselas bajo la ROM completa son tramos de bytes que se leen como imágenes; los gráficos que un juego empaqueta o comprime se ven como ruido, y los colores son una vista previa, no la paleta del juego.</translation>
     </message>
 </context>
 <context>

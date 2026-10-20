@@ -1,5 +1,6 @@
 #pragma once
 
+#include "rom/tile_formats.hpp"
 #include "sdk/project_file.hpp"
 #include "sdk/session.hpp"
 
@@ -47,6 +48,19 @@ public:
     QString tileFormat() const;
     // What the bytes look like (tiles::detect), worked out once.
     QString detectedTileFormat() const;
+    // The sets of tiles the Tiles view lists after the whole ROM, worked out
+    // once: the NES CHR ROM bank by bank, else the groups tiles::groups finds
+    // (a Mega Drive's in 4 bits a pixel after its header, any other system's
+    // in every layout).
+    QVector<tiles::Group> tileGroups() const;
+    // The bytes a Tiles document shows, from `offset` on, and its layout:
+    // "all" is the whole ROM, "group-<n>" a tile group.
+    struct TileRange {
+        int offset = 0;
+        int length = 0;
+        QString format;
+    };
+    TileRange tileRange(const QString& document) const;
 
     // One undo step from the bytes now to `next`.
     void edit(const QString& text, const QByteArray& next);
@@ -68,6 +82,8 @@ private:
     quint64 nextRevision_ = 0;
     mutable QString detected_;
     mutable bool detectedKnown_ = false;
+    mutable QVector<tiles::Group> groups_;
+    mutable bool groupsKnown_ = false;
 };
 
 }  // namespace rl::rom

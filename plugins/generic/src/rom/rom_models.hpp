@@ -36,15 +36,15 @@ private:
     int row_ = 0;
 };
 
-// Raw 8x8 patterns across the whole file, in a layout chosen from
-// tiles::formats() (the system's own, or the one the bytes look like most),
-// with the runs that read as pictures listed to jump to. Graphics the game
-// packs or compresses do not show here.
+// Raw 8x8 patterns of one Tiles document (the whole file, or one tile group
+// the session found) in a layout chosen from tiles::formats(): the system's
+// own or the group's to begin with. Graphics the game packs or compresses do
+// not show here.
 class RomTileModel final : public sdk::TileModel {
     Q_OBJECT
 
 public:
-    explicit RomTileModel(RomSession* session);
+    explicit RomTileModel(RomSession* session, const QString& document = QStringLiteral("all"));
 
     QString title() const override;
     sdk::Inspection inspect() const override;
@@ -67,28 +67,21 @@ public:
     void endStroke() override;
     bool fill(QPoint pixel, int pen, QString* error) override;
 
-    // The layout shown (a tiles::formats() id) and the runs found in it.
+    // The layout shown (a tiles::formats() id).
     QString formatId() const { return format_; }
     void setFormat(const QString& id);
-    struct Jump {
-        QString label;
-        int tile = 0;
-        int count = 0;  // tiles in the run (0: just a place)
-    };
-    QVector<Jump> jumps() const { return jumps_; }
 
 private:
     const tiles::Format& format() const;
     int tileOffset(int tile) const;
     QString formatLabel(const QString& id) const;
     QStringList colorChoices() const;
-    void findJumps();
-    int jumpAt(int tile) const;
     void writePixels(QByteArray* bytes, int tile, const QVector<quint8>& pixels) const;
 
     RomSession* session_;
+    int offset_ = 0;  // the document's first byte
+    int length_ = 0;
     QString format_;
-    QVector<Jump> jumps_;
     int tile_ = 0;
     int pen_ = 3;
     int colors_ = 0;

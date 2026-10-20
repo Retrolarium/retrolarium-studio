@@ -149,9 +149,6 @@ QString HexModel::statusText() const {
 
 namespace {
 
-// The most runs the Section menu lists (the biggest, in file order).
-constexpr int kMostJumps = 200;
-
 QColor rgb(quint32 value) {
     return QColor((value >> 16) & 0xff, (value >> 8) & 0xff, value & 0xff);
 }
@@ -180,12 +177,13 @@ QVector<QColor> vividPens(int count) {
 
 }  // namespace
 
-RomTileModel::RomTileModel(RomSession* session) : TileModel(session), session_(session) {
-    format_ = session_->tileFormat();
+RomTileModel::RomTileModel(RomSession* session, const QString& document)
+    : TileModel(session), session_(session) {
+    const RomSession::TileRange range = session_->tileRange(document);
+    offset_ = range.offset;
+    length_ = range.length;
+    format_ = range.format;
     pen_ = penCount() - 1;
-    findJumps();
-    // Open on the graphics: the CHR ROM or the first run that reads as tiles.
-    if (jumps_.size() > 1) tile_ = jumps_.at(1).tile;
     connect(session_, &sdk::Session::contentChanged, this, &sdk::EditorModel::contentChanged);
 }
 
@@ -198,7 +196,7 @@ const tiles::Format& RomTileModel::format() const {
 }
 
 int RomTileModel::tileOffset(int tile) const {
-    return session_->tileBase() + tile * format().bytes;
+    return offset_ + tile * format().bytes;
 }
 
 QString RomTileModel::formatLabel(const QString& id) const {
@@ -213,44 +211,12 @@ QString RomTileModel::formatLabel(const QString& id) const {
     return id == session_->detectedTileFormat() ? tr("%1 (detected)").arg(label) : label;
 }
 
-void RomTileModel::findJumps() {
-    const tiles::Format& shown = format();
-    const int base = session_->tileBase();
-    jumps_ = {{tr("Start of the file"), 0, 0}};
-    const QPair<int, int> area = session_->graphicsArea();
-    if (session_->platform() == QLatin1String("nes") && area.first > base && (area.first - base) % shown.bytes == 0) {
-        jumps_.append({tr("CHR ROM · $%1 · %n tiles", nullptr, area.second / shown.bytes).arg(hex(area.first, 6)),
-                       (area.first - base) / shown.bytes, area.second / shown.bytes});
-    }
-    QVector<tiles::Section> found = tiles::sections(session_->original(), base, shown);
-    if (found.size() > kMostJumps) {
-        std::sort(found.begin(), found.end(),
-                  [](const tiles::Section& a, const tiles::Section& b) { return a.pictures > b.pictures; });
-        found.resize(kMostJumps);
-        std::sort(found.begin(), found.end(),
-                  [](const tiles::Section& a, const tiles::Section& b) { return a.offset < b.offset; });
-    }
-    for (const tiles::Section& section : found) {
-        jumps_.append({tr("$%1 · %n tiles", nullptr, section.tiles).arg(hex(section.offset, 6)),
-                       (section.offset - base) / shown.bytes, section.tiles});
-    }
-}
-
-int RomTileModel::jumpAt(int tile) const {
-    int best = 0;
-    for (int i = 1; i < jumps_.size(); ++i) {
-        if (jumps_.at(i).tile <= tile && tile < jumps_.at(i).tile + jumps_.at(i).count) best = i;
-    }
-    return best;
-}
-
 void RomTileModel::setFormat(const QString& id) {
     if (id == format_) return;
     const int offset = tileOffset(tile_);
     format_ = tiles::format(id).id;
-    tile_ = std::clamp((offset - session_->tileBase()) / format().bytes, 0, std::max(0, tileCount() - 1));
+    tile_ = std::clamp((offset - offset_) / format().bytes, 0, std::max(0, tileCount() - 1));
     pen_ = std::min(pen_, penCount() - 1);
-    findJumps();
     emit toolsChanged();
     emit contentChanged();
     emit selectionChanged();
@@ -262,17 +228,12 @@ QVector<sdk::ViewOption> RomTileModel::viewOptions() const {
     layout.label = tr("Format");
     for (const tiles::Format& candidate : tiles::formats()) layout.choices << formatLabel(candidate.id);
     layout.value = formatLabel(format_);
-    sdk::ViewOption section;
-    section.key = QStringLiteral("section");
-    section.label = tr("Section");
-    for (const Jump& jump : jumps_) section.choices << jump.label;
-    section.value = jumps_.at(jumpAt(tile_)).label;
     sdk::ViewOption colors;
     colors.key = QStringLiteral("colors");
     colors.label = tr("Colours");
     colors.choices = colorChoices();
     colors.value = colors.choices.value(colors_);
-    return {layout, section, colors};
+    return {layout, colors};
 }
 
 QStringList RomTileModel::colorChoices() const {
@@ -283,14 +244,6 @@ void RomTileModel::setViewOption(const QString& key, const QString& value) {
     if (key == QLatin1String("format")) {
         for (const tiles::Format& candidate : tiles::formats()) {
             if (formatLabel(candidate.id) == value) setFormat(candidate.id);
-        }
-    } else if (key == QLatin1String("section")) {
-        for (const Jump& jump : jumps_) {
-            if (jump.label == value) {
-                setCurrentTile(jump.tile);
-                emit toolsChanged();
-                return;
-            }
         }
     } else if (key == QLatin1String("colors")) {
         const int index = colorChoices().indexOf(value);
@@ -303,7 +256,8 @@ void RomTileModel::setViewOption(const QString& key, const QString& value) {
 }
 
 int RomTileModel::tileCount() const {
-    return std::max(0, (int(session_->rom().size()) - session_->tileBase()) / format().bytes);
+    const int length = std::min(length_, int(session_->rom().size()) - offset_);
+    return std::max(0, length / format().bytes);
 }
 
 QVector<QColor> RomTileModel::penColors() const {
@@ -414,13 +368,9 @@ sdk::Inspection RomTileModel::inspect() const {
     layout.key = QStringLiteral("format");
     layout.label = tr("Format");
     layout.value = tr("%1, %2 bytes a tile").arg(formatLabel(format_)).arg(format().bytes);
-    sdk::Field section;
-    section.key = QStringLiteral("section");
-    section.label = tr("Section");
-    section.value = jumps_.at(jumpAt(tile_)).label;
-    inspection.fields = {offset, layout, section};
-    inspection.note = tr("Raw patterns, as the hardware reads them. The sections are runs of bytes that read "
-                         "as pictures in this format; graphics a game packs or compresses show as noise, and "
+    inspection.fields = {offset, layout};
+    inspection.note = tr("Raw patterns, as the hardware reads them. The tile groups after the whole ROM are runs "
+                         "of bytes that read as pictures; graphics a game packs or compresses show as noise, and "
                          "the colours are a preview, not the game's palette.");
     return inspection;
 }

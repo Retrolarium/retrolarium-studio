@@ -4437,10 +4437,6 @@
         <translation>Wstrzymany</translation>
     </message>
     <message>
-        <source>Running · arrows, Z X, Enter, right Shift or a game pad · hold Tab to fast-forward</source>
-        <translation>Działa · strzałki, Z X, Enter, prawy Shift lub gamepad · przytrzymaj Tab, aby przyspieszyć</translation>
-    </message>
-    <message>
         <source>Running · click the picture for the keyboard</source>
         <translation>Działa · kliknij obraz, aby użyć klawiatury</translation>
     </message>
@@ -4463,6 +4459,10 @@
     <message>
         <source>Slot %1</source>
         <translation>Slot %1</translation>
+    </message>
+    <message>
+        <source>Running · arrows, Z X, Enter, right Shift or a game pad · hold Tab to fast-forward · Backspace rewinds</source>
+        <translation>Działa · strzałki, Z X, Enter, prawy Shift lub gamepad · przytrzymaj Tab, aby przyspieszyć · Backspace cofa</translation>
     </message>
 </context>
 <context>
@@ -7739,6 +7739,22 @@
         <source>The kit returned no emulator command.</source>
         <translation>Zestaw narzędzi nie zwrócił polecenia emulatora.</translation>
     </message>
+    <message>
+        <source>Whole ROM</source>
+        <translation>Cały ROM</translation>
+    </message>
+    <message>
+        <source>Tiles %1</source>
+        <translation>Kafelki %1</translation>
+    </message>
+    <message numerus="yes">
+        <source>$%1 · %n tiles</source>
+        <translation>
+            <numerusform>$%1 · %n kafelek</numerusform>
+            <numerusform>$%1 · %n kafelki</numerusform>
+            <numerusform>$%1 · %n kafelków</numerusform>
+        </translation>
+    </message>
 </context>
 <context>
     <name>rl::rom::RomTileModel</name>
@@ -7823,14 +7839,6 @@
         <translation>%1 (wykryty)</translation>
     </message>
     <message>
-        <source>Start of the file</source>
-        <translation>Początek pliku</translation>
-    </message>
-    <message>
-        <source>Section</source>
-        <translation>Sekcja</translation>
-    </message>
-    <message>
         <source>Vivid</source>
         <translation>Żywe</translation>
     </message>
@@ -7839,24 +7847,8 @@
         <translation>%1, bajtów na kafelek: %2</translation>
     </message>
     <message>
-        <source>Raw patterns, as the hardware reads them. The sections are runs of bytes that read as pictures in this format; graphics a game packs or compresses show as noise, and the colours are a preview, not the game&apos;s palette.</source>
-        <translation>Surowe wzory, tak jak czyta je sprzęt. Sekcje to ciągi bajtów, które w tym formacie wyglądają jak obrazki; grafika, którą gra pakuje lub kompresuje, wygląda jak szum, a kolory to podgląd, nie paleta gry.</translation>
-    </message>
-    <message numerus="yes">
-        <source>CHR ROM · $%1 · %n tiles</source>
-        <translation>
-            <numerusform>CHR ROM · $%1 · %n kafelek</numerusform>
-            <numerusform>CHR ROM · $%1 · %n kafelki</numerusform>
-            <numerusform>CHR ROM · $%1 · %n kafelków</numerusform>
-        </translation>
-    </message>
-    <message numerus="yes">
-        <source>$%1 · %n tiles</source>
-        <translation>
-            <numerusform>$%1 · %n kafelek</numerusform>
-            <numerusform>$%1 · %n kafelki</numerusform>
-            <numerusform>$%1 · %n kafelków</numerusform>
-        </translation>
+        <source>Raw patterns, as the hardware reads them. The tile groups after the whole ROM are runs of bytes that read as pictures; graphics a game packs or compresses show as noise, and the colours are a preview, not the game&apos;s palette.</source>
+        <translation>Surowe wzory, tak jak czyta je sprzęt. Grupy kafelków pod całym ROM-em to ciągi bajtów, które wyglądają jak obrazki; grafika, którą gra pakuje lub kompresuje, wygląda jak szum, a kolory to podgląd, nie paleta gry.</translation>
     </message>
 </context>
 <context>

@@ -4422,10 +4422,6 @@
         <translation>Pausiert</translation>
     </message>
     <message>
-        <source>Running · arrows, Z X, Enter, right Shift or a game pad · hold Tab to fast-forward</source>
-        <translation>Läuft · Pfeiltasten, Z X, Enter, rechte Umschalttaste oder ein Gamepad · Tab halten zum Vorspulen</translation>
-    </message>
-    <message>
         <source>Running · click the picture for the keyboard</source>
         <translation>Läuft · Bild anklicken für die Tastatur</translation>
     </message>
@@ -4448,6 +4444,10 @@
     <message>
         <source>Slot %1</source>
         <translation>Platz %1</translation>
+    </message>
+    <message>
+        <source>Running · arrows, Z X, Enter, right Shift or a game pad · hold Tab to fast-forward · Backspace rewinds</source>
+        <translation>Läuft · Pfeiltasten, Z X, Enter, rechte Umschalttaste oder ein Gamepad · Tab halten zum Vorspulen · Rücktaste spult zurück</translation>
     </message>
 </context>
 <context>
@@ -7708,6 +7708,21 @@
         <source>The kit returned no emulator command.</source>
         <translation>Das Kit hat keinen Emulator-Befehl zurückgegeben.</translation>
     </message>
+    <message>
+        <source>Whole ROM</source>
+        <translation>Ganzes ROM</translation>
+    </message>
+    <message>
+        <source>Tiles %1</source>
+        <translation>Kacheln %1</translation>
+    </message>
+    <message numerus="yes">
+        <source>$%1 · %n tiles</source>
+        <translation>
+            <numerusform>$%1 · %n Kachel</numerusform>
+            <numerusform>$%1 · %n Kacheln</numerusform>
+        </translation>
+    </message>
 </context>
 <context>
     <name>rl::rom::RomTileModel</name>
@@ -7792,14 +7807,6 @@
         <translation>%1 (erkannt)</translation>
     </message>
     <message>
-        <source>Start of the file</source>
-        <translation>Anfang der Datei</translation>
-    </message>
-    <message>
-        <source>Section</source>
-        <translation>Abschnitt</translation>
-    </message>
-    <message>
         <source>Vivid</source>
         <translation>Kräftig</translation>
     </message>
@@ -7808,22 +7815,8 @@
         <translation>%1, %2 Byte pro Kachel</translation>
     </message>
     <message>
-        <source>Raw patterns, as the hardware reads them. The sections are runs of bytes that read as pictures in this format; graphics a game packs or compresses show as noise, and the colours are a preview, not the game&apos;s palette.</source>
-        <translation>Rohe Muster, wie die Hardware sie liest. Abschnitte sind Bytefolgen, die in diesem Format wie Bilder aussehen; Grafik, die ein Spiel packt oder komprimiert, erscheint als Rauschen, und die Farben sind eine Vorschau, nicht die Palette des Spiels.</translation>
-    </message>
-    <message numerus="yes">
-        <source>CHR ROM · $%1 · %n tiles</source>
-        <translation>
-            <numerusform>CHR ROM · $%1 · %n Kachel</numerusform>
-            <numerusform>CHR ROM · $%1 · %n Kacheln</numerusform>
-        </translation>
-    </message>
-    <message numerus="yes">
-        <source>$%1 · %n tiles</source>
-        <translation>
-            <numerusform>$%1 · %n Kachel</numerusform>
-            <numerusform>$%1 · %n Kacheln</numerusform>
-        </translation>
+        <source>Raw patterns, as the hardware reads them. The tile groups after the whole ROM are runs of bytes that read as pictures; graphics a game packs or compresses show as noise, and the colours are a preview, not the game&apos;s palette.</source>
+        <translation>Rohe Muster, wie die Hardware sie liest. Die Kachelgruppen unter dem ganzen ROM sind Bytefolgen, die wie Bilder aussehen; Grafik, die ein Spiel packt oder komprimiert, erscheint als Rauschen, und die Farben sind eine Vorschau, nicht die Palette des Spiels.</translation>
     </message>
 </context>
 <context>

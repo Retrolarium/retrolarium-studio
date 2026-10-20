@@ -2,6 +2,7 @@
 
 #include <QByteArray>
 #include <QString>
+#include <QStringList>
 #include <QVector>
 
 #include <array>
@@ -48,6 +49,21 @@ struct Section {
     int pictures = 0;
 };
 QVector<Section> sections(const QByteArray& bytes, int from, const Format& format);
+
+// A set of tiles stored together, as an eye would mark it: from its first
+// tile to its last (blank tiles at its edges taken in), in the layout it reads
+// best in, starting at the byte where its tiles line up (not always a multiple
+// of the tile size from the start of the file).
+struct Group {
+    int offset = 0;
+    int tiles = 0;
+    QString format;
+    int pictures = 0;
+};
+// The groups from `from` on, in file order, trying the layouts named (every
+// one when the list is empty); where groups of two layouts overlap, the one
+// covering more bytes in pictures stays.
+QVector<Group> groups(const QByteArray& bytes, int from, const QStringList& layouts = {});
 
 // The format the bytes from `from` on most look like tiles in: the one whose
 // sections cover the most of them. Empty when hardly anything reads as tiles

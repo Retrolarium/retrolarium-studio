@@ -4433,10 +4433,6 @@
         <translation>Пауза</translation>
     </message>
     <message>
-        <source>Running · arrows, Z X, Enter, right Shift or a game pad · hold Tab to fast-forward</source>
-        <translation>Идёт · стрелки, Z X, Enter, правый Shift или геймпад · удерживайте Tab для ускорения</translation>
-    </message>
-    <message>
         <source>Running · click the picture for the keyboard</source>
         <translation>Идёт · щёлкните по картинке для клавиатуры</translation>
     </message>
@@ -4463,6 +4459,10 @@
     <message>
         <source>Slot %1</source>
         <translation>Слот %1</translation>
+    </message>
+    <message>
+        <source>Running · arrows, Z X, Enter, right Shift or a game pad · hold Tab to fast-forward · Backspace rewinds</source>
+        <translation>Идёт · стрелки, Z X, Enter, правый Shift или геймпад · удерживайте Tab для ускорения · Backspace — назад</translation>
     </message>
 </context>
 <context>
@@ -7739,6 +7739,22 @@
         <source>The kit returned no emulator command.</source>
         <translation>Кит не вернул команду эмулятора.</translation>
     </message>
+    <message>
+        <source>Whole ROM</source>
+        <translation>Весь ROM</translation>
+    </message>
+    <message>
+        <source>Tiles %1</source>
+        <translation>Тайлы %1</translation>
+    </message>
+    <message numerus="yes">
+        <source>$%1 · %n tiles</source>
+        <translation>
+            <numerusform>$%1 · %n тайл</numerusform>
+            <numerusform>$%1 · %n тайла</numerusform>
+            <numerusform>$%1 · %n тайлов</numerusform>
+        </translation>
+    </message>
 </context>
 <context>
     <name>rl::rom::RomTileModel</name>
@@ -7823,14 +7839,6 @@
         <translation>%1 (определён)</translation>
     </message>
     <message>
-        <source>Start of the file</source>
-        <translation>Начало файла</translation>
-    </message>
-    <message>
-        <source>Section</source>
-        <translation>Раздел</translation>
-    </message>
-    <message>
         <source>Vivid</source>
         <translation>Яркие</translation>
     </message>
@@ -7839,24 +7847,8 @@
         <translation>%1, байт на тайл: %2</translation>
     </message>
     <message>
-        <source>Raw patterns, as the hardware reads them. The sections are runs of bytes that read as pictures in this format; graphics a game packs or compresses show as noise, and the colours are a preview, not the game&apos;s palette.</source>
-        <translation>Сырые шаблоны, как их читает железо. Разделы — участки байтов, которые в этом формате читаются как картинки; графика, которую игра пакует или сжимает, выглядит как шум, а цвета — предпросмотр, а не палитра игры.</translation>
-    </message>
-    <message numerus="yes">
-        <source>CHR ROM · $%1 · %n tiles</source>
-        <translation>
-            <numerusform>CHR ROM · $%1 · %n тайл</numerusform>
-            <numerusform>CHR ROM · $%1 · %n тайла</numerusform>
-            <numerusform>CHR ROM · $%1 · %n тайлов</numerusform>
-        </translation>
-    </message>
-    <message numerus="yes">
-        <source>$%1 · %n tiles</source>
-        <translation>
-            <numerusform>$%1 · %n тайл</numerusform>
-            <numerusform>$%1 · %n тайла</numerusform>
-            <numerusform>$%1 · %n тайлов</numerusform>
-        </translation>
+        <source>Raw patterns, as the hardware reads them. The tile groups after the whole ROM are runs of bytes that read as pictures; graphics a game packs or compresses show as noise, and the colours are a preview, not the game&apos;s palette.</source>
+        <translation>Сырые шаблоны, как их читает железо. Группы тайлов под «Весь ROM» — участки байтов, которые читаются как картинки; графика, которую игра пакует или сжимает, выглядит как шум, а цвета — предпросмотр, а не палитра игры.</translation>
     </message>
 </context>
 <context>

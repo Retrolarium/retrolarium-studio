@@ -3,7 +3,8 @@
 // read and painted back in the cartridge's own bit layout, another layout
 // keeping the place, the header, the Mega Drive checksum fixed, and Save
 // writing the working copy only. Every tile layout round-trips, and pictures
-// among random bytes are found and their layout guessed. Needs no project.
+// among random bytes are found, their edges and layout too, even where they
+// start between tiles. Needs no project.
 //   rom_project_test
 
 #include "rom/rom_models.hpp"
@@ -94,6 +95,14 @@ void tileFormats() {
                "the pictures found as one section");
     }
     expect(rom::tiles::detect(QByteArray(4096, '\0'), 0).isEmpty(), "nothing guessed for empty bytes");
+
+    const QVector<rom::tiles::Group> nes = rom::tiles::groups(picturesAmidNoise(QStringLiteral("nes")), 0);
+    expect(nes.size() == 1 && nes.at(0).offset == 8192 && nes.at(0).tiles == 128 &&
+               nes.at(0).format == QLatin1String("nes"),
+           "a group of tiles: its edges and its layout");
+    const QByteArray shifted = QByteArray(6, char(0x5a)) + picturesAmidNoise(QStringLiteral("md"));
+    const QVector<rom::tiles::Group> md = rom::tiles::groups(shifted, 0, {QStringLiteral("md")});
+    expect(md.size() == 1 && md.at(0).offset == 8198 && md.at(0).tiles == 128, "a group that starts between tiles");
 }
 
 QStringList kindIds(const rom::RomSession& session) {
@@ -138,12 +147,15 @@ int main(int argc, char** argv) {
         expect(hex.setField(QStringLiteral("goto"), QStringLiteral("$4010"), &error) && hex.currentRow() == 0x401,
                "go to an offset");
 
-        rom::RomTileModel tiles(session.get());
-        const int chrTile = 16384 / 16;
-        expect(tiles.penCount() == 4 && tiles.tileCount() == (16384 + 8192) / 16, "every NES tile of the file");
-        expect(tiles.currentTile() == chrTile && tiles.jumps().size() >= 2 && tiles.jumps().at(1).tile == chrTile,
-               "it opens on the CHR ROM");
-        const QVector<quint8> pixels = tiles.tilePixels(chrTile);
+        rom::RomTileModel whole(session.get());
+        expect(whole.penCount() == 4 && whole.tileCount() == (16384 + 8192) / 16, "every NES tile of the file");
+        const QVector<sdk::DocumentGroup> tileDocuments = session->documents(QStringLiteral("tiles"));
+        expect(tileDocuments.size() == 1 && tileDocuments.at(0).documents.size() == 2 &&
+                   tileDocuments.at(0).documents.at(1).id == QLatin1String("group-0"),
+               "the whole ROM, then the CHR ROM");
+        rom::RomTileModel tiles(session.get(), QStringLiteral("group-0"));
+        expect(tiles.tileCount() == 512, "the CHR ROM's tiles");
+        const QVector<quint8> pixels = tiles.tilePixels(0);
         expect(pixels[0] == 1 && pixels[7] == 1 && pixels[8] == 2 && pixels[16] == 3 && pixels[17] == 0,
                "planes decoded");
         tiles.beginStroke();
@@ -151,9 +163,10 @@ int main(int argc, char** argv) {
         tiles.endStroke();
         expect(quint8(session->rom().at(chr + 2)) == 0x81 && quint8(session->rom().at(chr + 10)) == 0x81,
                "painted into both planes");
-        expect(tiles.isTileDirty(chrTile) && !tiles.isTileDirty(chrTile + 1), "the tile changed");
+        expect(tiles.isTileDirty(0) && !tiles.isTileDirty(1), "the tile changed");
+        tiles.setCurrentTile(5);
         tiles.setFormat(QStringLiteral("md"));
-        expect(tiles.penCount() == 16 && tiles.currentTile() == 16384 / 32, "another layout keeps the place");
+        expect(tiles.penCount() == 16 && tiles.currentTile() == 2, "another layout keeps the place");
         tiles.setFormat(QStringLiteral("nes"));
 
         rom::HeaderModel header(session.get());

@@ -4407,10 +4407,6 @@
         <translation>一時停止中</translation>
     </message>
     <message>
-        <source>Running · arrows, Z X, Enter, right Shift or a game pad · hold Tab to fast-forward</source>
-        <translation>実行中 · 矢印キー、Z X、Enter、右 Shift、ゲームパッド · Tab 長押しで早送り</translation>
-    </message>
-    <message>
         <source>Running · click the picture for the keyboard</source>
         <translation>実行中 · 画面をクリックするとキーボードで操作できます</translation>
     </message>
@@ -4433,6 +4429,10 @@
     <message>
         <source>Slot %1</source>
         <translation>スロット %1</translation>
+    </message>
+    <message>
+        <source>Running · arrows, Z X, Enter, right Shift or a game pad · hold Tab to fast-forward · Backspace rewinds</source>
+        <translation>実行中 · 矢印キー、Z X、Enter、右 Shift、ゲームパッド · Tab 長押しで早送り · Backspace で巻き戻し</translation>
     </message>
 </context>
 <context>
@@ -7677,6 +7677,20 @@
         <source>The kit returned no emulator command.</source>
         <translation>キットがエミュレーターのコマンドを返しませんでした。</translation>
     </message>
+    <message>
+        <source>Whole ROM</source>
+        <translation>ROM 全体</translation>
+    </message>
+    <message>
+        <source>Tiles %1</source>
+        <translation>タイル %1</translation>
+    </message>
+    <message numerus="yes">
+        <source>$%1 · %n tiles</source>
+        <translation>
+            <numerusform>$%1 · %n タイル</numerusform>
+        </translation>
+    </message>
 </context>
 <context>
     <name>rl::rom::RomTileModel</name>
@@ -7761,14 +7775,6 @@
         <translation>%1（検出）</translation>
     </message>
     <message>
-        <source>Start of the file</source>
-        <translation>ファイルの先頭</translation>
-    </message>
-    <message>
-        <source>Section</source>
-        <translation>セクション</translation>
-    </message>
-    <message>
         <source>Vivid</source>
         <translation>鮮やか</translation>
     </message>
@@ -7777,20 +7783,8 @@
         <translation>%1、1 タイル %2 バイト</translation>
     </message>
     <message>
-        <source>Raw patterns, as the hardware reads them. The sections are runs of bytes that read as pictures in this format; graphics a game packs or compresses show as noise, and the colours are a preview, not the game&apos;s palette.</source>
-        <translation>ハードウェアが読むままの生のパターンです。セクションは、この形式で絵として読めるバイトの並びです。ゲームが圧縮したグラフィックはノイズに見え、色はプレビューで、ゲームのパレットではありません。</translation>
-    </message>
-    <message numerus="yes">
-        <source>CHR ROM · $%1 · %n tiles</source>
-        <translation>
-            <numerusform>CHR ROM · $%1 · %n タイル</numerusform>
-        </translation>
-    </message>
-    <message numerus="yes">
-        <source>$%1 · %n tiles</source>
-        <translation>
-            <numerusform>$%1 · %n タイル</numerusform>
-        </translation>
+        <source>Raw patterns, as the hardware reads them. The tile groups after the whole ROM are runs of bytes that read as pictures; graphics a game packs or compresses show as noise, and the colours are a preview, not the game&apos;s palette.</source>
+        <translation>ハードウェアが読むままの生のパターンです。ROM 全体の下のタイルグループは、絵として読めるバイトの並びです。ゲームが圧縮したグラフィックはノイズに見え、色はプレビューで、ゲームのパレットではありません。</translation>
     </message>
 </context>
 <context>

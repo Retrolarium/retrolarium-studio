@@ -18,6 +18,8 @@
 #include <QStandardPaths>
 #include <QUndoStack>
 
+#include <algorithm>
+
 namespace rl::rom {
 
 namespace {
@@ -95,14 +97,36 @@ QVector<sdk::Kind> RomSession::kinds() const {
 }
 
 QVector<sdk::DocumentGroup> RomSession::documents(const QString& kind) const {
+    if (kind == QLatin1String("tiles")) {
+        sdk::DocumentGroup group;
+        group.title = profile().name;
+        auto entry = [this](const QString& id, const QString& label, const QString& meta) {
+            const TileRange range = tileRange(id);
+            sdk::DocumentEntry document;
+            document.id = id;
+            document.label = label;
+            document.meta = meta;
+            document.dirty = rom_.mid(range.offset, range.length) != original_.mid(range.offset, range.length);
+            return document;
+        };
+        const TileRange all = tileRange(QStringLiteral("all"));
+        group.documents.append(entry(QStringLiteral("all"), tr("Whole ROM"),
+                                     tr("%1 tiles").arg(all.length / tiles::format(all.format).bytes)));
+        const QVector<tiles::Group> found = tileGroups();
+        for (int i = 0; i < found.size(); ++i) {
+            const tiles::Group& set = found.at(i);
+            group.documents.append(entry(QStringLiteral("group-%1").arg(i), tr("Tiles %1").arg(i + 1),
+                                         tr("$%1 · %n tiles", nullptr, set.tiles)
+                                             .arg(QStringLiteral("%1").arg(set.offset, 6, 16, QLatin1Char('0')).toUpper())));
+        }
+        return {group};
+    }
     sdk::DocumentEntry entry;
     entry.id = QStringLiteral("rom");
     entry.label = QFileInfo(romPath_).fileName();
     entry.dirty = rom_ != original_;
     if (kind == QLatin1String("hex")) {
         entry.meta = tr("%1 KB").arg(rom_.size() / 1024);
-    } else if (kind == QLatin1String("tiles")) {
-        entry.meta = tr("%1 tiles").arg((rom_.size() - tileBase()) / tiles::format(tileFormat()).bytes);
     } else if (kind == QLatin1String("playtest")) {
         entry.label = tr("Run");
         entry.dirty = false;
@@ -116,9 +140,9 @@ QVector<sdk::DocumentGroup> RomSession::documents(const QString& kind) const {
     return {group};
 }
 
-std::unique_ptr<sdk::EditorModel> RomSession::openEditor(const QString& kind, const QString&) {
+std::unique_ptr<sdk::EditorModel> RomSession::openEditor(const QString& kind, const QString& document) {
     if (kind == QLatin1String("hex")) return std::make_unique<HexModel>(this);
-    if (kind == QLatin1String("tiles")) return std::make_unique<RomTileModel>(this);
+    if (kind == QLatin1String("tiles")) return std::make_unique<RomTileModel>(this, document);
     if (kind == QLatin1String("header")) return std::make_unique<HeaderModel>(this);
     if (kind == QLatin1String("playtest") && canPlay()) return std::make_unique<RomPlaytestModel>(this);
     return nullptr;
@@ -171,6 +195,38 @@ QString RomSession::tileFormat() const {
     if (platform_ == QLatin1String("megadrive")) return QStringLiteral("md");
     const QString detected = detectedTileFormat();
     return detected.isEmpty() ? QStringLiteral("md") : detected;
+}
+
+QVector<tiles::Group> RomSession::tileGroups() const {
+    if (groupsKnown_) return groups_;
+    groupsKnown_ = true;
+    const QPair<int, int> area = graphicsArea();
+    if (platform_ == QLatin1String("nes") && area.first > headerSize()) {
+        for (int at = 0; at < area.second; at += 8192) {
+            const int length = std::min(8192, area.second - at);
+            groups_.append({area.first + at, length / 16, QStringLiteral("nes"), 0});
+        }
+    } else if (platform_ == QLatin1String("nes")) {
+        groups_ = tiles::groups(original_, headerSize(), {QStringLiteral("nes")});
+    } else if (platform_ == QLatin1String("megadrive")) {
+        // $000-$1FF: the 68000 vectors and the cartridge header.
+        groups_ = tiles::groups(original_, 0x200, {QStringLiteral("md")});
+    } else {
+        groups_ = tiles::groups(original_, 0);
+    }
+    return groups_;
+}
+
+RomSession::TileRange RomSession::tileRange(const QString& document) const {
+    if (document.startsWith(QLatin1String("group-"))) {
+        const int index = document.mid(6).toInt();
+        const QVector<tiles::Group> found = tileGroups();
+        if (index >= 0 && index < found.size()) {
+            const tiles::Group& set = found.at(index);
+            return {set.offset, set.tiles * tiles::format(set.format).bytes, set.format};
+        }
+    }
+    return {tileBase(), int(rom_.size()) - tileBase(), tileFormat()};
 }
 
 QString RomSession::detectedTileFormat() const {
