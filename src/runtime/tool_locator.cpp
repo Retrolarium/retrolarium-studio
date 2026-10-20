@@ -4,7 +4,10 @@
 
 #include <QCoreApplication>
 #include <QDir>
+#include <QFile>
 #include <QFileInfo>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QSettings>
 #include <QStandardPaths>
 #include <QVersionNumber>
@@ -15,6 +18,27 @@ namespace rl::runtime {
 
 namespace {
 constexpr int kParentDepth = 6;
+
+// The kit's user settings (core/user_settings.py): RETROLARIUM_SETTINGS, else
+// Retrolarium/settings.json under LOCALAPPDATA on Windows, else
+// retrolarium/settings.json under XDG_CONFIG_HOME or ~/.config.
+QString kitSetting(const QString& name) {
+    QString path = qEnvironmentVariable("RETROLARIUM_SETTINGS");
+    if (path.isEmpty()) {
+#ifdef Q_OS_WIN
+        const QString local = qEnvironmentVariable("LOCALAPPDATA");
+        if (!local.isEmpty()) path = QDir(local).filePath(QStringLiteral("Retrolarium/settings.json"));
+#endif
+    }
+    if (path.isEmpty()) {
+        const QString config = qEnvironmentVariable("XDG_CONFIG_HOME");
+        path = QDir(config.isEmpty() ? QDir::home().filePath(QStringLiteral(".config")) : config)
+                   .filePath(QStringLiteral("retrolarium/settings.json"));
+    }
+    QFile file(path);
+    if (!file.open(QIODevice::ReadOnly)) return {};
+    return QJsonDocument::fromJson(file.readAll()).object().value(name).toString();
+}
 
 QString python() {
     // The installed studio carries its own Python.
@@ -133,12 +157,16 @@ QString ToolLocator::emulatorPath(const QString& id) {
     if (QFileInfo(chosen).isFile()) {
         return QFileInfo(chosen).canonicalFilePath();
     }
+    const QString remembered = kitSetting(QStringLiteral("mame"));
+    if (!remembered.isEmpty() && QFileInfo(remembered).isFile()) {
+        return QFileInfo(remembered).canonicalFilePath();
+    }
     const QString bundled =
         QDir(QCoreApplication::applicationDirPath()).filePath(QStringLiteral("mame/consoles.exe"));
     if (QFileInfo(bundled).isFile()) {
         return bundled;
     }
-    return findInParents(QStringLiteral("mame_testing/mame/consoles.exe"));
+    return findInParents(QStringLiteral("emulators/mame/mame/consoles.exe"));
 }
 
 QString ToolLocator::toolPath(const QString& name) {

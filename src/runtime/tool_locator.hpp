@@ -13,8 +13,10 @@ namespace rl::runtime {
 //          studio's directory or up to six parents, `rltool` on PATH;
 //          rltool.py runs with python/python.exe next to the studio, else
 //          Python on PATH
-//   mame:  $RETROLARIUM_MAME, the one chosen in Settings, <studio>/mame/
-//          consoles.exe, mame_testing/mame/consoles.exe up to six parents
+//   mame:  $RETROLARIUM_MAME, the one chosen in Settings, the one the kit
+//          remembers (`rltool movie mame`, in the user settings the kit and
+//          the studio share), <studio>/mame/consoles.exe,
+//          emulators/mame/mame/consoles.exe up to six parents
 //   tools: next to the studio executable
 class ToolLocator final {
 public:

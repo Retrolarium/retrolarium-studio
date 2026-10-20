@@ -34,9 +34,10 @@ start point: an editor sets it (`EditorModel::startPoint()`, shown as the "Start
 point" chip; for Flicky, the round opened in Levels) and the session keeps it
 while other documents are open. Play (`Ctrl+F5`) runs the game from power-on
 (`rltool studio launch-plan`). Pause (`Pause`) and Stop (`Shift+F5`) sit next to
-them and work only while the game runs. MAME is `RETROLARIUM_MAME`, else
+them and work only while the game runs. MAME is `RETROLARIUM_MAME`, else the one
+chosen in Settings, else the one the kit remembers (`rltool movie mame`), else
 `mame/consoles.exe` next to the studio, else the nearest
-`mame_testing/mame/consoles.exe` up the tree; the kit is `RETROLARIUM_KIT`, else
+`emulators/mame/mame/consoles.exe` up the tree; the kit is `RETROLARIUM_KIT`, else
 the nearest `../retrolarium-kit/rltool.py`, else `rltool` on `PATH`.
 
 MAME draws straight into the Playtest surface (`-attach_window`), so it never
