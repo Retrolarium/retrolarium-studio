@@ -124,6 +124,13 @@ void TileAtlas::mousePressEvent(QMouseEvent* event) {
 }
 
 void TileAtlas::keyPressEvent(QKeyEvent* event) {
+    // Ctrl+Left and Ctrl+Right move where the tiles start by a byte, for
+    // graphics that do not start on a tile boundary.
+    if ((event->modifiers() & Qt::ControlModifier) && model_->canShiftStart() &&
+        (event->key() == Qt::Key_Left || event->key() == Qt::Key_Right)) {
+        model_->shiftStart(event->key() == Qt::Key_Left ? -1 : 1);
+        return;
+    }
     int step = 0;
     switch (event->key()) {
     case Qt::Key_Left: step = -1; break;
@@ -367,7 +374,10 @@ TileEditor::TileEditor(sdk::TileModel* model, QWidget* parent)
     rightLayout->addWidget(canvas_);
     rightLayout->addWidget(pens_);
     auto* hint = new ui::Label(
-        tr("Right-click picks the pen under the cursor. Arrow keys move through the atlas."),
+        tiles_->canShiftStart()
+            ? tr("Right-click picks the pen under the cursor. Arrow keys move through the atlas; Ctrl+Left and "
+                 "Ctrl+Right move where the tiles start by a byte.")
+            : tr("Right-click picks the pen under the cursor. Arrow keys move through the atlas."),
         ui::Label::Role::Meta, right);
     hint->setWordWrap(true);
     hint->setMaximumWidth(PenRow::kWidth);

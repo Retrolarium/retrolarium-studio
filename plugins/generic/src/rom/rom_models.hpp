@@ -9,9 +9,9 @@ namespace rl::rom {
 
 class RomSession;
 
-// The bytes, sixteen to a row: an offset, the bytes in hexadecimal (each
-// one edited by typing 00-FF) and the text they spell.
-class HexModel final : public sdk::TableModel {
+// The ROM's bytes for the hex editor: overwritten in place, one undo step a
+// change, and where each byte sits in a NES cartridge.
+class HexModel final : public sdk::HexModel {
     Q_OBJECT
 
 public:
@@ -22,18 +22,16 @@ public:
     bool setField(const QString& key, const QVariant& value, QString* error) override;
     QString statusText() const override;
 
-    QVector<sdk::TableColumn> columns() const override;
-    int rowCount() const override;
-    QString cell(int row, int column) const override;
-    int maxLength(int row, int column) const override;
-    bool isRowDirty(int row) const override;
-    int currentRow() const override { return row_; }
-    void setCurrentRow(int row) override;
-    bool setCell(int row, int column, const QString& value, QString* error) override;
+    int size() const override;
+    QByteArray bytes(int offset, int length) const override;
+    bool isByteDirty(int offset) const override;
+    bool writeBytes(int offset, const QByteArray& data, const QString& text, QString* error) override;
 
 private:
+    // "PRG bank 1, $8123" or "CHR ROM $0123" on a NES; empty elsewhere.
+    QString place(int offset) const;
+
     RomSession* session_;
-    int row_ = 0;
 };
 
 // Raw 8x8 patterns of one Tiles document (the whole file, or one tile group
@@ -54,6 +52,8 @@ public:
 
     int tileCount() const override;
     int penCount() const override { return 1 << format().bits; }
+    bool canShiftStart() const override { return true; }
+    bool shiftStart(int bytes) override;
     QVector<QColor> penColors() const override;
     QVector<quint8> tilePixels(int tile) const override;
     bool isTileDirty(int tile) const override;

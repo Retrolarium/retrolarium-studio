@@ -4436,6 +4436,76 @@
     </message>
 </context>
 <context>
+    <name>rl::editors::HexEditor</name>
+    <message>
+        <source>Go to</source>
+        <translation>移動</translation>
+    </message>
+    <message>
+        <source>Copy</source>
+        <translation>コピー</translation>
+    </message>
+    <message>
+        <source>Fill with</source>
+        <translation>塗りつぶし値</translation>
+    </message>
+    <message>
+        <source>Fill the selection</source>
+        <translation>選択範囲を塗りつぶす</translation>
+    </message>
+    <message>
+        <source>Drag or Shift+click to select · right-click to start and end a long selection · Ctrl+C copies · Ctrl+G goes to an offset</source>
+        <translation>ドラッグまたは Shift+クリックで選択 · 右クリックで長い選択の開始と終了 · Ctrl+C でコピー · Ctrl+G でオフセットへ移動</translation>
+    </message>
+    <message>
+        <source>An offset in the file, in hexadecimal: 0-%1.</source>
+        <translation>ファイル内のオフセット（16 進数）: 0-%1。</translation>
+    </message>
+    <message>
+        <source>Select the bytes to fill first.</source>
+        <translation>先に塗りつぶすバイトを選択してください。</translation>
+    </message>
+    <message>
+        <source>Type the byte to fill with, 00-FF.</source>
+        <translation>塗りつぶすバイトを入力してください（00-FF）。</translation>
+    </message>
+    <message>
+        <source>Fill $%1-$%2 with $%3</source>
+        <translation>$%1-$%2 を $%3 で塗りつぶし</translation>
+    </message>
+</context>
+<context>
+    <name>rl::editors::HexView</name>
+    <message>
+        <source>Type a byte at $%1</source>
+        <translation>$%1 のバイトを入力</translation>
+    </message>
+    <message>
+        <source>Start selection here</source>
+        <translation>ここから選択を開始</translation>
+    </message>
+    <message>
+        <source>End selection here</source>
+        <translation>ここで選択を終了</translation>
+    </message>
+    <message>
+        <source>Select the row</source>
+        <translation>行を選択</translation>
+    </message>
+    <message>
+        <source>Copy</source>
+        <translation>コピー</translation>
+    </message>
+    <message>
+        <source>Fill the selection with a byte…</source>
+        <translation>選択範囲をバイトで塗りつぶす…</translation>
+    </message>
+    <message>
+        <source>Go to offset…</source>
+        <translation>オフセットへ移動…</translation>
+    </message>
+</context>
+<context>
     <name>rl::editors::MapCanvas</name>
     <message>
         <source>Page %1</source>
@@ -4567,6 +4637,10 @@
     <message>
         <source>View</source>
         <translation>表示</translation>
+    </message>
+    <message>
+        <source>Right-click picks the pen under the cursor. Arrow keys move through the atlas; Ctrl+Left and Ctrl+Right move where the tiles start by a byte.</source>
+        <translation>右クリックでカーソル下の色番号を取得します。矢印キーでアトラス内を移動します。Ctrl+← と Ctrl+→ でタイルの開始位置を 1 バイトずらします。</translation>
     </message>
 </context>
 <context>
@@ -7532,22 +7606,6 @@
         <translation>Hex</translation>
     </message>
     <message>
-        <source>Offset</source>
-        <translation>オフセット</translation>
-    </message>
-    <message>
-        <source>Text</source>
-        <translation>テキスト</translation>
-    </message>
-    <message>
-        <source>Type a byte in hexadecimal, 00-FF.</source>
-        <translation>16 進数でバイトを入力してください (00-FF)。</translation>
-    </message>
-    <message>
-        <source>Edit byte at $%1</source>
-        <translation>$%1 のバイトを編集</translation>
-    </message>
-    <message>
         <source>ROM bytes</source>
         <translation>ROM のバイト</translation>
     </message>
@@ -7584,12 +7642,30 @@
         <translation>PRG バンク %1, $%2</translation>
     </message>
     <message>
-        <source>Each cell is a byte in hexadecimal: type 00-FF to change it. Rows that differ from the original ROM are marked. Save writes the ROM in the project; the original stays beside it.</source>
-        <translation>各セルは 16 進数のバイトです。00-FF を入力して変更します。元の ROM と異なる行には印が付きます。保存するとプロジェクト内の ROM に書き込まれ、元の ROM はそのまま残ります。</translation>
-    </message>
-    <message>
         <source>An offset in the ROM, in hexadecimal: 0-%1.</source>
         <translation>ROM 内のオフセット (16 進数): 0-%1。</translation>
+    </message>
+    <message>
+        <source>Bytes past the end of the ROM cannot be written: it never grows.</source>
+        <translation>ROM の終端より先には書き込めません。ROM は大きくなりません。</translation>
+    </message>
+    <message>
+        <source>Selection</source>
+        <translation>選択範囲</translation>
+    </message>
+    <message numerus="yes">
+        <source>$%1-$%2 · %n bytes</source>
+        <translation>
+            <numerusform>$%1-$%2 · %n バイト</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>none</source>
+        <translation>なし</translation>
+    </message>
+    <message>
+        <source>Type two hex digits to change the byte under the cursor; bytes are only overwritten, so nothing after them moves. Changed bytes are marked. Save writes the ROM in the project; the original stays beside it.</source>
+        <translation>16 進数を 2 桁入力すると、カーソル下のバイトが変わります。バイトは上書きされるだけなので、後ろのデータはずれません。変更したバイトには印が付きます。保存するとプロジェクトの ROM に書き込まれ、オリジナルはそのまま残ります。</translation>
     </message>
 </context>
 <context>

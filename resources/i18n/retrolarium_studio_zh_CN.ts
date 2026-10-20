@@ -4436,6 +4436,76 @@
     </message>
 </context>
 <context>
+    <name>rl::editors::HexEditor</name>
+    <message>
+        <source>Go to</source>
+        <translation>转到</translation>
+    </message>
+    <message>
+        <source>Copy</source>
+        <translation>复制</translation>
+    </message>
+    <message>
+        <source>Fill with</source>
+        <translation>填充值</translation>
+    </message>
+    <message>
+        <source>Fill the selection</source>
+        <translation>填充选区</translation>
+    </message>
+    <message>
+        <source>Drag or Shift+click to select · right-click to start and end a long selection · Ctrl+C copies · Ctrl+G goes to an offset</source>
+        <translation>拖动或 Shift+单击进行选择 · 右键开始和结束长选区 · Ctrl+C 复制 · Ctrl+G 转到偏移</translation>
+    </message>
+    <message>
+        <source>An offset in the file, in hexadecimal: 0-%1.</source>
+        <translation>文件内的偏移，十六进制：0-%1。</translation>
+    </message>
+    <message>
+        <source>Select the bytes to fill first.</source>
+        <translation>请先选择要填充的字节。</translation>
+    </message>
+    <message>
+        <source>Type the byte to fill with, 00-FF.</source>
+        <translation>请输入用于填充的字节，00-FF。</translation>
+    </message>
+    <message>
+        <source>Fill $%1-$%2 with $%3</source>
+        <translation>用 $%3 填充 $%1-$%2</translation>
+    </message>
+</context>
+<context>
+    <name>rl::editors::HexView</name>
+    <message>
+        <source>Type a byte at $%1</source>
+        <translation>在 $%1 输入字节</translation>
+    </message>
+    <message>
+        <source>Start selection here</source>
+        <translation>从这里开始选择</translation>
+    </message>
+    <message>
+        <source>End selection here</source>
+        <translation>在这里结束选择</translation>
+    </message>
+    <message>
+        <source>Select the row</source>
+        <translation>选择整行</translation>
+    </message>
+    <message>
+        <source>Copy</source>
+        <translation>复制</translation>
+    </message>
+    <message>
+        <source>Fill the selection with a byte…</source>
+        <translation>用字节填充选区…</translation>
+    </message>
+    <message>
+        <source>Go to offset…</source>
+        <translation>转到偏移…</translation>
+    </message>
+</context>
+<context>
     <name>rl::editors::MapCanvas</name>
     <message>
         <source>Page %1</source>
@@ -4567,6 +4637,10 @@
     <message>
         <source>View</source>
         <translation>视图</translation>
+    </message>
+    <message>
+        <source>Right-click picks the pen under the cursor. Arrow keys move through the atlas; Ctrl+Left and Ctrl+Right move where the tiles start by a byte.</source>
+        <translation>右键拾取光标下的颜色索引。方向键可在图集中移动；Ctrl+← 和 Ctrl+→ 将图块起点移动一个字节。</translation>
     </message>
 </context>
 <context>
@@ -7532,22 +7606,6 @@
         <translation>Hex</translation>
     </message>
     <message>
-        <source>Offset</source>
-        <translation>偏移</translation>
-    </message>
-    <message>
-        <source>Text</source>
-        <translation>文本</translation>
-    </message>
-    <message>
-        <source>Type a byte in hexadecimal, 00-FF.</source>
-        <translation>请输入十六进制字节，00-FF。</translation>
-    </message>
-    <message>
-        <source>Edit byte at $%1</source>
-        <translation>编辑 $%1 处的字节</translation>
-    </message>
-    <message>
         <source>ROM bytes</source>
         <translation>ROM 字节</translation>
     </message>
@@ -7584,12 +7642,30 @@
         <translation>PRG 存储体 %1，$%2</translation>
     </message>
     <message>
-        <source>Each cell is a byte in hexadecimal: type 00-FF to change it. Rows that differ from the original ROM are marked. Save writes the ROM in the project; the original stays beside it.</source>
-        <translation>每个单元格是一个十六进制字节：输入 00-FF 即可修改。与原始 ROM 不同的行会被标记。保存会写入项目中的 ROM，原始文件保留在旁边。</translation>
-    </message>
-    <message>
         <source>An offset in the ROM, in hexadecimal: 0-%1.</source>
         <translation>ROM 中的偏移（十六进制）：0-%1。</translation>
+    </message>
+    <message>
+        <source>Bytes past the end of the ROM cannot be written: it never grows.</source>
+        <translation>不能写到 ROM 末尾之后：ROM 不会变大。</translation>
+    </message>
+    <message>
+        <source>Selection</source>
+        <translation>选区</translation>
+    </message>
+    <message numerus="yes">
+        <source>$%1-$%2 · %n bytes</source>
+        <translation>
+            <numerusform>$%1-$%2 · %n 字节</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>none</source>
+        <translation>无</translation>
+    </message>
+    <message>
+        <source>Type two hex digits to change the byte under the cursor; bytes are only overwritten, so nothing after them moves. Changed bytes are marked. Save writes the ROM in the project; the original stays beside it.</source>
+        <translation>输入两位十六进制数可修改光标下的字节；字节只会被覆盖，因此后面的数据不会移动。修改过的字节会被标记。保存会写入项目中的 ROM；原始文件保留在旁边。</translation>
     </message>
 </context>
 <context>

@@ -2,6 +2,7 @@
 
 #include "sdk/types.hpp"
 
+#include <QByteArray>
 #include <QObject>
 #include <QPoint>
 #include <QRect>
@@ -185,6 +186,15 @@ public:
     // Tool ids: "pencil", "fill", "pick".
     virtual QVector<Tool> tools() const;
 
+    // Moves where the tiles start by `bytes` (Ctrl+Left and Ctrl+Right in the
+    // atlas), for graphics that do not start on a tile boundary; false where
+    // the tiles cannot move.
+    virtual bool canShiftStart() const { return false; }
+    virtual bool shiftStart(int bytes) {
+        Q_UNUSED(bytes);
+        return false;
+    }
+
     // One stroke is one undo step.
     virtual void beginStroke();
     virtual bool setPixel(QPoint pixel, int pen);
@@ -277,6 +287,39 @@ public:
     // table shows a drop-down instead of a text field. Empty: free text.
     virtual QStringList cellChoices(int row, int column) const;
     virtual QVector<QImage> cellChoiceIcons(int row, int column) const;
+};
+
+// Bytes as they are, sixteen to a row with their text (a ROM opened as it
+// is). The view moves a cursor, selects a range and copies it, and overwrites
+// bytes; nothing is inserted or cut, so nothing after them moves. The cursor
+// and the selection live here, so the inspector and the status show them.
+class HexModel : public EditorModel {
+    Q_OBJECT
+
+public:
+    using EditorModel::EditorModel;
+
+    EditorType type() const override { return EditorType::Hex; }
+
+    virtual int size() const = 0;
+    virtual QByteArray bytes(int offset, int length) const = 0;
+    virtual bool isByteDirty(int offset) const;
+    // Writes `data` over the bytes from `offset` on, as one undo step.
+    virtual bool writeBytes(int offset, const QByteArray& data, const QString& text, QString* error) = 0;
+
+    int cursor() const { return cursor_; }
+    void setCursor(int offset);
+    // The selection, first to last byte; none when first is -1.
+    int selectionFirst() const { return first_; }
+    int selectionLast() const { return last_; }
+    bool hasSelection() const { return first_ >= 0; }
+    void setSelection(int from, int to);
+    void clearSelection();
+
+private:
+    int cursor_ = 0;
+    int first_ = -1;
+    int last_ = -1;
 };
 
 // A piece of a composition (sprite piece, metatile quadrant), in pixels of

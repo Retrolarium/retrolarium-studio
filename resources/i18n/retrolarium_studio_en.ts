@@ -273,6 +273,16 @@
     </message>
 </context>
 <context>
+    <name>rl::rom::HexModel</name>
+    <message numerus="yes">
+        <source>$%1-$%2 · %n bytes</source>
+        <translation>
+            <numerusform>$%1-$%2 · %n byte</numerusform>
+            <numerusform>$%1-$%2 · %n bytes</numerusform>
+        </translation>
+    </message>
+</context>
+<context>
     <name>rl::rom::RomSession</name>
     <message numerus="yes">
         <source>$%1 · %n tiles</source>

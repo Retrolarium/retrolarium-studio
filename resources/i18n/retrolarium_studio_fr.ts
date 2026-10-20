@@ -4451,6 +4451,76 @@
     </message>
 </context>
 <context>
+    <name>rl::editors::HexEditor</name>
+    <message>
+        <source>Go to</source>
+        <translation>Aller à</translation>
+    </message>
+    <message>
+        <source>Copy</source>
+        <translation>Copier</translation>
+    </message>
+    <message>
+        <source>Fill with</source>
+        <translation>Remplir avec</translation>
+    </message>
+    <message>
+        <source>Fill the selection</source>
+        <translation>Remplir la sélection</translation>
+    </message>
+    <message>
+        <source>Drag or Shift+click to select · right-click to start and end a long selection · Ctrl+C copies · Ctrl+G goes to an offset</source>
+        <translation>Glissez ou Maj+clic pour sélectionner · clic droit pour commencer et finir une longue sélection · Ctrl+C copie · Ctrl+G va à un décalage</translation>
+    </message>
+    <message>
+        <source>An offset in the file, in hexadecimal: 0-%1.</source>
+        <translation>Un décalage dans le fichier, en hexadécimal : 0-%1.</translation>
+    </message>
+    <message>
+        <source>Select the bytes to fill first.</source>
+        <translation>Sélectionnez d&apos;abord les octets à remplir.</translation>
+    </message>
+    <message>
+        <source>Type the byte to fill with, 00-FF.</source>
+        <translation>Tapez l&apos;octet de remplissage, 00-FF.</translation>
+    </message>
+    <message>
+        <source>Fill $%1-$%2 with $%3</source>
+        <translation>Remplir $%1-$%2 avec $%3</translation>
+    </message>
+</context>
+<context>
+    <name>rl::editors::HexView</name>
+    <message>
+        <source>Type a byte at $%1</source>
+        <translation>Taper un octet en $%1</translation>
+    </message>
+    <message>
+        <source>Start selection here</source>
+        <translation>Commencer la sélection ici</translation>
+    </message>
+    <message>
+        <source>End selection here</source>
+        <translation>Finir la sélection ici</translation>
+    </message>
+    <message>
+        <source>Select the row</source>
+        <translation>Sélectionner la ligne</translation>
+    </message>
+    <message>
+        <source>Copy</source>
+        <translation>Copier</translation>
+    </message>
+    <message>
+        <source>Fill the selection with a byte…</source>
+        <translation>Remplir la sélection avec un octet…</translation>
+    </message>
+    <message>
+        <source>Go to offset…</source>
+        <translation>Aller au décalage…</translation>
+    </message>
+</context>
+<context>
     <name>rl::editors::MapCanvas</name>
     <message>
         <source>Page %1</source>
@@ -4582,6 +4652,10 @@
     <message>
         <source>View</source>
         <translation>Affichage</translation>
+    </message>
+    <message>
+        <source>Right-click picks the pen under the cursor. Arrow keys move through the atlas; Ctrl+Left and Ctrl+Right move where the tiles start by a byte.</source>
+        <translation>Le clic droit prélève la couleur sous le curseur. Les flèches parcourent l’atlas ; Ctrl+Gauche et Ctrl+Droite déplacent le début des tuiles d’un octet.</translation>
     </message>
 </context>
 <context>
@@ -7563,22 +7637,6 @@
         <translation>Hex</translation>
     </message>
     <message>
-        <source>Offset</source>
-        <translation>Décalage</translation>
-    </message>
-    <message>
-        <source>Text</source>
-        <translation>Texte</translation>
-    </message>
-    <message>
-        <source>Type a byte in hexadecimal, 00-FF.</source>
-        <translation>Tapez un octet en hexadécimal, 00-FF.</translation>
-    </message>
-    <message>
-        <source>Edit byte at $%1</source>
-        <translation>Modifier l&apos;octet en $%1</translation>
-    </message>
-    <message>
         <source>ROM bytes</source>
         <translation>Octets de la ROM</translation>
     </message>
@@ -7615,12 +7673,31 @@
         <translation>Banque PRG %1, $%2</translation>
     </message>
     <message>
-        <source>Each cell is a byte in hexadecimal: type 00-FF to change it. Rows that differ from the original ROM are marked. Save writes the ROM in the project; the original stays beside it.</source>
-        <translation>Chaque case est un octet en hexadécimal : tapez 00-FF pour le changer. Les lignes qui diffèrent de la ROM d&apos;origine sont marquées. Enregistrer écrit la ROM du projet ; l&apos;original reste à côté.</translation>
-    </message>
-    <message>
         <source>An offset in the ROM, in hexadecimal: 0-%1.</source>
         <translation>Un décalage dans la ROM, en hexadécimal : 0-%1.</translation>
+    </message>
+    <message>
+        <source>Bytes past the end of the ROM cannot be written: it never grows.</source>
+        <translation>Impossible d&apos;écrire après la fin de la ROM : elle ne grandit jamais.</translation>
+    </message>
+    <message>
+        <source>Selection</source>
+        <translation>Sélection</translation>
+    </message>
+    <message numerus="yes">
+        <source>$%1-$%2 · %n bytes</source>
+        <translation>
+            <numerusform>$%1-$%2 · %n octet</numerusform>
+            <numerusform>$%1-$%2 · %n octets</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>none</source>
+        <translation>aucune</translation>
+    </message>
+    <message>
+        <source>Type two hex digits to change the byte under the cursor; bytes are only overwritten, so nothing after them moves. Changed bytes are marked. Save writes the ROM in the project; the original stays beside it.</source>
+        <translation>Tapez deux chiffres hexadécimaux pour changer l&apos;octet sous le curseur ; les octets sont seulement écrasés, rien ne se décale après eux. Les octets modifiés sont marqués. Enregistrer écrit la ROM du projet ; l&apos;originale reste à côté.</translation>
     </message>
 </context>
 <context>

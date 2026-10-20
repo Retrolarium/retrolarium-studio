@@ -2,6 +2,8 @@
 
 #include "sdk/i18n.hpp"
 
+#include <algorithm>
+
 namespace rl::sdk {
 
 QString editorName(EditorType type) {
@@ -18,6 +20,8 @@ QString editorName(EditorType type) {
         return QStringLiteral("TableEditor");
     case EditorType::Sequencer:
         return QStringLiteral("SequencerEditor");
+    case EditorType::Hex:
+        return QStringLiteral("HexEditor");
     case EditorType::Emulator:
         return QStringLiteral("EmulatorView");
     case EditorType::None:
@@ -175,5 +179,34 @@ void SequencerModel::endEdit() {}
 void SequencerModel::preview() {}
 void SequencerModel::stopPreview() {}
 void SequencerModel::setPreviewLoops(bool) {}
+
+bool HexModel::isByteDirty(int) const {
+    return false;
+}
+
+void HexModel::setCursor(int offset) {
+    offset = std::clamp(offset, 0, std::max(0, size() - 1));
+    if (offset == cursor_) return;
+    cursor_ = offset;
+    emit selectionChanged();
+}
+
+void HexModel::setSelection(int from, int to) {
+    const int count = size();
+    if (count <= 0) return;
+    from = std::clamp(from, 0, count - 1);
+    to = std::clamp(to, 0, count - 1);
+    if (from > to) std::swap(from, to);
+    if (from == first_ && to == last_) return;
+    first_ = from;
+    last_ = to;
+    emit selectionChanged();
+}
+
+void HexModel::clearSelection() {
+    if (first_ < 0) return;
+    first_ = last_ = -1;
+    emit selectionChanged();
+}
 
 }  // namespace rl::sdk

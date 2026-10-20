@@ -149,6 +149,8 @@ add_library(studio_editors STATIC
     src/editors/library_sheet.hpp
     src/editors/emulator_view.cpp
     src/editors/emulator_view.hpp
+    src/editors/hex_editor.cpp
+    src/editors/hex_editor.hpp
     src/editors/mime.hpp
     src/editors/palette_editor.cpp
     src/editors/palette_editor.hpp

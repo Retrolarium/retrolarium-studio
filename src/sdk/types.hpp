@@ -13,7 +13,7 @@
 namespace rl::sdk {
 
 // The universal editors of the studio. A data kind names the one that edits it.
-enum class EditorType { None, TileMap, Tile, Palette, Composition, Table, Sequencer, Emulator };
+enum class EditorType { None, TileMap, Tile, Palette, Composition, Table, Sequencer, Emulator, Hex };
 
 // Class-style name shown in the editor badge ("TileMapEditor").
 QString editorName(EditorType type);

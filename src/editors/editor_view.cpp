@@ -2,6 +2,7 @@
 
 #include "editors/composition_editor.hpp"
 #include "editors/emulator_view.hpp"
+#include "editors/hex_editor.hpp"
 #include "editors/palette_editor.hpp"
 #include "editors/sequencer_editor.hpp"
 #include "editors/table_editor.hpp"
@@ -23,6 +24,9 @@ std::unique_ptr<EditorView> createEditorView(sdk::EditorModel* model, const Edit
     }
     if (auto* palette = qobject_cast<sdk::PaletteModel*>(model)) {
         return std::make_unique<PaletteEditor>(palette, parent);
+    }
+    if (auto* bytes = qobject_cast<sdk::HexModel*>(model)) {
+        return std::make_unique<HexEditor>(bytes, parent);
     }
     if (auto* table = qobject_cast<sdk::TableModel*>(model)) {
         return std::make_unique<TableEditor>(table, parent);

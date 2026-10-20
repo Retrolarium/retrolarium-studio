@@ -4466,6 +4466,76 @@
     </message>
 </context>
 <context>
+    <name>rl::editors::HexEditor</name>
+    <message>
+        <source>Go to</source>
+        <translation>Перейти</translation>
+    </message>
+    <message>
+        <source>Copy</source>
+        <translation>Копировать</translation>
+    </message>
+    <message>
+        <source>Fill with</source>
+        <translation>Заполнить</translation>
+    </message>
+    <message>
+        <source>Fill the selection</source>
+        <translation>Заполнить выделение</translation>
+    </message>
+    <message>
+        <source>Drag or Shift+click to select · right-click to start and end a long selection · Ctrl+C copies · Ctrl+G goes to an offset</source>
+        <translation>Перетащите или Shift+щелчок — выделить · правый щелчок — начать и закончить длинное выделение · Ctrl+C — копировать · Ctrl+G — перейти к смещению</translation>
+    </message>
+    <message>
+        <source>An offset in the file, in hexadecimal: 0-%1.</source>
+        <translation>Смещение в файле, шестнадцатеричное: 0-%1.</translation>
+    </message>
+    <message>
+        <source>Select the bytes to fill first.</source>
+        <translation>Сначала выделите байты для заполнения.</translation>
+    </message>
+    <message>
+        <source>Type the byte to fill with, 00-FF.</source>
+        <translation>Введите байт для заполнения, 00-FF.</translation>
+    </message>
+    <message>
+        <source>Fill $%1-$%2 with $%3</source>
+        <translation>Заполнение $%1-$%2 байтом $%3</translation>
+    </message>
+</context>
+<context>
+    <name>rl::editors::HexView</name>
+    <message>
+        <source>Type a byte at $%1</source>
+        <translation>Ввод байта по $%1</translation>
+    </message>
+    <message>
+        <source>Start selection here</source>
+        <translation>Начать выделение здесь</translation>
+    </message>
+    <message>
+        <source>End selection here</source>
+        <translation>Закончить выделение здесь</translation>
+    </message>
+    <message>
+        <source>Select the row</source>
+        <translation>Выделить строку</translation>
+    </message>
+    <message>
+        <source>Copy</source>
+        <translation>Копировать</translation>
+    </message>
+    <message>
+        <source>Fill the selection with a byte…</source>
+        <translation>Заполнить выделение байтом…</translation>
+    </message>
+    <message>
+        <source>Go to offset…</source>
+        <translation>Перейти к смещению…</translation>
+    </message>
+</context>
+<context>
     <name>rl::editors::MapCanvas</name>
     <message>
         <source>Page %1</source>
@@ -4597,6 +4667,10 @@
     <message>
         <source>View</source>
         <translation>Вид</translation>
+    </message>
+    <message>
+        <source>Right-click picks the pen under the cursor. Arrow keys move through the atlas; Ctrl+Left and Ctrl+Right move where the tiles start by a byte.</source>
+        <translation>Правый щелчок берёт перо под курсором. Стрелки перемещают по атласу; Ctrl+← и Ctrl+→ сдвигают начало тайлов на байт.</translation>
     </message>
 </context>
 <context>
@@ -7594,22 +7668,6 @@
         <translation>Hex</translation>
     </message>
     <message>
-        <source>Offset</source>
-        <translation>Смещение</translation>
-    </message>
-    <message>
-        <source>Text</source>
-        <translation>Текст</translation>
-    </message>
-    <message>
-        <source>Type a byte in hexadecimal, 00-FF.</source>
-        <translation>Введите байт в шестнадцатеричном виде, 00-FF.</translation>
-    </message>
-    <message>
-        <source>Edit byte at $%1</source>
-        <translation>Правка байта по адресу $%1</translation>
-    </message>
-    <message>
         <source>ROM bytes</source>
         <translation>Байты ROM</translation>
     </message>
@@ -7646,12 +7704,32 @@
         <translation>Банк PRG %1, $%2</translation>
     </message>
     <message>
-        <source>Each cell is a byte in hexadecimal: type 00-FF to change it. Rows that differ from the original ROM are marked. Save writes the ROM in the project; the original stays beside it.</source>
-        <translation>Каждая ячейка — байт в шестнадцатеричном виде: введите 00-FF, чтобы его изменить. Строки, которые отличаются от оригинального ROM, помечены. Сохранение записывает ROM в проекте; оригинал лежит рядом.</translation>
-    </message>
-    <message>
         <source>An offset in the ROM, in hexadecimal: 0-%1.</source>
         <translation>Смещение в ROM в шестнадцатеричном виде: 0-%1.</translation>
+    </message>
+    <message>
+        <source>Bytes past the end of the ROM cannot be written: it never grows.</source>
+        <translation>За концом ROM писать нельзя: он не растёт.</translation>
+    </message>
+    <message>
+        <source>Selection</source>
+        <translation>Выделение</translation>
+    </message>
+    <message numerus="yes">
+        <source>$%1-$%2 · %n bytes</source>
+        <translation>
+            <numerusform>$%1-$%2 · %n байт</numerusform>
+            <numerusform>$%1-$%2 · %n байта</numerusform>
+            <numerusform>$%1-$%2 · %n байт</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>none</source>
+        <translation>нет</translation>
+    </message>
+    <message>
+        <source>Type two hex digits to change the byte under the cursor; bytes are only overwritten, so nothing after them moves. Changed bytes are marked. Save writes the ROM in the project; the original stays beside it.</source>
+        <translation>Введите две hex-цифры, чтобы изменить байт под курсором; байты только перезаписываются, поэтому ничего после них не сдвигается. Изменённые байты отмечены. Сохранение пишет ROM в проекте; оригинал остаётся рядом.</translation>
     </message>
 </context>
 <context>

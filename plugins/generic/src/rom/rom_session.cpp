@@ -86,7 +86,7 @@ sdk::Profile RomSession::profile() const {
 }
 
 QVector<sdk::Kind> RomSession::kinds() const {
-    QVector<sdk::Kind> kinds{kind(QStringLiteral("hex"), tr("Hex"), QStringLiteral("text"), sdk::EditorType::Table)};
+    QVector<sdk::Kind> kinds{kind(QStringLiteral("hex"), tr("Hex"), QStringLiteral("text"), sdk::EditorType::Hex)};
     kinds << kind(QStringLiteral("tiles"), tr("Tiles"), QStringLiteral("tiles"), sdk::EditorType::Tile);
     kinds << kind(QStringLiteral("header"), tr("Header"), QStringLiteral("levels"), sdk::EditorType::Table);
     if (canPlay()) {

@@ -1,5 +1,6 @@
 // A ROM opened as it is (profile rom.v1) on synthetic images: the views a NES
-// and a Mega Drive ROM get, a byte typed in the hex table and undone, a tile
+// and a Mega Drive ROM get, a byte typed in the hex editor and undone, a
+// selection filled, nothing written past the end, a tile
 // read and painted back in the cartridge's own bit layout, another layout
 // keeping the place, the header, the Mega Drive checksum fixed, and Save
 // writing the working copy only. Every tile layout round-trips, and pictures
@@ -135,17 +136,23 @@ int main(int argc, char** argv) {
         expect(session->graphicsArea() == qMakePair(chr, 8192), "the CHR ROM holds the tiles");
 
         rom::HexModel hex(session.get());
-        expect(hex.rowCount() == nes.size() / 16, "sixteen bytes a row");
-        expect(hex.cell(0, 1) == QLatin1String("4E") && hex.cell(0, 17).startsWith(QLatin1String("NES")),
-               "bytes and their text");
+        expect(hex.size() == nes.size() && hex.bytes(0, 4) == QByteArray("NES\x1a", 4), "the bytes");
         QString error;
-        expect(!hex.setCell(1, 1, QStringLiteral("1G0"), &error), "not a byte is refused");
-        expect(hex.setCell(1, 1, QStringLiteral("a5"), &error), "a byte typed");
-        expect(quint8(session->rom().at(16)) == 0xa5 && hex.isRowDirty(1) && !hex.isRowDirty(0), "the row changed");
+        expect(!hex.writeBytes(nes.size() - 1, QByteArray(2, char(1)), QStringLiteral("Past"), &error),
+               "nothing written past the end");
+        expect(hex.writeBytes(16, QByteArray(1, char(0xa5)), QStringLiteral("Type"), &error), "a byte typed");
+        expect(quint8(session->rom().at(16)) == 0xa5 && hex.isByteDirty(16) && !hex.isByteDirty(15), "the byte changed");
         session->undoStack()->undo();
-        expect(session->rom().at(16) == 0 && !hex.isRowDirty(1), "undone");
-        expect(hex.setField(QStringLiteral("goto"), QStringLiteral("$4010"), &error) && hex.currentRow() == 0x401,
+        expect(session->rom().at(16) == 0 && !hex.isByteDirty(16), "undone");
+        expect(hex.setField(QStringLiteral("goto"), QStringLiteral("$4010"), &error) && hex.cursor() == 0x4010,
                "go to an offset");
+        hex.setSelection(0x2f, 0x20);
+        expect(hex.hasSelection() && hex.selectionFirst() == 0x20 && hex.selectionLast() == 0x2f, "a selection");
+        expect(hex.writeBytes(0x20, QByteArray(16, char(0xff)), QStringLiteral("Fill"), &error) &&
+                   session->rom().mid(0x20, 16) == QByteArray(16, char(0xff)),
+               "the selection filled");
+        session->undoStack()->undo();
+        expect(session->rom().mid(0x20, 16) == nes.mid(0x20, 16), "and the fill undone");
 
         rom::RomTileModel whole(session.get());
         expect(whole.penCount() == 4 && whole.tileCount() == (16384 + 8192) / 16, "every NES tile of the file");
@@ -168,6 +175,12 @@ int main(int argc, char** argv) {
         tiles.setFormat(QStringLiteral("md"));
         expect(tiles.penCount() == 16 && tiles.currentTile() == 2, "another layout keeps the place");
         tiles.setFormat(QStringLiteral("nes"));
+        const rom::tiles::Pixels moved =
+            rom::tiles::decode(rom::tiles::format(QStringLiteral("nes")), session->rom().constData() + chr + 1);
+        expect(tiles.canShiftStart() && tiles.shiftStart(1) &&
+                   tiles.tilePixels(0) == QVector<quint8>(moved.begin(), moved.end()),
+               "the start moved a byte");
+        expect(tiles.shiftStart(-1) && tiles.tilePixels(0)[0] == 1, "and back");
 
         rom::HeaderModel header(session.get());
         bool mapper = false;

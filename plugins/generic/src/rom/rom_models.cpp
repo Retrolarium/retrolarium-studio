@@ -22,7 +22,7 @@ QString text(const QByteArray& bytes, int offset, int length) {
 
 // ---------------------------------------------------------------- hex
 
-HexModel::HexModel(RomSession* session) : TableModel(session), session_(session) {
+HexModel::HexModel(RomSession* session) : sdk::HexModel(session), session_(session) {
     connect(session_, &sdk::Session::contentChanged, this, &sdk::EditorModel::contentChanged);
 }
 
@@ -30,119 +30,102 @@ QString HexModel::title() const {
     return tr("Hex");
 }
 
-QVector<sdk::TableColumn> HexModel::columns() const {
-    QVector<sdk::TableColumn> columns;
-    columns.append({QStringLiteral("offset"), tr("Offset"), 100, true, false, false, true});
-    for (int i = 0; i < 16; ++i) {
-        columns.append({QStringLiteral("b%1").arg(i), hex(i, 2), 46, true, true, false, false});
-    }
-    columns.append({QStringLiteral("text"), tr("Text"), 156, true, false, false, true});
-    return columns;
+int HexModel::size() const {
+    return int(session_->rom().size());
 }
 
-int HexModel::rowCount() const {
-    return (session_->rom().size() + 15) / 16;
+QByteArray HexModel::bytes(int offset, int length) const {
+    return session_->rom().mid(offset, length);
 }
 
-QString HexModel::cell(int row, int column) const {
-    const QByteArray& rom = session_->rom();
-    const int offset = row * 16;
-    if (column == 0) return hex(offset, 6);
-    if (column >= 1 && column <= 16) {
-        const int at = offset + column - 1;
-        return at < rom.size() ? hex(quint8(rom.at(at)), 2) : QString();
-    }
-    QString line;
-    for (int i = offset; i < std::min<int>(offset + 16, rom.size()); ++i) {
-        const char c = rom.at(i);
-        line += (c >= 0x20 && c < 0x7f) ? QLatin1Char(c) : QLatin1Char('.');
-    }
-    return line;
+bool HexModel::isByteDirty(int offset) const {
+    return offset >= 0 && offset < session_->original().size() && offset < size() &&
+           session_->rom().at(offset) != session_->original().at(offset);
 }
 
-int HexModel::maxLength(int, int column) const {
-    return column >= 1 && column <= 16 ? 2 : -1;
-}
-
-bool HexModel::isRowDirty(int row) const {
-    const int offset = row * 16;
-    return session_->rom().mid(offset, 16) != session_->original().mid(offset, 16);
-}
-
-void HexModel::setCurrentRow(int row) {
-    if (row == row_) return;
-    row_ = std::clamp(row, 0, std::max(0, rowCount() - 1));
-    emit selectionChanged();
-}
-
-bool HexModel::setCell(int row, int column, const QString& value, QString* error) {
-    const int at = row * 16 + column - 1;
-    bool ok = false;
-    const uint byte = value.trimmed().toUInt(&ok, 16);
-    if (column < 1 || column > 16 || at >= session_->rom().size() || !ok || byte > 0xff) {
-        if (error) *error = tr("Type a byte in hexadecimal, 00-FF.");
+bool HexModel::writeBytes(int offset, const QByteArray& data, const QString& text, QString* error) {
+    if (offset < 0 || offset + data.size() > size() || data.isEmpty()) {
+        if (error) *error = tr("Bytes past the end of the ROM cannot be written: it never grows.");
         return false;
     }
     QByteArray next = session_->rom();
-    next[at] = char(byte);
-    session_->edit(tr("Edit byte at $%1").arg(hex(at, 6)), next);
+    next.replace(offset, data.size(), data);
+    session_->edit(text, next);
     return true;
+}
+
+QString HexModel::place(int offset) const {
+    const int header = session_->headerSize();
+    if (session_->platform() != QLatin1String("nes") || offset < header) return {};
+    const QPair<int, int> graphics = session_->graphicsArea();
+    if (graphics.first > header && offset >= graphics.first) {
+        return tr("CHR ROM $%1").arg(hex(offset - graphics.first, 5));
+    }
+    const int prg = offset - header;
+    return tr("PRG bank %1, $%2").arg(prg / 16384).arg(hex(0x8000 + prg % 16384, 4));
 }
 
 sdk::Inspection HexModel::inspect() const {
     sdk::Inspection inspection;
     inspection.kicker = tr("ROM bytes");
-    const int offset = row_ * 16;
-    inspection.title = tr("Offset $%1").arg(hex(offset, 6));
+    inspection.title = tr("Offset $%1").arg(hex(cursor(), 6));
     sdk::Field go;
     go.key = QStringLiteral("goto");
     go.label = tr("Go to offset");
     go.type = sdk::Field::Type::Text;
-    go.value = hex(offset, 6);
+    go.value = hex(cursor(), 6);
     go.hint = tr("hex");
     go.monospace = true;
-    sdk::Field size;
-    size.key = QStringLiteral("size");
-    size.label = tr("Size");
-    size.value = tr("%1 bytes ($%2)").arg(session_->rom().size()).arg(hex(session_->rom().size(), 6));
-    inspection.fields = {go, size};
-    const int header = session_->headerSize();
-    if (session_->platform() == QLatin1String("nes") && offset >= header) {
-        // Where the row is in PRG ROM, by 16 KB banks, or in CHR ROM.
-        const QPair<int, int> graphics = session_->graphicsArea();
-        sdk::Field place;
-        place.key = QStringLiteral("place");
-        place.label = tr("In the cartridge");
-        if (graphics.first > header && offset >= graphics.first) {
-            place.value = tr("CHR ROM $%1").arg(hex(offset - graphics.first, 5));
-        } else {
-            const int prg = offset - header;
-            place.value = tr("PRG bank %1, $%2").arg(prg / 16384).arg(hex(0x8000 + prg % 16384, 4));
-        }
-        inspection.fields.append(place);
+    sdk::Field selection;
+    selection.key = QStringLiteral("selection");
+    selection.label = tr("Selection");
+    selection.monospace = true;
+    selection.value = hasSelection() ? tr("$%1-$%2 · %n bytes", nullptr, selectionLast() - selectionFirst() + 1)
+                                           .arg(hex(selectionFirst(), 6), hex(selectionLast(), 6))
+                                     : tr("none");
+    sdk::Field length;
+    length.key = QStringLiteral("size");
+    length.label = tr("Size");
+    length.value = tr("%1 bytes ($%2)").arg(size()).arg(hex(size(), 6));
+    inspection.fields = {go, selection, length};
+    const QString where = place(cursor());
+    if (!where.isEmpty()) {
+        sdk::Field cartridge;
+        cartridge.key = QStringLiteral("place");
+        cartridge.label = tr("In the cartridge");
+        cartridge.value = where;
+        inspection.fields.append(cartridge);
     }
-    inspection.note = tr("Each cell is a byte in hexadecimal: type 00-FF to change it. Rows that differ from the "
-                         "original ROM are marked. Save writes the ROM in the project; the original stays beside it.");
+    inspection.note = tr("Type two hex digits to change the byte under the cursor; bytes are only overwritten, "
+                         "so nothing after them moves. Changed bytes are marked. Save writes the ROM in the "
+                         "project; the original stays beside it.");
     return inspection;
 }
 
 bool HexModel::setField(const QString& key, const QVariant& value, QString* error) {
-    if (key != QLatin1String("goto")) return TableModel::setField(key, value, error);
+    if (key != QLatin1String("goto")) return sdk::HexModel::setField(key, value, error);
     bool ok = false;
     QString text = value.toString().trimmed();
     if (text.startsWith(QLatin1Char('$'))) text.remove(0, 1);
     if (text.startsWith(QLatin1String("0x"), Qt::CaseInsensitive)) text.remove(0, 2);
     const qint64 offset = text.toLongLong(&ok, 16);
-    if (!ok || offset < 0 || offset >= session_->rom().size()) {
-        if (error) *error = tr("An offset in the ROM, in hexadecimal: 0-%1.").arg(hex(session_->rom().size() - 1, 6));
+    if (!ok || offset < 0 || offset >= size()) {
+        if (error) *error = tr("An offset in the ROM, in hexadecimal: 0-%1.").arg(hex(size() - 1, 6));
         return false;
     }
-    setCurrentRow(int(offset / 16));
+    setCursor(int(offset));
     return true;
 }
 
 QString HexModel::statusText() const {
-    return tr("Offset $%1").arg(hex(row_ * 16, 6));
+    const QString where = place(cursor());
+    QString text = tr("Offset $%1").arg(hex(cursor(), 6));
+    if (!where.isEmpty()) text += QStringLiteral(" · ") + where;
+    if (hasSelection()) {
+        text += QStringLiteral(" · ") + tr("$%1-$%2 · %n bytes", nullptr, selectionLast() - selectionFirst() + 1)
+                                            .arg(hex(selectionFirst(), 6), hex(selectionLast(), 6));
+    }
+    return text;
 }
 
 // ---------------------------------------------------------------- tiles
@@ -263,6 +246,16 @@ void RomTileModel::setViewOption(const QString& key, const QString& value) {
             emit contentChanged();
         }
     }
+}
+
+bool RomTileModel::shiftStart(int bytes) {
+    const int offset = std::clamp(offset_ + bytes, 0, std::max(0, int(session_->rom().size()) - 1));
+    if (offset == offset_) return false;
+    offset_ = offset;
+    tile_ = std::clamp(tile_, 0, std::max(0, tileCount() - 1));
+    emit contentChanged();
+    emit selectionChanged();
+    return true;
 }
 
 int RomTileModel::tileCount() const {

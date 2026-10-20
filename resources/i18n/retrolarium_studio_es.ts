@@ -4451,6 +4451,76 @@
     </message>
 </context>
 <context>
+    <name>rl::editors::HexEditor</name>
+    <message>
+        <source>Go to</source>
+        <translation>Ir a</translation>
+    </message>
+    <message>
+        <source>Copy</source>
+        <translation>Copiar</translation>
+    </message>
+    <message>
+        <source>Fill with</source>
+        <translation>Rellenar con</translation>
+    </message>
+    <message>
+        <source>Fill the selection</source>
+        <translation>Rellenar la selección</translation>
+    </message>
+    <message>
+        <source>Drag or Shift+click to select · right-click to start and end a long selection · Ctrl+C copies · Ctrl+G goes to an offset</source>
+        <translation>Arrastra o Mayús+clic para seleccionar · clic derecho para empezar y terminar una selección larga · Ctrl+C copia · Ctrl+G va a un desplazamiento</translation>
+    </message>
+    <message>
+        <source>An offset in the file, in hexadecimal: 0-%1.</source>
+        <translation>Un desplazamiento en el archivo, en hexadecimal: 0-%1.</translation>
+    </message>
+    <message>
+        <source>Select the bytes to fill first.</source>
+        <translation>Primero selecciona los bytes que rellenar.</translation>
+    </message>
+    <message>
+        <source>Type the byte to fill with, 00-FF.</source>
+        <translation>Escribe el byte de relleno, 00-FF.</translation>
+    </message>
+    <message>
+        <source>Fill $%1-$%2 with $%3</source>
+        <translation>Rellenar $%1-$%2 con $%3</translation>
+    </message>
+</context>
+<context>
+    <name>rl::editors::HexView</name>
+    <message>
+        <source>Type a byte at $%1</source>
+        <translation>Escribir un byte en $%1</translation>
+    </message>
+    <message>
+        <source>Start selection here</source>
+        <translation>Empezar la selección aquí</translation>
+    </message>
+    <message>
+        <source>End selection here</source>
+        <translation>Terminar la selección aquí</translation>
+    </message>
+    <message>
+        <source>Select the row</source>
+        <translation>Seleccionar la fila</translation>
+    </message>
+    <message>
+        <source>Copy</source>
+        <translation>Copiar</translation>
+    </message>
+    <message>
+        <source>Fill the selection with a byte…</source>
+        <translation>Rellenar la selección con un byte…</translation>
+    </message>
+    <message>
+        <source>Go to offset…</source>
+        <translation>Ir al desplazamiento…</translation>
+    </message>
+</context>
+<context>
     <name>rl::editors::MapCanvas</name>
     <message>
         <source>Page %1</source>
@@ -4582,6 +4652,10 @@
     <message>
         <source>View</source>
         <translation>Ver</translation>
+    </message>
+    <message>
+        <source>Right-click picks the pen under the cursor. Arrow keys move through the atlas; Ctrl+Left and Ctrl+Right move where the tiles start by a byte.</source>
+        <translation>El botón derecho toma la pluma bajo el cursor. Las flechas recorren el atlas; Ctrl+Izquierda y Ctrl+Derecha mueven el inicio de las teselas un byte.</translation>
     </message>
 </context>
 <context>
@@ -7563,22 +7637,6 @@
         <translation>Hex</translation>
     </message>
     <message>
-        <source>Offset</source>
-        <translation>Desplazamiento</translation>
-    </message>
-    <message>
-        <source>Text</source>
-        <translation>Texto</translation>
-    </message>
-    <message>
-        <source>Type a byte in hexadecimal, 00-FF.</source>
-        <translation>Escribe un byte en hexadecimal, 00-FF.</translation>
-    </message>
-    <message>
-        <source>Edit byte at $%1</source>
-        <translation>Editar el byte en $%1</translation>
-    </message>
-    <message>
         <source>ROM bytes</source>
         <translation>Bytes de la ROM</translation>
     </message>
@@ -7615,12 +7673,31 @@
         <translation>Banco PRG %1, $%2</translation>
     </message>
     <message>
-        <source>Each cell is a byte in hexadecimal: type 00-FF to change it. Rows that differ from the original ROM are marked. Save writes the ROM in the project; the original stays beside it.</source>
-        <translation>Cada celda es un byte en hexadecimal: escribe 00-FF para cambiarlo. Las filas que difieren de la ROM original están marcadas. Guardar escribe la ROM del proyecto; el original queda al lado.</translation>
-    </message>
-    <message>
         <source>An offset in the ROM, in hexadecimal: 0-%1.</source>
         <translation>Un desplazamiento en la ROM, en hexadecimal: 0-%1.</translation>
+    </message>
+    <message>
+        <source>Bytes past the end of the ROM cannot be written: it never grows.</source>
+        <translation>No se puede escribir más allá del final de la ROM: nunca crece.</translation>
+    </message>
+    <message>
+        <source>Selection</source>
+        <translation>Selección</translation>
+    </message>
+    <message numerus="yes">
+        <source>$%1-$%2 · %n bytes</source>
+        <translation>
+            <numerusform>$%1-$%2 · %n byte</numerusform>
+            <numerusform>$%1-$%2 · %n bytes</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>none</source>
+        <translation>ninguna</translation>
+    </message>
+    <message>
+        <source>Type two hex digits to change the byte under the cursor; bytes are only overwritten, so nothing after them moves. Changed bytes are marked. Save writes the ROM in the project; the original stays beside it.</source>
+        <translation>Escribe dos dígitos hexadecimales para cambiar el byte bajo el cursor; los bytes solo se sobrescriben, así que nada se desplaza tras ellos. Los bytes cambiados se marcan. Guardar escribe la ROM del proyecto; la original queda al lado.</translation>
     </message>
 </context>
 <context>
