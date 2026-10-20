@@ -465,7 +465,8 @@ QWidget* EmulatorView::createToolbar(QWidget* parent) {
             text = tr("Stopping…");
         } else if (running) {
             text = runner_->isPaused()                 ? tr("Paused")
-                   : stage_->surface()->hasFocus() ? tr("Running · arrows, Z X, Enter, right Shift or a game pad · hold Tab to fast-forward")
+                   : stage_->surface()->hasFocus() ? tr("Running · arrows, Z X, Enter, right Shift or a game pad · hold Tab to fast-forward · "
+                                                        "Backspace rewinds")
                                                    : tr("Running · click the picture for the keyboard");
         }
         state->setText(text);

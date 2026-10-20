@@ -217,8 +217,10 @@ if ready_when ~= "" then
 end
 
 -- The picture file: "square" shows square pixels instead of the machine's
--- 4:3 screen, "studio" the studio's colours instead of the emulator's.
-local picture_text, palette_device, original_pens = nil, nil, nil
+-- 4:3 screen, "studio" the studio's colours instead of the emulator's. The
+-- scale follows the screen's size too: a Mega Drive starts 256 pixels wide
+-- and most games switch to 320.
+local picture_text, picture_sizes, palette_device, original_pens = nil, nil, nil, nil
 local function apply_picture()
     local file = io.open(picture_file, "r")
     local text = ""
@@ -226,8 +228,10 @@ local function apply_picture()
         text = file:read("a") or ""
         file:close()
     end
-    if text == picture_text then return end
-    picture_text = text
+    local sizes = ""
+    for _, screen in pairs(machine.screens) do sizes = sizes .. screen.width .. "x" .. screen.height .. " " end
+    if text == picture_text and sizes == picture_sizes then return end
+    picture_text, picture_sizes = text, sizes
     local square = string.find(text, "square", 1, true) ~= nil
     local studio = string.find(text, "studio", 1, true) ~= nil
     for _, screen in pairs(machine.screens) do
@@ -348,7 +352,7 @@ _G.retrolarium_movie = {frame = 0}
 -- before it and runs the frames after it again with the same pads,
 -- unthrottled, then pauses there. (A state is 2 MB or so: one a frame would
 -- not fit.)
-local rewind_every, rewind_keep = 20, 45
+local rewind_every, rewind_keep = 60, 15
 local far_every, far_keep = 300, 60
 local ring, far, inputs, inputs_from = {}, {}, {}, 1
 local replay_to = nil
@@ -1025,12 +1029,13 @@ QString mameKey(const QKeyEvent* event) {
 }
 
 // Keys the studio keeps while the game has the keyboard: playtest controls,
-// and frame advance and speed (\ - =, as FCEUX has them).
+// frame advance and speed (\ - =, as FCEUX has them) and rewind (Backspace;
+// no game pad mapping uses it).
 bool isStudioKey(const QKeyEvent* event) {
     const int key = event->key();
     const bool keypad = event->modifiers() & Qt::KeypadModifier;
     return (key >= Qt::Key_F1 && key <= Qt::Key_F35) || key == Qt::Key_Pause || key == Qt::Key_Backslash ||
-           (!keypad && (key == Qt::Key_Minus || key == Qt::Key_Equal));
+           key == Qt::Key_Backspace || (!keypad && (key == Qt::Key_Minus || key == Qt::Key_Equal));
 }
 
 QString luaPath(const QString& path) {
