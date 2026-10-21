@@ -13682,5 +13682,9 @@
         <source>Other</source>
         <translation>その他</translation>
     </message>
+    <message>
+        <source>keys nested deeper than %1 tables</source>
+        <translation>キーが %1 段より深いテーブルに入れ子になっています</translation>
+    </message>
 </context>
 </TS>

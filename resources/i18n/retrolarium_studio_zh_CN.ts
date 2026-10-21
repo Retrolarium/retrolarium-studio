@@ -13682,5 +13682,9 @@
         <source>Other</source>
         <translation>其他</translation>
     </message>
+    <message>
+        <source>keys nested deeper than %1 tables</source>
+        <translation>键嵌套深度超过 %1 层表</translation>
+    </message>
 </context>
 </TS>

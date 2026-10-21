@@ -13788,5 +13788,9 @@
         <source>Other</source>
         <translation>Inne</translation>
     </message>
+    <message>
+        <source>keys nested deeper than %1 tables</source>
+        <translation>klucze zagnieżdżone głębiej niż %1 tabel</translation>
+    </message>
 </context>
 </TS>

@@ -13735,5 +13735,9 @@
         <source>Other</source>
         <translation>Outro</translation>
     </message>
+    <message>
+        <source>keys nested deeper than %1 tables</source>
+        <translation>chaves aninhadas em mais de %1 tabelas</translation>
+    </message>
 </context>
 </TS>

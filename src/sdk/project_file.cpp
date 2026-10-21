@@ -318,6 +318,11 @@ private:
     // Walks `path`, creating tables; an array of tables resolves to its last
     // element, as TOML specifies for keys following [[name]].
     Table* descend(const QStringList& path, int count) {
+        // Dotted keys nest tables as deep as they go; converting them later
+        // recurses as deep, so the depth is bounded as arrays' is.
+        if (path.size() > kMaxArrayDepth) {
+            fail(rlTr("studio", "keys nested deeper than %1 tables").arg(kMaxArrayDepth));
+        }
         Table* current = root_.get();
         for (int i = 0; i < count; ++i) {
             Entry& entry = current->entries[path.at(i)];

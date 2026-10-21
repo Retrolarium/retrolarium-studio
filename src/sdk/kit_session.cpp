@@ -335,7 +335,8 @@ void KitSession::runUpgrade(UpgradeStep step) {
         }
         QString loadError;
         const ProjectFile reloaded = ProjectFile::load(project_.path(), &loadError);
-        if (reloaded.path().isEmpty()) {
+        // A file the reader cannot parse keeps its path: it is not adopted.
+        if (!reloaded.isValid()) {
             report(Severity::Error, step.source, loadError);
             return;
         }
