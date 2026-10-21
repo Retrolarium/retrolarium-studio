@@ -142,6 +142,12 @@ sdk::ProcessSpec ToolLocator::kitCommand(const QStringList& arguments, const QSt
         spec.program = kit;
     }
     spec.arguments += arguments;
+    // The kit runs the core's codecs (Nemesis, Enigma) as rlcore: the one
+    // the studio ships, unless the environment names another.
+    const QString core = toolPath(QStringLiteral("rlcore"));
+    if (!core.isEmpty() && qEnvironmentVariableIsEmpty("RETROLARIUM_CORE")) {
+        spec.environment.insert(QStringLiteral("RETROLARIUM_CORE"), core);
+    }
     return spec;
 }
 

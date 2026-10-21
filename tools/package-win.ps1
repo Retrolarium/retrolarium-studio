@@ -78,11 +78,12 @@ function Copy-Tree([string]$From, [string]$To, [string[]]$SkipDirectories, [stri
 }
 
 # The studio, and in tools\ the helpers it runs: the level writer Flicky's
-# builds use and the YM2612 renderer its sound previews play through.
+# builds use, the YM2612 renderer its sound previews play through, and
+# rlcore, the core's codecs the kit runs.
 Copy-Item -LiteralPath (Join-Path $Bin "retrolarium-studio.exe") -Destination $package
 $helpers = Join-Path $package "tools"
 New-Item -ItemType Directory -Force -Path $helpers | Out-Null
-foreach ($helper in @("retrolarium-flicky-level-writer.exe", "retrolarium-ymfm-renderer.exe")) {
+foreach ($helper in @("retrolarium-flicky-level-writer.exe", "retrolarium-ymfm-renderer.exe", "rlcore.exe")) {
     Copy-Item -LiteralPath (Join-Path $Bin "tools\$helper") -Destination $helpers
 }
 
@@ -172,8 +173,6 @@ $core = Join-Path $repositoryRoot "retrolarium-core\third_party"
 foreach ($pair in @(
         @((Join-Path $projectRoot "resources\fonts\OFL-Barlow.txt"), "OFL-Barlow.txt"),
         @((Join-Path $projectRoot "resources\fonts\OFL-IBMPlex.txt"), "OFL-IBMPlex.txt"),
-        @((Join-Path $core "toml11\LICENSE"), "toml11-MIT.txt"),
-        @((Join-Path $core "nlohmann\LICENSE.MIT"), "nlohmann-json-MIT.txt"),
         @((Join-Path $projectRoot "resources\licenses\Qt-LGPL-3.0.txt"), "Qt-LGPL-3.0.txt"),
         @((Join-Path $projectRoot "resources\licenses\mingw-w64-runtime.txt"), "mingw-w64-runtime.txt"),
         @((Join-Path $projectRoot "resources\licenses\ymfm-BSD-3-Clause.txt"), "ymfm-BSD-3-Clause.txt"))) {

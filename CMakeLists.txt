@@ -199,11 +199,13 @@ studio_enable_warnings(studio_shell)
 # Run > Movie shows a console NES in the studio's colours (header only).
 target_include_directories(studio_shell PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/plugins/platforms/nes/src)
 
-# The shared, Qt-free core (codecs with golden tests, also shipped with the
-# kit as rlcore). Platform plugins wrap what they need from it.
-set(RETROLARIUM_CORE_BUILD_CLI OFF CACHE BOOL "" FORCE)
+# The shared, Qt-free core (codecs with golden tests). Platform plugins wrap
+# what they need from it; rlcore, its command line, goes into tools/ for the
+# kit, which runs the core's Nemesis and Enigma through it.
+set(RETROLARIUM_CORE_BUILD_CLI ON CACHE BOOL "" FORCE)
 set(RETROLARIUM_CORE_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../retrolarium-core retrolarium_core)
+install(TARGETS rlcore RUNTIME DESTINATION tools)
 
 # Test programs register here with the fixtures they read, as paths
 # relative to this directory. CTest runs them on a native build; the install
