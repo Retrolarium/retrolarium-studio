@@ -8,6 +8,7 @@
 #include <QCheckBox>
 #include <QComboBox>
 #include <QFile>
+#include <QFileDialog>
 #include <QFileInfo>
 #include <QHBoxLayout>
 #include <QHeaderView>
@@ -16,6 +17,7 @@
 #include <QMap>
 #include <QMouseEvent>
 #include <QPushButton>
+#include <QRegularExpression>
 #include <QSaveFile>
 #include <QSpinBox>
 #include <QUndoCommand>
@@ -76,6 +78,40 @@ bool readMovie(const QString& path, EditedMovie* movie, QString* error) {
     *movie = read;
     return true;
 }
+
+namespace {
+
+// The movie's `source` header value, empty without one.
+QString movieSource(const EditedMovie& movie) {
+    for (const QString& line : movie.header) {
+        if (line.startsWith(QLatin1String("source "))) return line.mid(7).trimmed();
+    }
+    return QString();
+}
+
+// A recording made in MAME, which the kit plays frame for frame (another
+// emulator's is lined up with MAME's frames first).
+bool isMameMovie(const EditedMovie& movie) {
+    return movieSource(movie).section(QLatin1Char(' '), 0, 0) == QLatin1String("mame");
+}
+
+// The movie marked as MAME's own frames, ported from the source it had (the
+// kit keeps that source's power-on work RAM).
+void markAsMame(EditedMovie* movie) {
+    const QString source = movieSource(*movie);
+    const QString marked = source.isEmpty() ? QStringLiteral("source mame")
+                                            : QStringLiteral("source mame from ") + source;
+    for (QString& line : movie->header) {
+        if (line.startsWith(QLatin1String("source "))) {
+            line = marked;
+            return;
+        }
+    }
+    const int platform = movie->header.indexOf(QRegularExpression(QStringLiteral("^platform ")));
+    movie->header.insert(platform + 1, marked);
+}
+
+}  // namespace
 
 bool writeMovie(const QString& path, const EditedMovie& movie, QString* error) {
     QString text = QStringLiteral("# retrolarium movie 1\n");
@@ -442,12 +478,27 @@ TasEditorWindow::TasEditorWindow(runtime::EmulatorRunner* emulator, QWidget* par
 }
 
 bool TasEditorWindow::open(const QString& working, const QString& origin, QString* error) {
-    EditedMovie movie;
-    if (!readMovie(working, &movie, error)) return false;
-    working_ = working;
-    origin_ = origin.isEmpty() ? working : origin;
-    undo_->clear();
-    model_->setMovie(movie);
+    const QString from = origin.isEmpty() ? working : origin;
+    // The same run opened again: its edits not saved stay, with their undo.
+    const bool same = working == working_ && from == origin_ && isModified();
+    if (!same) {
+        EditedMovie movie;
+        if (!readMovie(working, &movie, error)) return false;
+        working_ = working;
+        origin_ = from;
+        // The working file holds the frames as MAME plays them. The kit wrote
+        // it from another emulator's movie, or from one it lines up (frames
+        // dropped, an offset): those frames are not the origin's, and Save
+        // puts them in a MAME movie of its own instead.
+        toMame_ = working_ != origin_ && !isMameMovie(movie);
+        EditedMovie original;
+        QString ignored;
+        askPath_ = working_ != origin_ &&
+                   (toMame_ || QFileInfo(origin_).suffix().compare(QLatin1String("rlmovie"), Qt::CaseInsensitive) != 0 ||
+                    !readMovie(origin_, &original, &ignored) || original.offset != 0);
+        undo_->clear();
+        model_->setMovie(movie);
+    }
     stops_->clear();
     for (const runtime::StopCondition& stop : emulator_->stopConditions()) stops_->addItem(stop.name);
     stops_->setEnabled(stops_->count() > 0);
@@ -562,13 +613,36 @@ void TasEditorWindow::removeFrames() {
     undo_->endMacro();
 }
 
-void TasEditorWindow::save() {
-    QString error;
-    if (!writeMovie(origin_, model_->movie(), &error)) {
-        status_->setText(tr("The movie cannot be written: %1").arg(error));
-        return;
+bool TasEditorWindow::isModified() const {
+    return !undo_->isClean();
+}
+
+bool TasEditorWindow::save() {
+    QString target = origin_;
+    if (askPath_) {
+        const QFileInfo info(origin_);
+        target = QFileDialog::getSaveFileName(
+            this, tr("Save the movie as MAME plays it"),
+            info.dir().filePath(info.completeBaseName() + QStringLiteral("-mame.rlmovie")),
+            tr("Retrolarium movies (*.rlmovie)"));
+        if (target.isEmpty()) return false;
     }
+    EditedMovie movie = model_->movie();
+    if (toMame_) markAsMame(&movie);
+    QString error;
+    if (!writeMovie(target, movie, &error)) {
+        status_->setText(tr("The movie cannot be written: %1").arg(error));
+        return false;
+    }
+    origin_ = target;
+    askPath_ = false;
     undo_->setClean();
+    updateStatus();
+    return true;
+}
+
+void TasEditorWindow::discard() {
+    undo_->clear();
     updateStatus();
 }
 

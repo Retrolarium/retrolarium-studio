@@ -9060,6 +9060,30 @@
         <source>The TAS editor opens beside the Playtest picture: open Playtest first.</source>
         <translation>TAS 编辑器在 Playtest 画面旁打开：请先打开 Playtest。</translation>
     </message>
+    <message>
+        <source>Opening another project stops it before it finishes.</source>
+        <translation>现在打开其他项目会使它在完成前停止。</translation>
+    </message>
+    <message>
+        <source>Open</source>
+        <translation>打开</translation>
+    </message>
+    <message>
+        <source>Unsaved movie</source>
+        <translation>未保存的录像</translation>
+    </message>
+    <message>
+        <source>Save the changes to %1?</source>
+        <translation>保存对 %1 的修改？</translation>
+    </message>
+    <message>
+        <source>The TAS editor has edits that are not saved. Going on without saving loses them.</source>
+        <translation>TAS 编辑器中有尚未保存的修改。不保存就继续会丢失这些修改。</translation>
+    </message>
+    <message>
+        <source>The movie could not be written: the file keeps its last save</source>
+        <translation>无法写入录像：文件保留最后一次保存的内容</translation>
+    </message>
 </context>
 <context>
     <name>rl::shell::PickMovieDialog</name>
@@ -9446,6 +9470,14 @@
     <message>
         <source>Close the TAS editor</source>
         <translation>关闭 TAS 编辑器</translation>
+    </message>
+    <message>
+        <source>Save the movie as MAME plays it</source>
+        <translation>按 MAME 播放的样子保存录像</translation>
+    </message>
+    <message>
+        <source>Retrolarium movies (*.rlmovie)</source>
+        <translation>Retrolarium 录像 (*.rlmovie)</translation>
     </message>
 </context>
 <context>

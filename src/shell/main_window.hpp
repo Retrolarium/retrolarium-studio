@@ -100,7 +100,9 @@ private:
     void hideTask();
 
     void closeProject();
-    bool confirmDiscard();
+    bool confirmDiscard(bool remembered = true);
+    // Asks about the TAS editor's edits not saved; false: cancelled.
+    bool confirmMovieEdits();
     // The session and undo position the user last chose to discard: asking
     // again before closing it would only repeat the question.
     const sdk::Session* discardedSession_ = nullptr;

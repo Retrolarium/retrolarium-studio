@@ -9060,6 +9060,30 @@
         <source>The TAS editor opens beside the Playtest picture: open Playtest first.</source>
         <translation>TAS エディターは Playtest の画面の横に開きます。先に Playtest を開いてください。</translation>
     </message>
+    <message>
+        <source>Opening another project stops it before it finishes.</source>
+        <translation>別のプロジェクトを開くと、完了する前に停止します。</translation>
+    </message>
+    <message>
+        <source>Open</source>
+        <translation>開く</translation>
+    </message>
+    <message>
+        <source>Unsaved movie</source>
+        <translation>未保存のムービー</translation>
+    </message>
+    <message>
+        <source>Save the changes to %1?</source>
+        <translation>%1 への変更を保存しますか？</translation>
+    </message>
+    <message>
+        <source>The TAS editor has edits that are not saved. Going on without saving loses them.</source>
+        <translation>TAS エディターに保存していない変更があります。保存せずに続けると失われます。</translation>
+    </message>
+    <message>
+        <source>The movie could not be written: the file keeps its last save</source>
+        <translation>ムービーを書き込めませんでした: ファイルは最後に保存した内容のままです</translation>
+    </message>
 </context>
 <context>
     <name>rl::shell::PickMovieDialog</name>
@@ -9446,6 +9470,14 @@
     <message>
         <source>Close the TAS editor</source>
         <translation>TAS エディターを閉じる</translation>
+    </message>
+    <message>
+        <source>Save the movie as MAME plays it</source>
+        <translation>MAME が再生するとおりにムービーを保存</translation>
+    </message>
+    <message>
+        <source>Retrolarium movies (*.rlmovie)</source>
+        <translation>Retrolarium ムービー (*.rlmovie)</translation>
     </message>
 </context>
 <context>

@@ -122,9 +122,18 @@ signals:
 
 public:
     // The movie the run plays (its working file) and the one it came from,
-    // which Save writes.
+    // which Save writes. Opened again on the same files with edits not saved,
+    // the editor keeps them.
     bool open(const QString& working, const QString& origin, QString* error);
     QString origin() const { return origin_; }
+    // Edits not saved to the origin yet.
+    bool isModified() const;
+    // Writes the edits to the origin: to a MAME movie of its own (asked for)
+    // when the origin is another emulator's or the kit lines it up. False
+    // when it was not written.
+    bool save();
+    // Forgets the edits not saved (the run is going away).
+    void discard();
 
 protected:
     // The editor's keys (Ctrl+Z, Ctrl+S, Pause...) are the window's
@@ -144,7 +153,6 @@ private:
     // The toggles of Insert holding, one per button of the movie's pad.
     void buildHoldButtons();
     QVector<int> selectedRows() const;
-    void save();
     void followEmulator();
     void onEmulationEvent(const QString& event);
     void updateStatus();
@@ -164,6 +172,8 @@ private:
     bool wasPaused_ = true;
     QString working_;
     QString origin_;
+    bool askPath_ = false;   // Save asks for a new file: the origin cannot take MAME's frames
+    bool toMame_ = false;    // the frames saved are marked as MAME's own (no lining up)
     QString note_;          // what the last run to a stop found
 };
 

@@ -357,7 +357,7 @@ void MainWindow::buildMenus() {
     connect(saveAction_, &QAction::triggered, this, &MainWindow::saveAll);
     closeAction_ = file->addAction(tr("Close project"));
     connect(closeAction_, &QAction::triggered, this, [this] {
-        if (confirmDiscard()) {
+        if (confirmDiscard(false)) {
             closeProject();
         }
     });
@@ -991,6 +991,14 @@ bool MainWindow::openProjectFile(const QString& path) {
         report(message(sdk::Severity::Error, plugin->id(), error, QFileInfo(path).fileName()));
         return false;
     }
+    // A kit task may be writing the game's folder: opening another project
+    // stops it, the user's call as on exit.
+    if (isBusy() && !frame::MessageDialog::confirm(this, tr("Open project"), tr("A task is still running"),
+                                                   tr("Opening another project stops it before it finishes."),
+                                                   tr("Open"))) {
+        sdk::GameNames::install(previousNames);
+        return false;
+    }
     // Open ROM and version changes reach here after a download or a dialog,
     // with the current project still editable all the while.
     if (!confirmDiscard()) {
@@ -1022,6 +1030,8 @@ bool MainWindow::openProjectFile(const QString& path) {
         scheduleDirtyState();
     });
     connect(session_.get(), &sdk::Session::diagnosticsChanged, this, &MainWindow::refreshDiagnostics);
+    // "Don't save" was said of the edits as they were: any edit since asks again.
+    connect(session_->undoStack(), &QUndoStack::indexChanged, this, [this] { discardedSession_ = nullptr; });
     connect(session_.get(), &sdk::Session::selectedStartChanged, this, &MainWindow::updateActions);
     connect(
         session_.get(), &sdk::Session::documentRequested, this,
@@ -1289,6 +1299,8 @@ void MainWindow::openRomAsProject(const QString& rom) {
     const QDir dir(folder);
     if (!QDir().mkpath(dir.filePath(QStringLiteral("original"))) ||
         !QFile::copy(rom, dir.filePath(QStringLiteral("original/") + file)) || !QFile::copy(rom, dir.filePath(file))) {
+        // The folder is new: gone again, it does not push the next try to another name.
+        QDir(folder).removeRecursively();
         report(message(sdk::Severity::Error, QStringLiteral("project"),
                        tr("The ROM could not be copied into %1.").arg(QDir::toNativeSeparators(folder)), file));
         return;
@@ -1304,8 +1316,11 @@ void MainWindow::openRomAsProject(const QString& rom) {
                                   tomlString(file), tomlString(QStringLiteral("original/") + file), digest);
     const QString project = dir.filePath(stem + QStringLiteral(".rlj"));
     QFile out(project);
-    if (!out.open(QIODevice::WriteOnly | QIODevice::Truncate) || out.write(text.toUtf8()) < 0) {
-        report(message(sdk::Severity::Error, QStringLiteral("project"), out.errorString(), file));
+    if (!out.open(QIODevice::WriteOnly | QIODevice::Truncate) || out.write(text.toUtf8()) < 0 || !out.flush()) {
+        const QString problem = out.errorString();
+        out.close();
+        QDir(folder).removeRecursively();
+        report(message(sdk::Severity::Error, QStringLiteral("project"), problem, file));
         return;
     }
     out.close();
@@ -1539,12 +1554,15 @@ void MainWindow::closeProject() {
     updateStatus();
 }
 
-bool MainWindow::confirmDiscard() {
+bool MainWindow::confirmDiscard(bool remembered) {
     if (!session_ || !session_->isModified()) {
         return true;
     }
+    // An open asks before its dialog and again as the project changes; the
+    // answer holds for the second time. Closing always asks: an open given
+    // up (the dialog cancelled) leaves the edits there.
     const int index = session_->undoStack()->index();
-    if (discardedSession_ == session_.get() && discardedIndex_ == index) {
+    if (remembered && discardedSession_ == session_.get() && discardedIndex_ == index) {
         return true;
     }
     enum Answer { Cancel, Discard, Save };
@@ -1574,6 +1592,25 @@ bool MainWindow::confirmDiscard() {
     return true;
 }
 
+bool MainWindow::confirmMovieEdits() {
+    if (!tasEditor_ || !tasEditor_->isModified()) return true;
+    enum Answer { Cancel, Discard, Save };
+    frame::MessageDialog box(tr("Unsaved movie"),
+                             tr("Save the changes to %1?").arg(QFileInfo(tasEditor_->origin()).fileName()),
+                             tr("The TAS editor has edits that are not saved. Going on without saving "
+                                "loses them."),
+                             this);
+    box.addButton(tr("Don't save"), Discard);
+    box.addButton(tr("Cancel"), Cancel);
+    box.addButton(tr("Save"), Save, true);
+    box.setCancelResult(Cancel);
+    const int answer = box.exec();
+    if (answer == Cancel) return false;
+    if (answer == Save) return tasEditor_->save();
+    tasEditor_->discard();
+    return true;
+}
+
 void MainWindow::restartStudio() {
     // The same project at the same document, in the same theme.
     QStringList arguments{QStringLiteral("--theme"), theme::modeName(theme::Theme::instance().mode())};
@@ -1589,7 +1626,7 @@ void MainWindow::restartStudio() {
 }
 
 void MainWindow::closeEvent(QCloseEvent* event) {
-    if (!confirmDiscard()) {
+    if (!confirmMovieEdits() || !confirmDiscard(false)) {
         event->ignore();
         return;
     }
@@ -2205,6 +2242,8 @@ void MainWindow::showEmulationEvent(const QString& event) {
         text = tr("Cannot rewind further");
     } else if (event == QLatin1String("foreign-state")) {
         text = tr("State %1 is not from this movie: movie stopped").arg(slot);
+    } else if (event == QLatin1String("movie-not-saved")) {
+        text = tr("The movie could not be written: the file keeps its last save");
     }
     if (text.isEmpty()) return;
     notifyEmulation(text);
@@ -2240,6 +2279,9 @@ QString studioMovieHeader(const QString& path) {
     if (lines.value(0).trimmed() != QLatin1String("# retrolarium movie 1")) return {};
     for (int i = 1; i < lines.size() && lines.at(i).trimmed() != QLatin1String("---"); ++i) {
         const QString line = lines.at(i).trimmed();
+        // Frames skipped at the start (an offset) are the kit's to line up:
+        // the recording would go on from the wrong frame.
+        if (line.startsWith(QLatin1String("offset ")) && line.mid(7).trimmed().toInt() != 0) return {};
         if (line.startsWith(QLatin1String("frames ")) || line.startsWith(QLatin1String("offset "))) continue;
         // MAME's own, or a port to MAME of another emulator's ("source mame
         // from fm2 ..."): both go on in MAME.
@@ -2273,6 +2315,8 @@ QVector<MovieChoice> movieChoices(const QJsonArray& movies) {
 void MainWindow::startMovie(int mode) {
     using Mode = runtime::MovieRequest::Mode;
     if (!session_ || emulatorKind().isEmpty() || isBusy()) return;
+    // Another run replaces the movie the TAS editor edits.
+    if (!confirmMovieEdits()) return;
     const QString mame = runtime::ToolLocator::emulatorPath(QStringLiteral("mame"));
     if (mame.isEmpty()) {
         report(message(sdk::Severity::Error, QStringLiteral("playtest"),
@@ -2446,6 +2490,9 @@ void MainWindow::launchMovie(const QJsonObject& answer, int mode, const QString&
     if (openEditorOnLaunch_) {
         openEditorOnLaunch_ = false;
         if (mode == int(Mode::Play)) openTasEditor();
+    } else if (mode == int(Mode::Play) && tasEditor_ && tasEditor_->isVisible()) {
+        // The editor shown takes the new movie.
+        openTasEditor();
     }
 }
 

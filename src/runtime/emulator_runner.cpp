@@ -307,7 +307,10 @@ local function due(last, every)
     return machine.paused or real_ms() - last >= every
 end
 
-local speed = 100           -- percent; 0 runs without a limit
+-- A hot reload hard-resets the machine and runs this script again: the
+-- speed chosen, the events counted and the actions taken carry over in _G,
+-- as the studio keeps counting them.
+local speed = _G.retrolarium_speed or 100   -- percent; 0 runs without a limit
 local function apply_speed()
     local unlimited = forwarding or speed == 0
     video.throttled = was_throttled and not unlimited
@@ -315,6 +318,7 @@ local function apply_speed()
     video.frameskip = unlimited and 10 or was_frameskip
     sound.ui_mute = was_muted or unlimited or speed ~= 100
 end
+if speed ~= 100 then apply_speed() end
 
 -- The pads by mask, every field of a mask (MAME lists some twice).
 local pads = {{}, {}}
@@ -407,10 +411,11 @@ for _, item in ipairs({@STOPWHEN@}) do
     if chunk ~= nil then stop_when[#stop_when + 1] = {item[1], chunk} end
 end
 local run_until = nil       -- the stop_when index a run waits for
-local event, events, ack = "", 0, 0
+local event, events, ack = "", _G.retrolarium_events or 0, _G.retrolarium_ack or 0
 -- Each event counts, so the studio sees two saves in a row.
 local function set_event(name)
     event, events = name, events + 1
+    _G.retrolarium_events = events
 end
 
 local function runs_text(count)
@@ -418,8 +423,13 @@ local function runs_text(count)
     while i <= count do
         local entry = log[i]
         local j = i
-        while j < count and log[j + 1][1] == entry[1] and log[j + 1][2] == entry[2] do j = j + 1 end
+        -- A frame with a command (reset, power) is a run of its own.
+        while entry[3] == nil and j < count and log[j + 1][1] == entry[1] and log[j + 1][2] == entry[2]
+                and log[j + 1][3] == nil do
+            j = j + 1
+        end
         lines[#lines + 1] = string.format("%d %02x %02x", j - i + 1, entry[1], entry[2])
+            .. (entry[3] ~= nil and " " .. entry[3] or "")
         i = j + 1
     end
     return table.concat(lines, "\n")
@@ -434,29 +444,62 @@ local function read_runs(path)
         elseif line:find("^frame %d+$") then
             frame = tonumber(line:match("%d+"))
         elseif body or not line:find("^[#%a]") then
-            local count, one, two = line:match("^(%d+) (%x+) (%x+)")
+            local count, one, two, command = line:match("^(%d+) (%x+) (%x+) ?(%a*)")
             if count ~= nil then
-                for _ = 1, tonumber(count) do entries[#entries + 1] = {tonumber(one, 16), tonumber(two, 16)} end
+                -- The command (reset, power) comes before the run's first frame.
+                command = (command == "reset" or command == "power") and command or nil
+                for k = 1, tonumber(count) do
+                    entries[#entries + 1] = {tonumber(one, 16), tonumber(two, 16), k == 1 and command or nil}
+                end
             end
         end
     end
     file:close()
     return entries, frame
 end
+-- Written beside the movie, then put in its place: a write that fails (a
+-- full disk) leaves the movie as it was last saved, and says so.
 local function write_movie()
     if movie_file == "" or movie_mode ~= "record" then return end
-    local file = io.open(movie_file .. ".tmp", "w")
-    if file == nil then return end
-    file:write("# retrolarium movie 1\n", movie_header, "frames ", #log, "\noffset 0\n---\n")
-    if #log > 0 then file:write(runs_text(#log), "\n") end
-    file:close()
-    os.remove(movie_file)
-    os.rename(movie_file .. ".tmp", movie_file)
+    local temporary = movie_file .. ".tmp"
+    local file = io.open(temporary, "w")
+    local ok = file ~= nil
+        and file:write("# retrolarium movie 1\n", movie_header, "frames ", #log, "\noffset 0\n---\n") ~= nil
+        and (#log == 0 or file:write(runs_text(#log), "\n") ~= nil)
+    if file ~= nil then ok = file:close() and ok end
+    if ok then
+        os.remove(movie_file)
+        ok = os.rename(temporary, movie_file) ~= nil
+    end
+    if not ok then
+        os.remove(temporary)
+        set_event("movie-not-saved")
+    end
+    return ok
+end
+
+-- The pads of the movie's next frame, after its command: "reset" presses
+-- the reset button, "power" turns the machine off and on. That hard reset
+-- runs this script again, which plays on from the frame after it.
+local function play_frame(entry)
+    if entry ~= nil and entry[3] == "reset" then
+        machine:soft_reset()
+    elseif entry ~= nil and entry[3] == "power" then
+        _G.retrolarium_power_frame = done
+        machine:hard_reset()
+    end
+    set_pads(entry)
 end
 
 if movie_mode == "play" or movie_mode == "resume" then
     log = read_runs(movie_file) or {}
-    set_pads(log[1])
+    if _G.retrolarium_power_frame ~= nil then
+        done, _G.retrolarium_power_frame = _G.retrolarium_power_frame, nil
+        _G.retrolarium_movie.frame = done
+        set_pads(log[done + 1])
+    else
+        play_frame(log[1])
+    end
 end
 
 local function write_status()
@@ -734,6 +777,7 @@ end
 local function run_action(verb, argument)
     if verb == "speed" then
         speed = math.max(0, tonumber(argument) or 100)
+        _G.retrolarium_speed = speed
         apply_speed()
     elseif verb == "pause" then
         user_paused, resume_after = true, false
@@ -779,10 +823,10 @@ local function run_action(verb, argument)
             if machine.paused then emu.step() end
         end
     elseif verb == "stopmovie" then
-        write_movie()
+        local saved = write_movie() ~= false
         if movie_mode == "play" or movie_mode == "resume" then set_pads(nil) end
         movie_mode = ""
-        set_event("stopped")
+        if saved then set_event("stopped") end
     elseif verb == "flush" then
         write_movie()
     elseif verb == "exit" then
@@ -860,6 +904,7 @@ local function take_actions()
         serial = tonumber(serial)
         if serial ~= nil and serial > ack then
             ack = serial
+            _G.retrolarium_ack = ack
             run_action(verb, argument)
         end
     end
@@ -920,9 +965,19 @@ if screen ~= nil and _G.retrolarium_draw_hook ~= nil then
 end
 
 local status_count = 0
+local first_capture = true
 local function control_tick()
     local now = now_time()
     if last_time == nil then last_time = now end
+    if first_capture then
+        -- The machine as it starts, before its first frame: a movie edited
+        -- from its first frames on goes back here.
+        first_capture = false
+        if done == 0 and not capture_pending then
+            capture_pending = true
+            emu.pause()
+        end
+    end
     if machine.paused and now == last_time then
         if unpause_next then
             unpause_next = false
@@ -988,7 +1043,7 @@ local function control_tick()
                     end
                 end
             else
-                set_pads(log[done + 1])
+                play_frame(log[done + 1])
             end
         end
         if run_until ~= nil then
@@ -1901,6 +1956,11 @@ bool EmulatorRunner::reload(const sdk::ProcessSpec& requested, const QString& ca
         cart_ = previous;
         append(tr("Hot reload failed: %1; restarting.").arg(error));
         return false;
+    }
+    // Save states belong to the image: the rebuilt game has its own.
+    if (movie_.stateKey.isEmpty()) {
+        stateDir_ = QDir(QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation))
+                        .filePath(QStringLiteral("states/") + imageKey({QStringLiteral("-cart"), cartSource}));
     }
     if (paused_) {
         togglePause();

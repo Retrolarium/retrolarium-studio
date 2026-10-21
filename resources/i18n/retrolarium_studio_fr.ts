@@ -9096,6 +9096,30 @@
         <source>The TAS editor opens beside the Playtest picture: open Playtest first.</source>
         <translation>L&apos;éditeur TAS s&apos;ouvre à côté de l&apos;image de Playtest : ouvrez d&apos;abord Playtest.</translation>
     </message>
+    <message>
+        <source>Opening another project stops it before it finishes.</source>
+        <translation>Ouvrir un autre projet l’interrompt avant la fin.</translation>
+    </message>
+    <message>
+        <source>Open</source>
+        <translation>Ouvrir</translation>
+    </message>
+    <message>
+        <source>Unsaved movie</source>
+        <translation>Film non enregistré</translation>
+    </message>
+    <message>
+        <source>Save the changes to %1?</source>
+        <translation>Enregistrer les modifications de %1 ?</translation>
+    </message>
+    <message>
+        <source>The TAS editor has edits that are not saved. Going on without saving loses them.</source>
+        <translation>L’éditeur TAS contient des modifications non enregistrées. Continuer sans enregistrer les fait perdre.</translation>
+    </message>
+    <message>
+        <source>The movie could not be written: the file keeps its last save</source>
+        <translation>Impossible d&apos;écrire le film : le fichier garde son dernier enregistrement</translation>
+    </message>
 </context>
 <context>
     <name>rl::shell::PickMovieDialog</name>
@@ -9482,6 +9506,14 @@
     <message>
         <source>Close the TAS editor</source>
         <translation>Fermer l&apos;éditeur TAS</translation>
+    </message>
+    <message>
+        <source>Save the movie as MAME plays it</source>
+        <translation>Enregistrer le film tel que MAME le joue</translation>
+    </message>
+    <message>
+        <source>Retrolarium movies (*.rlmovie)</source>
+        <translation>Films Retrolarium (*.rlmovie)</translation>
     </message>
 </context>
 <context>
