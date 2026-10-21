@@ -94,7 +94,10 @@ void SolomonRooms::setBlock(int index, QPoint cell, bool white, bool on) {
     QJsonObject r = room(index);
     const QString key = white ? QStringLiteral("white") : QStringLiteral("brown");
     QJsonArray rows = r.value(key).toArray();
+    // Rows a hand-edited document leaves short grow to the cell edited.
+    while (rows.size() <= cell.y()) rows.append(QJsonArray());
     QJsonArray row = rows.at(cell.y()).toArray();
+    while (row.size() <= cell.x()) row.append(0);
     row.replace(cell.x(), on ? 1 : 0);
     rows.replace(cell.y(), row);
     r.insert(key, rows);

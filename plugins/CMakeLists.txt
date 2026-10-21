@@ -373,3 +373,27 @@ add_executable(rom_project_test
 )
 target_link_libraries(rom_project_test PRIVATE rom_plugin)
 studio_add_test(rom_project_test)
+
+# Checked copies of game libraries, for the tests of malformed documents: the
+# same sources with Qt's and libstdc++'s index checks on, so a read or write
+# past an array aborts the test instead of passing unseen. The studio itself
+# links the unchecked libraries.
+function(studio_checked_copy target)
+    get_target_property(sources ${target} SOURCES)
+    get_target_property(includes ${target} INCLUDE_DIRECTORIES)
+    get_target_property(links ${target} LINK_LIBRARIES)
+    add_library(${target}_checked STATIC ${sources})
+    target_include_directories(${target}_checked PUBLIC ${includes})
+    target_link_libraries(${target}_checked PUBLIC ${links})
+    target_compile_definitions(${target}_checked PUBLIC QT_FORCE_ASSERTS _GLIBCXX_ASSERTIONS)
+endfunction()
+studio_checked_copy(smb_data)
+studio_checked_copy(castle_excellent_plugin)
+studio_checked_copy(solomon_plugin)
+
+add_executable(malformed_documents_test
+    tests/malformed_documents_test.cpp
+)
+target_link_libraries(malformed_documents_test PRIVATE smb_data_checked castle_excellent_plugin_checked
+    solomon_plugin_checked)
+studio_add_test(malformed_documents_test games:smb1_src/tests/retrolarium/smb1_ju_level_scenes.json)

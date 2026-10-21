@@ -737,6 +737,10 @@
         <source>Cell opens</source>
         <translation>Открытие клетки</translation>
     </message>
+    <message>
+        <source>%1 has rooms of an impossible size.</source>
+        <translation>В %1 комнаты невозможного размера.</translation>
+    </message>
 </context>
 <context>
     <name>doraemon</name>

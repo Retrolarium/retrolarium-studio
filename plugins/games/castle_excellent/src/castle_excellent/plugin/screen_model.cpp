@@ -92,6 +92,7 @@ QJsonArray withPalette(QJsonArray attributes, int cell, int palette) {
     const int index = (y / 4) * 8 + x / 4;
     const int shift = ((y % 4) / 2) * 4 + ((x % 4) / 2) * 2;
     const int value = (attributes.at(index).toInt() & ~(3 << shift)) | ((palette & 3) << shift);
+    while (attributes.size() <= index) attributes.append(0);
     attributes.replace(index, value);
     return attributes;
 }
@@ -231,6 +232,8 @@ bool CastleExcellentScreenModel::placeObject(const QString& libraryItem, QPoint 
     setCurrentLibraryItem(libraryItem);
     QJsonObject s = screen();
     QJsonArray tiles = s.value(QStringLiteral("tiles")).toArray();
+    // A short tile list (a hand-edited document) grows to the cell edited.
+    while (tiles.size() <= cell.y() * kWidth + cell.x()) tiles.append(0);
     tiles.replace(cell.y() * kWidth + cell.x(), value);
     s.insert(QStringLiteral("tiles"), tiles);
     selectObject(QStringLiteral("cell:%1").arg(cell.y() * kWidth + cell.x()));
@@ -252,6 +255,7 @@ bool CastleExcellentScreenModel::paintCell(QPoint cell, int value) {
     } else {
         QJsonArray tiles = stroke_->value(QStringLiteral("tiles")).toArray();
         if (tiles.at(at).toInt() == value) return false;
+        while (tiles.size() <= at) tiles.append(0);
         tiles.replace(at, value);
         stroke_->insert(QStringLiteral("tiles"), tiles);
     }
@@ -309,6 +313,7 @@ bool CastleExcellentScreenModel::setField(const QString& key, const QVariant& va
     QJsonObject s = screen();
     if (key == QLatin1String("tile")) {
         QJsonArray tiles = s.value(QStringLiteral("tiles")).toArray();
+        while (tiles.size() <= cell_) tiles.append(0);
         tiles.replace(cell_, std::clamp(value.toInt(), 0, 255));
         s.insert(QStringLiteral("tiles"), tiles);
     } else if (key == QLatin1String("palette")) {
@@ -546,6 +551,7 @@ bool CastleExcellentScreenTextModel::setCell(int row, int column, const QString&
         QJsonArray list = document.value(QStringLiteral("screens")).toArray();
         QJsonObject screen = list.at(0).toObject();
         QJsonArray tiles = screen.value(QStringLiteral("tiles")).toArray();
+        while (tiles.size() < line.row * kWidth + line.column + width) tiles.append(0);
         for (int i = 0; i < width; ++i) tiles.replace(line.row * kWidth + line.column + i, codes.at(i));
         screen.insert(QStringLiteral("tiles"), tiles);
         list.replace(0, screen);

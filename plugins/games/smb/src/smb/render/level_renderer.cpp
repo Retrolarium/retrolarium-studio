@@ -364,7 +364,10 @@ SmbLevelScene renderSmbLevelScene(const QString &name, const QVector<int> &heade
     int background = header[4], terrain = header[5], style = header[3];
     const bool cloud = style == 3;
     QVector<QVector<SmbPositionedObject>> modifiers(width);
-    for (const auto &item : positioned) if (item.record.row == 14) modifiers[item.x].push_back(item);
+    // A record out of the area (a hand-edited document) has no column to modify.
+    for (const auto &item : positioned) {
+        if (item.record.row == 14 && item.x >= 0 && item.x < width) modifiers[item.x].push_back(item);
+    }
     QVector<QVector<int>> grid;
     grid.reserve(width);
     for (int column = 0; column < width; ++column) {

@@ -737,6 +737,10 @@
         <source>Cell opens</source>
         <translation>Celda que se abre</translation>
     </message>
+    <message>
+        <source>%1 has rooms of an impossible size.</source>
+        <translation>%1 tiene salas de un tamaño imposible.</translation>
+    </message>
 </context>
 <context>
     <name>doraemon</name>

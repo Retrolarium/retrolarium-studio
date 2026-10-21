@@ -737,6 +737,10 @@
         <source>Cell opens</source>
         <translation>セルが開く</translation>
     </message>
+    <message>
+        <source>%1 has rooms of an impossible size.</source>
+        <translation>%1 には大きさがありえないルームがあります。</translation>
+    </message>
 </context>
 <context>
     <name>doraemon</name>

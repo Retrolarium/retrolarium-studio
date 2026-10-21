@@ -89,6 +89,7 @@ QVector<int> CastleExcellentPainter::cellPalettes(const QVector<int>& cells) con
             int offset = 0;
             int quadrant = 0;
             place(x, y, &offset, &quadrant);
+            if (offset < 0 || offset >= attributes.size()) continue;
             const int mask = attributeMasks_.value(quadrant, 3 << (quadrant * 2));
             const int value = ownPalettes_.value(cell) * 0x55;
             attributes[offset] = (attributes.at(offset) & (mask ^ 0xff)) | (value & mask);
@@ -101,7 +102,7 @@ QVector<int> CastleExcellentPainter::cellPalettes(const QVector<int>& cells) con
             int offset = 0;
             int quadrant = 0;
             place(x, y, &offset, &quadrant);
-            result << ((attributes.at(offset) >> (quadrant * 2)) & 3);
+            result << ((attributes.value(offset) >> (quadrant * 2)) & 3);
         }
     }
     return result;

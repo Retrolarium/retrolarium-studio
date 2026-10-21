@@ -737,6 +737,10 @@
         <source>Cell opens</source>
         <translation>格子打开</translation>
     </message>
+    <message>
+        <source>%1 has rooms of an impossible size.</source>
+        <translation>%1 中有尺寸不可能的房间。</translation>
+    </message>
 </context>
 <context>
     <name>doraemon</name>

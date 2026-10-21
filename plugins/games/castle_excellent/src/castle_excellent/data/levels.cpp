@@ -45,6 +45,10 @@ CastleExcellentLevels CastleExcellentLevels::load(const QString& path) {
     }
     levels.width_ = levels.root_.value(QStringLiteral("width")).toInt(20);
     levels.height_ = levels.root_.value(QStringLiteral("height")).toInt(20);
+    // A room fills two name tables at most.
+    if (levels.width_ < 1 || levels.width_ > 30 || levels.height_ < 1 || levels.height_ > 23) {
+        fail(rlTr("castle_excellent", "%1 has rooms of an impossible size.").arg(path));
+    }
     return levels;
 }
 
@@ -104,7 +108,11 @@ void CastleExcellentLevels::setCell(int index, QPoint cell, int value) {
     }
     QJsonObject r = room(index);
     QJsonArray rows = r.value(QStringLiteral("cells")).toArray();
+    // Rows a hand-edited document leaves short read as empty cells: they
+    // grow to the cell edited.
+    while (rows.size() <= cell.y()) rows.append(QJsonArray());
     QJsonArray row = rows.at(cell.y()).toArray();
+    while (row.size() <= cell.x()) row.append(0);
     row.replace(cell.x(), value);
     rows.replace(cell.y(), row);
     r.insert(QStringLiteral("cells"), rows);
