@@ -2,6 +2,7 @@
 
 #include <QDir>
 #include <QFile>
+#include <QFileInfo>
 #include <QJsonDocument>
 #include <QJsonObject>
 
@@ -72,7 +73,16 @@ GameNames GameNames::fromRepository(const QString& repository, QString* error) {
 
 GameNames GameNames::forProject(const ProjectFile& project, QString* error) {
     const QString repository = project.string(QStringLiteral("source.repository"));
-    return repository.isEmpty() ? GameNames() : fromRepository(project.resolve(repository), error);
+    if (!repository.isEmpty()) return fromRepository(project.resolve(repository), error);
+    // A project the kit generates in a game repository sits in
+    // <repository>/.retrolarium/<version>/, naming its repository or not
+    // (Flicky's names its source snapshot instead).
+    QDir up = QFileInfo(project.path()).absoluteDir();
+    if (up.cdUp() && up.dirName() == QLatin1String(".retrolarium") && up.cdUp() &&
+        QFileInfo::exists(up.filePath(QStringLiteral("config/names.json")))) {
+        return fromRepository(up.absolutePath(), error);
+    }
+    return GameNames();
 }
 
 const GameNames& GameNames::current() {

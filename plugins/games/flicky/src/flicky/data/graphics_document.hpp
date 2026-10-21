@@ -33,6 +33,8 @@ struct FlickyCompactPaletteEntry final {
 class FlickyGraphicsDocument final {
 public:
     static FlickyGraphicsDocument load(const QString &path);
+    // Revert goes back to `pristine` (the document as first extracted).
+    void adoptBaseline(const FlickyGraphicsDocument &pristine) { baseline_ = pristine.baseline_; }
     static FlickyGraphicsDocument fromJson(const QJsonObject &root);
 
     [[nodiscard]] QJsonObject toJson() const;

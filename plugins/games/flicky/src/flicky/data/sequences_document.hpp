@@ -18,6 +18,8 @@ public:
 class FlickySequencesDocument final {
 public:
     static FlickySequencesDocument load(const QString &path);
+    // Revert goes back to `pristine` (the document as first extracted).
+    void adoptBaseline(const FlickySequencesDocument &pristine) { baseline_ = pristine.baseline_; }
     static FlickySequencesDocument fromJson(const QJsonObject &root);
 
     [[nodiscard]] QJsonObject toJson() const;

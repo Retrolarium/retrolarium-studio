@@ -68,6 +68,8 @@ struct FlickyFmVoice final {
 class FlickySoundDocument final {
 public:
     static FlickySoundDocument load(const QString &path);
+    // Revert goes back to `pristine` (the document as first extracted).
+    void adoptBaseline(const FlickySoundDocument &pristine) { baseline_ = pristine.baseline_; baselineParsed_ = pristine.baselineParsed_; }
     static FlickySoundDocument fromSource(const QString &source);
 
     [[nodiscard]] QString source() const;

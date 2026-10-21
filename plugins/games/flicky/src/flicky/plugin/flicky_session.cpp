@@ -92,9 +92,20 @@ QString two(int value) {
 }
 
 template <class T>
-void loadTracked(Tracked<T>& tracked, const QString& path) {
+void loadTracked(Tracked<T>& tracked, const QString& path, const QString& sourceRoot) {
     tracked.path = path;
     tracked.doc = std::make_shared<T>(T::load(path));
+    // A game repository keeps the documents as first extracted in original/
+    // beside flicky-source/: Revert goes back to those, whatever was saved
+    // since. Without them, to the documents as opened.
+    const QString pristine = QDir(sourceRoot).absoluteFilePath(
+        QStringLiteral("../original/") + QDir(sourceRoot).relativeFilePath(path));
+    if (QFileInfo::exists(pristine)) {
+        try {
+            tracked.doc->adoptBaseline(T::load(pristine));
+        } catch (const std::exception&) {
+        }
+    }
     tracked.saved = *tracked.doc;
 }
 
@@ -127,10 +138,10 @@ std::unique_ptr<FlickySession> FlickySession::open(const sdk::ProjectFile& proje
         session->sourceRoot_ = project.resolve(QStringLiteral("flicky-source"));
         session->levels_ = FlickyLevelDocument::load(session->levelsPath_);
         session->savedLevels_ = session->levels_;
-        loadTracked(session->graphics_, require(QStringLiteral("flicky.graphics")));
-        loadTracked(session->semantics_, require(QStringLiteral("flicky.semantics")));
-        loadTracked(session->sequences_, require(QStringLiteral("flicky.animations")));
-        loadTracked(session->sound_, require(QStringLiteral("flicky.sound")));
+        loadTracked(session->graphics_, require(QStringLiteral("flicky.graphics")), session->sourceRoot_);
+        loadTracked(session->semantics_, require(QStringLiteral("flicky.semantics")), session->sourceRoot_);
+        loadTracked(session->sequences_, require(QStringLiteral("flicky.animations")), session->sourceRoot_);
+        loadTracked(session->sound_, require(QStringLiteral("flicky.sound")), session->sourceRoot_);
         session->renderer_ = std::make_unique<FlickyLevelSceneRenderer>(
             session->sourceRoot_, session->graphics_.doc, session->semantics_.doc,
             session->sequences_.doc);
@@ -1456,6 +1467,12 @@ void FlickySession::launch(int round) {
     plan.cached = [this, keyed](sdk::ProcessSpec* spec) {
         const auto planned = plans_.constFind(keyed());
         if (planned == plans_.constEnd()) return false;
+        // The record is a file in the project: a plan whose program is not
+        // the MAME chosen in Settings is asked for again, never run.
+        const QString mame = host() ? host()->emulatorPath(QStringLiteral("mame")) : QString();
+        if (mame.isEmpty() || QFileInfo(planned->program).canonicalFilePath() != QFileInfo(mame).canonicalFilePath()) {
+            return false;
+        }
         *spec = *planned;
         return true;
     };
