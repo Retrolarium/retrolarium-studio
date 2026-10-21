@@ -241,8 +241,10 @@ void unregisterInstallation(const QString& directory) {
 }
 
 // Copies what the user added to the old installation (the Disk System BIOS,
-// MAME's settings) into the new one.
-void keepUserFiles(const QString& from, const QString& to) {
+// MAME's settings) into the new one. False when a file could not be copied:
+// the old installation, which still has it, must stay.
+bool keepUserFiles(const QString& from, const QString& to) {
+    bool all = true;
     for (const QString& kept : kKeptPaths) {
         const QString source = QDir(from).filePath(kept);
         if (!QDir(source).exists()) continue;
@@ -251,10 +253,13 @@ void keepUserFiles(const QString& from, const QString& to) {
             const QString file = it.next();
             const QString target = QDir(to).filePath(QDir(from).relativeFilePath(file));
             if (QFile::exists(target)) continue;
-            QDir().mkpath(QFileInfo(target).absolutePath());
-            QFile::copy(file, target);
+            if (!QDir().mkpath(QFileInfo(target).absolutePath()) || !QFile::copy(file, target) ||
+                QFileInfo(target).size() != QFileInfo(file).size()) {
+                all = false;
+            }
         }
     }
+    return all;
 }
 
 }  // namespace
@@ -392,8 +397,9 @@ bool install(const Request& request, const Progress& progress, QString* error) {
             if (!listed(ours, name) && !listed(old, name)) carried << name;
         }
     }
+    bool userFilesKept = true;
     if (update) {
-        keepUserFiles(target, staging.path());
+        userFilesKept = keepUserFiles(target, staging.path());
         if (!QDir().rename(target, previous)) {
             if (error) *error = rlTr("setup", "Could not replace the earlier version: a program may still use its files.");
             return false;
@@ -438,8 +444,9 @@ bool install(const Request& request, const Progress& progress, QString* error) {
         for (const QString& name : carried) {
             kept = QDir().rename(QDir(previous).filePath(name), QDir(target).filePath(name)) && kept;
         }
-        // Something of the user's that could not move stays in the old folder.
-        if (kept) removeTree(previous);
+        // Something of the user's that could not move or be copied stays in
+        // the old folder.
+        if (kept && userFilesKept) removeTree(previous);
     }
     if (progress) progress(100, rlTr("setup", "Retrolarium Studio is installed"));
     return true;

@@ -77,18 +77,21 @@ function Copy-Tree([string]$From, [string]$To, [string[]]$SkipDirectories, [stri
     }
 }
 
-# The studio, and in tools\ the helper its Flicky builds run.
+# The studio, and in tools\ the helpers it runs: the level writer Flicky's
+# builds use and the YM2612 renderer its sound previews play through.
 Copy-Item -LiteralPath (Join-Path $Bin "retrolarium-studio.exe") -Destination $package
 $helpers = Join-Path $package "tools"
 New-Item -ItemType Directory -Force -Path $helpers | Out-Null
-Copy-Item -LiteralPath (Join-Path $Bin "tools\retrolarium-flicky-level-writer.exe") -Destination $helpers
+foreach ($helper in @("retrolarium-flicky-level-writer.exe", "retrolarium-ymfm-renderer.exe")) {
+    Copy-Item -LiteralPath (Join-Path $Bin "tools\$helper") -Destination $helpers
+}
 
 # The kit, as a plain package next to a launcher, with the assemblers its
-# checkout built (retrolarium-kit	ools\build_toolchains.ps1); the package
+# checkout built (retrolarium-kit\tools\build_toolchains.ps1); the package
 # carries them, so users need nothing installed.
 $toolchainStatus = & python -c "import json, sys; sys.path[:0] = [r'$(Join-Path $repositoryRoot 'retrolarium-kit\src')', r'$(Join-Path $repositoryRoot 'retrolarium-core\python')']; from retrolarium_kit.core.build_toolchains import packaged_toolchain_status as s; print(all(item['available'] for item in s('windows-x86_64')['suites'].values()))"
 if ($toolchainStatus -ne "True") {
-    throw "The kit's assemblers are missing or differ from its manifest; run retrolarium-kit	ools\build_toolchains.ps1 first."
+    throw "The kit's assemblers are missing or differ from its manifest; run retrolarium-kit\tools\build_toolchains.ps1 first."
 }
 $kit = Join-Path $package "kit"
 # Only the Windows toolchains: the package runs on Windows.
