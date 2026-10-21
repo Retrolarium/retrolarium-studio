@@ -9128,6 +9128,10 @@
         <source>Opened %1 as it is, in %2.</source>
         <translation>Otwarto %1 bez zmian, w %2.</translation>
     </message>
+    <message>
+        <source>The TAS editor opens beside the Playtest picture: open Playtest first.</source>
+        <translation>Edytor TAS otwiera się obok obrazu Playtest: najpierw otwórz Playtest.</translation>
+    </message>
 </context>
 <context>
     <name>rl::shell::PickMovieDialog</name>
@@ -9368,10 +9372,6 @@
 <context>
     <name>rl::shell::TasEditorWindow</name>
     <message>
-        <source>TAS editor</source>
-        <translation>Edytor TAS</translation>
-    </message>
-    <message>
         <source>Save</source>
         <translation>Zapisz</translation>
     </message>
@@ -9456,10 +9456,6 @@
         <translation>Zmień przyciski</translation>
     </message>
     <message>
-        <source>TAS editor — %1</source>
-        <translation>Edytor TAS — %1</translation>
-    </message>
-    <message>
         <source>The movie cannot be written: %1</source>
         <translation>Nie można zapisać filmu: %1</translation>
     </message>
@@ -9518,6 +9514,10 @@
     <message>
         <source>frames holding</source>
         <translation>klatek, wciśnięte:</translation>
+    </message>
+    <message>
+        <source>Close the TAS editor</source>
+        <translation>Zamknij edytor TAS</translation>
     </message>
 </context>
 <context>

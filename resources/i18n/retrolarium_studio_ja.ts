@@ -9056,6 +9056,10 @@
         <source>Opened %1 as it is, in %2.</source>
         <translation>%1 をそのまま %2 で開きました。</translation>
     </message>
+    <message>
+        <source>The TAS editor opens beside the Playtest picture: open Playtest first.</source>
+        <translation>TAS エディターは Playtest の画面の横に開きます。先に Playtest を開いてください。</translation>
+    </message>
 </context>
 <context>
     <name>rl::shell::PickMovieDialog</name>
@@ -9296,10 +9300,6 @@
 <context>
     <name>rl::shell::TasEditorWindow</name>
     <message>
-        <source>TAS editor</source>
-        <translation>TAS エディタ</translation>
-    </message>
-    <message>
         <source>Save</source>
         <translation>保存</translation>
     </message>
@@ -9384,10 +9384,6 @@
         <translation>ボタンを変更</translation>
     </message>
     <message>
-        <source>TAS editor — %1</source>
-        <translation>TAS エディタ — %1</translation>
-    </message>
-    <message>
         <source>The movie cannot be written: %1</source>
         <translation>ムービーを書き込めません: %1</translation>
     </message>
@@ -9446,6 +9442,10 @@
     <message>
         <source>frames holding</source>
         <translation>フレーム、押すボタン:</translation>
+    </message>
+    <message>
+        <source>Close the TAS editor</source>
+        <translation>TAS エディターを閉じる</translation>
     </message>
 </context>
 <context>

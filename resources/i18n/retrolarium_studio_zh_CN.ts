@@ -9056,6 +9056,10 @@
         <source>Opened %1 as it is, in %2.</source>
         <translation>已按原样打开 %1，位于 %2。</translation>
     </message>
+    <message>
+        <source>The TAS editor opens beside the Playtest picture: open Playtest first.</source>
+        <translation>TAS 编辑器在 Playtest 画面旁打开：请先打开 Playtest。</translation>
+    </message>
 </context>
 <context>
     <name>rl::shell::PickMovieDialog</name>
@@ -9296,10 +9300,6 @@
 <context>
     <name>rl::shell::TasEditorWindow</name>
     <message>
-        <source>TAS editor</source>
-        <translation>TAS 编辑器</translation>
-    </message>
-    <message>
         <source>Save</source>
         <translation>保存</translation>
     </message>
@@ -9384,10 +9384,6 @@
         <translation>修改按键</translation>
     </message>
     <message>
-        <source>TAS editor — %1</source>
-        <translation>TAS 编辑器 — %1</translation>
-    </message>
-    <message>
         <source>The movie cannot be written: %1</source>
         <translation>无法写入录像：%1</translation>
     </message>
@@ -9446,6 +9442,10 @@
     <message>
         <source>frames holding</source>
         <translation>帧，按住：</translation>
+    </message>
+    <message>
+        <source>Close the TAS editor</source>
+        <translation>关闭 TAS 编辑器</translation>
     </message>
 </context>
 <context>

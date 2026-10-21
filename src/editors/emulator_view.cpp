@@ -12,10 +12,10 @@
 
 #include <QHBoxLayout>
 #include <QPainter>
-#include <QPlainTextEdit>
 #include <QPushButton>
 #include <QScrollBar>
 #include <QSettings>
+#include <QSplitter>
 #include <QStandardPaths>
 #include <QTimer>
 #include <QVBoxLayout>
@@ -312,23 +312,13 @@ EmulatorView::EmulatorView(sdk::EmulatorModel* model, runtime::EmulatorRunner* r
     auto* layout = new QVBoxLayout(this);
     layout->setContentsMargins(0, 0, 0, 0);
     layout->setSpacing(0);
-    stage_ = new EmulatorStage(model, runner, this);
-    layout->addWidget(stage_, 1);
-    layout->addWidget(new ui::Divider(Qt::Horizontal, ui::Divider::Strength::Line, this));
-    log_ = new QPlainTextEdit(this);
-    log_->setProperty("log", true);
-    log_->setReadOnly(true);
-    log_->setFont(theme::font(theme::TextRole::Mono, 11.5));
-    log_->setFixedHeight(130);
-    log_->setLineWrapMode(QPlainTextEdit::NoWrap);
-    log_->setPlainText(runner_->log().join(QLatin1Char('\n')));
-    layout->addWidget(log_);
+    split_ = new QSplitter(Qt::Horizontal, this);
+    split_->setChildrenCollapsible(false);
+    stage_ = new EmulatorStage(model, runner, split_);
+    split_->addWidget(stage_);
+    layout->addWidget(split_, 1);
 
     connect(runner_, &runtime::EmulatorRunner::stateChanged, this, &EmulatorView::updateState);
-    connect(runner_, &runtime::EmulatorRunner::outputLine, this, [this](const QString& line) {
-        log_->appendPlainText(line);
-        log_->verticalScrollBar()->setValue(log_->verticalScrollBar()->maximum());
-    });
     if (processes_) {
         connect(processes_, &runtime::ProcessRunner::started, this, [this](const QString& label, const QString&) {
             busyStep_ = label;
@@ -350,8 +340,24 @@ EmulatorView::EmulatorView(sdk::EmulatorModel* model, runtime::EmulatorRunner* r
 }
 
 EmulatorView::~EmulatorView() {
+    setSidePanel(nullptr);
     runner_->stopNow();
     runner_->setSurface(nullptr);
+}
+
+void EmulatorView::setSidePanel(QWidget* panel) {
+    if (side_ == panel) return;
+    if (side_) {
+        side_->hide();
+        side_->setParent(window());
+    }
+    side_ = panel;
+    if (!panel) return;
+    split_->insertWidget(0, panel);
+    split_->setStretchFactor(0, 0);
+    split_->setStretchFactor(1, 1);
+    split_->setSizes({std::max(520, panel->sizeHint().width()), std::max(1, width() - 520)});
+    panel->show();
 }
 
 void EmulatorView::updateState() {

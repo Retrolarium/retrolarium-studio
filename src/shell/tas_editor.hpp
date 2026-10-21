@@ -1,8 +1,7 @@
 #pragma once
 
-#include "frame/studio_dialog.hpp"
-
 #include <QAbstractTableModel>
+#include <QFrame>
 #include <QTableView>
 #include <QVector>
 
@@ -103,25 +102,34 @@ private:
     QVector<MovieFrame> before_;   // the frames as they were, from first_ on
 };
 
-// Run > Movie > TAS editor: the movie that plays, frame by frame. A frame
+// Run > Movie > TAS editor, docked beside the Playtest picture: the movie
+// that plays, frame by frame. A frame
 // clicked is shown in the game (the run goes back or forward to it, from the
 // nearest state it kept); Play from here plays on from the selected frame,
 // and Pause comes back to it; an edit is saved to the movie at once, the
 // states from the edited frame on are dropped and the game goes back to the
 // frame before it; a run goes on to the game's stop condition (a death) or the
 // end. Frames are inserted empty, as copies, or with chosen buttons held.
-class TasEditorWindow final : public frame::StudioDialog {
+class TasEditorWindow final : public QFrame {
     Q_OBJECT
 
 public:
     TasEditorWindow(runtime::EmulatorRunner* emulator, QWidget* parent = nullptr);
 
+signals:
+    // The close button: the host takes the editor out of the view.
+    void closeRequested();
+
+public:
     // The movie the run plays (its working file) and the one it came from,
     // which Save writes.
     bool open(const QString& working, const QString& origin, QString* error);
     QString origin() const { return origin_; }
 
 protected:
+    // The editor's keys (Ctrl+Z, Ctrl+S, Pause...) are the window's
+    // shortcuts too: in the editor they are the editor's.
+    bool event(QEvent* event) override;
     void keyPressEvent(QKeyEvent* event) override;
 
 private:

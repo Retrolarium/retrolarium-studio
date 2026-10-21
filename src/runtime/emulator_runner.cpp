@@ -290,6 +290,23 @@ local function now_time()
     return machine.time:as_double()
 end
 
+-- Real time in milliseconds. Fast forward and seeks run hundreds of frames a
+-- second: the keys, the actions and the status are files, so they are read
+-- and written by real time (every few milliseconds, every redraw while
+-- paused), not every emulated frame.
+local real_ms
+if emu.osd_ticks ~= nil and emu.osd_ticks_per_second ~= nil then
+    local per_ms = emu.osd_ticks_per_second() / 1000
+    real_ms = function() return emu.osd_ticks() / per_ms end
+else
+    real_ms = function() return os.clock() * 1000 end
+end
+local poll_every_ms, status_every_ms = 10, 50
+local keys_polled, actions_polled, status_written = -1e12, -1e12, -1e12
+local function due(last, every)
+    return machine.paused or real_ms() - last >= every
+end
+
 local speed = 100           -- percent; 0 runs without a limit
 local function apply_speed()
     local unlimited = forwarding or speed == 0
@@ -994,7 +1011,10 @@ local function control_tick()
     end
     -- Actions after the frame is counted: a save then holds that frame, and
     -- a load waits a whole frame for the pads' latch.
-    take_actions()
+    if due(actions_polled, poll_every_ms) then
+        actions_polled = real_ms()
+        take_actions()
+    end
     if pending_osd ~= nil and pending_save == nil and pending_load == nil and latched_load == nil then
         osd_wait = osd_wait - 1
         if osd_wait <= 0 then
@@ -1003,13 +1023,19 @@ local function control_tick()
         end
     end
     status_count = status_count + 1
-    if status_count % 4 == 0 then write_status() end
+    if real_ms() - status_written >= status_every_ms then
+        status_written = real_ms()
+        write_status()
+    end
 end
 
 on_frame(function()
     frames = frames + 1
-    apply_keys(movie_mode ~= "play" and movie_mode ~= "resume" and latched_load == nil and replay_to == nil
-        and rewind_pending == nil)
+    if due(keys_polled, poll_every_ms) then
+        keys_polled = real_ms()
+        apply_keys(movie_mode ~= "play" and movie_mode ~= "resume" and latched_load == nil and replay_to == nil
+            and rewind_pending == nil)
+    end
     if frames % 6 == 0 then take_command() end
     if frames == 1 or frames % 15 == 0 then apply_picture() end
     if hidden and ready_check ~= nil then
@@ -1730,7 +1756,11 @@ void EmulatorRunner::start(const sdk::ProcessSpec& requested, const QString& tit
     arguments << QStringLiteral("-attach_window")
               << QString::number(static_cast<qulonglong>(surface_->winId()))
               << QStringLiteral("-window") << QStringLiteral("-keepaspect")
-              << QStringLiteral("-unevenstretch") << QStringLiteral("-keyboardprovider")
+              << QStringLiteral("-unevenstretch")
+              // A rewind capture pauses MAME for a redraw: at the default
+              // pause brightness the picture would dim and flicker each time.
+              << QStringLiteral("-pause_brightness") << QStringLiteral("1.0")
+              << QStringLiteral("-keyboardprovider")
               << QStringLiteral("win32")
               // MAME reads input, game pads included, only while it believes
               // its window has focus. The surface belongs to our process, so

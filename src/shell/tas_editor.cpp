@@ -312,12 +312,11 @@ QPushButton* toolButton(const QString& text, const QString& tip, QWidget* parent
 }  // namespace
 
 TasEditorWindow::TasEditorWindow(runtime::EmulatorRunner* emulator, QWidget* parent)
-    : StudioDialog(tr("TAS editor"), parent), emulator_(emulator), model_(new MovieTableModel(this)),
+    : QFrame(parent), emulator_(emulator), model_(new MovieTableModel(this)),
       view_(new MovieTableView(this)), undo_(new QUndoStack(this)) {
-    setModal(false);
-    setAttribute(Qt::WA_DeleteOnClose, false);
-    resize(560, 760);
-    auto* layout = new QVBoxLayout(body());
+    setProperty("surface", QStringLiteral("panel"));
+    setMinimumWidth(460);
+    auto* layout = new QVBoxLayout(this);
     layout->setContentsMargins(12, 8, 12, 12);
     layout->setSpacing(8);
 
@@ -334,6 +333,10 @@ TasEditorWindow::TasEditorWindow(runtime::EmulatorRunner* emulator, QWidget* par
         row1->addWidget(button);
     }
     row1->addStretch(1);
+    QPushButton* closeButton = toolButton(QStringLiteral("×"), tr("Close the TAS editor"), this);
+    closeButton->setFixedWidth(closeButton->sizeHint().height());
+    connect(closeButton, &QPushButton::clicked, this, &TasEditorWindow::closeRequested);
+    row1->addWidget(closeButton);
     layout->addLayout(row1);
 
     auto* row2 = new QHBoxLayout;
@@ -392,7 +395,11 @@ TasEditorWindow::TasEditorWindow(runtime::EmulatorRunner* emulator, QWidget* par
     view_->setShowGrid(true);
     view_->setWordWrap(false);
     view_->setFont(theme::font(theme::TextRole::Body, 12.0));
-    view_->verticalHeader()->setDefaultSectionSize(20);
+    // Frame numbers in a fixed-width font, with room above and below them.
+    view_->verticalHeader()->setFont(theme::font(theme::TextRole::Mono, 11.0));
+    view_->verticalHeader()->setDefaultAlignment(Qt::AlignRight | Qt::AlignVCenter);
+    view_->verticalHeader()->setMinimumSectionSize(24);
+    view_->verticalHeader()->setDefaultSectionSize(24);
     view_->verticalHeader()->setSectionResizeMode(QHeaderView::Fixed);
     view_->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     view_->horizontalHeader()->setHighlightSections(false);
@@ -444,7 +451,6 @@ bool TasEditorWindow::open(const QString& working, const QString& origin, QStrin
     stops_->clear();
     for (const runtime::StopCondition& stop : emulator_->stopConditions()) stops_->addItem(stop.name);
     stops_->setEnabled(stops_->count() > 0);
-    setWindowTitle(tr("TAS editor — %1").arg(QFileInfo(origin_).fileName()));
     buildHoldButtons();
     followEmulator();
     updateStatus();
@@ -610,18 +616,36 @@ void TasEditorWindow::onEmulationEvent(const QString& event) {
 }
 
 void TasEditorWindow::updateStatus() {
-    QString text = tr("Frame %1 of %2").arg(model_->currentFrame()).arg(model_->rowCount());
+    QString text = QFileInfo(origin_).fileName() + QStringLiteral(" · ") +
+                   tr("Frame %1 of %2").arg(model_->currentFrame()).arg(model_->rowCount());
     if (!undo_->isClean()) text += QStringLiteral(" · ") + tr("not saved");
     if (!note_.isEmpty()) text += QStringLiteral(" · ") + note_;
     status_->setText(text);
 }
 
+bool TasEditorWindow::event(QEvent* event) {
+    if (event->type() == QEvent::ShortcutOverride) {
+        const auto* key = static_cast<QKeyEvent*>(event);
+        const bool control = key->modifiers() & Qt::ControlModifier;
+        const int k = key->key();
+        if (k == Qt::Key_Insert || k == Qt::Key_Delete || k == Qt::Key_Pause ||
+            (control && (k == Qt::Key_Z || k == Qt::Key_Y || k == Qt::Key_S || k == Qt::Key_P || k == Qt::Key_F))) {
+            event->accept();
+            return true;
+        }
+    }
+    return QFrame::event(event);
+}
+
 void TasEditorWindow::keyPressEvent(QKeyEvent* event) {
     const bool control = event->modifiers() & Qt::ControlModifier;
+    const bool shift = event->modifiers() & Qt::ShiftModifier;
     if (event->key() == Qt::Key_Insert) {
         insertFrames(control);
     } else if (event->key() == Qt::Key_Delete) {
         removeFrames();
+    } else if (control && shift && event->key() == Qt::Key_Z) {
+        undo_->redo();
     } else if (control && event->key() == Qt::Key_Z) {
         undo_->undo();
     } else if (control && event->key() == Qt::Key_Y) {
@@ -638,7 +662,7 @@ void TasEditorWindow::keyPressEvent(QKeyEvent* event) {
         const QVector<int> rows = selectedRows();
         if (!rows.isEmpty()) emulator_->seek(rows.first() + 1);
     } else {
-        StudioDialog::keyPressEvent(event);
+        QFrame::keyPressEvent(event);
     }
 }
 

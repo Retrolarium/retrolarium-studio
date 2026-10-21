@@ -1,6 +1,7 @@
 #include "shell/main_window.hpp"
 
 #include "editors/editor_view.hpp"
+#include "editors/emulator_view.hpp"
 #include "frame/studio_dialog.hpp"
 #include "frame/title_bar.hpp"
 #include "runtime/audio_player.hpp"
@@ -112,6 +113,9 @@ QString recentLabel(const QString& path) {
     if (name.isEmpty() && project.isValid()) name = project.string(QStringLiteral("game.name"));
     return name.isEmpty() ? QFileInfo(path).fileName() : name;
 }
+
+// MAME lines Messages keeps.
+constexpr int kEmulatorMessages = 200;
 
 sdk::Diagnostic message(sdk::Severity severity, const QString& source, const QString& text,
                         const QString& location) {
@@ -284,6 +288,18 @@ MainWindow::MainWindow(QWidget* parent) : StudioWindow(parent) {
                 updateActions();
             });
     connect(emulator_, &runtime::EmulatorRunner::stateChanged, this, &MainWindow::updateActions);
+    // MAME's lines go to Messages, the last of them only.
+    connect(emulator_, &runtime::EmulatorRunner::outputLine, this, [this](const QString& line) {
+        if (line.trimmed().isEmpty()) return;
+        hostMessages_.append(message(sdk::Severity::Info, QStringLiteral("emulator"), line, QString()));
+        int count = 0;
+        for (int i = hostMessages_.size() - 1; i >= 0; --i) {
+            if (hostMessages_.at(i).source == QLatin1String("emulator") && ++count > kEmulatorMessages) {
+                hostMessages_.removeAt(i);
+            }
+        }
+        refreshDiagnostics();
+    });
     connect(emulator_, &runtime::EmulatorRunner::emulationEvent, this, &MainWindow::showEmulationEvent);
     connect(emulator_, &runtime::EmulatorRunner::emulationChanged, this, &MainWindow::updateActions);
 
@@ -2434,16 +2450,33 @@ void MainWindow::launchMovie(const QJsonObject& answer, int mode, const QString&
 }
 
 void MainWindow::openTasEditor() {
-    if (tasEditor_ == nullptr) tasEditor_ = new TasEditorWindow(emulator_, this);
+    if (tasEditor_ == nullptr) {
+        tasEditor_ = new TasEditorWindow(emulator_, this);
+        tasEditor_->hide();
+        connect(tasEditor_, &TasEditorWindow::closeRequested, this, [this] {
+            for (editors::EditorView* view : {editor_.get(), parkedEditor_.get()}) {
+                auto* playtest = qobject_cast<editors::EmulatorView*>(view);
+                if (playtest && playtest->sidePanel() == tasEditor_) playtest->setSidePanel(nullptr);
+            }
+            tasEditor_->hide();
+        });
+    }
     QString error;
     if (!tasEditor_->open(emulator_->movie().file, emulator_->movie().origin, &error)) {
         report(message(sdk::Severity::Error, QStringLiteral("playtest"),
                        tr("The TAS editor cannot open the movie: %1").arg(error), QString()));
         return;
     }
-    tasEditor_->show();
-    tasEditor_->raise();
-    tasEditor_->activateWindow();
+    // Docked left of the picture in the Playtest view, brought forward.
+    if (!qobject_cast<editors::EmulatorView*>(editor_.get()) && parkedEditor_) selectKind(emulatorKind());
+    auto* playtest = qobject_cast<editors::EmulatorView*>(editor_.get());
+    if (!playtest) {
+        report(message(sdk::Severity::Warning, QStringLiteral("playtest"),
+                       tr("The TAS editor opens beside the Playtest picture: open Playtest first."), QString()));
+        return;
+    }
+    playtest->setSidePanel(tasEditor_);
+    tasEditor_->setFocus();
 }
 
 }  // namespace rl::shell
