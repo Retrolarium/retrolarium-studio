@@ -742,11 +742,25 @@ QJsonObject DoraemonSession::musicTrace(int driver, int track) {
 }
 
 bool DoraemonSession::save(QString* error) {
+    // Each document counts as saved once written: a save that fails
+    // halfway leaves the ones before it saved.
     try {
-        if (state_.bundle != saved_.bundle) state_.bundle.save(bundlePath_);
-        if (state_.text != saved_.text && !textPath_.isEmpty()) saveJsonObject(textPath_, state_.text);
-        if (state_.music != saved_.music && !musicPath_.isEmpty()) saveJsonObject(musicPath_, state_.music);
-        if (state_.demo != saved_.demo && !demoPath_.isEmpty()) saveJsonObject(demoPath_, state_.demo);
+        if (state_.bundle != saved_.bundle) {
+            state_.bundle.save(bundlePath_);
+            saved_.bundle = state_.bundle;
+        }
+        if (state_.text != saved_.text && !textPath_.isEmpty()) {
+            saveJsonObject(textPath_, state_.text);
+            saved_.text = state_.text;
+        }
+        if (state_.music != saved_.music && !musicPath_.isEmpty()) {
+            saveJsonObject(musicPath_, state_.music);
+            saved_.music = state_.music;
+        }
+        if (state_.demo != saved_.demo && !demoPath_.isEmpty()) {
+            saveJsonObject(demoPath_, state_.demo);
+            saved_.demo = state_.demo;
+        }
     } catch (const std::exception& e) {
         if (error) *error = QString::fromUtf8(e.what());
         return false;

@@ -580,11 +580,18 @@ bool SmbSession::edit(const QString& text, const std::function<void(SmbResourceD
 }
 
 bool SmbSession::save(QString* error) {
+    // Each document counts as saved once written: a save that fails
+    // halfway leaves the ones before it saved.
     try {
         if (revision_ != savedRevision_) {
             document_.save(documentPath_);
+            saved_ = document_;
+            savedRevision_ = revision_;
         }
-        if (demo_ != savedDemo_ && !demoPath_.isEmpty()) saveJsonObject(demoPath_, demo_);
+        if (demo_ != savedDemo_ && !demoPath_.isEmpty()) {
+            saveJsonObject(demoPath_, demo_);
+            savedDemo_ = demo_;
+        }
     } catch (const std::exception& e) {
         if (error) {
             *error = QString::fromUtf8(e.what());

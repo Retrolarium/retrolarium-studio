@@ -423,9 +423,17 @@ bool PacmanSession::editBundle(const QString& text, const std::function<void(nes
 }
 
 bool PacmanSession::save(QString* error) {
+    // Each document counts as saved once written: a save that fails
+    // halfway leaves the ones before it saved.
     try {
-        if (state_.bundle != saved_.bundle) state_.bundle.save(bundlePath_);
-        if (state_.demo != saved_.demo && !demoPath_.isEmpty()) saveJsonObject(demoPath_, state_.demo);
+        if (state_.bundle != saved_.bundle) {
+            state_.bundle.save(bundlePath_);
+            saved_.bundle = state_.bundle;
+        }
+        if (state_.demo != saved_.demo && !demoPath_.isEmpty()) {
+            saveJsonObject(demoPath_, state_.demo);
+            saved_.demo = state_.demo;
+        }
     } catch (const std::exception& e) {
         if (error) *error = QString::fromUtf8(e.what());
         return false;

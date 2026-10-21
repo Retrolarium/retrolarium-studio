@@ -483,18 +483,24 @@ bool CastleExcellentSession::editBundle(const QString& text, const std::function
 }
 
 bool CastleExcellentSession::save(QString* error) {
+    // Each document counts as saved once written: a save that fails
+    // halfway leaves the ones before it saved.
     try {
         if (state_.levels != saved_.levels) {
             state_.levels.save(levelsPath_);
+            saved_.levels = state_.levels;
         }
         if (state_.graphics != saved_.graphics) {
             state_.graphics.save(graphicsPath_);
+            saved_.graphics = state_.graphics;
         }
         if (state_.demo != saved_.demo && !demoPath_.isEmpty()) {
             saveJsonObject(demoPath_, state_.demo);
+            saved_.demo = state_.demo;
         }
         if (state_.screens != saved_.screens && !screensPath_.isEmpty()) {
             saveJsonObject(screensPath_, state_.screens);
+            saved_.screens = state_.screens;
         }
     } catch (const std::exception& e) {
         if (error) {

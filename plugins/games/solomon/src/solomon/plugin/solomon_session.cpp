@@ -489,16 +489,37 @@ bool SolomonSession::editBundle(const QString& text, const std::function<void(ne
 }
 
 bool SolomonSession::save(QString* error) {
+    // Each document counts as saved once written: a save that fails
+    // halfway leaves the ones before it saved.
     try {
-        if (state_.rooms != saved_.rooms) saveJson(roomsPath_, state_.rooms.root());
-        if (state_.art != saved_.art) saveJson(artPath_, state_.art);
-        if (state_.animations != saved_.animations) saveJson(animationsPath_, state_.animations);
+        if (state_.rooms != saved_.rooms) {
+            saveJson(roomsPath_, state_.rooms.root());
+            saved_.rooms = state_.rooms;
+        }
+        if (state_.art != saved_.art) {
+            saveJson(artPath_, state_.art);
+            saved_.art = state_.art;
+        }
+        if (state_.animations != saved_.animations) {
+            saveJson(animationsPath_, state_.animations);
+            saved_.animations = state_.animations;
+        }
         if (state_.presentation != saved_.presentation && !presentationPath_.isEmpty()) {
             saveJson(presentationPath_, state_.presentation);
+            saved_.presentation = state_.presentation;
         }
-        if (state_.audio != saved_.audio && !audioPath_.isEmpty()) saveJson(audioPath_, state_.audio);
-        if (!(state_.text == saved_.text) && !textPath_.isEmpty()) saveJson(textPath_, state_.text.root());
-        if (state_.graphics != saved_.graphics) state_.graphics.save(graphicsPath_);
+        if (state_.audio != saved_.audio && !audioPath_.isEmpty()) {
+            saveJson(audioPath_, state_.audio);
+            saved_.audio = state_.audio;
+        }
+        if (!(state_.text == saved_.text) && !textPath_.isEmpty()) {
+            saveJson(textPath_, state_.text.root());
+            saved_.text = state_.text;
+        }
+        if (state_.graphics != saved_.graphics) {
+            state_.graphics.save(graphicsPath_);
+            saved_.graphics = state_.graphics;
+        }
     } catch (const std::exception& e) {
         if (error) {
             *error = QString::fromUtf8(e.what());
