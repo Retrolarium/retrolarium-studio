@@ -19,6 +19,8 @@
 #include <QUndoStack>
 
 #include <algorithm>
+#include <functional>
+#include <utility>
 
 namespace rl::rom {
 
@@ -61,6 +63,7 @@ std::unique_ptr<RomSession> RomSession::open(const sdk::ProjectFile& project, QS
     const QString original = project.string(QStringLiteral("source.original"));
     session->original_ = original.isEmpty() ? session->rom_ : readAll(project.resolve(original), &problem);
     if (session->original_.isEmpty()) session->original_ = session->rom_;
+    session->saved_ = session->rom_;
     return session;
 }
 
@@ -106,7 +109,7 @@ QVector<sdk::DocumentGroup> RomSession::documents(const QString& kind) const {
             document.id = id;
             document.label = label;
             document.meta = meta;
-            document.dirty = rom_.mid(range.offset, range.length) != original_.mid(range.offset, range.length);
+            document.dirty = rom_.mid(range.offset, range.length) != saved_.mid(range.offset, range.length);
             return document;
         };
         const TileRange all = tileRange(QStringLiteral("all"));
@@ -124,7 +127,7 @@ QVector<sdk::DocumentGroup> RomSession::documents(const QString& kind) const {
     sdk::DocumentEntry entry;
     entry.id = QStringLiteral("rom");
     entry.label = QFileInfo(romPath_).fileName();
-    entry.dirty = rom_ != original_;
+    entry.dirty = rom_ != saved_;
     if (kind == QLatin1String("hex")) {
         entry.meta = tr("%1 KB").arg(rom_.size() / 1024);
     } else if (kind == QLatin1String("playtest")) {
@@ -157,6 +160,7 @@ bool RomSession::save(QString* error) {
     // The edited ROM, dropped on the studio later, opens this project again.
     const QString digest = QString::fromLatin1(QCryptographicHash::hash(rom_, QCryptographicHash::Sha256).toHex());
     QSettings().setValue(QStringLiteral("romProjects/") + digest, project_.path());
+    saved_ = rom_;
     undoStack()->setClean();
     emit documentsChanged(QStringLiteral("hex"));
     emit documentsChanged(QStringLiteral("tiles"));
@@ -237,12 +241,83 @@ QString RomSession::detectedTileFormat() const {
     return detected_;
 }
 
+namespace {
+
+// Bytes written at an offset, the ones they replace kept for undo. Bytes
+// typed one at a time (on at the next offset, or the same byte again) join
+// one step; a fill stays a step of its own.
+class RangeCommand final : public QUndoCommand {
+public:
+    using Apply = std::function<void(int, const QByteArray&, quint64)>;
+
+    RangeCommand(Apply apply, int offset, QByteArray before, quint64 beforeRevision, QByteArray after,
+                 quint64 afterRevision, const QString& text)
+        : QUndoCommand(text),
+          apply_(std::move(apply)),
+          offset_(offset),
+          before_(std::move(before)),
+          after_(std::move(after)),
+          beforeRevision_(beforeRevision),
+          afterRevision_(afterRevision),
+          typed_(after_.size() == 1) {}
+
+    int id() const override { return 0x524f4d; }
+    void redo() override { apply_(offset_, after_, afterRevision_); }
+    void undo() override { apply_(offset_, before_, beforeRevision_); }
+
+    bool mergeWith(const QUndoCommand* other) override {
+        const auto* next = static_cast<const RangeCommand*>(other);
+        const int at = next->offset_ - offset_;
+        if (!typed_ || !next->typed_ || at < 0 || at > after_.size()) return false;
+        const int end = at + next->after_.size();
+        if (end > after_.size()) {
+            // The bytes past this step's end: theirs before the write.
+            before_.append(next->before_.right(end - after_.size()));
+            after_.resize(end);
+        }
+        after_.replace(at, next->after_.size(), next->after_);
+        afterRevision_ = next->afterRevision_;
+        return true;
+    }
+
+private:
+    Apply apply_;
+    int offset_;
+    QByteArray before_;
+    QByteArray after_;
+    quint64 beforeRevision_;
+    quint64 afterRevision_;
+    bool typed_;
+};
+
+}  // namespace
+
 void RomSession::apply(const QByteArray& bytes, quint64 revision) {
     rom_ = bytes;
     revision_ = revision;
+    changed();
+}
+
+void RomSession::applyRange(int offset, const QByteArray& bytes, quint64 revision) {
+    rom_.replace(offset, bytes.size(), bytes);
+    revision_ = revision;
+    changed();
+}
+
+void RomSession::changed() {
     emit contentChanged();
     emit documentsChanged(QStringLiteral("hex"));
     emit documentsChanged(QStringLiteral("tiles"));
+}
+
+void RomSession::write(int offset, const QByteArray& bytes, const QString& text) {
+    const QByteArray before = rom_.mid(offset, bytes.size());
+    if (before == bytes) return;
+    const quint64 beforeRevision = revision_;
+    const quint64 afterRevision = ++nextRevision_;
+    undoStack()->push(new RangeCommand(
+        [this](int at, const QByteArray& data, quint64 revision) { applyRange(at, data, revision); }, offset, before,
+        beforeRevision, bytes, afterRevision, text));
 }
 
 void RomSession::edit(const QString& text, const QByteArray& next) {

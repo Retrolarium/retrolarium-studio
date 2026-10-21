@@ -64,6 +64,9 @@ public:
 
     // One undo step from the bytes now to `next`.
     void edit(const QString& text, const QByteArray& next);
+    // One undo step writing `bytes` at `offset`: it keeps those bytes only,
+    // not the whole ROM, and bytes typed one after another join one step.
+    void write(int offset, const QByteArray& bytes, const QString& text);
     // A stroke in progress: the bytes change, the undo step comes at its end.
     void preview(const QByteArray& next);
     void commit(const QString& text, const QByteArray& before);
@@ -71,6 +74,8 @@ public:
 private:
     RomSession() = default;
     void apply(const QByteArray& bytes, quint64 revision);
+    void applyRange(int offset, const QByteArray& bytes, quint64 revision);
+    void changed();
     void commitFrom(const QString& text, const QByteArray& before, const QByteArray& after);
 
     sdk::ProjectFile project_;
@@ -78,6 +83,7 @@ private:
     QString platform_;
     QByteArray rom_;
     QByteArray original_;
+    QByteArray saved_;   // the ROM as the project's file holds it
     quint64 revision_ = 0;
     quint64 nextRevision_ = 0;
     mutable QString detected_;

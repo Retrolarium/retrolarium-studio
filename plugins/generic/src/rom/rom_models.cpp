@@ -48,9 +48,7 @@ bool HexModel::writeBytes(int offset, const QByteArray& data, const QString& tex
         if (error) *error = tr("Bytes past the end of the ROM cannot be written: it never grows.");
         return false;
     }
-    QByteArray next = session_->rom();
-    next.replace(offset, data.size(), data);
-    session_->edit(text, next);
+    session_->write(offset, data, text);
     return true;
 }
 

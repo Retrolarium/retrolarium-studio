@@ -144,6 +144,22 @@ int main(int argc, char** argv) {
         expect(quint8(session->rom().at(16)) == 0xa5 && hex.isByteDirty(16) && !hex.isByteDirty(15), "the byte changed");
         session->undoStack()->undo();
         expect(session->rom().at(16) == 0 && !hex.isByteDirty(16), "undone");
+        // Bytes typed one after another are one step, holding those bytes only.
+        const int steps = session->undoStack()->index();
+        for (int i = 0; i < 3; ++i) {
+            hex.writeBytes(16 + i, QByteArray(1, char(0x11 * (i + 1))), QStringLiteral("Type"), &error);
+        }
+        hex.writeBytes(18, QByteArray(1, char(0x3f)), QStringLiteral("Type"), &error);
+        expect(session->undoStack()->index() == steps + 1 && session->rom().mid(16, 3) == QByteArray("\x11\x22\x3f"),
+               "typing is one undo step");
+        session->undoStack()->undo();
+        expect(session->rom().mid(16, 3) == QByteArray(3, '\0'), "undone as one");
+        // Saved, the project has nothing to save, though it differs from the original.
+        hex.writeBytes(16, QByteArray(1, char(0x5a)), QStringLiteral("Type"), &error);
+        expect(session->isModified() && session->save(&error) && !session->isModified() && hex.isByteDirty(16),
+               "saved: not modified, the byte still marked against the original");
+        session->undoStack()->undo();
+        expect(session->isModified() && session->rom().at(16) == 0, "undone past the save: modified again");
         expect(hex.setField(QStringLiteral("goto"), QStringLiteral("$4010"), &error) && hex.cursor() == 0x4010,
                "go to an offset");
         hex.setSelection(0x2f, 0x20);
