@@ -63,13 +63,6 @@ struct WatchCell {
     int length = 1;
 };
 
-// A condition a run to a stop waits for (the TAS editor): a name, and a Lua
-// expression over `memory`, the main CPU's program space ("Player dies").
-struct StopCondition {
-    QString name;
-    QString lua;
-};
-
 // One emulator process at a time, rendering into a surface the Playtest view
 // shows. Game-agnostic: the plugin supplies the command, this adds embedding.
 class EmulatorRunner final : public QObject {
@@ -155,15 +148,15 @@ public:
     void setWatch(const QVector<WatchCell>& cells) { watch_ = cells; }
     // The TAS editor, on a movie that plays: go to a frame (paused there) or
     // play on from it, take the movie file in again after an edit (the states
-    // from the first frame it changed on are dropped), run on until a stop
-    // condition holds (by index), record from the frame shown on.
-    void setStopConditions(const QVector<StopCondition>& conditions) { stops_ = conditions; }
-    const QVector<StopCondition>& stopConditions() const { return stops_; }
+    // from the first frame it changed on are dropped), go to a frame anew
+    // from a state before it (an edit changed the frames that led there).
+    // While it edits, the movie pauses at its end instead of handing the
+    // pads over.
     void seek(int frame);
     void playFrom(int frame);
     void reloadMovie(int changedFrom = -1);
-    void runUntil(int condition);
-    void recordFromHere();
+    void replay(int frame);
+    void setMovieEditing(bool editing);
     // A short note over the game's picture; false when nothing can show it.
     bool showMessage(const QString& text);
 
@@ -178,8 +171,9 @@ signals:
     // The movie's frame or mode, the speed or the slot changed.
     void emulationChanged();
     // Something the control script did: "saved", "loaded", "no-state",
-    // "ended", "stopped", "recording" (Resume reached the end) or
-    // "foreign-state" (a state from outside the movie ended it).
+    // "ended", "stopped", "recording" (Resume reached the end),
+    // "movie-end" (the edited movie paused at its end) or "foreign-state"
+    // (a state from outside the movie ended it).
     void emulationEvent(const QString& event);
 
 private:
@@ -236,7 +230,6 @@ private:
     bool showInput_ = false;
     bool showWatch_ = false;
     QVector<WatchCell> watch_;
-    QVector<StopCondition> stops_;
     QString movieMode_ = QStringLiteral("none");
     int movieFrame_ = 0;
     int movieLength_ = 0;

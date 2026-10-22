@@ -9041,10 +9041,6 @@
         <translation>これ以上戻せません</translation>
     </message>
     <message>
-        <source>TAS editor…</source>
-        <translation>TAS エディタ…</translation>
-    </message>
-    <message>
         <source>The TAS editor cannot open the movie: %1</source>
         <translation>TAS エディタでムービーを開けません: %1</translation>
     </message>
@@ -9087,6 +9083,50 @@
     <message>
         <source>The movie could not be written: the file keeps its last save</source>
         <translation>ムービーを書き込めませんでした: ファイルは最後に保存した内容のままです</translation>
+    </message>
+    <message>
+        <source>Cut frame</source>
+        <translation>フレームを切り取り</translation>
+    </message>
+    <message>
+        <source>Copy frame</source>
+        <translation>フレームをコピー</translation>
+    </message>
+    <message>
+        <source>Paste frame</source>
+        <translation>フレームを貼り付け</translation>
+    </message>
+    <message>
+        <source>Insert frame</source>
+        <translation>空のフレームを挿入</translation>
+    </message>
+    <message>
+        <source>Delete frame</source>
+        <translation>フレームを削除</translation>
+    </message>
+    <message>
+        <source>TAS editor</source>
+        <translation>TAS エディタ</translation>
+    </message>
+    <message>
+        <source>Play the movie from the selected frame (Pause, Space)</source>
+        <translation>選んだフレームからムービーを再生（Pause、Space）</translation>
+    </message>
+    <message>
+        <source>Pause the movie where it is (Pause, Space)</source>
+        <translation>ムービーを今の位置で一時停止（Pause、Space）</translation>
+    </message>
+    <message>
+        <source>Pause and go back to the selected frame (Shift+F5)</source>
+        <translation>停止して選んだフレームに戻る（Shift+F5）</translation>
+    </message>
+    <message>
+        <source>Stop at the selected frame</source>
+        <translation>停止：選んだフレームへ</translation>
+    </message>
+    <message>
+        <source>End of the movie</source>
+        <translation>ムービーの終わり</translation>
     </message>
 </context>
 <context>
@@ -9328,108 +9368,12 @@
 <context>
     <name>rl::shell::TasEditorWindow</name>
     <message>
-        <source>Save</source>
-        <translation>保存</translation>
-    </message>
-    <message>
-        <source>Write the movie to its file (Ctrl+S)</source>
-        <translation>ムービーをファイルに書き込む (Ctrl+S)</translation>
-    </message>
-    <message>
-        <source>Undo</source>
-        <translation>元に戻す</translation>
-    </message>
-    <message>
-        <source>Undo the last edit (Ctrl+Z)</source>
-        <translation>最後の編集を元に戻す (Ctrl+Z)</translation>
-    </message>
-    <message>
-        <source>Redo</source>
-        <translation>やり直す</translation>
-    </message>
-    <message>
-        <source>Redo (Ctrl+Y)</source>
-        <translation>やり直す (Ctrl+Y)</translation>
-    </message>
-    <message>
-        <source>Insert</source>
-        <translation>挿入</translation>
-    </message>
-    <message>
-        <source>Insert empty frames before the selected ones (Insert)</source>
-        <translation>選択したフレームの前に空のフレームを挿入 (Insert)</translation>
-    </message>
-    <message>
-        <source>Duplicate</source>
-        <translation>複製</translation>
-    </message>
-    <message>
-        <source>Insert a copy of the selected frames (Ctrl+Insert)</source>
-        <translation>選択したフレームのコピーを挿入 (Ctrl+Insert)</translation>
-    </message>
-    <message>
-        <source>Delete</source>
-        <translation>削除</translation>
-    </message>
-    <message>
-        <source>Delete the selected frames (Delete)</source>
-        <translation>選択したフレームを削除 (Delete)</translation>
-    </message>
-    <message>
-        <source>Go to frame</source>
-        <translation>フレームへ移動</translation>
-    </message>
-    <message>
-        <source>Show the selected frame in the game (Enter)</source>
-        <translation>選択したフレームをゲームで表示 (Enter)</translation>
-    </message>
-    <message>
-        <source>Run to</source>
-        <translation>ここまで進める</translation>
-    </message>
-    <message>
-        <source>Run the movie on until this happens, or to its end</source>
-        <translation>これが起きるか終わりまでムービーを進める</translation>
-    </message>
-    <message>
-        <source>Record from here</source>
-        <translation>ここから記録</translation>
-    </message>
-    <message>
-        <source>Record from the frame shown on, dropping the frames after it</source>
-        <translation>表示中のフレームから記録し、それ以降のフレームは捨てる</translation>
-    </message>
-    <message>
-        <source>Follow</source>
-        <translation>追従</translation>
-    </message>
-    <message>
-        <source>Keep the frame the game shows in view</source>
-        <translation>ゲームが表示しているフレームを常に表示</translation>
-    </message>
-    <message>
         <source>Change buttons</source>
         <translation>ボタンを変更</translation>
     </message>
     <message>
         <source>The movie cannot be written: %1</source>
         <translation>ムービーを書き込めません: %1</translation>
-    </message>
-    <message>
-        <source>Duplicate frames</source>
-        <translation>フレームを複製</translation>
-    </message>
-    <message>
-        <source>Insert frames</source>
-        <translation>フレームを挿入</translation>
-    </message>
-    <message>
-        <source>Delete frames</source>
-        <translation>フレームを削除</translation>
-    </message>
-    <message>
-        <source>stopped: %1 at frame %2</source>
-        <translation>停止: %1 (フレーム %2)</translation>
     </message>
     <message>
         <source>Frame %1 of %2</source>
@@ -9440,48 +9384,28 @@
         <translation>未保存</translation>
     </message>
     <message>
-        <source>Play from here</source>
-        <translation>ここから再生</translation>
-    </message>
-    <message>
-        <source>Play on from the selected frame at the game&apos;s speed, from the nearest state kept (Ctrl+P)</source>
-        <translation>選択したフレームから、保存済みの最も近いステートを使ってゲーム速度で再生を続けます (Ctrl+P)</translation>
-    </message>
-    <message>
-        <source>Pause</source>
-        <translation>一時停止</translation>
-    </message>
-    <message>
-        <source>Pause the game and come back to the frame played from (Pause)</source>
-        <translation>ゲームを一時停止し、再生を始めたフレームに戻ります (Pause)</translation>
-    </message>
-    <message>
-        <source>Frame shown</source>
-        <translation>表示中のフレーム</translation>
-    </message>
-    <message>
-        <source>Select the frame the game shows now (Ctrl+F)</source>
-        <translation>ゲームが今表示しているフレームを選択 (Ctrl+F)</translation>
-    </message>
-    <message>
-        <source>Insert this many frames with the buttons chosen held, before the selected frame</source>
-        <translation>選択したボタンを押したままのフレームを、選択したフレームの前にこの数だけ挿入</translation>
-    </message>
-    <message>
-        <source>frames holding</source>
-        <translation>フレーム、押すボタン:</translation>
-    </message>
-    <message>
-        <source>Close the TAS editor</source>
-        <translation>TAS エディターを閉じる</translation>
-    </message>
-    <message>
         <source>Save the movie as MAME plays it</source>
         <translation>MAME が再生するとおりにムービーを保存</translation>
     </message>
     <message>
         <source>Retrolarium movies (*.rlmovie)</source>
         <translation>Retrolarium ムービー (*.rlmovie)</translation>
+    </message>
+    <message>
+        <source>Cut frame</source>
+        <translation>フレームを切り取り</translation>
+    </message>
+    <message>
+        <source>Paste frame</source>
+        <translation>フレームを貼り付け</translation>
+    </message>
+    <message>
+        <source>Insert frame</source>
+        <translation>空のフレームを挿入</translation>
+    </message>
+    <message>
+        <source>Delete frame</source>
+        <translation>フレームを削除</translation>
     </message>
 </context>
 <context>

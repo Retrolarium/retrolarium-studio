@@ -184,23 +184,6 @@ QVector<runtime::WatchCell> watchCells(const QString& repository) {
     return cells;
 }
 
-// What a game repository's TAS editor runs may stop at (config/tas.json:
-// {"stop_when": [{"name": "Player dies", "lua": "memory:read_u8(0x28) & 0x10 ~= 0"}]}).
-QVector<runtime::StopCondition> stopConditions(const QString& repository) {
-    QVector<runtime::StopCondition> stops;
-    QFile file(QDir(repository).filePath(QStringLiteral("config/tas.json")));
-    if (!file.open(QIODevice::ReadOnly)) return stops;
-    const QJsonArray all =
-        QJsonDocument::fromJson(file.readAll()).object().value(QStringLiteral("stop_when")).toArray();
-    for (const QJsonValue& value : all) {
-        const QJsonObject stop = value.toObject();
-        const QString name = stop.value(QStringLiteral("name")).toString();
-        const QString lua = stop.value(QStringLiteral("lua")).toString();
-        if (!name.isEmpty() && !lua.isEmpty()) stops.append({name, lua});
-    }
-    return stops;
-}
-
 }  // namespace
 
 MainWindow::MainWindow(QWidget* parent) : StudioWindow(parent) {
@@ -383,11 +366,45 @@ void MainWindow::buildMenus() {
     redoAction_ = edit->addAction(tr("Redo"));
     redoAction_->setShortcuts({QKeySequence::Redo, QKeySequence(QStringLiteral("Ctrl+Shift+Z"))});
     connect(undoAction_, &QAction::triggered, this, [this] {
-        if (session_) session_->undoStack()->undo();
+        if (tasEditorShown()) {
+            tasEditor_->undoStack()->undo();
+        } else if (session_) {
+            session_->undoStack()->undo();
+        }
     });
     connect(redoAction_, &QAction::triggered, this, [this] {
-        if (session_) session_->undoStack()->redo();
+        if (tasEditorShown()) {
+            tasEditor_->undoStack()->redo();
+        } else if (session_) {
+            session_->undoStack()->redo();
+        }
     });
+    // The TAS editor's frame, one at a time; off while it is not shown, so
+    // the keys stay the editors' own.
+    edit->addSeparator();
+    cutFrameAction_ = edit->addAction(tr("Cut frame"));
+    cutFrameAction_->setShortcut(QKeySequence::Cut);
+    copyFrameAction_ = edit->addAction(tr("Copy frame"));
+    copyFrameAction_->setShortcut(QKeySequence::Copy);
+    pasteFrameAction_ = edit->addAction(tr("Paste frame"));
+    pasteFrameAction_->setShortcut(QKeySequence::Paste);
+    insertFrameAction_ = edit->addAction(tr("Insert frame"));
+    insertFrameAction_->setShortcut(QKeySequence(Qt::Key_Insert));
+    deleteFrameAction_ = edit->addAction(tr("Delete frame"));
+    deleteFrameAction_->setShortcut(QKeySequence::Delete);
+    const QList<QPair<QAction*, void (TasEditorWindow::*)()>> frameActions{
+        {cutFrameAction_, &TasEditorWindow::cut},
+        {copyFrameAction_, &TasEditorWindow::copy},
+        {pasteFrameAction_, &TasEditorWindow::paste},
+        {insertFrameAction_, &TasEditorWindow::insertFrame},
+        {deleteFrameAction_, &TasEditorWindow::deleteFrame}};
+    for (const auto& frameAction : frameActions) {
+        frameAction.first->setEnabled(false);
+        const auto method = frameAction.second;
+        connect(frameAction.first, &QAction::triggered, this, [this, method] {
+            if (tasEditorShown()) (tasEditor_->*method)();
+        });
+    }
 
     QMenu* view = bar->addMenu(tr("View"));
     view->setFont(menuFont);
@@ -444,7 +461,13 @@ void MainWindow::buildMenus() {
     connect(pauseGameAction_, &QAction::triggered, this, &MainWindow::togglePlaytestPause);
     stopGameAction_ = build->addAction(tr("Stop"));
     stopGameAction_->setShortcut(QKeySequence(QStringLiteral("Shift+F5")));
-    connect(stopGameAction_, &QAction::triggered, this, [this] { emulator_->stop(); });
+    connect(stopGameAction_, &QAction::triggered, this, [this] {
+        if (tasEditorShown()) {
+            tasEditor_->stop();
+        } else {
+            emulator_->stop();
+        }
+    });
     pauseGameAction_->setEnabled(false);
     stopGameAction_->setEnabled(false);
 
@@ -541,12 +564,18 @@ void MainWindow::buildMenus() {
             [this] { startMovie(int(runtime::MovieRequest::Mode::Resume)); });
     playMovieAction_ = movie->addAction(tr("Play movie…"));
     connect(playMovieAction_, &QAction::triggered, this, [this] { startMovie(int(runtime::MovieRequest::Mode::Play)); });
-    tasEditorAction_ = movie->addAction(tr("TAS editor…"));
-    connect(tasEditorAction_, &QAction::triggered, this, [this] {
-        if (emulator_->phase() == runtime::EmulatorRunner::Phase::Running &&
-            emulator_->movieMode() == QLatin1String("play")) {
+    // Shown only when asked for: on the movie that plays, or on one picked
+    // to play.
+    tasEditorAction_ = movie->addAction(tr("TAS editor"));
+    tasEditorAction_->setCheckable(true);
+    connect(tasEditorAction_, &QAction::triggered, this, [this](bool checked) {
+        if (!checked) {
+            closeTasEditor();
+        } else if (emulator_->phase() == runtime::EmulatorRunner::Phase::Running &&
+                   emulator_->movieMode() == QLatin1String("play")) {
             openTasEditor();
         } else {
+            tasEditorAction_->setChecked(false);
             openEditorOnLaunch_ = true;
             startMovie(int(runtime::MovieRequest::Mode::Play));
         }
@@ -1014,8 +1043,6 @@ bool MainWindow::openProjectFile(const QString& path) {
     const QString descriptor = currentDescriptor();
     emulator_->setWatch(descriptor.isEmpty() ? QVector<runtime::WatchCell>()
                                              : watchCells(QFileInfo(descriptor).absolutePath()));
-    emulator_->setStopConditions(descriptor.isEmpty() ? QVector<runtime::StopCondition>()
-                                                      : stopConditions(QFileInfo(descriptor).absolutePath()));
 
     QUndoStack* undo = session_->undoStack();
     connect(undo, &QUndoStack::indexChanged, this, [this] {
@@ -1929,7 +1956,7 @@ void MainWindow::scheduleDirtyState() {
 
 void MainWindow::updateDirtyState() {
     const bool open = session_ != nullptr;
-    QUndoStack* undo = open ? session_->undoStack() : nullptr;
+    QUndoStack* undo = tasEditorShown() ? tasEditor_->undoStack() : open ? session_->undoStack() : nullptr;
     undoAction_->setEnabled(undo && undo->canUndo());
     redoAction_->setEnabled(undo && undo->canRedo());
     undoButton_->setEnabled(undoAction_->isEnabled());
@@ -1941,8 +1968,9 @@ void MainWindow::updateDirtyState() {
                                 ? tr("Redo %1 (Ctrl+Y)").arg(undo->redoText())
                                 : tr("Redo (Ctrl+Y)"));
     const bool modified = open && session_->isModified();
-    saveAction_->setEnabled(modified);
-    saveButton_->setEnabled(modified);
+    const bool movieModified = tasEditor_ && tasEditor_->isModified();
+    saveAction_->setEnabled(modified || movieModified);
+    saveButton_->setEnabled(modified || movieModified);
     revertButton_->setEnabled(open && session_->canRevert(kind_, document_));
 
     int dirty = 0;
@@ -1999,6 +2027,7 @@ void MainWindow::saveAll() {
     } else {
         report(message(sdk::Severity::Error, QStringLiteral("save"), error, QString()));
     }
+    if (tasEditor_ && tasEditor_->isModified()) tasEditor_->save();
     updateDirtyState();
     documents_->updateGroups(session_->documents(kind_));
 }
@@ -2137,10 +2166,25 @@ void MainWindow::updateActions() {
     pauseGameAction_->setText(paused ? tr("Resume") : tr("Pause"));
     pauseButton_->setEnabled(running);
     pauseButton_->setIcon(theme::icon(paused ? QStringLiteral("play") : QStringLiteral("pause")));
-    pauseButton_->setToolTip(paused ? tr("Resume the playtest (Pause)")
-                                    : tr("Pause the playtest (Pause)"));
+    const bool tas = tasEditorShown();
+    if (tas) {
+        pauseButton_->setToolTip(paused ? tr("Play the movie from the selected frame (Pause, Space)")
+                                        : tr("Pause the movie where it is (Pause, Space)"));
+        stopButton_->setToolTip(tr("Pause and go back to the selected frame (Shift+F5)"));
+    } else {
+        pauseButton_->setToolTip(paused ? tr("Resume the playtest (Pause)")
+                                        : tr("Pause the playtest (Pause)"));
+        stopButton_->setToolTip(tr("Stop the playtest (Shift+F5)"));
+    }
     stopGameAction_->setEnabled(live);
+    stopGameAction_->setText(tas ? tr("Stop at the selected frame") : tr("Stop"));
     stopButton_->setEnabled(live);
+    const int frame = tas ? tasEditor_->selectedRow() : -1;
+    cutFrameAction_->setEnabled(frame >= 0);
+    copyFrameAction_->setEnabled(frame >= 0);
+    pasteFrameAction_->setEnabled(tas && tasEditor_->canPaste());
+    insertFrameAction_->setEnabled(tas);
+    deleteFrameAction_->setEnabled(frame >= 0);
 
     const bool controls = running && emulator_->hasControls();
     frameAdvanceAction_->setEnabled(controls);
@@ -2159,12 +2203,17 @@ void MainWindow::updateActions() {
     recordMovieAction_->setEnabled(movies);
     resumeMovieAction_->setEnabled(movies);
     playMovieAction_->setEnabled(movies);
-    tasEditorAction_->setEnabled(movies);
+    tasEditorAction_->setEnabled(movies || (tasEditor_ && !tasEditor_->isHidden()));
+    tasEditorAction_->setChecked(tasEditor_ && !tasEditor_->isHidden());
     stopMovieAction_->setEnabled(running && emulator_->movieMode() != QLatin1String("none"));
 }
 
 void MainWindow::togglePlaytestPause() {
     if (emulator_->phase() != runtime::EmulatorRunner::Phase::Running) return;
+    if (tasEditorShown()) {
+        tasEditor_->playOrPause();
+        return;
+    }
     if (!emulator_->togglePause()) {
         report(message(sdk::Severity::Warning, QStringLiteral("playtest"),
                        tr("The emulator could not be paused."), QString()));
@@ -2242,6 +2291,8 @@ void MainWindow::showEmulationEvent(const QString& event) {
         text = tr("Cannot rewind further");
     } else if (event == QLatin1String("foreign-state")) {
         text = tr("State %1 is not from this movie: movie stopped").arg(slot);
+    } else if (event == QLatin1String("movie-end")) {
+        text = tr("End of the movie");
     } else if (event == QLatin1String("movie-not-saved")) {
         text = tr("The movie could not be written: the file keeps its last save");
     }
@@ -2441,15 +2492,6 @@ void MainWindow::launchMovie(const QJsonObject& answer, int mode, const QString&
     movie.file = file;
     movie.origin = origin;
     movie.header = header;
-    if (movie.header.isEmpty()) {
-        // A movie that plays may become a recording (the TAS editor's Record
-        // from here): it keeps its own header.
-        EditedMovie read;
-        QString error;
-        if (readMovie(file, &read, &error)) {
-            for (const QString& line : read.header) movie.header += line + QLatin1Char('\n');
-        }
-    }
     movie.stateKey = answer.value(QStringLiteral("rom")).toObject().value(QStringLiteral("sha1")).toString();
     movie.stopAt = stopAt;
     movie.closeAtEnd = closeAtEnd;
@@ -2487,26 +2529,21 @@ void MainWindow::launchMovie(const QJsonObject& answer, int mode, const QString&
         if (line.startsWith(QLatin1String("title "))) movieTitle = line.mid(6).trimmed();
     }
     notifyEmulation(recording ? tr("Recording movie «%1»").arg(movieTitle) : tr("Playing movie «%1»").arg(movieTitle));
-    if (openEditorOnLaunch_) {
-        openEditorOnLaunch_ = false;
-        if (mode == int(Mode::Play)) openTasEditor();
-    } else if (mode == int(Mode::Play) && tasEditor_ && tasEditor_->isVisible()) {
-        // The editor shown takes the new movie.
+    // The TAS editor shows when it was asked for, not for every movie.
+    if (openEditorOnLaunch_ && mode == int(Mode::Play)) {
         openTasEditor();
+    } else {
+        closeTasEditor();
     }
+    openEditorOnLaunch_ = false;
 }
 
 void MainWindow::openTasEditor() {
     if (tasEditor_ == nullptr) {
         tasEditor_ = new TasEditorWindow(emulator_, this);
         tasEditor_->hide();
-        connect(tasEditor_, &TasEditorWindow::closeRequested, this, [this] {
-            for (editors::EditorView* view : {editor_.get(), parkedEditor_.get()}) {
-                auto* playtest = qobject_cast<editors::EmulatorView*>(view);
-                if (playtest && playtest->sidePanel() == tasEditor_) playtest->setSidePanel(nullptr);
-            }
-            tasEditor_->hide();
-        });
+        // Its undo, selection and copied frame: the menus follow.
+        connect(tasEditor_, &TasEditorWindow::changed, this, &MainWindow::scheduleDirtyState);
     }
     QString error;
     if (!tasEditor_->open(emulator_->movie().file, emulator_->movie().origin, &error)) {
@@ -2524,6 +2561,21 @@ void MainWindow::openTasEditor() {
     }
     playtest->setSidePanel(tasEditor_);
     tasEditor_->setFocus();
+    scheduleDirtyState();
+}
+
+void MainWindow::closeTasEditor() {
+    if (tasEditor_ == nullptr) return;
+    for (editors::EditorView* view : {editor_.get(), parkedEditor_.get()}) {
+        auto* playtest = qobject_cast<editors::EmulatorView*>(view);
+        if (playtest && playtest->sidePanel() == tasEditor_) playtest->setSidePanel(nullptr);
+    }
+    tasEditor_->hide();
+    scheduleDirtyState();
+}
+
+bool MainWindow::tasEditorShown() const {
+    return tasEditor_ != nullptr && tasEditor_->isVisible();
 }
 
 }  // namespace rl::shell

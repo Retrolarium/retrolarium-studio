@@ -9113,10 +9113,6 @@
         <translation>Дальше назад нельзя</translation>
     </message>
     <message>
-        <source>TAS editor…</source>
-        <translation>Редактор TAS…</translation>
-    </message>
-    <message>
         <source>The TAS editor cannot open the movie: %1</source>
         <translation>Редактор TAS не может открыть ролик: %1</translation>
     </message>
@@ -9159,6 +9155,50 @@
     <message>
         <source>The movie could not be written: the file keeps its last save</source>
         <translation>Не удалось записать ролик: в файле осталось последнее сохранение</translation>
+    </message>
+    <message>
+        <source>Cut frame</source>
+        <translation>Вырезать кадр</translation>
+    </message>
+    <message>
+        <source>Copy frame</source>
+        <translation>Копировать кадр</translation>
+    </message>
+    <message>
+        <source>Paste frame</source>
+        <translation>Вставить скопированный кадр</translation>
+    </message>
+    <message>
+        <source>Insert frame</source>
+        <translation>Вставить пустой кадр</translation>
+    </message>
+    <message>
+        <source>Delete frame</source>
+        <translation>Удалить кадр</translation>
+    </message>
+    <message>
+        <source>TAS editor</source>
+        <translation>Редактор TAS</translation>
+    </message>
+    <message>
+        <source>Play the movie from the selected frame (Pause, Space)</source>
+        <translation>Играть ролик с выбранного кадра (Pause, пробел)</translation>
+    </message>
+    <message>
+        <source>Pause the movie where it is (Pause, Space)</source>
+        <translation>Пауза на текущем кадре (Pause, пробел)</translation>
+    </message>
+    <message>
+        <source>Pause and go back to the selected frame (Shift+F5)</source>
+        <translation>Остановить и вернуться к выбранному кадру (Shift+F5)</translation>
+    </message>
+    <message>
+        <source>Stop at the selected frame</source>
+        <translation>Стоп: к выбранному кадру</translation>
+    </message>
+    <message>
+        <source>End of the movie</source>
+        <translation>Конец ролика</translation>
     </message>
 </context>
 <context>
@@ -9400,108 +9440,12 @@
 <context>
     <name>rl::shell::TasEditorWindow</name>
     <message>
-        <source>Save</source>
-        <translation>Сохранить</translation>
-    </message>
-    <message>
-        <source>Write the movie to its file (Ctrl+S)</source>
-        <translation>Записать ролик в его файл (Ctrl+S)</translation>
-    </message>
-    <message>
-        <source>Undo</source>
-        <translation>Отменить</translation>
-    </message>
-    <message>
-        <source>Undo the last edit (Ctrl+Z)</source>
-        <translation>Отменить последнюю правку (Ctrl+Z)</translation>
-    </message>
-    <message>
-        <source>Redo</source>
-        <translation>Повторить</translation>
-    </message>
-    <message>
-        <source>Redo (Ctrl+Y)</source>
-        <translation>Повторить (Ctrl+Y)</translation>
-    </message>
-    <message>
-        <source>Insert</source>
-        <translation>Вставить</translation>
-    </message>
-    <message>
-        <source>Insert empty frames before the selected ones (Insert)</source>
-        <translation>Вставить пустые кадры перед выделенными (Insert)</translation>
-    </message>
-    <message>
-        <source>Duplicate</source>
-        <translation>Дублировать</translation>
-    </message>
-    <message>
-        <source>Insert a copy of the selected frames (Ctrl+Insert)</source>
-        <translation>Вставить копию выделенных кадров (Ctrl+Insert)</translation>
-    </message>
-    <message>
-        <source>Delete</source>
-        <translation>Удалить</translation>
-    </message>
-    <message>
-        <source>Delete the selected frames (Delete)</source>
-        <translation>Удалить выделенные кадры (Delete)</translation>
-    </message>
-    <message>
-        <source>Go to frame</source>
-        <translation>К кадру</translation>
-    </message>
-    <message>
-        <source>Show the selected frame in the game (Enter)</source>
-        <translation>Показать выделенный кадр в игре (Enter)</translation>
-    </message>
-    <message>
-        <source>Run to</source>
-        <translation>Бежать до</translation>
-    </message>
-    <message>
-        <source>Run the movie on until this happens, or to its end</source>
-        <translation>Проиграть ролик дальше, пока это не случится, или до конца</translation>
-    </message>
-    <message>
-        <source>Record from here</source>
-        <translation>Записывать отсюда</translation>
-    </message>
-    <message>
-        <source>Record from the frame shown on, dropping the frames after it</source>
-        <translation>Записывать с показанного кадра, отбросив кадры после него</translation>
-    </message>
-    <message>
-        <source>Follow</source>
-        <translation>Следить</translation>
-    </message>
-    <message>
-        <source>Keep the frame the game shows in view</source>
-        <translation>Держать на виду кадр, который показывает игра</translation>
-    </message>
-    <message>
         <source>Change buttons</source>
         <translation>Изменить кнопки</translation>
     </message>
     <message>
         <source>The movie cannot be written: %1</source>
         <translation>Не удаётся записать ролик: %1</translation>
-    </message>
-    <message>
-        <source>Duplicate frames</source>
-        <translation>Дублировать кадры</translation>
-    </message>
-    <message>
-        <source>Insert frames</source>
-        <translation>Вставить кадры</translation>
-    </message>
-    <message>
-        <source>Delete frames</source>
-        <translation>Удалить кадры</translation>
-    </message>
-    <message>
-        <source>stopped: %1 at frame %2</source>
-        <translation>остановка: %1 на кадре %2</translation>
     </message>
     <message>
         <source>Frame %1 of %2</source>
@@ -9512,48 +9456,28 @@
         <translation>не сохранено</translation>
     </message>
     <message>
-        <source>Play from here</source>
-        <translation>Играть отсюда</translation>
-    </message>
-    <message>
-        <source>Play on from the selected frame at the game&apos;s speed, from the nearest state kept (Ctrl+P)</source>
-        <translation>Играть дальше с выделенного кадра на скорости игры, от ближайшего сохранённого слепка (Ctrl+P)</translation>
-    </message>
-    <message>
-        <source>Pause</source>
-        <translation>Пауза</translation>
-    </message>
-    <message>
-        <source>Pause the game and come back to the frame played from (Pause)</source>
-        <translation>Поставить игру на паузу и вернуться к кадру, с которого играли (Pause)</translation>
-    </message>
-    <message>
-        <source>Frame shown</source>
-        <translation>Текущий кадр</translation>
-    </message>
-    <message>
-        <source>Select the frame the game shows now (Ctrl+F)</source>
-        <translation>Выделить кадр, который сейчас показывает игра (Ctrl+F)</translation>
-    </message>
-    <message>
-        <source>Insert this many frames with the buttons chosen held, before the selected frame</source>
-        <translation>Вставить столько кадров с выбранными зажатыми кнопками перед выделенным кадром</translation>
-    </message>
-    <message>
-        <source>frames holding</source>
-        <translation>кадров, зажаты</translation>
-    </message>
-    <message>
-        <source>Close the TAS editor</source>
-        <translation>Закрыть редактор TAS</translation>
-    </message>
-    <message>
         <source>Save the movie as MAME plays it</source>
         <translation>Сохранить ролик в том виде, как его играет MAME</translation>
     </message>
     <message>
         <source>Retrolarium movies (*.rlmovie)</source>
         <translation>Ролики Retrolarium (*.rlmovie)</translation>
+    </message>
+    <message>
+        <source>Cut frame</source>
+        <translation>Вырезать кадр</translation>
+    </message>
+    <message>
+        <source>Paste frame</source>
+        <translation>Вставить кадр</translation>
+    </message>
+    <message>
+        <source>Insert frame</source>
+        <translation>Вставить пустой кадр</translation>
+    </message>
+    <message>
+        <source>Delete frame</source>
+        <translation>Удалить кадр</translation>
     </message>
 </context>
 <context>

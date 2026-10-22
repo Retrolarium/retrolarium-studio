@@ -9077,10 +9077,6 @@
         <translation>Não é possível voltar mais</translation>
     </message>
     <message>
-        <source>TAS editor…</source>
-        <translation>Editor de TAS…</translation>
-    </message>
-    <message>
         <source>The TAS editor cannot open the movie: %1</source>
         <translation>O editor de TAS não consegue abrir o filme: %1</translation>
     </message>
@@ -9123,6 +9119,50 @@
     <message>
         <source>The movie could not be written: the file keeps its last save</source>
         <translation>Não foi possível gravar o filme: o arquivo mantém o último salvamento</translation>
+    </message>
+    <message>
+        <source>Cut frame</source>
+        <translation>Recortar quadro</translation>
+    </message>
+    <message>
+        <source>Copy frame</source>
+        <translation>Copiar quadro</translation>
+    </message>
+    <message>
+        <source>Paste frame</source>
+        <translation>Colar quadro</translation>
+    </message>
+    <message>
+        <source>Insert frame</source>
+        <translation>Inserir quadro vazio</translation>
+    </message>
+    <message>
+        <source>Delete frame</source>
+        <translation>Excluir quadro</translation>
+    </message>
+    <message>
+        <source>TAS editor</source>
+        <translation>Editor de TAS</translation>
+    </message>
+    <message>
+        <source>Play the movie from the selected frame (Pause, Space)</source>
+        <translation>Reproduzir o filme a partir do quadro escolhido (Pause, Espaço)</translation>
+    </message>
+    <message>
+        <source>Pause the movie where it is (Pause, Space)</source>
+        <translation>Pausar o filme onde está (Pause, Espaço)</translation>
+    </message>
+    <message>
+        <source>Pause and go back to the selected frame (Shift+F5)</source>
+        <translation>Parar e voltar ao quadro escolhido (Shift+F5)</translation>
+    </message>
+    <message>
+        <source>Stop at the selected frame</source>
+        <translation>Parar no quadro escolhido</translation>
+    </message>
+    <message>
+        <source>End of the movie</source>
+        <translation>Fim do filme</translation>
     </message>
 </context>
 <context>
@@ -9364,108 +9404,12 @@
 <context>
     <name>rl::shell::TasEditorWindow</name>
     <message>
-        <source>Save</source>
-        <translation>Salvar</translation>
-    </message>
-    <message>
-        <source>Write the movie to its file (Ctrl+S)</source>
-        <translation>Gravar o filme no seu arquivo (Ctrl+S)</translation>
-    </message>
-    <message>
-        <source>Undo</source>
-        <translation>Desfazer</translation>
-    </message>
-    <message>
-        <source>Undo the last edit (Ctrl+Z)</source>
-        <translation>Desfazer a última edição (Ctrl+Z)</translation>
-    </message>
-    <message>
-        <source>Redo</source>
-        <translation>Refazer</translation>
-    </message>
-    <message>
-        <source>Redo (Ctrl+Y)</source>
-        <translation>Refazer (Ctrl+Y)</translation>
-    </message>
-    <message>
-        <source>Insert</source>
-        <translation>Inserir</translation>
-    </message>
-    <message>
-        <source>Insert empty frames before the selected ones (Insert)</source>
-        <translation>Inserir quadros vazios antes dos selecionados (Insert)</translation>
-    </message>
-    <message>
-        <source>Duplicate</source>
-        <translation>Duplicar</translation>
-    </message>
-    <message>
-        <source>Insert a copy of the selected frames (Ctrl+Insert)</source>
-        <translation>Inserir uma cópia dos quadros selecionados (Ctrl+Insert)</translation>
-    </message>
-    <message>
-        <source>Delete</source>
-        <translation>Excluir</translation>
-    </message>
-    <message>
-        <source>Delete the selected frames (Delete)</source>
-        <translation>Excluir os quadros selecionados (Delete)</translation>
-    </message>
-    <message>
-        <source>Go to frame</source>
-        <translation>Ir ao quadro</translation>
-    </message>
-    <message>
-        <source>Show the selected frame in the game (Enter)</source>
-        <translation>Mostrar no jogo o quadro selecionado (Enter)</translation>
-    </message>
-    <message>
-        <source>Run to</source>
-        <translation>Avançar até</translation>
-    </message>
-    <message>
-        <source>Run the movie on until this happens, or to its end</source>
-        <translation>Seguir o filme até isso acontecer, ou até o fim</translation>
-    </message>
-    <message>
-        <source>Record from here</source>
-        <translation>Gravar daqui</translation>
-    </message>
-    <message>
-        <source>Record from the frame shown on, dropping the frames after it</source>
-        <translation>Gravar a partir do quadro mostrado, descartando os quadros depois dele</translation>
-    </message>
-    <message>
-        <source>Follow</source>
-        <translation>Acompanhar</translation>
-    </message>
-    <message>
-        <source>Keep the frame the game shows in view</source>
-        <translation>Manter à vista o quadro que o jogo mostra</translation>
-    </message>
-    <message>
         <source>Change buttons</source>
         <translation>Alterar botões</translation>
     </message>
     <message>
         <source>The movie cannot be written: %1</source>
         <translation>Não foi possível gravar o filme: %1</translation>
-    </message>
-    <message>
-        <source>Duplicate frames</source>
-        <translation>Duplicar quadros</translation>
-    </message>
-    <message>
-        <source>Insert frames</source>
-        <translation>Inserir quadros</translation>
-    </message>
-    <message>
-        <source>Delete frames</source>
-        <translation>Excluir quadros</translation>
-    </message>
-    <message>
-        <source>stopped: %1 at frame %2</source>
-        <translation>parado: %1 no quadro %2</translation>
     </message>
     <message>
         <source>Frame %1 of %2</source>
@@ -9476,48 +9420,28 @@
         <translation>não salvo</translation>
     </message>
     <message>
-        <source>Play from here</source>
-        <translation>Jogar daqui</translation>
-    </message>
-    <message>
-        <source>Play on from the selected frame at the game&apos;s speed, from the nearest state kept (Ctrl+P)</source>
-        <translation>Continuar jogando a partir do quadro selecionado na velocidade do jogo, do estado guardado mais próximo (Ctrl+P)</translation>
-    </message>
-    <message>
-        <source>Pause</source>
-        <translation>Pausar</translation>
-    </message>
-    <message>
-        <source>Pause the game and come back to the frame played from (Pause)</source>
-        <translation>Pausar o jogo e voltar ao quadro de onde se jogou (Pause)</translation>
-    </message>
-    <message>
-        <source>Frame shown</source>
-        <translation>Quadro atual</translation>
-    </message>
-    <message>
-        <source>Select the frame the game shows now (Ctrl+F)</source>
-        <translation>Selecionar o quadro que o jogo mostra agora (Ctrl+F)</translation>
-    </message>
-    <message>
-        <source>Insert this many frames with the buttons chosen held, before the selected frame</source>
-        <translation>Inserir tantos quadros com os botões escolhidos pressionados antes do quadro selecionado</translation>
-    </message>
-    <message>
-        <source>frames holding</source>
-        <translation>quadros segurando</translation>
-    </message>
-    <message>
-        <source>Close the TAS editor</source>
-        <translation>Fechar o editor TAS</translation>
-    </message>
-    <message>
         <source>Save the movie as MAME plays it</source>
         <translation>Salvar o filme como o MAME o reproduz</translation>
     </message>
     <message>
         <source>Retrolarium movies (*.rlmovie)</source>
         <translation>Filmes do Retrolarium (*.rlmovie)</translation>
+    </message>
+    <message>
+        <source>Cut frame</source>
+        <translation>Recortar quadro</translation>
+    </message>
+    <message>
+        <source>Paste frame</source>
+        <translation>Colar quadro</translation>
+    </message>
+    <message>
+        <source>Insert frame</source>
+        <translation>Inserir quadro vazio</translation>
+    </message>
+    <message>
+        <source>Delete frame</source>
+        <translation>Excluir quadro</translation>
     </message>
 </context>
 <context>

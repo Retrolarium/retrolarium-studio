@@ -9077,10 +9077,6 @@
         <translation>No se puede retroceder más</translation>
     </message>
     <message>
-        <source>TAS editor…</source>
-        <translation>Editor TAS…</translation>
-    </message>
-    <message>
         <source>The TAS editor cannot open the movie: %1</source>
         <translation>El editor TAS no puede abrir la película: %1</translation>
     </message>
@@ -9123,6 +9119,50 @@
     <message>
         <source>The movie could not be written: the file keeps its last save</source>
         <translation>No se pudo escribir la película: el archivo conserva su último guardado</translation>
+    </message>
+    <message>
+        <source>Cut frame</source>
+        <translation>Cortar fotograma</translation>
+    </message>
+    <message>
+        <source>Copy frame</source>
+        <translation>Copiar fotograma</translation>
+    </message>
+    <message>
+        <source>Paste frame</source>
+        <translation>Pegar fotograma</translation>
+    </message>
+    <message>
+        <source>Insert frame</source>
+        <translation>Insertar fotograma vacío</translation>
+    </message>
+    <message>
+        <source>Delete frame</source>
+        <translation>Eliminar fotograma</translation>
+    </message>
+    <message>
+        <source>TAS editor</source>
+        <translation>Editor TAS</translation>
+    </message>
+    <message>
+        <source>Play the movie from the selected frame (Pause, Space)</source>
+        <translation>Reproducir la película desde el fotograma elegido (Pause, Espacio)</translation>
+    </message>
+    <message>
+        <source>Pause the movie where it is (Pause, Space)</source>
+        <translation>Pausar la película donde está (Pause, Espacio)</translation>
+    </message>
+    <message>
+        <source>Pause and go back to the selected frame (Shift+F5)</source>
+        <translation>Detener y volver al fotograma elegido (Shift+F5)</translation>
+    </message>
+    <message>
+        <source>Stop at the selected frame</source>
+        <translation>Detener en el fotograma elegido</translation>
+    </message>
+    <message>
+        <source>End of the movie</source>
+        <translation>Fin de la película</translation>
     </message>
 </context>
 <context>
@@ -9364,108 +9404,12 @@
 <context>
     <name>rl::shell::TasEditorWindow</name>
     <message>
-        <source>Save</source>
-        <translation>Guardar</translation>
-    </message>
-    <message>
-        <source>Write the movie to its file (Ctrl+S)</source>
-        <translation>Escribir la película en su archivo (Ctrl+S)</translation>
-    </message>
-    <message>
-        <source>Undo</source>
-        <translation>Deshacer</translation>
-    </message>
-    <message>
-        <source>Undo the last edit (Ctrl+Z)</source>
-        <translation>Deshacer la última edición (Ctrl+Z)</translation>
-    </message>
-    <message>
-        <source>Redo</source>
-        <translation>Rehacer</translation>
-    </message>
-    <message>
-        <source>Redo (Ctrl+Y)</source>
-        <translation>Rehacer (Ctrl+Y)</translation>
-    </message>
-    <message>
-        <source>Insert</source>
-        <translation>Insertar</translation>
-    </message>
-    <message>
-        <source>Insert empty frames before the selected ones (Insert)</source>
-        <translation>Insertar fotogramas vacíos antes de los seleccionados (Insert)</translation>
-    </message>
-    <message>
-        <source>Duplicate</source>
-        <translation>Duplicar</translation>
-    </message>
-    <message>
-        <source>Insert a copy of the selected frames (Ctrl+Insert)</source>
-        <translation>Insertar una copia de los fotogramas seleccionados (Ctrl+Insert)</translation>
-    </message>
-    <message>
-        <source>Delete</source>
-        <translation>Eliminar</translation>
-    </message>
-    <message>
-        <source>Delete the selected frames (Delete)</source>
-        <translation>Eliminar los fotogramas seleccionados (Supr)</translation>
-    </message>
-    <message>
-        <source>Go to frame</source>
-        <translation>Ir al fotograma</translation>
-    </message>
-    <message>
-        <source>Show the selected frame in the game (Enter)</source>
-        <translation>Mostrar en el juego el fotograma seleccionado (Intro)</translation>
-    </message>
-    <message>
-        <source>Run to</source>
-        <translation>Avanzar hasta</translation>
-    </message>
-    <message>
-        <source>Run the movie on until this happens, or to its end</source>
-        <translation>Seguir la película hasta que ocurra esto, o hasta el final</translation>
-    </message>
-    <message>
-        <source>Record from here</source>
-        <translation>Grabar desde aquí</translation>
-    </message>
-    <message>
-        <source>Record from the frame shown on, dropping the frames after it</source>
-        <translation>Grabar desde el fotograma mostrado, descartando los que vienen después</translation>
-    </message>
-    <message>
-        <source>Follow</source>
-        <translation>Seguir</translation>
-    </message>
-    <message>
-        <source>Keep the frame the game shows in view</source>
-        <translation>Mantener a la vista el fotograma que muestra el juego</translation>
-    </message>
-    <message>
         <source>Change buttons</source>
         <translation>Cambiar botones</translation>
     </message>
     <message>
         <source>The movie cannot be written: %1</source>
         <translation>No se puede escribir la película: %1</translation>
-    </message>
-    <message>
-        <source>Duplicate frames</source>
-        <translation>Duplicar fotogramas</translation>
-    </message>
-    <message>
-        <source>Insert frames</source>
-        <translation>Insertar fotogramas</translation>
-    </message>
-    <message>
-        <source>Delete frames</source>
-        <translation>Eliminar fotogramas</translation>
-    </message>
-    <message>
-        <source>stopped: %1 at frame %2</source>
-        <translation>detenido: %1 en el fotograma %2</translation>
     </message>
     <message>
         <source>Frame %1 of %2</source>
@@ -9476,48 +9420,28 @@
         <translation>sin guardar</translation>
     </message>
     <message>
-        <source>Play from here</source>
-        <translation>Jugar desde aquí</translation>
-    </message>
-    <message>
-        <source>Play on from the selected frame at the game&apos;s speed, from the nearest state kept (Ctrl+P)</source>
-        <translation>Seguir jugando desde el fotograma seleccionado a la velocidad del juego, desde el estado guardado más cercano (Ctrl+P)</translation>
-    </message>
-    <message>
-        <source>Pause</source>
-        <translation>Pausa</translation>
-    </message>
-    <message>
-        <source>Pause the game and come back to the frame played from (Pause)</source>
-        <translation>Pausar el juego y volver al fotograma desde el que se jugó (Pausa)</translation>
-    </message>
-    <message>
-        <source>Frame shown</source>
-        <translation>Fotograma actual</translation>
-    </message>
-    <message>
-        <source>Select the frame the game shows now (Ctrl+F)</source>
-        <translation>Seleccionar el fotograma que muestra ahora el juego (Ctrl+F)</translation>
-    </message>
-    <message>
-        <source>Insert this many frames with the buttons chosen held, before the selected frame</source>
-        <translation>Insertar tantos fotogramas con los botones elegidos pulsados antes del fotograma seleccionado</translation>
-    </message>
-    <message>
-        <source>frames holding</source>
-        <translation>fotogramas pulsando</translation>
-    </message>
-    <message>
-        <source>Close the TAS editor</source>
-        <translation>Cerrar el editor TAS</translation>
-    </message>
-    <message>
         <source>Save the movie as MAME plays it</source>
         <translation>Guardar la película tal como la reproduce MAME</translation>
     </message>
     <message>
         <source>Retrolarium movies (*.rlmovie)</source>
         <translation>Películas de Retrolarium (*.rlmovie)</translation>
+    </message>
+    <message>
+        <source>Cut frame</source>
+        <translation>Cortar fotograma</translation>
+    </message>
+    <message>
+        <source>Paste frame</source>
+        <translation>Pegar fotograma</translation>
+    </message>
+    <message>
+        <source>Insert frame</source>
+        <translation>Insertar fotograma vacío</translation>
+    </message>
+    <message>
+        <source>Delete frame</source>
+        <translation>Eliminar fotograma</translation>
     </message>
 </context>
 <context>

@@ -403,14 +403,10 @@ local overlay = [==[@OVERLAY@]==]
 local show_input, show_watch = overlay:find("input", 1, true) ~= nil, overlay:find("watch", 1, true) ~= nil
 local memory_space = machine.devices[":maincpu"] ~= nil and machine.devices[":maincpu"].spaces["program"] or nil
 local watch = {@WATCH@}
--- What a run to a stop may wait for (the TAS editor): the game's own
--- conditions, Lua expressions over `memory`, the main CPU's program space.
-local stop_when = {}
-for _, item in ipairs({@STOPWHEN@}) do
-    local chunk = load("local memory = ... return " .. item[2])
-    if chunk ~= nil then stop_when[#stop_when + 1] = {item[1], chunk} end
-end
-local run_until = nil       -- the stop_when index a run waits for
+-- The TAS editor edits the movie: it pauses at its end, still playing.
+local movie_editing = false
+-- A seek asked for while another is on its way: {go, frame}, done after it.
+local queued_seek = nil
 local event, events, ack = "", _G.retrolarium_events or 0, _G.retrolarium_ack or 0
 -- Each event counts, so the studio sees two saves in a row.
 local function set_event(name)
@@ -614,6 +610,11 @@ local function finish_rewind()
         emu.pause()
     end
     set_event("rewound")
+    if queued_seek ~= nil then
+        local go, frame = queued_seek[1], queued_seek[2]
+        queued_seek = nil
+        go(frame)
+    end
 end
 
 local function movie_playing()
@@ -745,8 +746,13 @@ local function rewind_load()
 end
 
 -- The TAS editor: go to a frame of the movie, back or forward, paused there.
-local function seek(target)
-    if latched_load ~= nil or replay_to ~= nil or rewind_pending ~= nil then return end
+local seek
+seek = function(target)
+    if latched_load ~= nil then return end
+    if replay_to ~= nil or rewind_pending ~= nil then
+        queued_seek = {seek, target}
+        return
+    end
     local playing = movie_mode == "play" or movie_mode == "resume"
     if playing then target = math.min(target, #log) end
     if target < done then
@@ -765,13 +771,22 @@ local function seek(target)
     end
 end
 
--- Run the movie on, unthrottled, until a stop condition holds or it ends.
-local function stop_run(name)
-    run_until = nil
-    apply_speed()
-    user_paused = true
-    emu.pause()
-    set_event(name)
+-- The same, from the latest state before the frame even when the frame is
+-- shown or lies ahead: an edit changed the frames that led there.
+local replay
+replay = function(target)
+    if latched_load ~= nil then return end
+    if replay_to ~= nil or rewind_pending ~= nil then
+        queued_seek = {replay, target}
+        return
+    end
+    if movie_playing() then target = math.min(target, #log) end
+    local entry = state_before(target - 1) or oldest_state()
+    if entry == nil or entry.frame >= target then
+        seek(target)
+        return
+    end
+    go_to(entry, target)
 end
 
 local function run_action(verb, argument)
@@ -860,28 +875,15 @@ local function run_action(verb, argument)
                 end
             end
         end
-    elseif verb == "until" then
-        local index = tonumber(argument)
-        if index ~= nil and stop_when[index] ~= nil and replay_to == nil and rewind_pending == nil
-                and (movie_mode == "play" or movie_mode == "resume") then
-            run_until = index
-            video.throttled, video.frameskip = false, 10
-            if machine.paused then emu.unpause() end
-        end
+    elseif verb == "replay" then
+        replay(tonumber(argument) or done)
+    elseif verb == "editing" then
+        movie_editing = argument == "1"
     elseif verb == "reload" then
         -- The editor changed the movie: its pads from here on.
         if movie_mode == "play" or movie_mode == "resume" then
             log = read_runs(argument) or log
             if not machine.paused then set_pads(log[done + 1]) end
-        end
-    elseif verb == "record" then
-        -- Record from this frame on: the movie's later frames are dropped.
-        if movie_mode == "play" or movie_mode == "resume" then
-            for i = #log, done + 1, -1 do log[i] = nil end
-            movie_mode = "record"
-            set_pads(nil)
-            write_movie()
-            set_event("recording")
         end
     elseif verb == "overlay" then
         show_input = argument:find("input", 1, true) ~= nil
@@ -989,8 +991,8 @@ local function control_tick()
         elseif capture_pending then
             capture_pending = false
             capture_state()
-            if replay_to == nil and run_until == nil then apply_speed() end
-            if not user_paused or replay_to ~= nil or run_until ~= nil then emu.unpause() end
+            if replay_to == nil then apply_speed() end
+            if not user_paused or replay_to ~= nil then emu.unpause() end
         end
     end
     if now ~= last_time and latched_load ~= nil then
@@ -1033,6 +1035,13 @@ local function control_tick()
                     set_event("recording")
                     user_paused = true
                     emu.pause()
+                elseif movie_editing and movie_mode == "play" then
+                    -- Edited, the movie stays: paused at its end.
+                    if replay_to == nil and not user_paused then
+                        user_paused = true
+                        emu.pause()
+                        set_event("movie-end")
+                    end
                 else
                     movie_mode = ""
                     set_event("ended")
@@ -1044,16 +1053,6 @@ local function control_tick()
                 end
             else
                 play_frame(log[done + 1])
-            end
-        end
-        if run_until ~= nil then
-            local memory_ok, hit = pcall(stop_when[run_until][2], memory_space)
-            if memory_ok and hit then
-                stop_run("stopped-" .. run_until)
-            elseif movie_mode ~= "play" and movie_mode ~= "resume" then
-                -- The movie ended (and said so): the run is over.
-                run_until = nil
-                apply_speed()
             end
         end
         if replay_to ~= nil then
@@ -1600,13 +1599,12 @@ void EmulatorRunner::reloadMovie(int changedFrom) {
     }
 }
 
-void EmulatorRunner::runUntil(int condition) {
-    // The script counts its conditions from 1.
-    if (controls_ && process_) sendAction(QStringLiteral("until"), QString::number(condition + 1));
+void EmulatorRunner::replay(int frame) {
+    if (controls_ && process_) sendAction(QStringLiteral("replay"), QString::number(std::max(0, frame)));
 }
 
-void EmulatorRunner::recordFromHere() {
-    if (controls_ && process_) sendAction(QStringLiteral("record"));
+void EmulatorRunner::setMovieEditing(bool editing) {
+    if (controls_ && process_) sendAction(QStringLiteral("editing"), editing ? QStringLiteral("1") : QStringLiteral("0"));
 }
 
 void EmulatorRunner::rewind(int frames) {
@@ -1690,11 +1688,6 @@ bool EmulatorRunner::writeControl(const sdk::ProcessSpec& spec, const QStringLis
         values << cell.name;
         cells << QStringLiteral("{[==[%1]==], %2, %3}").arg(cell.name).arg(cell.address).arg(cell.length);
     }
-    QStringList stops;
-    for (const StopCondition& stop : stops_) {
-        values << stop.name << stop.lua;
-        stops << QStringLiteral("{[==[%1]==], [==[%2]==]}").arg(stop.name, stop.lua);
-    }
     values << actions << status << movieFile << movie_.header;
     for (const QString& value : values) {
         if (value.contains(QLatin1String("]==]"))) {
@@ -1725,7 +1718,6 @@ bool EmulatorRunner::writeControl(const sdk::ProcessSpec& spec, const QStringLis
         .replace(QLatin1String("@ENVIRONMENT@"), environment)
         .replace(QLatin1String("@OVERLAY@"), overlayText(showInput_, showWatch_))
         .replace(QLatin1String("@WATCH@"), cells.join(QStringLiteral(", ")))
-        .replace(QLatin1String("@STOPWHEN@"), stops.join(QStringLiteral(", ")))
         // Last: the header holds the user's own words.
         .replace(QLatin1String("@MOVIEHEADER@"), movie_.header);
     file.write(text.toUtf8());

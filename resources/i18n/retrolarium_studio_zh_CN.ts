@@ -9041,10 +9041,6 @@
         <translation>无法再后退</translation>
     </message>
     <message>
-        <source>TAS editor…</source>
-        <translation>TAS 编辑器…</translation>
-    </message>
-    <message>
         <source>The TAS editor cannot open the movie: %1</source>
         <translation>TAS 编辑器无法打开录像：%1</translation>
     </message>
@@ -9087,6 +9083,50 @@
     <message>
         <source>The movie could not be written: the file keeps its last save</source>
         <translation>无法写入录像：文件保留最后一次保存的内容</translation>
+    </message>
+    <message>
+        <source>Cut frame</source>
+        <translation>剪切帧</translation>
+    </message>
+    <message>
+        <source>Copy frame</source>
+        <translation>复制帧</translation>
+    </message>
+    <message>
+        <source>Paste frame</source>
+        <translation>粘贴帧</translation>
+    </message>
+    <message>
+        <source>Insert frame</source>
+        <translation>插入空帧</translation>
+    </message>
+    <message>
+        <source>Delete frame</source>
+        <translation>删除帧</translation>
+    </message>
+    <message>
+        <source>TAS editor</source>
+        <translation>TAS 编辑器</translation>
+    </message>
+    <message>
+        <source>Play the movie from the selected frame (Pause, Space)</source>
+        <translation>从所选帧播放录像（Pause、空格）</translation>
+    </message>
+    <message>
+        <source>Pause the movie where it is (Pause, Space)</source>
+        <translation>在当前位置暂停录像（Pause、空格）</translation>
+    </message>
+    <message>
+        <source>Pause and go back to the selected frame (Shift+F5)</source>
+        <translation>停止并回到所选帧（Shift+F5）</translation>
+    </message>
+    <message>
+        <source>Stop at the selected frame</source>
+        <translation>停止并回到所选帧</translation>
+    </message>
+    <message>
+        <source>End of the movie</source>
+        <translation>录像结束</translation>
     </message>
 </context>
 <context>
@@ -9328,108 +9368,12 @@
 <context>
     <name>rl::shell::TasEditorWindow</name>
     <message>
-        <source>Save</source>
-        <translation>保存</translation>
-    </message>
-    <message>
-        <source>Write the movie to its file (Ctrl+S)</source>
-        <translation>将录像写入其文件 (Ctrl+S)</translation>
-    </message>
-    <message>
-        <source>Undo</source>
-        <translation>撤销</translation>
-    </message>
-    <message>
-        <source>Undo the last edit (Ctrl+Z)</source>
-        <translation>撤销上一次编辑 (Ctrl+Z)</translation>
-    </message>
-    <message>
-        <source>Redo</source>
-        <translation>重做</translation>
-    </message>
-    <message>
-        <source>Redo (Ctrl+Y)</source>
-        <translation>重做 (Ctrl+Y)</translation>
-    </message>
-    <message>
-        <source>Insert</source>
-        <translation>插入</translation>
-    </message>
-    <message>
-        <source>Insert empty frames before the selected ones (Insert)</source>
-        <translation>在所选帧之前插入空帧 (Insert)</translation>
-    </message>
-    <message>
-        <source>Duplicate</source>
-        <translation>复制</translation>
-    </message>
-    <message>
-        <source>Insert a copy of the selected frames (Ctrl+Insert)</source>
-        <translation>插入所选帧的副本 (Ctrl+Insert)</translation>
-    </message>
-    <message>
-        <source>Delete</source>
-        <translation>删除</translation>
-    </message>
-    <message>
-        <source>Delete the selected frames (Delete)</source>
-        <translation>删除所选帧 (Delete)</translation>
-    </message>
-    <message>
-        <source>Go to frame</source>
-        <translation>转到帧</translation>
-    </message>
-    <message>
-        <source>Show the selected frame in the game (Enter)</source>
-        <translation>在游戏中显示所选帧 (Enter)</translation>
-    </message>
-    <message>
-        <source>Run to</source>
-        <translation>运行到</translation>
-    </message>
-    <message>
-        <source>Run the movie on until this happens, or to its end</source>
-        <translation>让录像继续运行直到发生此事件或到结尾</translation>
-    </message>
-    <message>
-        <source>Record from here</source>
-        <translation>从此处录制</translation>
-    </message>
-    <message>
-        <source>Record from the frame shown on, dropping the frames after it</source>
-        <translation>从显示的帧开始录制，丢弃其后的帧</translation>
-    </message>
-    <message>
-        <source>Follow</source>
-        <translation>跟随</translation>
-    </message>
-    <message>
-        <source>Keep the frame the game shows in view</source>
-        <translation>始终显示游戏当前的帧</translation>
-    </message>
-    <message>
         <source>Change buttons</source>
         <translation>修改按键</translation>
     </message>
     <message>
         <source>The movie cannot be written: %1</source>
         <translation>无法写入录像：%1</translation>
-    </message>
-    <message>
-        <source>Duplicate frames</source>
-        <translation>复制帧</translation>
-    </message>
-    <message>
-        <source>Insert frames</source>
-        <translation>插入帧</translation>
-    </message>
-    <message>
-        <source>Delete frames</source>
-        <translation>删除帧</translation>
-    </message>
-    <message>
-        <source>stopped: %1 at frame %2</source>
-        <translation>已停止：%1（第 %2 帧）</translation>
     </message>
     <message>
         <source>Frame %1 of %2</source>
@@ -9440,48 +9384,28 @@
         <translation>未保存</translation>
     </message>
     <message>
-        <source>Play from here</source>
-        <translation>从此处播放</translation>
-    </message>
-    <message>
-        <source>Play on from the selected frame at the game&apos;s speed, from the nearest state kept (Ctrl+P)</source>
-        <translation>从所选帧开始以游戏速度继续播放，使用最近保存的状态 (Ctrl+P)</translation>
-    </message>
-    <message>
-        <source>Pause</source>
-        <translation>暂停</translation>
-    </message>
-    <message>
-        <source>Pause the game and come back to the frame played from (Pause)</source>
-        <translation>暂停游戏并回到开始播放的帧 (Pause)</translation>
-    </message>
-    <message>
-        <source>Frame shown</source>
-        <translation>当前帧</translation>
-    </message>
-    <message>
-        <source>Select the frame the game shows now (Ctrl+F)</source>
-        <translation>选择游戏当前显示的帧 (Ctrl+F)</translation>
-    </message>
-    <message>
-        <source>Insert this many frames with the buttons chosen held, before the selected frame</source>
-        <translation>在所选帧之前插入这么多按住所选按钮的帧</translation>
-    </message>
-    <message>
-        <source>frames holding</source>
-        <translation>帧，按住：</translation>
-    </message>
-    <message>
-        <source>Close the TAS editor</source>
-        <translation>关闭 TAS 编辑器</translation>
-    </message>
-    <message>
         <source>Save the movie as MAME plays it</source>
         <translation>按 MAME 播放的样子保存录像</translation>
     </message>
     <message>
         <source>Retrolarium movies (*.rlmovie)</source>
         <translation>Retrolarium 录像 (*.rlmovie)</translation>
+    </message>
+    <message>
+        <source>Cut frame</source>
+        <translation>剪切帧</translation>
+    </message>
+    <message>
+        <source>Paste frame</source>
+        <translation>粘贴帧</translation>
+    </message>
+    <message>
+        <source>Insert frame</source>
+        <translation>插入空帧</translation>
+    </message>
+    <message>
+        <source>Delete frame</source>
+        <translation>删除帧</translation>
     </message>
 </context>
 <context>

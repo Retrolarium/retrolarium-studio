@@ -162,6 +162,10 @@ private:
     // Run > Movie > TAS editor: on the movie that plays, or on one chosen
     // to play first.
     void openTasEditor();
+    void closeTasEditor();
+    // The TAS editor is on screen: the Edit menu, Save, Pause and Stop work
+    // on its movie.
+    bool tasEditorShown() const;
     void showEmulationEvent(const QString& event);
     void showPlaytest();
     QString emulatorKind() const;
@@ -241,6 +245,11 @@ private:
     // Actions.
     QAction* undoAction_ = nullptr;
     QAction* redoAction_ = nullptr;
+    QAction* cutFrameAction_ = nullptr;
+    QAction* copyFrameAction_ = nullptr;
+    QAction* pasteFrameAction_ = nullptr;
+    QAction* insertFrameAction_ = nullptr;
+    QAction* deleteFrameAction_ = nullptr;
     QAction* saveAction_ = nullptr;
     QAction* closeAction_ = nullptr;
     QAction* switchRevisionAction_ = nullptr;

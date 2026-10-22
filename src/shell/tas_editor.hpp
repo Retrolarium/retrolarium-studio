@@ -5,12 +5,7 @@
 #include <QTableView>
 #include <QVector>
 
-class QCheckBox;
-class QComboBox;
-class QHBoxLayout;
 class QLabel;
-class QPushButton;
-class QSpinBox;
 class QUndoStack;
 
 namespace rl::runtime {
@@ -74,19 +69,23 @@ private:
     int current_ = 0;
 };
 
-// The table: a press on a button cell turns it on or off, and dragging over
-// more frames does the same to them, as one edit.
+// The table: a press on a button cell selects its frame and turns the button
+// on or off, and dragging over more frames does the same to them, as one
+// edit. Space asks to play or pause.
 class MovieTableView final : public QTableView {
     Q_OBJECT
 
 public:
     explicit MovieTableView(QWidget* parent = nullptr);
+    bool isPainting() const { return painting_; }
 
 signals:
     // Frames from `row` on (`count` of them) take `frames` (one edit).
     void painted(int row, const QVector<MovieFrame>& before, const QVector<MovieFrame>& after);
+    void playPauseRequested();
 
 protected:
+    void keyPressEvent(QKeyEvent* event) override;
     void mousePressEvent(QMouseEvent* event) override;
     void mouseMoveEvent(QMouseEvent* event) override;
     void mouseReleaseEvent(QMouseEvent* event) override;
@@ -102,25 +101,20 @@ private:
     QVector<MovieFrame> before_;   // the frames as they were, from first_ on
 };
 
-// Run > Movie > TAS editor, docked beside the Playtest picture: the movie
-// that plays, frame by frame. A frame
-// clicked is shown in the game (the run goes back or forward to it, from the
-// nearest state it kept); Play from here plays on from the selected frame,
-// and Pause comes back to it; an edit is saved to the movie at once, the
-// states from the edited frame on are dropped and the game goes back to the
-// frame before it; a run goes on to the game's stop condition (a death) or the
-// end. Frames are inserted empty, as copies, or with chosen buttons held.
+// Run > Movie > TAS editor, docked beside the Playtest picture: the frames of
+// the movie that plays, and nothing else. The frame selected is the frame the
+// game shows. The studio's menus work on it: Edit (undo, cut, copy, paste,
+// insert, delete: one frame), File > Save, Run > Pause (play the movie on
+// from the selected frame, or pause it where it is, that frame then
+// selected) and Run > Stop (pause and go back to the selected frame). An edit
+// goes to the run at once: the game shows the selected frame as the edit
+// makes it. The movie is only played: nothing records over it.
 class TasEditorWindow final : public QFrame {
     Q_OBJECT
 
 public:
     TasEditorWindow(runtime::EmulatorRunner* emulator, QWidget* parent = nullptr);
 
-signals:
-    // The close button: the host takes the editor out of the view.
-    void closeRequested();
-
-public:
     // The movie the run plays (its working file) and the one it came from,
     // which Save writes. Opened again on the same files with edits not saved,
     // the editor keeps them.
@@ -134,47 +128,53 @@ public:
     bool save();
     // Forgets the edits not saved (the run is going away).
     void discard();
+    QUndoStack* undoStack() const { return undo_; }
+
+    // The Edit menu, on the selected frame (-1: none). Insert and Paste put
+    // their frame before it, and select it.
+    int selectedRow() const;
+    bool canPaste() const { return hasCopy_; }
+    void cut();
+    void copy();
+    void paste();
+    void insertFrame();
+    void deleteFrame();
+
+    // Run > Pause and Run > Stop.
+    void playOrPause();
+    void stop();
+
+signals:
+    // The undo stack, the selection or the frame copied changed.
+    void changed();
 
 protected:
-    // The editor's keys (Ctrl+Z, Ctrl+S, Pause...) are the window's
-    // shortcuts too: in the editor they are the editor's.
-    bool event(QEvent* event) override;
-    void keyPressEvent(QKeyEvent* event) override;
+    void showEvent(QShowEvent* event) override;
+    void hideEvent(QHideEvent* event) override;
 
 private:
     void edit(int row, int count, const QVector<MovieFrame>& frames, const QString& text);
     void applied(int row);
-    void insertFrames(bool copy);
-    void insertHeld();
-    void removeFrames();
-    void playFromSelection();
-    void pause();
-    void selectFrameShown();
-    // The toggles of Insert holding, one per button of the movie's pad.
-    void buildHoldButtons();
-    QVector<int> selectedRows() const;
+    // Selects a frame without sending the game there.
+    void selectRow(int row);
+    void onSelection();
     void followEmulator();
-    void onEmulationEvent(const QString& event);
     void updateStatus();
 
     runtime::EmulatorRunner* emulator_;
     MovieTableModel* model_;
     MovieTableView* view_;
     QUndoStack* undo_;
-    QComboBox* stops_;
-    QCheckBox* follow_;
     QLabel* status_;
-    QSpinBox* holdCount_;
-    QHBoxLayout* holdRow_;
-    QVector<QPushButton*> holdButtons_;
-    int playedFrom_ = -1;   // the row Play from here started at
-    int followed_ = -1;     // the frame Follow last brought into view
-    bool wasPaused_ = true;
+    MovieFrame copied_;
+    bool hasCopy_ = false;
+    bool quiet_ = false;         // a selection made here, not by the user
+    bool followPause_ = false;   // paused here: the frame it stops at is selected
+    int followed_ = -1;          // the frame the table last kept in view
     QString working_;
     QString origin_;
     bool askPath_ = false;   // Save asks for a new file: the origin cannot take MAME's frames
     bool toMame_ = false;    // the frames saved are marked as MAME's own (no lining up)
-    QString note_;          // what the last run to a stop found
 };
 
 }  // namespace rl::shell

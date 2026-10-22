@@ -5,21 +5,17 @@
 #include "theme/theme.hpp"
 #include "theme/typography.hpp"
 
-#include <QCheckBox>
-#include <QComboBox>
 #include <QFile>
 #include <QFileDialog>
 #include <QFileInfo>
-#include <QHBoxLayout>
 #include <QHeaderView>
+#include <QHideEvent>
 #include <QKeyEvent>
 #include <QLabel>
-#include <QMap>
 #include <QMouseEvent>
-#include <QPushButton>
 #include <QRegularExpression>
 #include <QSaveFile>
-#include <QSpinBox>
+#include <QShowEvent>
 #include <QUndoCommand>
 #include <QUndoStack>
 #include <QVBoxLayout>
@@ -241,6 +237,15 @@ QVariant MovieTableModel::headerData(int section, Qt::Orientation orientation, i
 
 MovieTableView::MovieTableView(QWidget* parent) : QTableView(parent) {}
 
+void MovieTableView::keyPressEvent(QKeyEvent* event) {
+    if (event->key() == Qt::Key_Space && event->modifiers() == Qt::NoModifier) {
+        emit playPauseRequested();
+        event->accept();
+        return;
+    }
+    QTableView::keyPressEvent(event);
+}
+
 void MovieTableView::mousePressEvent(QMouseEvent* event) {
     const QModelIndex index = indexAt(event->pos());
     auto* table = qobject_cast<MovieTableModel*>(model());
@@ -254,6 +259,8 @@ void MovieTableView::mousePressEvent(QMouseEvent* event) {
     value_ = (table->movie().frames.at(index.row()).pad1 & mask) == 0;
     first_ = last_ = index.row();
     before_ = {table->movie().frames.at(index.row())};
+    // The frame pressed is the one selected; the edit then shows it.
+    selectionModel()->setCurrentIndex(index, QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
     paintAt(index);
     event->accept();
 }
@@ -337,96 +344,20 @@ private:
     std::function<void(int)> applied_;
 };
 
-QPushButton* toolButton(const QString& text, const QString& tip, QWidget* parent) {
-    auto* button = new QPushButton(text, parent);
-    button->setAutoDefault(false);
-    button->setFont(theme::font(theme::TextRole::Body, 13.0));
-    button->setToolTip(tip);
-    return button;
-}
-
 }  // namespace
 
 TasEditorWindow::TasEditorWindow(runtime::EmulatorRunner* emulator, QWidget* parent)
     : QFrame(parent), emulator_(emulator), model_(new MovieTableModel(this)),
       view_(new MovieTableView(this)), undo_(new QUndoStack(this)) {
     setProperty("surface", QStringLiteral("panel"));
-    setMinimumWidth(460);
+    setMinimumWidth(360);
     auto* layout = new QVBoxLayout(this);
     layout->setContentsMargins(12, 8, 12, 12);
     layout->setSpacing(8);
 
-    auto* row1 = new QHBoxLayout;
-    QPushButton* saveButton = toolButton(tr("Save"), tr("Write the movie to its file (Ctrl+S)"), this);
-    QPushButton* undoButton = toolButton(tr("Undo"), tr("Undo the last edit (Ctrl+Z)"), this);
-    QPushButton* redoButton = toolButton(tr("Redo"), tr("Redo (Ctrl+Y)"), this);
-    QPushButton* insertButton =
-        toolButton(tr("Insert"), tr("Insert empty frames before the selected ones (Insert)"), this);
-    QPushButton* copyButton =
-        toolButton(tr("Duplicate"), tr("Insert a copy of the selected frames (Ctrl+Insert)"), this);
-    QPushButton* removeButton = toolButton(tr("Delete"), tr("Delete the selected frames (Delete)"), this);
-    for (QPushButton* button : {saveButton, undoButton, redoButton, insertButton, copyButton, removeButton}) {
-        row1->addWidget(button);
-    }
-    row1->addStretch(1);
-    QPushButton* closeButton = toolButton(QStringLiteral("×"), tr("Close the TAS editor"), this);
-    closeButton->setFixedWidth(closeButton->sizeHint().height());
-    connect(closeButton, &QPushButton::clicked, this, &TasEditorWindow::closeRequested);
-    row1->addWidget(closeButton);
-    layout->addLayout(row1);
-
-    auto* row2 = new QHBoxLayout;
-    QPushButton* goButton = toolButton(tr("Go to frame"), tr("Show the selected frame in the game (Enter)"), this);
-    QPushButton* playButton = toolButton(
-        tr("Play from here"),
-        tr("Play on from the selected frame at the game's speed, from the nearest state kept (Ctrl+P)"), this);
-    QPushButton* pauseButton =
-        toolButton(tr("Pause"), tr("Pause the game and come back to the frame played from (Pause)"), this);
-    QPushButton* shownButton =
-        toolButton(tr("Frame shown"), tr("Select the frame the game shows now (Ctrl+F)"), this);
-    for (QPushButton* button : {goButton, playButton, pauseButton, shownButton}) row2->addWidget(button);
-    row2->addStretch(1);
-    layout->addLayout(row2);
-
-    auto* row3 = new QHBoxLayout;
-    QPushButton* runButton = toolButton(tr("Run to"), tr("Run the movie on until this happens, or to its end"), this);
-    stops_ = new QComboBox(this);
-    stops_->setFont(theme::font(theme::TextRole::Body, 13.0));
-    QPushButton* recordButton =
-        toolButton(tr("Record from here"), tr("Record from the frame shown on, dropping the frames after it"), this);
-    follow_ = new QCheckBox(tr("Follow"), this);
-    follow_->setFont(theme::font(theme::TextRole::Body, 13.0));
-    follow_->setToolTip(tr("Keep the frame the game shows in view"));
-    follow_->setChecked(true);
-    row3->addWidget(runButton);
-    row3->addWidget(stops_, 1);
-    row3->addWidget(recordButton);
-    row3->addWidget(follow_);
-    layout->addLayout(row3);
-
-    // Insert N frames with chosen buttons held, before the selected frame.
-    holdRow_ = new QHBoxLayout;
-    QPushButton* holdButton = toolButton(
-        tr("Insert"), tr("Insert this many frames with the buttons chosen held, before the selected frame"), this);
-    holdCount_ = new QSpinBox(this);
-    holdCount_->setRange(1, 9999);
-    holdCount_->setFont(theme::font(theme::TextRole::Body, 13.0));
-    auto* holding = new QLabel(tr("frames holding"), this);
-    holding->setFont(theme::font(theme::TextRole::Body, 13.0));
-    holdRow_->addWidget(holdButton);
-    holdRow_->addWidget(holdCount_);
-    holdRow_->addWidget(holding);
-    holdRow_->addStretch(1);
-    layout->addLayout(holdRow_);
-    connect(holdButton, &QPushButton::clicked, this, &TasEditorWindow::insertHeld);
-
-    status_ = new QLabel(this);
-    status_->setFont(theme::font(theme::TextRole::Body, 12.0));
-    layout->addWidget(status_);
-
     view_->setModel(model_);
     view_->setSelectionBehavior(QAbstractItemView::SelectRows);
-    view_->setSelectionMode(QAbstractItemView::ExtendedSelection);
+    view_->setSelectionMode(QAbstractItemView::SingleSelection);
     view_->setEditTriggers(QAbstractItemView::NoEditTriggers);
     view_->setShowGrid(true);
     view_->setWordWrap(false);
@@ -440,41 +371,32 @@ TasEditorWindow::TasEditorWindow(runtime::EmulatorRunner* emulator, QWidget* par
     view_->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     view_->horizontalHeader()->setHighlightSections(false);
     layout->addWidget(view_, 1);
+    setFocusProxy(view_);
+
+    status_ = new QLabel(this);
+    status_->setFont(theme::font(theme::TextRole::Body, 12.0));
+    layout->addWidget(status_);
 
     connect(view_, &MovieTableView::painted, this,
             [this](int row, const QVector<MovieFrame>& before, const QVector<MovieFrame>& after) {
                 undo_->push(new SpliceCommand(model_, row, before, after, true, [this](int r) { applied(r); },
                                               tr("Change buttons")));
             });
-    // A frame number clicked shows that frame in the game.
-    connect(view_->verticalHeader(), &QHeaderView::sectionClicked, this,
-            [this](int row) { emulator_->seek(row + 1); });
-    connect(view_, &QTableView::doubleClicked, this,
-            [this](const QModelIndex& index) { emulator_->seek(index.row() + 1); });
-    connect(goButton, &QPushButton::clicked, this, [this] {
-        const QVector<int> rows = selectedRows();
-        if (!rows.isEmpty()) emulator_->seek(rows.first() + 1);
+    connect(view_, &MovieTableView::playPauseRequested, this, &TasEditorWindow::playOrPause);
+    connect(view_->selectionModel(), &QItemSelectionModel::selectionChanged, this, &TasEditorWindow::onSelection);
+    connect(undo_, &QUndoStack::indexChanged, this, &TasEditorWindow::changed);
+    connect(undo_, &QUndoStack::cleanChanged, this, [this] {
+        updateStatus();
+        emit changed();
     });
-    connect(playButton, &QPushButton::clicked, this, &TasEditorWindow::playFromSelection);
-    connect(pauseButton, &QPushButton::clicked, this, &TasEditorWindow::pause);
-    connect(shownButton, &QPushButton::clicked, this, &TasEditorWindow::selectFrameShown);
-    connect(runButton, &QPushButton::clicked, this, [this] {
-        if (stops_->currentIndex() >= 0) emulator_->runUntil(stops_->currentIndex());
-    });
-    connect(recordButton, &QPushButton::clicked, this, [this] { emulator_->recordFromHere(); });
-    connect(saveButton, &QPushButton::clicked, this, &TasEditorWindow::save);
-    connect(undoButton, &QPushButton::clicked, undo_, &QUndoStack::undo);
-    connect(redoButton, &QPushButton::clicked, undo_, &QUndoStack::redo);
-    connect(insertButton, &QPushButton::clicked, this, [this] { insertFrames(false); });
-    connect(copyButton, &QPushButton::clicked, this, [this] { insertFrames(true); });
-    connect(removeButton, &QPushButton::clicked, this, &TasEditorWindow::removeFrames);
-    connect(undo_, &QUndoStack::canUndoChanged, undoButton, &QPushButton::setEnabled);
-    connect(undo_, &QUndoStack::canRedoChanged, redoButton, &QPushButton::setEnabled);
-    connect(undo_, &QUndoStack::cleanChanged, this, [this] { updateStatus(); });
-    undoButton->setEnabled(false);
-    redoButton->setEnabled(false);
     connect(emulator_, &runtime::EmulatorRunner::emulationChanged, this, &TasEditorWindow::followEmulator);
-    connect(emulator_, &runtime::EmulatorRunner::emulationEvent, this, &TasEditorWindow::onEmulationEvent);
+    connect(emulator_, &runtime::EmulatorRunner::emulationEvent, this, [this](const QString& event) {
+        // Paused at the movie's end: that frame is selected.
+        if (event == QLatin1String("movie-end")) {
+            followPause_ = true;
+            followEmulator();
+        }
+    });
 }
 
 bool TasEditorWindow::open(const QString& working, const QString& origin, QString* error) {
@@ -499,13 +421,25 @@ bool TasEditorWindow::open(const QString& working, const QString& origin, QStrin
         undo_->clear();
         model_->setMovie(movie);
     }
-    stops_->clear();
-    for (const runtime::StopCondition& stop : emulator_->stopConditions()) stops_->addItem(stop.name);
-    stops_->setEnabled(stops_->count() > 0);
-    buildHoldButtons();
+    emulator_->setMovieEditing(true);
+    // The frame the game shows is the one selected.
+    followPause_ = false;
+    if (model_->rowCount() > 0) selectRow(std::clamp(emulator_->movieFrame() - 1, 0, model_->rowCount() - 1));
     followEmulator();
-    updateStatus();
+    emit changed();
     return true;
+}
+
+void TasEditorWindow::showEvent(QShowEvent* event) {
+    QFrame::showEvent(event);
+    if (!event->spontaneous()) emulator_->setMovieEditing(true);
+    emit changed();
+}
+
+void TasEditorWindow::hideEvent(QHideEvent* event) {
+    QFrame::hideEvent(event);
+    if (!event->spontaneous()) emulator_->setMovieEditing(false);
+    emit changed();
 }
 
 void TasEditorWindow::edit(int row, int count, const QVector<MovieFrame>& frames, const QString& text) {
@@ -514,8 +448,7 @@ void TasEditorWindow::edit(int row, int count, const QVector<MovieFrame>& frames
 }
 
 void TasEditorWindow::applied(int row) {
-    // The run plays the working file: write it, let the run take it in, and
-    // go back to the last frame the edit leaves as it was.
+    // The run plays the working file: write it and let the run take it in.
     QString error;
     if (!writeMovie(working_, model_->movie(), &error)) {
         status_->setText(tr("The movie cannot be written: %1").arg(error));
@@ -523,94 +456,94 @@ void TasEditorWindow::applied(int row) {
     }
     // Row r is frame r + 1: the states from that frame on show the old input.
     emulator_->reloadMovie(row + 1);
-    if (emulator_->movieFrame() > row) emulator_->seek(row);
-    note_.clear();
     updateStatus();
-}
-
-QVector<int> TasEditorWindow::selectedRows() const {
-    QVector<int> rows;
-    for (const QModelIndex& index : view_->selectionModel()->selectedRows()) rows.append(index.row());
-    std::sort(rows.begin(), rows.end());
-    return rows;
-}
-
-void TasEditorWindow::insertFrames(bool copy) {
-    QVector<int> rows = selectedRows();
-    if (rows.isEmpty()) rows = {std::clamp(model_->currentFrame(), 0, model_->rowCount())};
-    QVector<MovieFrame> frames;
-    for (const int row : rows) {
-        frames.append(copy && row < model_->rowCount() ? model_->movie().frames.at(row) : MovieFrame());
-    }
-    // A copy goes after the frames copied, empty frames before the selection.
-    const int at = copy ? rows.last() + 1 : rows.first();
-    edit(std::min(at, model_->rowCount()), 0, frames, copy ? tr("Duplicate frames") : tr("Insert frames"));
-}
-
-void TasEditorWindow::buildHoldButtons() {
-    for (QPushButton* button : holdButtons_) delete button;
-    holdButtons_.clear();
-    const int before = holdRow_->count() - 1;  // ahead of the stretch
-    for (int column = 0; column < model_->columnCount(); ++column) {
-        auto* button = new QPushButton(model_->headerData(column, Qt::Horizontal).toString(), this);
-        button->setCheckable(true);
-        button->setAutoDefault(false);
-        button->setFont(theme::font(theme::TextRole::Body, 13.0));
-        button->setFixedWidth(std::max(30, button->sizeHint().height()));
-        holdRow_->insertWidget(before + column, button);
-        holdButtons_.append(button);
+    if (model_->rowCount() == 0) return;
+    // The frame edited is selected and shown as the edit makes it: from a
+    // state before the edit when the game shows a frame after it.
+    const int shown = std::clamp(row, 0, model_->rowCount() - 1);
+    selectRow(shown);
+    followPause_ = false;
+    if (emulator_->movieFrame() > row) {
+        emulator_->replay(shown + 1);
+    } else {
+        emulator_->seek(shown + 1);
     }
 }
 
-void TasEditorWindow::insertHeld() {
-    MovieFrame frame;
-    for (int column = 0; column < holdButtons_.size(); ++column) {
-        if (holdButtons_.at(column)->isChecked()) frame.pad1 = quint8(frame.pad1 | model_->buttonMask(column));
-    }
-    const QVector<int> rows = selectedRows();
-    const int at = rows.isEmpty() ? std::clamp(model_->currentFrame(), 0, model_->rowCount()) : rows.first();
-    edit(std::min(at, model_->rowCount()), 0, QVector<MovieFrame>(holdCount_->value(), frame),
-         tr("Insert frames"));
-    view_->selectRow(at);
-}
-
-void TasEditorWindow::playFromSelection() {
-    const QVector<int> rows = selectedRows();
-    const int row = rows.isEmpty() ? std::max(0, model_->currentFrame() - 1) : rows.first();
-    playedFrom_ = row;
-    note_.clear();
-    // Row r is the input of frame r + 1: the run goes to frame r and plays it.
-    emulator_->playFrom(row);
-}
-
-void TasEditorWindow::pause() {
-    if (!emulator_->isPaused()) emulator_->togglePause();
-    if (playedFrom_ >= 0 && playedFrom_ < model_->rowCount()) {
-        view_->selectRow(playedFrom_);
-        view_->scrollTo(model_->index(playedFrom_, 0), QAbstractItemView::PositionAtCenter);
-    }
-}
-
-void TasEditorWindow::selectFrameShown() {
-    const int row = model_->currentFrame() - 1;
+void TasEditorWindow::selectRow(int row) {
     if (row < 0 || row >= model_->rowCount()) return;
-    playedFrom_ = -1;
+    quiet_ = true;
     view_->selectRow(row);
-    view_->scrollTo(model_->index(row, 0), QAbstractItemView::PositionAtCenter);
+    quiet_ = false;
+    view_->scrollTo(model_->index(row, 0));
 }
 
-void TasEditorWindow::removeFrames() {
-    const QVector<int> rows = selectedRows();
-    if (rows.isEmpty()) return;
-    undo_->beginMacro(tr("Delete frames"));
-    // From the last, so the rows before stay where they are.
-    for (int i = rows.size() - 1; i >= 0;) {
-        int j = i;
-        while (j > 0 && rows.at(j - 1) == rows.at(j) - 1) --j;
-        edit(rows.at(j), rows.at(i) - rows.at(j) + 1, {}, tr("Delete frames"));
-        i = j - 1;
+int TasEditorWindow::selectedRow() const {
+    const QModelIndexList rows = view_->selectionModel()->selectedRows();
+    return rows.isEmpty() ? -1 : rows.first().row();
+}
+
+void TasEditorWindow::onSelection() {
+    emit changed();
+    // A frame the user selects is shown; a press on a button shows it
+    // after its edit.
+    if (quiet_ || view_->isPainting()) return;
+    const int row = selectedRow();
+    if (row < 0) return;
+    followPause_ = false;
+    emulator_->seek(row + 1);
+}
+
+void TasEditorWindow::copy() {
+    const int row = selectedRow();
+    if (row < 0) return;
+    copied_ = model_->movie().frames.at(row);
+    hasCopy_ = true;
+    emit changed();
+}
+
+void TasEditorWindow::cut() {
+    const int row = selectedRow();
+    if (row < 0) return;
+    copy();
+    edit(row, 1, {}, tr("Cut frame"));
+}
+
+void TasEditorWindow::paste() {
+    if (!hasCopy_) return;
+    const int row = selectedRow();
+    edit(row < 0 ? model_->rowCount() : row, 0, {copied_}, tr("Paste frame"));
+}
+
+void TasEditorWindow::insertFrame() {
+    const int row = selectedRow();
+    edit(row < 0 ? model_->rowCount() : row, 0, {MovieFrame()}, tr("Insert frame"));
+}
+
+void TasEditorWindow::deleteFrame() {
+    const int row = selectedRow();
+    if (row >= 0) edit(row, 1, {}, tr("Delete frame"));
+}
+
+void TasEditorWindow::playOrPause() {
+    if (!emulator_->isPaused()) {
+        // Paused where it is: that frame is selected once the game says
+        // where it stopped.
+        followPause_ = true;
+        emulator_->togglePause();
+        return;
     }
-    undo_->endMacro();
+    followPause_ = false;
+    // Row r is frame r + 1, the frame shown: the movie plays on after it.
+    const int row = selectedRow();
+    emulator_->playFrom(row >= 0 ? row + 1 : emulator_->movieFrame());
+}
+
+void TasEditorWindow::stop() {
+    followPause_ = false;
+    if (!emulator_->isPaused()) emulator_->togglePause();
+    const int row = selectedRow();
+    if (row >= 0) emulator_->seek(row + 1);
 }
 
 bool TasEditorWindow::isModified() const {
@@ -649,95 +582,23 @@ void TasEditorWindow::discard() {
 void TasEditorWindow::followEmulator() {
     model_->setCurrentFrame(emulator_->movieFrame());
     const int frame = model_->currentFrame();
-    // Follow scrolls as the frame moves only, so the table stays where it is
-    // put while the game is paused.
-    if (follow_->isChecked() && frame != followed_ && frame > 0 && frame <= model_->rowCount()) {
-        view_->scrollTo(model_->index(frame - 1, 0), QAbstractItemView::PositionAtCenter);
+    if (frame > 0 && frame <= model_->rowCount()) {
+        if (emulator_->isPaused()) {
+            if (followPause_) selectRow(frame - 1);
+        } else if (frame != followed_) {
+            // Played, the frame stays in view.
+            view_->scrollTo(model_->index(frame - 1, 0));
+        }
     }
     followed_ = frame;
-    // Paused (from here or the studio) after Play from here: back to its frame.
-    const bool paused = emulator_->isPaused();
-    if (paused && !wasPaused_ && playedFrom_ >= 0 && playedFrom_ < model_->rowCount()) {
-        view_->selectRow(playedFrom_);
-        view_->scrollTo(model_->index(playedFrom_, 0), QAbstractItemView::PositionAtCenter);
-    }
-    wasPaused_ = paused;
     updateStatus();
-}
-
-void TasEditorWindow::onEmulationEvent(const QString& event) {
-    if (event.startsWith(QLatin1String("stopped-"))) {
-        const int index = event.mid(8).toInt() - 1;
-        note_ = tr("stopped: %1 at frame %2").arg(stops_->itemText(index)).arg(emulator_->movieFrame());
-        updateStatus();
-        const int row = emulator_->movieFrame() - 1;
-        if (row >= 0 && row < model_->rowCount()) {
-            view_->selectRow(row);
-            view_->scrollTo(model_->index(row, 0), QAbstractItemView::PositionAtCenter);
-        }
-        return;
-    }
-    if (event == QLatin1String("stopped")) {
-        // A recording from here ended: its frames are in the working file.
-        QString error;
-        EditedMovie movie;
-        if (readMovie(working_, &movie, &error) && movie.frames.size() != model_->rowCount()) {
-            undo_->clear();
-            model_->setMovie(movie);
-            updateStatus();
-        }
-    }
 }
 
 void TasEditorWindow::updateStatus() {
     QString text = QFileInfo(origin_).fileName() + QStringLiteral(" · ") +
                    tr("Frame %1 of %2").arg(model_->currentFrame()).arg(model_->rowCount());
     if (!undo_->isClean()) text += QStringLiteral(" · ") + tr("not saved");
-    if (!note_.isEmpty()) text += QStringLiteral(" · ") + note_;
     status_->setText(text);
-}
-
-bool TasEditorWindow::event(QEvent* event) {
-    if (event->type() == QEvent::ShortcutOverride) {
-        const auto* key = static_cast<QKeyEvent*>(event);
-        const bool control = key->modifiers() & Qt::ControlModifier;
-        const int k = key->key();
-        if (k == Qt::Key_Insert || k == Qt::Key_Delete || k == Qt::Key_Pause ||
-            (control && (k == Qt::Key_Z || k == Qt::Key_Y || k == Qt::Key_S || k == Qt::Key_P || k == Qt::Key_F))) {
-            event->accept();
-            return true;
-        }
-    }
-    return QFrame::event(event);
-}
-
-void TasEditorWindow::keyPressEvent(QKeyEvent* event) {
-    const bool control = event->modifiers() & Qt::ControlModifier;
-    const bool shift = event->modifiers() & Qt::ShiftModifier;
-    if (event->key() == Qt::Key_Insert) {
-        insertFrames(control);
-    } else if (event->key() == Qt::Key_Delete) {
-        removeFrames();
-    } else if (control && shift && event->key() == Qt::Key_Z) {
-        undo_->redo();
-    } else if (control && event->key() == Qt::Key_Z) {
-        undo_->undo();
-    } else if (control && event->key() == Qt::Key_Y) {
-        undo_->redo();
-    } else if (control && event->key() == Qt::Key_S) {
-        save();
-    } else if (control && event->key() == Qt::Key_P) {
-        playFromSelection();
-    } else if (control && event->key() == Qt::Key_F) {
-        selectFrameShown();
-    } else if (event->key() == Qt::Key_Pause) {
-        pause();
-    } else if (event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter) {
-        const QVector<int> rows = selectedRows();
-        if (!rows.isEmpty()) emulator_->seek(rows.first() + 1);
-    } else {
-        QFrame::keyPressEvent(event);
-    }
 }
 
 }  // namespace rl::shell

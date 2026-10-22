@@ -9113,10 +9113,6 @@
         <translation>Nie można cofnąć dalej</translation>
     </message>
     <message>
-        <source>TAS editor…</source>
-        <translation>Edytor TAS…</translation>
-    </message>
-    <message>
         <source>The TAS editor cannot open the movie: %1</source>
         <translation>Edytor TAS nie może otworzyć filmu: %1</translation>
     </message>
@@ -9159,6 +9155,50 @@
     <message>
         <source>The movie could not be written: the file keeps its last save</source>
         <translation>Nie udało się zapisać filmu: plik zachowuje ostatni zapis</translation>
+    </message>
+    <message>
+        <source>Cut frame</source>
+        <translation>Wytnij klatkę</translation>
+    </message>
+    <message>
+        <source>Copy frame</source>
+        <translation>Kopiuj klatkę</translation>
+    </message>
+    <message>
+        <source>Paste frame</source>
+        <translation>Wklej klatkę</translation>
+    </message>
+    <message>
+        <source>Insert frame</source>
+        <translation>Wstaw pustą klatkę</translation>
+    </message>
+    <message>
+        <source>Delete frame</source>
+        <translation>Usuń klatkę</translation>
+    </message>
+    <message>
+        <source>TAS editor</source>
+        <translation>Edytor TAS</translation>
+    </message>
+    <message>
+        <source>Play the movie from the selected frame (Pause, Space)</source>
+        <translation>Odtwórz film od wybranej klatki (Pause, spacja)</translation>
+    </message>
+    <message>
+        <source>Pause the movie where it is (Pause, Space)</source>
+        <translation>Wstrzymaj film w bieżącym miejscu (Pause, spacja)</translation>
+    </message>
+    <message>
+        <source>Pause and go back to the selected frame (Shift+F5)</source>
+        <translation>Zatrzymaj i wróć do wybranej klatki (Shift+F5)</translation>
+    </message>
+    <message>
+        <source>Stop at the selected frame</source>
+        <translation>Stop: do wybranej klatki</translation>
+    </message>
+    <message>
+        <source>End of the movie</source>
+        <translation>Koniec filmu</translation>
     </message>
 </context>
 <context>
@@ -9400,108 +9440,12 @@
 <context>
     <name>rl::shell::TasEditorWindow</name>
     <message>
-        <source>Save</source>
-        <translation>Zapisz</translation>
-    </message>
-    <message>
-        <source>Write the movie to its file (Ctrl+S)</source>
-        <translation>Zapisz film do jego pliku (Ctrl+S)</translation>
-    </message>
-    <message>
-        <source>Undo</source>
-        <translation>Cofnij</translation>
-    </message>
-    <message>
-        <source>Undo the last edit (Ctrl+Z)</source>
-        <translation>Cofnij ostatnią zmianę (Ctrl+Z)</translation>
-    </message>
-    <message>
-        <source>Redo</source>
-        <translation>Ponów</translation>
-    </message>
-    <message>
-        <source>Redo (Ctrl+Y)</source>
-        <translation>Ponów (Ctrl+Y)</translation>
-    </message>
-    <message>
-        <source>Insert</source>
-        <translation>Wstaw</translation>
-    </message>
-    <message>
-        <source>Insert empty frames before the selected ones (Insert)</source>
-        <translation>Wstaw puste klatki przed zaznaczonymi (Insert)</translation>
-    </message>
-    <message>
-        <source>Duplicate</source>
-        <translation>Powiel</translation>
-    </message>
-    <message>
-        <source>Insert a copy of the selected frames (Ctrl+Insert)</source>
-        <translation>Wstaw kopię zaznaczonych klatek (Ctrl+Insert)</translation>
-    </message>
-    <message>
-        <source>Delete</source>
-        <translation>Usuń</translation>
-    </message>
-    <message>
-        <source>Delete the selected frames (Delete)</source>
-        <translation>Usuń zaznaczone klatki (Delete)</translation>
-    </message>
-    <message>
-        <source>Go to frame</source>
-        <translation>Do klatki</translation>
-    </message>
-    <message>
-        <source>Show the selected frame in the game (Enter)</source>
-        <translation>Pokaż zaznaczoną klatkę w grze (Enter)</translation>
-    </message>
-    <message>
-        <source>Run to</source>
-        <translation>Graj do</translation>
-    </message>
-    <message>
-        <source>Run the movie on until this happens, or to its end</source>
-        <translation>Odtwarzaj film, aż to się stanie, albo do końca</translation>
-    </message>
-    <message>
-        <source>Record from here</source>
-        <translation>Nagrywaj stąd</translation>
-    </message>
-    <message>
-        <source>Record from the frame shown on, dropping the frames after it</source>
-        <translation>Nagrywaj od pokazanej klatki, odrzucając klatki po niej</translation>
-    </message>
-    <message>
-        <source>Follow</source>
-        <translation>Śledź</translation>
-    </message>
-    <message>
-        <source>Keep the frame the game shows in view</source>
-        <translation>Trzymaj na widoku klatkę, którą pokazuje gra</translation>
-    </message>
-    <message>
         <source>Change buttons</source>
         <translation>Zmień przyciski</translation>
     </message>
     <message>
         <source>The movie cannot be written: %1</source>
         <translation>Nie można zapisać filmu: %1</translation>
-    </message>
-    <message>
-        <source>Duplicate frames</source>
-        <translation>Powiel klatki</translation>
-    </message>
-    <message>
-        <source>Insert frames</source>
-        <translation>Wstaw klatki</translation>
-    </message>
-    <message>
-        <source>Delete frames</source>
-        <translation>Usuń klatki</translation>
-    </message>
-    <message>
-        <source>stopped: %1 at frame %2</source>
-        <translation>zatrzymano: %1 na klatce %2</translation>
     </message>
     <message>
         <source>Frame %1 of %2</source>
@@ -9512,48 +9456,28 @@
         <translation>niezapisane</translation>
     </message>
     <message>
-        <source>Play from here</source>
-        <translation>Graj stąd</translation>
-    </message>
-    <message>
-        <source>Play on from the selected frame at the game&apos;s speed, from the nearest state kept (Ctrl+P)</source>
-        <translation>Graj dalej od zaznaczonej klatki z prędkością gry, od najbliższego zapisanego stanu (Ctrl+P)</translation>
-    </message>
-    <message>
-        <source>Pause</source>
-        <translation>Pauza</translation>
-    </message>
-    <message>
-        <source>Pause the game and come back to the frame played from (Pause)</source>
-        <translation>Wstrzymaj grę i wróć do klatki, od której grano (Pause)</translation>
-    </message>
-    <message>
-        <source>Frame shown</source>
-        <translation>Bieżąca klatka</translation>
-    </message>
-    <message>
-        <source>Select the frame the game shows now (Ctrl+F)</source>
-        <translation>Zaznacz klatkę, którą gra teraz pokazuje (Ctrl+F)</translation>
-    </message>
-    <message>
-        <source>Insert this many frames with the buttons chosen held, before the selected frame</source>
-        <translation>Wstaw tyle klatek z wybranymi wciśniętymi przyciskami przed zaznaczoną klatką</translation>
-    </message>
-    <message>
-        <source>frames holding</source>
-        <translation>klatek, wciśnięte:</translation>
-    </message>
-    <message>
-        <source>Close the TAS editor</source>
-        <translation>Zamknij edytor TAS</translation>
-    </message>
-    <message>
         <source>Save the movie as MAME plays it</source>
         <translation>Zapisz film tak, jak odtwarza go MAME</translation>
     </message>
     <message>
         <source>Retrolarium movies (*.rlmovie)</source>
         <translation>Filmy Retrolarium (*.rlmovie)</translation>
+    </message>
+    <message>
+        <source>Cut frame</source>
+        <translation>Wytnij klatkę</translation>
+    </message>
+    <message>
+        <source>Paste frame</source>
+        <translation>Wklej klatkę</translation>
+    </message>
+    <message>
+        <source>Insert frame</source>
+        <translation>Wstaw pustą klatkę</translation>
+    </message>
+    <message>
+        <source>Delete frame</source>
+        <translation>Usuń klatkę</translation>
     </message>
 </context>
 <context>
