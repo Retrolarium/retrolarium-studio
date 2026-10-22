@@ -19,18 +19,18 @@ if (-not $Bin) {
 }
 if (-not $GameSources) { $GameSources = $env:RETROLARIUM_GAME_SOURCES }
 if (-not $GameSources) {
-    # An oranguthang folder holding the game repositories, beside one of the
+    # A retrolariumlab folder holding the game repositories, beside one of the
     # folders above the studio (a monorepo checkout or the product repos).
     $folder = Split-Path $projectRoot -Parent
     while ($folder -and -not $GameSources) {
-        $candidate = Join-Path (Split-Path $folder -Parent) "oranguthang"
+        $candidate = Join-Path (Split-Path $folder -Parent) "retrolariumlab"
         if (Test-Path -LiteralPath $candidate -PathType Container) { $GameSources = $candidate }
         $parent = Split-Path $folder -Parent
         if ($parent -eq $folder) { break }
         $folder = $parent
     }
     # None found: the tests that need game data skip.
-    if (-not $GameSources) { $GameSources = Join-Path $projectRoot "oranguthang-not-found" }
+    if (-not $GameSources) { $GameSources = Join-Path $projectRoot "retrolariumlab-not-found" }
 }
 $manifest = Join-Path $Bin "tests.json"
 if (-not (Test-Path -LiteralPath $manifest -PathType Leaf)) {
