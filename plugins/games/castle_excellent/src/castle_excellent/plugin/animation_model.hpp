@@ -12,18 +12,18 @@ class CastleExcellentSession;
 // side at the renderer's x offsets, for `ticks` frames.
 struct CastleExcellentAnimationFrame {
     int first = 0;
-    QVector<int> offsets;   // x of each 8x16 sprite
+    QVector<int> offsets;  // x of each 8x16 sprite
     int ticks = 8;
-    bool weapon = false;    // the player's action overlay (tile $CA) follows
-    bool flipped = false;   // ... on the left
+    bool weapon = false;   // the player's action overlay (tile $CA) follows
+    bool flipped = false;  // ... on the left
 };
 
 // A player animation (from the source's frame selection) or the frames an
 // object type's sprite selector chooses between.
 struct CastleExcellentAnimation {
-    QString id;             // "player:walk-right", "object:84"
+    QString id;  // "player:walk-right", "object:84"
     QString label;
-    QString group;          // "Player", "Enemies", "Objects"
+    QString group;  // "Player", "Enemies", "Objects"
     QVector<CastleExcellentAnimationFrame> frames;
 };
 
@@ -67,9 +67,9 @@ private:
 
     CastleExcellentSession* session_;
     int index_;
-    CastleExcellentAnimation animation_;   // as the catalog had it when opened
+    CastleExcellentAnimation animation_;  // as the catalog had it when opened
     int frame_ = 0;
-    int selected_ = -1;     // descriptor
+    int selected_ = -1;  // descriptor
 };
 
 }  // namespace rl::castle_excellent

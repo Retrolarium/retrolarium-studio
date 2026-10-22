@@ -14,8 +14,7 @@
 
 namespace rl::shell {
 
-KindRail::KindRail(QWidget* parent)
-    : QFrame(parent), layout_(new QVBoxLayout(this)), group_(new QButtonGroup(this)) {
+KindRail::KindRail(QWidget* parent) : QFrame(parent), layout_(new QVBoxLayout(this)), group_(new QButtonGroup(this)) {
     setProperty("surface", QStringLiteral("chrome"));
     setFixedWidth(62);
     layout_->setContentsMargins(0, 6, 0, 6);
@@ -78,8 +77,7 @@ DocumentPanel::DocumentPanel(QWidget* parent) : QFrame(parent) {
     filter_->setFont(theme::font(theme::TextRole::Body, 12.0));
     filter_->setFixedHeight(26);
     filter_->setClearButtonEnabled(true);
-    filter_->addAction(theme::icon(QStringLiteral("search"), theme::IconTone::Faint),
-                       QLineEdit::LeadingPosition);
+    filter_->addAction(theme::icon(QStringLiteral("search"), theme::IconTone::Faint), QLineEdit::LeadingPosition);
     filterLayout->addWidget(filter_);
     layout->addWidget(filterBox);
 
@@ -93,9 +91,7 @@ DocumentPanel::DocumentPanel(QWidget* parent) : QFrame(parent) {
     });
 }
 
-void DocumentPanel::setTitle(const QString& title) {
-    title_->setText(title);
-}
+void DocumentPanel::setTitle(const QString& title) { title_->setText(title); }
 
 namespace {
 
@@ -153,8 +149,6 @@ void DocumentPanel::selectDocument(const QString& id) {
     updating_ = false;
 }
 
-QString DocumentPanel::currentDocument() const {
-    return list_->currentDocument();
-}
+QString DocumentPanel::currentDocument() const { return list_->currentDocument(); }
 
 }  // namespace rl::shell

@@ -5,12 +5,11 @@
 
 #include <QJsonArray>
 
-
 namespace rl::solomon {
 
 namespace {
 
-constexpr int kEmpty = 0x10;        // RoomMap identity of an empty cell
+constexpr int kEmpty = 0x10;  // RoomMap identity of an empty cell
 constexpr int kBrownBlock = 0x90;
 constexpr int kWhiteBlock = 0xf8;
 constexpr int kKey = 0x06;
@@ -21,14 +20,15 @@ QVector<int> renderTable(const nes::Bundle& graphics, const QString& name) {
     QVector<int> values;
     if (!graphics.contains(QStringLiteral("render-tables"))) return values;
     const QJsonArray raw = graphics.resource(QStringLiteral("render-tables"))
-                               .value(QStringLiteral("tables")).toObject().value(name).toArray();
+                               .value(QStringLiteral("tables"))
+                               .toObject()
+                               .value(name)
+                               .toArray();
     for (const QJsonValue& value : raw) values.push_back(value.toInt());
     return values;
 }
 
-bool visible(QPoint p) {
-    return p.x() >= 0 && p.x() < kWidth && p.y() >= 0 && p.y() < kHeight;
-}
+bool visible(QPoint p) { return p.x() >= 0 && p.x() < kWidth && p.y() >= 0 && p.y() < kHeight; }
 
 int identityPattern(int value) {
     if (value >= 0xf8) return 3;
@@ -37,9 +37,7 @@ int identityPattern(int value) {
     return value < 58 ? value : kEmpty;
 }
 
-QRgb rgb(int index) {
-    return 0xff000000u | nes::masterColor(index & 0x3f);
-}
+QRgb rgb(int index) { return 0xff000000u | nes::masterColor(index & 0x3f); }
 
 struct Placement {
     int type = 0;
@@ -90,9 +88,12 @@ void SolomonPainter::drawPattern(QImage& image, int x, int y, const SolomonPatte
                     image.setPixel(ox, oy, color);
                 } else {
                     const QRgb before = image.pixel(ox, oy);
-                    const auto mix = [opacity](int a, int b) { return (a * (255 - opacity) + b * opacity + 127) / 255; };
-                    image.setPixel(ox, oy, qRgb(mix(qRed(before), qRed(color)), mix(qGreen(before), qGreen(color)),
-                                                mix(qBlue(before), qBlue(color))));
+                    const auto mix = [opacity](int a, int b) {
+                        return (a * (255 - opacity) + b * opacity + 127) / 255;
+                    };
+                    image.setPixel(ox, oy,
+                                   qRgb(mix(qRed(before), qRed(color)), mix(qGreen(before), qGreen(color)),
+                                        mix(qBlue(before), qBlue(color))));
                 }
             }
         }
@@ -108,7 +109,8 @@ void SolomonPainter::drawSprite(QImage& image, const QJsonObject& frame, const B
         ((flags & 0x20) << 2) | ((flags & 0x10) << 2) | ((flags & 0x80) >> 7) | ((flags & 0x40) >> 5),
         ((flags & 0x01) << 7) | ((flags & 0x02) << 5) | ((flags & 0x08) >> 2) | ((flags & 0x04) >> 2),
     };
-    const int tiles[2] = {frame.value(QStringLiteral("left_tile")).toInt(), frame.value(QStringLiteral("right_tile")).toInt()};
+    const int tiles[2] = {frame.value(QStringLiteral("left_tile")).toInt(),
+                          frame.value(QStringLiteral("right_tile")).toInt()};
     for (int half = 0; half < 2; ++half) {
         const int attribute = attributes[half];
         const bool hflip = attribute & 0x40;
@@ -255,10 +257,12 @@ QImage SolomonPainter::room(int index, const Options& options, const SolomonRoom
     }
     // The six patterns of each constellation and its palette, as the game's
     // tables list them.
-    const QVector<int> constellationTiles = renderTable(state_->graphics, QStringLiteral("constellation_tile_patterns"));
+    const QVector<int> constellationTiles =
+        renderTable(state_->graphics, QStringLiteral("constellation_tile_patterns"));
     const QVector<int> constellationPalettes = renderTable(state_->graphics, QStringLiteral("constellation_palettes"));
     const auto constellationAt = [&](int x, int y, SolomonPattern* result) {
-        if (constellation.isEmpty() || constellationTiles.size() < 96 || constellationPalettes.size() < 12) return false;
+        if (constellation.isEmpty() || constellationTiles.size() < 96 || constellationPalettes.size() < 12)
+            return false;
         const QPoint origin = point(constellation.value(QStringLiteral("position")));
         const int rx = x - origin.x();
         const int ry = y - origin.y();
@@ -284,11 +288,13 @@ QImage SolomonPainter::room(int index, const Options& options, const SolomonRoom
             if ((value == kEmpty || combined || embeddedHere) && constellationAt(x, y, &chosen)) {
                 drawPattern(image, x, y, chosen, colors, b);
             } else {
-                drawPattern(image, x, y, pattern(state_->art, combined || embeddedHere ? kEmpty : identityPattern(value)),
-                            colors, b);
+                drawPattern(image, x, y,
+                            pattern(state_->art, combined || embeddedHere ? kEmpty : identityPattern(value)), colors,
+                            b);
             }
             if (combined || embeddedHere) {
-                drawPattern(image, x, y, pattern(state_->art, embeddedHere ? 0 : 3), colors, b, embeddedHere ? 80 : 128, true);
+                drawPattern(image, x, y, pattern(state_->art, embeddedHere ? 0 : 3), colors, b, embeddedHere ? 80 : 128,
+                            true);
             }
         }
     }
@@ -300,7 +306,7 @@ QImage SolomonPainter::room(int index, const Options& options, const SolomonRoom
             drawPattern(image, p.x(), p.y(), pattern(state_->art, 0x20), colors, b);
         }
     }
-    const QString field = index == 19 ? QStringLiteral("room_20_bat_symbols")
+    const QString field = index == 19   ? QStringLiteral("room_20_bat_symbols")
                           : index == 29 ? QStringLiteral("room_30_blue_opals")
                                         : QString();
     if (!field.isEmpty()) {

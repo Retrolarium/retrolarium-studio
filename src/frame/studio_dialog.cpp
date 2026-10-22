@@ -49,8 +49,7 @@ bool StudioDialog::nativeEvent(const QByteArray& eventType, void* message, long*
     return QDialog::nativeEvent(eventType, message, result);
 }
 
-MessageDialog::MessageDialog(const QString& title, const QString& heading, const QString& text,
-                             QWidget* parent)
+MessageDialog::MessageDialog(const QString& title, const QString& heading, const QString& text, QWidget* parent)
     : StudioDialog(title, parent) {
     // A message keeps the size of its text.
     setWindowFlag(Qt::MSWindowsFixedSizeDialogHint, true);
@@ -82,8 +81,7 @@ void MessageDialog::addButton(const QString& text, int result, bool primary) {
     if (primary) {
         button = new ui::PrimaryButton(text, QString(), body());
         for (const auto key : {Qt::Key_Return, Qt::Key_Enter}) {
-            connect(new QShortcut(QKeySequence(key), this), &QShortcut::activated, button,
-                    &QAbstractButton::click);
+            connect(new QShortcut(QKeySequence(key), this), &QShortcut::activated, button, &QAbstractButton::click);
         }
     } else {
         auto* plain = new QPushButton(text, body());
@@ -96,19 +94,16 @@ void MessageDialog::addButton(const QString& text, int result, bool primary) {
     buttons_->addWidget(button, 0, Qt::AlignVCenter);
 }
 
-void MessageDialog::reject() {
-    done(cancelResult_);
-}
+void MessageDialog::reject() { done(cancelResult_); }
 
-void MessageDialog::inform(QWidget* parent, const QString& title, const QString& heading,
-                           const QString& text) {
+void MessageDialog::inform(QWidget* parent, const QString& title, const QString& heading, const QString& text) {
     MessageDialog dialog(title, heading, text, parent);
     dialog.addButton(tr("OK"), 1, true);
     dialog.exec();
 }
 
-bool MessageDialog::confirm(QWidget* parent, const QString& title, const QString& heading,
-                            const QString& text, const QString& action) {
+bool MessageDialog::confirm(QWidget* parent, const QString& title, const QString& heading, const QString& text,
+                            const QString& action) {
     MessageDialog dialog(title, heading, text, parent);
     dialog.addButton(tr("Cancel"), 0);
     dialog.addButton(action, 1, true);

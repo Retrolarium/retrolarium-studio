@@ -14,8 +14,8 @@ namespace {
 
 const QStringList& buttonNames() {
     // The demo document's names: never translated.
-    static const QStringList kNames{QStringLiteral("A"),     QStringLiteral("B"),  QStringLiteral("SELECT"),
-                                    QStringLiteral("START"), QStringLiteral("UP"), QStringLiteral("DOWN"),
+    static const QStringList kNames{QStringLiteral("A"),     QStringLiteral("B"),    QStringLiteral("SELECT"),
+                                    QStringLiteral("START"), QStringLiteral("UP"),   QStringLiteral("DOWN"),
                                     QStringLiteral("LEFT"),  QStringLiteral("RIGHT")};
     return kNames;
 }
@@ -69,9 +69,7 @@ SmbDemoModel::Recording SmbDemoModel::stepsFromRecording(const QString& text, in
     return result;
 }
 
-QJsonArray SmbDemoModel::steps() const {
-    return session_->demo().value(QStringLiteral("steps")).toArray();
-}
+QJsonArray SmbDemoModel::steps() const { return session_->demo().value(QStringLiteral("steps")).toArray(); }
 
 QVector<sdk::TableColumn> SmbDemoModel::columns() const {
     sdk::TableColumn step;
@@ -98,28 +96,29 @@ QVector<sdk::TableColumn> SmbDemoModel::columns() const {
     return {step, frames, buttons, at};
 }
 
-int SmbDemoModel::rowCount() const {
-    return steps().size();
-}
+int SmbDemoModel::rowCount() const { return steps().size(); }
 
 QString SmbDemoModel::cell(int row, int column) const {
     const QJsonArray list = steps();
     if (row < 0 || row >= list.size()) return {};
     const QJsonObject step = list.at(row).toObject();
     switch (column) {
-    case 0: return QString::number(row + 1);
-    case 1: return QString::number(step.value(QStringLiteral("frames")).toInt());
-    case 2: {
-        QStringList held;
-        for (const QJsonValue& b : step.value(QStringLiteral("buttons")).toArray()) held << b.toString();
-        return held.isEmpty() ? QStringLiteral("-") : held.join(QLatin1Char(' '));
-    }
-    case 3: {
-        int frames = 0;
-        for (int i = 0; i < row; ++i) frames += list.at(i).toObject().value(QStringLiteral("frames")).toInt();
-        return QStringLiteral("%1.%2 s").arg(frames / 60).arg(frames % 60 * 10 / 60);
-    }
-    default: return {};
+        case 0:
+            return QString::number(row + 1);
+        case 1:
+            return QString::number(step.value(QStringLiteral("frames")).toInt());
+        case 2: {
+            QStringList held;
+            for (const QJsonValue& b : step.value(QStringLiteral("buttons")).toArray()) held << b.toString();
+            return held.isEmpty() ? QStringLiteral("-") : held.join(QLatin1Char(' '));
+        }
+        case 3: {
+            int frames = 0;
+            for (int i = 0; i < row; ++i) frames += list.at(i).toObject().value(QStringLiteral("frames")).toInt();
+            return QStringLiteral("%1.%2 s").arg(frames / 60).arg(frames % 60 * 10 / 60);
+        }
+        default:
+            return {};
     }
 }
 
@@ -137,7 +136,8 @@ void SmbDemoModel::setCurrentRow(int row) {
 }
 
 bool SmbDemoModel::setCell(int row, int column, const QString& value, QString* error) {
-    if (row < 0 || row >= rowCount() || (column != 1 && column != 2)) return TableModel::setCell(row, column, value, error);
+    if (row < 0 || row >= rowCount() || (column != 1 && column != 2))
+        return TableModel::setCell(row, column, value, error);
     QJsonArray list = steps();
     QJsonObject step = list.at(row).toObject();
     if (column == 1) {
@@ -149,7 +149,8 @@ bool SmbDemoModel::setCell(int row, int column, const QString& value, QString* e
         }
         step.insert(QStringLiteral("frames"), frames);
     } else {
-        const QStringList words = value.toUpper().split(QRegularExpression(QStringLiteral("[\\s,+]+")), Qt::SkipEmptyParts);
+        const QStringList words =
+            value.toUpper().split(QRegularExpression(QStringLiteral("[\\s,+]+")), Qt::SkipEmptyParts);
         QJsonArray held;
         for (const QString& name : buttonNames()) {
             if (words.contains(name)) held.append(name);
@@ -163,8 +164,9 @@ bool SmbDemoModel::setCell(int row, int column, const QString& value, QString* e
         step.insert(QStringLiteral("buttons"), held);
     }
     list.replace(row, step);
-    return session_->editDemo(tr("Edit demo step %1").arg(row + 1),
-                              [list](QJsonObject& demo) { demo.insert(QStringLiteral("steps"), list); }, error);
+    return session_->editDemo(
+        tr("Edit demo step %1").arg(row + 1), [list](QJsonObject& demo) { demo.insert(QStringLiteral("steps"), list); },
+        error);
 }
 
 sdk::Budget SmbDemoModel::budget() const {
@@ -181,9 +183,7 @@ sdk::Budget SmbDemoModel::budget() const {
     return budget;
 }
 
-QString SmbDemoModel::startPoint() const {
-    return session_->demoStart() ? session_->selectedStart() : QString();
-}
+QString SmbDemoModel::startPoint() const { return session_->demoStart() ? session_->selectedStart() : QString(); }
 
 QVector<sdk::EditorAction> SmbDemoModel::actions() const {
     sdk::EditorAction loop;

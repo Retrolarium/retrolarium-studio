@@ -21,7 +21,9 @@ struct CastleExcellentObject {
     int x = 0;
     int y = 0;
 
-    bool operator==(const CastleExcellentObject& other) const { return type == other.type && x == other.x && y == other.y; }
+    bool operator==(const CastleExcellentObject& other) const {
+        return type == other.type && x == other.x && y == other.y;
+    }
     bool operator!=(const CastleExcellentObject& other) const { return !(*this == other); }
 };
 
@@ -29,7 +31,7 @@ struct CastleExcellentObject {
 // descriptors and the x offset of each 8x16 sprite.
 struct CastleExcellentObjectPreview {
     int runtimeType = 0;
-    int descriptorOffset = 0;   // in bytes: two per sprite (tile, attributes)
+    int descriptorOffset = 0;  // in bytes: two per sprite (tile, attributes)
     QVector<int> xOffsets;
 };
 
@@ -47,8 +49,8 @@ public:
     int roomNumber(int room) const;
     QString revision() const;
 
-    QVector<int> cells(int room) const;             // row-major
-    void setCell(int room, QPoint cell, int value); // throws CastleExcellentError
+    QVector<int> cells(int room) const;              // row-major
+    void setCell(int room, QPoint cell, int value);  // throws CastleExcellentError
     QVector<CastleExcellentObject> objects(int room) const;
     void setObjects(int room, const QVector<CastleExcellentObject>& objects);
 
@@ -57,7 +59,7 @@ public:
     int renderingCellCount() const;
     QVector<int> renderingInts(const QString& key) const;
     QVector<CastleExcellentObjectPreview> objectPreviews() const;
-    int encodedTypeCount() const;   // runtime_object_types entries
+    int encodedTypeCount() const;  // runtime_object_types entries
 
     bool operator==(const CastleExcellentLevels& other) const { return root_ == other.root_; }
     bool operator!=(const CastleExcellentLevels& other) const { return root_ != other.root_; }

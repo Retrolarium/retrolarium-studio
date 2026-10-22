@@ -22,8 +22,7 @@ class ToolLocator final {
 public:
     // Fills program/arguments for a kit call; empty program and `error` set
     // when no kit is found.
-    static sdk::ProcessSpec kitCommand(const QStringList& arguments, const QString& workingDirectory,
-                                       QString* error);
+    static sdk::ProcessSpec kitCommand(const QStringList& arguments, const QString& workingDirectory, QString* error);
     static QString emulatorPath(const QString& id);
     static QString toolPath(const QString& name);
 

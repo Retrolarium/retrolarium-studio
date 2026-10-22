@@ -57,7 +57,8 @@ QString mirrorUsers(const SolomonSession* session, const QString& field, int ind
         }
         if (!mirrors.isEmpty()) users << QString::number(rooms.roomNumber(r));
     }
-    return users.isEmpty() ? rlTr("solomon", "no room") : rlTr("solomon", "rooms %1").arg(users.join(QStringLiteral(", ")));
+    return users.isEmpty() ? rlTr("solomon", "no room")
+                           : rlTr("solomon", "rooms %1").arg(users.join(QStringLiteral(", ")));
 }
 
 // ---------------------------------------------------------------- enemy sets
@@ -95,25 +96,28 @@ QVector<sdk::TableColumn> SolomonMirrorSetsModel::columns() const {
     return {set, types, loop, drops, users};
 }
 
-int SolomonMirrorSetsModel::rowCount() const {
-    return session_->rooms().mirrorSets().size();
-}
+int SolomonMirrorSetsModel::rowCount() const { return session_->rooms().mirrorSets().size(); }
 
 QString SolomonMirrorSetsModel::cell(int row, int column) const {
     const QVector<SolomonMirrorSet> sets = session_->rooms().mirrorSets();
     if (row < 0 || row >= sets.size()) return {};
     const SolomonMirrorSet& set = sets.at(row);
     switch (column) {
-    case 0: return QString::number(row);
-    case 1: return bytesText(set.types);
-    case 2: return QString::number(set.loopOffset + 1);
-    case 3: {
-        QStringList names;
-        for (int type : set.types) names << enemyName(type);
-        return names.join(QStringLiteral(" → "));
-    }
-    case 4: return mirrorUsers(session_, QStringLiteral("_enemy_set"), row);
-    default: return {};
+        case 0:
+            return QString::number(row);
+        case 1:
+            return bytesText(set.types);
+        case 2:
+            return QString::number(set.loopOffset + 1);
+        case 3: {
+            QStringList names;
+            for (int type : set.types) names << enemyName(type);
+            return names.join(QStringLiteral(" → "));
+        }
+        case 4:
+            return mirrorUsers(session_, QStringLiteral("_enemy_set"), row);
+        default:
+            return {};
     }
 }
 
@@ -132,7 +136,8 @@ void SolomonMirrorSetsModel::setCurrentRow(int row) {
 
 bool SolomonMirrorSetsModel::setCell(int row, int column, const QString& value, QString* error) {
     const QVector<SolomonMirrorSet> sets = session_->rooms().mirrorSets();
-    if (row < 0 || row >= sets.size() || (column != 1 && column != 2)) return TableModel::setCell(row, column, value, error);
+    if (row < 0 || row >= sets.size() || (column != 1 && column != 2))
+        return TableModel::setCell(row, column, value, error);
     SolomonMirrorSet set = sets.at(row);
     if (column == 1) {
         const QVector<int> types = parseBytes(value, -1);
@@ -167,8 +172,7 @@ bool SolomonMirrorSetsModel::setCell(int row, int column, const QString& value, 
         }
         return false;
     }
-    return session_->edit(tr("Edit mirror enemy set %1").arg(row),
-                          [next](SolomonState& s) { s.rooms = next; }, error);
+    return session_->edit(tr("Edit mirror enemy set %1").arg(row), [next](SolomonState& s) { s.rooms = next; }, error);
 }
 
 sdk::Budget SolomonMirrorSetsModel::budget() const {
@@ -195,7 +199,8 @@ sdk::Inspection SolomonMirrorSetsModel::inspect() const {
     }
     inspection.note = tr("A mirror drops these in order; after the last it starts again at the one "
                          "marked ↺. Every set ends in a loop byte, so a set takes one byte more than "
-                         "its enemies. Used by %1.").arg(mirrorUsers(session_, QStringLiteral("_enemy_set"), row_));
+                         "its enemies. Used by %1.")
+                          .arg(mirrorUsers(session_, QStringLiteral("_enemy_set"), row_));
     inspection.engineTag = QStringLiteral("solomon.mirror-enemy-sets.v1");
     return inspection;
 }
@@ -236,21 +241,25 @@ QVector<sdk::TableColumn> SolomonSchedulesModel::columns() const {
     return {index, initial, loop, bits, users};
 }
 
-int SolomonSchedulesModel::rowCount() const {
-    return session_->rooms().schedules().size();
-}
+int SolomonSchedulesModel::rowCount() const { return session_->rooms().schedules().size(); }
 
 QString SolomonSchedulesModel::cell(int row, int column) const {
     const QVector<SolomonSchedule> list = session_->rooms().schedules();
     if (row < 0 || row >= list.size()) return {};
     const SolomonSchedule& s = list.at(row);
     switch (column) {
-    case 0: return QString::number(row);
-    case 1: return bytesText(s.initial);
-    case 2: return bytesText(s.loop);
-    case 3: return bitsText(s.initial) + QStringLiteral("  |  ") + bitsText(s.loop);
-    case 4: return mirrorUsers(session_, QStringLiteral("_schedule"), row);
-    default: return {};
+        case 0:
+            return QString::number(row);
+        case 1:
+            return bytesText(s.initial);
+        case 2:
+            return bytesText(s.loop);
+        case 3:
+            return bitsText(s.initial) + QStringLiteral("  |  ") + bitsText(s.loop);
+        case 4:
+            return mirrorUsers(session_, QStringLiteral("_schedule"), row);
+        default:
+            return {};
     }
 }
 
@@ -269,7 +278,8 @@ void SolomonSchedulesModel::setCurrentRow(int row) {
 
 bool SolomonSchedulesModel::setCell(int row, int column, const QString& value, QString* error) {
     const QVector<SolomonSchedule> list = session_->rooms().schedules();
-    if (row < 0 || row >= list.size() || (column != 1 && column != 2)) return TableModel::setCell(row, column, value, error);
+    if (row < 0 || row >= list.size() || (column != 1 && column != 2))
+        return TableModel::setCell(row, column, value, error);
     const QVector<int> bytes = parseBytes(value, 4);
     if (bytes.isEmpty()) {
         if (error) *error = tr("Write four hex bytes, e.g. 80 00 80 00.");
@@ -279,8 +289,7 @@ bool SolomonSchedulesModel::setCell(int row, int column, const QString& value, Q
     (column == 1 ? schedule.initial : schedule.loop) = bytes;
     SolomonRooms next = session_->rooms();
     next.setSchedule(row, schedule);
-    return session_->edit(tr("Edit drop schedule %1").arg(row), [next](SolomonState& s) { s.rooms = next; },
-                          error);
+    return session_->edit(tr("Edit drop schedule %1").arg(row), [next](SolomonState& s) { s.rooms = next; }, error);
 }
 
 sdk::Inspection SolomonSchedulesModel::inspect() const {

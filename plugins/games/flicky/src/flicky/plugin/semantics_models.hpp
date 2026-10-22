@@ -28,7 +28,7 @@ public:
     QVector<sdk::PaletteSample> samples() const override;
 
 private:
-    int cramBase() const;     // first CRAM slot the palette loads into, -1 unknown
+    int cramBase() const;  // first CRAM slot the palette loads into, -1 unknown
     QVector<int> rounds() const;
 
     FlickySession* session_;

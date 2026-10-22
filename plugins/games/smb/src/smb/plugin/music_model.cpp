@@ -104,7 +104,8 @@ void SmbMusicModel::setCurrentChannel(int channel) {
 void SmbMusicModel::setChannelMuted(int channel, bool muted) {
     if (channel < 0 || channel >= timeline().channels.size()) return;
     const QString id = timeline().channels.at(channel).id;
-    if (muted) muted_.insert(id); else muted_.remove(id);
+    if (muted) muted_.insert(id);
+    else muted_.remove(id);
     emit contentChanged();
 }
 
@@ -213,8 +214,8 @@ int SmbMusicModel::lengthIndexFor(int duration) const {
     int best = -1;
     for (int i = 0; i < 8 && base + i < music().lengths.size(); ++i) {
         if (music().lengths.at(base + i) == duration) return i;
-        if (best < 0 || std::abs(music().lengths.at(base + i) - duration) <
-                            std::abs(music().lengths.at(base + best) - duration)) {
+        if (best < 0 ||
+            std::abs(music().lengths.at(base + i) - duration) < std::abs(music().lengths.at(base + best) - duration)) {
             best = i;
         }
     }
@@ -240,12 +241,14 @@ bool SmbMusicModel::editNote(const QString& id, int pitch, int length) {
     const SmbMusicChannel& channel = start.channels.at(c);
     const SmbMusicEvent& event = channel.events.at(e);
     try {
-        if (event.kind == SmbMusicEvent::Kind::Note && pitch >= 0 && pitch != next.pitchOf(event.periodIndex, channel.id)) {
+        if (event.kind == SmbMusicEvent::Kind::Note && pitch >= 0 &&
+            pitch != next.pitchOf(event.periodIndex, channel.id)) {
             const int period = next.periodFor(pitch, channel.id);
-            if (period < 0) return false;   // no period entry sounds that pitch
+            if (period < 0) return false;  // no period entry sounds that pitch
             next.setNotePeriod(channel.id, event.offset, period);
         }
-        if ((channel.id == QLatin1String("square1") || channel.id == QLatin1String("noise")) && length != event.duration) {
+        if ((channel.id == QLatin1String("square1") || channel.id == QLatin1String("noise")) &&
+            length != event.duration) {
             const int index = lengthIndexFor(length);
             if (index >= 0 && index != event.lengthIndex) next.setEventLength(channel.id, event.offset, index);
         }
@@ -307,14 +310,16 @@ bool SmbMusicModel::setField(const QString& key, const QVariant& value, QString*
     const int offset = event.offset;
     if (key == QLatin1String("period")) {
         const int period = value.toInt();
-        return editMusic(tr("Set a note of %1").arg(header_),
-                         [channelId, offset, period](SmbMusic& m) { m.setNotePeriod(channelId, offset, period); }, error);
+        return editMusic(
+            tr("Set a note of %1").arg(header_),
+            [channelId, offset, period](SmbMusic& m) { m.setNotePeriod(channelId, offset, period); }, error);
     }
     if (key == QLatin1String("length")) {
         // "20 ticks (entry 2)", in any language: the entry is the last number.
         const int index = entryOf(value.toString());
-        return editMusic(tr("Set a note length of %1").arg(header_),
-                         [channelId, offset, index](SmbMusic& m) { m.setEventLength(channelId, offset, index); }, error);
+        return editMusic(
+            tr("Set a note length of %1").arg(header_),
+            [channelId, offset, index](SmbMusic& m) { m.setEventLength(channelId, offset, index); }, error);
     }
     if (key == QLatin1String("run")) {
         // The length byte before this note on square 2 or the triangle.
@@ -330,14 +335,14 @@ bool SmbMusicModel::setField(const QString& key, const QVariant& value, QString*
             return false;
         }
         const int index = entryOf(value.toString());
-        return editMusic(tr("Set a run length of %1").arg(header_),
-                         [channelId, lengthOffset, index](SmbMusic& m) { m.setEventLength(channelId, lengthOffset, index); },
-                         error);
+        return editMusic(
+            tr("Set a run length of %1").arg(header_),
+            [channelId, lengthOffset, index](SmbMusic& m) { m.setEventLength(channelId, lengthOffset, index); }, error);
     }
     if (key == QLatin1String("beat")) {
         const int beat = std::max(0, beatNames().indexOf(value.toString()));
-        return editMusic(tr("Set a beat of %1").arg(header_),
-                         [offset, beat](SmbMusic& m) { m.setBeat(offset, beat); }, error);
+        return editMusic(
+            tr("Set a beat of %1").arg(header_), [offset, beat](SmbMusic& m) { m.setBeat(offset, beat); }, error);
     }
     return SequencerModel::setField(key, value, error);
 }
@@ -509,9 +514,15 @@ void SmbMusicModel::preview() {
         host->report(d);
         return;
     }
-    QStringList arguments{QStringLiteral("audio"), QStringLiteral("render-smb-wav"), document,
-                          QStringLiteral("--output"), wav, QStringLiteral("--resource"), session_->music(),
-                          QStringLiteral("--header"), header_};
+    QStringList arguments{QStringLiteral("audio"),
+                          QStringLiteral("render-smb-wav"),
+                          document,
+                          QStringLiteral("--output"),
+                          wav,
+                          QStringLiteral("--resource"),
+                          session_->music(),
+                          QStringLiteral("--header"),
+                          header_};
     const QString selector = selectorOf();
     if (!selector.isEmpty()) {
         arguments << QStringLiteral("--selector") << selector;
@@ -537,8 +548,9 @@ void SmbMusicModel::preview() {
                 sdk::Diagnostic d;
                 d.severity = sdk::Severity::Error;
                 d.source = QStringLiteral("sound");
-                d.message = tr("Rendering %1 failed: %2")
-                                .arg(header, QString::fromUtf8(result.standardError).trimmed().section(QLatin1Char('\n'), -1));
+                d.message =
+                    tr("Rendering %1 failed: %2")
+                        .arg(header, QString::fromUtf8(result.standardError).trimmed().section(QLatin1Char('\n'), -1));
                 host->report(d);
             }
             return;

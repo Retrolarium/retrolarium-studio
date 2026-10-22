@@ -61,9 +61,9 @@ AboutDialog::AboutDialog(QWidget* parent) : StudioDialog(tr("About"), parent) {
     auto* names = new QVBoxLayout;
     names->setSpacing(4);
     names->addWidget(new ui::Label(tr("Retrolarium Studio"), ui::Label::Role::Title, body()));
-    auto* version = new ui::Label(tr("Version %1 · Qt %2").arg(QCoreApplication::applicationVersion(),
-                                                                         QString::fromLatin1(qVersion())),
-                                  ui::Label::Role::Mono, body());
+    auto* version = new ui::Label(
+        tr("Version %1 · Qt %2").arg(QCoreApplication::applicationVersion(), QString::fromLatin1(qVersion())),
+        ui::Label::Role::Mono, body());
     version->setTone(QStringLiteral("faint"));
     names->addWidget(version);
     names->addStretch(1);
@@ -85,9 +85,8 @@ AboutDialog::AboutDialog(QWidget* parent) : StudioDialog(tr("About"), parent) {
     for (const auto& plugin : sdk::PluginRegistry::instance().plugins()) {
         games << plugin->displayName();
     }
-    auto* gameList = paragraph(games.isEmpty() ? tr("No game plugins are built in.")
-                                               : games.join(QStringLiteral(" · ")),
-                               body());
+    auto* gameList =
+        paragraph(games.isEmpty() ? tr("No game plugins are built in.") : games.join(QStringLiteral(" · ")), body());
     gameList->setTone(QStringLiteral("text"));
     content->addWidget(gameList);
     auto* trademarks = paragraph(tr("The games are named only to say which ones the studio works with. "
@@ -150,16 +149,16 @@ AboutDialog::AboutDialog(QWidget* parent) : StudioDialog(tr("About"), parent) {
     if (QFileInfo::exists(notices)) {
         thirdParty = link.arg(QUrl::fromLocalFile(notices).toString(), ink, thirdParty);
     }
-    auto* license = paragraph(
-        tr("Copyright © 2026 Daniel Oranguthang. Retrolarium Studio is free software under the GNU "
-           "General Public License, version 3 or any later version, and comes with absolutely no "
-           "warranty. Its source code is at %1. The components it carries (Qt, MAME, Python, the "
-           "kit's assemblers, OpenDiskSysROM and others) keep their own licenses: %2 lists them, and "
-           "their texts are in the licenses folder next to the program.")
-            .arg(link.arg(QString::fromLatin1(links::kSource), ink,
-                          QString::fromLatin1(links::kSource).section(QLatin1Char('/'), 2)),
-                 thirdParty),
-        body());
+    auto* license =
+        paragraph(tr("Copyright © 2026 Daniel Oranguthang. Retrolarium Studio is free software under the GNU "
+                     "General Public License, version 3 or any later version, and comes with absolutely no "
+                     "warranty. Its source code is at %1. The components it carries (Qt, MAME, Python, the "
+                     "kit's assemblers, OpenDiskSysROM and others) keep their own licenses: %2 lists them, and "
+                     "their texts are in the licenses folder next to the program.")
+                      .arg(link.arg(QString::fromLatin1(links::kSource), ink,
+                                    QString::fromLatin1(links::kSource).section(QLatin1Char('/'), 2)),
+                           thirdParty),
+                  body());
     license->setTextFormat(Qt::RichText);
     license->setOpenExternalLinks(true);
     license->setFixedWidth(500);

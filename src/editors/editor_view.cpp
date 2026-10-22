@@ -14,8 +14,7 @@ namespace rl::editors {
 
 EditorView::EditorView(sdk::EditorModel* model, QWidget* parent) : QWidget(parent), model_(model) {}
 
-std::unique_ptr<EditorView> createEditorView(sdk::EditorModel* model, const EditorServices& services,
-                                             QWidget* parent) {
+std::unique_ptr<EditorView> createEditorView(sdk::EditorModel* model, const EditorServices& services, QWidget* parent) {
     if (auto* map = qobject_cast<sdk::TileMapModel*>(model)) {
         return std::make_unique<TileMapEditor>(map, parent);
     }

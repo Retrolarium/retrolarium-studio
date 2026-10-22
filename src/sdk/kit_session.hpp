@@ -54,11 +54,11 @@ protected:
 
     // What one build runs with; prepareBuild fills it in.
     struct BuildStep {
-        bool force = false;           // build even when the plugin knows the ROM is current
-        QStringList arguments;        // after `studio build <project>`
+        bool force = false;     // build even when the plugin knows the ROM is current
+        QStringList arguments;  // after `studio build <project>`
         QMap<QString, QString> environment;
-        bool upToDate = false;        // set: skip the kit, the last ROM stands
-        QByteArray inputs;            // what the plugin wants back in built()
+        bool upToDate = false;  // set: skip the kit, the last ROM stands
+        QByteArray inputs;      // what the plugin wants back in built()
     };
     // Checks and extra arguments before the kit runs; false stops the
     // build with `error`.
@@ -70,11 +70,11 @@ protected:
     void runBuild(std::function<void(bool)> next, bool force = true);
 
     struct EmulatorPlan {
-        QStringList arguments;        // the kit's plan command; --mame <path> is added
-        QString label;                // in Build output while the kit plans
-        QString title;                // over the Playtest view
-        bool demo = false;            // a demo plan (its failure says so)
-        bool force = false;           // passed to runBuild
+        QStringList arguments;  // the kit's plan command; --mame <path> is added
+        QString label;          // in Build output while the kit plans
+        QString title;          // over the Playtest view
+        bool demo = false;      // a demo plan (its failure says so)
+        bool force = false;     // passed to runBuild
         // A file (relative to the project) the game script writes once the
         // game is up, named to it in `readyVariable`: the Playtest view
         // covers the start until then.
@@ -83,7 +83,7 @@ protected:
         // A demo recording to this file (relative to the project): the kit
         // gets --record <path>; `recorded` gets the path after the run.
         QString recordTo;
-        QString recordingMessage;     // reported as the recording starts
+        QString recordingMessage;  // reported as the recording starts
         std::function<void(const QString& path)> recorded;
         // The game's colours, a ready condition: changes to the command.
         std::function<void(ProcessSpec&)> prepare;
@@ -97,14 +97,14 @@ protected:
     void launchPlanned(EmulatorPlan plan);
 
     struct UpgradeStep {
-        QStringList arguments;        // the kit command that adds documents
-        QString label;                // in Build output
-        QString source;               // where messages go (the kind that asked)
-        QString failure;              // "Adding … failed: %1"
-        bool saveFirst = false;       // the kit merges into the saved files
+        QStringList arguments;   // the kit command that adds documents
+        QString label;           // in Build output
+        QString source;          // where messages go (the kind that asked)
+        QString failure;         // "Adding … failed: %1"
+        bool saveFirst = false;  // the kit merges into the saved files
         // Takes the new documents from the reloaded project; may throw.
         std::function<void()> adopt;
-        QString done;                 // reported when it worked
+        QString done;  // reported when it worked
         // A document to open afterwards (the one that asked for them).
         QString openKind;
         QString openDocument;
@@ -118,9 +118,9 @@ protected:
 private:
     // What the kit answered for a plan it ran right after the build.
     struct BuiltPlan {
-        bool ran = false;             // the build ran the plan (else ask for it)
-        QJsonObject plan;             // the emulator command it describes
-        QString error;                // why planning failed
+        bool ran = false;  // the build ran the plan (else ask for it)
+        QJsonObject plan;  // the emulator command it describes
+        QString error;     // why planning failed
     };
     // runBuild that may pass the kit a plan command to run in the same
     // process once the ROM is built (`studio build --plan-json`): Play then

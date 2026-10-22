@@ -14,7 +14,7 @@ namespace rl::nes {
 // Four colours a pattern can be previewed in ("Room BG 1").
 struct PreviewPalette {
     QString name;
-    QVector<int> values;    // master-palette indices; entry 0 is the backdrop
+    QVector<int> values;  // master-palette indices; entry 0 is the backdrop
 };
 
 // What a game session lends the shared NES editors: its resource bundle,
@@ -45,8 +45,8 @@ class ChrTileModel final : public sdk::TileModel {
 public:
     // `height` 16 edits 8x16 sprite pattern pairs: unit n is tiles 2n and
     // 2n+1 from `first`, `count` tiles in all.
-    ChrTileModel(BundleOwner* owner, const QString& resource, int first, int count, const QString& title,
-                 bool sprites, int height = 8);
+    ChrTileModel(BundleOwner* owner, const QString& resource, int first, int count, const QString& title, bool sprites,
+                 int height = 8);
 
     QString title() const override { return title_; }
     sdk::Inspection inspect() const override;
@@ -72,7 +72,7 @@ public:
 
 private:
     bool writeTile(const QVector<quint8>& pixels, const QString& text, QString* error);
-    int stack() const { return height_ / 8; }   // CHR tiles per unit
+    int stack() const { return height_ / 8; }  // CHR tiles per unit
     int chrTile(int unit, int part = 0) const { return first_ + unit * stack() + part; }
     QVector<quint8> unitPixels(int unit) const;
 
@@ -126,8 +126,8 @@ private:
     QString title_;
     QPoint entry_;
     int first_ = 0;
-    int count_ = -1;        // -1: to the end
-    QString key_;           // row labels and samples
+    int count_ = -1;  // -1: to the end
+    QString key_;     // row labels and samples
 };
 
 QString hex(int value, int digits = 2);

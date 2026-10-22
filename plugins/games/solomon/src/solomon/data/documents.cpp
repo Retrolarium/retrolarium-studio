@@ -10,9 +10,7 @@ namespace rl::solomon {
 
 namespace {
 
-[[noreturn]] void fail(const QString& message) {
-    throw SolomonError(message.toStdString());
-}
+[[noreturn]] void fail(const QString& message) { throw SolomonError(message.toStdString()); }
 
 }  // namespace
 
@@ -54,9 +52,7 @@ QJsonObject pointJson(QPoint p) {
 
 // ---------------------------------------------------------------- rooms
 
-int SolomonRooms::roomCount() const {
-    return root_.value(QStringLiteral("rooms")).toArray().size();
-}
+int SolomonRooms::roomCount() const { return root_.value(QStringLiteral("rooms")).toArray().size(); }
 
 QJsonObject SolomonRooms::room(int index) const {
     const QJsonArray rooms = root_.value(QStringLiteral("rooms")).toArray();
@@ -72,9 +68,7 @@ void SolomonRooms::setRoom(int index, const QJsonObject& room) {
     root_.insert(QStringLiteral("rooms"), rooms);
 }
 
-int SolomonRooms::roomNumber(int index) const {
-    return room(index).value(QStringLiteral("number")).toInt(index + 1);
-}
+int SolomonRooms::roomNumber(int index) const { return room(index).value(QStringLiteral("number")).toInt(index + 1); }
 
 bool SolomonRooms::block(int index, QPoint cell, bool white) const {
     if (cell.x() < 0 || cell.y() < 0 || cell.x() >= kWidth || cell.y() >= kHeight) return false;
@@ -149,7 +143,8 @@ QVector<SolomonEnemy> SolomonRooms::enemies(int index) const {
 
 void SolomonRooms::setEnemies(int index, const QVector<SolomonEnemy>& enemies) {
     if (enemies.size() > kMaximumEnemies) {
-        fail(rlTr("solomon", "A room holds at most %1 enemies; the game keeps them in a fixed pool.").arg(kMaximumEnemies));
+        fail(rlTr("solomon", "A room holds at most %1 enemies; the game keeps them in a fixed pool.")
+                 .arg(kMaximumEnemies));
     }
     QJsonArray list;
     for (const SolomonEnemy& e : enemies) {
@@ -181,12 +176,13 @@ int SolomonRooms::chrBank(const QJsonArray& commands) {
 }
 
 int SolomonRooms::itemStreamBytes(const QJsonArray& commands) {
-    int bytes = 10;     // mirror tables, status rate, five positions
+    int bytes = 10;  // mirror tables, status rate, five positions
     for (const QJsonValue& value : commands) {
         const QJsonObject command = value.toObject();
         const QString kind = command.value(QStringLiteral("kind")).toString();
         if (kind == QLatin1String("end")) bytes += 1;
-        else if (kind == QLatin1String("repeat")) bytes += 2 + command.value(QStringLiteral("positions")).toArray().size();
+        else if (kind == QLatin1String("repeat"))
+            bytes += 2 + command.value(QStringLiteral("positions")).toArray().size();
         else bytes += 2;
     }
     return bytes;
@@ -280,32 +276,44 @@ QString SolomonRooms::overflow() const {
     // original layout: switching back to it must not leave them over.
     if (mirrorSetBytes() > mirrorSetCapacity()) {
         return expanded() ? rlTr("solomon", "The mirror enemy sets share %1 bytes; they need %2. Shorten a set.")
-                                .arg(mirrorSetCapacity()).arg(mirrorSetBytes())
-                          : rlTr("solomon", "The mirror enemy sets share %1 bytes; they need %2. Shorten a set, or "
-                                            "switch the ROM to Expanded.")
-                                .arg(mirrorSetCapacity()).arg(mirrorSetBytes());
+                                .arg(mirrorSetCapacity())
+                                .arg(mirrorSetBytes())
+                          : rlTr("solomon",
+                                 "The mirror enemy sets share %1 bytes; they need %2. Shorten a set, or "
+                                 "switch the ROM to Expanded.")
+                                .arg(mirrorSetCapacity())
+                                .arg(mirrorSetBytes());
     }
     if (!expanded()) {
         if (itemBytes() > kItemArenaBytes) {
-            return rlTr("solomon", "The item lists of all rooms share %1 bytes; they need %2. Remove an item in any "
-                                   "room, or switch the ROM to Expanded.").arg(kItemArenaBytes).arg(itemBytes());
+            return rlTr("solomon",
+                        "The item lists of all rooms share %1 bytes; they need %2. Remove an item in any "
+                        "room, or switch the ROM to Expanded.")
+                .arg(kItemArenaBytes)
+                .arg(itemBytes());
         }
         if (enemyBytes() > kEnemyArenaBytes) {
-            return rlTr("solomon", "The enemy lists of all rooms share %1 bytes; they need %2. Remove an enemy in any "
-                                   "room, or switch the ROM to Expanded.").arg(kEnemyArenaBytes).arg(enemyBytes());
+            return rlTr("solomon",
+                        "The enemy lists of all rooms share %1 bytes; they need %2. Remove an enemy in any "
+                        "room, or switch the ROM to Expanded.")
+                .arg(kEnemyArenaBytes)
+                .arg(enemyBytes());
         }
         return {};
     }
     for (int r = 0; r < roomCount(); ++r) {
         if (itemStreamBytes(itemCommands(r)) > kExpandedStreamLimit) {
             return rlTr("solomon", "Room %1's item list needs %2 bytes; the game reads at most %3 per room.")
-                .arg(r + 1).arg(itemStreamBytes(itemCommands(r))).arg(kExpandedStreamLimit);
+                .arg(r + 1)
+                .arg(itemStreamBytes(itemCommands(r)))
+                .arg(kExpandedStreamLimit);
         }
     }
     const int total = itemBytes() + enemyBytes();
     if (total > expandedDataBytes(revision())) {
         return rlTr("solomon", "The expanded ROM keeps %1 bytes for every room's items and enemies; they need %2.")
-            .arg(expandedDataBytes(revision())).arg(total);
+            .arg(expandedDataBytes(revision()))
+            .arg(total);
     }
     return {};
 }
@@ -329,9 +337,7 @@ SolomonPattern pattern(const QJsonObject& art, int index) {
     return result;
 }
 
-int patternCount(const QJsonObject& art) {
-    return art.value(QStringLiteral("room_map_patterns")).toArray().size();
-}
+int patternCount(const QJsonObject& art) { return art.value(QStringLiteral("room_map_patterns")).toArray().size(); }
 
 int groupColor(const QJsonObject& art, int group) {
     const QJsonValue value = art.value(QStringLiteral("room_group_colors")).toArray().at(group);

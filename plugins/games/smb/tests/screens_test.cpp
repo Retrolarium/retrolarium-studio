@@ -16,9 +16,7 @@ using namespace rl::smb;
 
 namespace {
 
-[[noreturn]] void fail(const QString& message) {
-    throw std::runtime_error(message.toStdString());
-}
+[[noreturn]] void fail(const QString& message) { throw std::runtime_error(message.toStdString()); }
 
 void expect(bool condition, const QString& message) {
     if (!condition) fail(message);
@@ -93,8 +91,10 @@ int main(int argc, char** argv) {
         setSlotText(document, slotList.at(0), QStringLiteral("Hello"));
         setSlotText(document, slotList.at(1), QStringLiteral("World"));
         setSlotText(document, slotList.at(6), QStringLiteral("HI"));
-        expect(slotText(document, slotList.at(0)) == QLatin1String("HELLO"), QStringLiteral("fixed text did not change"));
-        expect(slotText(document, slotList.at(1)) == QLatin1String("WORLD"), QStringLiteral("screen text did not change"));
+        expect(slotText(document, slotList.at(0)) == QLatin1String("HELLO"),
+               QStringLiteral("fixed text did not change"));
+        expect(slotText(document, slotList.at(1)) == QLatin1String("WORLD"),
+               QStringLiteral("screen text did not change"));
         expect(slotText(document, slotList.at(6)) == QLatin1String("HI"), QStringLiteral("short text was not padded"));
         expectThrow([&] { setSlotText(document, slotList.at(0), QStringLiteral("TOO LONG TEXT")); },
                     QStringLiteral("text longer than its slot was accepted"));
@@ -139,9 +139,9 @@ int main(int argc, char** argv) {
         {
             QJsonObject json = document.resource(QStringLiteral("game-screen-packets"));
             json.insert(QStringLiteral("capacity_pool"), true);
-            json.insert(QStringLiteral("growable_fields"),
-                        QJsonArray{QStringLiteral("status-headings"), QStringLiteral("time-up"),
-                                   QStringLiteral("game-over")});
+            json.insert(
+                QStringLiteral("growable_fields"),
+                QJsonArray{QStringLiteral("status-headings"), QStringLiteral("time-up"), QStringLiteral("game-over")});
             SmbScreenSet set = SmbScreenSet::fromJson(json);
             const auto field = [](const SmbScreenSet& from, const QString& key) {
                 for (const SmbScreenTextField& f : from.textFields) {

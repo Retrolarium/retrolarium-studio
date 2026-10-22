@@ -40,7 +40,12 @@ QString usageText(const SolomonText& text) {
     const SolomonText::Usage i = text.initialUsage();
     const SolomonText::Usage m = text.messageUsage();
     return rlTr("solomon", "screens %1 / %2 B · fairy lines %3 / %4 B · ending %5 / %6 B")
-        .arg(s.used).arg(s.capacity).arg(i.used).arg(i.capacity).arg(m.used).arg(m.capacity);
+        .arg(s.used)
+        .arg(s.capacity)
+        .arg(i.used)
+        .arg(i.capacity)
+        .arg(m.used)
+        .arg(m.capacity);
 }
 
 // The tiles of a fixed-width run padded with spaces; empty and `error` set
@@ -48,7 +53,10 @@ QString usageText(const SolomonText& text) {
 QVector<int> fitted(const TextString& s, QVector<int> tiles, QString* error) {
     if (s.width > 0) {
         if (tiles.size() > s.width) {
-            if (error) *error = rlTr("solomon", "%1 is %2 characters wide; the game patches it in place.").arg(s.label).arg(s.width);
+            if (error)
+                *error = rlTr("solomon", "%1 is %2 characters wide; the game patches it in place.")
+                             .arg(s.label)
+                             .arg(s.width);
             return {};
         }
         while (tiles.size() < s.width) tiles << 0x24;
@@ -65,26 +73,42 @@ QVector<int> fitted(const TextString& s, QVector<int> tiles, QString* error) {
 const QVector<TextScreen>& textScreens() {
     static const QVector<TextScreen> kScreens = [] {
         QVector<TextScreen> screens;
-        screens << TextScreen{QStringLiteral("intro"), rlTr("solomon", "Room intro"),
-                              {QStringLiteral("s:0:0"), QStringLiteral("s:0:1"), QStringLiteral("r:0"), QStringLiteral("r:1")},
-                              0, 1, false};
+        screens << TextScreen{
+            QStringLiteral("intro"),
+            rlTr("solomon", "Room intro"),
+            {QStringLiteral("s:0:0"), QStringLiteral("s:0:1"), QStringLiteral("r:0"), QStringLiteral("r:1")},
+            0,
+            1,
+            false};
         screens << TextScreen{QStringLiteral("clear"), rlTr("solomon", "Room clear"), {}, 0, 1, false};
         // The post-game code selects bank 3 before it queues GAME OVER.
         screens << TextScreen{QStringLiteral("gameover"), rlTr("solomon", "Game over"), {}, 3, 1, false};
         screens << TextScreen{QStringLiteral("title"), rlTr("solomon", "Title text"), {}, 3, 5, true};
         screens << TextScreen{QStringLiteral("licence"), rlTr("solomon", "Licence"), {}, 3, 13, false};
         const QStringList fairies{QStringLiteral("i:0"), QStringLiteral("i:1")};
-        screens << TextScreen{QStringLiteral("ending1"), rlTr("solomon", "Ending · seal"),
-                              fairies + QStringList{QStringLiteral("m:0"), QStringLiteral("m:1"), QStringLiteral("m:2")}, 3, 5,
-                              false};
-        screens << TextScreen{QStringLiteral("ending2"), rlTr("solomon", "Ending · spirits"),
-                              fairies + QStringList{QStringLiteral("m:0"), QStringLiteral("m:1"), QStringLiteral("m:3"),
-                                                    QStringLiteral("m:4"), QStringLiteral("m:5"), QStringLiteral("m:6")},
-                              3, 5, false};
-        screens << TextScreen{QStringLiteral("ending3"), rlTr("solomon", "Ending · constellation"),
-                              fairies + QStringList{QStringLiteral("m:0"), QStringLiteral("m:1"), QStringLiteral("m:3"),
-                                                    QStringLiteral("m:7"), QStringLiteral("m:8"), QStringLiteral("m:9")},
-                              3, 5, false};
+        screens << TextScreen{
+            QStringLiteral("ending1"),
+            rlTr("solomon", "Ending · seal"),
+            fairies + QStringList{QStringLiteral("m:0"), QStringLiteral("m:1"), QStringLiteral("m:2")},
+            3,
+            5,
+            false};
+        screens << TextScreen{
+            QStringLiteral("ending2"),
+            rlTr("solomon", "Ending · spirits"),
+            fairies + QStringList{QStringLiteral("m:0"), QStringLiteral("m:1"), QStringLiteral("m:3"),
+                                  QStringLiteral("m:4"), QStringLiteral("m:5"), QStringLiteral("m:6")},
+            3,
+            5,
+            false};
+        screens << TextScreen{
+            QStringLiteral("ending3"),
+            rlTr("solomon", "Ending · constellation"),
+            fairies + QStringList{QStringLiteral("m:0"), QStringLiteral("m:1"), QStringLiteral("m:3"),
+                                  QStringLiteral("m:7"), QStringLiteral("m:8"), QStringLiteral("m:9")},
+            3,
+            5,
+            false};
         return screens;
     }();
     return kScreens;
@@ -102,10 +126,14 @@ QPoint clampedTopLeft(const TextString& s, QPoint at) {
 
 // The runs a screen shows; program runs resolve against the document.
 QStringList screenStrings(const SolomonText& text, const TextScreen& screen) {
-    if (screen.id == QLatin1String("clear")) return programStrings(text, {QStringLiteral("0"), QStringLiteral("2"), QStringLiteral("3"), QStringLiteral("4")});
+    if (screen.id == QLatin1String("clear"))
+        return programStrings(text,
+                              {QStringLiteral("0"), QStringLiteral("2"), QStringLiteral("3"), QStringLiteral("4")});
     if (screen.id == QLatin1String("gameover")) return programStrings(text, {QStringLiteral("0"), QStringLiteral("6")});
-    if (screen.id == QLatin1String("title")) return programStrings(text, {QStringLiteral("9"), QStringLiteral("10"), QStringLiteral("11")});
-    if (screen.id == QLatin1String("licence")) return programStrings(text, {QStringLiteral("15"), QStringLiteral("16"), QStringLiteral("17")});
+    if (screen.id == QLatin1String("title"))
+        return programStrings(text, {QStringLiteral("9"), QStringLiteral("10"), QStringLiteral("11")});
+    if (screen.id == QLatin1String("licence"))
+        return programStrings(text, {QStringLiteral("15"), QStringLiteral("16"), QStringLiteral("17")});
     return screen.strings;
 }
 
@@ -170,9 +198,14 @@ QImage renderTextScreen(const SolomonSession* session, const TextScreen& screen,
             const QHash<int, QPair<int, int>> writers = titleWriters(session->state().presentation, s);
             for (auto it = writers.constBegin(); it != writers.constEnd(); ++it) {
                 if (it.key() < 0 || it.key() >= kColumns * kRows) continue;
-                const int tile = tokens.at(it.value().first).toObject().value(QStringLiteral("tiles")).toArray()
-                                     .at(it.value().second).toInt();
-                painter.drawImage((it.key() % kColumns) * 8, (it.key() / kColumns) * 8, tileImage(pixels, tile, palette, true));
+                const int tile = tokens.at(it.value().first)
+                                     .toObject()
+                                     .value(QStringLiteral("tiles"))
+                                     .toArray()
+                                     .at(it.value().second)
+                                     .toInt();
+                painter.drawImage((it.key() % kColumns) * 8, (it.key() / kColumns) * 8,
+                                  tileImage(pixels, tile, palette, true));
             }
         }
     }
@@ -213,19 +246,21 @@ QVector<sdk::TableColumn> SolomonTextTableModel::columns() const {
     return {where, text, size};
 }
 
-int SolomonTextTableModel::rowCount() const {
-    return session_->state().text.strings().size();
-}
+int SolomonTextTableModel::rowCount() const { return session_->state().text.strings().size(); }
 
 QString SolomonTextTableModel::cell(int row, int column) const {
     const QVector<TextString> strings = session_->state().text.strings();
     if (row < 0 || row >= strings.size()) return {};
     const TextString& s = strings.at(row);
     switch (column) {
-    case 0: return s.label;
-    case 1: return tilesToText(s.tiles);
-    case 2: return s.width ? tr("%1 fixed").arg(s.width) : QString::number(s.tiles.size());
-    default: return {};
+        case 0:
+            return s.label;
+        case 1:
+            return tilesToText(s.tiles);
+        case 2:
+            return s.width ? tr("%1 fixed").arg(s.width) : QString::number(s.tiles.size());
+        default:
+            return {};
     }
 }
 
@@ -296,10 +331,11 @@ sdk::Inspection SolomonTextTableModel::inspect() const {
         where.monospace = true;
         inspection.fields = {where};
     }
-    inspection.note = tr("Lines may grow and shrink while their region has room: the screens share one, "
-                         "the ending's fairy lines another and its messages a third. The room intro and "
-                         "special-room names keep their width. Only bank 3 holds the whole font; the "
-                         "rooms' banks lack some letters, so check the screen in Screens.");
+    inspection.note =
+        tr("Lines may grow and shrink while their region has room: the screens share one, "
+           "the ending's fairy lines another and its messages a third. The room intro and "
+           "special-room names keep their width. Only bank 3 holds the whole font; the "
+           "rooms' banks lack some letters, so check the screen in Screens.");
     inspection.engineTag = QStringLiteral("solomon.text@1");
     return inspection;
 }
@@ -311,9 +347,7 @@ SolomonTextScreenModel::SolomonTextScreenModel(SolomonSession* session, const Te
     connect(session_, &sdk::Session::contentChanged, this, &sdk::EditorModel::contentChanged);
 }
 
-SolomonText SolomonTextScreenModel::text() const {
-    return drafting_ ? draft_ : session_->state().text;
-}
+SolomonText SolomonTextScreenModel::text() const { return drafting_ ? draft_ : session_->state().text; }
 
 QVector<sdk::Tool> SolomonTextScreenModel::tools() const {
     return {{QStringLiteral("select"), tr("Select and move a line"), QStringLiteral("select")},
@@ -332,9 +366,7 @@ QPair<QString, int> SolomonTextScreenModel::writerAt(QPoint cell) const {
     return surfaceOf(text(), screen_).writers.at(cell.y() * kColumns + cell.x());
 }
 
-QVector<sdk::CellBrush> SolomonTextScreenModel::brushes() const {
-    return {{brush_, tilesToText({brush_}), QColor()}};
-}
+QVector<sdk::CellBrush> SolomonTextScreenModel::brushes() const { return {{brush_, tilesToText({brush_}), QColor()}}; }
 
 void SolomonTextScreenModel::setCurrentBrush(int value) {
     brush_ = std::clamp(value, 0, 0xff);
@@ -347,13 +379,12 @@ int SolomonTextScreenModel::cellValue(QPoint cell) const {
     return surfaceOf(text(), screen_).tiles.at(cell.y() * kColumns + cell.x());
 }
 
-bool SolomonTextScreenModel::isCellEditable(QPoint cell) const {
-    return writerAt(cell).second >= 0;
-}
+bool SolomonTextScreenModel::isCellEditable(QPoint cell) const { return writerAt(cell).second >= 0; }
 
 QString SolomonTextScreenModel::lockReason(QPoint) const {
-    return tr("No line of text writes this cell. Paint the letters of a line, or edit its text in the "
-              "inspector.");
+    return tr(
+        "No line of text writes this cell. Paint the letters of a line, or edit its text in the "
+        "inspector.");
 }
 
 void SolomonTextScreenModel::beginStroke() {
@@ -453,9 +484,7 @@ bool SolomonTextScreenModel::commit(const SolomonText& next, const QString& labe
     return session_->edit(label, [next](SolomonState& s) { s.text = next; }, error);
 }
 
-QString SolomonTextScreenModel::currentLibraryItem() const {
-    return QStringLiteral("tile:%1").arg(brush_);
-}
+QString SolomonTextScreenModel::currentLibraryItem() const { return QStringLiteral("tile:%1").arg(brush_); }
 
 void SolomonTextScreenModel::setCurrentLibraryItem(const QString& id) {
     if (id.startsWith(QLatin1String("tile:"))) setCurrentBrush(id.mid(5).toInt());
@@ -545,9 +574,10 @@ sdk::Inspection SolomonTextScreenModel::inspect() const {
     }
     inspection.kicker = tr("Screen");
     inspection.title = screen_.label;
-    inspection.note = tr("Select a line to edit its text, drag it to move it, or paint font tiles into "
-                         "it. Tileset shows the screen in another CHR bank: only bank 3 holds every "
-                         "letter.");
+    inspection.note =
+        tr("Select a line to edit its text, drag it to move it, or paint font tiles into "
+           "it. Tileset shows the screen in another CHR bank: only bank 3 holds every "
+           "letter.");
     inspection.engineTag = QStringLiteral("solomon.text@1");
     return inspection;
 }
@@ -586,16 +616,18 @@ SolomonStaticPaletteModel::SolomonStaticPaletteModel(SolomonSession* session, in
 
 QString SolomonStaticPaletteModel::programLabel(int program) {
     switch (program) {
-    case 1: return tr("Room intro");
-    case 5: return tr("Title and ending");
-    case 13: return tr("Licence");
-    default: return tr("Program %1").arg(program);
+        case 1:
+            return tr("Room intro");
+        case 5:
+            return tr("Title and ending");
+        case 13:
+            return tr("Licence");
+        default:
+            return tr("Program %1").arg(program);
     }
 }
 
-QString SolomonStaticPaletteModel::title() const {
-    return tr("%1 palettes").arg(programLabel(program_));
-}
+QString SolomonStaticPaletteModel::title() const { return tr("%1 palettes").arg(programLabel(program_)); }
 
 QVector<sdk::PaletteRow> SolomonStaticPaletteModel::rows() const {
     const QVector<int> values = session_->state().text.palette(program_);
@@ -639,9 +671,9 @@ int SolomonStaticPaletteModel::currentGamutIndex() const {
 bool SolomonStaticPaletteModel::assignGamut(int index, QString* error) {
     const int program = program_;
     const int entry = entry_.y() * 4 + entry_.x();
-    return session_->edit(tr("Set %1 colour %2").arg(title()).arg(entry),
-                          [program, entry, index](SolomonState& s) { s.text.setPaletteEntry(program, entry, index); },
-                          error);
+    return session_->edit(
+        tr("Set %1 colour %2").arg(title()).arg(entry),
+        [program, entry, index](SolomonState& s) { s.text.setPaletteEntry(program, entry, index); }, error);
 }
 
 QVector<sdk::PaletteSample> SolomonStaticPaletteModel::samples() const {
@@ -668,8 +700,9 @@ sdk::Inspection SolomonStaticPaletteModel::inspect() const {
     field.value = value < 0 ? QString() : nes::hex(value);
     field.monospace = true;
     inspection.fields = {field};
-    inspection.note = tr("A static PPU program writes these sixteen background colours when the screen "
-                         "loads. Rooms load their own palettes afterwards.");
+    inspection.note =
+        tr("A static PPU program writes these sixteen background colours when the screen "
+           "loads. Rooms load their own palettes afterwards.");
     inspection.engineTag = QStringLiteral("solomon.text@1");
     inspection.engine = {{tr("Program"), QString::number(program_)}};
     return inspection;

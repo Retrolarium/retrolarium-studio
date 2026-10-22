@@ -133,13 +133,21 @@ void TileAtlas::keyPressEvent(QKeyEvent* event) {
     }
     int step = 0;
     switch (event->key()) {
-    case Qt::Key_Left: step = -1; break;
-    case Qt::Key_Right: step = 1; break;
-    case Qt::Key_Up: step = -kColumns; break;
-    case Qt::Key_Down: step = kColumns; break;
-    default:
-        QWidget::keyPressEvent(event);
-        return;
+        case Qt::Key_Left:
+            step = -1;
+            break;
+        case Qt::Key_Right:
+            step = 1;
+            break;
+        case Qt::Key_Up:
+            step = -kColumns;
+            break;
+        case Qt::Key_Down:
+            step = kColumns;
+            break;
+        default:
+            QWidget::keyPressEvent(event);
+            return;
     }
     if (model_->tileCount() <= 0) {
         return;
@@ -295,9 +303,7 @@ PenRow::PenRow(sdk::TileModel* model, QWidget* parent) : QWidget(parent), model_
     connect(model_, &sdk::EditorModel::toolsChanged, this, [this] { setFixedSize(sizeHint()); });
 }
 
-int PenRow::rowHeight() const {
-    return model_->penCount() > kColumns ? kShortHeight : kHeight;
-}
+int PenRow::rowHeight() const { return model_->penCount() > kColumns ? kShortHeight : kHeight; }
 
 QSize PenRow::sizeHint() const {
     const int rows = (std::max(1, model_->penCount()) + kColumns - 1) / kColumns;
@@ -341,8 +347,7 @@ void PenRow::mousePressEvent(QMouseEvent* event) {
 
 // ---------------------------------------------------------------- editor
 
-TileEditor::TileEditor(sdk::TileModel* model, QWidget* parent)
-    : EditorView(model, parent), tiles_(model) {
+TileEditor::TileEditor(sdk::TileModel* model, QWidget* parent) : EditorView(model, parent), tiles_(model) {
     const QString penKey = QString::fromLatin1(tiles_->metaObject()->className());
     const auto pen = lastPens().constFind(penKey);
     if (pen != lastPens().constEnd() && *pen < tiles_->penCount()) tiles_->setCurrentPen(*pen);
@@ -435,8 +440,7 @@ QWidget* TileEditor::createToolbar(QWidget* parent) {
         segment->addIconSegment(tool.icon, tool.label, tool.id);
     }
     segment->setCurrentId(tool_);
-    connect(segment, &ui::SegmentedControl::currentChanged, this,
-            [this](int, const QString& id) { chooseTool(id); });
+    connect(segment, &ui::SegmentedControl::currentChanged, this, [this](int, const QString& id) { chooseTool(id); });
     layout->addWidget(segment);
     auto* separator = new ui::Divider(Qt::Vertical, ui::Divider::Strength::Line, bar);
     separator->setFixedHeight(18);

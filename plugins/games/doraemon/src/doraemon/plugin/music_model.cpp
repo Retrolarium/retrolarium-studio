@@ -16,7 +16,8 @@ namespace rl::doraemon {
 namespace {
 
 const char* const kChannels[4] = {"Pulse 1", "Pulse 2", "Triangle", "Noise"};
-const QColor kColours[4] = {QColor(0xe0, 0xb0, 0x40), QColor(0x60, 0xa8, 0xe0), QColor(0x70, 0xc8, 0x70), QColor(0xb0, 0xb0, 0xb0)};
+const QColor kColours[4] = {QColor(0xe0, 0xb0, 0x40), QColor(0x60, 0xa8, 0xe0), QColor(0x70, 0xc8, 0x70),
+                            QColor(0xb0, 0xb0, 0xb0)};
 
 // Bytes an event text takes: "event $2B" and "duration $8E" are one byte,
 // a command one plus its operands ("CallStream $CB $F0").
@@ -39,9 +40,7 @@ DoraemonMusicModel::DoraemonMusicModel(DoraemonSession* session, int driver, int
     connect(session_, &DoraemonSession::traceReady, this, &sdk::EditorModel::contentChanged);
 }
 
-QJsonObject DoraemonMusicModel::trace() const {
-    return session_->musicTrace(driver_, track_);
-}
+QJsonObject DoraemonMusicModel::trace() const { return session_->musicTrace(driver_, track_); }
 
 QVector<sdk::SequencerChannel> DoraemonMusicModel::channels() const {
     QVector<sdk::SequencerChannel> result;
@@ -71,7 +70,13 @@ void DoraemonMusicModel::setChannelMuted(int channel, bool muted) {
 
 QVector<sdk::SequencerNote> DoraemonMusicModel::notes(int channel) const {
     QVector<sdk::SequencerNote> result;
-    const QJsonArray events = trace().value(QStringLiteral("lanes")).toArray().at(channel).toObject().value(QStringLiteral("events")).toArray();
+    const QJsonArray events = trace()
+                                  .value(QStringLiteral("lanes"))
+                                  .toArray()
+                                  .at(channel)
+                                  .toObject()
+                                  .value(QStringLiteral("events"))
+                                  .toArray();
     for (int i = 0; i < events.size(); ++i) {
         const QJsonObject e = events.at(i).toObject();
         sdk::SequencerNote note;
@@ -92,13 +97,26 @@ QVector<sdk::SequencerNote> DoraemonMusicModel::notes(int channel) const {
 QJsonObject DoraemonMusicModel::eventAt(const QString& noteId) const {
     const int channel = noteId.section(QLatin1Char(':'), 0, 0).toInt();
     const int index = noteId.section(QLatin1Char(':'), 1, 1).toInt();
-    return trace().value(QStringLiteral("lanes")).toArray().at(channel).toObject().value(QStringLiteral("events")).toArray().at(index).toObject();
+    return trace()
+        .value(QStringLiteral("lanes"))
+        .toArray()
+        .at(channel)
+        .toObject()
+        .value(QStringLiteral("events"))
+        .toArray()
+        .at(index)
+        .toObject();
 }
 
 DoraemonMusicModel::Location DoraemonMusicModel::locate(int address) const {
     Location result;
-    const QJsonArray segments =
-        session_->music().value(QStringLiteral("drivers")).toArray().at(driver_).toObject().value(QStringLiteral("segments")).toArray();
+    const QJsonArray segments = session_->music()
+                                    .value(QStringLiteral("drivers"))
+                                    .toArray()
+                                    .at(driver_)
+                                    .toObject()
+                                    .value(QStringLiteral("segments"))
+                                    .toArray();
     for (int s = 0; s < segments.size(); ++s) {
         const QJsonObject segment = segments.at(s).toObject();
         int cursor = segment.value(QStringLiteral("address")).toString().toInt(nullptr, 16);
@@ -144,7 +162,9 @@ bool DoraemonMusicModel::shiftEvent(int address, int semitones, const QString& l
     QJsonArray segments = driver.value(QStringLiteral("segments")).toArray();
     QJsonObject segment = segments.at(at.segment).toObject();
     QJsonArray events = segment.value(QStringLiteral("events")).toArray();
-    events.replace(at.event, QStringLiteral("event $%1").arg(QString::number(next, 16).rightJustified(2, QLatin1Char('0')).toUpper()));
+    events.replace(
+        at.event,
+        QStringLiteral("event $%1").arg(QString::number(next, 16).rightJustified(2, QLatin1Char('0')).toUpper()));
     segment.insert(QStringLiteral("events"), events);
     segments.replace(at.segment, segment);
     driver.insert(QStringLiteral("segments"), segments);
@@ -176,7 +196,8 @@ void DoraemonMusicModel::endEdit() {
     dragShift_ = 0;
     if (!id.isEmpty() && shift != 0) {
         QString error;
-        if (!shiftEvent(eventAt(id).value(QStringLiteral("address")).toInt(), shift, tr("Edit a note of %1").arg(title()), &error)) {
+        if (!shiftEvent(eventAt(id).value(QStringLiteral("address")).toInt(), shift,
+                        tr("Edit a note of %1").arg(title()), &error)) {
             session_->report(sdk::Severity::Error, QStringLiteral("sound"), error);
         }
     }
@@ -201,11 +222,21 @@ void DoraemonMusicModel::preview() {
         session_->report(sdk::Severity::Error, QStringLiteral("sound"), error);
         return;
     }
-    const QString wav = QDir(QFileInfo(document).absolutePath()).filePath(QStringLiteral("track-%1-%2.wav").arg(driver_).arg(track_));
-    QStringList arguments{QStringLiteral("audio"), QStringLiteral("render-doraemon-wav"), session_->projectPath(),
-                          QStringLiteral("--document"), document, QStringLiteral("--driver"), QString::number(driver_),
-                          QStringLiteral("--track"), QString::number(track_), QStringLiteral("--frames"), QString::number(kFrames),
-                          QStringLiteral("--output"), wav};
+    const QString wav =
+        QDir(QFileInfo(document).absolutePath()).filePath(QStringLiteral("track-%1-%2.wav").arg(driver_).arg(track_));
+    QStringList arguments{QStringLiteral("audio"),
+                          QStringLiteral("render-doraemon-wav"),
+                          session_->projectPath(),
+                          QStringLiteral("--document"),
+                          document,
+                          QStringLiteral("--driver"),
+                          QString::number(driver_),
+                          QStringLiteral("--track"),
+                          QString::number(track_),
+                          QStringLiteral("--frames"),
+                          QString::number(kFrames),
+                          QStringLiteral("--output"),
+                          wav};
     if (!muted_.isEmpty()) {
         for (int c = 0; c < 4; ++c) {
             if (!muted_.contains(c)) arguments << QStringLiteral("--channel") << QString::fromLatin1(kChannels[c]);
@@ -221,7 +252,8 @@ void DoraemonMusicModel::preview() {
     const QString label = title();
     host->runProcess(spec, [host, session, wav, label](const sdk::ProcessResult& result) {
         if (!result.succeeded() || !QFileInfo(wav).isFile()) {
-            if (!result.cancelled) session->report(sdk::Severity::Error, QStringLiteral("sound"), tr("Rendering %1 failed.").arg(label));
+            if (!result.cancelled)
+                session->report(sdk::Severity::Error, QStringLiteral("sound"), tr("Rendering %1 failed.").arg(label));
             return;
         }
         host->playAudio(wav);
@@ -244,9 +276,10 @@ void DoraemonMusicModel::setPreviewLoops(bool loop) {
 sdk::Budget DoraemonMusicModel::budget() const {
     const QJsonObject driver = session_->music().value(QStringLiteral("drivers")).toArray().at(driver_).toObject();
     sdk::Budget budget;
-    budget.text = tr("%1 · %2 stream bytes, each note keeps its byte")
-                      .arg(driver.value(QStringLiteral("name")).toString())
-                      .arg(driver.value(QStringLiteral("metrics")).toObject().value(QStringLiteral("reachable_bytes")).toInt());
+    budget.text =
+        tr("%1 · %2 stream bytes, each note keeps its byte")
+            .arg(driver.value(QStringLiteral("name")).toString())
+            .arg(driver.value(QStringLiteral("metrics")).toObject().value(QStringLiteral("reachable_bytes")).toInt());
     return budget;
 }
 
@@ -272,7 +305,8 @@ sdk::Inspection DoraemonMusicModel::inspect() const {
     sdk::Field event;
     event.key = QStringLiteral("event");
     event.label = tr("Stream");
-    event.value = tr("%1 at $%2").arg(at.text, QString::number(address, 16).rightJustified(4, QLatin1Char('0')).toUpper());
+    event.value =
+        tr("%1 at $%2").arg(at.text, QString::number(address, 16).rightJustified(4, QLatin1Char('0')).toUpper());
     event.monospace = true;
     inspection.fields = {event};
     if (at.text.startsWith(QLatin1String("event $")) && at.text != QLatin1String("event $00")) {
@@ -296,8 +330,6 @@ sdk::Inspection DoraemonMusicModel::inspect() const {
     return inspection;
 }
 
-QString DoraemonMusicModel::statusText() const {
-    return tr("Sound · %1").arg(title());
-}
+QString DoraemonMusicModel::statusText() const { return tr("Sound · %1").arg(title()); }
 
 }  // namespace rl::doraemon

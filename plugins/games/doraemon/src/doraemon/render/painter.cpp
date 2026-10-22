@@ -10,17 +10,11 @@
 
 namespace rl::doraemon {
 
-QString worldLabel(World world) {
-    return rlTr("doraemon", "World %1").arg(int(world));
-}
+QString worldLabel(World world) { return rlTr("doraemon", "World %1").arg(int(world)); }
 
-QString hierarchyId(World world) {
-    return QStringLiteral("world%1-hierarchy").arg(int(world));
-}
+QString hierarchyId(World world) { return QStringLiteral("world%1-hierarchy").arg(int(world)); }
 
-QString chrId(World world) {
-    return QStringLiteral("chr-bank-%1").arg(int(world) - 1);
-}
+QString chrId(World world) { return QStringLiteral("chr-bank-%1").arg(int(world) - 1); }
 
 QStringList paletteIds(const nes::Bundle& bundle, World world) {
     QStringList result;
@@ -50,7 +44,7 @@ int areaPreset(const nes::Bundle& bundle, World world, const QString& map, int c
         int start;
         int preset;
     };
-    static const Region kRegions[] = {{0, 0, 2},  {0, 8, 8},  {8, 0, 2},  {8, 16, 3}, {8, 32, 4},
+    static const Region kRegions[] = {{0, 0, 2},  {0, 8, 8},  {8, 0, 2},   {8, 16, 3},  {8, 32, 4},
                                       {8, 48, 5}, {16, 0, 6}, {16, 16, 7}, {16, 24, 10}};
     int band = 0;
     for (const Region& r : kRegions) {
@@ -69,18 +63,18 @@ DoraemonPainter::DoraemonPainter(const nes::Bundle& bundle) : bundle_(&bundle) {
         if (w == World::Three && bundle.contains(QStringLiteral("chr-bank-3"))) {
             chr_.insert(QStringLiteral("chr-bank-3"), bundle.allPixels(QStringLiteral("chr-bank-3")));
         }
-        if (w != World::Two && bundle.contains(hierarchyId(w))) hierarchies_.insert(int(w), bundle.resource(hierarchyId(w)));
+        if (w != World::Two && bundle.contains(hierarchyId(w)))
+            hierarchies_.insert(int(w), bundle.resource(hierarchyId(w)));
     }
 }
 
-QColor DoraemonPainter::color(int index) const {
-    return QColor::fromRgb(nes::masterColor(index & 0x3f, "nes"));
-}
+QColor DoraemonPainter::color(int index) const { return QColor::fromRgb(nes::masterColor(index & 0x3f, "nes")); }
 
 QVector<int> DoraemonPainter::colours(World world, int preset, int row) const {
     const QStringList presets = paletteIds(*bundle_, world);
-    const QVector<int> values = presets.isEmpty() ? QVector<int>()
-                                                  : bundle_->tableValues(presets.at(std::clamp(preset, 0, int(presets.size()) - 1)));
+    const QVector<int> values = presets.isEmpty()
+                                    ? QVector<int>()
+                                    : bundle_->tableValues(presets.at(std::clamp(preset, 0, int(presets.size()) - 1)));
     QVector<int> result = values.mid(row * 4, 4);
     while (result.size() < 4) result << 0x0f;
     return result;
@@ -109,9 +103,7 @@ QImage DoraemonPainter::shellTile(int tile, const QVector<int>& colours, int tab
     return image;
 }
 
-QJsonObject DoraemonPainter::hierarchy(World world) const {
-    return hierarchies_.value(int(world));
-}
+QJsonObject DoraemonPainter::hierarchy(World world) const { return hierarchies_.value(int(world)); }
 
 QImage DoraemonPainter::smallBlock(World world, int block, int preset) const {
     const quint64 key = (quint64(1) << 40) | (quint64(world) << 32) | (quint64(preset) << 16) | quint64(block & 0xff);
@@ -119,7 +111,8 @@ QImage DoraemonPainter::smallBlock(World world, int block, int preset) const {
     if (found != cache_.constEnd()) return *found;
     const QJsonObject h = hierarchy(world);
     const QJsonArray tiles = h.value(QStringLiteral("small_blocks")).toArray().at(block).toArray();
-    const int palette = h.value(QStringLiteral("attributes")).toArray().at(block).toObject().value(QStringLiteral("palette")).toInt();
+    const int palette =
+        h.value(QStringLiteral("attributes")).toArray().at(block).toObject().value(QStringLiteral("palette")).toInt();
     const QVector<int> c = colours(world, preset, palette & 3);
     QImage image(16, 16, QImage::Format_ARGB32);
     QPainter painter(&image);
@@ -136,7 +129,8 @@ QImage DoraemonPainter::bigBlock(World world, int block, int preset) const {
     const QJsonArray smalls = hierarchy(world).value(QStringLiteral("big_blocks")).toArray().at(block).toArray();
     QImage image(32, 32, QImage::Format_ARGB32);
     QPainter painter(&image);
-    for (int q = 0; q < 4; ++q) painter.drawImage((q % 2) * 16, (q / 2) * 16, smallBlock(world, smalls.at(q).toInt(), preset));
+    for (int q = 0; q < 4; ++q)
+        painter.drawImage((q % 2) * 16, (q / 2) * 16, smallBlock(world, smalls.at(q).toInt(), preset));
     painter.end();
     cache_.insert(key, image);
     return image;
@@ -146,9 +140,11 @@ QImage DoraemonPainter::metatile(int metatile, int preset) const {
     const quint64 key = (quint64(3) << 40) | (quint64(preset) << 16) | quint64(metatile & 0xff);
     const auto found = cache_.constFind(key);
     if (found != cache_.constEnd()) return *found;
-    const QJsonObject m = bundle_->contains(ids::kWorld2Metatiles) ? bundle_->resource(ids::kWorld2Metatiles) : QJsonObject();
+    const QJsonObject m =
+        bundle_->contains(ids::kWorld2Metatiles) ? bundle_->resource(ids::kWorld2Metatiles) : QJsonObject();
     const QJsonArray tiles = m.value(QStringLiteral("tiles")).toArray().at(metatile).toArray();
-    const QVector<int> c = colours(World::Two, preset, m.value(QStringLiteral("palettes")).toArray().at(metatile).toInt() & 3);
+    const QVector<int> c =
+        colours(World::Two, preset, m.value(QStringLiteral("palettes")).toArray().at(metatile).toInt() & 3);
     QImage image(16, 16, QImage::Format_ARGB32);
     QPainter painter(&image);
     for (int q = 0; q < 4; ++q) painter.drawImage((q % 2) * 8, (q / 2) * 8, tile(World::Two, tiles.at(q).toInt(), c));

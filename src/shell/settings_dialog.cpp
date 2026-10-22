@@ -44,8 +44,8 @@ ui::Label* hint(const QString& text, QWidget* parent) {
 QString biosPath(const QString& mame) {
     if (mame.isEmpty()) return {};
     const QDir roms(QFileInfo(mame).absoluteDir().filePath(QStringLiteral("roms")));
-    for (const QString& name : {QStringLiteral("fds/rp2c33a-01a.bin"), QStringLiteral("fds.zip"),
-                                QStringLiteral("fds.7z")}) {
+    for (const QString& name :
+         {QStringLiteral("fds/rp2c33a-01a.bin"), QStringLiteral("fds.zip"), QStringLiteral("fds.7z")}) {
         if (QFileInfo(roms.filePath(name)).isFile()) return roms.filePath(name);
     }
     return {};
@@ -154,8 +154,8 @@ void SettingsDialog::refresh() {
 
 void SettingsDialog::chooseMame() {
     const QString current = runtime::ToolLocator::emulatorPath(QStringLiteral("mame"));
-    const QString path = QFileDialog::getOpenFileName(this, tr("Choose MAME"), current,
-                                                      tr("Programs (*.exe);;All files (*)"));
+    const QString path =
+        QFileDialog::getOpenFileName(this, tr("Choose MAME"), current, tr("Programs (*.exe);;All files (*)"));
     if (path.isEmpty()) return;
     QSettings().setValue(QString::fromLatin1(kMameKey), path);
     refresh();
@@ -172,10 +172,10 @@ void SettingsDialog::chooseBios() {
                                                       tr("BIOS dumps (*.rom *.bin);;All files (*)"));
     if (path.isEmpty()) return;
     QString error;
-    const sdk::ProcessSpec spec = runtime::ToolLocator::kitCommand(
-        {QStringLiteral("studio"), QStringLiteral("fds-bios"), QStringLiteral("--mame"), mame,
-         QStringLiteral("--install"), path},
-        QFileInfo(mame).absolutePath(), &error);
+    const sdk::ProcessSpec spec =
+        runtime::ToolLocator::kitCommand({QStringLiteral("studio"), QStringLiteral("fds-bios"),
+                                          QStringLiteral("--mame"), mame, QStringLiteral("--install"), path},
+                                         QFileInfo(mame).absolutePath(), &error);
     if (!spec.program.isEmpty()) {
         QProcess process;
         process.setWorkingDirectory(spec.workingDirectory);
@@ -195,8 +195,7 @@ void SettingsDialog::chooseBios() {
         }
     }
     if (!error.isEmpty()) {
-        frame::MessageDialog::inform(this, tr("Settings"), tr("The BIOS was not installed"),
-                                     error);
+        frame::MessageDialog::inform(this, tr("Settings"), tr("The BIOS was not installed"), error);
     }
     refresh();
 }

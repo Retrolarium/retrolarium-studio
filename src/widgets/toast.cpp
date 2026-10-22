@@ -20,9 +20,7 @@ constexpr int kMargin = 24;
 constexpr int kMaxWidth = 560;
 constexpr int kShowMs = 4500;
 
-QFont toastFont() {
-    return theme::font(theme::TextRole::Body, 12.5);
-}
+QFont toastFont() { return theme::font(theme::TextRole::Body, 12.5); }
 }  // namespace
 
 Toast::Toast(QWidget* parent) : QWidget(parent), timer_(new QTimer(this)) {
@@ -48,8 +46,8 @@ void Toast::showMessage(const QString& text) {
 void Toast::place() {
     const QFontMetrics metrics(toastFont());
     const int available = std::min(kMaxWidth, parentWidget()->width() - 2 * kMargin);
-    const QRect textRect = metrics.boundingRect(QRect(0, 0, available - 2 * kPaddingX - 14, 1000),
-                                                Qt::TextWordWrap, text_);
+    const QRect textRect =
+        metrics.boundingRect(QRect(0, 0, available - 2 * kPaddingX - 14, 1000), Qt::TextWordWrap, text_);
     const int width = textRect.width() + 2 * kPaddingX + 14;
     const int height = textRect.height() + 2 * kPaddingY;
     setGeometry((parentWidget()->width() - width) / 2, parentWidget()->height() - height - kMargin, width, height);
@@ -62,9 +60,7 @@ bool Toast::eventFilter(QObject* watched, QEvent* event) {
     return QWidget::eventFilter(watched, event);
 }
 
-void Toast::mousePressEvent(QMouseEvent*) {
-    hide();
-}
+void Toast::mousePressEvent(QMouseEvent*) { hide(); }
 
 void Toast::paintEvent(QPaintEvent*) {
     const theme::Tokens& t = theme::current();

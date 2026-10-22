@@ -38,17 +38,13 @@ bool invisibleState(int state) {
     return false;
 }
 
-int stateOf(int value) {
-    return value - DoraemonRouteModel::kSpawnBase + 1;
-}
+int stateOf(int value) { return value - DoraemonRouteModel::kSpawnBase + 1; }
 
 QString foeName(int state) {
     return sdk::gameName("world2_enemies", state, rlTr("doraemon", "State %1").arg(nes::hex(state)));
 }
 
-QString foeChoice(int state) {
-    return QStringLiteral("%1 %2").arg(nes::hex(state)).arg(foeName(state));
-}
+QString foeChoice(int state) { return QStringLiteral("%1 %2").arg(nes::hex(state)).arg(foeName(state)); }
 
 QImage foeImage(const DoraemonSession* session, int state, int preset) {
     const int metasprite = state >= 1 && state <= kStates ? stateMetasprite(state) : -1;
@@ -109,7 +105,7 @@ QImage secretSymbol() {
     return image;
 }
 
-constexpr int kSecretColumn = 14;   // the symbol's cells in a panel
+constexpr int kSecretColumn = 14;  // the symbol's cells in a panel
 
 const char* const kDirections[4] = {"right", "up", "down", "left"};
 
@@ -132,9 +128,7 @@ DoraemonRouteModel::DoraemonRouteModel(DoraemonSession* session, int route)
     chapter_ = 6 + stage;
 }
 
-QString DoraemonRouteModel::startPoint() const {
-    return session_->selectedStart();
-}
+QString DoraemonRouteModel::startPoint() const { return session_->selectedStart(); }
 
 void DoraemonRouteModel::readPanels() {
     const QJsonObject r = session_->world2View().value(QStringLiteral("routes")).toArray().at(route_).toObject();
@@ -169,17 +163,14 @@ void DoraemonRouteModel::readPanels() {
     for (const QJsonValue& v : r.value(QStringLiteral("annotations")).toArray()) annotations_ << v.toObject();
 }
 
-QString DoraemonRouteModel::title() const {
-    return name_;
-}
+QString DoraemonRouteModel::title() const { return name_; }
 
-QSize DoraemonRouteModel::gridSize() const {
-    return {columns_ * kPanelWidth, rows_ * kPanelHeight};
-}
+QSize DoraemonRouteModel::gridSize() const { return {columns_ * kPanelWidth, rows_ * kPanelHeight}; }
 
 DoraemonRouteModel::Located DoraemonRouteModel::locate(QPoint cell) const {
     Located result;
-    if (cell.x() < 0 || cell.y() < 0 || cell.x() >= columns_ * kPanelWidth || cell.y() >= rows_ * kPanelHeight) return result;
+    if (cell.x() < 0 || cell.y() < 0 || cell.x() >= columns_ * kPanelWidth || cell.y() >= rows_ * kPanelHeight)
+        return result;
     const int index = panelAt_.value((cell.y() / kPanelHeight) * columns_ + cell.x() / kPanelWidth, -1);
     if (index < 0) return result;
     const Panel& p = panels_.at(index);
@@ -213,19 +204,22 @@ void DoraemonRouteModel::setCurrentLayer(const QString& id) {
 
 QVector<int> DoraemonRouteModel::secretScreens() const {
     QVector<int> result;
-    for (const QJsonValue& v : session_->resource(kSecrets).value(QStringLiteral("screens")).toArray()) result << v.toInt();
+    for (const QJsonValue& v : session_->resource(kSecrets).value(QStringLiteral("screens")).toArray())
+        result << v.toInt();
     return result;
 }
 
 QVector<sdk::Tool> DoraemonRouteModel::tools() const {
     if (objectLayer()) {
-        return {{QStringLiteral("select"), tr("Select and move enemies"), QStringLiteral("select")},
-                {QStringLiteral("place"), tr("Add the sheet's enemy on a background cell"), QStringLiteral("place")},
-                {QStringLiteral("remove"), tr("Remove an enemy (its cell becomes metatile $00)"), QStringLiteral("erase")}};
+        return {
+            {QStringLiteral("select"), tr("Select and move enemies"), QStringLiteral("select")},
+            {QStringLiteral("place"), tr("Add the sheet's enemy on a background cell"), QStringLiteral("place")},
+            {QStringLiteral("remove"), tr("Remove an enemy (its cell becomes metatile $00)"), QStringLiteral("erase")}};
     }
-    return {{QStringLiteral("select"), tr("Select a cell"), QStringLiteral("select")},
-            {QStringLiteral("paint"), tr("Paint the sheet's metatile (right button takes one)"), QStringLiteral("paint")},
-            {QStringLiteral("pick"), tr("Take a cell's metatile as the brush"), QStringLiteral("pick")}};
+    return {
+        {QStringLiteral("select"), tr("Select a cell"), QStringLiteral("select")},
+        {QStringLiteral("paint"), tr("Paint the sheet's metatile (right button takes one)"), QStringLiteral("paint")},
+        {QStringLiteral("pick"), tr("Take a cell's metatile as the brush"), QStringLiteral("pick")}};
 }
 
 QImage DoraemonRouteModel::render() const {
@@ -274,7 +268,8 @@ QImage DoraemonRouteModel::render() const {
     }
     // Panel joins and the branch annotations.
     painter.setPen(QColor(255, 255, 255, 60));
-    for (const Panel& p : panels_) painter.drawRect(p.x * kPanelWidth * 16, p.y * kPanelHeight * 16, kPanelWidth * 16 - 1, kPanelHeight * 16 - 1);
+    for (const Panel& p : panels_)
+        painter.drawRect(p.x * kPanelWidth * 16, p.y * kPanelHeight * 16, kPanelWidth * 16 - 1, kPanelHeight * 16 - 1);
     const QVector<int> secrets = secretScreens();
     const QImage symbol = secretSymbol();
     for (const Panel& p : panels_) {
@@ -285,11 +280,12 @@ QImage DoraemonRouteModel::render() const {
     font.setPixelSize(14);
     painter.setFont(font);
     for (const QJsonObject& a : annotations_) {
-        const QRect box(a.value(QStringLiteral("x")).toInt() * kPanelWidth * 16 + 8, a.value(QStringLiteral("y")).toInt() * kPanelHeight * 16 + 8,
-                        200, 22);
+        const QRect box(a.value(QStringLiteral("x")).toInt() * kPanelWidth * 16 + 8,
+                        a.value(QStringLiteral("y")).toInt() * kPanelHeight * 16 + 8, 200, 22);
         painter.fillRect(box, QColor(0, 0, 0, 170));
         painter.setPen(QColor(255, 220, 120));
-        painter.drawText(box.adjusted(6, 0, 0, 0), Qt::AlignVCenter | Qt::AlignLeft, a.value(QStringLiteral("text")).toString());
+        painter.drawText(box.adjusted(6, 0, 0, 0), Qt::AlignVCenter | Qt::AlignLeft,
+                         a.value(QStringLiteral("text")).toString());
     }
     return image;
 }
@@ -397,9 +393,7 @@ bool DoraemonRouteModel::placeObject(const QString& libraryItem, QPoint cell, QS
     return commit({{{at.selector, at.raw}, metatile_}}, tr("Set a metatile of %1").arg(title()), error);
 }
 
-void DoraemonRouteModel::beginStroke() {
-    stroke_.clear();
-}
+void DoraemonRouteModel::beginStroke() { stroke_.clear(); }
 
 bool DoraemonRouteModel::paintCell(QPoint cell, int value) {
     if (value < 0 || value >= kSpawnBase || !isCellEditable(cell)) return false;
@@ -461,7 +455,8 @@ QVector<sdk::MapObject> DoraemonRouteModel::objects() const {
             const int cy = p.y * kPanelHeight + local / kPanelWidth;
             sdk::MapObject o;
             o.id = QStringLiteral("cell:%1").arg(cy * width + cx);
-            o.label = tr("Screen %1 · %2, %3").arg(nes::hex(p.selector)).arg(local % kPanelWidth).arg(local / kPanelWidth);
+            o.label =
+                tr("Screen %1 · %2, %3").arg(nes::hex(p.selector)).arg(local % kPanelWidth).arg(local / kPanelWidth);
             o.cells = QRect(cx, cy, 1, 1);
             o.movable = false;
             o.outlined = false;
@@ -510,7 +505,8 @@ bool DoraemonRouteModel::dragObject(const QString& id, QPoint topLeftCell) {
         const Located from = locate(cellOf(dragFrom_));
         const Located to = locate(topLeftCell);
         const int token = valueAt(from);
-        if (to.panel < 0 || to.raw < 0 || valueAt(to) >= kSpawnBase || (to.selector == from.selector && to.raw == from.raw)) {
+        if (to.panel < 0 || to.raw < 0 || valueAt(to) >= kSpawnBase ||
+            (to.selector == from.selector && to.raw == from.raw)) {
             stroke_ = previous;
             return false;
         }
@@ -532,7 +528,8 @@ void DoraemonRouteModel::endDrag() {
     if (!moved.isEmpty()) {
         object_ = QStringLiteral("spawn:%1").arg(index);
         QString error;
-        if (!commit(moved, tr("Move %1 on %2").arg(foeName(stateOf(moved.value({to.selector, to.raw})))).arg(title()), &error)) {
+        if (!commit(moved, tr("Move %1 on %2").arg(foeName(stateOf(moved.value({to.selector, to.raw})))).arg(title()),
+                    &error)) {
             session_->report(sdk::Severity::Error, QStringLiteral("levels"), error);
         }
         emit selectionChanged();
@@ -543,7 +540,8 @@ void DoraemonRouteModel::endDrag() {
 bool DoraemonRouteModel::removeObject(const QString& id, QString* error) {
     if (!objectLayer() || !id.startsWith(QLatin1String("spawn:"))) {
         if (error && id.startsWith(QLatin1String("secret:"))) {
-            *error = tr("The secret item table always holds seven screens: give this one another screen in the inspector.");
+            *error =
+                tr("The secret item table always holds seven screens: give this one another screen in the inspector.");
         }
         return false;
     }
@@ -552,7 +550,8 @@ bool DoraemonRouteModel::removeObject(const QString& id, QString* error) {
     if (at.raw < 0 || value < kSpawnBase || value >= kPadding) return false;
     if (object_ == id) object_.clear();
     emit selectionChanged();
-    return commit({{{at.selector, at.raw}, 0}}, tr("Remove %1 from %2").arg(foeName(stateOf(value))).arg(title()), error);
+    return commit({{{at.selector, at.raw}, 0}}, tr("Remove %1 from %2").arg(foeName(stateOf(value))).arg(title()),
+                  error);
 }
 
 sdk::Inspection DoraemonRouteModel::inspectObject() const {
@@ -568,7 +567,8 @@ sdk::Inspection DoraemonRouteModel::inspectObject() const {
         screen.label = tr("Screen");
         screen.type = sdk::Field::Type::Integer;
         screen.minimum = 0;
-        screen.maximum = std::max(0, int(session_->resource(kScreens).value(QStringLiteral("screens")).toArray().size()) - 1);
+        screen.maximum =
+            std::max(0, int(session_->resource(kScreens).value(QStringLiteral("screens")).toArray().size()) - 1);
         screen.value = selector;
         screen.hint = nes::hex(selector);
         screen.monospace = true;
@@ -577,10 +577,11 @@ sdk::Inspection DoraemonRouteModel::inspectObject() const {
         place.label = tr("Table slot");
         place.value = tr("%1 of 7").arg(slot + 1);
         inspection.fields = {screen, place};
-        inspection.note = tr("While Doraemon flies through one of these seven screens, enough hits drop an "
-                             "inventory item (it rises from X $78, Y $F0). The ROM picks neither the item "
-                             "nor a place, so the symbol only marks the screen. Set another screen number "
-                             "to move this secret there.");
+        inspection.note =
+            tr("While Doraemon flies through one of these seven screens, enough hits drop an "
+               "inventory item (it rises from X $78, Y $F0). The ROM picks neither the item "
+               "nor a place, so the symbol only marks the screen. Set another screen number "
+               "to move this secret there.");
         return inspection;
     }
     inspection.engineTag = QStringLiteral("doraemon.world2-screens.v1");
@@ -589,10 +590,11 @@ sdk::Inspection DoraemonRouteModel::inspectObject() const {
     if (at.panel < 0 || value < kSpawnBase || value >= kPadding) {
         inspection.kicker = tr("Objects");
         inspection.title = title();
-        inspection.note = tr("Enemy spawns sit in the screen streams: each starts its enemy when the screen "
-                             "scrolls in. Drag one onto another cell, change its enemy here, add one from "
-                             "the sheet or delete one. Translucent ? symbols mark the screens that can drop "
-                             "a secret item.");
+        inspection.note =
+            tr("Enemy spawns sit in the screen streams: each starts its enemy when the screen "
+               "scrolls in. Drag one onto another cell, change its enemy here, add one from "
+               "the sheet or delete one. Translucent ? symbols mark the screens that can drop "
+               "a secret item.");
         return inspection;
     }
     const int state = stateOf(value);
@@ -608,16 +610,16 @@ sdk::Inspection DoraemonRouteModel::inspectObject() const {
     sdk::Field screen;
     screen.key = QStringLiteral("screen");
     screen.label = tr("Screen");
-    screen.value = tr("%1 · cell %2, %3")
-                       .arg(nes::hex(at.selector))
-                       .arg(cell.x() % kPanelWidth)
-                       .arg(cell.y() % kPanelHeight);
+    screen.value =
+        tr("%1 · cell %2, %3").arg(nes::hex(at.selector)).arg(cell.x() % kPanelWidth).arg(cell.y() % kPanelHeight);
     inspection.fields = {enemy, screen};
-    const int shared = session_->world2View().value(QStringLiteral("aliases")).toArray().at(at.selector).toArray().size();
-    inspection.note = tr("Token %1 in the screen's stream; the enemy appears when the screen scrolls in.%2%3")
-                          .arg(nes::hex(value))
-                          .arg(invisibleState(state) ? tr(" The background draws this enemy, so it shows as a marker.") : QString())
-                          .arg(shared > 1 ? tr(" %1 screens share this stream and change together.").arg(shared) : QString());
+    const int shared =
+        session_->world2View().value(QStringLiteral("aliases")).toArray().at(at.selector).toArray().size();
+    inspection.note =
+        tr("Token %1 in the screen's stream; the enemy appears when the screen scrolls in.%2%3")
+            .arg(nes::hex(value))
+            .arg(invisibleState(state) ? tr(" The background draws this enemy, so it shows as a marker.") : QString())
+            .arg(shared > 1 ? tr(" %1 screens share this stream and change together.").arg(shared) : QString());
     return inspection;
 }
 
@@ -720,11 +722,12 @@ sdk::Inspection DoraemonRouteModel::inspect() const {
     if (at.panel < 0) {
         inspection.kicker = tr("World 2 route");
         inspection.title = title();
-        inspection.note = tr("The screens of this part of the stage in the order the stage bytecode scrolls "
-                             "them, each in its background preset. Paint metatiles onto background cells; "
-                             "framed enemies are spawns, edited in the Objects layer. Screens that share one "
-                             "stream change together, "
-                             "and the build repacks the streams into their region.");
+        inspection.note =
+            tr("The screens of this part of the stage in the order the stage bytecode scrolls "
+               "them, each in its background preset. Paint metatiles onto background cells; "
+               "framed enemies are spawns, edited in the Objects layer. Screens that share one "
+               "stream change together, "
+               "and the build repacks the streams into their region.");
         return inspection;
     }
     const Panel& panel = panels_.at(at.panel);
@@ -752,7 +755,8 @@ sdk::Inspection DoraemonRouteModel::inspect() const {
                        .arg(QLatin1String(kDirections[panel.direction & 3]))
                        .arg(panel.palette);
     inspection.fields = {field, screen};
-    const int shared = session_->world2View().value(QStringLiteral("aliases")).toArray().at(at.selector).toArray().size();
+    const int shared =
+        session_->world2View().value(QStringLiteral("aliases")).toArray().at(at.selector).toArray().size();
     inspection.note = isCellEditable(cell)
                           ? (shared > 1 ? tr("%1 screens share this stream and change together.").arg(shared)
                                         : tr("A background cell of this screen."))

@@ -41,16 +41,26 @@ inline bool isInterfaceLanguage(const QString& code) {
 // Portuguese gets Brazilian Portuguese, any Chinese simplified Chinese.
 inline QString systemInterfaceLanguage() {
     switch (QLocale::system().language()) {
-    case QLocale::Portuguese: return QStringLiteral("pt_BR");
-    case QLocale::Spanish: return QStringLiteral("es");
-    case QLocale::Chinese: return QStringLiteral("zh_CN");
-    case QLocale::Japanese: return QStringLiteral("ja");
-    case QLocale::French: return QStringLiteral("fr");
-    case QLocale::German: return QStringLiteral("de");
-    case QLocale::Italian: return QStringLiteral("it");
-    case QLocale::Polish: return QStringLiteral("pl");
-    case QLocale::Russian: return QStringLiteral("ru");
-    default: return QStringLiteral("en");
+        case QLocale::Portuguese:
+            return QStringLiteral("pt_BR");
+        case QLocale::Spanish:
+            return QStringLiteral("es");
+        case QLocale::Chinese:
+            return QStringLiteral("zh_CN");
+        case QLocale::Japanese:
+            return QStringLiteral("ja");
+        case QLocale::French:
+            return QStringLiteral("fr");
+        case QLocale::German:
+            return QStringLiteral("de");
+        case QLocale::Italian:
+            return QStringLiteral("it");
+        case QLocale::Polish:
+            return QStringLiteral("pl");
+        case QLocale::Russian:
+            return QStringLiteral("ru");
+        default:
+            return QStringLiteral("en");
     }
 }
 

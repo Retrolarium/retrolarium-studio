@@ -13,9 +13,9 @@ namespace rl::smb {
 
 // One area of a levels resource, as the game stores it.
 struct SmbArea {
-    QString name;               // "ground_1", "castle_3"
-    int areaCapacity = 0;       // bytes the ROM leaves for the object stream
-    int enemyCapacity = 0;      // and for the enemy stream
+    QString name;           // "ground_1", "castle_3"
+    int areaCapacity = 0;   // bytes the ROM leaves for the object stream
+    int enemyCapacity = 0;  // and for the enemy stream
     // timer, entrance, foreground or colour, area style, background, terrain
     QVector<int> header = QVector<int>(6, 0);
     QVector<SmbAreaObject> objects;
@@ -38,7 +38,7 @@ struct SmbArea {
 // One of the player physics tables of the world resource: bytes indexed by
 // the game's state (jump speed class, swimming, climbing).
 struct SmbPhysicsTable {
-    QString name;               // "jump_gravity"
+    QString name;  // "jump_gravity"
     bool isSigned = false;
     QVector<int> values;
 };
@@ -56,7 +56,7 @@ struct SmbLevelPool {
 
 // One route step of a world: the area the course plays.
 struct SmbRoute {
-    int areaType = 0;           // index into area types: water, ground, underground, castle
+    int areaType = 0;  // index into area types: water, ground, underground, castle
     int areaIndex = 0;
     bool alternate = false;
 };
@@ -70,8 +70,8 @@ public:
     void save(const QString& path) const;                  // throws SmbError
 
     const QJsonObject& root() const { return root_; }
-    QString game() const;       // "smb1"
-    QString revision() const;   // "ju"
+    QString game() const;      // "smb1"
+    QString revision() const;  // "ju"
 
     // Resources by id, and the ids carrying a codec ("smb.levels.v1").
     QStringList resourceIds(const QString& codec) const;
@@ -82,7 +82,7 @@ public:
     QStringList areaNames(const QString& levels) const;
     SmbArea area(const QString& levels, const QString& name) const;
     void setArea(const QString& levels, const SmbArea& area);
-    QString rendering(const QString& levels) const;   // "smb1", "ann", "smb2"
+    QString rendering(const QString& levels) const;  // "smb1", "ann", "smb2"
     // Whether the kit packs all areas into shared ranges, and the bytes they
     // take as it packs them, with `replacement` in place of its area.
     bool levelsPooled(const QString& levels) const;
@@ -121,7 +121,7 @@ public:
     // PPU palettes.
     QStringList packetNames(const QString& palettes) const;
     QVector<int> packetValues(const QString& palettes, const QString& name) const;
-    int packetAddress(const QString& palettes, const QString& name) const;   // PPU address, $3F00 up
+    int packetAddress(const QString& palettes, const QString& name) const;  // PPU address, $3F00 up
     // The 32 colours the PPU holds for a palette key: "ground", or a base
     // packet with the packets the game writes over it, "ground+day_snow".
     QVector<int> paletteFor(const QString& palettes, const QString& key) const;

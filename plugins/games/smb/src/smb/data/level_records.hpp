@@ -40,10 +40,9 @@ struct SmbEnemyRecord final {
     int destinationPage = -1;
 
     [[nodiscard]] bool operator==(const SmbEnemyRecord& other) const noexcept {
-        return kind == other.kind && column == other.column && row == other.row &&
-               pageAdvance == other.pageAdvance && hardMode == other.hardMode &&
-               objectOrPage == other.objectOrPage && destinationWorld == other.destinationWorld &&
-               destinationPage == other.destinationPage;
+        return kind == other.kind && column == other.column && row == other.row && pageAdvance == other.pageAdvance &&
+               hardMode == other.hardMode && objectOrPage == other.objectOrPage &&
+               destinationWorld == other.destinationWorld && destinationPage == other.destinationPage;
     }
     [[nodiscard]] bool operator!=(const SmbEnemyRecord& other) const noexcept { return !(*this == other); }
 };

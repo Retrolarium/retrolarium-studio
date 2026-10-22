@@ -52,8 +52,7 @@ using ui::Label;
 namespace {
 
 void repaintOnThemeChange(QWidget* widget) {
-    QObject::connect(&theme::Theme::instance(), &theme::Theme::changed, widget,
-                     [widget] { widget->update(); });
+    QObject::connect(&theme::Theme::instance(), &theme::Theme::changed, widget, [widget] { widget->update(); });
 }
 
 QFrame* surface(const char* name, QWidget* parent = nullptr) {
@@ -63,8 +62,7 @@ QFrame* surface(const char* name, QWidget* parent = nullptr) {
     return frame;
 }
 
-QToolButton* iconButton(const QString& iconName, const QString& toolTip, int size = 30,
-                        int glyph = 17) {
+QToolButton* iconButton(const QString& iconName, const QString& toolTip, int size = 30, int glyph = 17) {
     auto* button = new QToolButton;
     button->setIcon(theme::icon(iconName));
     button->setIconSize(QSize(glyph, glyph));
@@ -109,11 +107,21 @@ protected:
     void paintEvent(QPaintEvent*) override {
         const theme::Tokens& t = theme::current();
         const std::pair<const char*, QColor> entries[] = {
-            {"bg", t.bg},           {"chrome", t.chrome},       {"panel", t.panel},
-            {"field", t.field},     {"canvas", t.canvas},       {"text", t.text},
-            {"muted", t.muted},     {"faint", t.faint},         {"line", t.line},
-            {"lineStrong", t.lineStrong}, {"accent", t.accent}, {"accentInk", t.accentInk},
-            {"accentSoft", t.accentSoft}, {"hover", t.hover},   {"onAccent", t.onAccent},
+            {"bg", t.bg},
+            {"chrome", t.chrome},
+            {"panel", t.panel},
+            {"field", t.field},
+            {"canvas", t.canvas},
+            {"text", t.text},
+            {"muted", t.muted},
+            {"faint", t.faint},
+            {"line", t.line},
+            {"lineStrong", t.lineStrong},
+            {"accent", t.accent},
+            {"accentInk", t.accentInk},
+            {"accentSoft", t.accentSoft},
+            {"hover", t.hover},
+            {"onAccent", t.onAccent},
             {"mark", t.mark},
         };
         QPainter painter(this);
@@ -135,13 +143,10 @@ protected:
             painter.setFont(theme::font(theme::TextRole::Mono, 11.0));
             painter.setPen(t.muted);
             const QColor c = entry.second;
-            const QString value = c.alpha() == 255
-                                      ? c.name().toUpper()
-                                      : QStringLiteral("%1 · %2%")
-                                            .arg(c.name().toUpper())
-                                            .arg(qRound(c.alphaF() * 100));
-            painter.drawText(QRect(swatch.right() + 120, swatch.top(), cellWidth - 170, 22),
-                             Qt::AlignVCenter, value);
+            const QString value =
+                c.alpha() == 255 ? c.name().toUpper()
+                                 : QStringLiteral("%1 · %2%").arg(c.name().toUpper()).arg(qRound(c.alphaF() * 100));
+            painter.drawText(QRect(swatch.right() + 120, swatch.top(), cellWidth - 170, 22), Qt::AlignVCenter, value);
             ++i;
         }
     }
@@ -157,11 +162,9 @@ QWidget* typographySample() {
     layout->addWidget(new Label(QStringLiteral("Tileset · Metatiles"), Label::Role::PanelTitle));
     layout->addWidget(new Label(QStringLiteral("Area object"), Label::Role::Caps));
     layout->addWidget(new Label(QStringLiteral("Where it's used"), Label::Role::CapsMuted));
-    layout->addWidget(new Label(
-        QStringLiteral("Drag on the map to move. Drag an edge to resize."), Label::Role::Body));
+    layout->addWidget(new Label(QStringLiteral("Drag on the map to move. Drag an edge to resize."), Label::Role::Body));
     layout->addWidget(new Label(QStringLiteral("Round 07 · layout 1120 / 1120 B"), Label::Role::Small));
-    layout->addWidget(new Label(QStringLiteral("AreaData_1_1 · $9C8E · 2 bytes: pos + type"),
-                                Label::Role::Mono));
+    layout->addWidget(new Label(QStringLiteral("AreaData_1_1 · $9C8E · 2 bytes: pos + type"), Label::Role::Mono));
     layout->addWidget(new Label(QStringLiteral("smb1.disasm.v2"), Label::Role::MonoSmall));
     auto* fonts = new Label(theme::fontsLoaded() ? QStringLiteral("Bundled fonts loaded")
                                                  : QStringLiteral("Fonts missing: using fallbacks"),
@@ -286,19 +289,17 @@ QWidget* editorToolbarSample() {
     row->addWidget(sep2, 0, Qt::AlignVCenter);
     row->addWidget(new Label(QStringLiteral("View"), Label::Role::Caps));
     auto* palette = new ui::ViewChip(QStringLiteral("Palette"), QStringLiteral("Overworld"));
-    palette->setChoices({QStringLiteral("Overworld"), QStringLiteral("Underground"),
-                         QStringLiteral("Castle"), QStringLiteral("Underwater")});
+    palette->setChoices({QStringLiteral("Overworld"), QStringLiteral("Underground"), QStringLiteral("Castle"),
+                         QStringLiteral("Underwater")});
     row->addWidget(palette);
     auto* grid = new ui::ViewChip(QStringLiteral("Grid"), QStringLiteral("On"));
     grid->setCheckable(true);
     grid->setChecked(true);
-    QObject::connect(grid, &QAbstractButton::toggled, grid, [grid](bool on) {
-        grid->setValue(on ? QStringLiteral("On") : QStringLiteral("Off"));
-    });
+    QObject::connect(grid, &QAbstractButton::toggled, grid,
+                     [grid](bool on) { grid->setValue(on ? QStringLiteral("On") : QStringLiteral("Off")); });
     row->addWidget(grid);
     auto* zoom = new ui::ViewChip(QStringLiteral("Zoom"), QStringLiteral("2×"));
-    zoom->setChoices({QStringLiteral("1×"), QStringLiteral("2×"), QStringLiteral("3×"),
-                      QStringLiteral("4×")});
+    zoom->setChoices({QStringLiteral("1×"), QStringLiteral("2×"), QStringLiteral("3×"), QStringLiteral("4×")});
     row->addWidget(zoom);
     row->addStretch(1);
     layout->addLayout(row);
@@ -378,9 +379,8 @@ QWidget* inspectorSample() {
     headLayout->addWidget(new Label(QStringLiteral("Area object"), Label::Role::Caps));
     headLayout->addWidget(new Label(QStringLiteral("Player / start"), Label::Role::Title));
     auto* grid = new ui::PropertyGrid;
-    grid->addChoice(QStringLiteral("Type"),
-                    {QStringLiteral("Player / start"), QStringLiteral("? block"),
-                     QStringLiteral("Brick row"), QStringLiteral("Pipe")});
+    grid->addChoice(QStringLiteral("Type"), {QStringLiteral("Player / start"), QStringLiteral("? block"),
+                                             QStringLiteral("Brick row"), QStringLiteral("Pipe")});
     grid->addField(QStringLiteral("Position"), QStringLiteral("3, 12"), QStringLiteral("metatile"));
     grid->addField(QStringLiteral("Size"), QStringLiteral("1 × 1"));
     auto* page = grid->addField(QStringLiteral("Page"), QStringLiteral("0"));
@@ -388,8 +388,7 @@ QWidget* inspectorSample() {
     auto* locked = grid->addField(QStringLiteral("Record"), QStringLiteral("AreaData_1_1"));
     locked->setReadOnly(true);
     headLayout->addWidget(grid);
-    auto* note = new Label(QStringLiteral("Drag on the map to move. Drag an edge to resize."),
-                           Label::Role::Small);
+    auto* note = new Label(QStringLiteral("Drag on the map to move. Drag an edge to resize."), Label::Role::Small);
     note->setWordWrap(true);
     headLayout->addWidget(note);
     layout->addWidget(head);
@@ -406,8 +405,8 @@ QWidget* inspectorSample() {
     libLayout->addLayout(libHead);
     auto* items = new QGridLayout;
     items->setSpacing(6);
-    const char* names[] = {"Player / start", "? block", "Brick row", "Pipe",
-                           "Walker",        "Shell walker", "Page jump", "Warp"};
+    const char* names[] = {"Player / start", "? block",      "Brick row", "Pipe",
+                           "Walker",         "Shell walker", "Page jump", "Warp"};
     for (int i = 0; i < 8; ++i) {
         items->addWidget(new LibraryItem(QString::fromUtf8(names[i])), i / 2, i % 2);
     }
@@ -453,8 +452,7 @@ QWidget* documentListSample() {
     filter->setPlaceholderText(QStringLiteral("Filter"));
     filter->setFont(theme::font(theme::TextRole::Body, 12.0));
     filter->setFixedHeight(26);
-    filter->addAction(theme::icon(QStringLiteral("search"), theme::IconTone::Faint),
-                      QLineEdit::LeadingPosition);
+    filter->addAction(theme::icon(QStringLiteral("search"), theme::IconTone::Faint), QLineEdit::LeadingPosition);
     filter->setClearButtonEnabled(true);
     filterLayout->addWidget(filter);
     layout->addWidget(filterBox);
@@ -485,14 +483,12 @@ QWidget* railSample() {
     layout->setContentsMargins(0, 6, 0, 6);
     layout->setSpacing(2);
     const std::pair<const char*, const char*> kinds[] = {
-        {"levels", "Levels"},   {"world", "World"},     {"tileset", "Tileset"},
-        {"palettes", "Palettes"}, {"sprites", "Sprites"}, {"text", "Text"},
-        {"sound", "Sound"},     {"playtest", "Playtest"},
+        {"levels", "Levels"},   {"world", "World"}, {"tileset", "Tileset"}, {"palettes", "Palettes"},
+        {"sprites", "Sprites"}, {"text", "Text"},   {"sound", "Sound"},     {"playtest", "Playtest"},
     };
     bool first = true;
     for (const auto& kind : kinds) {
-        auto* button = new ui::RailButton(QString::fromUtf8(kind.first),
-                                          QString::fromUtf8(kind.second));
+        auto* button = new ui::RailButton(QString::fromUtf8(kind.first), QString::fromUtf8(kind.second));
         button->setChecked(first);
         first = false;
         layout->addWidget(button);
@@ -505,8 +501,7 @@ QWidget* railSample() {
 
 QWidget* tableSample() {
     auto* table = new QTableWidget(6, 3);
-    table->setHorizontalHeaderLabels(
-        {QStringLiteral("Name"), QStringLiteral("Game text"), QStringLiteral("Length")});
+    table->setHorizontalHeaderLabels({QStringLiteral("Name"), QStringLiteral("Game text"), QStringLiteral("Length")});
     QFont headerFont = theme::font(theme::TextRole::Caps, 12.0);
     table->horizontalHeader()->setFont(headerFont);
     table->horizontalHeader()->setDefaultAlignment(Qt::AlignLeft | Qt::AlignVCenter);
@@ -557,8 +552,7 @@ QWidget* tableSample() {
         bar->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
         bar->setBudget(std::get<2>(r), std::get<3>(r));
         cellLayout->addWidget(bar, 1);
-        auto* count = new Label(QStringLiteral("%1 / %2").arg(std::get<2>(r)).arg(std::get<3>(r)),
-                                Label::Role::Mono);
+        auto* count = new Label(QStringLiteral("%1 / %2").arg(std::get<2>(r)).arg(std::get<3>(r)), Label::Role::Mono);
         cellLayout->addWidget(count);
         table->setCellWidget(row, 2, cell);
         ++row;
@@ -596,8 +590,7 @@ private:
     bool filled_;
 };
 
-QWidget* messageRow(bool warning, const QString& source, const QString& message,
-                    const QString& location) {
+QWidget* messageRow(bool warning, const QString& source, const QString& message, const QString& location) {
     auto* row = new QWidget;
     row->setFixedHeight(26);
     auto* layout = new QHBoxLayout(row);
@@ -609,8 +602,7 @@ QWidget* messageRow(bool warning, const QString& source, const QString& message,
     sevLayout->setContentsMargins(0, 0, 0, 0);
     sevLayout->setSpacing(7);
     sevLayout->addWidget(new SeverityMark(warning));
-    auto* sev = new Label(warning ? QStringLiteral("Warning") : QStringLiteral("Info"),
-                          Label::Role::Row);
+    auto* sev = new Label(warning ? QStringLiteral("Warning") : QStringLiteral("Info"), Label::Role::Row);
     sev->setTone(QStringLiteral("muted"));
     sevLayout->addWidget(sev);
     sevLayout->addStretch(1);
@@ -669,8 +661,7 @@ QWidget* bottomPanelSample() {
     };
     for (const auto& r : rows) {
         msgLayout->addWidget(messageRow(std::get<0>(r), QString::fromUtf8(std::get<1>(r)),
-                                        QString::fromUtf8(std::get<2>(r)),
-                                        QString::fromUtf8(std::get<3>(r))));
+                                        QString::fromUtf8(std::get<2>(r)), QString::fromUtf8(std::get<3>(r))));
         msgLayout->addWidget(new ui::Divider(Qt::Horizontal));
     }
     stackLayout->addWidget(messages);
@@ -680,11 +671,11 @@ QWidget* bottomPanelSample() {
     log->setReadOnly(true);
     QFont logFont = theme::font(theme::TextRole::Mono, 11.5);
     log->setFont(logFont);
-    log->setPlainText(QStringLiteral(
-        "14:02:11  rltool studio build smb1.rlj\n"
-        "14:02:12  assembled 40976 bytes, 0 warnings\n"
-        "14:02:12  checksum fixed, iNES header ok\n"
-        "14:02:12  verified against source image"));
+    log->setPlainText(
+        QStringLiteral("14:02:11  rltool studio build smb1.rlj\n"
+                       "14:02:12  assembled 40976 bytes, 0 warnings\n"
+                       "14:02:12  checksum fixed, iNES header ok\n"
+                       "14:02:12  verified against source image"));
     log->setVisible(false);
     stackLayout->addWidget(log);
     layout->addWidget(stack);
@@ -697,8 +688,7 @@ QWidget* bottomPanelSample() {
     QObject::connect(chevron, &QToolButton::clicked, panel, [panel, stack, chevron] {
         const bool open = !stack->isVisible();
         stack->setVisible(open);
-        chevron->setIcon(theme::icon(open ? QStringLiteral("chevron-down")
-                                          : QStringLiteral("chevron-right"),
+        chevron->setIcon(theme::icon(open ? QStringLiteral("chevron-down") : QStringLiteral("chevron-right"),
                                      theme::IconTone::Faint));
         panel->setFixedHeight(open ? 28 + 2 + 112 : 28 + 2);
     });
@@ -743,12 +733,10 @@ protected:
         painter.fillRect(block, QColor(0xfc, 0x98, 0x38));
         painter.fillRect(block.adjusted(10, 8, -10, -8), QColor(0x88, 0x14, 0x00));
         for (int x = 0; x <= cols; ++x) {
-            painter.fillRect(QRect(map.left() + x * cell, map.top(), 1, map.height()),
-                             QColor(0, 0, 0, 41));
+            painter.fillRect(QRect(map.left() + x * cell, map.top(), 1, map.height()), QColor(0, 0, 0, 41));
         }
         for (int y = 0; y <= rows; ++y) {
-            painter.fillRect(QRect(map.left(), map.top() + y * cell, map.width(), 1),
-                             QColor(0, 0, 0, 41));
+            painter.fillRect(QRect(map.left(), map.top() + y * cell, map.width(), 1), QColor(0, 0, 0, 41));
         }
 
         // Page separator and labels.
@@ -806,8 +794,8 @@ protected:
         painter.fillRect(rect(), t.canvas);
         const QRect area(32, 22, 256, 256);
         paint::checkerboard(painter, area, 16, theme::canvas::kCheckerA, theme::canvas::kCheckerB);
-        const QColor quadrant[4] = {QColor(0xfc, 0x98, 0x38), QColor(0xc8, 0x4c, 0x0c),
-                                    QColor(0xc8, 0x4c, 0x0c), QColor(0xfc, 0x98, 0x38)};
+        const QColor quadrant[4] = {QColor(0xfc, 0x98, 0x38), QColor(0xc8, 0x4c, 0x0c), QColor(0xc8, 0x4c, 0x0c),
+                                    QColor(0xfc, 0x98, 0x38)};
         for (int i = 0; i < 4; ++i) {
             const QRect slot(area.left() + (i % 2) * 128, area.top() + (i / 2) * 128, 128, 128);
             painter.fillRect(slot.adjusted(8, 8, -8, -8), quadrant[i]);
@@ -818,8 +806,7 @@ protected:
             painter.setPen(Qt::white);
             painter.drawText(labelRect, Qt::AlignCenter, label);
         }
-        paint::hairlineRect(painter, QRect(area.left() + 128, area.top(), 128, 128),
-                            theme::canvas::kSelection, 2.0);
+        paint::hairlineRect(painter, QRect(area.left() + 128, area.top(), 128, 128), theme::canvas::kSelection, 2.0);
         paint::cornerMarks(painter, area, 13, 8, theme::canvas::kMark, paint::kDiagonal);
     }
 };
@@ -842,8 +829,7 @@ protected:
         paint::cornerMarks(painter, screen, 13, 7, theme::canvas::kMark, paint::kDiagonal);
         painter.setFont(theme::font(theme::TextRole::Mono, 11.5));
         painter.setPen(QColor(255, 255, 255, 140));
-        painter.drawText(screen, Qt::AlignCenter,
-                         QStringLiteral("embedded emulator\n256 × 240 · aspect-fit"));
+        painter.drawText(screen, Qt::AlignCenter, QStringLiteral("embedded emulator\n256 × 240 · aspect-fit"));
     }
 };
 
@@ -870,8 +856,7 @@ protected:
             const int y = 4 + r * (size + 5);
             painter.setFont(theme::font(theme::TextRole::Mono, 11.0));
             painter.setPen(t.muted);
-            painter.drawText(QRect(0, y, 60, size), Qt::AlignVCenter,
-                             QString::fromUtf8(rows[r].first));
+            painter.drawText(QRect(0, y, 60, size), Qt::AlignVCenter, QString::fromUtf8(rows[r].first));
             for (int i = 0; i < 4; ++i) {
                 const QRect swatch(64 + i * (size + 4), y, size, size);
                 painter.fillRect(swatch, QColor(rows[r].second[i]));
@@ -911,8 +896,8 @@ QWidget* controlsSample() {
     auto* combo = new QComboBox;
     combo->setFont(body);
     combo->setFixedHeight(26);
-    combo->addItems({QStringLiteral("Duty 50% · env 3"), QStringLiteral("Duty 25% · env 1"),
-                     QStringLiteral("Triangle")});
+    combo->addItems(
+        {QStringLiteral("Duty 50% · env 3"), QStringLiteral("Duty 25% · env 1"), QStringLiteral("Triangle")});
     layout->addWidget(combo, 1, 0);
     auto* hinted = new ui::PropertyField(QStringLiteral("5"), QStringLiteral("0–7"));
     layout->addWidget(hinted, 1, 1);
@@ -954,16 +939,13 @@ ThemeGallery::ThemeGallery(QWidget* parent) : StudioWindow(parent) {
     titleBar()->setTitle(QStringLiteral("Theme gallery"), QStringLiteral("Retrolarium"));
     setMinimumSize(1280, 780);
     buildMenus();
-    auto* themeButton = iconButton(theme::Theme::instance().mode() == theme::Mode::Dark
-                                       ? QStringLiteral("sun")
-                                       : QStringLiteral("moon"),
-                                   QStringLiteral("Toggle theme (Ctrl+Shift+L)"), 34, 16);
+    auto* themeButton = iconButton(
+        theme::Theme::instance().mode() == theme::Mode::Dark ? QStringLiteral("sun") : QStringLiteral("moon"),
+        QStringLiteral("Toggle theme (Ctrl+Shift+L)"), 34, 16);
     connect(themeButton, &QToolButton::clicked, this, [] { theme::Theme::instance().toggle(); });
-    connect(&theme::Theme::instance(), &theme::Theme::changed, themeButton,
-            [themeButton](theme::Mode mode) {
-                themeButton->setIcon(theme::icon(
-                    mode == theme::Mode::Dark ? QStringLiteral("sun") : QStringLiteral("moon")));
-            });
+    connect(&theme::Theme::instance(), &theme::Theme::changed, themeButton, [themeButton](theme::Mode mode) {
+        themeButton->setIcon(theme::icon(mode == theme::Mode::Dark ? QStringLiteral("sun") : QStringLiteral("moon")));
+    });
     titleBar()->addTrailingWidget(themeButton);
 
     auto* root = surface("chrome");
@@ -990,14 +972,10 @@ void ThemeGallery::buildMenus() {
             group->addAction(dark);
             group->addAction(light);
             (theme::Theme::instance().mode() == theme::Mode::Dark ? dark : light)->setChecked(true);
-            connect(dark, &QAction::triggered, this,
-                    [] { theme::Theme::instance().setMode(theme::Mode::Dark); });
-            connect(light, &QAction::triggered, this,
-                    [] { theme::Theme::instance().setMode(theme::Mode::Light); });
+            connect(dark, &QAction::triggered, this, [] { theme::Theme::instance().setMode(theme::Mode::Dark); });
+            connect(light, &QAction::triggered, this, [] { theme::Theme::instance().setMode(theme::Mode::Light); });
             connect(&theme::Theme::instance(), &theme::Theme::changed, menu,
-                    [dark, light](theme::Mode mode) {
-                        (mode == theme::Mode::Dark ? dark : light)->setChecked(true);
-                    });
+                    [dark, light](theme::Mode mode) { (mode == theme::Mode::Dark ? dark : light)->setChecked(true); });
             menu->addSeparator();
             QAction* toggle = menu->addAction(QStringLiteral("Toggle theme"));
             toggle->setShortcut(QKeySequence(QStringLiteral("Ctrl+Shift+L")));
@@ -1030,11 +1008,11 @@ QWidget* ThemeGallery::buildToolbar() {
     projectLayout->addWidget(new Label(QStringLiteral("Super Mario Bros."), Label::Role::Project));
     projectLayout->addWidget(new ui::Badge(QStringLiteral("JU"), ui::Badge::Kind::Tag));
     auto* chevron = new QLabel;
-    chevron->setPixmap(theme::iconPixmap(QStringLiteral("chevron-down"), 10, theme::current().faint,
-                                         devicePixelRatioF()));
+    chevron->setPixmap(
+        theme::iconPixmap(QStringLiteral("chevron-down"), 10, theme::current().faint, devicePixelRatioF()));
     connect(&theme::Theme::instance(), &theme::Theme::changed, chevron, [chevron] {
-        chevron->setPixmap(theme::iconPixmap(QStringLiteral("chevron-down"), 10,
-                                             theme::current().faint, chevron->devicePixelRatioF()));
+        chevron->setPixmap(theme::iconPixmap(QStringLiteral("chevron-down"), 10, theme::current().faint,
+                                             chevron->devicePixelRatioF()));
     });
     projectLayout->addWidget(chevron);
     project->setMinimumWidth(projectLayout->sizeHint().width());
@@ -1086,9 +1064,9 @@ QWidget* ThemeGallery::buildPage() {
     layout->setHorizontalSpacing(36);
     layout->setVerticalSpacing(32);
 
-    layout->addWidget(section(QStringLiteral("Color tokens"), new TokenSwatches,
-                              QStringLiteral("semantic set of the active theme")),
-                      0, 0);
+    layout->addWidget(
+        section(QStringLiteral("Color tokens"), new TokenSwatches, QStringLiteral("semantic set of the active theme")),
+        0, 0);
     layout->addWidget(section(QStringLiteral("Typography"), typographySample(),
                               QStringLiteral("Barlow · Barlow Condensed · IBM Plex Mono")),
                       0, 1);

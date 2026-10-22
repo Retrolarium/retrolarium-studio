@@ -15,7 +15,7 @@ namespace screens {
 
 namespace {
 
-constexpr int kBlank = 0x2d;    // the code's fill around the screens
+constexpr int kBlank = 0x2d;  // the code's fill around the screens
 constexpr int kSpace = 0x20;
 
 }  // namespace
@@ -80,7 +80,8 @@ QVector<int> cells(const QJsonObject& collection, const QString& id, const QVect
     const QJsonArray rows = logo.value(QStringLiteral("tiles")).toArray();
     for (int r = 0; r < rows.size(); ++r) {
         const QJsonArray row = rows.at(r).toArray();
-        for (int c = 0; c < row.size(); ++c) put(base + r * 32 + c, row.at(c).toInt(), Source{QStringLiteral("title_logo"), r, c});
+        for (int c = 0; c < row.size(); ++c)
+            put(base + r * 32 + c, row.at(c).toInt(), Source{QStringLiteral("title_logo"), r, c});
     }
     const QJsonObject attributes = collection.value(QStringLiteral("title_attributes")).toObject();
     int address = attributes.value(QStringLiteral("ppu_address")).toInt();
@@ -136,9 +137,7 @@ PacmanScreenModel::PacmanScreenModel(PacmanSession* session, const QString& scre
     connect(session_, &sdk::Session::contentChanged, this, &sdk::EditorModel::contentChanged);
 }
 
-QJsonObject PacmanScreenModel::collection() const {
-    return stroke_ ? *stroke_ : session_->resource(ids::kScreens);
-}
+QJsonObject PacmanScreenModel::collection() const { return stroke_ ? *stroke_ : session_->resource(ids::kScreens); }
 
 QVector<sdk::Tool> PacmanScreenModel::tools() const {
     return {{QStringLiteral("select"), tr("Select a cell"), QStringLiteral("select")},
@@ -148,12 +147,11 @@ QVector<sdk::Tool> PacmanScreenModel::tools() const {
 
 QImage PacmanScreenModel::render() const {
     if (!stroke_) return screens::render(session_, screen_);
-    return session_->painter().nameTable(screens::cells(*stroke_, screen_, session_->attractAttributes()), screens::paletteTable(screen_));
+    return session_->painter().nameTable(screens::cells(*stroke_, screen_, session_->attractAttributes()),
+                                         screens::paletteTable(screen_));
 }
 
-QVector<sdk::CellBrush> PacmanScreenModel::brushes() const {
-    return {{tile_, nes::hex(tile_), QColor()}};
-}
+QVector<sdk::CellBrush> PacmanScreenModel::brushes() const { return {{tile_, nes::hex(tile_), QColor()}}; }
 
 void PacmanScreenModel::setCurrentBrush(int value) {
     tile_ = std::clamp(value, 0, 255);
@@ -161,9 +159,7 @@ void PacmanScreenModel::setCurrentBrush(int value) {
     emit selectionChanged();
 }
 
-QString PacmanScreenModel::currentLibraryItem() const {
-    return QStringLiteral("tile:%1").arg(tile_);
-}
+QString PacmanScreenModel::currentLibraryItem() const { return QStringLiteral("tile:%1").arg(tile_); }
 
 void PacmanScreenModel::setCurrentLibraryItem(const QString& id) {
     if (!id.startsWith(QLatin1String("tile:"))) return;
@@ -237,8 +233,9 @@ void PacmanScreenModel::endStroke() {
         return;
     }
     QString error;
-    session_->editBundle(tr("Paint the %1").arg(title().toLower()),
-                         [painted](nes::Bundle& b) { b.setResource(ids::kScreens, painted); }, &error);
+    session_->editBundle(
+        tr("Paint the %1").arg(title().toLower()), [painted](nes::Bundle& b) { b.setResource(ids::kScreens, painted); },
+        &error);
 }
 
 QVector<sdk::MapObject> PacmanScreenModel::objects() const {
@@ -341,9 +338,7 @@ QString PacmanScreenModel::statusText() const {
 
 namespace {
 
-QJsonArray fields(const QJsonObject& collection) {
-    return collection.value(QStringLiteral("text_fields")).toArray();
-}
+QJsonArray fields(const QJsonObject& collection) { return collection.value(QStringLiteral("text_fields")).toArray(); }
 
 QJsonValue valueAt(const QJsonValue& root, const QJsonArray& path, int depth = 0) {
     if (depth >= path.size()) return root;
@@ -405,9 +400,7 @@ QVector<sdk::TableColumn> PacmanTextModel::columns() const {
     return {where, text, length};
 }
 
-int PacmanTextModel::rowCount() const {
-    return fields(session_->resource(ids::kScreens)).size();
-}
+int PacmanTextModel::rowCount() const { return fields(session_->resource(ids::kScreens)).size(); }
 
 QString PacmanTextModel::text(const QJsonObject& collection, int row) const {
     const QJsonObject field = fields(collection).at(row).toObject();
@@ -419,8 +412,9 @@ QString PacmanTextModel::text(const QJsonObject& collection, int row) const {
     for (int i = start; i < start + width && i < bytes.size(); ++i) {
         const int code = bytes.at(i).toInt();
         const int at = e.codes.indexOf(code);
-        result += at >= 0 && at < e.characters.size() ? QString(e.characters.at(at))
-                                                      : QStringLiteral("{%1}").arg(code, 2, 16, QLatin1Char('0')).toUpper();
+        result += at >= 0 && at < e.characters.size()
+                      ? QString(e.characters.at(at))
+                      : QStringLiteral("{%1}").arg(code, 2, 16, QLatin1Char('0')).toUpper();
     }
     // Trailing padding is the field's free room.
     const int padding = e.codes.indexOf(e.padding);
@@ -446,8 +440,7 @@ int PacmanTextModel::maxLength(int row, int column) const {
 }
 
 bool PacmanTextModel::isRowDirty(int row) const {
-    return text(session_->resource(ids::kScreens), row) !=
-           text(session_->savedBundle().resource(ids::kScreens), row);
+    return text(session_->resource(ids::kScreens), row) != text(session_->savedBundle().resource(ids::kScreens), row);
 }
 
 void PacmanTextModel::setCurrentRow(int row) {
@@ -497,8 +490,9 @@ bool PacmanTextModel::setCell(int row, int column, const QString& value, QString
     QJsonArray bytes = valueAt(collection, path).toArray();
     for (int i = 0; i < width; ++i) bytes.replace(start + i, codes.at(i));
     const QJsonObject next = withValue(collection, path, bytes).toObject();
-    return session_->editBundle(tr("Edit %1").arg(field.value(QStringLiteral("label")).toString()),
-                                [next](nes::Bundle& b) { b.setResource(ids::kScreens, next); }, error);
+    return session_->editBundle(
+        tr("Edit %1").arg(field.value(QStringLiteral("label")).toString()),
+        [next](nes::Bundle& b) { b.setResource(ids::kScreens, next); }, error);
 }
 
 sdk::Inspection PacmanTextModel::inspect() const {
@@ -507,9 +501,10 @@ sdk::Inspection PacmanTextModel::inspect() const {
     inspection.kicker = tr("Text");
     inspection.title = cell(row_, 0);
     inspection.preview = cell(row_, 1);
-    inspection.note = tr("The text keeps its places on the screen; shorter text is padded with spaces. "
-                         "The game's letters are A-Z, 0-9, '.', ';' and the space; any other tile is "
-                         "written {HH}.");
+    inspection.note =
+        tr("The text keeps its places on the screen; shorter text is padded with spaces. "
+           "The game's letters are A-Z, 0-9, '.', ';' and the space; any other tile is "
+           "written {HH}.");
     return inspection;
 }
 

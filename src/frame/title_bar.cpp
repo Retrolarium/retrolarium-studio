@@ -43,8 +43,8 @@ protected:
         const QWidget* w = window();
         const bool active = w->isActiveWindow() || w->property("rlDrawActive").toBool();
         QPainter painter(this);
-        painter.drawPixmap(0, 0, theme::brand::mark(theme::Theme::instance().mode(), kMarkSize, devicePixelRatioF(),
-                                                    !active));
+        painter.drawPixmap(
+            0, 0, theme::brand::mark(theme::Theme::instance().mode(), kMarkSize, devicePixelRatioF(), !active));
     }
 };
 
@@ -91,9 +91,7 @@ void TitleBar::setTitle(const QString& primary, const QString& secondary) {
     update();
 }
 
-void TitleBar::addTrailingWidget(QWidget* widget) {
-    trailingLayout_->addWidget(widget);
-}
+void TitleBar::addTrailingWidget(QWidget* widget) { trailingLayout_->addWidget(widget); }
 
 void TitleBar::setWindowButtonsVisible(bool visible) {
     buttonsVisible_ = visible;
@@ -121,14 +119,14 @@ QRect TitleBar::buttonRect(Button button) const {
     }
     const int right = width();
     switch (button) {
-    case Button::Close:
-        return QRect(right - kButtonWidth, 0, kButtonWidth, height());
-    case Button::Maximize:
-        return QRect(right - kButtonWidth * 2, 0, kButtonWidth, height());
-    case Button::Minimize:
-        return QRect(right - kButtonWidth * 3, 0, kButtonWidth, height());
-    case Button::None:
-        break;
+        case Button::Close:
+            return QRect(right - kButtonWidth, 0, kButtonWidth, height());
+        case Button::Maximize:
+            return QRect(right - kButtonWidth * 2, 0, kButtonWidth, height());
+        case Button::Minimize:
+            return QRect(right - kButtonWidth * 3, 0, kButtonWidth, height());
+        case Button::None:
+            break;
     }
     return QRect();
 }
@@ -178,17 +176,17 @@ void TitleBar::setNativePressed(Button button) {
 
 void TitleBar::trigger(Button button) {
     switch (button) {
-    case Button::Minimize:
-        emit minimizeRequested();
-        break;
-    case Button::Maximize:
-        emit maximizeRequested();
-        break;
-    case Button::Close:
-        emit closeRequested();
-        break;
-    case Button::None:
-        break;
+        case Button::Minimize:
+            emit minimizeRequested();
+            break;
+        case Button::Maximize:
+            emit maximizeRequested();
+            break;
+        case Button::Close:
+            emit closeRequested();
+            break;
+        case Button::None:
+            break;
     }
 }
 
@@ -215,8 +213,7 @@ void TitleBar::mousePressEvent(QMouseEvent* event) {
 void TitleBar::mouseReleaseEvent(QMouseEvent* event) {
     const Button pressed = pressed_;
     setNativePressed(Button::None);
-    if (event->button() == Qt::LeftButton && pressed != Button::None &&
-        buttonAt(event->pos()) == pressed) {
+    if (event->button() == Qt::LeftButton && pressed != Button::None && buttonAt(event->pos()) == pressed) {
         trigger(pressed);
         event->accept();
         return;
@@ -267,34 +264,34 @@ void TitleBar::paintButton(QPainter& painter, Button button) const {
     const double half = side / 2.0;
     const QRectF box(c.x() - half + px / 2, c.y() - half + px / 2, side - px, side - px);
     switch (button) {
-    case Button::Minimize:
-        painter.drawLine(QPointF(box.left(), c.y() + px / 2), QPointF(box.right(), c.y() + px / 2));
-        break;
-    case Button::Maximize:
-        if (window_->isMaximized()) {
-            const double offset = std::round(2.0 * dpr) / dpr;
-            const QRectF front = box.adjusted(0, offset, -offset, 0);
-            painter.drawRect(front);
-            QPainterPath back;
-            back.moveTo(front.left() + offset, front.top());
-            back.lineTo(front.left() + offset, box.top());
-            back.lineTo(box.right(), box.top());
-            back.lineTo(box.right(), front.bottom() - offset);
-            back.lineTo(front.right(), front.bottom() - offset);
-            painter.drawPath(back);
-        } else {
-            painter.drawRect(box);
-        }
-        break;
-    case Button::Close:
-        painter.setRenderHint(QPainter::Antialiasing, true);
-        pen.setWidthF(std::max(1.0, dpr) / dpr);
-        painter.setPen(pen);
-        painter.drawLine(box.topLeft(), box.bottomRight());
-        painter.drawLine(box.topRight(), box.bottomLeft());
-        break;
-    case Button::None:
-        break;
+        case Button::Minimize:
+            painter.drawLine(QPointF(box.left(), c.y() + px / 2), QPointF(box.right(), c.y() + px / 2));
+            break;
+        case Button::Maximize:
+            if (window_->isMaximized()) {
+                const double offset = std::round(2.0 * dpr) / dpr;
+                const QRectF front = box.adjusted(0, offset, -offset, 0);
+                painter.drawRect(front);
+                QPainterPath back;
+                back.moveTo(front.left() + offset, front.top());
+                back.lineTo(front.left() + offset, box.top());
+                back.lineTo(box.right(), box.top());
+                back.lineTo(box.right(), front.bottom() - offset);
+                back.lineTo(front.right(), front.bottom() - offset);
+                painter.drawPath(back);
+            } else {
+                painter.drawRect(box);
+            }
+            break;
+        case Button::Close:
+            painter.setRenderHint(QPainter::Antialiasing, true);
+            pen.setWidthF(std::max(1.0, dpr) / dpr);
+            painter.setPen(pen);
+            painter.drawLine(box.topLeft(), box.bottomRight());
+            painter.drawLine(box.topRight(), box.bottomLeft());
+            break;
+        case Button::None:
+            break;
     }
     painter.restore();
 }
@@ -306,8 +303,7 @@ void TitleBar::paintEvent(QPaintEvent*) {
     painter.fillRect(QRect(0, height() - 1, width(), 1), t.line);
 
     // Title, centred on the whole bar and kept clear of menus and controls.
-    const QString secondary = secondary_.isEmpty() ? QString()
-                                                   : QStringLiteral("  —  ") + secondary_;
+    const QString secondary = secondary_.isEmpty() ? QString() : QStringLiteral("  —  ") + secondary_;
     if (!primary_.isEmpty() || !secondary.isEmpty()) {
         const bool active = windowActive();
         const QFont primaryFont = theme::font(theme::TextRole::BodyMedium, 13.0);
@@ -315,9 +311,8 @@ void TitleBar::paintEvent(QPaintEvent*) {
         const QFontMetrics pm(primaryFont);
         const QFontMetrics sm(secondaryFont);
         const int left = dialog_ ? mark_->geometry().right() + 12 : menuBar_->geometry().right() + kTitleGap;
-        const int right = (trailing_->isVisible() && trailing_->width() > 6
-                               ? trailing_->geometry().left()
-                               : width() - buttonsWidth()) -
+        const int right = (trailing_->isVisible() && trailing_->width() > 6 ? trailing_->geometry().left()
+                                                                            : width() - buttonsWidth()) -
                           kTitleGap;
         const int available = right - left;
         if (available > 40) {
@@ -339,9 +334,9 @@ void TitleBar::paintEvent(QPaintEvent*) {
             if (!second.isEmpty()) {
                 painter.setFont(secondaryFont);
                 painter.setPen(active ? t.muted : t.faint);
-                painter.drawText(QRect(x + pm.horizontalAdvance(first), band.top(),
-                                       sm.horizontalAdvance(second) + 1, band.height()),
-                                 Qt::AlignVCenter | Qt::AlignLeft, second);
+                painter.drawText(
+                    QRect(x + pm.horizontalAdvance(first), band.top(), sm.horizontalAdvance(second) + 1, band.height()),
+                    Qt::AlignVCenter | Qt::AlignLeft, second);
             }
         }
     }

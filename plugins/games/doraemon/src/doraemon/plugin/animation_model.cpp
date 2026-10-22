@@ -45,7 +45,12 @@ namespace {
 int world3Table(const DoraemonSession* session, const char* name, int type) {
     if (!session->bundle().contains(QStringLiteral("render-tables"))) return 0;
     return session->resource(QStringLiteral("render-tables"))
-        .value(QStringLiteral("tables")).toObject().value(QLatin1String(name)).toArray().at(type & 0x1F).toInt();
+        .value(QStringLiteral("tables"))
+        .toObject()
+        .value(QLatin1String(name))
+        .toArray()
+        .at(type & 0x1F)
+        .toInt();
 }
 
 }  // namespace
@@ -73,7 +78,8 @@ QVector<SpritePiece> metaspritePieces(const DoraemonSession* session, World worl
         entry = entries.at(entry.value(QStringLiteral("alias")).toInt()).toObject();
     }
     if (!entry.contains(QStringLiteral("record"))) return result;
-    const QJsonObject rec = r.value(QStringLiteral("records")).toArray().at(entry.value(QStringLiteral("record")).toInt()).toObject();
+    const QJsonObject rec =
+        r.value(QStringLiteral("records")).toArray().at(entry.value(QStringLiteral("record")).toInt()).toObject();
     const int xExtent = rec.value(QStringLiteral("x_extent")).toInt();
     const int yExtent = rec.value(QStringLiteral("y_extent")).toInt();
     for (const QJsonValue& v : rec.value(QStringLiteral("pieces")).toArray()) {
@@ -127,8 +133,9 @@ QImage world2Image(const DoraemonSession* session, int index, int preset) {
         const int tile = tiles.at(q).toInt();
         if (tile == 0) continue;
         const int a = attributes.at(((descriptor >> 2) & 0x0F) * 4 + q).toInt();
-        painter.drawImage((q % 2) * 8, (q / 2) * 8,
-                          session->painter().tile(World::Two, tile, colours, true).mirrored((a & 0x40) != 0, (a & 0x80) != 0));
+        painter.drawImage(
+            (q % 2) * 8, (q / 2) * 8,
+            session->painter().tile(World::Two, tile, colours, true).mirrored((a & 0x40) != 0, (a & 0x80) != 0));
     }
     return image;
 }
@@ -167,7 +174,8 @@ QVector<DoraemonAnimation> doraemonAnimations() {
         for (const QJsonValue& value : sdk::gameCatalog("world1_item_animations").toArray()) {
             const QJsonObject item = value.toObject();
             list << make(one, "Items", item.value(QStringLiteral("name")).toString(),
-                         {item.value(QStringLiteral("frame")).toInt()}, 8, item.value(QStringLiteral("palette")).toInt());
+                         {item.value(QStringLiteral("frame")).toInt()}, 8,
+                         item.value(QStringLiteral("palette")).toInt());
         }
         list << make(one, "Frames", rlTr("doraemon", "World 1 · all frames"), run(0, 115), 15);
 
@@ -208,14 +216,15 @@ DoraemonAnimation resolvedAnimation(const DoraemonSession* session, int index) {
 }
 
 DoraemonAnimationModel::DoraemonAnimationModel(DoraemonSession* session, int animation)
-    : CompositionModel(session), session_(session), index_(animation),
-      animation_(resolvedAnimation(session, animation)), palette_(animation_.palette) {
+    : CompositionModel(session),
+      session_(session),
+      index_(animation),
+      animation_(resolvedAnimation(session, animation)),
+      palette_(animation_.palette) {
     connect(session_, &sdk::Session::contentChanged, this, &sdk::EditorModel::contentChanged);
 }
 
-const DoraemonAnimation& DoraemonAnimationModel::animation() const {
-    return animation_;
-}
+const DoraemonAnimation& DoraemonAnimationModel::animation() const { return animation_; }
 
 int DoraemonAnimationModel::index() const {
     return animation().frames.value(std::clamp(frame_, 0, int(animation().frames.size()) - 1));
@@ -224,11 +233,13 @@ int DoraemonAnimationModel::index() const {
 QString DoraemonAnimationModel::title() const {
     const DoraemonAnimation& a = animation();
     if (a.group == QLatin1String("Frames")) return a.label;
-    return QStringLiteral("%1 · %2").arg(a.group == QLatin1String("Doraemon") ? QStringLiteral("Doraemon") : worldLabel(a.world), a.label);
+    return QStringLiteral("%1 · %2").arg(
+        a.group == QLatin1String("Doraemon") ? QStringLiteral("Doraemon") : worldLabel(a.world), a.label);
 }
 
 int DoraemonAnimationModel::recordOf(int index, int* flip) const {
-    const QJsonArray entries = session_->resource(metaspriteId(animation().world)).value(QStringLiteral("entries")).toArray();
+    const QJsonArray entries =
+        session_->resource(metaspriteId(animation().world)).value(QStringLiteral("entries")).toArray();
     QJsonObject entry = entries.at(index).toObject();
     *flip = -1;
     if (entry.contains(QStringLiteral("alias"))) {
@@ -369,7 +380,8 @@ void DoraemonAnimationModel::selectPiece(const QString& id) {
 
 QVector<sdk::CompositionFrame> DoraemonAnimationModel::frames() const {
     QVector<sdk::CompositionFrame> result;
-    const QJsonArray entries = session_->resource(metaspriteId(animation().world)).value(QStringLiteral("entries")).toArray();
+    const QJsonArray entries =
+        session_->resource(metaspriteId(animation().world)).value(QStringLiteral("entries")).toArray();
     for (int f = 0; f < animation().frames.size(); ++f) {
         const int i = animation().frames.at(f);
         sdk::CompositionFrame frame;
@@ -393,9 +405,7 @@ void DoraemonAnimationModel::setCurrentFrame(int frame) {
     }
 }
 
-int DoraemonAnimationModel::frameDurationMs(int) const {
-    return animation().ticks * 1000 / 60;
-}
+int DoraemonAnimationModel::frameDurationMs(int) const { return animation().ticks * 1000 / 60; }
 
 QVector<sdk::ViewOption> DoraemonAnimationModel::viewOptions() const {
     QVector<sdk::ViewOption> result;
@@ -408,7 +418,8 @@ QVector<sdk::ViewOption> DoraemonAnimationModel::viewOptions() const {
         return {colours};
     }
     colours.label = tr("Colours");
-    for (int p = 0; p < paletteIds(session_->bundle(), animation().world).size(); ++p) colours.choices << tr("Preset %1").arg(p);
+    for (int p = 0; p < paletteIds(session_->bundle(), animation().world).size(); ++p)
+        colours.choices << tr("Preset %1").arg(p);
     colours.value = tr("Preset %1").arg(preset_);
     sdk::ViewOption palette;
     palette.key = QStringLiteral("palette");
@@ -456,7 +467,8 @@ bool DoraemonAnimationModel::editPiece(int piece, int rawY, int rawX, int tile, 
         error);
 }
 
-bool DoraemonAnimationModel::editWorld2(int quarter, int tile, int attribute, int descriptor, const QString& text, QString* error) {
+bool DoraemonAnimationModel::editWorld2(int quarter, int tile, int attribute, int descriptor, const QString& text,
+                                        QString* error) {
     const int i = index();
     const QString id = metaspriteId(World::Two);
     return session_->editBundle(
@@ -545,12 +557,15 @@ bool DoraemonAnimationModel::setField(const QString& key, const QVariant& value,
     if (animation().world == World::Two) {
         const QJsonObject r = session_->resource(metaspriteId(World::Two));
         int descriptor = r.value(QStringLiteral("descriptors")).toArray().at(index()).toInt();
-        int attribute = r.value(QStringLiteral("attributes")).toArray().at(((descriptor >> 2) & 0x0F) * 4 + p.piece).toInt();
+        int attribute =
+            r.value(QStringLiteral("attributes")).toArray().at(((descriptor >> 2) & 0x0F) * 4 + p.piece).toInt();
         int tile = p.tile;
         if (key == QLatin1String("tile")) tile = std::clamp(value.toInt(), 0, 255);
-        else if (key == QLatin1String("palette")) descriptor = (descriptor & ~3) | std::max(0, labelNumber(value.toString(), tr("SPR %1"), 4));
+        else if (key == QLatin1String("palette"))
+            descriptor = (descriptor & ~3) | std::max(0, labelNumber(value.toString(), tr("SPR %1"), 4));
         else if (key == QLatin1String("flip")) {
-            const int flip = std::max(0, QStringList{kFlips[0], kFlips[1], kFlips[2], kFlips[3]}.indexOf(value.toString()));
+            const int flip =
+                std::max(0, QStringList{kFlips[0], kFlips[1], kFlips[2], kFlips[3]}.indexOf(value.toString()));
             attribute = (attribute & ~0xc0) | ((flip & 1) ? 0x40 : 0) | ((flip & 2) ? 0x80 : 0);
         } else if (key == QLatin1String("priority")) {
             attribute = (attribute & ~0x20) | (value.toString() == QLatin1String("Behind the background") ? 0x20 : 0);
@@ -612,7 +627,8 @@ sdk::Library DoraemonAnimationModel::sheet() const {
 sdk::Inspection DoraemonAnimationModel::inspect() const {
     sdk::Inspection inspection;
     const bool two = animation().world == World::Two;
-    inspection.engineTag = two ? QStringLiteral("doraemon.world2-metasprites.v1") : QStringLiteral("doraemon.metasprites.v1");
+    inspection.engineTag =
+        two ? QStringLiteral("doraemon.world2-metasprites.v1") : QStringLiteral("doraemon.metasprites.v1");
     int flip = -1;
     const int record = two ? index() : recordOf(index(), &flip);
     if (selected_ < 0) {
@@ -621,9 +637,12 @@ sdk::Inspection DoraemonAnimationModel::inspect() const {
         sdk::Field frame;
         frame.key = QStringLiteral("frame");
         frame.label = tr("Shown");
-        frame.value = two ? tr("metasprite %1").arg(index())
-                          : flip > 0 ? tr("index %1 · record %2 mirrored %3").arg(nes::hex(index())).arg(record).arg(QString::fromLatin1(kFlips[flip]).toLower())
-                                     : tr("index %1 · record %2").arg(nes::hex(index())).arg(record);
+        frame.value = two        ? tr("metasprite %1").arg(index())
+                      : flip > 0 ? tr("index %1 · record %2 mirrored %3")
+                                       .arg(nes::hex(index()))
+                                       .arg(record)
+                                       .arg(QString::fromLatin1(kFlips[flip]).toLower())
+                                 : tr("index %1 · record %2").arg(nes::hex(index())).arg(record);
         inspection.fields = {frame};
         inspection.note = two ? tr("A World 2 metasprite is four sprites in a 2x2 square: four patterns, a "
                                    "palette and per-sprite attributes shared by records with the same base. "
@@ -667,7 +686,8 @@ sdk::Inspection DoraemonAnimationModel::inspect() const {
         palette.hint = tr("the whole metasprite");
         const QJsonObject r = session_->resource(metaspriteId(World::Two));
         const int descriptor = r.value(QStringLiteral("descriptors")).toArray().at(index()).toInt();
-        const int attribute = r.value(QStringLiteral("attributes")).toArray().at(((descriptor >> 2) & 0x0F) * 4 + p.piece).toInt();
+        const int attribute =
+            r.value(QStringLiteral("attributes")).toArray().at(((descriptor >> 2) & 0x0F) * 4 + p.piece).toInt();
         sdk::Field priority;
         priority.key = QStringLiteral("priority");
         priority.label = tr("Priority");
@@ -676,7 +696,8 @@ sdk::Inspection DoraemonAnimationModel::inspect() const {
         priority.value = priority.choices.at((attribute & 0x20) ? 1 : 0);
         inspection.fields = {tile, palette, flips, priority};
         inspection.note = tr("The flip and priority belong to attribute group %1, shared by every metasprite "
-                             "with that base.").arg((descriptor >> 2) & 0x0F);
+                             "with that base.")
+                              .arg((descriptor >> 2) & 0x0F);
         return inspection;
     }
     sdk::Field x;
@@ -695,8 +716,13 @@ sdk::Inspection DoraemonAnimationModel::inspect() const {
         y.type = sdk::Field::Type::ReadOnly;
         flips.type = sdk::Field::Type::ReadOnly;
         inspection.note = tr("This frame mirrors index %1; edit that frame.")
-                              .arg(nes::hex(session_->resource(metaspriteId(animation().world)).value(QStringLiteral("entries")).toArray()
-                                                .at(index()).toObject().value(QStringLiteral("alias")).toInt()));
+                              .arg(nes::hex(session_->resource(metaspriteId(animation().world))
+                                                .value(QStringLiteral("entries"))
+                                                .toArray()
+                                                .at(index())
+                                                .toObject()
+                                                .value(QStringLiteral("alias"))
+                                                .toInt()));
     } else {
         inspection.note = tr("Offsets are pixels from the actor's position (0-127).");
     }

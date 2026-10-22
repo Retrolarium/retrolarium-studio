@@ -46,13 +46,9 @@ void LibrarySheet::setItems(const QVector<sdk::LibraryItem>& items, const QStrin
     update();
 }
 
-int LibrarySheet::cellWidth() const {
-    return std::max(1, width() / columns_);
-}
+int LibrarySheet::cellWidth() const { return std::max(1, width() / columns_); }
 
-int LibrarySheet::cellHeight(int width) const {
-    return std::max(1, width * cell_.height() / cell_.width());
-}
+int LibrarySheet::cellHeight(int width) const { return std::max(1, width * cell_.height() / cell_.width()); }
 
 int LibrarySheet::heightForWidth(int width) const {
     const int rows = (int(items_.size()) + columns_ - 1) / columns_;
@@ -199,16 +195,14 @@ SheetPane::SheetPane(sdk::EditorModel* model, QWidget* parent)
     refresh_->setSingleShot(true);
     refresh_->setInterval(0);
     connect(refresh_, &QTimer::timeout, this, &SheetPane::refresh);
-    for (auto signal : {&sdk::EditorModel::contentChanged, &sdk::EditorModel::selectionChanged,
-                        &sdk::EditorModel::toolsChanged}) {
+    for (auto signal :
+         {&sdk::EditorModel::contentChanged, &sdk::EditorModel::selectionChanged, &sdk::EditorModel::toolsChanged}) {
         connect(model_, signal, refresh_, qOverload<>(&QTimer::start));
     }
     refresh();
 }
 
-QSize SheetPane::sizeHint() const {
-    return {std::max(16 * 24, sheet_->sizeHint().width()) + 32, 480};
-}
+QSize SheetPane::sizeHint() const { return {std::max(16 * 24, sheet_->sizeHint().width()) + 32, 480}; }
 
 void SheetPane::refresh() {
     const sdk::Library library = model_->sheet();

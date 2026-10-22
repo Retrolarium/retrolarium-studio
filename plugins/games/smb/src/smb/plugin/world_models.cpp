@@ -35,7 +35,7 @@ struct PhysicsInfo {
 
 const PhysicsInfo& physicsInfo(const QString& name) {
     static const QStringList jump{QStringLiteral("standing"), QStringLiteral("walking"), QStringLiteral("faster"),
-                                  QStringLiteral("running"),  rlTr("smb", "full run"), QStringLiteral("swimming"),
+                                  QStringLiteral("running"),  rlTr("smb", "full run"),   QStringLiteral("swimming"),
                                   QStringLiteral("whirlpool")};
     static const QStringList speed{QStringLiteral("running"), QStringLiteral("walking"), rlTr("smb", "under water"),
                                    rlTr("smb", "entry 3")};
@@ -190,17 +190,22 @@ QString SmbRoutesModel::cell(int row, int column) const {
     }
     const SmbRoute route = session_->document().routes(session_->world(), at.first).at(at.second);
     switch (column) {
-    case 0: return courseLabel(row);
-    case 1: return QStringLiteral("%1 / %2").arg(at.first).arg(at.second + 1);
-    case 2: {
-        const QString area = areaAt(row);
-        return session_->document().areaNames(session_->levels()).contains(area)
-                   ? areaLabel(area)
-                   : areaLabel(area) + tr(" (missing)");
-    }
-    case 3: return route.alternate ? QStringLiteral("set") : QStringLiteral("—");
-    case 4: return byteHex((route.alternate ? 0x80 : 0) | (route.areaType << 5) | route.areaIndex);
-    default: return {};
+        case 0:
+            return courseLabel(row);
+        case 1:
+            return QStringLiteral("%1 / %2").arg(at.first).arg(at.second + 1);
+        case 2: {
+            const QString area = areaAt(row);
+            return session_->document().areaNames(session_->levels()).contains(area)
+                       ? areaLabel(area)
+                       : areaLabel(area) + tr(" (missing)");
+        }
+        case 3:
+            return route.alternate ? QStringLiteral("set") : QStringLiteral("—");
+        case 4:
+            return byteHex((route.alternate ? 0x80 : 0) | (route.areaType << 5) | route.areaIndex);
+        default:
+            return {};
     }
 }
 
@@ -243,9 +248,9 @@ bool SmbRoutesModel::setArea(int row, const QString& area, QString* error) {
     const QString world = session_->world();
     const int number = at.first;
     const int step = at.second;
-    const bool ok = session_->edit(tr("Route %1 step %2 to %3").arg(number).arg(step + 1).arg(areaLabel(name)),
-                                   [world, number, step, route](SmbResourceDocument& d) { d.setRoute(world, number, step, route); },
-                                   error);
+    const bool ok = session_->edit(
+        tr("Route %1 step %2 to %3").arg(number).arg(step + 1).arg(areaLabel(name)),
+        [world, number, step, route](SmbResourceDocument& d) { d.setRoute(world, number, step, route); }, error);
     if (ok && row == row_) {
         session_->selectStart(name);
     }
@@ -262,9 +267,9 @@ bool SmbRoutesModel::setAlternate(int row, bool alternate, QString* error) {
     const QString world = session_->world();
     const int number = at.first;
     const int step = at.second;
-    return session_->edit(tr("Route %1 step %2 alternate bit").arg(number).arg(step + 1),
-                          [world, number, step, route](SmbResourceDocument& d) { d.setRoute(world, number, step, route); },
-                          error);
+    return session_->edit(
+        tr("Route %1 step %2 alternate bit").arg(number).arg(step + 1),
+        [world, number, step, route](SmbResourceDocument& d) { d.setRoute(world, number, step, route); }, error);
 }
 
 QStringList SmbRoutesModel::cellChoices(int, int column) const {
@@ -343,9 +348,10 @@ sdk::Inspection SmbRoutesModel::inspect() const {
     step.value = tr("%1 of %2").arg(at.second + 1).arg(session_->document().routes(session_->world(), at.first).size());
     step.monospace = true;
     inspection.fields = {area, alternate, step};
-    inspection.note = tr("Each world plays its steps in order; a pipe intro (an area whose entrance "
-                         "walks the player into a pipe) shares the level number of the next step. The "
-                         "steps per world are fixed. F4 plays the selected step's area.");
+    inspection.note =
+        tr("Each world plays its steps in order; a pipe intro (an area whose entrance "
+           "walks the player into a pipe) shares the level number of the next step. The "
+           "steps per world are fixed. F4 plays the selected step's area.");
     inspection.engineTag = QStringLiteral("smb.world.v1");
     inspection.engine = {{tr("Route byte"), cell(row_, 4)},
                          {tr("Area type"), QString::number(route.areaType)},
@@ -357,9 +363,7 @@ QString SmbRoutesModel::statusText() const {
     return tr("World %1 · %2").arg(courseLabel(row_), areaLabel(areaAt(row_)));
 }
 
-QString SmbRoutesModel::startPoint() const {
-    return session_->selectedStart();
-}
+QString SmbRoutesModel::startPoint() const { return session_->selectedStart(); }
 
 // ---------------------------------------------------------------- physics
 
@@ -392,9 +396,7 @@ QVector<sdk::TableColumn> SmbPhysicsModel::columns() const {
     return result;
 }
 
-int SmbPhysicsModel::rowCount() const {
-    return session_->document().physicsTables(session_->world()).size();
-}
+int SmbPhysicsModel::rowCount() const { return session_->document().physicsTables(session_->world()).size(); }
 
 QString SmbPhysicsModel::cell(int row, int column) const {
     const QVector<SmbPhysicsTable> tables = session_->document().physicsTables(session_->world());
@@ -432,9 +434,9 @@ bool SmbPhysicsModel::setValue(int row, int index, int value, QString* error) {
         return false;
     }
     const QString world = session_->world();
-    return session_->edit(QStringLiteral("%1 (%2)").arg(physicsLabel(tables.at(row).name), entryLabel(tables.at(row).name, index)),
-                          [world, row, index, value](SmbResourceDocument& d) { d.setPhysicsValue(world, row, index, value); },
-                          error);
+    return session_->edit(
+        QStringLiteral("%1 (%2)").arg(physicsLabel(tables.at(row).name), entryLabel(tables.at(row).name, index)),
+        [world, row, index, value](SmbResourceDocument& d) { d.setPhysicsValue(world, row, index, value); }, error);
 }
 
 bool SmbPhysicsModel::setCell(int row, int column, const QString& value, QString* error) {
@@ -482,13 +484,16 @@ sdk::Inspection SmbPhysicsModel::inspect() const {
     const PhysicsInfo& info = physicsInfo(table.name);
     inspection.note = QString::fromLatin1(info.meaning);
     if (info.entries.size() == 7) {
-        inspection.note += tr(" The entry is picked when the jump starts: by running speed, or "
-                              "swimming (and in a whirlpool).");
+        inspection.note +=
+            tr(" The entry is picked when the jump starts: by running speed, or "
+               "swimming (and in a whirlpool).");
     }
     inspection.engineTag = QStringLiteral("smb.world.v1");
-    inspection.engine = {{tr("Table"), table.name},
-                         {tr("Bytes"), QStringLiteral("%1, %2").arg(table.values.size())
-                                                       .arg(table.isSigned ? QStringLiteral("signed") : QStringLiteral("unsigned"))}};
+    inspection.engine = {
+        {tr("Table"), table.name},
+        {tr("Bytes"), QStringLiteral("%1, %2")
+                          .arg(table.values.size())
+                          .arg(table.isSigned ? QStringLiteral("signed") : QStringLiteral("unsigned"))}};
     return inspection;
 }
 

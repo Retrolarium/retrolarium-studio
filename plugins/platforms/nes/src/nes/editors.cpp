@@ -7,9 +7,7 @@
 
 namespace rl::nes {
 
-QString hex(int value, int digits) {
-    return QStringLiteral("$%1").arg(value, digits, 16, QLatin1Char('0')).toUpper();
-}
+QString hex(int value, int digits) { return QStringLiteral("$%1").arg(value, digits, 16, QLatin1Char('0')).toUpper(); }
 
 QColor color(int index, const QString& model) {
     return QColor::fromRgb(masterColor(index & 0x3f, model.toStdString()));
@@ -110,13 +108,14 @@ bool ChrTileModel::writeTile(const QVector<quint8>& pixels, const QString& text,
     const QString resource = resource_;
     const int tile = chrTile(tile_);
     const int parts = stack();
-    return owner_->editBundle(text,
-                              [resource, tile, parts, pixels](Bundle& b) {
-                                  for (int part = 0; part < parts; ++part) {
-                                      b.setTilePixels(resource, tile + part, pixels.mid(part * 64, 64));
-                                  }
-                              },
-                              error);
+    return owner_->editBundle(
+        text,
+        [resource, tile, parts, pixels](Bundle& b) {
+            for (int part = 0; part < parts; ++part) {
+                b.setTilePixels(resource, tile + part, pixels.mid(part * 64, 64));
+            }
+        },
+        error);
 }
 
 void ChrTileModel::endStroke() {
@@ -187,11 +186,10 @@ QString ChrTileModel::statusText() const {
 
 sdk::Inspection ChrTileModel::inspect() const {
     sdk::Inspection inspection;
-    inspection.kicker = height_ == 16 ? tr("8x16 sprite pair")
-                        : sprites_    ? tr("Sprite tile")
-                                      : tr("Background tile");
-    inspection.title = height_ == 16 ? tr("Tiles %1-%2").arg(hex(chrTile(tile_) & 0xff), hex((chrTile(tile_) + 1) & 0xff))
-                                     : hex(tile_);
+    inspection.kicker = height_ == 16 ? tr("8x16 sprite pair") : sprites_ ? tr("Sprite tile") : tr("Background tile");
+    inspection.title = height_ == 16
+                           ? tr("Tiles %1-%2").arg(hex(chrTile(tile_) & 0xff), hex((chrTile(tile_) + 1) & 0xff))
+                           : hex(tile_);
     sdk::Field address;
     address.key = QStringLiteral("address");
     address.label = tr("CHR address");
@@ -202,8 +200,9 @@ sdk::Inspection ChrTileModel::inspect() const {
     palette.label = tr("Preview palette");
     palette.value = palette_;
     inspection.fields = {address, palette};
-    inspection.note = tr("2bpp patterns: four pens, pen 0 transparent. The preview palette only "
-                         "colours the editor; tiles carry no palette of their own.");
+    inspection.note =
+        tr("2bpp patterns: four pens, pen 0 transparent. The preview palette only "
+           "colours the editor; tiles carry no palette of their own.");
     inspection.engineTag = QStringLiteral("nes.chr-2bpp.v1");
     inspection.engine = {{tr("Resource"), resource_},
                          {tr("Tile index"), QString::number(first_ + tile_)},
@@ -224,9 +223,7 @@ void PaletteTableModel::setWindow(int first, int count, const QString& key) {
     key_ = key;
 }
 
-QVector<int> PaletteTableModel::values() const {
-    return owner_->bundle().tableValues(resource_).mid(first_, count_);
-}
+QVector<int> PaletteTableModel::values() const { return owner_->bundle().tableValues(resource_).mid(first_, count_); }
 
 QString PaletteTableModel::rowLabel(int row) const {
     const QStringList labels = owner_->paletteRowLabels(key_);
@@ -280,13 +277,12 @@ int PaletteTableModel::currentGamutIndex() const {
 bool PaletteTableModel::assignGamut(int index, QString* error) {
     const QString resource = resource_;
     const int entry = flatEntry();
-    return owner_->editBundle(tr("Set %1 colour %2").arg(title_).arg(entry),
-                              [resource, entry, index](Bundle& b) { b.setTableValue(resource, entry, index); }, error);
+    return owner_->editBundle(
+        tr("Set %1 colour %2").arg(title_).arg(entry),
+        [resource, entry, index](Bundle& b) { b.setTableValue(resource, entry, index); }, error);
 }
 
-QVector<sdk::PaletteSample> PaletteTableModel::samples() const {
-    return owner_->paletteSamples(key_);
-}
+QVector<sdk::PaletteSample> PaletteTableModel::samples() const { return owner_->paletteSamples(key_); }
 
 QString PaletteTableModel::statusText() const {
     return tr("%1 · %2, colour %3").arg(title_, rowLabel(entry_.y())).arg(entry_.x());
@@ -303,11 +299,11 @@ sdk::Inspection PaletteTableModel::inspect() const {
     field.value = value < 0 ? QString() : hex(value);
     field.monospace = true;
     inspection.fields = {field};
-    inspection.note = tr("Pick a colour from the NES palette. Colour 0 of every row shows the "
-                         "backdrop.");
+    inspection.note =
+        tr("Pick a colour from the NES palette. Colour 0 of every row shows the "
+           "backdrop.");
     inspection.engineTag = QStringLiteral("nes.palette-table.v1");
-    inspection.engine = {{tr("Resource"), resource_},
-                         {tr("Entry"), QString::number(flatEntry())}};
+    inspection.engine = {{tr("Resource"), resource_}, {tr("Entry"), QString::number(flatEntry())}};
     return inspection;
 }
 

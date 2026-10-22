@@ -75,7 +75,7 @@ private:
     // World 3's spawn schedule (world3-schedule): four channels a room, each
     // shown in its room's top-left corner, the type's sprite with its count
     // (an inactive channel as a faint slot).
-    QJsonObject scheduleChannel(int slot) const;      // slot = room * 4 + channel
+    QJsonObject scheduleChannel(int slot) const;  // slot = room * 4 + channel
     QImage scheduleImage(int slot, QRect* pixels) const;
     sdk::Inspection inspectSchedule() const;
     bool setScheduleField(const QString& key, const QVariant& value, QString* error);
@@ -92,11 +92,11 @@ private:
     int height_ = 0;
     int block_ = 0;
     int cell_ = -1;
-    QHash<int, int> stroke_;        // cell -> painted block
+    QHash<int, int> stroke_;  // cell -> painted block
     QString layer_ = QStringLiteral("blocks");
-    int object_ = -1;               // selected placement
-    int scheduled_ = -1;            // selected World 3 schedule slot
-    std::optional<QJsonArray> dragged_;     // the list while a placement is dragged
+    int object_ = -1;                    // selected placement
+    int scheduled_ = -1;                 // selected World 3 schedule slot
+    std::optional<QJsonArray> dragged_;  // the list while a placement is dragged
     mutable QImage base_;
     mutable quint64 baseRevision_ = ~quint64(0);
 };

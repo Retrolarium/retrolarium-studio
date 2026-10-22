@@ -20,11 +20,11 @@ QVector<int> textToTiles(const QString& text, QString* error);
 //   n:<n>                  a special-room name (room intro)
 struct TextString {
     QString id;
-    QString label;          // what it is: "HUD labels", "Ending message 3"
+    QString label;  // what it is: "HUD labels", "Ending message 3"
     QVector<int> tiles;
-    QVector<int> addresses; // PPU addresses; empty for special-room names
+    QVector<int> addresses;  // PPU addresses; empty for special-room names
     bool vertical = false;
-    int width = 0;          // fixed width, 0 when it may change length
+    int width = 0;  // fixed width, 0 when it may change length
     bool movable = false;
 };
 

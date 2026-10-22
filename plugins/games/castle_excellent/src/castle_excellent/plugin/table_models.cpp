@@ -99,9 +99,7 @@ QVector<sdk::TableColumn> CastleExcellentTextModel::columns() const {
     return {name, text, length};
 }
 
-int CastleExcellentTextModel::rowCount() const {
-    return records(session_->bundle(), resource_).size();
-}
+int CastleExcellentTextModel::rowCount() const { return records(session_->bundle(), resource_).size(); }
 
 QVector<int> CastleExcellentTextModel::values(int row) const {
     return nes::intsOf(records(session_->bundle(), resource_).at(row).toObject().value(QStringLiteral("values")));
@@ -157,19 +155,20 @@ bool CastleExcellentTextModel::setText(int row, const QString& text, QString* er
     const QVector<int> codes = encode(text, values(row).size(), error);
     if (codes.isEmpty()) return false;
     const QString resource = resource_;
-    return session_->editBundle(tr("Edit %1").arg(titled(recordId(row))),
-                                [resource, row, codes](nes::Bundle& b) {
-                                    QJsonObject r = b.resource(resource);
-                                    QJsonArray list = r.value(QStringLiteral("records")).toArray();
-                                    QJsonObject record = list.at(row).toObject();
-                                    QJsonArray values;
-                                    for (int code : codes) values.append(code);
-                                    record.insert(QStringLiteral("values"), values);
-                                    list.replace(row, record);
-                                    r.insert(QStringLiteral("records"), list);
-                                    b.setResource(resource, r);
-                                },
-                                error);
+    return session_->editBundle(
+        tr("Edit %1").arg(titled(recordId(row))),
+        [resource, row, codes](nes::Bundle& b) {
+            QJsonObject r = b.resource(resource);
+            QJsonArray list = r.value(QStringLiteral("records")).toArray();
+            QJsonObject record = list.at(row).toObject();
+            QJsonArray values;
+            for (int code : codes) values.append(code);
+            record.insert(QStringLiteral("values"), values);
+            list.replace(row, record);
+            r.insert(QStringLiteral("records"), list);
+            b.setResource(resource, r);
+        },
+        error);
 }
 
 bool CastleExcellentTextModel::setCell(int row, int column, const QString& value, QString* error) {
@@ -206,8 +205,9 @@ sdk::Inspection CastleExcellentTextModel::inspect() const {
     text.monospace = true;
     inspection.fields = {text};
     inspection.preview = decode(values(row_));
-    inspection.note = tr("Each word has a fixed slot ending in 0; shorter words are padded with "
-                         "blanks. The font has A-Z and the blank; write another code as {XX}.");
+    inspection.note =
+        tr("Each word has a fixed slot ending in 0; shorter words are padded with "
+           "blanks. The font has A-Z and the blank; write another code as {XX}.");
     QStringList bytes;
     for (int v : values(row_)) bytes << QStringLiteral("%1").arg(v, 2, 16, QLatin1Char('0')).toUpper();
     inspection.engineTag = QStringLiteral("castle-excellent.sub-command-text.v1");
@@ -249,9 +249,7 @@ QVector<sdk::TableColumn> CastleExcellentSfxModel::columns() const {
     return result;
 }
 
-int CastleExcellentSfxModel::rowCount() const {
-    return records(session_->bundle(), resource_).size();
-}
+int CastleExcellentSfxModel::rowCount() const { return records(session_->bundle(), resource_).size(); }
 
 QString CastleExcellentSfxModel::cell(int row, int column) const {
     if (row < 0 || row >= rowCount()) return {};
@@ -277,29 +275,30 @@ bool CastleExcellentSfxModel::setCell(int row, int column, const QString& value,
     if (row < 0 || row >= rowCount() || column < 1) return TableModel::setCell(row, column, value, error);
     bool ok = false;
     const int number = value.trimmed().startsWith(QLatin1Char('$')) ? value.trimmed().mid(1).toInt(&ok, 16)
-                                                                     : value.trimmed().toInt(&ok);
+                                                                    : value.trimmed().toInt(&ok);
     if (!ok || number < 0 || number > 255) {
         if (error) *error = tr("A parameter is one byte, 0-255.");
         return false;
     }
     const QString resource = resource_;
     const int index = column - 1;
-    return session_->editBundle(tr("Edit a sound parameter"),
-                                [resource, row, index, number](nes::Bundle& b) {
-                                    QJsonObject r = b.resource(resource);
-                                    QJsonArray list = r.value(QStringLiteral("records")).toArray();
-                                    QJsonObject record = list.at(row).toObject();
-                                    QJsonArray values = record.value(QStringLiteral("values")).toArray();
-                                    if (index >= values.size()) {
-                                        throw nes::BundleError("That parameter has no such step.");
-                                    }
-                                    values.replace(index, number);
-                                    record.insert(QStringLiteral("values"), values);
-                                    list.replace(row, record);
-                                    r.insert(QStringLiteral("records"), list);
-                                    b.setResource(resource, r);
-                                },
-                                error);
+    return session_->editBundle(
+        tr("Edit a sound parameter"),
+        [resource, row, index, number](nes::Bundle& b) {
+            QJsonObject r = b.resource(resource);
+            QJsonArray list = r.value(QStringLiteral("records")).toArray();
+            QJsonObject record = list.at(row).toObject();
+            QJsonArray values = record.value(QStringLiteral("values")).toArray();
+            if (index >= values.size()) {
+                throw nes::BundleError("That parameter has no such step.");
+            }
+            values.replace(index, number);
+            record.insert(QStringLiteral("values"), values);
+            list.replace(row, record);
+            r.insert(QStringLiteral("records"), list);
+            b.setResource(resource, r);
+        },
+        error);
 }
 
 sdk::Inspection CastleExcellentSfxModel::inspect() const {
@@ -307,15 +306,17 @@ sdk::Inspection CastleExcellentSfxModel::inspect() const {
     if (row_ < 0 || row_ >= rowCount()) return inspection;
     inspection.kicker = tr("Sound effect");
     inspection.title = cell(row_, 0);
-    inspection.note = tr("Bytes the sound driver steps through for this effect: pitch periods "
-                         "(lower is higher) and timings. Each is 0-255.");
+    inspection.note =
+        tr("Bytes the sound driver steps through for this effect: pitch periods "
+           "(lower is higher) and timings. Each is 0-255.");
     inspection.engineTag = QStringLiteral("castle-excellent.sfx-parameters.v1");
     return inspection;
 }
 
 // ---------------------------------------------------------------- playtest
 
-CastleExcellentPlaytestModel::CastleExcellentPlaytestModel(CastleExcellentSession* session) : EmulatorModel(session), session_(session) {
+CastleExcellentPlaytestModel::CastleExcellentPlaytestModel(CastleExcellentSession* session)
+    : EmulatorModel(session), session_(session) {
     connect(session_, &CastleExcellentSession::startChanged, this, [this] {
         emit toolsChanged();
         emit contentChanged();
@@ -323,17 +324,11 @@ CastleExcellentPlaytestModel::CastleExcellentPlaytestModel(CastleExcellentSessio
     connect(session_, &sdk::Session::selectedStartChanged, this, &sdk::EditorModel::contentChanged);
 }
 
-QString CastleExcellentPlaytestModel::startLabel() const {
-    return session_->selectedStart();
-}
+QString CastleExcellentPlaytestModel::startLabel() const { return session_->selectedStart(); }
 
-void CastleExcellentPlaytestModel::play() {
-    session_->playSelected();
-}
+void CastleExcellentPlaytestModel::play() { session_->playSelected(); }
 
-bool CastleExcellentPlaytestModel::isRecording() const {
-    return session_->isRecording();
-}
+bool CastleExcellentPlaytestModel::isRecording() const { return session_->isRecording(); }
 
 sdk::Inspection CastleExcellentPlaytestModel::inspect() const {
     sdk::Inspection inspection;
@@ -344,8 +339,9 @@ sdk::Inspection CastleExcellentPlaytestModel::inspect() const {
     core.label = tr("Core");
     core.value = coreLabel();
     inspection.fields = {core};
-    inspection.note = tr("Play from selected builds the ROM with the kit and enters the room open in "
-                         "Rooms with the player at the start marker; Play starts from power-on.");
+    inspection.note =
+        tr("Play from selected builds the ROM with the kit and enters the room open in "
+           "Rooms with the player at the start marker; Play starts from power-on.");
     inspection.engineTag = QStringLiteral("castle-excellent-point-playtest");
     return inspection;
 }

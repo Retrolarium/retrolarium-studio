@@ -85,7 +85,7 @@ private:
     int tile_ = 0xff;
     int palette_ = 0;
     int cell_ = -1;
-    std::optional<QJsonObject> stroke_;     // the screen while a stroke paints it
+    std::optional<QJsonObject> stroke_;  // the screen while a stroke paints it
     bool strokeChanged_ = false;
     mutable QVector<sdk::LibraryItem> library_;
     mutable QString libraryKey_;
@@ -113,9 +113,9 @@ public:
     bool setCell(int row, int column, const QString& value, QString* error) override;
 
     struct Line {
-        int row = 0;        // name-table row
-        int column = 0;     // first cell
-        int width = 0;      // cells it may take
+        int row = 0;     // name-table row
+        int column = 0;  // first cell
+        int width = 0;   // cells it may take
     };
 
 private:
@@ -123,7 +123,7 @@ private:
     QString text(const QJsonObject& screens, int row) const;
 
     CastleExcellentSession* session_;
-    QVector<Line> lines_;   // ending lines; one more row is GAME OVER
+    QVector<Line> lines_;  // ending lines; one more row is GAME OVER
     int row_ = 0;
 };
 

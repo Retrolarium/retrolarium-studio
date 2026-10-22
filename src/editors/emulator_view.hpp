@@ -11,7 +11,7 @@ namespace rl::runtime {
 class EmulatorRunner;
 class EmulatorSurface;
 class ProcessRunner;
-}
+}  // namespace rl::runtime
 
 namespace rl::sdk {
 class EmulatorModel;
@@ -48,7 +48,7 @@ private:
     sdk::EmulatorModel* emulator_;
     runtime::EmulatorRunner* runner_;
     runtime::ProcessRunner* processes_;
-    QString busyStep_;          // the kit step in progress, if any
+    QString busyStep_;  // the kit step in progress, if any
     EmulatorStage* stage_;
     QSplitter* split_;
     QPointer<QWidget> side_;

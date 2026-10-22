@@ -21,13 +21,13 @@ struct PacmanFrame {
 struct PacmanAnimation {
     QString id;
     QString label;
-    QString group;          // "Pac-Man", "Ghosts", "Fruit", "Scores", "Intermission", "Frames"
+    QString group;  // "Pac-Man", "Ghosts", "Fruit", "Scores", "Intermission", "Frames"
     QVector<PacmanFrame> frames;
     int palette = 0;
     bool ghost = false;
-    bool fruit = false;     // the fruit's colour comes from the round
-    bool frightened = false;    // sprite palette 1 in the frightened colour
-    int fruitIndex = -1;    // the fruit's number in the game's fruit list
+    bool fruit = false;       // the fruit's colour comes from the round
+    bool frightened = false;  // sprite palette 1 in the frightened colour
+    int fruitIndex = -1;      // the fruit's number in the game's fruit list
 };
 
 const QVector<PacmanAnimation>& pacmanAnimations();
@@ -80,8 +80,8 @@ private:
     PacmanSession* session_;
     int index_;
     int frame_ = 0;
-    int selected_ = -1;     // quarter 0-3 of the current frame
-    int ghost_ = 0;         // shown palette for ghost animations
+    int selected_ = -1;  // quarter 0-3 of the current frame
+    int ghost_ = 0;      // shown palette for ghost animations
 };
 
 }  // namespace rl::pacman

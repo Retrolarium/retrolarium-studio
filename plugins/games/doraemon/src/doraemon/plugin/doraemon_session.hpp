@@ -17,8 +17,8 @@ namespace rl::doraemon {
 struct DoraemonState {
     nes::Bundle bundle;
     QJsonObject text;
-    QJsonObject music;      // documents/music.json, empty before it is added
-    QJsonObject demo;       // documents/demo.json, empty before it is added
+    QJsonObject music;  // documents/music.json, empty before it is added
+    QJsonObject demo;   // documents/demo.json, empty before it is added
 
     bool operator==(const DoraemonState& other) const {
         return bundle == other.bundle && text == other.text && music == other.music && demo == other.demo;
@@ -135,7 +135,7 @@ private:
     bool startUnderground_ = false;
     int startStage_ = -1;
     int startRoom_ = 0;
-    QHash<QString, QJsonObject> traces_;    // "hash/driver/track"
+    QHash<QString, QJsonObject> traces_;  // "hash/driver/track"
     QString tracing_;
     QString musicHash_;
     quint64 musicHashRevision_ = ~quint64(0);

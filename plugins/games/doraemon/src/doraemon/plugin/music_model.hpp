@@ -18,7 +18,7 @@ class DoraemonMusicModel final : public sdk::SequencerModel {
     Q_OBJECT
 
 public:
-    static constexpr int kFrames = 2400;    // 40 seconds traced and rendered
+    static constexpr int kFrames = 2400;  // 40 seconds traced and rendered
     static QString trackTitle(int driver, int track);
 
     DoraemonMusicModel(DoraemonSession* session, int driver, int track);
@@ -61,7 +61,7 @@ private:
     };
     Location locate(int address) const;
     QJsonObject trace() const;
-    QJsonObject eventAt(const QString& noteId) const;     // the trace event of a note id
+    QJsonObject eventAt(const QString& noteId) const;  // the trace event of a note id
     bool shiftEvent(int address, int semitones, const QString& label, QString* error);
 
     DoraemonSession* session_;

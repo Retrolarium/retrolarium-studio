@@ -8,8 +8,8 @@
 
 namespace rl::theme::paint {
 
-void cornerMarks(QPainter& painter, const QRectF& target, double length, double offset,
-                 const QColor& color, unsigned corners) {
+void cornerMarks(QPainter& painter, const QRectF& target, double length, double offset, const QColor& color,
+                 unsigned corners) {
     painter.save();
     painter.setRenderHint(QPainter::Antialiasing, false);
     QPen pen(color);
@@ -43,8 +43,7 @@ void cornerMarks(QPainter& painter, const QRectF& target, double length, double 
     painter.restore();
 }
 
-void hatch(QPainter& painter, const QRectF& area, const QColor& color, double period,
-           double stripe) {
+void hatch(QPainter& painter, const QRectF& area, const QColor& color, double period, double stripe) {
     painter.save();
     painter.setClipRect(area, Qt::IntersectClip);
     painter.setRenderHint(QPainter::Antialiasing, true);
@@ -54,14 +53,12 @@ void hatch(QPainter& painter, const QRectF& area, const QColor& color, double pe
     painter.setPen(pen);
     const double span = area.width() + area.height();
     for (double d = -area.height(); d < span; d += period) {
-        painter.drawLine(QPointF(area.left() + d, area.bottom()),
-                         QPointF(area.left() + d + area.height(), area.top()));
+        painter.drawLine(QPointF(area.left() + d, area.bottom()), QPointF(area.left() + d + area.height(), area.top()));
     }
     painter.restore();
 }
 
-void checkerboard(QPainter& painter, const QRect& area, int square, const QColor& a,
-                  const QColor& b) {
+void checkerboard(QPainter& painter, const QRect& area, int square, const QColor& a, const QColor& b) {
     painter.save();
     painter.setClipRect(area, Qt::IntersectClip);
     painter.fillRect(area, a);

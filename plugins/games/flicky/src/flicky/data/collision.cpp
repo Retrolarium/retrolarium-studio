@@ -7,17 +7,12 @@ namespace {
 
 constexpr int streamStart = 0x40;
 
-[[noreturn]] void fail(const char *message)
-{
-    throw FlickyCollisionError(message);
-}
+[[noreturn]] void fail(const char* message) { throw FlickyCollisionError(message); }
 
-} // namespace
+}  // namespace
 
-FlickyCollisionGrid decodeFlickyCollision(
-    const std::vector<std::uint8_t> &stream)
-{
-    FlickyCollisionGrid grid {};
+FlickyCollisionGrid decodeFlickyCollision(const std::vector<std::uint8_t>& stream) {
+    FlickyCollisionGrid grid{};
     int cursor = streamStart;
     for (std::size_t index = 0; index < stream.size(); ++index) {
         const int command = stream[index];
@@ -45,7 +40,7 @@ FlickyCollisionGrid decodeFlickyCollision(
                 if (cursor + length > flickyMapSize) {
                     fail("collision run leaves the 32x28 map");
                 }
-                std::fill_n(grid.begin() + cursor, length, std::uint8_t {1});
+                std::fill_n(grid.begin() + cursor, length, std::uint8_t{1});
                 cursor += length;
             }
         } else {
@@ -58,15 +53,11 @@ FlickyCollisionGrid decodeFlickyCollision(
     fail("collision stream has no terminator");
 }
 
-std::vector<std::uint8_t> encodeFlickyCollision(
-    const FlickyCollisionGrid &grid)
-{
-    if (std::any_of(grid.begin(), grid.begin() + streamStart,
-                    [](std::uint8_t cell) { return cell != 0; })) {
+std::vector<std::uint8_t> encodeFlickyCollision(const FlickyCollisionGrid& grid) {
+    if (std::any_of(grid.begin(), grid.begin() + streamStart, [](std::uint8_t cell) { return cell != 0; })) {
         fail("the first two collision rows are generated at runtime");
     }
-    if (std::any_of(grid.begin(), grid.end(),
-                    [](std::uint8_t cell) { return cell > 1; })) {
+    if (std::any_of(grid.begin(), grid.end(), [](std::uint8_t cell) { return cell > 1; })) {
         fail("collision cells must be 0 or 1");
     }
     std::vector<std::uint8_t> output;
@@ -85,9 +76,8 @@ std::vector<std::uint8_t> encodeFlickyCollision(
                 cursor += distance;
             }
             int length = 0;
-            while (column + length < flickyMapWidth
-                   && grid[static_cast<std::size_t>(position + length)]
-                   && length < 0x3f) {
+            while (column + length < flickyMapWidth && grid[static_cast<std::size_t>(position + length)] &&
+                   length < 0x3f) {
                 ++length;
             }
             output.push_back(static_cast<std::uint8_t>(0x80 | length));
@@ -99,4 +89,4 @@ std::vector<std::uint8_t> encodeFlickyCollision(
     return output;
 }
 
-} // namespace rl::flicky
+}  // namespace rl::flicky

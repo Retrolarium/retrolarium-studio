@@ -11,9 +11,9 @@ namespace rl::theme {
 // How an icon picks its color. Themed roles follow the current theme and the
 // QIcon mode (hover -> Active, selected -> Selected); a fixed color does not.
 enum class IconTone {
-    Muted,     // toolbar and segment buttons: muted, text on hover, accent ink when on
-    Rail,      // kind rail: muted, text on hover and when on
-    Text,      // always text color
+    Muted,  // toolbar and segment buttons: muted, text on hover, accent ink when on
+    Rail,   // kind rail: muted, text on hover and when on
+    Text,   // always text color
     Faint,
     Accent,
     OnAccent,  // glyphs on the primary button
@@ -28,8 +28,7 @@ enum class IconTone {
 QIcon icon(const QString& name, IconTone tone = IconTone::Muted);
 
 // Same glyph rendered once at an explicit size and color.
-QPixmap iconPixmap(const QString& name, int logicalSize, const QColor& color,
-                   double devicePixelRatio);
+QPixmap iconPixmap(const QString& name, int logicalSize, const QColor& color, double devicePixelRatio);
 
 bool hasIcon(const QString& name);
 QStringList iconNames();

@@ -13,10 +13,10 @@ class SolomonSession;
 // One note a virtual channel plays: when, for how long, and which command
 // of the shared stream storage played it.
 struct SolomonNote {
-    int start = 0;          // frames
+    int start = 0;  // frames
     int length = 1;
-    int command = -1;       // index into the document's commands
-    int token = 0;          // the note byte
+    int command = -1;  // index into the document's commands
+    int token = 0;     // the note byte
 };
 
 // One of the 26 audio programs (room music, sound effects) on the piano
@@ -65,7 +65,7 @@ public:
     void setPreviewLoops(bool loop) override;
 
 private:
-    QVector<int> numbers() const;           // virtual channels, in program order
+    QVector<int> numbers() const;  // virtual channels, in program order
     const QHash<int, QVector<SolomonNote>>& traced() const;
     bool find(const QString& id, int* number, int* index) const;
     int pitchOf(int number, int token) const;

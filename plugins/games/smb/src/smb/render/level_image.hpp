@@ -56,7 +56,7 @@ private:
     const SmbResourceDocument& document_;
     SmbArt art_;
     mutable QHash<QString, QImage> cache_;
-    mutable std::string model_;     // palette model, read once per cache
+    mutable std::string model_;  // palette model, read once per cache
 };
 
 // A table of the project's level tables; empty in a project made before

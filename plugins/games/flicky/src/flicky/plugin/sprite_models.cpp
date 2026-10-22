@@ -16,9 +16,7 @@ namespace {
 constexpr int kOffsetMin = -128;
 constexpr int kOffsetMax = 127;
 
-QString roundLabel(int round) {
-    return rlTr("flicky", "Round %1").arg(round + 1, 2, 10, QLatin1Char('0'));
-}
+QString roundLabel(int round) { return rlTr("flicky", "Round %1").arg(round + 1, 2, 10, QLatin1Char('0')); }
 
 QStringList roundChoices() {
     QStringList choices;
@@ -33,9 +31,9 @@ QRect mappingExtent(const FlickySequencesDocument& sequences, const QString& id,
     QRect extent;
     for (const QJsonValue& value : sequences.mapping(id).value(QStringLiteral("pieces")).toArray()) {
         const QJsonObject p = value.toObject();
-        extent |= QRect(origin.x() + p.value(QStringLiteral("x")).toInt(),
-                        origin.y() + p.value(QStringLiteral("y")).toInt(),
-                        p.value(QStringLiteral("width")).toInt() * 8, p.value(QStringLiteral("height")).toInt() * 8);
+        extent |=
+            QRect(origin.x() + p.value(QStringLiteral("x")).toInt(), origin.y() + p.value(QStringLiteral("y")).toInt(),
+                  p.value(QStringLiteral("width")).toInt() * 8, p.value(QStringLiteral("height")).toInt() * 8);
     }
     return extent;
 }
@@ -56,9 +54,7 @@ QImage failure(const QString& message) {
     return image;
 }
 
-QString hex(int value, int digits) {
-    return QStringLiteral("$%1").arg(value, digits, 16, QLatin1Char('0')).toUpper();
-}
+QString hex(int value, int digits) { return QStringLiteral("$%1").arg(value, digits, 16, QLatin1Char('0')).toUpper(); }
 
 sdk::Field integerField(const QString& key, const QString& label, int value, int minimum, int maximum,
                         const QString& hint = QString()) {
@@ -74,8 +70,7 @@ sdk::Field integerField(const QString& key, const QString& label, int value, int
     return field;
 }
 
-sdk::Field choiceField(const QString& key, const QString& label, const QStringList& choices,
-                       const QString& value) {
+sdk::Field choiceField(const QString& key, const QString& label, const QStringList& choices, const QString& value) {
     sdk::Field field;
     field.key = key;
     field.label = label;
@@ -126,17 +121,15 @@ QVector<sdk::CompositionPiece> MappingModel::pieces() const {
         sdk::CompositionPiece piece;
         piece.id = QString::number(i);
         piece.label = tr("Piece %1 · %2").arg(i).arg(hex(p.value(QStringLiteral("tile")).toInt(), 3));
-        piece.pixels = QRect(origin().x() + p.value(QStringLiteral("x")).toInt(),
-                             origin().y() + p.value(QStringLiteral("y")).toInt(),
-                             p.value(QStringLiteral("width")).toInt() * 8, p.value(QStringLiteral("height")).toInt() * 8);
+        piece.pixels = QRect(
+            origin().x() + p.value(QStringLiteral("x")).toInt(), origin().y() + p.value(QStringLiteral("y")).toInt(),
+            p.value(QStringLiteral("width")).toInt() * 8, p.value(QStringLiteral("height")).toInt() * 8);
         result.append(piece);
     }
     return result;
 }
 
-QString MappingModel::selectedPiece() const {
-    return selected_ >= 0 ? QString::number(selected_) : QString();
-}
+QString MappingModel::selectedPiece() const { return selected_ >= 0 ? QString::number(selected_) : QString(); }
 
 void MappingModel::selectPiece(const QString& id) {
     bool ok = false;
@@ -150,9 +143,9 @@ void MappingModel::selectPiece(const QString& id) {
 
 bool MappingModel::setPiece(int index, const QJsonObject& piece, QString* error) {
     const QString id = id_;
-    return session_->editSequences(tr("Edit %1 piece %2").arg(id).arg(index),
-                                   [id, index, piece](FlickySequencesDocument& q) { q.setMappingPiece(id, index, piece); },
-                                   error);
+    return session_->editSequences(
+        tr("Edit %1 piece %2").arg(id).arg(index),
+        [id, index, piece](FlickySequencesDocument& q) { q.setMappingPiece(id, index, piece); }, error);
 }
 
 void MappingModel::beginDrag(const QString& id) {
@@ -174,7 +167,8 @@ bool MappingModel::dragPiece(const QString& id, QPoint offset) {
     const int maxX = std::min(kOffsetMax, -kOffsetMin - width);
     const int x = std::clamp(dragStart_.value(QStringLiteral("x")).toInt() + offset.x(), minX, maxX);
     const int y = std::clamp(dragStart_.value(QStringLiteral("y")).toInt() + offset.y(), kOffsetMin, kOffsetMax);
-    if (x == piece(selected_).value(QStringLiteral("x")).toInt() && y == piece(selected_).value(QStringLiteral("y")).toInt()) {
+    if (x == piece(selected_).value(QStringLiteral("x")).toInt() &&
+        y == piece(selected_).value(QStringLiteral("y")).toInt()) {
         return false;
     }
     p.insert(QStringLiteral("x"), x);
@@ -223,16 +217,17 @@ sdk::Inspection MappingModel::inspect() const {
         inspection.kicker = tr("Sprite mapping");
         inspection.title = id_;
         inspection.fields = {integerField(QStringLiteral("render_flags"), tr("Render flags"),
-                                          mapping.value(QStringLiteral("render_flags")).toInt(), 0, 255, QStringLiteral("0–255"))};
+                                          mapping.value(QStringLiteral("render_flags")).toInt(), 0, 255,
+                                          QStringLiteral("0–255"))};
         sdk::Field count;
         count.key = QStringLiteral("pieces");
         count.label = tr("Pieces");
         count.value = QString::number(mapping.value(QStringLiteral("pieces")).toArray().size());
         inspection.fields << count;
-        inspection.note = tr("Pick a piece to edit it. Pieces are placed around the sprite "
-                             "origin (the crosshair); the palette comes from the chosen round.");
-        inspection.engine = {{tr("Mapping"), id_},
-                             {tr("Source"), mapping.value(QStringLiteral("source")).toString()}};
+        inspection.note =
+            tr("Pick a piece to edit it. Pieces are placed around the sprite "
+               "origin (the crosshair); the palette comes from the chosen round.");
+        inspection.engine = {{tr("Mapping"), id_}, {tr("Source"), mapping.value(QStringLiteral("source")).toString()}};
         return inspection;
     }
     const QJsonObject p = piece(selected_);
@@ -246,23 +241,34 @@ sdk::Inspection MappingModel::inspect() const {
     flipped.hint = QStringLiteral("auto");
     flipped.monospace = true;
     inspection.fields = {
-        integerField(QStringLiteral("x"), QStringLiteral("X"), p.value(QStringLiteral("x")).toInt(), kOffsetMin, kOffsetMax, QStringLiteral("px")),
-        integerField(QStringLiteral("y"), QStringLiteral("Y"), p.value(QStringLiteral("y")).toInt(), kOffsetMin, kOffsetMax, QStringLiteral("px")),
+        integerField(QStringLiteral("x"), QStringLiteral("X"), p.value(QStringLiteral("x")).toInt(), kOffsetMin,
+                     kOffsetMax, QStringLiteral("px")),
+        integerField(QStringLiteral("y"), QStringLiteral("Y"), p.value(QStringLiteral("y")).toInt(), kOffsetMin,
+                     kOffsetMax, QStringLiteral("px")),
         flipped,
-        choiceField(QStringLiteral("width"), tr("Width"), sizes, QString::number(p.value(QStringLiteral("width")).toInt())),
-        choiceField(QStringLiteral("height"), tr("Height"), sizes, QString::number(p.value(QStringLiteral("height")).toInt())),
-        integerField(QStringLiteral("tile"), tr("Tile"), p.value(QStringLiteral("tile")).toInt(), 0, 0x7FF, QStringLiteral("VRAM")),
-        choiceField(QStringLiteral("palette"), tr("Palette line"), {QStringLiteral("0"), QStringLiteral("1"), QStringLiteral("2"), QStringLiteral("3")},
+        choiceField(QStringLiteral("width"), tr("Width"), sizes,
+                    QString::number(p.value(QStringLiteral("width")).toInt())),
+        choiceField(QStringLiteral("height"), tr("Height"), sizes,
+                    QString::number(p.value(QStringLiteral("height")).toInt())),
+        integerField(QStringLiteral("tile"), tr("Tile"), p.value(QStringLiteral("tile")).toInt(), 0, 0x7FF,
+                     QStringLiteral("VRAM")),
+        choiceField(QStringLiteral("palette"), tr("Palette line"),
+                    {QStringLiteral("0"), QStringLiteral("1"), QStringLiteral("2"), QStringLiteral("3")},
                     QString::number(p.value(QStringLiteral("palette")).toInt())),
-        choiceField(QStringLiteral("priority"), tr("Priority"), kYesNo, p.value(QStringLiteral("priority")).toBool() ? kYesNo.at(1) : kYesNo.at(0)),
-        choiceField(QStringLiteral("hflip"), tr("X flip"), kYesNo, p.value(QStringLiteral("hflip")).toBool() ? kYesNo.at(1) : kYesNo.at(0)),
-        choiceField(QStringLiteral("vflip"), tr("Y flip"), kYesNo, p.value(QStringLiteral("vflip")).toBool() ? kYesNo.at(1) : kYesNo.at(0)),
+        choiceField(QStringLiteral("priority"), tr("Priority"), kYesNo,
+                    p.value(QStringLiteral("priority")).toBool() ? kYesNo.at(1) : kYesNo.at(0)),
+        choiceField(QStringLiteral("hflip"), tr("X flip"), kYesNo,
+                    p.value(QStringLiteral("hflip")).toBool() ? kYesNo.at(1) : kYesNo.at(0)),
+        choiceField(QStringLiteral("vflip"), tr("Y flip"), kYesNo,
+                    p.value(QStringLiteral("vflip")).toBool() ? kYesNo.at(1) : kYesNo.at(0)),
     };
-    inspection.note = tr("Drag the piece or nudge it with the arrow keys. The mirrored X that "
-                         "flipped sprites use follows automatically.");
-    inspection.engine = {{tr("Mapping"), id_},
-                         {tr("Piece"), tr("%1 of %2").arg(selected_ + 1).arg(mapping.value(QStringLiteral("pieces")).toArray().size())},
-                         {tr("Tile word"), hex(p.value(QStringLiteral("tile")).toInt(), 3)}};
+    inspection.note =
+        tr("Drag the piece or nudge it with the arrow keys. The mirrored X that "
+           "flipped sprites use follows automatically.");
+    inspection.engine = {
+        {tr("Mapping"), id_},
+        {tr("Piece"), tr("%1 of %2").arg(selected_ + 1).arg(mapping.value(QStringLiteral("pieces")).toArray().size())},
+        {tr("Tile word"), hex(p.value(QStringLiteral("tile")).toInt(), 3)}};
     return inspection;
 }
 
@@ -270,16 +276,17 @@ bool MappingModel::setField(const QString& key, const QVariant& value, QString* 
     if (key == QLatin1String("render_flags")) {
         const QString id = id_;
         const int flags = value.toInt();
-        return session_->editSequences(tr("Edit %1 render flags").arg(id),
-                                       [id, flags](FlickySequencesDocument& q) { q.setMappingRenderFlags(id, flags); },
-                                       error);
+        return session_->editSequences(
+            tr("Edit %1 render flags").arg(id),
+            [id, flags](FlickySequencesDocument& q) { q.setMappingRenderFlags(id, flags); }, error);
     }
     if (selected_ < 0) {
         return CompositionModel::setField(key, value, error);
     }
     QJsonObject p = piece(selected_);
     if (key == QLatin1String("x") || key == QLatin1String("width")) {
-        const int width = (key == QLatin1String("width") ? value.toString().toInt() : p.value(QStringLiteral("width")).toInt()) * 8;
+        const int width =
+            (key == QLatin1String("width") ? value.toString().toInt() : p.value(QStringLiteral("width")).toInt()) * 8;
         const int x = key == QLatin1String("x") ? value.toInt() : p.value(QStringLiteral("x")).toInt();
         if (-x - width < kOffsetMin || -x - width > kOffsetMax) {
             if (error) *error = tr("The mirrored position would leave the -128..127 range.");
@@ -321,9 +328,7 @@ AnimationModel::AnimationModel(FlickySession* session, const QString& id)
     connect(session_, &FlickySession::semanticsChanged, this, &sdk::EditorModel::contentChanged);
 }
 
-QJsonObject AnimationModel::animation() const {
-    return session_->sequences().animation(id_);
-}
+QJsonObject AnimationModel::animation() const { return session_->sequences().animation(id_); }
 
 QVector<sdk::CompositionFrame> AnimationModel::frames() const {
     QVector<sdk::CompositionFrame> result;
@@ -395,8 +400,8 @@ bool AnimationModel::moveFrame(int from, int to, QString* error) {
     list.replace(to, moved);
     a.insert(QStringLiteral("frames"), list);
     const QString id = id_;
-    if (!session_->editSequences(tr("Reorder %1").arg(id),
-                                 [id, a](FlickySequencesDocument& q) { q.replaceAnimation(id, a); }, error)) {
+    if (!session_->editSequences(
+            tr("Reorder %1").arg(id), [id, a](FlickySequencesDocument& q) { q.replaceAnimation(id, a); }, error)) {
         return false;
     }
     setCurrentFrame(to);
@@ -437,11 +442,12 @@ sdk::Inspection AnimationModel::inspect() const {
     frame.choices = session_->sequences().allowedFrames(a.value(QStringLiteral("kind")).toString());
     frame.value = list.at(frame_).toString();
     inspection.fields = {kind,
-                         integerField(QStringLiteral("delay"), tr("Delay"), a.value(QStringLiteral("delay")).toInt(), 0, 255,
-                                      QStringLiteral("frames")),
+                         integerField(QStringLiteral("delay"), tr("Delay"), a.value(QStringLiteral("delay")).toInt(), 0,
+                                      255, QStringLiteral("frames")),
                          frame};
-    inspection.note = tr("Each frame shows for delay + 1 video frames. Reorder frames with "
-                         "Earlier / Later; the frame count is fixed by the game.");
+    inspection.note =
+        tr("Each frame shows for delay + 1 video frames. Reorder frames with "
+           "Earlier / Later; the frame count is fixed by the game.");
     inspection.engineTag = QStringLiteral("flicky.animations.v1");
     inspection.engine = {{tr("Animation"), id_},
                          {QStringLiteral("Frames"), QString::number(list.size())},
@@ -453,18 +459,16 @@ bool AnimationModel::setField(const QString& key, const QVariant& value, QString
     const QString id = id_;
     if (key == QLatin1String("delay")) {
         const int delay = value.toInt();
-        return session_->editSequences(tr("Edit %1 delay").arg(id),
-                                       [id, delay](FlickySequencesDocument& q) { q.setAnimationDelay(id, delay); },
-                                       error);
+        return session_->editSequences(
+            tr("Edit %1 delay").arg(id), [id, delay](FlickySequencesDocument& q) { q.setAnimationDelay(id, delay); },
+            error);
     }
     if (key == QLatin1String("frame")) {
         const int index = frame_;
         const QString frame = value.toString();
-        return session_->editSequences(tr("Edit %1 frame %2").arg(id).arg(index + 1),
-                                       [id, index, frame](FlickySequencesDocument& q) {
-                                           q.setAnimationFrame(id, index, frame);
-                                       },
-                                       error);
+        return session_->editSequences(
+            tr("Edit %1 frame %2").arg(id).arg(index + 1),
+            [id, index, frame](FlickySequencesDocument& q) { q.setAnimationFrame(id, index, frame); }, error);
     }
     return CompositionModel::setField(key, value, error);
 }
@@ -480,13 +484,9 @@ BonusMotionModel::BonusMotionModel(FlickySession* session, const QString& id)
     connect(session_, &FlickySession::sequencesChanged, this, &sdk::EditorModel::contentChanged);
 }
 
-QJsonObject BonusMotionModel::record() const {
-    return session_->sequences().bonusMotion(id_);
-}
+QJsonObject BonusMotionModel::record() const { return session_->sequences().bonusMotion(id_); }
 
-int BonusMotionModel::word(int row) const {
-    return record().value(QStringLiteral("words")).toArray().at(row).toInt();
-}
+int BonusMotionModel::word(int row) const { return record().value(QStringLiteral("words")).toArray().at(row).toInt(); }
 
 bool BonusMotionModel::isLocked(int row) const {
     // A trajectory ends with the $FFFF sentinel the game scans for.
@@ -545,9 +545,7 @@ QVector<sdk::TableColumn> BonusMotionModel::columns() const {
     return {index, value, meaningColumn};
 }
 
-int BonusMotionModel::rowCount() const {
-    return record().value(QStringLiteral("words")).toArray().size();
-}
+int BonusMotionModel::rowCount() const { return record().value(QStringLiteral("words")).toArray().size(); }
 
 QString BonusMotionModel::cell(int row, int column) const {
     if (column == 0) return QString::number(row);
@@ -556,7 +554,8 @@ QString BonusMotionModel::cell(int row, int column) const {
 }
 
 bool BonusMotionModel::isRowDirty(int row) const {
-    return word(row) != session_->savedSequences().bonusMotion(id_).value(QStringLiteral("words")).toArray().at(row).toInt();
+    return word(row) !=
+           session_->savedSequences().bonusMotion(id_).value(QStringLiteral("words")).toArray().at(row).toInt();
 }
 
 void BonusMotionModel::setCurrentRow(int row) {
@@ -580,9 +579,9 @@ bool BonusMotionModel::setWord(int row, const QString& text, QString* error) {
         return false;
     }
     const QString id = id_;
-    return session_->editSequences(tr("Edit %1 slot %2").arg(id).arg(row),
-                                   [id, row, value](FlickySequencesDocument& q) { q.setBonusMotionWord(id, row, value); },
-                                   error);
+    return session_->editSequences(
+        tr("Edit %1 slot %2").arg(id).arg(row),
+        [id, row, value](FlickySequencesDocument& q) { q.setBonusMotionWord(id, row, value); }, error);
 }
 
 bool BonusMotionModel::setCell(int row, int column, const QString& value, QString* error) {
@@ -625,10 +624,12 @@ sdk::Inspection BonusMotionModel::inspect() const {
     inspection.fields = {value, kind, used};
     inspection.note = meaning(row_);
     inspection.engineTag = QStringLiteral("flicky.animations.v1");
-    inspection.engine = {{tr("Table"), id_},
-                         {tr("Words"), QString::number(rowCount())},
-                         {tr("Saved"),
-                          hex(session_->savedSequences().bonusMotion(id_).value(QStringLiteral("words")).toArray().at(row_).toInt(), 4)}};
+    inspection.engine = {
+        {tr("Table"), id_},
+        {tr("Words"), QString::number(rowCount())},
+        {tr("Saved"),
+         hex(session_->savedSequences().bonusMotion(id_).value(QStringLiteral("words")).toArray().at(row_).toInt(),
+             4)}};
     return inspection;
 }
 

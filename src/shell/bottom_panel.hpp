@@ -13,7 +13,7 @@ class QStackedWidget;
 namespace rl::ui {
 class Label;
 class PanelTabs;
-}
+}  // namespace rl::ui
 
 namespace rl::shell {
 

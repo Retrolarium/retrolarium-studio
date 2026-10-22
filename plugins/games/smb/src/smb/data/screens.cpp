@@ -11,9 +11,7 @@ namespace rl::smb {
 
 namespace {
 
-[[noreturn]] void fail(const QString& message) {
-    throw SmbError(message.toStdString());
-}
+[[noreturn]] void fail(const QString& message) { throw SmbError(message.toStdString()); }
 
 QVector<int> intsOf(const QJsonValue& value) {
     QVector<int> result;

@@ -46,12 +46,13 @@ int behaviorSize(int opcode) {
 }
 
 const char* const kDrivers[4] = {QT_TRANSLATE_NOOP("doraemon", "World 1"), QT_TRANSLATE_NOOP("doraemon", "World 2"),
-                                 QT_TRANSLATE_NOOP("doraemon", "World 3"), QT_TRANSLATE_NOOP("doraemon", "Title and ending")};
+                                 QT_TRANSLATE_NOOP("doraemon", "World 3"),
+                                 QT_TRANSLATE_NOOP("doraemon", "Title and ending")};
 
 // Music commands whose operands shape the sound; the rest steer the stream.
 bool shapesSound(const QString& name) {
-    static const QStringList kShaping{QStringLiteral("SetEnvelopeVolume"), QStringLiteral("EnableFixedPitch"),
-                                      QStringLiteral("SetDutyCycle"), QStringLiteral("SetGlobalPitchOffset"),
+    static const QStringList kShaping{QStringLiteral("SetEnvelopeVolume"),     QStringLiteral("EnableFixedPitch"),
+                                      QStringLiteral("SetDutyCycle"),          QStringLiteral("SetGlobalPitchOffset"),
                                       QStringLiteral("SetChannelPitchOffset"), QStringLiteral("LoadExtendedDuration")};
     return kShaping.contains(name);
 }
@@ -90,13 +91,16 @@ QString DoraemonBehaviorModel::commandLabel(const QString& command) {
 QJsonArray DoraemonBehaviorModel::instructions(bool saved) const {
     const nes::Bundle& bundle = saved ? session_->savedBundle() : session_->bundle();
     if (!bundle.contains(kBehavior)) return {};
-    return bundle.resource(kBehavior).value(QStringLiteral("streams")).toArray().at(stream_).toObject()
-        .value(QStringLiteral("instructions")).toArray();
+    return bundle.resource(kBehavior)
+        .value(QStringLiteral("streams"))
+        .toArray()
+        .at(stream_)
+        .toObject()
+        .value(QStringLiteral("instructions"))
+        .toArray();
 }
 
-QString DoraemonBehaviorModel::title() const {
-    return tr("Behavior %1").arg(stream_);
-}
+QString DoraemonBehaviorModel::title() const { return tr("Behavior %1").arg(stream_); }
 
 QVector<sdk::TableColumn> DoraemonBehaviorModel::columns() const {
     sdk::TableColumn offset;
@@ -123,19 +127,22 @@ QVector<sdk::TableColumn> DoraemonBehaviorModel::columns() const {
     return {offset, command, parameter, operands};
 }
 
-int DoraemonBehaviorModel::rowCount() const {
-    return instructions().size();
-}
+int DoraemonBehaviorModel::rowCount() const { return instructions().size(); }
 
 QString DoraemonBehaviorModel::cell(int row, int column) const {
     const QJsonObject instruction = instructions().at(row).toObject();
     if (instruction.isEmpty()) return {};
     switch (column) {
-    case 0: return nes::hex(instruction.value(QStringLiteral("offset")).toInt());
-    case 1: return commandLabel(instruction.value(QStringLiteral("command")).toString());
-    case 2: return nes::hex(instruction.value(QStringLiteral("opcode")).toInt() & 0x0f, 1);
-    case 3: return bytesText(instruction.value(QStringLiteral("operands")).toArray());
-    default: return {};
+        case 0:
+            return nes::hex(instruction.value(QStringLiteral("offset")).toInt());
+        case 1:
+            return commandLabel(instruction.value(QStringLiteral("command")).toString());
+        case 2:
+            return nes::hex(instruction.value(QStringLiteral("opcode")).toInt() & 0x0f, 1);
+        case 3:
+            return bytesText(instruction.value(QStringLiteral("operands")).toArray());
+        default:
+            return {};
     }
 }
 
@@ -184,17 +191,20 @@ bool DoraemonBehaviorModel::setCell(int row, int column, const QString& value, Q
         instruction.insert(QStringLiteral("operands"), operands);
     }
     const int stream = stream_;
-    return session_->editBundle(tr("Edit behavior %1").arg(stream_), [stream, row, instruction](nes::Bundle& bundle) {
-        QJsonObject resource = bundle.resource(kBehavior);
-        QJsonArray streams = resource.value(QStringLiteral("streams")).toArray();
-        QJsonObject object = streams.at(stream).toObject();
-        QJsonArray list = object.value(QStringLiteral("instructions")).toArray();
-        list.replace(row, instruction);
-        object.insert(QStringLiteral("instructions"), list);
-        streams.replace(stream, object);
-        resource.insert(QStringLiteral("streams"), streams);
-        bundle.setResource(kBehavior, resource);
-    }, error);
+    return session_->editBundle(
+        tr("Edit behavior %1").arg(stream_),
+        [stream, row, instruction](nes::Bundle& bundle) {
+            QJsonObject resource = bundle.resource(kBehavior);
+            QJsonArray streams = resource.value(QStringLiteral("streams")).toArray();
+            QJsonObject object = streams.at(stream).toObject();
+            QJsonArray list = object.value(QStringLiteral("instructions")).toArray();
+            list.replace(row, instruction);
+            object.insert(QStringLiteral("instructions"), list);
+            streams.replace(stream, object);
+            resource.insert(QStringLiteral("streams"), streams);
+            bundle.setResource(kBehavior, resource);
+        },
+        error);
 }
 
 sdk::Inspection DoraemonBehaviorModel::inspect() const {
@@ -202,9 +212,10 @@ sdk::Inspection DoraemonBehaviorModel::inspect() const {
     inspection.kicker = title();
     const QJsonObject instruction = instructions().at(row_).toObject();
     inspection.title = commandLabel(instruction.value(QStringLiteral("command")).toString());
-    inspection.note = tr("World 3's creatures run these small programs. An instruction keeps its place and "
-                         "size: change its parameter digit or its operands. A jump or branch operand is an "
-                         "offset in this stream and must land on one of its instructions.");
+    inspection.note =
+        tr("World 3's creatures run these small programs. An instruction keeps its place and "
+           "size: change its parameter digit or its operands. A jump or branch operand is an "
+           "offset in this stream and must land on one of its instructions.");
     QStringList raw{nes::hex(instruction.value(QStringLiteral("opcode")).toInt())};
     raw << bytesText(instruction.value(QStringLiteral("operands")).toArray());
     inspection.engine = {{tr("Offset"), nes::hex(instruction.value(QStringLiteral("offset")).toInt())},
@@ -273,28 +284,40 @@ QVector<sdk::TableColumn> DoraemonStreamEventsModel::columns() const {
     return {address, event, value};
 }
 
-int DoraemonStreamEventsModel::rowCount() const {
-    return events().size();
-}
+int DoraemonStreamEventsModel::rowCount() const { return events().size(); }
 
 QString DoraemonStreamEventsModel::cell(int row, int column) const {
     if (row < 0 || row >= rowCount()) return {};
     const Event& e = events().at(row);
     const QString name = e.text.section(QLatin1Char(' '), 0, 0);
     switch (column) {
-    case 0: return nes::hex(e.address, 4);
-    case 1: return name == QLatin1String("event") ? tr("Note") : name == QLatin1String("duration") ? tr("Duration") : name;
-    case 2: return e.text.section(QLatin1Char(' '), 1);
-    default: return {};
+        case 0:
+            return nes::hex(e.address, 4);
+        case 1:
+            return name == QLatin1String("event")      ? tr("Note")
+                   : name == QLatin1String("duration") ? tr("Duration")
+                                                       : name;
+        case 2:
+            return e.text.section(QLatin1Char(' '), 1);
+        default:
+            return {};
     }
 }
 
 bool DoraemonStreamEventsModel::isRowDirty(int row) const {
     if (row < 0 || row >= rowCount()) return false;
     const Event& e = events().at(row);
-    const QJsonArray saved = session_->savedMusic().value(QStringLiteral("drivers")).toArray().at(driver_).toObject()
-                                 .value(QStringLiteral("segments")).toArray().at(e.segment).toObject()
-                                 .value(QStringLiteral("events")).toArray();
+    const QJsonArray saved = session_->savedMusic()
+                                 .value(QStringLiteral("drivers"))
+                                 .toArray()
+                                 .at(driver_)
+                                 .toObject()
+                                 .value(QStringLiteral("segments"))
+                                 .toArray()
+                                 .at(e.segment)
+                                 .toObject()
+                                 .value(QStringLiteral("events"))
+                                 .toArray();
     return saved.at(e.index).toString() != e.text;
 }
 
@@ -350,9 +373,10 @@ sdk::Inspection DoraemonStreamEventsModel::inspect() const {
     sdk::Inspection inspection;
     inspection.kicker = title();
     inspection.title = row_ < rowCount() ? cell(row_, 1) : QString();
-    inspection.note = tr("Every byte the driver's channels reach, in stream order. Notes, durations and the "
-                         "operands of envelope, duty, pitch and length commands change in place; calls, "
-                         "loops, returns and channel ends stay as they are.");
+    inspection.note =
+        tr("Every byte the driver's channels reach, in stream order. Notes, durations and the "
+           "operands of envelope, duty, pitch and length commands change in place; calls, "
+           "loops, returns and channel ends stay as they are.");
     if (row_ < rowCount()) {
         inspection.engine = {{tr("Address"), nes::hex(events().at(row_).address, 4)},
                              {tr("Stream text"), events().at(row_).text}};
@@ -361,8 +385,6 @@ sdk::Inspection DoraemonStreamEventsModel::inspect() const {
     return inspection;
 }
 
-QString DoraemonStreamEventsModel::statusText() const {
-    return tr("%1 · %n events", nullptr, rowCount()).arg(title());
-}
+QString DoraemonStreamEventsModel::statusText() const { return tr("%1 · %n events", nullptr, rowCount()).arg(title()); }
 
 }  // namespace rl::doraemon

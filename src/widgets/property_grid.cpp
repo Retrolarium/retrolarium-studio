@@ -24,9 +24,7 @@ constexpr int kChoiceIcon = 20;
 // The widest the key column grows before its keys wrap.
 constexpr int kMaxKeyWidth = 132;
 
-QFont hintFont() {
-    return theme::font(theme::TextRole::Body, kHintPx);
-}
+QFont hintFont() { return theme::font(theme::TextRole::Body, kHintPx); }
 
 void clearLayout(QGridLayout* grid) {
     while (QLayoutItem* item = grid->takeAt(0)) {
@@ -57,8 +55,7 @@ void PropertyField::setMonospace(bool monospace) {
 }
 
 void PropertyField::updateMargins() {
-    const int hintWidth =
-        hint_.isEmpty() ? 0 : QFontMetrics(hintFont()).horizontalAdvance(hint_) + kHintGap;
+    const int hintWidth = hint_.isEmpty() ? 0 : QFontMetrics(hintFont()).horizontalAdvance(hint_) + kHintGap;
     setTextMargins(0, 0, hintWidth, 0);
 }
 
@@ -105,8 +102,7 @@ void PropertyGrid::addRow(const QString& key, QWidget* field) {
     ++rows_;
 }
 
-PropertyField* PropertyGrid::addField(const QString& key, const QString& value,
-                                      const QString& hint) {
+PropertyField* PropertyGrid::addField(const QString& key, const QString& value, const QString& hint) {
     auto* field = new PropertyField(value, hint);
     addRow(key, field);
     return field;

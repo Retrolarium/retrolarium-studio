@@ -66,7 +66,7 @@ public:
     QSize sizeHint() const override;
 
 signals:
-    void zoomRequested(int delta, QPoint anchor);   // anchor: the mouse, canvas coordinates
+    void zoomRequested(int delta, QPoint anchor);  // anchor: the mouse, canvas coordinates
     void zoomChanged();
     void actionFailed(const QString& message);
 
@@ -95,7 +95,7 @@ private:
     QImage image_;
     int zoom_ = 2;
     bool fit_ = true;
-    QRect view_;                // canvas pixels shown; grows, never shrinks
+    QRect view_;  // canvas pixels shown; grows, never shrinks
     QString dragging_;
     QPoint pressPos_;
 };

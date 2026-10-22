@@ -19,16 +19,14 @@ enum Corner : unsigned {
 
 // Registration marks: L-shaped 1px brackets sitting `offset` pixels outside
 // `target`, each arm `length` pixels long.
-void cornerMarks(QPainter& painter, const QRectF& target, double length, double offset,
-                 const QColor& color, unsigned corners = kAllCorners);
+void cornerMarks(QPainter& painter, const QRectF& target, double length, double offset, const QColor& color,
+                 unsigned corners = kAllCorners);
 
 // 45-degree hatching used for placeholders and library icons.
-void hatch(QPainter& painter, const QRectF& area, const QColor& color, double period,
-           double stripe);
+void hatch(QPainter& painter, const QRectF& area, const QColor& color, double period, double stripe);
 
 // Transparency checkerboard behind sprite compositions.
-void checkerboard(QPainter& painter, const QRect& area, int square,
-                  const QColor& a, const QColor& b);
+void checkerboard(QPainter& painter, const QRect& area, int square, const QColor& a, const QColor& b);
 
 // Dot grid on the map canvas ground.
 void dotGrid(QPainter& painter, const QRect& area, int spacing, const QColor& color);

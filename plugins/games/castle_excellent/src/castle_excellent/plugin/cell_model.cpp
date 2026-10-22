@@ -12,15 +12,14 @@ namespace rl::castle_excellent {
 
 namespace {
 
-QString hex(int value) {
-    return QLatin1Char('$') + QStringLiteral("%1").arg(value, 2, 16, QLatin1Char('0')).toUpper();
-}
+QString hex(int value) { return QLatin1Char('$') + QStringLiteral("%1").arg(value, 2, 16, QLatin1Char('0')).toUpper(); }
 
 const char* const kHalves[2] = {"Left", "Right"};
 
 }  // namespace
 
-CastleExcellentCellModel::CastleExcellentCellModel(CastleExcellentSession* session) : TileMapModel(session), session_(session) {
+CastleExcellentCellModel::CastleExcellentCellModel(CastleExcellentSession* session)
+    : TileMapModel(session), session_(session) {
     connect(session_, &sdk::Session::contentChanged, this, &sdk::EditorModel::contentChanged);
 }
 
@@ -33,8 +32,12 @@ int CastleExcellentCellModel::tileOf(int cell, int half) const {
     if (found != pending_.constEnd()) {
         return found->at(static_cast<std::size_t>(half));
     }
-    const QJsonObject record =
-        session_->bundle().resource(session_->art().cellVisuals).value(QStringLiteral("records")).toArray().at(cell).toObject();
+    const QJsonObject record = session_->bundle()
+                                   .resource(session_->art().cellVisuals)
+                                   .value(QStringLiteral("records"))
+                                   .toArray()
+                                   .at(cell)
+                                   .toObject();
     return record.value(half == 0 ? QStringLiteral("left_tile") : QStringLiteral("right_tile")).toInt();
 }
 
@@ -102,7 +105,8 @@ QImage CastleExcellentCellModel::render() const {
     QPainter painter(&image);
     const CastleExcellentPainter& art = session_->painter();
     for (int i = 0; i < count(); ++i) {
-        const QPoint at((i % kPerRow) * CastleExcellentPainter::kCellWidth, (i / kPerRow) * CastleExcellentPainter::kCellHeight);
+        const QPoint at((i % kPerRow) * CastleExcellentPainter::kCellWidth,
+                        (i / kPerRow) * CastleExcellentPainter::kCellHeight);
         if (!pending_.contains(i)) {
             painter.drawImage(at, art.cellIcon(i));
             continue;
@@ -126,9 +130,7 @@ void CastleExcellentCellModel::setCurrentBrush(int value) {
     emit selectionChanged();
 }
 
-QString CastleExcellentCellModel::currentLibraryItem() const {
-    return QStringLiteral("tile:%1").arg(tile_);
-}
+QString CastleExcellentCellModel::currentLibraryItem() const { return QStringLiteral("tile:%1").arg(tile_); }
 
 void CastleExcellentCellModel::setCurrentLibraryItem(const QString& id) {
     if (!id.startsWith(QLatin1String("tile:"))) {
@@ -147,25 +149,25 @@ int CastleExcellentCellModel::cellValue(QPoint cell) const {
     return at.first < 0 ? -1 : tileOf(at.first, at.second);
 }
 
-bool CastleExcellentCellModel::isCellEditable(QPoint cell) const {
-    return cellAt(cell).first >= 0;
-}
+bool CastleExcellentCellModel::isCellEditable(QPoint cell) const { return cellAt(cell).first >= 0; }
 
-bool CastleExcellentCellModel::setCellFields(int cell, int left, int right, int palette, const QString& text, QString* error) {
+bool CastleExcellentCellModel::setCellFields(int cell, int left, int right, int palette, const QString& text,
+                                             QString* error) {
     const QString id = session_->art().cellVisuals;
-    return session_->editBundle(text,
-                                [id, cell, left, right, palette](nes::Bundle& b) {
-                                    QJsonObject resource = b.resource(id);
-                                    QJsonArray records = resource.value(QStringLiteral("records")).toArray();
-                                    QJsonObject record = records.at(cell).toObject();
-                                    record.insert(QStringLiteral("left_tile"), left);
-                                    record.insert(QStringLiteral("right_tile"), right);
-                                    record.insert(QStringLiteral("palette"), palette);
-                                    records.replace(cell, record);
-                                    resource.insert(QStringLiteral("records"), records);
-                                    b.setResource(id, resource);
-                                },
-                                error);
+    return session_->editBundle(
+        text,
+        [id, cell, left, right, palette](nes::Bundle& b) {
+            QJsonObject resource = b.resource(id);
+            QJsonArray records = resource.value(QStringLiteral("records")).toArray();
+            QJsonObject record = records.at(cell).toObject();
+            record.insert(QStringLiteral("left_tile"), left);
+            record.insert(QStringLiteral("right_tile"), right);
+            record.insert(QStringLiteral("palette"), palette);
+            records.replace(cell, record);
+            resource.insert(QStringLiteral("records"), records);
+            b.setResource(id, resource);
+        },
+        error);
 }
 
 bool CastleExcellentCellModel::placeObject(const QString& libraryItem, QPoint cell, QString* error) {
@@ -179,8 +181,8 @@ bool CastleExcellentCellModel::placeObject(const QString& libraryItem, QPoint ce
     selectObject(QStringLiteral("cell:%1").arg(at.first));
     const int left = at.second == 0 ? tile : tileOf(at.first, 0);
     const int right = at.second == 1 ? tile : tileOf(at.first, 1);
-    return setCellFields(at.first, left, right, paletteOf(at.first),
-                         tr("Set a pattern of cell %1").arg(at.first), error);
+    return setCellFields(at.first, left, right, paletteOf(at.first), tr("Set a pattern of cell %1").arg(at.first),
+                         error);
 }
 
 void CastleExcellentCellModel::beginStroke() {
@@ -212,20 +214,21 @@ void CastleExcellentCellModel::endStroke() {
     // Cleared first: the edit redraws from the document.
     pending_.clear();
     QString error;
-    session_->editBundle(tr("Paint room cells"),
-                         [pending, id](nes::Bundle& b) {
-                             QJsonObject resource = b.resource(id);
-                             QJsonArray records = resource.value(QStringLiteral("records")).toArray();
-                             for (auto it = pending.constBegin(); it != pending.constEnd(); ++it) {
-                                 QJsonObject record = records.at(it.key()).toObject();
-                                 record.insert(QStringLiteral("left_tile"), it.value()[0]);
-                                 record.insert(QStringLiteral("right_tile"), it.value()[1]);
-                                 records.replace(it.key(), record);
-                             }
-                             resource.insert(QStringLiteral("records"), records);
-                             b.setResource(id, resource);
-                         },
-                         &error);
+    session_->editBundle(
+        tr("Paint room cells"),
+        [pending, id](nes::Bundle& b) {
+            QJsonObject resource = b.resource(id);
+            QJsonArray records = resource.value(QStringLiteral("records")).toArray();
+            for (auto it = pending.constBegin(); it != pending.constEnd(); ++it) {
+                QJsonObject record = records.at(it.key()).toObject();
+                record.insert(QStringLiteral("left_tile"), it.value()[0]);
+                record.insert(QStringLiteral("right_tile"), it.value()[1]);
+                records.replace(it.key(), record);
+            }
+            resource.insert(QStringLiteral("records"), records);
+            b.setResource(id, resource);
+        },
+        &error);
 }
 
 // ---------------------------------------------------------------- objects
@@ -314,9 +317,10 @@ sdk::Inspection CastleExcellentCellModel::inspect() const {
         cells.label = tr("Cells");
         cells.value = QStringLiteral("%1 · 16x8").arg(count());
         inspection.fields = {cells};
-        inspection.note = tr("Rooms are built from these cells: two background patterns side by side in "
-                             "one of four palettes. Changing a cell changes every room that uses it. "
-                             "Pick a pattern in the sheet and paint cell halves, or select a cell.");
+        inspection.note =
+            tr("Rooms are built from these cells: two background patterns side by side in "
+               "one of four palettes. Changing a cell changes every room that uses it. "
+               "Pick a pattern in the sheet and paint cell halves, or select a cell.");
         return inspection;
     }
     int rooms = 0;
@@ -365,8 +369,9 @@ sdk::Inspection CastleExcellentCellModel::inspect() const {
                          "palette the room loader writes for this cell (cells the loader skips keep "
                          "their neighbours' colours). %1 rooms place it.")
                           .arg(rooms);
-    inspection.engine = {{tr("Cell"), QString::number(selected_)},
-                         {tr("Patterns"), QStringLiteral("%1 %2").arg(hex(tileOf(selected_, 0)), hex(tileOf(selected_, 1)))}};
+    inspection.engine = {
+        {tr("Cell"), QString::number(selected_)},
+        {tr("Patterns"), QStringLiteral("%1 %2").arg(hex(tileOf(selected_, 0)), hex(tileOf(selected_, 1)))}};
     return inspection;
 }
 

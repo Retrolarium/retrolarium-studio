@@ -119,8 +119,8 @@ QRect MapCanvas::hoverRect(QPoint cell) const {
     const int cw = std::max(1, scaled(model_->cellSize().width()));
     const int ch = std::max(1, scaled(model_->cellSize().height()));
     // The Add tool's preview can cover more than the cell.
-    const QSize cells = tool_ == QLatin1String("place") && !previewIcon_.isNull() ? previewCells_.expandedTo(QSize(1, 1))
-                                                                                  : QSize(1, 1);
+    const QSize cells =
+        tool_ == QLatin1String("place") && !previewIcon_.isNull() ? previewCells_.expandedTo(QSize(1, 1)) : QSize(1, 1);
     return QRect(map.left() + cell.x() * cw, map.top() + cell.y() * ch, cw * cells.width(), ch * cells.height())
         .adjusted(-3, -3, 3, 3);
 }
@@ -168,9 +168,7 @@ void MapCanvas::setPlacePreview(const QImage& icon, QSize cells) {
     update();
 }
 
-void MapCanvas::updateCursor() {
-    setCursor(tool_ == QLatin1String("select") ? Qt::ArrowCursor : Qt::CrossCursor);
-}
+void MapCanvas::updateCursor() { setCursor(tool_ == QLatin1String("select") ? Qt::ArrowCursor : Qt::CrossCursor); }
 
 QSize MapCanvas::sizeHint() const {
     const QSize map(scaled(model_->gridSize().width() * model_->cellSize().width()),
@@ -274,9 +272,8 @@ void MapCanvas::mousePressEvent(QMouseEvent* event) {
             return;
         }
         lockReported_ = false;
-        paintValue_ = event->button() == Qt::RightButton && !brushes.isEmpty()
-                          ? brushes.first().value
-                          : model_->currentBrush();
+        paintValue_ =
+            event->button() == Qt::RightButton && !brushes.isEmpty() ? brushes.first().value : model_->currentBrush();
         painting_ = true;
         paintButton_ = event->button();
         lastPaintCell_ = cell;
@@ -346,9 +343,7 @@ void MapCanvas::mouseReleaseEvent(QMouseEvent* event) {
     }
 }
 
-void MapCanvas::leaveEvent(QEvent*) {
-    setHoverCell(QPoint(-1, -1));
-}
+void MapCanvas::leaveEvent(QEvent*) { setHoverCell(QPoint(-1, -1)); }
 
 void MapCanvas::wheelEvent(QWheelEvent* event) {
     if (event->modifiers() & Qt::ControlModifier) {
@@ -442,8 +437,7 @@ void MapCanvas::paintEvent(QPaintEvent* event) {
                 const int value = model_->cellValue(QPoint(x, y));
                 for (const sdk::CellBrush& brush : brushes) {
                     if (brush.value == value && brush.overlay.isValid()) {
-                        painter.fillRect(QRect(map.left() + x * cw, map.top() + y * ch, cw, ch),
-                                         brush.overlay);
+                        painter.fillRect(QRect(map.left() + x * cw, map.top() + y * ch, cw, ch), brush.overlay);
                     }
                 }
             }
@@ -474,8 +468,7 @@ void MapCanvas::paintEvent(QPaintEvent* event) {
             }
             painter.fillRect(QRect(x, map.top() - 24, 1, 16), QColor(255, 255, 255, 90));
             painter.setPen(theme::canvas::kPageLabel);
-            painter.drawText(QRect(x + 5, map.top() - 24, 80, 16), Qt::AlignVCenter,
-                             tr("Page %1").arg(page));
+            painter.drawText(QRect(x + 5, map.top() - 24, 80, 16), Qt::AlignVCenter, tr("Page %1").arg(page));
         }
     }
 
@@ -505,8 +498,7 @@ void MapCanvas::paintEvent(QPaintEvent* event) {
         painter.drawRect(r.adjusted(0, 0, -1, -1));
     }
     if (selectedObject) {
-        const QRect r(map.left() + selectedObject->cells.left() * cw,
-                      map.top() + selectedObject->cells.top() * ch,
+        const QRect r(map.left() + selectedObject->cells.left() * cw, map.top() + selectedObject->cells.top() * ch,
                       selectedObject->cells.width() * cw, selectedObject->cells.height() * ch);
         painter.fillRect(r, theme::canvas::kSelectionFill);
         paint::hairlineRect(painter, r, theme::canvas::kSelection, 2.0);
@@ -544,10 +536,7 @@ void MapCanvas::paintEvent(QPaintEvent* event) {
 // ---------------------------------------------------------------- editor
 
 TileMapEditor::TileMapEditor(sdk::TileMapModel* model, QWidget* parent)
-    : EditorView(model, parent),
-      map_(model),
-      scroll_(new QScrollArea(this)),
-      canvas_(new MapCanvas(model, scroll_)) {
+    : EditorView(model, parent), map_(model), scroll_(new QScrollArea(this)), canvas_(new MapCanvas(model, scroll_)) {
     auto* layout = new QHBoxLayout(this);
     layout->setContentsMargins(0, 0, 0, 0);
     scroll_->setFrameShape(QFrame::NoFrame);
@@ -572,9 +561,8 @@ TileMapEditor::TileMapEditor(sdk::TileMapModel* model, QWidget* parent)
     layout->addWidget(split);
 
     const QVector<sdk::Tool> tools = map_->tools();
-    const bool remembered = std::any_of(tools.begin(), tools.end(), [](const sdk::Tool& tool) {
-        return tool.id == lastTool();
-    });
+    const bool remembered =
+        std::any_of(tools.begin(), tools.end(), [](const sdk::Tool& tool) { return tool.id == lastTool(); });
     tool_ = remembered ? lastTool() : tools.isEmpty() ? QStringLiteral("select") : tools.first().id;
     canvas_->setTool(tool_);
     updatePlacePreview();
@@ -582,17 +570,17 @@ TileMapEditor::TileMapEditor(sdk::TileMapModel* model, QWidget* parent)
     // Ctrl+wheel zooms about the mouse: the picture under it stays put.
     connect(canvas_, &MapCanvas::zoomRequested, this, [this](int delta, QPoint anchor) {
         const int next = zoomStep(zoom(), delta);
-        zoomKeepingPoint(scroll_, canvas_, anchor, [this] { return canvas_->mapRect(); },
-                         [this, next] { canvas_->setZoom(next); });
+        zoomKeepingPoint(
+            scroll_, canvas_, anchor, [this] { return canvas_->mapRect(); }, [this, next] { canvas_->setZoom(next); });
         emit toolbarChanged();
     });
     connect(canvas_, &MapCanvas::actionFailed, this, &EditorView::actionFailed);
     connect(map_, &sdk::EditorModel::toolsChanged, this, [this] {
         const QVector<sdk::Tool> current = map_->tools();
-        const bool known = std::any_of(current.begin(), current.end(),
-                                       [this](const sdk::Tool& t) { return t.id == tool_; });
-        const bool remembered = std::any_of(current.begin(), current.end(),
-                                            [](const sdk::Tool& t) { return t.id == lastTool(); });
+        const bool known =
+            std::any_of(current.begin(), current.end(), [this](const sdk::Tool& t) { return t.id == tool_; });
+        const bool remembered =
+            std::any_of(current.begin(), current.end(), [](const sdk::Tool& t) { return t.id == lastTool(); });
         if (remembered && tool_ != lastTool()) {
             // The user's tool is back (another layer offers it again).
             tool_ = lastTool();
@@ -662,7 +650,7 @@ void TileMapEditor::updatePlacePreview() {
 }
 
 bool TileMapEditor::armPlacement(const QString& item) {
-    restoring_ = true;   // a pick of its own: no second arming
+    restoring_ = true;  // a pick of its own: no second arming
     map_->setCurrentLibraryItem(item);
     restoring_ = false;
     // The model may have changed layer to offer the item: that layer's old
@@ -701,23 +689,18 @@ bool TileMapEditor::libraryHas(const QString& item) const {
     return has(map_->sheet()) || has(map_->inspect().library);
 }
 
-int TileMapEditor::zoom() const {
-    return canvas_->zoom();
-}
+int TileMapEditor::zoom() const { return canvas_->zoom(); }
 
 void TileMapEditor::setZoom(int zoom) {
     // About the middle of the view, so what is in sight stays in sight.
-    zoomKeepingPoint(scroll_, canvas_, viewportCentre(scroll_, canvas_), [this] { return canvas_->mapRect(); },
-                     [this, zoom] { canvas_->setZoom(zoom); });
+    zoomKeepingPoint(
+        scroll_, canvas_, viewportCentre(scroll_, canvas_), [this] { return canvas_->mapRect(); },
+        [this, zoom] { canvas_->setZoom(zoom); });
 }
 
-bool TileMapEditor::gridVisible() const {
-    return canvas_->gridVisible();
-}
+bool TileMapEditor::gridVisible() const { return canvas_->gridVisible(); }
 
-void TileMapEditor::setGridVisible(bool visible) {
-    canvas_->setGridVisible(visible);
-}
+void TileMapEditor::setGridVisible(bool visible) { canvas_->setGridVisible(visible); }
 
 void TileMapEditor::chooseTool(const QString& id) {
     tool_ = id;
@@ -748,8 +731,9 @@ void TileMapEditor::fitZoom() {
     int zoom = kMinZoom;
     for (int step : kZoomSteps) {
         const bool fits = map_->pageColumns() > 0 ? mapHeight * step / 4 <= room.height()
-                          : map_->scrollsDown() ? mapWidth * step / 4 <= room.width()
-                                                : mapWidth * step / 4 <= room.width() && mapHeight * step / 4 <= room.height();
+                          : map_->scrollsDown()
+                              ? mapWidth * step / 4 <= room.width()
+                              : mapWidth * step / 4 <= room.width() && mapHeight * step / 4 <= room.height();
         if (step <= (map_->scrollsDown() ? 8 : 16) && fits) zoom = step;
     }
     setZoom(zoom);
@@ -820,8 +804,7 @@ QWidget* TileMapEditor::createToolbar(QWidget* parent) {
         layout->addWidget(chip);
     }
 
-    auto* gridChip = new ui::ViewChip(tr("Grid"),
-                                      gridVisible() ? QStringLiteral("On") : QStringLiteral("Off"), bar);
+    auto* gridChip = new ui::ViewChip(tr("Grid"), gridVisible() ? QStringLiteral("On") : QStringLiteral("Off"), bar);
     gridChip->setCheckable(true);
     gridChip->setChecked(gridVisible());
     connect(gridChip, &QAbstractButton::toggled, this, [this, gridChip](bool on) {

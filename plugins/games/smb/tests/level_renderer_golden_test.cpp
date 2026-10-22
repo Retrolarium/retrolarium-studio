@@ -13,16 +13,13 @@
 
 namespace {
 
-void requireArraySize(const QJsonArray &array, int expected, const QString &context)
-{
+void requireArraySize(const QJsonArray& array, int expected, const QString& context) {
     if (array.size() != expected) {
-        throw std::runtime_error((context + QStringLiteral(" has the wrong field count"))
-            .toStdString());
+        throw std::runtime_error((context + QStringLiteral(" has the wrong field count")).toStdString());
     }
 }
 
-QVector<int> parseHeader(const QJsonArray &raw, const QString &name)
-{
+QVector<int> parseHeader(const QJsonArray& raw, const QString& name) {
     requireArraySize(raw, 6, name + QStringLiteral(" header"));
     QVector<int> result;
     result.reserve(raw.size());
@@ -30,55 +27,43 @@ QVector<int> parseHeader(const QJsonArray &raw, const QString &name)
     return result;
 }
 
-QVector<rl::smb::SmbAreaObject> parseObjects(
-    const QJsonArray &raw, const QString &name)
-{
+QVector<rl::smb::SmbAreaObject> parseObjects(const QJsonArray& raw, const QString& name) {
     QVector<rl::smb::SmbAreaObject> result;
     result.reserve(raw.size());
     for (int index = 0; index < raw.size(); ++index) {
         const auto item = raw[index].toArray();
-        requireArraySize(item, 4,
-            name + QStringLiteral(" object %1").arg(index));
-        result.push_back({item[0].toInt(), item[1].toInt(), item[2].toBool(),
-            item[3].toInt()});
+        requireArraySize(item, 4, name + QStringLiteral(" object %1").arg(index));
+        result.push_back({item[0].toInt(), item[1].toInt(), item[2].toBool(), item[3].toInt()});
     }
     return result;
 }
 
-QVector<rl::smb::SmbEnemyRecord> parseEnemies(
-    const QJsonArray &raw, const QString &name)
-{
+QVector<rl::smb::SmbEnemyRecord> parseEnemies(const QJsonArray& raw, const QString& name) {
     QVector<rl::smb::SmbEnemyRecord> result;
     result.reserve(raw.size());
     for (int index = 0; index < raw.size(); ++index) {
         const auto item = raw[index].toArray();
-        requireArraySize(item, 8,
-            name + QStringLiteral(" enemy record %1").arg(index));
-        result.push_back({item[0].toString(), item[1].toInt(), item[2].toInt(),
-            item[3].toBool(), item[4].toBool(), item[5].toInt(),
-            item[6].toInt(), item[7].toInt()});
+        requireArraySize(item, 8, name + QStringLiteral(" enemy record %1").arg(index));
+        result.push_back({item[0].toString(), item[1].toInt(), item[2].toInt(), item[3].toBool(), item[4].toBool(),
+                          item[5].toInt(), item[6].toInt(), item[7].toInt()});
     }
     return result;
 }
 
-QByteArray sceneDigest(const rl::smb::SmbLevelScene &scene, const QString &name)
-{
+QByteArray sceneDigest(const rl::smb::SmbLevelScene& scene, const QString& name) {
     if (scene.metatiles.size() != scene.width) {
-        throw std::runtime_error((name + QStringLiteral(" column count differs"))
-            .toStdString());
+        throw std::runtime_error((name + QStringLiteral(" column count differs")).toStdString());
     }
     QByteArray payload;
     payload.reserve(scene.width * 13);
     for (int column = 0; column < scene.metatiles.size(); ++column) {
         if (scene.metatiles[column].size() != 13) {
-            throw std::runtime_error((name
-                + QStringLiteral(" column %1 has the wrong height").arg(column))
-                .toStdString());
+            throw std::runtime_error(
+                (name + QStringLiteral(" column %1 has the wrong height").arg(column)).toStdString());
         }
         for (const int value : scene.metatiles[column]) {
             if (value < 0 || value > 0xff) {
-                throw std::runtime_error((name + QStringLiteral(" metatile is out of range"))
-                    .toStdString());
+                throw std::runtime_error((name + QStringLiteral(" metatile is out of range")).toStdString());
             }
             payload.push_back(static_cast<char>(value));
         }
@@ -86,25 +71,28 @@ QByteArray sceneDigest(const rl::smb::SmbLevelScene &scene, const QString &name)
     return QCryptographicHash::hash(payload, QCryptographicHash::Sha256).toHex();
 }
 
-QSet<QString> expectedAreaNames()
-{
+QSet<QString> expectedAreaNames() {
     QSet<QString> names;
-    const struct { const char *prefix; int count; } groups[] {
-        {"castle", 6}, {"ground", 22}, {"underground", 3}, {"water", 3},
+    const struct {
+        const char* prefix;
+        int count;
+    } groups[]{
+        {"castle", 6},
+        {"ground", 22},
+        {"underground", 3},
+        {"water", 3},
     };
-    for (const auto &group : groups) {
+    for (const auto& group : groups) {
         for (int index = 1; index <= group.count; ++index) {
-            names.insert(QString::fromLatin1(group.prefix)
-                + QLatin1Char('_') + QString::number(index));
+            names.insert(QString::fromLatin1(group.prefix) + QLatin1Char('_') + QString::number(index));
         }
     }
     return names;
 }
 
-} // namespace
+}  // namespace
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char* argv[]) {
     QCoreApplication application(argc, argv);
     try {
         if (argc < 2) {
@@ -120,21 +108,20 @@ int main(int argc, char *argv[])
             throw std::runtime_error("SMB JU golden corpus is not valid JSON");
         }
         const auto root = document.object();
-        if (root[QStringLiteral("schema")].toString()
-                != QStringLiteral("retrolarium.smb-level-scene-golden")
-            || root[QStringLiteral("schema_version")].toInt() != 2
-            || root[QStringLiteral("profile")].toString() != QStringLiteral("smb1.ju")) {
+        if (root[QStringLiteral("schema")].toString() != QStringLiteral("retrolarium.smb-level-scene-golden") ||
+            root[QStringLiteral("schema_version")].toInt() != 2 ||
+            root[QStringLiteral("profile")].toString() != QStringLiteral("smb1.ju")) {
             throw std::runtime_error("SMB JU golden corpus identity differs");
         }
         // The corpus carries the JU level tables the kit reads from the game.
         const QJsonObject tables = root[QStringLiteral("level_tables")].toObject();
-        const auto rendering = rl::smb::SmbLevelRendering::fromResource(
-            tables, root[QStringLiteral("rendering")].toString());
+        const auto rendering =
+            rl::smb::SmbLevelRendering::fromResource(tables, root[QStringLiteral("rendering")].toString());
 
         bool rejectedUnknownRendering = false;
         try {
             static_cast<void>(rl::smb::SmbLevelRendering::fromResource(tables, QStringLiteral("unknown")));
-        } catch (const rl::smb::SmbError &) {
+        } catch (const rl::smb::SmbError&) {
             rejectedUnknownRendering = true;
         }
         if (!rejectedUnknownRendering) {
@@ -144,10 +131,10 @@ int main(int argc, char *argv[])
         try {
             auto partial = rendering;
             partial.tables.remove(QStringLiteral("cannon_top"));
-            static_cast<void>(rl::smb::renderSmbLevelScene(
-                QStringLiteral("ground_1"), QVector<int> {0,0,0,2,0,0},
-                QVector<rl::smb::SmbAreaObject> {{0,4,false,0x12}}, {}, 0, partial));
-        } catch (const rl::smb::SmbError &) {
+            static_cast<void>(rl::smb::renderSmbLevelScene(QStringLiteral("ground_1"), QVector<int>{0, 0, 0, 2, 0, 0},
+                                                           QVector<rl::smb::SmbAreaObject>{{0, 4, false, 0x12}}, {}, 0,
+                                                           partial));
+        } catch (const rl::smb::SmbError&) {
             rejectedMissingTable = true;
         }
         if (!rejectedMissingTable) {
@@ -162,13 +149,13 @@ int main(int argc, char *argv[])
         }
         smb2.tables.remove(QStringLiteral("mushroom_stem_top"));
         smb2.tables.remove(QStringLiteral("mushroom_stem"));
-        const auto unsupportedLedge = rl::smb::renderSmbLevelScene(
-            QStringLiteral("ground_1"), QVector<int> {0,0,0,1,0,0},
-            QVector<rl::smb::SmbAreaObject> {{0,4,false,0x12}}, {}, 0, smb2);
-        if (unsupportedLedge.metatiles[0][4] != smb2.one(QStringLiteral("cloud_ledge_start"))
-            || unsupportedLedge.metatiles[1][4] != smb2.one(QStringLiteral("cloud_ledge_middle"))
-            || unsupportedLedge.metatiles[2][4] != smb2.one(QStringLiteral("cloud_ledge_end"))
-            || unsupportedLedge.metatiles[1][5] != 0) {
+        const auto unsupportedLedge =
+            rl::smb::renderSmbLevelScene(QStringLiteral("ground_1"), QVector<int>{0, 0, 0, 1, 0, 0},
+                                         QVector<rl::smb::SmbAreaObject>{{0, 4, false, 0x12}}, {}, 0, smb2);
+        if (unsupportedLedge.metatiles[0][4] != smb2.one(QStringLiteral("cloud_ledge_start")) ||
+            unsupportedLedge.metatiles[1][4] != smb2.one(QStringLiteral("cloud_ledge_middle")) ||
+            unsupportedLedge.metatiles[2][4] != smb2.one(QStringLiteral("cloud_ledge_end")) ||
+            unsupportedLedge.metatiles[1][5] != 0) {
             throw std::runtime_error("SMB2 supportless ledge rendering differs");
         }
 
@@ -181,66 +168,53 @@ int main(int argc, char *argv[])
             const auto area = rawArea.toObject();
             const QString name = area[QStringLiteral("name")].toString();
             if (!missingNames.remove(name)) {
-                throw std::runtime_error((name + QStringLiteral(" is duplicated or unknown"))
-                    .toStdString());
+                throw std::runtime_error((name + QStringLiteral(" is duplicated or unknown")).toStdString());
             }
-            const auto scene = rl::smb::renderSmbLevelScene(name,
-                parseHeader(area[QStringLiteral("header")].toArray(), name),
-                parseObjects(area[QStringLiteral("objects")].toArray(), name),
-                parseEnemies(area[QStringLiteral("enemies")].toArray(), name),
-                area[QStringLiteral("world")].toInt(), rendering);
+            const auto scene =
+                rl::smb::renderSmbLevelScene(name, parseHeader(area[QStringLiteral("header")].toArray(), name),
+                                             parseObjects(area[QStringLiteral("objects")].toArray(), name),
+                                             parseEnemies(area[QStringLiteral("enemies")].toArray(), name),
+                                             area[QStringLiteral("world")].toInt(), rendering);
             const auto expected = area[QStringLiteral("expected")].toObject();
             if (scene.width != expected[QStringLiteral("width")].toInt()) {
-                throw std::runtime_error((name + QStringLiteral(" width differs"))
-                    .toStdString());
+                throw std::runtime_error((name + QStringLiteral(" width differs")).toStdString());
             }
-            if (sceneDigest(scene, name)
-                != expected[QStringLiteral("metatile_sha256")].toString().toLatin1()) {
-                throw std::runtime_error((name + QStringLiteral(" metatile grid differs"))
-                    .toStdString());
+            if (sceneDigest(scene, name) != expected[QStringLiteral("metatile_sha256")].toString().toLatin1()) {
+                throw std::runtime_error((name + QStringLiteral(" metatile grid differs")).toStdString());
             }
             const auto expectedEnemies = expected[QStringLiteral("enemies")].toArray();
             if (scene.enemies.size() != expectedEnemies.size()) {
-                throw std::runtime_error((name + QStringLiteral(" enemy count differs"))
-                    .toStdString());
+                throw std::runtime_error((name + QStringLiteral(" enemy count differs")).toStdString());
             }
             for (int index = 0; index < scene.enemies.size(); ++index) {
                 const auto placement = expectedEnemies[index].toArray();
-                requireArraySize(placement, 3,
-                    name + QStringLiteral(" expected enemy %1").arg(index));
-                const auto &enemy = scene.enemies[index];
-                if (enemy.index != placement[0].toInt()
-                    || enemy.page != placement[1].toInt()
-                    || enemy.x != placement[2].toInt()) {
-                    throw std::runtime_error((name
-                        + QStringLiteral(" enemy placement %1 differs").arg(index))
-                        .toStdString());
+                requireArraySize(placement, 3, name + QStringLiteral(" expected enemy %1").arg(index));
+                const auto& enemy = scene.enemies[index];
+                if (enemy.index != placement[0].toInt() || enemy.page != placement[1].toInt() ||
+                    enemy.x != placement[2].toInt()) {
+                    throw std::runtime_error(
+                        (name + QStringLiteral(" enemy placement %1 differs").arg(index)).toStdString());
                 }
             }
             const auto expectedObjects = expected[QStringLiteral("objects")].toArray();
             if (scene.objects.size() != expectedObjects.size()) {
-                throw std::runtime_error((name + QStringLiteral(" object count differs"))
-                    .toStdString());
+                throw std::runtime_error((name + QStringLiteral(" object count differs")).toStdString());
             }
             for (int index = 0; index < scene.objects.size(); ++index) {
                 const auto placement = expectedObjects[index].toArray();
-                requireArraySize(placement, 4,
-                    name + QStringLiteral(" expected object %1").arg(index));
-                const auto &object = scene.objects[index];
-                if (object.index != placement[0].toInt()
-                    || object.page != placement[1].toInt()
-                    || object.x != placement[2].toInt()
-                    || object.width != placement[3].toInt()) {
-                    throw std::runtime_error((name
-                        + QStringLiteral(" object placement %1 differs").arg(index))
-                        .toStdString());
+                requireArraySize(placement, 4, name + QStringLiteral(" expected object %1").arg(index));
+                const auto& object = scene.objects[index];
+                if (object.index != placement[0].toInt() || object.page != placement[1].toInt() ||
+                    object.x != placement[2].toInt() || object.width != placement[3].toInt()) {
+                    throw std::runtime_error(
+                        (name + QStringLiteral(" object placement %1 differs").arg(index)).toStdString());
                 }
             }
         }
         if (!missingNames.isEmpty()) {
             throw std::runtime_error("SMB JU golden corpus is missing named areas");
         }
-    } catch (const std::exception &error) {
+    } catch (const std::exception& error) {
         std::cerr << error.what() << '\n';
         return 1;
     }

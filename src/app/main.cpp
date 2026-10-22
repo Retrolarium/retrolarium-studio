@@ -74,8 +74,7 @@ QSize parseSize(const QString& text, const QSize& fallback) {
 int main(int argc, char* argv[]) {
     QApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
     QApplication::setAttribute(Qt::AA_UseHighDpiPixmaps);
-    QApplication::setHighDpiScaleFactorRoundingPolicy(
-        Qt::HighDpiScaleFactorRoundingPolicy::PassThrough);
+    QApplication::setHighDpiScaleFactorRoundingPolicy(Qt::HighDpiScaleFactorRoundingPolicy::PassThrough);
     Q_INIT_RESOURCE(studio);
 
     StudioApplication app(argc, argv);
@@ -91,8 +90,7 @@ int main(int argc, char* argv[]) {
     // English loads its file too: it holds the plural forms of counted text.
     if (studioTranslator.load(QStringLiteral(":/i18n/retrolarium_studio_%1").arg(language))) {
         QApplication::installTranslator(&studioTranslator);
-        if (language != QLatin1String("en") &&
-            qtTranslator.load(QStringLiteral(":/i18n/qtbase_%1").arg(language))) {
+        if (language != QLatin1String("en") && qtTranslator.load(QStringLiteral(":/i18n/qtbase_%1").arg(language))) {
             QApplication::installTranslator(&qtTranslator);
         }
     }
@@ -101,37 +99,35 @@ int main(int argc, char* argv[]) {
     parser.setApplicationDescription(QStringLiteral("Retrolarium Studio"));
     parser.addHelpOption();
     parser.addVersionOption();
-    const QCommandLineOption themeOption(QStringLiteral("theme"),
-                                         QStringLiteral("Color theme: dark or light."),
+    const QCommandLineOption themeOption(QStringLiteral("theme"), QStringLiteral("Color theme: dark or light."),
                                          QStringLiteral("mode"), QStringLiteral("dark"));
-    const QCommandLineOption screenshotOption(
-        QStringLiteral("screenshot"),
-        QStringLiteral("Render the window off screen to a PNG and exit."), QStringLiteral("path"));
+    const QCommandLineOption screenshotOption(QStringLiteral("screenshot"),
+                                              QStringLiteral("Render the window off screen to a PNG and exit."),
+                                              QStringLiteral("path"));
     const QCommandLineOption sizeOption(QStringLiteral("size"),
                                         QStringLiteral("Window size, e.g. 1600x1000; without it the "
                                                        "window opens maximized."),
                                         QStringLiteral("WxH"), QStringLiteral("1600x1000"));
-    const QCommandLineOption fontReportOption(
-        QStringLiteral("font-report"), QStringLiteral("Write registered font families to a file."),
-        QStringLiteral("path"));
+    const QCommandLineOption fontReportOption(QStringLiteral("font-report"),
+                                              QStringLiteral("Write registered font families to a file."),
+                                              QStringLiteral("path"));
     const QCommandLineOption switchOption(
         QStringLiteral("switch-theme"),
-        QStringLiteral("With --screenshot: switch to this theme after the window is shown."),
-        QStringLiteral("mode"));
+        QStringLiteral("With --screenshot: switch to this theme after the window is shown."), QStringLiteral("mode"));
     const QCommandLineOption galleryOption(QStringLiteral("gallery"),
                                            QStringLiteral("Show the theme gallery instead of the studio."));
     const QCommandLineOption documentOption(
         QStringLiteral("document"), QStringLiteral("Open kind/document after the project, e.g. levels/round-07."),
         QStringLiteral("kind/document"));
-    parser.addOptions({themeOption, screenshotOption, sizeOption, fontReportOption, switchOption,
-                       galleryOption, documentOption});
+    parser.addOptions(
+        {themeOption, screenshotOption, sizeOption, fontReportOption, switchOption, galleryOption, documentOption});
     parser.addPositionalArgument(QStringLiteral("project"), QStringLiteral("Project file (.rlj) to open."));
     parser.process(app);
 
     rl::plugins::registerBuiltinPlugins();
 
-    rl::theme::Theme::instance().install(
-        app, rl::theme::modeFromName(parser.value(themeOption), rl::theme::Mode::Dark));
+    rl::theme::Theme::instance().install(app,
+                                         rl::theme::modeFromName(parser.value(themeOption), rl::theme::Mode::Dark));
     // The window and taskbar icon follow the theme: the accent tile in the
     // light one, the dark tile in the dark one.
     QApplication::setWindowIcon(rl::theme::brand::appIcon(rl::theme::Theme::instance().mode()));
@@ -155,8 +151,7 @@ int main(int argc, char* argv[]) {
             studio->openProjectFile(parser.positionalArguments().first());
             const QString document = parser.value(documentOption);
             if (!document.isEmpty()) {
-                studio->showDocument(document.section(QLatin1Char('/'), 0, 0),
-                                     document.section(QLatin1Char('/'), 1));
+                studio->showDocument(document.section(QLatin1Char('/'), 0, 0), document.section(QLatin1Char('/'), 1));
             }
         }
         owner = std::move(studio);
@@ -179,8 +174,8 @@ int main(int argc, char* argv[]) {
         window.setProperty("rlDrawActive", true);
         window.show();
         if (parser.isSet(switchOption)) {
-            const auto target = rl::theme::modeFromName(parser.value(switchOption),
-                                                        rl::theme::Theme::instance().mode());
+            const auto target =
+                rl::theme::modeFromName(parser.value(switchOption), rl::theme::Theme::instance().mode());
             QTimer::singleShot(100, &app, [target] { rl::theme::Theme::instance().setMode(target); });
         }
         QTimer::singleShot(300, &app, [&window, path] {

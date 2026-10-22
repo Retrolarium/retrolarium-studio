@@ -31,9 +31,7 @@ SetWindowAttribute dwmSetWindowAttribute() {
     return function;
 }
 
-COLORREF colorRef(const QColor& color) {
-    return RGB(color.red(), color.green(), color.blue());
-}
+COLORREF colorRef(const QColor& color) { return RGB(color.red(), color.green(), color.blue()); }
 
 }  // namespace
 #endif

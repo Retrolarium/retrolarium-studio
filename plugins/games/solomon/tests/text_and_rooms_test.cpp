@@ -50,7 +50,8 @@ int main(int argc, char** argv) {
                 const QString shown = tilesToText(s.tiles);
                 QString parseError;
                 const QVector<int> back = textToTiles(shown, &parseError);
-                expect(back == s.tiles, QStringLiteral("%1 reads back differently: \"%2\" %3").arg(s.label, shown, parseError));
+                expect(back == s.tiles,
+                       QStringLiteral("%1 reads back differently: \"%2\" %3").arg(s.label, shown, parseError));
                 ++strings;
             }
         }
@@ -68,7 +69,8 @@ int main(int argc, char** argv) {
         }
         rooms.setMirrorSet(0, grown);
         expect(rooms.mirrorSetBytes() > kMirrorSetBytes, QStringLiteral("the sets did not grow"));
-        expect(rooms.mirrorSetBytes() <= rooms.mirrorSetCapacity(), QStringLiteral("the sets grew past the expanded area"));
+        expect(rooms.mirrorSetBytes() <= rooms.mirrorSetCapacity(),
+               QStringLiteral("the sets grew past the expanded area"));
         expect(!rooms.overflow().contains(QLatin1String("mirror")),
                QStringLiteral("the expanded layout refuses the grown sets: %1").arg(rooms.overflow()));
         rooms.setExpanded(false);

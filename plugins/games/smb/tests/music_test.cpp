@@ -17,19 +17,24 @@ using namespace rl::smb;
 
 namespace {
 
-[[noreturn]] void fail(const QString& message) {
-    throw std::runtime_error(message.toStdString());
-}
+[[noreturn]] void fail(const QString& message) { throw std::runtime_error(message.toStdString()); }
 
 int kindCode(SmbMusicEvent::Kind kind) {
     switch (kind) {
-    case SmbMusicEvent::Kind::Note: return 0;
-    case SmbMusicEvent::Kind::Rest: return 1;
-    case SmbMusicEvent::Kind::Beat: return 2;
-    case SmbMusicEvent::Kind::Length: return 3;
-    case SmbMusicEvent::Kind::Control: return 4;
-    case SmbMusicEvent::Kind::Loop: return 5;
-    case SmbMusicEvent::Kind::End: return 6;
+        case SmbMusicEvent::Kind::Note:
+            return 0;
+        case SmbMusicEvent::Kind::Rest:
+            return 1;
+        case SmbMusicEvent::Kind::Beat:
+            return 2;
+        case SmbMusicEvent::Kind::Length:
+            return 3;
+        case SmbMusicEvent::Kind::Control:
+            return 4;
+        case SmbMusicEvent::Kind::Loop:
+            return 5;
+        case SmbMusicEvent::Kind::End:
+            return 6;
     }
     return -1;
 }
@@ -57,7 +62,9 @@ int main(int argc, char** argv) {
             const SmbMusicTimeline got = music.timeline(header.name);
             if (got.duration != want.value(QStringLiteral("duration")).toInt()) {
                 fail(QStringLiteral("%1: %2 ticks, the kit has %3")
-                         .arg(header.name).arg(got.duration).arg(want.value(QStringLiteral("duration")).toInt()));
+                         .arg(header.name)
+                         .arg(got.duration)
+                         .arg(want.value(QStringLiteral("duration")).toInt()));
             }
             const QJsonArray channels = want.value(QStringLiteral("channels")).toArray();
             if (got.channels.size() != channels.size()) fail(header.name + QStringLiteral(": channel count differs"));
@@ -68,18 +75,22 @@ int main(int argc, char** argv) {
                 const QJsonArray list = pair.at(1).toArray();
                 if (channel.events.size() != list.size()) {
                     fail(QStringLiteral("%1 %2: %3 events, the kit has %4")
-                             .arg(header.name, channel.id).arg(channel.events.size()).arg(list.size()));
+                             .arg(header.name, channel.id)
+                             .arg(channel.events.size())
+                             .arg(list.size()));
                 }
                 for (int i = 0; i < list.size(); ++i) {
                     const QJsonArray e = list.at(i).toArray();
                     const SmbMusicEvent& g = channel.events.at(i);
                     const int period = g.kind == SmbMusicEvent::Kind::Beat ? -1 : g.periodIndex;
                     const int duration = g.kind == SmbMusicEvent::Kind::Note || g.kind == SmbMusicEvent::Kind::Rest ||
-                                                 g.kind == SmbMusicEvent::Kind::Beat || g.kind == SmbMusicEvent::Kind::Length
+                                                 g.kind == SmbMusicEvent::Kind::Beat ||
+                                                 g.kind == SmbMusicEvent::Kind::Length
                                              ? g.duration
                                              : 0;
-                    if (kindCode(g.kind) != e.at(0).toInt() || g.offset != e.at(1).toInt() || g.tick != e.at(2).toInt() ||
-                        duration != e.at(3).toInt() || (e.at(0).toInt() <= 1 && period != e.at(4).toInt())) {
+                    if (kindCode(g.kind) != e.at(0).toInt() || g.offset != e.at(1).toInt() ||
+                        g.tick != e.at(2).toInt() || duration != e.at(3).toInt() ||
+                        (e.at(0).toInt() <= 1 && period != e.at(4).toInt())) {
                         fail(QStringLiteral("%1 %2 event %3 differs from the kit").arg(header.name, channel.id).arg(i));
                     }
                     ++events;
@@ -102,12 +113,14 @@ int main(int argc, char** argv) {
         const int higher = music.periodFor(pitch + 2, QStringLiteral("square2"));
         if (higher < 0) fail(QStringLiteral("no period sounds two semitones up"));
         const QStringList readers = music.readersOf(note->offset);
-        if (!readers.contains(QStringLiteral("ground_part_1 square 2"))) fail(QStringLiteral("readers miss the song itself"));
+        if (!readers.contains(QStringLiteral("ground_part_1 square 2")))
+            fail(QStringLiteral("readers miss the song itself"));
         music.setNotePeriod(QStringLiteral("square2"), note->offset, higher);
         const SmbMusicTimeline after = music.timeline(QStringLiteral("ground_part_1"));
         if (after.duration != before.duration) fail(QStringLiteral("a pitch edit changed the song length"));
-        if (music.pitchOf(after.channels.first().events.at(int(note - before.channels.first().events.data())).periodIndex,
-                          QStringLiteral("square2")) != pitch + 2) {
+        if (music.pitchOf(
+                after.channels.first().events.at(int(note - before.channels.first().events.data())).periodIndex,
+                QStringLiteral("square2")) != pitch + 2) {
             fail(QStringLiteral("the pitch edit did not land"));
         }
         bool refused = false;

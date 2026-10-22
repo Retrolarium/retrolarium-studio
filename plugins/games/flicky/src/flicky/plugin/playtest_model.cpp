@@ -10,9 +10,7 @@
 namespace rl::flicky {
 
 namespace {
-QString roundLabel(int round) {
-    return rlTr("flicky", "Round %1").arg(round + 1, 2, 10, QLatin1Char('0'));
-}
+QString roundLabel(int round) { return rlTr("flicky", "Round %1").arg(round + 1, 2, 10, QLatin1Char('0')); }
 
 // The round a label names: its number, wherever a translation puts it.
 int roundOf(const QString& label) {
@@ -36,13 +34,9 @@ QString PlaytestModel::startLabel() const {
     return session_->demoStart() ? session_->selectedStart() : roundLabel(session_->playRound());
 }
 
-bool PlaytestModel::isRecording() const {
-    return session_->isRecording();
-}
+bool PlaytestModel::isRecording() const { return session_->isRecording(); }
 
-void PlaytestModel::play() {
-    session_->playSelected();
-}
+void PlaytestModel::play() { session_->playSelected(); }
 
 QVector<sdk::ViewOption> PlaytestModel::viewOptions() const {
     sdk::ViewOption start;
@@ -80,9 +74,10 @@ sdk::Inspection PlaytestModel::inspect() const {
     build.value = session_->lastBuild().isEmpty() ? tr("not built yet") : session_->lastBuild();
     inspection.fields = {core, start, build};
     const QString mame = session_->host() ? session_->host()->emulatorPath(QStringLiteral("mame")) : QString();
-    inspection.note = tr("Play from selected saves the project, builds the ROM with the kit and "
-                         "starts the selected round in MAME inside this view; Play starts the "
-                         "game from power-on. Opening a round in Levels selects it.");
+    inspection.note =
+        tr("Play from selected saves the project, builds the ROM with the kit and "
+           "starts the selected round in MAME inside this view; Play starts the "
+           "game from power-on. Opening a round in Levels selects it.");
     inspection.engineTag = QStringLiteral("flicky-round-playtest");
     inspection.engine = {{QStringLiteral("Output"), QStringLiteral("build/flicky-edited.bin")},
                          {QStringLiteral("Script"), QStringLiteral("flicky/playtest.lua")},
@@ -90,8 +85,6 @@ sdk::Inspection PlaytestModel::inspect() const {
     return inspection;
 }
 
-QString PlaytestModel::statusText() const {
-    return tr("Playtest · %1").arg(startLabel());
-}
+QString PlaytestModel::statusText() const { return tr("Playtest · %1").arg(startLabel()); }
 
 }  // namespace rl::flicky

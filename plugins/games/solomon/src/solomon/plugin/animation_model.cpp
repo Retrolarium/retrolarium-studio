@@ -14,13 +14,9 @@ namespace rl::solomon {
 
 namespace {
 
-QString hex(int value, int digits = 2) {
-    return nes::hex(value, digits);
-}
+QString hex(int value, int digits = 2) { return nes::hex(value, digits); }
 
-QJsonArray framesOf(const QJsonObject& animations) {
-    return animations.value(QStringLiteral("frames")).toArray();
-}
+QJsonArray framesOf(const QJsonObject& animations) { return animations.value(QStringLiteral("frames")).toArray(); }
 
 int frameIndexAt(const QJsonObject& animations, int address) {
     const QJsonArray frames = framesOf(animations);
@@ -140,14 +136,17 @@ QVector<AnimationFamily> SolomonAnimationModel::families(const QJsonObject& anim
         int action;
         int delay;
         bool variants;
-        QVector<QVector<QJsonObject>> cycles;   // per variant
+        QVector<QVector<QJsonObject>> cycles;  // per variant
     };
     const QJsonArray frames = framesOf(animations);
     QVector<Entry> entries;
     for (const auto& action : actions(animations)) {
         const QJsonObject d = descriptor(animations, action.first, action.second);
-        Entry e{action.first, action.second, d.value(QStringLiteral("delay")).toInt(),
-                d.value(QStringLiteral("uses_variants")).toBool(), {}};
+        Entry e{action.first,
+                action.second,
+                d.value(QStringLiteral("delay")).toInt(),
+                d.value(QStringLiteral("uses_variants")).toBool(),
+                {}};
         for (int variant = 0; variant < (e.variants ? 4 : 1); ++variant) {
             QVector<QJsonObject> cycle;
             for (int index : SolomonAnimationModel::cycle(animations, action.first, action.second, variant)) {
@@ -204,7 +203,8 @@ QString SolomonAnimationModel::familyLabel(const AnimationFamily& family) {
     if (family.members.size() > 3) list += QStringLiteral(" +%1").arg(family.members.size() - 3);
     // Only the player's standing poses have names; the rest are numbered.
     if (family.group == 0 && (first.action == 0x16 || first.action == 0x17)) {
-        return QStringLiteral("%1 · %2").arg(actionLabel(family.group, first.action).section(QLatin1Char(','), 0, 0), list);
+        return QStringLiteral("%1 · %2").arg(actionLabel(family.group, first.action).section(QLatin1Char(','), 0, 0),
+                                             list);
     }
     return tr("Actions %1").arg(list);
 }
@@ -311,7 +311,8 @@ void SolomonAnimationModel::selectPiece(const QString& id) {
     if (piece != piece_) {
         piece_ = piece;
         if (piece_ >= 0) {
-            tile_ = frameRecord().value(piece_ == 0 ? QStringLiteral("left_tile") : QStringLiteral("right_tile")).toInt();
+            tile_ =
+                frameRecord().value(piece_ == 0 ? QStringLiteral("left_tile") : QStringLiteral("right_tile")).toInt();
         }
         emit selectionChanged();
         emit toolsChanged();
@@ -349,8 +350,9 @@ int SolomonAnimationModel::frameDurationMs(int) const {
 
 bool SolomonAnimationModel::moveFrame(int, int, QString* error) {
     if (error) {
-        *error = tr("The game steps through frames that lie one after another in ROM; their order "
-                    "is where they are. Edit a frame's patterns instead.");
+        *error =
+            tr("The game steps through frames that lie one after another in ROM; their order "
+               "is where they are. Edit a frame's patterns instead.");
     }
     return false;
 }
@@ -379,23 +381,24 @@ bool SolomonAnimationModel::editFrame(const QString& text, const std::function<v
             if (frame_ < cycle.size()) targets << qMakePair(cycle.at(frame_), m.transform ^ own);
         }
     }
-    return session_->edit(text,
-                          [targets, change](SolomonState& s) {
-                              QJsonArray frames = s.animations.value(QStringLiteral("frames")).toArray();
-                              QJsonObject record = frames.at(targets.first().first).toObject();
-                              change(record);
-                              QHash<int, QJsonObject> written;
-                              for (const auto& target : targets) {
-                                  if (written.contains(target.first)) continue;
-                                  QJsonObject next = mirrored(record, target.second);
-                                  next.insert(QStringLiteral("cpu_address"),
-                                              frames.at(target.first).toObject().value(QStringLiteral("cpu_address")));
-                                  written.insert(target.first, next);
-                                  frames.replace(target.first, next);
-                              }
-                              s.animations.insert(QStringLiteral("frames"), frames);
-                          },
-                          error);
+    return session_->edit(
+        text,
+        [targets, change](SolomonState& s) {
+            QJsonArray frames = s.animations.value(QStringLiteral("frames")).toArray();
+            QJsonObject record = frames.at(targets.first().first).toObject();
+            change(record);
+            QHash<int, QJsonObject> written;
+            for (const auto& target : targets) {
+                if (written.contains(target.first)) continue;
+                QJsonObject next = mirrored(record, target.second);
+                next.insert(QStringLiteral("cpu_address"),
+                            frames.at(target.first).toObject().value(QStringLiteral("cpu_address")));
+                written.insert(target.first, next);
+                frames.replace(target.first, next);
+            }
+            s.animations.insert(QStringLiteral("frames"), frames);
+        },
+        error);
 }
 
 bool SolomonAnimationModel::dropItem(const QString& libraryItem, const QString& piece, QString* error) {
@@ -407,13 +410,11 @@ bool SolomonAnimationModel::dropItem(const QString& libraryItem, const QString& 
     tile_ = tile;
     piece_ = half;
     const QString key = half == 0 ? QStringLiteral("left_tile") : QStringLiteral("right_tile");
-    return editFrame(tr("Set a pattern of %1").arg(title()),
-                     [key, tile](QJsonObject& record) { record.insert(key, tile); }, error);
+    return editFrame(
+        tr("Set a pattern of %1").arg(title()), [key, tile](QJsonObject& record) { record.insert(key, tile); }, error);
 }
 
-QString SolomonAnimationModel::currentLibraryItem() const {
-    return QStringLiteral("tile:%1").arg(tile_);
-}
+QString SolomonAnimationModel::currentLibraryItem() const { return QStringLiteral("tile:%1").arg(tile_); }
 
 void SolomonAnimationModel::setCurrentLibraryItem(const QString& id) {
     if (!id.startsWith(QLatin1String("tile:"))) return;
@@ -421,7 +422,8 @@ void SolomonAnimationModel::setCurrentLibraryItem(const QString& id) {
     emit selectionChanged();
     // With a half selected, picking a pattern puts it there.
     if (piece_ >= 0) {
-        const int current = frameRecord().value(piece_ == 0 ? QStringLiteral("left_tile") : QStringLiteral("right_tile")).toInt();
+        const int current =
+            frameRecord().value(piece_ == 0 ? QStringLiteral("left_tile") : QStringLiteral("right_tile")).toInt();
         if (current != tile_) dropItem(id, QString::number(piece_), nullptr);
     }
 }
@@ -476,7 +478,8 @@ QVector<sdk::ViewOption> SolomonAnimationModel::viewOptions() const {
         variant.key = QStringLiteral("variant");
         variant.label = tr("Variant");
         variant.value = QString::number(variant_);
-        variant.choices = QStringList{QStringLiteral("0"), QStringLiteral("1"), QStringLiteral("2"), QStringLiteral("3")};
+        variant.choices =
+            QStringList{QStringLiteral("0"), QStringLiteral("1"), QStringLiteral("2"), QStringLiteral("3")};
         options << variant;
     }
     return options;
@@ -535,8 +538,9 @@ sdk::Inspection SolomonAnimationModel::inspect() const {
         palette.value = tr("SPR %1").arg(h.palette);
         palette.choices = QStringList{tr("SPR 0"), tr("SPR 1"), tr("SPR 2"), tr("SPR 3")};
         inspection.fields = {pattern, hflip, vflip, palette};
-        inspection.note = tr("8x16 sprites: an even pattern pair comes from the sprite table, an odd "
-                             "one from the background table. Pick a pair in the sheet to put it here.");
+        inspection.note =
+            tr("8x16 sprites: an even pattern pair comes from the sprite table, an odd "
+               "one from the background table. Pick a pair in the sheet to put it here.");
         inspection.engineTag = QStringLiteral("solomon.animations@1");
         inspection.engine = {{tr("Frame"), hex(record.value(QStringLiteral("cpu_address")).toInt(), 4)},
                              {tr("Flags"), hex(record.value(QStringLiteral("flags")).toInt())}};
@@ -574,10 +578,11 @@ sdk::Inspection SolomonAnimationModel::inspect() const {
         shown.monospace = true;
         inspection.fields << shown;
     }
-    inspection.note = tr("The game keeps a frame record per facing: left and right are the same "
-                         "patterns with the halves swapped and flipped. Actions that show the same "
-                         "frames, as drawn or mirrored, are one entry; with Mirrors linked an edit "
-                         "reaches all of them. Select a half to change its pattern, flips and palette.");
+    inspection.note =
+        tr("The game keeps a frame record per facing: left and right are the same "
+           "patterns with the halves swapped and flipped. Actions that show the same "
+           "frames, as drawn or mirrored, are one entry; with Mirrors linked an edit "
+           "reaches all of them. Select a half to change its pattern, flips and palette.");
     inspection.engineTag = QStringLiteral("solomon.animations@1");
     inspection.engine = {{tr("Descriptor"), hex(d.value(QStringLiteral("cpu_address")).toInt(), 4)},
                          {tr("Initial phase"), hex(d.value(QStringLiteral("initial_phase")).toInt())}};
@@ -597,19 +602,20 @@ bool SolomonAnimationModel::setField(const QString& key, const QVariant& value, 
                                      .toInt());
             }
         }
-        return session_->edit(tr("Change the speed of %1").arg(title()),
-                              [addresses, delay](SolomonState& s) {
-                                  QJsonArray list = s.animations.value(QStringLiteral("descriptors")).toArray();
-                                  for (int i = 0; i < list.size(); ++i) {
-                                      QJsonObject o = list.at(i).toObject();
-                                      if (addresses.contains(o.value(QStringLiteral("cpu_address")).toInt())) {
-                                          o.insert(QStringLiteral("delay"), delay);
-                                          list.replace(i, o);
-                                      }
-                                  }
-                                  s.animations.insert(QStringLiteral("descriptors"), list);
-                              },
-                              error);
+        return session_->edit(
+            tr("Change the speed of %1").arg(title()),
+            [addresses, delay](SolomonState& s) {
+                QJsonArray list = s.animations.value(QStringLiteral("descriptors")).toArray();
+                for (int i = 0; i < list.size(); ++i) {
+                    QJsonObject o = list.at(i).toObject();
+                    if (addresses.contains(o.value(QStringLiteral("cpu_address")).toInt())) {
+                        o.insert(QStringLiteral("delay"), delay);
+                        list.replace(i, o);
+                    }
+                }
+                s.animations.insert(QStringLiteral("descriptors"), list);
+            },
+            error);
     }
     if (piece_ < 0) return CompositionModel::setField(key, value, error);
     const int half = piece_;
@@ -618,16 +624,17 @@ bool SolomonAnimationModel::setField(const QString& key, const QVariant& value, 
     }
     if (key == QLatin1String("hflip") || key == QLatin1String("vflip") || key == QLatin1String("palette")) {
         const QString text = value.toString();
-        return editFrame(tr("Edit a frame of %1").arg(title()),
-                         [key, text, half](QJsonObject& record) {
-                             const int flags = record.value(QStringLiteral("flags")).toInt();
-                             Half h = unpack(flags, half);
-                             if (key == QLatin1String("hflip")) h.hflip = text == QLatin1String("yes");
-                             else if (key == QLatin1String("vflip")) h.vflip = text == QLatin1String("yes");
-                             else h.palette = std::clamp(text.section(QLatin1Char(' '), 1).toInt(), 0, 3);
-                             record.insert(QStringLiteral("flags"), pack(flags, half, h));
-                         },
-                         error);
+        return editFrame(
+            tr("Edit a frame of %1").arg(title()),
+            [key, text, half](QJsonObject& record) {
+                const int flags = record.value(QStringLiteral("flags")).toInt();
+                Half h = unpack(flags, half);
+                if (key == QLatin1String("hflip")) h.hflip = text == QLatin1String("yes");
+                else if (key == QLatin1String("vflip")) h.vflip = text == QLatin1String("yes");
+                else h.palette = std::clamp(text.section(QLatin1Char(' '), 1).toInt(), 0, 3);
+                record.insert(QStringLiteral("flags"), pack(flags, half, h));
+            },
+            error);
     }
     return CompositionModel::setField(key, value, error);
 }

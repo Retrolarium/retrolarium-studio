@@ -12,8 +12,7 @@ namespace rl::ui {
 
 class CollapsibleSection::Header final : public QWidget {
 public:
-    Header(const QString& title, CollapsibleSection* owner) : QWidget(owner), owner_(owner),
-                                                              title_(title) {
+    Header(const QString& title, CollapsibleSection* owner) : QWidget(owner), owner_(owner), title_(title) {
         setFixedHeight(34);
         setCursor(Qt::PointingHandCursor);
         setAttribute(Qt::WA_Hover);
@@ -48,18 +47,14 @@ protected:
             painter.fillRect(rect(), t.hover);
         }
         const int left = 14;
-        const QString chevron = owner_->isExpanded() ? QStringLiteral("chevron-down")
-                                                     : QStringLiteral("chevron-right");
-        painter.drawPixmap(left, (height() - 10) / 2,
-                           theme::iconPixmap(chevron, 10, t.faint, devicePixelRatioF()));
+        const QString chevron = owner_->isExpanded() ? QStringLiteral("chevron-down") : QStringLiteral("chevron-right");
+        painter.drawPixmap(left, (height() - 10) / 2, theme::iconPixmap(chevron, 10, t.faint, devicePixelRatioF()));
         painter.setPen(t.faint);
         painter.setFont(theme::font(theme::TextRole::Caps, theme::size::kCaps));
-        painter.drawText(QRect(left + 18, 0, width() - left - 18, height()), Qt::AlignVCenter,
-                         title_);
+        painter.drawText(QRect(left + 18, 0, width() - left - 18, height()), Qt::AlignVCenter, title_);
         if (!tag_.isEmpty()) {
             painter.setFont(theme::font(theme::TextRole::Mono, 10.5));
-            painter.drawText(rect().adjusted(0, 0, -14, 0), Qt::AlignVCenter | Qt::AlignRight,
-                             tag_);
+            painter.drawText(rect().adjusted(0, 0, -14, 0), Qt::AlignVCenter | Qt::AlignRight, tag_);
         }
     }
 
@@ -82,13 +77,10 @@ CollapsibleSection::CollapsibleSection(const QString& title, QWidget* body, QWid
     bodyLayout->addWidget(body_);
     layout->addWidget(frame_);
     frame_->setVisible(false);
-    connect(&theme::Theme::instance(), &theme::Theme::changed, header_,
-            [this] { header_->update(); });
+    connect(&theme::Theme::instance(), &theme::Theme::changed, header_, [this] { header_->update(); });
 }
 
-void CollapsibleSection::setTag(const QString& tag) {
-    header_->setTag(tag);
-}
+void CollapsibleSection::setTag(const QString& tag) { header_->setTag(tag); }
 
 void CollapsibleSection::setExpanded(bool expanded) {
     if (expanded == expanded_) {

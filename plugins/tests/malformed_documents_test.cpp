@@ -50,8 +50,8 @@ QJsonObject castleRooms(int width, int height, const QJsonArray& cells) {
 void castleRoomsHoldUp(const QTemporaryDir& dir) {
     using rl::castle_excellent::CastleExcellentError;
     using rl::castle_excellent::CastleExcellentLevels;
-    for (const auto& size : {QPair<int, int>{128, 20}, QPair<int, int>{20, 64}, QPair<int, int>{0, 20},
-                             QPair<int, int>{-3, 20}}) {
+    for (const auto& size :
+         {QPair<int, int>{128, 20}, QPair<int, int>{20, 64}, QPair<int, int>{0, 20}, QPair<int, int>{-3, 20}}) {
         bool refused = false;
         try {
             static_cast<void>(CastleExcellentLevels::load(
@@ -91,9 +91,8 @@ void castleScreensHoldUp() {
 // Solomon rooms: block planes cut short grow to the block an edit writes.
 void solomonRoomsHoldUp() {
     rl::solomon::SolomonRooms rooms(QJsonObject{
-        {QStringLiteral("rooms"),
-         QJsonArray{QJsonObject{{QStringLiteral("brown"), QJsonArray{}},
-                                {QStringLiteral("white"), QJsonArray{QJsonArray{0}}}}}}});
+        {QStringLiteral("rooms"), QJsonArray{QJsonObject{{QStringLiteral("brown"), QJsonArray{}},
+                                                         {QStringLiteral("white"), QJsonArray{QJsonArray{0}}}}}}});
     expect(!rooms.block(0, QPoint(15, 11), false), "a missing block reads as none");
     rooms.setBlock(0, QPoint(15, 11), false, true);
     expect(rooms.block(0, QPoint(15, 11), false), "a block set past a short plane is kept");

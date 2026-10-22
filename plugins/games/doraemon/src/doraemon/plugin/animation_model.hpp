@@ -13,20 +13,20 @@ class DoraemonSession;
 // after another, with the sprite palette the game gives the actor.
 struct DoraemonAnimation {
     World world;
-    QString group;          // "Doraemon", "Enemies", "Items", "Creatures", "Frames"
+    QString group;  // "Doraemon", "Enemies", "Items", "Creatures", "Frames"
     QString label;
-    QVector<int> frames;    // metasprite indexes
+    QVector<int> frames;  // metasprite indexes
     int ticks = 8;
-    int palette = 0;        // sprite palette 0-3 (World 2: from the record)
-    int world3Type = -1;    // a World 3 entity type: frames and palette come
-                            // from the game's tables (resolvedAnimation)
+    int palette = 0;      // sprite palette 0-3 (World 2: from the record)
+    int world3Type = -1;  // a World 3 entity type: frames and palette come
+                          // from the game's tables (resolvedAnimation)
 };
 
 QVector<DoraemonAnimation> doraemonAnimations();
 // An entry of doraemonAnimations() with a World 3 type's frames and
 // palette filled in from the project.
 DoraemonAnimation resolvedAnimation(const DoraemonSession* session, int index);
-QString metaspriteId(World world);      // the bundle resource
+QString metaspriteId(World world);  // the bundle resource
 
 // One sprite of a World 1 / World 3 metasprite, its offset from the
 // metasprite's origin (the entity's top-left), as the game composes it.
@@ -89,17 +89,17 @@ public:
 private:
     // A piece as drawn: its place on the canvas, tile and flips.
     struct Placed {
-        int piece = 0;      // piece of the record (World 2: quarter)
+        int piece = 0;  // piece of the record (World 2: quarter)
         int x = 0;
         int y = 0;
         int tile = 0;
         bool flipX = false;
         bool flipY = false;
         int palette = 0;
-        bool hidden = false;    // World 2 tile 0: not drawn
+        bool hidden = false;  // World 2 tile 0: not drawn
     };
     const DoraemonAnimation& animation() const;
-    int index() const;          // the metasprite index of the current frame
+    int index() const;  // the metasprite index of the current frame
     // World 1/3: the record an index draws and the alias flip (-1 none).
     int recordOf(int index, int* flip) const;
     QVector<Placed> placed() const;
@@ -113,7 +113,7 @@ private:
     int frame_ = 0;
     int selected_ = -1;
     int preset_ = 0;
-    int palette_;           // shown sprite palette (World 1/3)
+    int palette_;  // shown sprite palette (World 1/3)
     QPoint dragStart_;
     QPoint dragAt_{-1, -1};
     int dragPiece_ = -1;

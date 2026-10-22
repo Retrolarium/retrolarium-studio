@@ -201,10 +201,8 @@ QString buildStyleSheet(const Tokens& t, const Theme& theme) {
         {QStringLiteral("canvas"), css(t.canvas)},
         {QStringLiteral("onAccent"), css(t.onAccent)},
         {QStringLiteral("mark"), css(t.mark)},
-        {QStringLiteral("chevronDown"),
-         theme.assetPath(QStringLiteral("chevron-down-%1.svg").arg(suffix))},
-        {QStringLiteral("chevronUp"),
-         theme.assetPath(QStringLiteral("chevron-up-%1.svg").arg(suffix))},
+        {QStringLiteral("chevronDown"), theme.assetPath(QStringLiteral("chevron-down-%1.svg").arg(suffix))},
+        {QStringLiteral("chevronUp"), theme.assetPath(QStringLiteral("chevron-up-%1.svg").arg(suffix))},
         {QStringLiteral("checkIcon"), theme.assetPath(QStringLiteral("check-%1.svg").arg(suffix))},
     };
 

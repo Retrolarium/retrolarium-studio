@@ -137,7 +137,7 @@ QVector<sdk::MapObject> ScreenModel::objects() const {
     }
     for (const auto& text : texts) {
         int length = session_->semantics().textValue(text.id).size();
-        if (text.id == QLatin1String("Title_Sega1991Text")) ++length;    // the (c) before it
+        if (text.id == QLatin1String("Title_Sega1991Text")) ++length;  // the (c) before it
         sdk::MapObject object;
         object.id = text.id;
         object.label = label(text.id);
@@ -155,9 +155,7 @@ void ScreenModel::selectObject(const QString& id) {
     }
 }
 
-bool ScreenModel::movesSprites() const {
-    return screen_ == Screen::Title && session_->semantics().hasTitleLayout();
-}
+bool ScreenModel::movesSprites() const { return screen_ == Screen::Title && session_->semantics().hasTitleLayout(); }
 
 std::optional<FlickyLevelSceneRenderer::TitleSprite> ScreenModel::sprite(const QString& id) const {
     if (!movesSprites() || !id.startsWith(QLatin1String("sprite:"))) return std::nullopt;
@@ -221,12 +219,13 @@ sdk::Inspection ScreenModel::inspect() const {
         y.label = QStringLiteral("Y");
         y.value = s->position.y() - 128;
         inspection.fields = {x, y};
-        inspection.note = tr("A title sprite placed by Title_Init. Drag it on the screen or type its "
-                             "screen position; the build writes it into the title's position table.");
+        inspection.note =
+            tr("A title sprite placed by Title_Init. Drag it on the screen or type its "
+               "screen position; the build writes it into the title's position table.");
         inspection.engineTag = QStringLiteral("flicky.semantics.v1");
-        inspection.engine = {{tr("Mapping"), s->mapping},
-                             {tr("VDP position"), QStringLiteral("$%1, $%2").arg(s->position.x(), 0, 16)
-                                                                   .arg(s->position.y(), 0, 16)}};
+        inspection.engine = {
+            {tr("Mapping"), s->mapping},
+            {tr("VDP position"), QStringLiteral("$%1, $%2").arg(s->position.x(), 0, 16).arg(s->position.y(), 0, 16)}};
         return inspection;
     }
     if (selected_.isEmpty()) {
@@ -246,28 +245,31 @@ sdk::Inspection ScreenModel::inspect() const {
     text.hint = QStringLiteral("%1 / %2").arg(s.textValue(selected_).size()).arg(s.textCapacity(selected_));
     inspection.fields = {text};
     switch (screen_) {
-    case Screen::Title:
-        inspection.note = movesSprites()
-                              ? tr("Pick a text on the screen to edit it; the same strings are in Text. "
-                                   "Drag the logo pieces and the cast to move them. This is the overseas "
-                                   "title (the ROM reports an overseas console).")
-                              : tr("Pick a text on the screen to edit it; the same strings are in Text. The "
-                                   "logo, the cast and PUSH START BUTTON are sprites (see Animations). This "
-                                   "is the overseas title (the ROM reports an overseas console).");
-        break;
-    case Screen::Guide:
-        inspection.note = tr("The guide shown after Start on the title: round 1's scenery, the doors and "
-                             "the chicks are drawn by the game around these lines. Pick a text to edit "
-                             "it; the same strings are in Text.");
-        break;
-    case Screen::Ending:
-        inspection.note = tr("The ending after the last round, before the credits roll. Pick a text to "
-                             "edit it; the same strings are in Text.");
-        break;
-    case Screen::Credits:
-        inspection.note = tr("The credits roll up over the ending a row every 32 frames; each row here "
-                             "is one line of the roll, in order. Leading spaces indent a line.");
-        break;
+        case Screen::Title:
+            inspection.note = movesSprites()
+                                  ? tr("Pick a text on the screen to edit it; the same strings are in Text. "
+                                       "Drag the logo pieces and the cast to move them. This is the overseas "
+                                       "title (the ROM reports an overseas console).")
+                                  : tr("Pick a text on the screen to edit it; the same strings are in Text. The "
+                                       "logo, the cast and PUSH START BUTTON are sprites (see Animations). This "
+                                       "is the overseas title (the ROM reports an overseas console).");
+            break;
+        case Screen::Guide:
+            inspection.note =
+                tr("The guide shown after Start on the title: round 1's scenery, the doors and "
+                   "the chicks are drawn by the game around these lines. Pick a text to edit "
+                   "it; the same strings are in Text.");
+            break;
+        case Screen::Ending:
+            inspection.note =
+                tr("The ending after the last round, before the credits roll. Pick a text to "
+                   "edit it; the same strings are in Text.");
+            break;
+        case Screen::Credits:
+            inspection.note =
+                tr("The credits roll up over the ending a row every 32 frames; each row here "
+                   "is one line of the roll, in order. Leading spaces indent a line.");
+            break;
     }
     inspection.engineTag = QStringLiteral("flicky.semantics.v1");
     inspection.engine = {{QStringLiteral("Text id"), selected_},
@@ -282,11 +284,10 @@ bool ScreenModel::setField(const QString& key, const QVariant& value, QString* e
         else position.setY(std::clamp(value.toInt() + 128, 0, 0x1FF));
         const QString group = s->group;
         const int index = s->index;
-        return session_->editSemantics(tr("Move %1").arg(spriteLabel(group, index)),
-                                       [group, index, position](FlickySemanticsDocument& d) {
-                                           d.setTitlePosition(group, index, position);
-                                       },
-                                       error);
+        return session_->editSemantics(
+            tr("Move %1").arg(spriteLabel(group, index)),
+            [group, index, position](FlickySemanticsDocument& d) { d.setTitlePosition(group, index, position); },
+            error);
     }
     if (key != QLatin1String("text") || selected_.isEmpty()) return TileMapModel::setField(key, value, error);
     const QString id = selected_;
@@ -297,8 +298,8 @@ bool ScreenModel::setField(const QString& key, const QVariant& value, QString* e
         if (error) *error = QString::fromUtf8(e.what());
         return false;
     }
-    return session_->editSemantics(tr("Edit text %1").arg(id),
-                                   [id, text](FlickySemanticsDocument& s) { s.setTextValue(id, text); }, error);
+    return session_->editSemantics(
+        tr("Edit text %1").arg(id), [id, text](FlickySemanticsDocument& s) { s.setTextValue(id, text); }, error);
 }
 
 QString ScreenModel::statusText() const {

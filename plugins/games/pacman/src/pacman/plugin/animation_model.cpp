@@ -57,8 +57,7 @@ QString ghostName(int palette) {
 
 QString animationLabel(const PacmanAnimation& animation) {
     if (animation.fruitIndex < 0) return animation.label;
-    return sdk::gameName("fruits", animation.fruitIndex,
-                         rlTr("pacman", "Fruit %1").arg(animation.fruitIndex + 1));
+    return sdk::gameName("fruits", animation.fruitIndex, rlTr("pacman", "Fruit %1").arg(animation.fruitIndex + 1));
 }
 
 const QVector<PacmanAnimation>& pacmanAnimations() {
@@ -102,9 +101,7 @@ PacmanAnimationModel::PacmanAnimationModel(PacmanSession* session, int animation
     connect(session_, &sdk::Session::contentChanged, this, &sdk::EditorModel::contentChanged);
 }
 
-const PacmanAnimation& PacmanAnimationModel::animation() const {
-    return pacmanAnimations().at(index_);
-}
+const PacmanAnimation& PacmanAnimationModel::animation() const { return pacmanAnimations().at(index_); }
 
 const PacmanFrame& PacmanAnimationModel::current() const {
     return animation().frames.at(std::clamp(frame_, 0, int(animation().frames.size()) - 1));
@@ -118,9 +115,7 @@ QString PacmanAnimationModel::title() const {
     return animationLabel(a);
 }
 
-int PacmanAnimationModel::palette() const {
-    return animation().ghost ? ghost_ : animation().palette;
-}
+int PacmanAnimationModel::palette() const { return animation().ghost ? ghost_ : animation().palette; }
 
 QVector<QVector<int>> PacmanAnimationModel::sprites() const {
     // The intermissions load their own sprite colours.
@@ -147,14 +142,22 @@ int PacmanAnimationModel::tileOf(int quarter) const {
     const PacmanFrame& f = current();
     return session_->resource(ids::kActors)
         .value(f.alternate ? QStringLiteral("alternate_tile_quads") : QStringLiteral("standard_tile_quads"))
-        .toArray().at(f.index).toArray().at(quarter).toInt();
+        .toArray()
+        .at(f.index)
+        .toArray()
+        .at(quarter)
+        .toInt();
 }
 
 int PacmanAnimationModel::attributesOf(int quarter) const {
     const PacmanFrame& f = current();
     return session_->resource(ids::kActors)
         .value(f.alternate ? QStringLiteral("alternate_attribute_quads") : QStringLiteral("standard_attribute_quads"))
-        .toArray().at(f.index).toArray().at(quarter).toInt();
+        .toArray()
+        .at(f.index)
+        .toArray()
+        .at(quarter)
+        .toInt();
 }
 
 QImage PacmanAnimationModel::render() const {
@@ -162,8 +165,8 @@ QImage PacmanAnimationModel::render() const {
     image.fill(session_->painter().color(session_->bundle().tableValues(ids::kGameplay).value(0, 0x0f)));
     QPainter painter(&image);
     const PacmanFrame& f = current();
-    painter.drawImage(origin() - QPoint(8, 8),
-                      session_->painter().frame(session_->resource(ids::kActors), f.alternate, f.index, palette(), sprites()));
+    painter.drawImage(origin() - QPoint(8, 8), session_->painter().frame(session_->resource(ids::kActors), f.alternate,
+                                                                         f.index, palette(), sprites()));
     return image;
 }
 
@@ -198,8 +201,7 @@ QVector<sdk::CompositionFrame> PacmanAnimationModel::frames() const {
     for (int i = 0; i < list.size(); ++i) {
         sdk::CompositionFrame f;
         f.id = QString::number(i);
-        f.label = list.at(i).alternate ? tr("Alt %1").arg(list.at(i).index)
-                                       : tr("Frame %1").arg(list.at(i).index);
+        f.label = list.at(i).alternate ? tr("Alt %1").arg(list.at(i).index) : tr("Frame %1").arg(list.at(i).index);
         f.detail = tr("%n ticks", nullptr, list.at(i).ticks);
         result << f;
     }
@@ -214,9 +216,7 @@ void PacmanAnimationModel::setCurrentFrame(int frame) {
     }
 }
 
-int PacmanAnimationModel::frameDurationMs(int frame) const {
-    return animation().frames.value(frame).ticks * 1000 / 60;
-}
+int PacmanAnimationModel::frameDurationMs(int frame) const { return animation().frames.value(frame).ticks * 1000 / 60; }
 
 QVector<sdk::ViewOption> PacmanAnimationModel::viewOptions() const {
     if (!animation().ghost) return {};
@@ -245,7 +245,8 @@ bool PacmanAnimationModel::setQuarter(int quarter, int tile, int attributes, QSt
         tr("Edit %1 frame %2").arg(f.alternate ? QStringLiteral("alternate") : QStringLiteral("actor")).arg(f.index),
         [f, quarter, tile, attributes](nes::Bundle& b) {
             QJsonObject actors = b.resource(ids::kActors);
-            const QString tilesKey = f.alternate ? QStringLiteral("alternate_tile_quads") : QStringLiteral("standard_tile_quads");
+            const QString tilesKey =
+                f.alternate ? QStringLiteral("alternate_tile_quads") : QStringLiteral("standard_tile_quads");
             const QString attributesKey =
                 f.alternate ? QStringLiteral("alternate_attribute_quads") : QStringLiteral("standard_attribute_quads");
             QJsonArray tiles = actors.value(tilesKey).toArray();
@@ -284,8 +285,7 @@ bool PacmanAnimationModel::setField(const QString& key, const QVariant& value, Q
     } else if (key == QLatin1String("priority")) {
         attributes = (attributes & ~0x20) | (value.toString() == QLatin1String("Behind the maze") ? 0x20 : 0);
     } else if (key == QLatin1String("flip")) {
-        static const QStringList kFlips{QStringLiteral("None"), tr("Horizontal"), tr("Vertical"),
-                                        tr("Both")};
+        static const QStringList kFlips{QStringLiteral("None"), tr("Horizontal"), tr("Vertical"), tr("Both")};
         const int flip = std::max(0, int(kFlips.indexOf(value.toString())));
         attributes = (attributes & ~0xc0) | ((flip & 1) ? 0x40 : 0) | ((flip & 2) ? 0x80 : 0);
     } else {
@@ -322,8 +322,7 @@ sdk::Inspection PacmanAnimationModel::inspect() const {
     inspection.engineTag = QStringLiteral("pacman.actor-mapping.v1");
     const PacmanFrame& f = current();
     if (selected_ < 0) {
-        inspection.kicker = animation().group == QLatin1String("Frames") ? tr("Actor frames")
-                                                                         : tr("Animation");
+        inspection.kicker = animation().group == QLatin1String("Frames") ? tr("Actor frames") : tr("Animation");
         inspection.title = title();
         sdk::Field count;
         count.key = QStringLiteral("frames");
@@ -332,12 +331,12 @@ sdk::Inspection PacmanAnimationModel::inspect() const {
         sdk::Field shown;
         shown.key = QStringLiteral("frame");
         shown.label = tr("Shown");
-        shown.value = f.alternate ? tr("alternate frame %1").arg(f.index)
-                                  : tr("actor frame %1").arg(f.index);
+        shown.value = f.alternate ? tr("alternate frame %1").arg(f.index) : tr("actor frame %1").arg(f.index);
         inspection.fields = {count, shown};
-        QString note = tr("A frame is four 8x8 sprites around the actor's position. Select one to change "
-                          "its pattern, palette, priority or flip, or drop a pattern from the sheet on it. "
-                          "Frames are shared: every animation that shows one changes with it.");
+        QString note =
+            tr("A frame is four 8x8 sprites around the actor's position. Select one to change "
+               "its pattern, palette, priority or flip, or drop a pattern from the sheet on it. "
+               "Frames are shared: every animation that shows one changes with it.");
         if (animation().ghost) note += tr(" Ghost shows the frames in each ghost's colours.");
         if (animation().fruit) {
             note += tr(" The fruit's colour is the one Fruit by stage gives round %1 (the start round).")
@@ -379,8 +378,7 @@ sdk::Inspection PacmanAnimationModel::inspect() const {
     flip.key = QStringLiteral("flip");
     flip.label = tr("Flip");
     flip.type = sdk::Field::Type::Choice;
-    flip.choices = QStringList{QStringLiteral("None"), tr("Horizontal"), tr("Vertical"),
-                               tr("Both")};
+    flip.choices = QStringList{QStringLiteral("None"), tr("Horizontal"), tr("Vertical"), tr("Both")};
     flip.value = flip.choices.at(((attributes & 0x40) ? 1 : 0) | ((attributes & 0x80) ? 2 : 0));
     inspection.fields = {tile, pal, priority, flip};
     inspection.note = tr("The game ORs the actor's own palette into these bits: 0 for Pac-Man and "

@@ -17,26 +17,26 @@ void Badge::setKind(Kind kind) {
     kind_ = kind;
     QString name;
     switch (kind) {
-    case Kind::Platform:
-        name = QStringLiteral("platform");
-        setFont(theme::font(theme::TextRole::MonoSemiBold, 10.0));
-        setFixedHeight(22);
-        break;
-    case Kind::Tag:
-        name = QStringLiteral("tag");
-        setFont(theme::font(theme::TextRole::Body, 11.0));
-        setFixedHeight(18);
-        break;
-    case Kind::Code:
-        name = QStringLiteral("code");
-        setFont(theme::font(theme::TextRole::Mono, 10.5));
-        setFixedHeight(18);
-        break;
-    case Kind::Accent:
-        name = QStringLiteral("accent");
-        setFont(theme::font(theme::TextRole::MonoSemiBold, 10.5));
-        setFixedHeight(18);
-        break;
+        case Kind::Platform:
+            name = QStringLiteral("platform");
+            setFont(theme::font(theme::TextRole::MonoSemiBold, 10.0));
+            setFixedHeight(22);
+            break;
+        case Kind::Tag:
+            name = QStringLiteral("tag");
+            setFont(theme::font(theme::TextRole::Body, 11.0));
+            setFixedHeight(18);
+            break;
+        case Kind::Code:
+            name = QStringLiteral("code");
+            setFont(theme::font(theme::TextRole::Mono, 10.5));
+            setFixedHeight(18);
+            break;
+        case Kind::Accent:
+            name = QStringLiteral("accent");
+            setFont(theme::font(theme::TextRole::MonoSemiBold, 10.5));
+            setFixedHeight(18);
+            break;
     }
     setProperty("badge", name);
     style()->unpolish(this);

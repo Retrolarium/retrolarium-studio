@@ -69,7 +69,7 @@ private:
     QString typeLabel(int type) const;
     bool commitObjects(const QVector<CastleExcellentObject>& objects, const QString& text, QString* error);
     QRect startCells() const;
-    bool hasStart() const;      // the user has put the player in this room
+    bool hasStart() const;  // the user has put the player in this room
 
     CastleExcellentSession* session_;
     int room_;
@@ -80,10 +80,10 @@ private:
 
     // A stroke paints into this and writes the document once at its end.
     bool stroking_ = false;
-    QHash<int, int> pending_;               // cell index: type
+    QHash<int, int> pending_;  // cell index: type
     // A drag moves records here and writes once on release.
     std::optional<QVector<CastleExcellentObject>> dragged_;
-    QPoint dragStartOffset_;                // start marker: pixel offset in its box
+    QPoint dragStartOffset_;  // start marker: pixel offset in its box
 
     mutable QVector<sdk::LibraryItem> cellSheet_;
     mutable QVector<sdk::LibraryItem> objectSheet_;

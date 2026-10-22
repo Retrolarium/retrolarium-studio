@@ -27,7 +27,19 @@ namespace rl::rom::tiles {
 //          Mode 7 as it sits in VRAM)
 //   8bpp   one byte a pixel
 enum class Layout {
-    OneBit, Nes, GameBoy, VirtualBoy, NeoGeoPocket, Snes3, Snes4, MasterSystem, MegaDrive, Gba, Snes8, Mode7, EightBit
+    OneBit,
+    Nes,
+    GameBoy,
+    VirtualBoy,
+    NeoGeoPocket,
+    Snes3,
+    Snes4,
+    MasterSystem,
+    MegaDrive,
+    Gba,
+    Snes8,
+    Mode7,
+    EightBit
 };
 
 struct Format {

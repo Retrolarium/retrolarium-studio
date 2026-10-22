@@ -16,15 +16,15 @@ class PacmanSession;
 // introduction of the attract mode.
 namespace screens {
 
-const QStringList& ids();       // "title", "attract"
+const QStringList& ids();  // "title", "attract"
 QString label(const QString& id);
 QString paletteTable(const QString& id);
 
 // Where a name-table byte comes from in the screen collection.
 struct Source {
-    QString list;       // "title_packets", "attract_packets", "title_logo"
-    int item = 0;       // packet, or logo row
-    int index = 0;      // byte in it
+    QString list;   // "title_packets", "attract_packets", "title_logo"
+    int item = 0;   // packet, or logo row
+    int index = 0;  // byte in it
 };
 
 // The name table (1024 entries with attributes) the screen leaves on the

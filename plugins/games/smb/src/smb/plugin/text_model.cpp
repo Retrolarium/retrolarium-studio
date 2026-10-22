@@ -33,9 +33,7 @@ QVector<sdk::TableColumn> SmbTextModel::columns() const {
     return {name, where, text, length};
 }
 
-int SmbTextModel::rowCount() const {
-    return session_->textSlots().size();
-}
+int SmbTextModel::rowCount() const { return session_->textSlots().size(); }
 
 QString SmbTextModel::cell(int row, int column) const {
     const QVector<SmbTextSlot>& slotList = session_->textSlots();
@@ -81,8 +79,8 @@ bool SmbTextModel::setText(int row, const QString& value, QString* error) {
         return false;
     }
     const SmbTextSlot slot = session_->textSlots().at(row);
-    return session_->edit(tr("Edit %1").arg(slot.label),
-                          [slot, value](SmbResourceDocument& d) { setSlotText(d, slot, value); }, error);
+    return session_->edit(
+        tr("Edit %1").arg(slot.label), [slot, value](SmbResourceDocument& d) { setSlotText(d, slot, value); }, error);
 }
 
 bool SmbTextModel::setCell(int row, int column, const QString& value, QString* error) {
@@ -115,10 +113,7 @@ sdk::Budget SmbTextModel::budget() const {
         // Screen texts that grow take from the bytes the game screens share.
         budget.used = pool.used;
         budget.capacity = pool.size;
-        budget.text = tr("text %1 chars · game screens %2 / %3 bytes")
-                          .arg(used)
-                          .arg(pool.used)
-                          .arg(pool.size);
+        budget.text = tr("text %1 chars · game screens %2 / %3 bytes").arg(used).arg(pool.used).arg(pool.size);
     }
     return budget;
 }
@@ -168,9 +163,8 @@ sdk::Inspection SmbTextModel::inspect() const {
     }
     inspection.engineTag = slot.screen.isEmpty() ? QStringLiteral("nes.fixed-text-fields.v1")
                                                  : QStringLiteral("nes.ppu-screen-packets.v1");
-    inspection.engine = {{tr("Resource"), slot.resource},
-                         {tr("Key"), slot.key},
-                         {tr("Saved"), slotText(session_->saved(), slot)}};
+    inspection.engine = {
+        {tr("Resource"), slot.resource}, {tr("Key"), slot.key}, {tr("Saved"), slotText(session_->saved(), slot)}};
     return inspection;
 }
 

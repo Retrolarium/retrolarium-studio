@@ -16,26 +16,26 @@ namespace rl::smb {
 struct SmbMusicHeader {
     QString name;
     int lengthTableOffset = 0;
-    int stream = 0;             // square 2 entry, arena offset
-    int triangle = 0;           // relative to stream
-    int square1 = -1;           // relative; -1 absent, 0 silent
-    int noise = -1;             // relative; -1 absent
+    int stream = 0;    // square 2 entry, arena offset
+    int triangle = 0;  // relative to stream
+    int square1 = -1;  // relative; -1 absent, 0 silent
+    int noise = -1;    // relative; -1 absent
 };
 
 // One decoded event of a channel, at the arena byte that holds it.
 struct SmbMusicEvent {
     enum class Kind { Note, Rest, Beat, Length, Control, Loop, End };
     Kind kind = Kind::Note;
-    int offset = 0;             // arena byte
-    int tick = 0;               // engine ticks (frames) from the song start
+    int offset = 0;  // arena byte
+    int tick = 0;    // engine ticks (frames) from the song start
     int duration = 0;
-    int periodIndex = -1;       // notes
-    int lengthIndex = -1;       // length commands, square 1 notes and beats
-    int beat = 0;               // noise: 0 rest, 1 short, 2 strong, 3 long
+    int periodIndex = -1;  // notes
+    int lengthIndex = -1;  // length commands, square 1 notes and beats
+    int beat = 0;          // noise: 0 rest, 1 short, 2 strong, 3 long
 };
 
 struct SmbMusicChannel {
-    QString id;                 // "square2", "square1", "triangle", "noise"
+    QString id;  // "square2", "square1", "triangle", "noise"
     int entry = 0;
     QVector<SmbMusicEvent> events;
 };
@@ -43,7 +43,7 @@ struct SmbMusicChannel {
 struct SmbMusicTimeline {
     QString header;
     int lengthBase = 0;
-    int duration = 0;           // ticks, set by square 2
+    int duration = 0;  // ticks, set by square 2
     QVector<SmbMusicChannel> channels;
 };
 
@@ -60,7 +60,7 @@ public:
     QVector<int> arena;
     QVector<int> periods;
     QVector<int> lengths;
-    QVector<QPair<QString, QString>> selectors;    // selector name, header
+    QVector<QPair<QString, QString>> selectors;  // selector name, header
     QStringList groundSchedule;
 
     int indexOf(const QString& header) const;

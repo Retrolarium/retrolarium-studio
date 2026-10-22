@@ -28,8 +28,6 @@ public:
 
 }  // namespace
 
-void registerPlugin(sdk::PluginRegistry& registry) {
-    registry.add(std::make_unique<PacmanPlugin>());
-}
+void registerPlugin(sdk::PluginRegistry& registry) { registry.add(std::make_unique<PacmanPlugin>()); }
 
 }  // namespace rl::pacman

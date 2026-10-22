@@ -62,7 +62,12 @@ private:
 };
 
 QJsonObject record(const TestSession& session, int row) {
-    return session.bundle().resource(QStringLiteral("table")).value(QStringLiteral("records")).toArray().at(row).toObject();
+    return session.bundle()
+        .resource(QStringLiteral("table"))
+        .value(QStringLiteral("records"))
+        .toArray()
+        .at(row)
+        .toObject();
 }
 
 }  // namespace

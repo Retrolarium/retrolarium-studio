@@ -11,7 +11,7 @@ class EditorModel;
 namespace rl::runtime {
 class EmulatorRunner;
 class ProcessRunner;
-}
+}  // namespace rl::runtime
 
 namespace rl::editors {
 
@@ -51,7 +51,6 @@ struct EditorServices {
 };
 
 // The universal editor for a model, or nullptr when none exists for its type.
-std::unique_ptr<EditorView> createEditorView(sdk::EditorModel* model, const EditorServices& services,
-                                             QWidget* parent);
+std::unique_ptr<EditorView> createEditorView(sdk::EditorModel* model, const EditorServices& services, QWidget* parent);
 
 }  // namespace rl::editors

@@ -34,9 +34,9 @@ public:
     QVector<QImage> cellChoiceIcons(int row, int column) const override;
 
 private:
-    QPair<int, int> stepAt(int row) const;      // {world, step}, step from 0
-    QString areaAt(int row) const;              // "ground_6"
-    QString courseLabel(int row) const;         // "1-1", "1-2 · pipe intro"
+    QPair<int, int> stepAt(int row) const;  // {world, step}, step from 0
+    QString areaAt(int row) const;          // "ground_6"
+    QString courseLabel(int row) const;     // "1-1", "1-2 · pipe intro"
     bool setArea(int row, const QString& area, QString* error);
     bool setAlternate(int row, bool alternate, QString* error);
 

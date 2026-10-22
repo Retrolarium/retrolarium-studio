@@ -8,9 +8,7 @@ Session::Session(QObject* parent) : QObject(parent), undoStack_(new QUndoStack(t
 
 Session::~Session() = default;
 
-bool Session::canRevert(const QString&, const QString&) const {
-    return false;
-}
+bool Session::canRevert(const QString&, const QString&) const { return false; }
 
 bool Session::revert(const QString&, const QString&, QString* error) {
     if (error) {

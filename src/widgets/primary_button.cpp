@@ -11,7 +11,7 @@
 namespace rl::ui {
 
 namespace {
-constexpr int kMarkMargin = 4;   // marks sit 4px outside the face
+constexpr int kMarkMargin = 4;  // marks sit 4px outside the face
 constexpr int kMarkLength = 7;
 constexpr int kFaceHeight = 28;
 constexpr int kPaddingX = 14;
@@ -26,8 +26,7 @@ PrimaryButton::PrimaryButton(const QString& text, const QString& iconName, QWidg
     setCursor(Qt::PointingHandCursor);
     setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
     setAttribute(Qt::WA_Hover);
-    connect(&theme::Theme::instance(), &theme::Theme::changed, this,
-            [this] { update(); });
+    connect(&theme::Theme::instance(), &theme::Theme::changed, this, [this] { update(); });
 }
 
 void PrimaryButton::setIconName(const QString& name) {
@@ -50,17 +49,11 @@ QSize PrimaryButton::sizeHint() const {
     return QSize(width + kMarkMargin * 2, kFaceHeight + kMarkMargin * 2);
 }
 
-QSize PrimaryButton::minimumSizeHint() const {
-    return sizeHint();
-}
+QSize PrimaryButton::minimumSizeHint() const { return sizeHint(); }
 
-QRect PrimaryButton::faceRect() const {
-    return rect().adjusted(kMarkMargin, kMarkMargin, -kMarkMargin, -kMarkMargin);
-}
+QRect PrimaryButton::faceRect() const { return rect().adjusted(kMarkMargin, kMarkMargin, -kMarkMargin, -kMarkMargin); }
 
-bool PrimaryButton::hitButton(const QPoint& pos) const {
-    return faceRect().contains(pos);
-}
+bool PrimaryButton::hitButton(const QPoint& pos) const { return faceRect().contains(pos); }
 
 void PrimaryButton::enterEvent(QEvent* event) {
     hovered_ = true;
@@ -91,23 +84,20 @@ void PrimaryButton::paintEvent(QPaintEvent*) {
     if (hasFocus()) {
         theme::paint::hairlineRect(painter, face.adjusted(-2, -2, 2, 2), t.accent);
     }
-    theme::paint::cornerMarks(painter, face, kMarkLength, kMarkMargin, t.mark,
-                              theme::paint::kDiagonal);
+    theme::paint::cornerMarks(painter, face, kMarkLength, kMarkMargin, t.mark, theme::paint::kDiagonal);
 
     const QFontMetrics metrics(font());
     const int textWidth = metrics.horizontalAdvance(text());
     const int contentWidth = textWidth + (iconName_.isEmpty() ? 0 : kIconSize + kGap);
     int x = face.left() + (face.width() - contentWidth) / 2;
     if (!iconName_.isEmpty()) {
-        const QPixmap glyph =
-            theme::iconPixmap(iconName_, kIconSize, ink, devicePixelRatioF());
+        const QPixmap glyph = theme::iconPixmap(iconName_, kIconSize, ink, devicePixelRatioF());
         painter.drawPixmap(x, face.top() + (face.height() - kIconSize) / 2, glyph);
         x += kIconSize + kGap;
     }
     painter.setPen(ink);
     painter.setFont(font());
-    painter.drawText(QRect(x, face.top(), textWidth + 1, face.height()),
-                     Qt::AlignVCenter | Qt::AlignLeft, text());
+    painter.drawText(QRect(x, face.top(), textWidth + 1, face.height()), Qt::AlignVCenter | Qt::AlignLeft, text());
 }
 
 }  // namespace rl::ui

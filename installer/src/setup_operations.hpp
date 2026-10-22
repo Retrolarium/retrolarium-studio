@@ -28,7 +28,7 @@ struct Request {
 using Progress = std::function<void(int percent, const QString& message)>;
 
 QString defaultInstallDirectory();
-QString installedDirectory();       // from the Installed Apps entry, or empty
+QString installedDirectory();  // from the Installed Apps entry, or empty
 QString installedVersion();
 QString desktopShortcutPath();
 // Where Open ROM downloads games and keeps their edits.

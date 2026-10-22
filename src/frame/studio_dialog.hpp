@@ -42,8 +42,7 @@ class MessageDialog final : public StudioDialog {
     Q_OBJECT
 
 public:
-    MessageDialog(const QString& title, const QString& heading, const QString& text,
-                  QWidget* parent = nullptr);
+    MessageDialog(const QString& title, const QString& heading, const QString& text, QWidget* parent = nullptr);
 
     // Buttons line up on the right in the order added. The primary one takes
     // the accent and Enter.
@@ -52,11 +51,10 @@ public:
 
     void reject() override;
 
-    static void inform(QWidget* parent, const QString& title, const QString& heading,
-                       const QString& text);
+    static void inform(QWidget* parent, const QString& title, const QString& heading, const QString& text);
     // True when the user takes `action`.
-    static bool confirm(QWidget* parent, const QString& title, const QString& heading,
-                        const QString& text, const QString& action);
+    static bool confirm(QWidget* parent, const QString& title, const QString& heading, const QString& text,
+                        const QString& action);
 
 private:
     QHBoxLayout* buttons_;

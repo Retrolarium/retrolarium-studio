@@ -60,8 +60,8 @@ sdk::DocumentEntry entry(const QString& id, const QString& label, const QString&
     return result;
 }
 
-const QStringList kShellPalettes{QStringLiteral("shell-palette-title"), QStringLiteral("shell-palette-help-1"),
-                                 QStringLiteral("shell-palette-help-2"), QStringLiteral("shell-palette-help-3"),
+const QStringList kShellPalettes{QStringLiteral("shell-palette-title"),   QStringLiteral("shell-palette-help-1"),
+                                 QStringLiteral("shell-palette-help-2"),  QStringLiteral("shell-palette-help-3"),
                                  QStringLiteral("shell-palette-chapter"), QStringLiteral("shell-palette-ending")};
 
 QString shellPaletteLabel(const QString& id) {
@@ -106,20 +106,24 @@ struct TableEntry {
 };
 const TableEntry kTables[] = {
     {World::One, "world1-underground-rooms", QT_TRANSLATE_NOOP("doraemon", "Underground rooms"),
-     QT_TRANSLATE_NOOP("doraemon", "Where each underground room puts the camera and Doraemon, and the city return "
-                                   "each way out leads to (— for none).")},
+     QT_TRANSLATE_NOOP("doraemon",
+                       "Where each underground room puts the camera and Doraemon, and the city return "
+                       "each way out leads to (— for none).")},
     {World::One, "world1-city-returns", QT_TRANSLATE_NOOP("doraemon", "City returns"),
      QT_TRANSLATE_NOOP("doraemon", "Where Doraemon comes back up into the city: the camera and the manhole.")},
     {World::One, "world1-weapon-sounds", QT_TRANSLATE_NOOP("doraemon", "Weapon sounds"),
      QT_TRANSLATE_NOOP("doraemon", "The sound effect request a shot plays at each weapon level.")},
     {World::One, "world1-weapon-shots", QT_TRANSLATE_NOOP("doraemon", "Weapon shots"),
-     QT_TRANSLATE_NOOP("doraemon", "Where a shot starts from Doraemon and how it is drawn, per weapon level and direction.")},
+     QT_TRANSLATE_NOOP("doraemon",
+                       "Where a shot starts from Doraemon and how it is drawn, per weapon level and direction.")},
     {World::Two, "world2-enemy-states", QT_TRANSLATE_NOOP("doraemon", "Enemy states"),
-     QT_TRANSLATE_NOOP("doraemon", "World 2's enemies by state: how often they attack, the hits they take and their "
-                                   "score code. State $00 is no enemy; its damage and score bytes belong to other tables.")},
+     QT_TRANSLATE_NOOP("doraemon",
+                       "World 2's enemies by state: how often they attack, the hits they take and their "
+                       "score code. State $00 is no enemy; its damage and score bytes belong to other tables.")},
     {World::Three, "world3-rooms", QT_TRANSLATE_NOOP("doraemon", "Room flags"),
-     QT_TRANSLATE_NOOP("doraemon", "Per room: the look type $03 creatures take, whether type $04 creatures follow "
-                                   "Doraemon, and whether type $05 creatures stay where they are.")},
+     QT_TRANSLATE_NOOP("doraemon",
+                       "Per room: the look type $03 creatures take, whether type $04 creatures follow "
+                       "Doraemon, and whether type $05 creatures stay where they are.")},
     {World::Three, "world3-type05-motion", QT_TRANSLATE_NOOP("doraemon", "Type $05 steps"),
      QT_TRANSLATE_NOOP("doraemon", "How far a type $05 creature moves each step in its four directions.")},
     {World::Three, "world3-type0c-formation", QT_TRANSLATE_NOOP("doraemon", "Type $0C group"),
@@ -138,33 +142,32 @@ constexpr int kBehaviorStreams = 16;
 // reconstruction's structural roles, and where play starts it when the
 // call site says so. Request 0 resets the effects and is not listed.
 QVector<nes::SoundEffect> soundEffects(int driver) {
-    static const char* const kRoles[26] = {
-        nullptr,
-        "Pulse 2 tone C",
-        "Triangle and noise burst",
-        "Pulse 2 tone A",
-        "Pulse 2 pitch run, long",
-        "Pulse 2 pitch run, short",
-        "Pulse 1 alternating burst",
-        "Pulse 1 tone",
-        "Pulse 1 tone, holds the triangle",
-        "Noise ramp",
-        "Tonal sequence on all channels",
-        "Pulse 2 tone B",
-        "Noise sweep, slow",
-        "Noise swell",
-        "Pulse 2 three steps",
-        "Pulse 2 pitch run",
-        "Pulse 1 melody",
-        "Triangle rise",
-        "Pulse 2 two tones",
-        "Pulse 2 pitch run, wide",
-        "Pulse 2 fade",
-        "Pulse 1 alternator (repeats)",
-        "Pulse 1 alternator (repeats)",
-        "Pulse 1 alternator (repeats)",
-        "Pulse 1 alternator (repeats)",
-        "Noise sweep, fast"};
+    static const char* const kRoles[26] = {nullptr,
+                                           "Pulse 2 tone C",
+                                           "Triangle and noise burst",
+                                           "Pulse 2 tone A",
+                                           "Pulse 2 pitch run, long",
+                                           "Pulse 2 pitch run, short",
+                                           "Pulse 1 alternating burst",
+                                           "Pulse 1 tone",
+                                           "Pulse 1 tone, holds the triangle",
+                                           "Noise ramp",
+                                           "Tonal sequence on all channels",
+                                           "Pulse 2 tone B",
+                                           "Noise sweep, slow",
+                                           "Noise swell",
+                                           "Pulse 2 three steps",
+                                           "Pulse 2 pitch run",
+                                           "Pulse 1 melody",
+                                           "Triangle rise",
+                                           "Pulse 2 two tones",
+                                           "Pulse 2 pitch run, wide",
+                                           "Pulse 2 fade",
+                                           "Pulse 1 alternator (repeats)",
+                                           "Pulse 1 alternator (repeats)",
+                                           "Pulse 1 alternator (repeats)",
+                                           "Pulse 1 alternator (repeats)",
+                                           "Noise sweep, fast"};
     // World 2's driver has fifteen requests in its own order (the game's
     // world2_sound_requests catalog); without it they show by number.
     const QJsonArray world2 = sdk::gameCatalog("world2_sound_requests").toArray();
@@ -173,8 +176,8 @@ QVector<nes::SoundEffect> soundEffects(int driver) {
         int request;
         const char* name;
     };
-    static const Known kKnown[] = {{0, 0x06, "Pause"}, {0, 0x12, "Jump"}, {1, 0x09, "Part complete"},
-                                   {1, 0x0A, "Inventory attack"}};
+    static const Known kKnown[] = {
+        {0, 0x06, "Pause"}, {0, 0x12, "Jump"}, {1, 0x09, "Part complete"}, {1, 0x0A, "Inventory attack"}};
     QVector<nes::SoundEffect> result;
     const int count = driver == 1 ? 15 : 26;
     for (int request = 1; request < count; ++request) {
@@ -184,18 +187,22 @@ QVector<nes::SoundEffect> soundEffects(int driver) {
         if (driver == 3 && request == 23) name = rlTr("doraemon", "Pulse 1 and falling noise (repeats)");
         if (driver == 3 && request == 24) name = rlTr("doraemon", "Pulse pair and noise tail");
         for (const Known& known : kKnown) {
-            if (known.driver == driver && known.request == request) name = QStringLiteral("%1 · %2").arg(QString::fromLatin1(known.name), name);
+            if (known.driver == driver && known.request == request)
+                name = QStringLiteral("%1 · %2").arg(QString::fromLatin1(known.name), name);
         }
         // The game's own names for its sounds (sound_effects, "driver:request").
-        const QString named = sdk::gameName("sound_effects", QStringLiteral("%1:%2").arg(driver).arg(nes::hex(request)), QString());
+        const QString named =
+            sdk::gameName("sound_effects", QStringLiteral("%1:%2").arg(driver).arg(nes::hex(request)), QString());
         if (!named.isEmpty()) name = QStringLiteral("%1 · %2").arg(named, name);
-        result << nes::SoundEffect{QStringLiteral("doraemon:%1:%2").arg(driver).arg(request),
-                                   QStringLiteral("%1 %2").arg(nes::hex(request), name),
-                                   rlTr("doraemon", "%1 · request %2").arg(QString::fromLatin1(kSoundDrivers[driver]), nes::hex(request)),
-                                   name.contains(QLatin1String("(repeats)"))
-                                       ? rlTr("doraemon", "It repeats until the game starts another sound; the preview "
-                                                          "stops after five seconds.")
-                                       : QString()};
+        result << nes::SoundEffect{
+            QStringLiteral("doraemon:%1:%2").arg(driver).arg(request),
+            QStringLiteral("%1 %2").arg(nes::hex(request), name),
+            rlTr("doraemon", "%1 · request %2").arg(QString::fromLatin1(kSoundDrivers[driver]), nes::hex(request)),
+            name.contains(QLatin1String("(repeats)"))
+                ? rlTr("doraemon",
+                       "It repeats until the game starts another sound; the preview "
+                       "stops after five seconds.")
+                : QString()};
     }
     return result;
 }
@@ -295,16 +302,24 @@ QVector<sdk::DocumentGroup> DoraemonSession::documents(const QString& kind) cons
             const QVector<int> now = mapCellsIn(state_.bundle, m.world, m.id, &width, &height);
             const bool dirty = now != mapCellsIn(saved_.bundle, m.world, m.id) ||
                                (m.world == World::Three && changed(ids::kRoomSelectors));
-            group(worldLabel(m.world)).documents
-                << entry(QStringLiteral("%1/%2").arg(int(m.world)).arg(m.id), m.label, QStringLiteral("%1 × %2").arg(width).arg(height), dirty);
+            group(worldLabel(m.world)).documents << entry(QStringLiteral("%1/%2").arg(int(m.world)).arg(m.id), m.label,
+                                                          QStringLiteral("%1 × %2").arg(width).arg(height), dirty);
             if (m.world == World::One && state_.bundle.contains(QStringLiteral("world2-screens"))) {
                 // World 2 between the others, its routes in stage order.
                 for (int r = 0; r < kRoutes.size(); ++r) {
-                    const QJsonArray panels =
-                        world2View_.value(QStringLiteral("routes")).toArray().at(r).toObject().value(QStringLiteral("panels")).toArray();
+                    const QJsonArray panels = world2View_.value(QStringLiteral("routes"))
+                                                  .toArray()
+                                                  .at(r)
+                                                  .toObject()
+                                                  .value(QStringLiteral("panels"))
+                                                  .toArray();
                     if (m.id != QLatin1String("underground")) continue;
-                    const QJsonArray nowScreens = state_.bundle.resource(QStringLiteral("world2-screens")).value(QStringLiteral("screens")).toArray();
-                    const QJsonArray savedScreens = saved_.bundle.resource(QStringLiteral("world2-screens")).value(QStringLiteral("screens")).toArray();
+                    const QJsonArray nowScreens = state_.bundle.resource(QStringLiteral("world2-screens"))
+                                                      .value(QStringLiteral("screens"))
+                                                      .toArray();
+                    const QJsonArray savedScreens = saved_.bundle.resource(QStringLiteral("world2-screens"))
+                                                        .value(QStringLiteral("screens"))
+                                                        .toArray();
                     bool routeDirty = false;
                     for (const QJsonValue& p : panels) {
                         const int selector = p.toObject().value(QStringLiteral("selector")).toInt();
@@ -322,19 +337,26 @@ QVector<sdk::DocumentGroup> DoraemonSession::documents(const QString& kind) cons
             const bool present = state_.bundle.contains(id);
             group(tr("%1 · tables").arg(worldLabel(table.world))).documents
                 << entry(QStringLiteral("table:") + id, rlTr("doraemon", table.title),
-                         present ? tr("%n rows", nullptr, int(state_.bundle.resource(id).value(QStringLiteral("records")).toArray().size()))
+                         present ? tr("%n rows", nullptr,
+                                      int(state_.bundle.resource(id).value(QStringLiteral("records")).toArray().size()))
                                  : tr("not added yet"),
                          present && saved_.bundle.contains(id) && changed(id));
         }
         const bool behavior = state_.bundle.contains(QStringLiteral("world3-behavior"));
         for (int s = 0; s < kBehaviorStreams; ++s) {
-            const QJsonArray now = behavior ? state_.bundle.resource(QStringLiteral("world3-behavior")).value(QStringLiteral("streams")).toArray() : QJsonArray();
+            const QJsonArray now = behavior ? state_.bundle.resource(QStringLiteral("world3-behavior"))
+                                                  .value(QStringLiteral("streams"))
+                                                  .toArray()
+                                            : QJsonArray();
             const QJsonArray saved = behavior && saved_.bundle.contains(QStringLiteral("world3-behavior"))
-                                         ? saved_.bundle.resource(QStringLiteral("world3-behavior")).value(QStringLiteral("streams")).toArray()
+                                         ? saved_.bundle.resource(QStringLiteral("world3-behavior"))
+                                               .value(QStringLiteral("streams"))
+                                               .toArray()
                                          : QJsonArray();
             group(tr("%1 · behavior").arg(worldLabel(World::Three))).documents
                 << entry(QStringLiteral("behavior:%1").arg(s), tr("Behavior %1").arg(s),
-                         behavior ? tr("%n steps", nullptr, int(now.at(s).toObject().value(QStringLiteral("instructions")).toArray().size()))
+                         behavior ? tr("%n steps", nullptr,
+                                       int(now.at(s).toObject().value(QStringLiteral("instructions")).toArray().size()))
                                   : tr("not added yet"),
                          behavior && now.at(s) != saved.at(s));
         }
@@ -350,8 +372,7 @@ QVector<sdk::DocumentGroup> DoraemonSession::documents(const QString& kind) cons
                     dirty = state_.bundle.tilePixels(id, t) != saved_.bundle.tilePixels(id, t);
                 }
                 g.documents << entry(QStringLiteral("%1/%2").arg(id).arg(half),
-                                     half == 0 ? tr("Sprites") : tr("Background"),
-                                     tr("256 tiles"), dirty);
+                                     half == 0 ? tr("Sprites") : tr("Background"), tr("256 tiles"), dirty);
             }
         }
     } else if (kind == QLatin1String("metatiles")) {
@@ -363,25 +384,26 @@ QVector<sdk::DocumentGroup> DoraemonSession::documents(const QString& kind) cons
                                  changed(hierarchyId(w)));
         }
         if (state_.bundle.contains(ids::kWorld2Metatiles)) {
-            group(worldLabel(World::Two)).documents
-                << entry(QStringLiteral("metatiles/2"), tr("Metatiles"), QStringLiteral("16×16"), changed(ids::kWorld2Metatiles));
+            group(worldLabel(World::Two)).documents << entry(QStringLiteral("metatiles/2"), tr("Metatiles"),
+                                                             QStringLiteral("16×16"), changed(ids::kWorld2Metatiles));
         }
         // Keep the worlds in order.
-        std::sort(groups.begin(), groups.end(), [](const sdk::DocumentGroup& a, const sdk::DocumentGroup& b) { return a.title < b.title; });
+        std::sort(groups.begin(), groups.end(),
+                  [](const sdk::DocumentGroup& a, const sdk::DocumentGroup& b) { return a.title < b.title; });
     } else if (kind == QLatin1String("palettes")) {
         for (World w : {World::One, World::Two, World::Three}) {
             for (const QString& id : paletteIds(state_.bundle, w)) {
-                group(worldLabel(w)).documents
-                    << entry(id, tr("Preset %1").arg(presetOf(id).second),
-                             tr("%n colours", nullptr, state_.bundle.tableValues(id).size()),
-                             state_.bundle.tableValues(id) != saved_.bundle.tableValues(id));
+                group(worldLabel(w)).documents << entry(id, tr("Preset %1").arg(presetOf(id).second),
+                                                        tr("%n colours", nullptr, state_.bundle.tableValues(id).size()),
+                                                        state_.bundle.tableValues(id) != saved_.bundle.tableValues(id));
             }
         }
         for (const QString& id : kShellPalettes) {
             const bool present = state_.bundle.contains(id);
             group(tr("Title and help")).documents
                 << entry(id, shellPaletteLabel(id), present ? tr("32 colours") : tr("not added yet"),
-                         present && saved_.bundle.contains(id) && state_.bundle.tableValues(id) != saved_.bundle.tableValues(id));
+                         present && saved_.bundle.contains(id) &&
+                             state_.bundle.tableValues(id) != saved_.bundle.tableValues(id));
         }
     } else if (kind == QLatin1String("animations")) {
         // Opening one adds the catalogs from the project's own source.
@@ -393,8 +415,9 @@ QVector<sdk::DocumentGroup> DoraemonSession::documents(const QString& kind) cons
             const bool dirty = !missing && state_.bundle.resource(id) != saved_.bundle.resource(id);
             group(QStringLiteral("%1 · %2").arg(worldLabel(a.world), a.group)).documents
                 << entry(QStringLiteral("anim:%1").arg(i), a.label,
-                         missing ? tr("not added yet")
-                                 : a.frames.size() > 1 ? tr("%1 fr").arg(a.frames.size()) : QString(),
+                         missing               ? tr("not added yet")
+                         : a.frames.size() > 1 ? tr("%1 fr").arg(a.frames.size())
+                                               : QString(),
                          dirty && a.group == QLatin1String("Frames"));
         }
     } else if (kind == QLatin1String("screens")) {
@@ -410,8 +433,18 @@ QVector<sdk::DocumentGroup> DoraemonSession::documents(const QString& kind) cons
         const bool missing = state_.music.isEmpty();
         static const int kTracks[4] = {8, 6, 8, 4};
         for (int d = 0; d < 4; ++d) {
-            const QJsonArray now = state_.music.value(QStringLiteral("drivers")).toArray().at(d).toObject().value(QStringLiteral("segments")).toArray();
-            const QJsonArray saved = saved_.music.value(QStringLiteral("drivers")).toArray().at(d).toObject().value(QStringLiteral("segments")).toArray();
+            const QJsonArray now = state_.music.value(QStringLiteral("drivers"))
+                                       .toArray()
+                                       .at(d)
+                                       .toObject()
+                                       .value(QStringLiteral("segments"))
+                                       .toArray();
+            const QJsonArray saved = saved_.music.value(QStringLiteral("drivers"))
+                                         .toArray()
+                                         .at(d)
+                                         .toObject()
+                                         .value(QStringLiteral("segments"))
+                                         .toArray();
             for (int t = 0; t < kTracks[d]; ++t) {
                 group(QString::fromLatin1(kSoundDrivers[d])).documents
                     << entry(QStringLiteral("track:%1:%2").arg(d).arg(t), DoraemonMusicModel::trackTitle(d, t),
@@ -421,7 +454,8 @@ QVector<sdk::DocumentGroup> DoraemonSession::documents(const QString& kind) cons
         // The music first, then each driver's effects.
         for (int d = 0; d < 4; ++d) {
             sdk::DocumentGroup& effects = group(tr("Sound effects · %1").arg(QString::fromLatin1(kSoundDrivers[d])));
-            for (const nes::SoundEffect& effect : soundEffects(d)) effects.documents << entry(QStringLiteral("sfx:") + effect.key, effect.title);
+            for (const nes::SoundEffect& effect : soundEffects(d))
+                effects.documents << entry(QStringLiteral("sfx:") + effect.key, effect.title);
         }
         sdk::DocumentGroup& routing = group(tr("Effect routing"));
         for (int d = 0; d < 4; ++d) {
@@ -450,12 +484,13 @@ QVector<sdk::DocumentGroup> DoraemonSession::documents(const QString& kind) cons
         // Opening it adds the document from the project's own source.
         group(tr("Attract mode")).documents
             << entry(QStringLiteral("world1"), tr("World 1 demo"),
-                     state_.demo.isEmpty() ? tr("not added yet")
-                                           : tr("%n steps", nullptr, state_.demo.value(QStringLiteral("steps")).toArray().size()),
+                     state_.demo.isEmpty()
+                         ? tr("not added yet")
+                         : tr("%n steps", nullptr, state_.demo.value(QStringLiteral("steps")).toArray().size()),
                      !state_.demo.isEmpty() && state_.demo != saved_.demo);
     } else if (kind == QLatin1String("playtest")) {
-        group(tr("Session")).documents
-            << entry(QStringLiteral("playtest"), tr("Build and run"), lastBuild().isEmpty() ? QString() : QStringLiteral("built"));
+        group(tr("Session")).documents << entry(QStringLiteral("playtest"), tr("Build and run"),
+                                                lastBuild().isEmpty() ? QString() : QStringLiteral("built"));
     }
     return groups;
 }
@@ -466,8 +501,8 @@ std::unique_ptr<sdk::EditorModel> DoraemonSession::openEditor(const QString& kin
             for (const MapEntry& m : hierarchyMaps()) {
                 if (document == QStringLiteral("%1/%2").arg(int(m.world)).arg(m.id)) {
                     // Map objects came with a newer kit.
-                    if (m.world != World::Two && (!state_.bundle.contains(QStringLiteral("world3-schedule")) ||
-                                                  !hasWorld3Tables(this))) {
+                    if (m.world != World::Two &&
+                        (!state_.bundle.contains(QStringLiteral("world3-schedule")) || !hasWorld3Tables(this))) {
                         upgradeDocuments(kind, document);
                         return nullptr;
                     }
@@ -540,16 +575,19 @@ std::unique_ptr<sdk::EditorModel> DoraemonSession::openEditor(const QString& kin
             if (state_.bundle.resourceIds(kChrCodec).contains(id) && (half == 0 || half == 1)) {
                 return std::make_unique<nes::ChrTileModel>(
                     this, id, half * 256, 256,
-                    tr("Bank %1 · %2").arg(id.section(QLatin1Char('-'), 2)).arg(half == 0 ? QStringLiteral("sprites")
-                                                                                                    : QStringLiteral("background")),
+                    tr("Bank %1 · %2")
+                        .arg(id.section(QLatin1Char('-'), 2))
+                        .arg(half == 0 ? QStringLiteral("sprites") : QStringLiteral("background")),
                     half == 0);
             }
         }
         if (kind == QLatin1String("metatiles")) {
             const QString what = document.section(QLatin1Char('/'), 0, 0);
             const World world = World(document.section(QLatin1Char('/'), 1).toInt());
-            if (what == QLatin1String("small")) return std::make_unique<DoraemonBlockModel>(this, DoraemonBlockModel::Kind::Small, world);
-            if (what == QLatin1String("big")) return std::make_unique<DoraemonBlockModel>(this, DoraemonBlockModel::Kind::Big, world);
+            if (what == QLatin1String("small"))
+                return std::make_unique<DoraemonBlockModel>(this, DoraemonBlockModel::Kind::Small, world);
+            if (what == QLatin1String("big"))
+                return std::make_unique<DoraemonBlockModel>(this, DoraemonBlockModel::Kind::Big, world);
             if (what == QLatin1String("metatiles") && state_.bundle.contains(ids::kWorld2Metatiles)) {
                 return std::make_unique<DoraemonBlockModel>(this, DoraemonBlockModel::Kind::Metatile, World::Two);
             }
@@ -563,7 +601,8 @@ std::unique_ptr<sdk::EditorModel> DoraemonSession::openEditor(const QString& kin
                 computeWorld2View(kind, document);
                 return nullptr;
             }
-            return std::make_unique<nes::PaletteTableModel>(this, document, tr("World %1 · preset %2").arg(world).arg(preset));
+            return std::make_unique<nes::PaletteTableModel>(this, document,
+                                                            tr("World %1 · preset %2").arg(world).arg(preset));
         }
         if (kind == QLatin1String("sound") && document.startsWith(QLatin1String("sfx:"))) {
             for (const nes::SoundEffect& effect : soundEffects(document.section(QLatin1Char(':'), 2, 2).toInt())) {
@@ -604,7 +643,8 @@ std::unique_ptr<sdk::EditorModel> DoraemonSession::openEditor(const QString& kin
             }
             return std::make_unique<nes::PaletteTableModel>(this, document, shellPaletteLabel(document));
         }
-        if (kind == QLatin1String("text") && (document == QLatin1String("messages") || document == QLatin1String("credits"))) {
+        if (kind == QLatin1String("text") &&
+            (document == QLatin1String("messages") || document == QLatin1String("credits"))) {
             if (state_.text.isEmpty()) {
                 upgradeDocuments(kind, document);
                 return nullptr;
@@ -696,8 +736,11 @@ QString DoraemonSession::writeMusicSnapshot(QString* error) const {
 QJsonObject DoraemonSession::musicTrace(int driver, int track) {
     // The document's hash, worked out once per revision.
     if (musicHashRevision_ != revision_ || musicHash_.isEmpty()) {
-        musicHash_ = QString::fromLatin1(
-            QCryptographicHash::hash(QJsonDocument(state_.music).toJson(QJsonDocument::Compact), QCryptographicHash::Sha1).toHex().left(16));
+        musicHash_ =
+            QString::fromLatin1(QCryptographicHash::hash(QJsonDocument(state_.music).toJson(QJsonDocument::Compact),
+                                                         QCryptographicHash::Sha1)
+                                    .toHex()
+                                    .left(16));
         musicHashRevision_ = revision_;
     }
     const QString hash = musicHash_;
@@ -712,12 +755,14 @@ QJsonObject DoraemonSession::musicTrace(int driver, int track) {
         report(sdk::Severity::Error, QStringLiteral("sound"), error);
         return {};
     }
-    const QString output = project_.resolve(QStringLiteral("build/sound-preview/trace-%1-%2.json").arg(driver).arg(track));
-    sdk::ProcessSpec spec = h->kitCommand({QStringLiteral("audio"), QStringLiteral("trace-doraemon"), project_.path(),
-                                           QStringLiteral("--document"), document, QStringLiteral("--driver"), QString::number(driver),
-                                           QStringLiteral("--track"), QString::number(track), QStringLiteral("--frames"),
-                                           QString::number(DoraemonMusicModel::kFrames), QStringLiteral("--output"), output},
-                                          project_.directory(), &error);
+    const QString output =
+        project_.resolve(QStringLiteral("build/sound-preview/trace-%1-%2.json").arg(driver).arg(track));
+    sdk::ProcessSpec spec =
+        h->kitCommand({QStringLiteral("audio"), QStringLiteral("trace-doraemon"), project_.path(),
+                       QStringLiteral("--document"), document, QStringLiteral("--driver"), QString::number(driver),
+                       QStringLiteral("--track"), QString::number(track), QStringLiteral("--frames"),
+                       QString::number(DoraemonMusicModel::kFrames), QStringLiteral("--output"), output},
+                      project_.directory(), &error);
     if (spec.program.isEmpty()) {
         report(sdk::Severity::Error, QStringLiteral("sound"), error);
         return {};
@@ -727,7 +772,9 @@ QJsonObject DoraemonSession::musicTrace(int driver, int track) {
     h->runProcess(spec, [this, key, output](const sdk::ProcessResult& result) {
         tracing_.clear();
         if (!result.succeeded()) {
-            if (!result.cancelled) report(sdk::Severity::Error, QStringLiteral("sound"), tr("Tracing the track failed: %1").arg(failureText(result)));
+            if (!result.cancelled)
+                report(sdk::Severity::Error, QStringLiteral("sound"),
+                       tr("Tracing the track failed: %1").arg(failureText(result)));
             return;
         }
         try {
@@ -784,8 +831,10 @@ QVector<nes::PreviewPalette> DoraemonSession::previewPalettes(const QString& chr
             for (int row = 0; row < 4; ++row) {
                 const int at = (sprites && values.size() >= 32 ? 16 : 0) + row * 4;
                 if (at + 4 <= values.size()) {
-                    result << nes::PreviewPalette{tr("Preset %1 %2 %3").arg(p).arg(sprites ? QStringLiteral("SPR")
-                                                                                                         : QStringLiteral("BG")).arg(row),
+                    result << nes::PreviewPalette{tr("Preset %1 %2 %3")
+                                                      .arg(p)
+                                                      .arg(sprites ? QStringLiteral("SPR") : QStringLiteral("BG"))
+                                                      .arg(row),
                                                   values.mid(at, 4)};
                 }
             }
@@ -808,7 +857,8 @@ QVector<sdk::PaletteSample> DoraemonSession::paletteSamples(const QString& table
         if (state_.text.isEmpty()) return result;
         QStringList screens;
         if (table == QLatin1String("shell-palette-title")) screens = QStringList{QStringLiteral("title")};
-        else if (table == QLatin1String("shell-palette-chapter")) screens = QStringList{QStringLiteral("help-1"), QStringLiteral("help-2"), QStringLiteral("help-3")};
+        else if (table == QLatin1String("shell-palette-chapter"))
+            screens = QStringList{QStringLiteral("help-1"), QStringLiteral("help-2"), QStringLiteral("help-3")};
         else screens = QStringList{table.mid(int(QStringLiteral("shell-palette-").size()))};
         for (const QString& id : screens) {
             sdk::PaletteSample sample;
@@ -829,9 +879,10 @@ QVector<sdk::PaletteSample> DoraemonSession::paletteSamples(const QString& table
         // the empty metatile under the enemy.
         // The view is a cache file the kit wrote when World 2 was first opened.
         if (world2View_.isEmpty()) const_cast<DoraemonSession*>(this)->loadWorld2View();
-        const QJsonArray screens = state_.bundle.contains(QStringLiteral("world2-screens"))
-                                       ? state_.bundle.resource(QStringLiteral("world2-screens")).value(QStringLiteral("screens")).toArray()
-                                       : QJsonArray();
+        const QJsonArray screens =
+            state_.bundle.contains(QStringLiteral("world2-screens"))
+                ? state_.bundle.resource(QStringLiteral("world2-screens")).value(QStringLiteral("screens")).toArray()
+                : QJsonArray();
         for (const QJsonValue& routeValue : world2View_.value(QStringLiteral("routes")).toArray()) {
             const QJsonObject route = routeValue.toObject();
             for (const QJsonValue& panelValue : route.value(QStringLiteral("panels")).toArray()) {
@@ -846,9 +897,10 @@ QVector<sdk::PaletteSample> DoraemonSession::paletteSamples(const QString& table
                 for (int y = 0; y < 15; ++y) {
                     for (int x = 0; x < 16; ++x) {
                         const QJsonArray cell = rows.at(y).toArray().at(x).toArray();
-                        const int value = cell.size() == 2
-                                              ? screen.at(cell.at(1).toInt()).toArray().at(cell.at(0).toInt()).toInt(0xEF)
-                                              : fixed.at(y).toArray().at(x).toInt(0xEF);
+                        const int value =
+                            cell.size() == 2
+                                ? screen.at(cell.at(1).toInt()).toArray().at(cell.at(0).toInt()).toInt(0xEF)
+                                : fixed.at(y).toArray().at(x).toInt(0xEF);
                         if (value < 0xD0) p.drawImage(x * 16, y * 16, art.metatile(value, preset));
                         else if (value < 0xEF) p.drawImage(x * 16, y * 16, art.metatile(0, preset));
                     }
@@ -864,9 +916,10 @@ QVector<sdk::PaletteSample> DoraemonSession::paletteSamples(const QString& table
         }
         // Before the World 2 view is read: the metatiles in this preset,
         // sixteen to a row.
-        const int count = state_.bundle.contains(ids::kWorld2Metatiles)
-                              ? state_.bundle.resource(ids::kWorld2Metatiles).value(QStringLiteral("tiles")).toArray().size()
-                              : 0;
+        const int count =
+            state_.bundle.contains(ids::kWorld2Metatiles)
+                ? state_.bundle.resource(ids::kWorld2Metatiles).value(QStringLiteral("tiles")).toArray().size()
+                : 0;
         QImage image(16 * 16, ((count + 15) / 16) * 16, QImage::Format_ARGB32);
         image.fill(Qt::black);
         QPainter p(&image);
@@ -898,7 +951,8 @@ QVector<sdk::PaletteSample> DoraemonSession::paletteSamples(const QString& table
                 for (int column = 0; column < 8; ++column) {
                     const int at = (top + row) * width + left + column;
                     p.drawImage(column * 32, row * 32,
-                                art.bigBlock(world, cells.value(at), areaPreset(state_.bundle, world, m.id, left + column, top + row)));
+                                art.bigBlock(world, cells.value(at),
+                                             areaPreset(state_.bundle, world, m.id, left + column, top + row)));
                 }
             }
             p.end();
@@ -962,16 +1016,21 @@ QString DoraemonSession::world2ViewPath() const {
         }
     }
     if (state_.bundle.contains(QStringLiteral("world2-screens"))) {
-        hash.addData(state_.bundle.resource(QStringLiteral("world2-screens")).value(QStringLiteral("raw_hex")).toString().toLatin1());
+        hash.addData(state_.bundle.resource(QStringLiteral("world2-screens"))
+                         .value(QStringLiteral("raw_hex"))
+                         .toString()
+                         .toLatin1());
     }
-    return project_.resolve(QStringLiteral("build/world2-view-%1.json").arg(QString::fromLatin1(hash.result().toHex().left(16))));
+    return project_.resolve(
+        QStringLiteral("build/world2-view-%1.json").arg(QString::fromLatin1(hash.result().toHex().left(16))));
 }
 
 bool DoraemonSession::loadWorld2View() {
     QFile file(world2ViewPath());
     if (!file.open(QIODevice::ReadOnly)) return false;
     const QJsonObject view = QJsonDocument::fromJson(file.readAll()).object();
-    if (view.value(QStringLiteral("schema")).toString() != QLatin1String("retrolarium.doraemon-world2-view")) return false;
+    if (view.value(QStringLiteral("schema")).toString() != QLatin1String("retrolarium.doraemon-world2-view"))
+        return false;
     world2View_ = view;
     return true;
 }
@@ -982,8 +1041,8 @@ void DoraemonSession::computeWorld2View(const QString& kind, const QString& docu
     const QString output = world2ViewPath();
     QDir().mkpath(QFileInfo(output).absolutePath());
     QString error;
-    sdk::ProcessSpec spec = h->kitCommand({QStringLiteral("studio"), QStringLiteral("doraemon-world2-view"), bundlePath_,
-                                           QStringLiteral("--output"), output},
+    sdk::ProcessSpec spec = h->kitCommand({QStringLiteral("studio"), QStringLiteral("doraemon-world2-view"),
+                                           bundlePath_, QStringLiteral("--output"), output},
                                           project_.directory(), &error);
     if (spec.program.isEmpty()) {
         report(sdk::Severity::Error, kind, error);
@@ -993,7 +1052,8 @@ void DoraemonSession::computeWorld2View(const QString& kind, const QString& docu
     h->runProcess(spec, [this, kind, document](const sdk::ProcessResult& result) {
         if (!result.succeeded() || !loadWorld2View()) {
             if (!result.cancelled) {
-                report(sdk::Severity::Error, kind, tr("Laying out the World 2 routes failed: %1").arg(failureText(result)));
+                report(sdk::Severity::Error, kind,
+                       tr("Laying out the World 2 routes failed: %1").arg(failureText(result)));
             }
             if (kind == QLatin1String("palettes")) {
                 world2ViewFailed_ = true;
@@ -1012,9 +1072,7 @@ void DoraemonSession::build() {
     runBuild([](bool) {});
 }
 
-void DoraemonSession::play() {
-    launchWorld(0);
-}
+void DoraemonSession::play() { launchWorld(0); }
 
 void DoraemonSession::playSelected() {
     if (isRecording()) stopRecording();
@@ -1026,7 +1084,9 @@ void DoraemonSession::playSelected() {
 
 int DoraemonSession::demoCapacity() const {
     const QJsonObject layout = state_.demo.value(QStringLiteral("layout")).toObject();
-    return (layout.value(QStringLiteral("limit_cpu")).toInt() - layout.value(QStringLiteral("stream_cpu")).toInt()) / 2 - 1;
+    return (layout.value(QStringLiteral("limit_cpu")).toInt() - layout.value(QStringLiteral("stream_cpu")).toInt()) /
+               2 -
+           1;
 }
 
 bool DoraemonSession::editDemo(const QString& label, const QJsonArray& steps, QString* error) {
@@ -1134,9 +1194,10 @@ void DoraemonSession::launchDemo(bool record) {
     plan.readyVariable = QStringLiteral("DORAEMON_DEMO_READY");
     if (record) {
         plan.recordTo = QStringLiteral("build/demo-recording.txt");
-        plan.recordingMessage = tr("Recording: when World 1's demo starts Doraemon follows the controller until "
-                                   "you press Start or Stop recording, the game ends the demo, or its steps "
-                                   "are full.");
+        plan.recordingMessage =
+            tr("Recording: when World 1's demo starts Doraemon follows the controller until "
+               "you press Start or Stop recording, the game ends the demo, or its steps "
+               "are full.");
         plan.recorded = [this](const QString& path) { applyRecording(path); };
     }
     plan.prepare = [](sdk::ProcessSpec& game) {
@@ -1176,8 +1237,8 @@ void DoraemonSession::launchWorld(int world) {
     plan.label = tr("Plan playtest from power-on");
     plan.title = tr("Doraemon · power-on");
     if (world > 0) {
-        plan.arguments = QStringList{QStringLiteral("studio"), QStringLiteral("doraemon-playtest-plan"), project_.path(),
-                          QStringLiteral("--world"), QString::number(world)};
+        plan.arguments = QStringList{QStringLiteral("studio"), QStringLiteral("doraemon-playtest-plan"),
+                                     project_.path(), QStringLiteral("--world"), QString::number(world)};
         if (world == 1 && startBlock_.x() >= 0) {
             plan.arguments << (startUnderground_ ? QStringLiteral("--underground") : QStringLiteral("--block"))
                            << QString::number(startBlock_.x()) << QString::number(startBlock_.y());

@@ -11,17 +11,13 @@ namespace rl::smb {
 
 namespace {
 
-[[noreturn]] void fail(const QString& message) {
-    throw SmbError(message.toStdString());
-}
+[[noreturn]] void fail(const QString& message) { throw SmbError(message.toStdString()); }
 
 constexpr int kTilePixels = 64;
 
 }  // namespace
 
-int SmbArea::areaBytes() const {
-    return 2 + 2 * int(objects.size()) + 1;
-}
+int SmbArea::areaBytes() const { return 2 + 2 * int(objects.size()) + 1; }
 
 int SmbArea::enemyBytes() const {
     int bytes = 1;
@@ -76,13 +72,9 @@ void SmbResourceDocument::save(const QString& path) const {
     }
 }
 
-QString SmbResourceDocument::game() const {
-    return root_.value(QStringLiteral("game")).toString();
-}
+QString SmbResourceDocument::game() const { return root_.value(QStringLiteral("game")).toString(); }
 
-QString SmbResourceDocument::revision() const {
-    return root_.value(QStringLiteral("revision")).toString();
-}
+QString SmbResourceDocument::revision() const { return root_.value(QStringLiteral("revision")).toString(); }
 
 int SmbResourceDocument::indexOf(const QString& id) const {
     const QJsonArray resources = root_.value(QStringLiteral("resources")).toArray();
@@ -178,11 +170,10 @@ SmbLevelPool SmbResourceDocument::poolOf(const QVector<SmbArea>& areas) {
             continue;
         }
         const SmbArea& next = areas.at(i + 1);
-        const int nextHeader = ((next.header.value(0) & 3) << 6) | ((next.header.value(1) & 7) << 3) |
-                               (next.header.value(2) & 7);
-        const int nextEnemy = next.enemies.isEmpty()
-                                  ? 0xff
-                                  : ((next.enemies.first().column & 15) << 4) | (next.enemies.first().row & 15);
+        const int nextHeader =
+            ((next.header.value(0) & 3) << 6) | ((next.header.value(1) & 7) << 3) | (next.header.value(2) & 7);
+        const int nextEnemy =
+            next.enemies.isEmpty() ? 0xff : ((next.enemies.first().column & 15) << 4) | (next.enemies.first().row & 15);
         if (a.areaImplicitTerminator && nextHeader == 0xfd) --pool.objectUsed;
         if (a.enemyImplicitTerminator && nextEnemy == 0xff) --pool.enemyUsed;
     }
@@ -214,12 +205,10 @@ SmbArea SmbResourceDocument::area(const QString& levels, const QString& name) co
         area.areaImplicitTerminator = a.value(QStringLiteral("area_implicit_terminator")).toBool();
         area.enemyImplicitTerminator = a.value(QStringLiteral("enemy_implicit_terminator")).toBool();
         const QJsonObject h = a.value(QStringLiteral("header")).toObject();
-        area.header = {h.value(QStringLiteral("timer_setting")).toInt(),
-                       h.value(QStringLiteral("entrance_control")).toInt(),
-                       h.value(QStringLiteral("foreground_or_color")).toInt(),
-                       h.value(QStringLiteral("area_style")).toInt(),
-                       h.value(QStringLiteral("background_scenery")).toInt(),
-                       h.value(QStringLiteral("terrain_control")).toInt()};
+        area.header = {
+            h.value(QStringLiteral("timer_setting")).toInt(),       h.value(QStringLiteral("entrance_control")).toInt(),
+            h.value(QStringLiteral("foreground_or_color")).toInt(), h.value(QStringLiteral("area_style")).toInt(),
+            h.value(QStringLiteral("background_scenery")).toInt(),  h.value(QStringLiteral("terrain_control")).toInt()};
         for (const QJsonValue& item : a.value(QStringLiteral("objects")).toArray()) {
             const QJsonObject o = item.toObject();
             area.objects.push_back({o.value(QStringLiteral("column")).toInt(), o.value(QStringLiteral("row")).toInt(),
@@ -228,13 +217,12 @@ SmbArea SmbResourceDocument::area(const QString& levels, const QString& name) co
         }
         for (const QJsonValue& item : a.value(QStringLiteral("enemies")).toArray()) {
             const QJsonObject e = item.toObject();
-            area.enemies.push_back({e.value(QStringLiteral("kind")).toString(), e.value(QStringLiteral("column")).toInt(),
-                                    e.value(QStringLiteral("row")).toInt(),
-                                    e.value(QStringLiteral("page_advance")).toBool(),
-                                    e.value(QStringLiteral("hard_mode")).toBool(),
-                                    e.value(QStringLiteral("object_or_page")).toInt(),
-                                    e.value(QStringLiteral("destination_world")).toInt(-1),
-                                    e.value(QStringLiteral("destination_page")).toInt(-1)});
+            area.enemies.push_back(
+                {e.value(QStringLiteral("kind")).toString(), e.value(QStringLiteral("column")).toInt(),
+                 e.value(QStringLiteral("row")).toInt(), e.value(QStringLiteral("page_advance")).toBool(),
+                 e.value(QStringLiteral("hard_mode")).toBool(), e.value(QStringLiteral("object_or_page")).toInt(),
+                 e.value(QStringLiteral("destination_world")).toInt(-1),
+                 e.value(QStringLiteral("destination_page")).toInt(-1)});
         }
         return area;
     }
@@ -252,13 +240,12 @@ void SmbResourceDocument::setArea(const QString& levels, const SmbArea& area) {
         if (area.header.size() != 6) {
             fail(QStringLiteral("An SMB area header has six fields"));
         }
-        a.insert(QStringLiteral("header"),
-                 QJsonObject{{QStringLiteral("timer_setting"), area.header.at(0)},
-                             {QStringLiteral("entrance_control"), area.header.at(1)},
-                             {QStringLiteral("foreground_or_color"), area.header.at(2)},
-                             {QStringLiteral("area_style"), area.header.at(3)},
-                             {QStringLiteral("background_scenery"), area.header.at(4)},
-                             {QStringLiteral("terrain_control"), area.header.at(5)}});
+        a.insert(QStringLiteral("header"), QJsonObject{{QStringLiteral("timer_setting"), area.header.at(0)},
+                                                       {QStringLiteral("entrance_control"), area.header.at(1)},
+                                                       {QStringLiteral("foreground_or_color"), area.header.at(2)},
+                                                       {QStringLiteral("area_style"), area.header.at(3)},
+                                                       {QStringLiteral("background_scenery"), area.header.at(4)},
+                                                       {QStringLiteral("terrain_control"), area.header.at(5)}});
         QJsonArray objects;
         for (const SmbAreaObject& o : area.objects) {
             objects.append(QJsonObject{{QStringLiteral("column"), o.column},
@@ -312,7 +299,8 @@ QVector<SmbRoute> SmbResourceDocument::routes(const QString& world, int number) 
         }
         for (const QJsonValue& step : w.value(QStringLiteral("areas")).toArray()) {
             const QJsonObject s = step.toObject();
-            result.push_back({s.value(QStringLiteral("area_type")).toInt(), s.value(QStringLiteral("area_index")).toInt(),
+            result.push_back({s.value(QStringLiteral("area_type")).toInt(),
+                              s.value(QStringLiteral("area_index")).toInt(),
                               s.value(QStringLiteral("alternate_bit")).toBool()});
         }
     }

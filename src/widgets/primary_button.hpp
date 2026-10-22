@@ -11,8 +11,7 @@ class PrimaryButton final : public QAbstractButton {
     Q_OBJECT
 
 public:
-    explicit PrimaryButton(const QString& text, const QString& iconName = QString(),
-                           QWidget* parent = nullptr);
+    explicit PrimaryButton(const QString& text, const QString& iconName = QString(), QWidget* parent = nullptr);
 
     QSize sizeHint() const override;
     QSize minimumSizeHint() const override;

@@ -9,7 +9,8 @@
 
 namespace rl::castle_excellent {
 
-CastleExcellentPainter::CastleExcellentPainter(const CastleExcellentLevels& levels, const nes::Bundle& graphics, const CastleExcellentArt& art)
+CastleExcellentPainter::CastleExcellentPainter(const CastleExcellentLevels& levels, const nes::Bundle& graphics,
+                                               const CastleExcellentArt& art)
     : width_(levels.width()), height_(levels.height()) {
     chr_ = graphics.allPixels(art.chr);
     palette_ = graphics.tableValues(art.roomPalette);
@@ -38,7 +39,8 @@ CastleExcellentPainter::CastleExcellentPainter(const CastleExcellentLevels& leve
     preserving_ = levels.renderingInts(QStringLiteral("attribute_preserving_cells"));
     runtimeTypes_ = levels.renderingInts(QStringLiteral("runtime_object_types"));
     if (!art.descriptors.isEmpty()) {
-        for (const QJsonValue& value : graphics.resource(art.descriptors).value(QStringLiteral("descriptors")).toArray()) {
+        for (const QJsonValue& value :
+             graphics.resource(art.descriptors).value(QStringLiteral("descriptors")).toArray()) {
             const QJsonObject d = value.toObject();
             descriptors_ << d.value(QStringLiteral("tile")).toInt() << d.value(QStringLiteral("attributes")).toInt();
         }
@@ -54,9 +56,7 @@ QColor CastleExcellentPainter::color(int index) const {
     return QColor::fromRgb(nes::masterColor(index & 0x3f, model_.toStdString()));
 }
 
-QColor CastleExcellentPainter::backdrop() const {
-    return color(palette_.value(0, 0x0f));
-}
+QColor CastleExcellentPainter::backdrop() const { return color(palette_.value(0, 0x0f)); }
 
 int CastleExcellentPainter::pixel(int tile, int x, int y) const {
     const int at = tile * 64 + y * 8 + x;
@@ -138,9 +138,7 @@ QImage CastleExcellentPainter::backgroundTile(int tile, int palette) const {
     return image;
 }
 
-QImage CastleExcellentPainter::cellIcon(int type) const {
-    return cell(type, ownPalettes_.value(type));
-}
+QImage CastleExcellentPainter::cellIcon(int type) const { return cell(type, ownPalettes_.value(type)); }
 
 QImage CastleExcellentPainter::sprite(const CastleExcellentSprite& s) const {
     QImage image(8, 16, QImage::Format_ARGB32);
@@ -168,14 +166,13 @@ QImage CastleExcellentPainter::player() const {
     QPainter painter(&image);
     for (int i = 0; i < 2; ++i) {
         const int d = (kNeutral + i) * 2;
-        painter.drawImage(i * 8, 0, sprite(CastleExcellentSprite{descriptors_.value(d), descriptors_.value(d + 1), 0, 0}));
+        painter.drawImage(i * 8, 0,
+                          sprite(CastleExcellentSprite{descriptors_.value(d), descriptors_.value(d + 1), 0, 0}));
     }
     return image;
 }
 
-int CastleExcellentPainter::runtimeType(int encodedType) const {
-    return runtimeTypes_.value(encodedType, -1);
-}
+int CastleExcellentPainter::runtimeType(int encodedType) const { return runtimeTypes_.value(encodedType, -1); }
 
 QVector<CastleExcellentSprite> CastleExcellentPainter::sprites(const CastleExcellentObject& object) const {
     QVector<CastleExcellentSprite> result;
@@ -188,7 +185,8 @@ QVector<CastleExcellentSprite> CastleExcellentPainter::sprites(const CastleExcel
     const int baseY = object.y * kCellHeight;
     for (int i = 0; i < found->xOffsets.size(); ++i) {
         const int d = found->descriptorOffset + i * 2;
-        result << CastleExcellentSprite{descriptors_.value(d), descriptors_.value(d + 1), baseX + found->xOffsets.at(i), baseY};
+        result << CastleExcellentSprite{descriptors_.value(d), descriptors_.value(d + 1), baseX + found->xOffsets.at(i),
+                                        baseY};
     }
     return result;
 }

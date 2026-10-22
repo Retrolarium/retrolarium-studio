@@ -18,15 +18,15 @@ namespace rl::smb {
 struct SmbTextEncoding {
     QString characters;
     QVector<int> codes;
-    QString caseFold;       // "upper", "lower" or "none"
-    int padding = 0;        // the code that fills a field after its text
+    QString caseFold;  // "upper", "lower" or "none"
+    int padding = 0;   // the code that fills a field after its text
 
     static SmbTextEncoding fromJson(const QJsonObject& json);
     bool isValid() const { return !characters.isEmpty(); }
 
     QString fold(const QString& text) const;
-    int code(QChar character) const;        // -1 when unmapped
-    QChar character(int code) const;        // null when unmapped
+    int code(QChar character) const;  // -1 when unmapped
+    QChar character(int code) const;  // null when unmapped
     // The text of a field's codes, the padding stripped from the right;
     // unmapped codes show as '?'.
     QString decode(const QVector<int>& codes) const;
@@ -76,11 +76,11 @@ struct SmbScreen {
     int capacity = 0;
     int width = 32;
     int height = 30;
-    int base = 0x2000;          // name table address
+    int base = 0x2000;  // name table address
     QVector<int> tiles;
     QVector<int> attributes;
     QVector<SmbScreenCommand> commands;
-    QJsonArray trailing;        // bytes after the terminator, kept as they are
+    QJsonArray trailing;  // bytes after the terminator, kept as they are
 
     int attributeBase() const { return base + width * height; }
     // The display list's bytes: its writes and the terminator.
@@ -113,7 +113,7 @@ public:
 
     QVector<SmbScreen> screens;
     QVector<SmbScreenTextField> textFields;
-    SmbTextEncoding encoding;   // invalid when the resource has no text
+    SmbTextEncoding encoding;  // invalid when the resource has no text
     // A pooled resource (capacity_pool) packs its screens one after another
     // into the range they share, so a list may grow while the others leave
     // room; the growable fields may lengthen their text.
@@ -141,7 +141,7 @@ public:
     void moveCommand(int screen, int command, int cell, bool vertical);
 
     QString text(const SmbScreenTextField& field) const;
-    void setText(const SmbScreenTextField& field, const QString& text);   // throws SmbError
+    void setText(const SmbScreenTextField& field, const QString& text);  // throws SmbError
 
 private:
     void project(SmbScreen& screen) const;
@@ -153,13 +153,13 @@ class SmbResourceDocument;
 
 // One piece of game text: a fixed text field, or a text field of a screen.
 struct SmbTextSlot {
-    QString resource;       // resource id
-    QString key;            // field key
-    QString label;          // "Second player name"
-    QString screen;         // screen key; empty for a fixed text field
-    QString screenLabel;    // "Status bar"
+    QString resource;     // resource id
+    QString key;          // field key
+    QString label;        // "Second player name"
+    QString screen;       // screen key; empty for a fixed text field
+    QString screenLabel;  // "Status bar"
     int width = 0;
-    int maxWidth = 0;       // more than width when the text can grow
+    int maxWidth = 0;  // more than width when the text can grow
 };
 
 // The shared range of the pooled screen resources; not pooled when none is.

@@ -20,18 +20,22 @@ constexpr int kSemitones = 0;
 constexpr int kLengths = 7;
 constexpr int kPeriods = 0x3f;
 
-int noteIndex(char letter) {
-    return letter >= 'a' && letter <= 'g' ? letter - 'a' : -1;
-}
+int noteIndex(char letter) { return letter >= 'a' && letter <= 'g' ? letter - 'a' : -1; }
 
 int defaultLengthIndex(char c) {
     switch (c) {
-    case '@': return 0;
-    case '8': return 1;
-    case '4': return 2;
-    case '2': return 3;
-    case '1': return 4;
-    default: return -1;
+        case '@':
+            return 0;
+        case '8':
+            return 1;
+        case '4':
+            return 2;
+        case '2':
+            return 3;
+        case '1':
+            return 4;
+        default:
+            return -1;
     }
 }
 
@@ -80,7 +84,7 @@ int periodIndex(const QByteArray& memory, char letter, char accidental, int octa
 }
 
 struct Cursor {
-    int stream = -1;        // -1: stopped
+    int stream = -1;  // -1: stopped
     int position = 0;
     int ticks = 1;
     int octave = 0;
@@ -95,7 +99,8 @@ int CastleExcellentMusic::pitchOf(const QJsonObject& music, char letter, char ac
     return pitchFromPeriod(memory, periodIndex(memory, letter, accidental, octave, channel), channel);
 }
 
-QVector<QVector<CastleExcellentMusicNote>> CastleExcellentMusic::trace(const QJsonObject& music, int track, int frames) {
+QVector<QVector<CastleExcellentMusicNote>> CastleExcellentMusic::trace(const QJsonObject& music, int track,
+                                                                       int frames) {
     QVector<QVector<CastleExcellentMusicNote>> lanes(kChannels);
     const QJsonArray streams = music.value(QStringLiteral("streams")).toArray();
     const QJsonObject set = music.value(QStringLiteral("track_sets")).toArray().at(track).toObject();
@@ -175,7 +180,7 @@ QVector<QVector<CastleExcellentMusicNote>> CastleExcellentMusic::trace(const QJs
                     if (at(cur, p) == '+' || at(cur, p) == '-') accidental = at(cur, p++);
                     note.pitch = pitchFromPeriod(memory, periodIndex(memory, command, accidental, cur.octave, c), c);
                 } else if (command != 'r') {
-                    cur.stream = -1;     // not MML the engine plays
+                    cur.stream = -1;  // not MML the engine plays
                     break;
                 }
                 const char duration = at(cur, p);
@@ -254,24 +259,26 @@ QJsonObject CastleExcellentMusic::withText(const QJsonObject& music, int stream,
     const int used = usedBytes(next);
     const int capacity = next.value(QStringLiteral("capacity_bytes")).toInt();
     if (used > capacity) {
-        throw CastleExcellentError(rlTr("castle_excellent", "The music would take %1 of %2 bytes; shorten a stream by %3 first.")
-                              .arg(used)
-                              .arg(capacity)
-                              .arg(used - capacity)
-                              .toStdString());
+        throw CastleExcellentError(
+            rlTr("castle_excellent", "The music would take %1 of %2 bytes; shorten a stream by %3 first.")
+                .arg(used)
+                .arg(capacity)
+                .arg(used - capacity)
+                .toStdString());
     }
     next.insert(QStringLiteral("used_bytes"), used);
     return next;
 }
 
-QString CastleExcellentMusic::retune(const QJsonObject& music, const CastleExcellentMusicNote& note, int channel, int pitch,
-                            const QString& text) {
+QString CastleExcellentMusic::retune(const QJsonObject& music, const CastleExcellentMusicNote& note, int channel,
+                                     int pitch, const QString& text) {
     if (note.pitch < 0 || note.position >= text.size()) return {};
     const QByteArray memory = memoryOf(music);
     const auto find = [&](int octave, QString* token) {
         for (const char accidental : {'\0', '+', '-'}) {
             for (const char letter : {'c', 'd', 'e', 'f', 'g', 'a', 'b'}) {
-                if (pitchFromPeriod(memory, periodIndex(memory, letter, accidental, octave, channel), channel) == pitch) {
+                if (pitchFromPeriod(memory, periodIndex(memory, letter, accidental, octave, channel), channel) ==
+                    pitch) {
                     *token = QString(QLatin1Char(letter)) + (accidental ? QString(QLatin1Char(accidental)) : QString());
                     return true;
                 }
@@ -279,20 +286,20 @@ QString CastleExcellentMusic::retune(const QJsonObject& music, const CastleExcel
         }
         return false;
     };
-    const bool hasAccidental = note.position + 1 < text.size() &&
-                               (text.at(note.position + 1) == QLatin1Char('+') || text.at(note.position + 1) == QLatin1Char('-'));
+    const bool hasAccidental = note.position + 1 < text.size() && (text.at(note.position + 1) == QLatin1Char('+') ||
+                                                                   text.at(note.position + 1) == QLatin1Char('-'));
     const int letterSpan = hasAccidental ? 2 : 1;
     const auto octaveOf = [](QChar digit) { return ((digit.toLatin1() - 0x32) * 12) & 0xff; };
     const auto isSwitch = [&](int at) {
-        return at >= 0 && at + 1 < text.size() && text.at(at) == QLatin1Char('o') && text.at(at + 1) >= QLatin1Char('0') &&
-               text.at(at + 1) <= QLatin1Char('9');
+        return at >= 0 && at + 1 < text.size() && text.at(at) == QLatin1Char('o') &&
+               text.at(at + 1) >= QLatin1Char('0') && text.at(at + 1) <= QLatin1Char('9');
     };
     const QString rest = text.mid(note.position + letterSpan, note.span - letterSpan);
     // Octave switches right before and after the note are reused rather than
     // nested: retuning a note back and forth then settles on one form.
     const int before = note.position - 2;
     const int after = note.position + note.span;
-    const bool switchBefore = isSwitch(before);   // sets this note's octave
+    const bool switchBefore = isSwitch(before);  // sets this note's octave
     const bool switchAfter = isSwitch(after);
     QString token;
     // oN note oM, and the note fits octave M: "oM note", or just "note"

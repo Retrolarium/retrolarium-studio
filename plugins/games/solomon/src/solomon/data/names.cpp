@@ -9,9 +9,7 @@ namespace rl::solomon {
 
 namespace {
 
-QString hex(int value) {
-    return QStringLiteral("%1").arg(value, 2, 16, QLatin1Char('0')).toUpper();
-}
+QString hex(int value) { return QStringLiteral("%1").arg(value, 2, 16, QLatin1Char('0')).toUpper(); }
 
 QString direction4(int variant) {
     static const QStringList kDirections{QStringLiteral("right"), QStringLiteral("left"), QStringLiteral("up"),
@@ -20,9 +18,7 @@ QString direction4(int variant) {
 }
 
 // An enemy family by its first type, or one type, as the game names it.
-QString enemyKind(int type) {
-    return sdk::gameName("enemies", type, rlTr("solomon", "Enemy $%1").arg(hex(type)));
-}
+QString enemyKind(int type) { return sdk::gameName("enemies", type, rlTr("solomon", "Enemy $%1").arg(hex(type))); }
 
 }  // namespace
 
@@ -45,9 +41,7 @@ QString constellationName(int opcode) {
     return sdk::gameName("constellations", opcode, rlTr("solomon", "Constellation $%1").arg(hex(opcode)));
 }
 
-QString enemyFamilyName(int type) {
-    return enemyKind(type);
-}
+QString enemyFamilyName(int type) { return enemyKind(type); }
 
 QString enemyName(int type) {
     if (type < 0x18 || type > 0x83) return rlTr("solomon", "Not an enemy");
@@ -83,8 +77,12 @@ QString enemyName(int type) {
     if (type >= 0x80) return enemyKind(type);
     // $74-$77 run the $70 family's code with other tiles (CHR bank 2 draws
     // them differently).
-    const int base = type < 0x5c ? 0x50 : type < 0x68 ? 0x5c : type < 0x70 ? 0x68 : type < 0x74 ? 0x70
-                   : type < 0x78 ? 0x74 : 0x78;
+    const int base = type < 0x5c   ? 0x50
+                     : type < 0x68 ? 0x5c
+                     : type < 0x70 ? 0x68
+                     : type < 0x74 ? 0x70
+                     : type < 0x78 ? 0x74
+                                   : 0x78;
     const int offset = type - base;
     const int variant = offset & 3;
     return rlTr("solomon", "%1 (%2, speed %3)%4")
@@ -93,8 +91,6 @@ QString enemyName(int type) {
         .arg(variant >= 2 ? rlTr("solomon", " variant 2") : QString());
 }
 
-QString playerName() {
-    return sdk::gameName("player", 0, rlTr("solomon", "Player"));
-}
+QString playerName() { return sdk::gameName("player", 0, rlTr("solomon", "Player")); }
 
 }  // namespace rl::solomon

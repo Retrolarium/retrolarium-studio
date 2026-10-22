@@ -26,17 +26,11 @@ HexModel::HexModel(RomSession* session) : sdk::HexModel(session), session_(sessi
     connect(session_, &sdk::Session::contentChanged, this, &sdk::EditorModel::contentChanged);
 }
 
-QString HexModel::title() const {
-    return tr("Hex");
-}
+QString HexModel::title() const { return tr("Hex"); }
 
-int HexModel::size() const {
-    return int(session_->rom().size());
-}
+int HexModel::size() const { return int(session_->rom().size()); }
 
-QByteArray HexModel::bytes(int offset, int length) const {
-    return session_->rom().mid(offset, length);
-}
+QByteArray HexModel::bytes(int offset, int length) const { return session_->rom().mid(offset, length); }
 
 bool HexModel::isByteDirty(int offset) const {
     return offset >= 0 && offset < session_->original().size() && offset < size() &&
@@ -94,9 +88,10 @@ sdk::Inspection HexModel::inspect() const {
         cartridge.value = where;
         inspection.fields.append(cartridge);
     }
-    inspection.note = tr("Type two hex digits to change the byte under the cursor; bytes are only overwritten, "
-                         "so nothing after them moves. Changed bytes are marked. Save writes the ROM in the "
-                         "project; the original stays beside it.");
+    inspection.note =
+        tr("Type two hex digits to change the byte under the cursor; bytes are only overwritten, "
+           "so nothing after them moves. Changed bytes are marked. Save writes the ROM in the "
+           "project; the original stays beside it.");
     return inspection;
 }
 
@@ -130,9 +125,7 @@ QString HexModel::statusText() const {
 
 namespace {
 
-QColor rgb(quint32 value) {
-    return QColor((value >> 16) & 0xff, (value >> 8) & 0xff, value & 0xff);
-}
+QColor rgb(quint32 value) { return QColor((value >> 16) & 0xff, (value >> 8) & 0xff, value & 0xff); }
 
 // Bright colours of clearly different hues, so every pen stands out: black
 // first, as most games clear to pen 0.
@@ -162,8 +155,7 @@ QVector<QColor> vividPens(int count) {
 
 }  // namespace
 
-RomTileModel::RomTileModel(RomSession* session, const QString& document)
-    : TileModel(session), session_(session) {
+RomTileModel::RomTileModel(RomSession* session, const QString& document) : TileModel(session), session_(session) {
     const RomSession::TileRange range = session_->tileRange(document);
     offset_ = range.offset;
     length_ = range.length;
@@ -172,17 +164,11 @@ RomTileModel::RomTileModel(RomSession* session, const QString& document)
     connect(session_, &sdk::Session::contentChanged, this, &sdk::EditorModel::contentChanged);
 }
 
-QString RomTileModel::title() const {
-    return tr("Tiles");
-}
+QString RomTileModel::title() const { return tr("Tiles"); }
 
-const tiles::Format& RomTileModel::format() const {
-    return tiles::format(format_);
-}
+const tiles::Format& RomTileModel::format() const { return tiles::format(format_); }
 
-int RomTileModel::tileOffset(int tile) const {
-    return offset_ + tile * format().bytes;
-}
+int RomTileModel::tileOffset(int tile) const { return offset_ + tile * format().bytes; }
 
 QString RomTileModel::formatLabel(const QString& id) const {
     QString label;
@@ -227,9 +213,7 @@ QVector<sdk::ViewOption> RomTileModel::viewOptions() const {
     return {layout, colors};
 }
 
-QStringList RomTileModel::colorChoices() const {
-    return {tr("Vivid"), tr("Warm"), tr("Grey")};
-}
+QStringList RomTileModel::colorChoices() const { return {tr("Vivid"), tr("Warm"), tr("Grey")}; }
 
 void RomTileModel::setViewOption(const QString& key, const QString& value) {
     if (key == QLatin1String("format")) {
@@ -370,15 +354,14 @@ sdk::Inspection RomTileModel::inspect() const {
     layout.label = tr("Format");
     layout.value = tr("%1, %2 bytes a tile").arg(formatLabel(format_)).arg(format().bytes);
     inspection.fields = {offset, layout};
-    inspection.note = tr("Raw patterns, as the hardware reads them. The tile groups after the whole ROM are runs "
-                         "of bytes that read as pictures; graphics a game packs or compresses show as noise, and "
-                         "the colours are a preview, not the game's palette.");
+    inspection.note =
+        tr("Raw patterns, as the hardware reads them. The tile groups after the whole ROM are runs "
+           "of bytes that read as pictures; graphics a game packs or compresses show as noise, and "
+           "the colours are a preview, not the game's palette.");
     return inspection;
 }
 
-QString RomTileModel::statusText() const {
-    return tr("Tile $%1 · $%2").arg(hex(tile_, 2), hex(tileOffset(tile_), 6));
-}
+QString RomTileModel::statusText() const { return tr("Tile $%1 · $%2").arg(hex(tile_, 2), hex(tileOffset(tile_), 6)); }
 
 // ---------------------------------------------------------------- header
 
@@ -389,18 +372,14 @@ HeaderModel::HeaderModel(RomSession* session) : TableModel(session), session_(se
     });
 }
 
-QString HeaderModel::title() const {
-    return tr("Header");
-}
+QString HeaderModel::title() const { return tr("Header"); }
 
 QVector<sdk::TableColumn> HeaderModel::columns() const {
     return {{QStringLiteral("field"), tr("Field"), 180, false, false, false, true},
             {QStringLiteral("value"), tr("Value"), 0, true, false, false, false}};
 }
 
-int HeaderModel::rowCount() const {
-    return rows().size();
-}
+int HeaderModel::rowCount() const { return rows().size(); }
 
 QString HeaderModel::cell(int row, int column) const {
     const auto all = rows();
@@ -411,7 +390,8 @@ QString HeaderModel::cell(int row, int column) const {
 quint16 HeaderModel::megaDriveChecksum() const {
     const QByteArray& rom = session_->rom();
     quint16 sum = 0;
-    for (int i = 0x200; i + 1 < rom.size(); i += 2) sum = quint16(sum + ((quint8(rom.at(i)) << 8) | quint8(rom.at(i + 1))));
+    for (int i = 0x200; i + 1 < rom.size(); i += 2)
+        sum = quint16(sum + ((quint8(rom.at(i)) << 8) | quint8(rom.at(i + 1))));
     return sum;
 }
 
@@ -419,8 +399,9 @@ QVector<QPair<QString, QString>> HeaderModel::rows() const {
     const QByteArray& rom = session_->rom();
     QVector<QPair<QString, QString>> rows;
     rows.append({tr("File size"), tr("%1 bytes ($%2)").arg(rom.size()).arg(hex(rom.size(), 6))});
-    rows.append({tr("SHA-1 of the original"),
-                 QString::fromLatin1(QCryptographicHash::hash(session_->original(), QCryptographicHash::Sha1).toHex())});
+    rows.append(
+        {tr("SHA-1 of the original"),
+         QString::fromLatin1(QCryptographicHash::hash(session_->original(), QCryptographicHash::Sha1).toHex())});
     rows.append({tr("Changed"), session_->rom() == session_->original() ? tr("no") : tr("yes")});
     if (session_->platform() == QLatin1String("nes") && rom.size() >= 16 && rom.startsWith("NES\x1a")) {
         const quint8 flags6 = quint8(rom.at(6)), flags7 = quint8(rom.at(7));
@@ -429,7 +410,9 @@ QVector<QPair<QString, QString>> HeaderModel::rows() const {
         rows.append({tr("PRG ROM"), tr("%1 KB").arg(quint8(rom.at(4)) * 16)});
         rows.append({tr("CHR ROM"), quint8(rom.at(5)) ? tr("%1 KB").arg(quint8(rom.at(5)) * 8) : tr("none (CHR RAM)")});
         rows.append({tr("Mapper"), QString::number((flags6 >> 4) | (flags7 & 0xf0))});
-        rows.append({tr("Mirroring"), (flags6 & 0x08) ? tr("four-screen") : (flags6 & 0x01) ? tr("vertical") : tr("horizontal")});
+        rows.append({tr("Mirroring"), (flags6 & 0x08)   ? tr("four-screen")
+                                      : (flags6 & 0x01) ? tr("vertical")
+                                                        : tr("horizontal")});
         rows.append({tr("Battery"), (flags6 & 0x02) ? tr("yes") : tr("no")});
         rows.append({tr("Trainer"), (flags6 & 0x04) ? tr("512 bytes") : tr("no")});
     } else if (session_->platform() == QLatin1String("megadrive") && rom.size() >= 0x200) {
@@ -440,8 +423,9 @@ QVector<QPair<QString, QString>> HeaderModel::rows() const {
         rows.append({tr("Serial"), text(rom, 0x180, 14)});
         const quint16 stored = quint16((quint8(rom.at(0x18e)) << 8) | quint8(rom.at(0x18f)));
         const quint16 sum = megaDriveChecksum();
-        rows.append({tr("Checksum"), stored == sum ? tr("$%1 (right)").arg(hex(stored, 4))
-                                                   : tr("$%1 (the bytes add up to $%2)").arg(hex(stored, 4), hex(sum, 4))});
+        rows.append({tr("Checksum"), stored == sum
+                                         ? tr("$%1 (right)").arg(hex(stored, 4))
+                                         : tr("$%1 (the bytes add up to $%2)").arg(hex(stored, 4), hex(sum, 4))});
         rows.append({tr("Devices"), text(rom, 0x190, 16)});
         rows.append({tr("Regions"), text(rom, 0x1f0, 3)});
     } else {
@@ -450,9 +434,7 @@ QVector<QPair<QString, QString>> HeaderModel::rows() const {
     return rows;
 }
 
-QString HeaderModel::readOnlyReason() const {
-    return tr("What the ROM says about itself. Edit the bytes in Hex.");
-}
+QString HeaderModel::readOnlyReason() const { return tr("What the ROM says about itself. Edit the bytes in Hex."); }
 
 QVector<sdk::EditorAction> HeaderModel::actions() const {
     const QByteArray& rom = session_->rom();
@@ -496,9 +478,7 @@ QString RomPlaytestModel::coreLabel() const {
                                                               : QStringLiteral("MAME · nes");
 }
 
-void RomPlaytestModel::play() {
-    session_->play();
-}
+void RomPlaytestModel::play() { session_->play(); }
 
 sdk::Inspection RomPlaytestModel::inspect() const {
     sdk::Inspection inspection;

@@ -17,30 +17,25 @@ const QString kLayout = QStringLiteral("layout");
 const QString kBackground = QStringLiteral("background");
 constexpr int kBonusPhase = 60;  // frames after ready: the settled bonus scene
 
-QString two(int value) {
-    return QStringLiteral("%1").arg(value, 2, 10, QLatin1Char('0'));
-}
+QString two(int value) { return QStringLiteral("%1").arg(value, 2, 10, QLatin1Char('0')); }
 
 QImage errorImage(const QString& message) {
     QImage image(objects::kMapWidth * 8, objects::kMapHeight * 8, QImage::Format_RGB32);
     image.fill(QColor(0x20, 0x16, 0x18));
     QPainter painter(&image);
     painter.setPen(QColor(0xff, 0xb4, 0xa8));
-    painter.drawText(image.rect().adjusted(8, 8, -8, -8), Qt::AlignCenter | Qt::TextWordWrap,
-                     message);
+    painter.drawText(image.rect().adjusted(8, 8, -8, -8), Qt::AlignCenter | Qt::TextWordWrap, message);
     return image;
 }
 
 }  // namespace
 
-LevelsModel::LevelsModel(FlickySession* session, int round)
-    : TileMapModel(session), session_(session), round_(round) {
+LevelsModel::LevelsModel(FlickySession* session, int round) : TileMapModel(session), session_(session), round_(round) {
     connect(session_, &FlickySession::levelsChanged, this, [this] {
         // An undo can remove the selected placement.
         const Ref ref = parseId(selected_);
         if (ref.isValid()) {
-            const auto positions =
-                session_->levels().objectPositions(layoutFor(ref.field), ref.field);
+            const auto positions = session_->levels().objectPositions(layoutFor(ref.field), ref.field);
             if (ref.index >= positions.size()) {
                 selected_.clear();
             }
@@ -64,24 +59,17 @@ LevelsModel::Ref LevelsModel::parseId(const QString& id) {
     return ok ? Ref{id.left(colon), index} : Ref{};
 }
 
-QString LevelsModel::makeId(const QString& field, int index) {
-    return QStringLiteral("%1:%2").arg(field).arg(index);
-}
+QString LevelsModel::makeId(const QString& field, int index) { return QStringLiteral("%1:%2").arg(field).arg(index); }
 
-QString LevelsModel::title() const {
-    return tr("Round %1").arg(two(round_ + 1));
-}
+QString LevelsModel::title() const { return tr("Round %1").arg(two(round_ + 1)); }
 
-bool LevelsModel::isReadOnly() const {
-    return objects::isBonusRound(round_);
-}
+bool LevelsModel::isReadOnly() const { return objects::isBonusRound(round_); }
 
 QString LevelsModel::readOnlyReason() const {
-    return isReadOnly()
-               ? tr("Bonus rounds are built from the bonus tables, not from a layout. This "
-                    "project's levels document predates the bonus placements: run "
-                    "rltool studio flicky-upgrade on it to move the seesaws, tigers and chicks.")
-               : QString();
+    return isReadOnly() ? tr("Bonus rounds are built from the bonus tables, not from a layout. This "
+                             "project's levels document predates the bonus placements: run "
+                             "rltool studio flicky-upgrade on it to move the seesaws, tigers and chicks.")
+                        : QString();
 }
 
 QStringList LevelsModel::layerFields() const {
@@ -109,26 +97,18 @@ QString LevelsModel::roundList(const QVector<int>& rounds) const {
 
 // ---------------------------------------------------------------- geometry
 
-QSize LevelsModel::gridSize() const {
-    return {objects::kMapWidth, objects::kMapHeight};
-}
+QSize LevelsModel::gridSize() const { return {objects::kMapWidth, objects::kMapHeight}; }
 
-QSize LevelsModel::cellSize() const {
-    return {8, 8};
-}
+QSize LevelsModel::cellSize() const { return {8, 8}; }
 
 QVector<sdk::MapLayer> LevelsModel::layers() const {
     if (isReadOnly()) {
         return {};
     }
-    return {{kObjects, tr("Objects")},
-            {kLayout, tr("Layout")},
-            {kBackground, tr("Background")}};
+    return {{kObjects, tr("Objects")}, {kLayout, tr("Layout")}, {kBackground, tr("Background")}};
 }
 
-QString LevelsModel::currentLayer() const {
-    return session_->levelLayer();
-}
+QString LevelsModel::currentLayer() const { return session_->levelLayer(); }
 
 void LevelsModel::setCurrentLayer(const QString& id) {
     if (id == session_->levelLayer()) {
@@ -147,8 +127,7 @@ QVector<sdk::Tool> LevelsModel::tools() const {
         return {{QStringLiteral("select"), tr("Select"), QStringLiteral("select")}};
     }
     if (session_->levelLayer() == kLayout) {
-        return {{QStringLiteral("paint"), tr("Paint collision (right button erases)"),
-                 QStringLiteral("pencil")}};
+        return {{QStringLiteral("paint"), tr("Paint collision (right button erases)"), QStringLiteral("pencil")}};
     }
     return {{QStringLiteral("select"), tr("Select and move"), QStringLiteral("select")},
             {QStringLiteral("place"), tr("Place the library object"), QStringLiteral("place")},
@@ -178,13 +157,10 @@ QVector<sdk::CellBrush> LevelsModel::brushes() const {
     }
     // Solid cells are mostly platforms, already orange in the scene; tinting
     // the empty ones too keeps the two apart.
-    return {{0, tr("Empty"), QColor(45, 130, 205, 96)},
-            {1, QStringLiteral("Solid"), QColor(250, 150, 30, 175)}};
+    return {{0, tr("Empty"), QColor(45, 130, 205, 96)}, {1, QStringLiteral("Solid"), QColor(250, 150, 30, 175)}};
 }
 
-void LevelsModel::setCurrentBrush(int value) {
-    brush_ = value == 0 ? 0 : 1;
-}
+void LevelsModel::setCurrentBrush(int value) { brush_ = value == 0 ? 0 : 1; }
 
 bool LevelsModel::showsCellOverlay() const {
     return !isReadOnly() && (session_->levelLayer() == kLayout || session_->collisionOverlay());
@@ -195,8 +171,8 @@ int LevelsModel::cellValue(QPoint cell) const {
 }
 
 bool LevelsModel::isCellEditable(QPoint cell) const {
-    return !isReadOnly() && session_->levelLayer() == kLayout && cell.y() >= objects::kLockedRows &&
-           cell.x() >= 0 && cell.x() < objects::kMapWidth && cell.y() < objects::kMapHeight;
+    return !isReadOnly() && session_->levelLayer() == kLayout && cell.y() >= objects::kLockedRows && cell.x() >= 0 &&
+           cell.x() < objects::kMapWidth && cell.y() < objects::kMapHeight;
 }
 
 void LevelsModel::beginStroke() {
@@ -222,8 +198,7 @@ bool LevelsModel::paintCell(QPoint cell, int value) {
 void LevelsModel::endStroke() {
     if (before_ && changed_) {
         session_->commitLevels(*before_, session_->levels(),
-                               tr("Paint collision in layout %1")
-                                   .arg(two(session_->levels().layoutForRound(round_))));
+                               tr("Paint collision in layout %1").arg(two(session_->levels().layoutForRound(round_))));
     }
     before_.reset();
     changed_ = false;
@@ -296,8 +271,7 @@ bool LevelsModel::dragObject(const QString& id, QPoint topLeftCell) {
 void LevelsModel::endDrag() {
     if (before_ && changed_) {
         const Ref ref = parseId(selected_);
-        session_->commitLevels(*before_, session_->levels(),
-                               tr("Move %1").arg(objects::title(ref.field)));
+        session_->commitLevels(*before_, session_->levels(), tr("Move %1").arg(objects::title(ref.field)));
     }
     before_.reset();
     changed_ = false;
@@ -319,9 +293,7 @@ bool LevelsModel::placeObject(const QString& libraryItem, QPoint cell, QString* 
     if (objects::isVariable(field)) {
         selectIndex = positions.size();
         text = tr("Add %1").arg(objects::title(field));
-        edit = [layout, field, cell](FlickyLevelDocument& levels) {
-            levels.addObjectPosition(layout, field, cell);
-        };
+        edit = [layout, field, cell](FlickyLevelDocument& levels) { levels.addObjectPosition(layout, field, cell); };
     } else {
         // Fixed placements cannot be added; the nearest one moves instead.
         int nearest = 0;
@@ -359,19 +331,17 @@ bool LevelsModel::removeObject(const QString& id, QString* error) {
     }
     if (!objects::isVariable(ref.field)) {
         if (error) {
-            *error = tr("%1 is a fixed placement: move it instead of removing it.")
-                         .arg(objects::title(ref.field));
+            *error = tr("%1 is a fixed placement: move it instead of removing it.").arg(objects::title(ref.field));
         }
         return false;
     }
     const int layout = layoutFor(ref.field);
     const QString field = ref.field;
     const int index = ref.index;
-    if (!session_->editLevels(tr("Remove %1").arg(objects::title(field)),
-                              [layout, field, index](FlickyLevelDocument& levels) {
-                                  levels.removeObjectPosition(layout, field, index);
-                              },
-                              error)) {
+    if (!session_->editLevels(
+            tr("Remove %1").arg(objects::title(field)),
+            [layout, field, index](FlickyLevelDocument& levels) { levels.removeObjectPosition(layout, field, index); },
+            error)) {
         return false;
     }
     selectObject(QString());
@@ -431,9 +401,8 @@ sdk::Library LevelsModel::library() const {
         item.id = field;
         item.label = objects::title(field);
         item.icon = session_->placementPreview(field, round_);
-        item.hint = objects::isVariable(field)
-                        ? tr("%1: drop to add one").arg(item.label)
-                        : tr("%1: drop to move the existing one").arg(item.label);
+        item.hint = objects::isVariable(field) ? tr("%1: drop to add one").arg(item.label)
+                                               : tr("%1: drop to move the existing one").arg(item.label);
         library.items.append(item);
     }
     return library;
@@ -468,16 +437,14 @@ sdk::Inspection LevelsModel::inspectRound() const {
         shared.label = tr("Used by");
         shared.value = tr("rounds %1").arg(roundList(levels.roundsForLayout(layout)));
         inspection.fields = {layoutField, shared};
-        inspection.note = tr("Pick an object on the map, or drag one from the library. "
-                             "Layouts are shared: edits show in every round listed above.");
+        inspection.note =
+            tr("Pick an object on the map, or drag one from the library. "
+               "Layouts are shared: edits show in every round listed above.");
         inspection.library = library();
         inspection.engine = {{tr("Record"), QStringLiteral("Level_Data%1").arg(layout)},
-                             {tr("Collision"),
-                              tr("%1 bytes RLE").arg(levels.encodedCollision(layout).size())},
-                             {tr("Level bytes"),
-                              QString::number(levels.encodedLevel(layout).size())},
-                             {tr("Special bytes"),
-                              QString::number(levels.encodedSpecial(layout).size())}};
+                             {tr("Collision"), tr("%1 bytes RLE").arg(levels.encodedCollision(layout).size())},
+                             {tr("Level bytes"), QString::number(levels.encodedLevel(layout).size())},
+                             {tr("Special bytes"), QString::number(levels.encodedSpecial(layout).size())}};
     }
     return inspection;
 }
@@ -508,16 +475,16 @@ sdk::Inspection LevelsModel::inspectLayout() const {
     cells.value = QString::number(solid);
     cells.monospace = true;
     inspection.fields = {brush, shared, cells};
-    inspection.note = tr("Paint with the left button, erase with the right. The top two "
-                         "rows are generated by the game and cannot be painted.");
+    inspection.note =
+        tr("Paint with the left button, erase with the right. The top two "
+           "rows are generated by the game and cannot be painted.");
     inspection.engineTag = QStringLiteral("flicky.levels.v1");
     const auto stream = levels.encodedCollision(layout);
     inspection.engine = {{tr("Record"), QStringLiteral("Level_Data%1").arg(layout)},
                          {tr("Encoding"), tr("RLE from cell $40")},
                          {tr("Stream"), tr("%n bytes", nullptr, stream.size())},
-                         {tr("Changed"),
-                          levels.grid(layout) == levels.baselineGrid(layout) ? QStringLiteral("no")
-                                                                             : QStringLiteral("yes")}};
+                         {tr("Changed"), levels.grid(layout) == levels.baselineGrid(layout) ? QStringLiteral("no")
+                                                                                            : QStringLiteral("yes")}};
     return inspection;
 }
 
@@ -574,9 +541,8 @@ sdk::Inspection LevelsModel::inspectObject(const Ref& ref) const {
         {tr("Field"), ref.field},
         {tr("Index"), tr("%1 of %2").arg(ref.index + 1).arg(positions.size())},
         {tr("Encoding"), objects::encoding(ref.field)},
-        {tr("Table"), FlickyLevelDocument::isSpecialObjectField(ref.field)
-                                      ? QStringLiteral("Level_SpecialTilePointers")
-                                      : QStringLiteral("Level_DataPointers")},
+        {tr("Table"), FlickyLevelDocument::isSpecialObjectField(ref.field) ? QStringLiteral("Level_SpecialTilePointers")
+                                                                           : QStringLiteral("Level_DataPointers")},
     };
     return inspection;
 }
@@ -607,11 +573,12 @@ bool LevelsModel::setField(const QString& key, const QVariant& value, QString* e
         }
         const QString field = ref.field;
         const int index = ref.index;
-        return session_->editLevels(tr("Move %1").arg(objects::title(field)),
-                                    [layout, field, index, x, y](FlickyLevelDocument& levels) {
-                                        levels.setObjectPosition(layout, field, index, QPoint(x, y));
-                                    },
-                                    error);
+        return session_->editLevels(
+            tr("Move %1").arg(objects::title(field)),
+            [layout, field, index, x, y](FlickyLevelDocument& levels) {
+                levels.setObjectPosition(layout, field, index, QPoint(x, y));
+            },
+            error);
     }
     if (key == QLatin1String("type")) {
         QString target;
@@ -651,9 +618,7 @@ bool LevelsModel::setField(const QString& key, const QVariant& value, QString* e
     return TileMapModel::setField(key, value, error);
 }
 
-QString LevelsModel::startPoint() const {
-    return tr("Round %1").arg(two(round_ + 1));
-}
+QString LevelsModel::startPoint() const { return tr("Round %1").arg(two(round_ + 1)); }
 
 QString LevelsModel::statusText() const {
     if (isReadOnly()) {

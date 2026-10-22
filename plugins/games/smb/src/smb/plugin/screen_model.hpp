@@ -79,11 +79,11 @@ private:
     QString layer_ = QStringLiteral("tiles");
     QString packet_;
     bool showWritten_ = true;
-    int cell_ = -1;             // selected cell, -1: none
-    int write_ = -1;            // selected write (Writes layer), -1: none
+    int cell_ = -1;   // selected cell, -1: none
+    int write_ = -1;  // selected write (Writes layer), -1: none
     bool dragging_ = false;
-    int tile_ = 0x24;           // tile the paint tool lays
-    int palette_ = 0;           // palette the palette layer paints
+    int tile_ = 0x24;  // tile the paint tool lays
+    int palette_ = 0;  // palette the palette layer paints
 
     // A stroke paints into a copy of the screen set, shown instead of the
     // document's, and writes the document once when it ends.

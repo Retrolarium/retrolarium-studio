@@ -84,8 +84,8 @@ private:
     std::optional<SmbArea> dragArea_;
     QVector<SmbArea> dragAreas_;  // all areas when pooled, for the budget
     QString dragging_;
-    QPoint dragOffset_;   // the player's feet relative to the dragged top-left cell
-    QPoint dragCell_;     // the last cell the drag was asked for
+    QPoint dragOffset_;  // the player's feet relative to the dragged top-left cell
+    QPoint dragCell_;    // the last cell the drag was asked for
     quint64 dragSerial_ = 0;
 
     mutable SmbLevelScene scene_;

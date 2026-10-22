@@ -63,12 +63,12 @@ RecordMovieDialog::RecordMovieDialog(const QString& game, const QString& folder,
     content->setContentsMargins(24, 20, 20, 18);
     content->setSpacing(10);
     content->addWidget(new ui::Label(tr("Record movie"), ui::Label::Role::Title, body()));
-    auto* intro = new ui::Label(
-        tr("%1 starts from power-on and every frame of your input is recorded: the movie plays back the "
-           "same way in the studio, in make play and in the checks. Save states (F5, F8 to load), pause "
-           "and speed do not change it. This is not the game's own demo: that one is in the Demo view.")
-            .arg(game),
-        ui::Label::Role::Body, body());
+    auto* intro =
+        new ui::Label(tr("%1 starts from power-on and every frame of your input is recorded: the movie plays back the "
+                         "same way in the studio, in make play and in the checks. Save states (F5, F8 to load), pause "
+                         "and speed do not change it. This is not the game's own demo: that one is in the Demo view.")
+                          .arg(game),
+                      ui::Label::Role::Body, body());
     intro->setTone(QStringLiteral("muted"));
     intro->setWordWrap(true);
     intro->setFixedWidth(460);
@@ -149,15 +149,15 @@ PickMovieDialog::PickMovieDialog(Purpose purpose, const QString& game, const QVe
     content->setSpacing(10);
     content->addWidget(new ui::Label(purpose == Purpose::Play ? tr("Play movie") : tr("Resume movie recording"),
                                      ui::Label::Role::Title, body()));
-    auto* intro = new ui::Label(
-        purpose == Purpose::Play
-            ? tr("%1 from power-on with the movie's input. Pause, speed and save states work as usual; "
-                 "your own keys wait until the movie ends.")
-                  .arg(game)
-            : tr("%1 plays the movie to its end, pauses, and records on from there. Only movies recorded "
-                 "in the studio can go on.")
-                  .arg(game),
-        ui::Label::Role::Body, body());
+    auto* intro =
+        new ui::Label(purpose == Purpose::Play
+                          ? tr("%1 from power-on with the movie's input. Pause, speed and save states work as usual; "
+                               "your own keys wait until the movie ends.")
+                                .arg(game)
+                          : tr("%1 plays the movie to its end, pauses, and records on from there. Only movies recorded "
+                               "in the studio can go on.")
+                                .arg(game),
+                      ui::Label::Role::Body, body());
     intro->setTone(QStringLiteral("muted"));
     intro->setWordWrap(true);
     intro->setFixedWidth(620);
@@ -172,9 +172,9 @@ PickMovieDialog::PickMovieDialog(Purpose purpose, const QString& game, const QVe
     list_->setFixedHeight(220);
     for (const MovieChoice& movie : movies_) {
         const bool usable = purpose == Purpose::Play || movie.source == QLatin1String("mame");
-        auto* item = new QTreeWidgetItem(list_, {movie.title.isEmpty() ? movie.file : movie.title,
-                                                 movieKindLabel(movie.kind), duration(movie.seconds), movie.author,
-                                                 movie.description});
+        auto* item =
+            new QTreeWidgetItem(list_, {movie.title.isEmpty() ? movie.file : movie.title, movieKindLabel(movie.kind),
+                                        duration(movie.seconds), movie.author, movie.description});
         item->setToolTip(0, movie.file);
         item->setToolTip(4, movie.description);
         if (!usable) {
@@ -254,9 +254,8 @@ PickMovieDialog::PickMovieDialog(Purpose purpose, const QString& game, const QVe
 }
 
 void PickMovieDialog::choose() {
-    const QString filter = purpose_ == Purpose::Play
-                               ? tr("Movies (*.rlmovie *.fm2 *.gmv)")
-                               : tr("Retrolarium movies (*.rlmovie)");
+    const QString filter =
+        purpose_ == Purpose::Play ? tr("Movies (*.rlmovie *.fm2 *.gmv)") : tr("Retrolarium movies (*.rlmovie)");
     const QString chosen = QFileDialog::getOpenFileName(this, windowTitle(), QString(), filter);
     if (!chosen.isEmpty()) {
         path_ = chosen;
@@ -265,13 +264,9 @@ void PickMovieDialog::choose() {
     }
 }
 
-int PickMovieDialog::stopAt() const {
-    return stopAt_ ? stopAt_->value() : 0;
-}
+int PickMovieDialog::stopAt() const { return stopAt_ ? stopAt_->value() : 0; }
 
-bool PickMovieDialog::closeAtEnd() const {
-    return close_ && close_->isChecked();
-}
+bool PickMovieDialog::closeAtEnd() const { return close_ && close_->isChecked(); }
 
 void PickMovieDialog::remember() const {
     if (!stopAt_) return;

@@ -50,9 +50,7 @@ AudioPlayer::AudioPlayer(QObject* parent) : QObject(parent), passEnd_(new QTimer
     connect(passEnd_, &QTimer::timeout, this, &AudioPlayer::passEnded);
 }
 
-AudioPlayer::~AudioPlayer() {
-    stop();
-}
+AudioPlayer::~AudioPlayer() { stop(); }
 
 void AudioPlayer::play(const QString& wavPath) {
     stop();
@@ -118,11 +116,11 @@ void AudioPlayer::passEnded() {
 #ifdef Q_OS_WIN
     if (!playing_) return;
     if (looping_ && !startedLooping_) {
-        start();    // the single pass ends: carry on looping from here
+        start();  // the single pass ends: carry on looping from here
         return;
     }
     if (startedLooping_) {
-        PlaySoundW(nullptr, nullptr, 0);    // the loop was switched off: end with this pass
+        PlaySoundW(nullptr, nullptr, 0);  // the loop was switched off: end with this pass
     }
     playing_ = false;
     emit stateChanged(false);

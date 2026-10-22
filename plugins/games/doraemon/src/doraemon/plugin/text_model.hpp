@@ -35,9 +35,9 @@ private:
     // Where a row's text lives in the document.
     struct Row {
         QString label;
-        QString where;          // "game_over", "title", "help", "credits"
-        int index = 0;          // record, screen or credits row
-        int segment = 0;        // help segment
+        QString where;    // "game_over", "title", "help", "credits"
+        int index = 0;    // record, screen or credits row
+        int segment = 0;  // help segment
         int width = 0;
     };
     void readRows();

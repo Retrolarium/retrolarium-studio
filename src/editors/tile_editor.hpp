@@ -95,7 +95,7 @@ private:
     void paintLine(QPoint from, QPoint to);
 
     sdk::TileModel* model_;
-    int pixel_ = kPixel;    // smaller for tall tiles
+    int pixel_ = kPixel;  // smaller for tall tiles
     QString tool_ = QStringLiteral("pencil");
     QPoint hover_{-1, -1};
     bool painting_ = false;

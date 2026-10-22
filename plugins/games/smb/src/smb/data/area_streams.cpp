@@ -8,9 +8,7 @@ namespace {
 
 constexpr int kPageMask = 0x1f;
 
-int objectJump(const SmbAreaObject& object) {
-    return isPageCommand(object) ? object.control & kPageMask : -1;
-}
+int objectJump(const SmbAreaObject& object) { return isPageCommand(object) ? object.control & kPageMask : -1; }
 
 int enemyJump(const SmbEnemyRecord& record) {
     return record.kind == QLatin1String("page") ? record.objectOrPage & kPageMask : -1;
@@ -87,25 +85,17 @@ int insertRecord(QVector<Record>& records, int page, Record record, Jump jump, C
 
 }  // namespace
 
-bool isPageCommand(const SmbAreaObject& object) {
-    return object.row == 13 && !(object.control & 0x40);
-}
+bool isPageCommand(const SmbAreaObject& object) { return object.row == 13 && !(object.control & 0x40); }
 
-SmbAreaObject objectPageCommand(int page) {
-    return {0, 13, false, page & kPageMask};
-}
+SmbAreaObject objectPageCommand(int page) { return {0, 13, false, page & kPageMask}; }
 
 SmbEnemyRecord enemyPageCommand(int page) {
     return {QStringLiteral("page"), 0, 15, false, false, page & kPageMask, -1, -1};
 }
 
-QVector<int> objectPages(const QVector<SmbAreaObject>& objects) {
-    return pagesOf(objects, objectJump);
-}
+QVector<int> objectPages(const QVector<SmbAreaObject>& objects) { return pagesOf(objects, objectJump); }
 
-QVector<int> enemyPages(const QVector<SmbEnemyRecord>& enemies) {
-    return pagesOf(enemies, enemyJump);
-}
+QVector<int> enemyPages(const QVector<SmbEnemyRecord>& enemies) { return pagesOf(enemies, enemyJump); }
 
 void removeObject(QVector<SmbAreaObject>& objects, int index) {
     removeRecord(objects, index, objectJump, objectPageCommand);

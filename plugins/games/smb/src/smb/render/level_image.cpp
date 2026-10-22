@@ -25,9 +25,7 @@ int groupMember(int id) {
     return -1;
 }
 
-int groupCount(int id) {
-    return id == 0x37 || id == 0x3b ? 2 : id == 0x38 || id == 0x3c ? 3 : 0;
-}
+int groupCount(int id) { return id == 0x37 || id == 0x3b ? 2 : id == 0x38 || id == 0x3c ? 3 : 0; }
 
 // Six 8x8 tiles, two wide and three tall, from the game's enemy graphics
 // table at the enemy's offset; 0xfc is the game's blank sprite. Enemies the
@@ -90,9 +88,7 @@ constexpr int kStandingFrame = 23;
 
 }  // namespace
 
-QString areaTypeOf(const QString& areaName) {
-    return areaName.section(QLatin1Char('_'), 0, -2);
-}
+QString areaTypeOf(const QString& areaName) { return areaName.section(QLatin1Char('_'), 0, -2); }
 
 QVector<int> smbLevelTable(const SmbResourceDocument& document, const QString& name) {
     QVector<int> values;
@@ -291,7 +287,8 @@ QImage SmbLevelPainter::player() const {
     const QVector<int> tiles = document_.playerFrameTiles(art_.playerFrames, kStandingFrame);
     const int base = document_.playerTileBase(art_.playerFrames);
     const int blank = document_.playerBlankTile(art_.playerFrames);
-    const QVector<int> palette = art_.playerPalette.isEmpty() ? QVector<int>{} : document_.tableValues(art_.playerPalette);
+    const QVector<int> palette =
+        art_.playerPalette.isEmpty() ? QVector<int>{} : document_.tableValues(art_.playerPalette);
     if (palette.size() < 4) {
         return {};
     }

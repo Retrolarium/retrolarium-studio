@@ -14,7 +14,7 @@ namespace rl::ui {
 class DocumentList;
 class Label;
 class RailButton;
-}
+}  // namespace rl::ui
 
 namespace rl::shell {
 

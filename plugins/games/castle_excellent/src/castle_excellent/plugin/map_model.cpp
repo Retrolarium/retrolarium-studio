@@ -6,7 +6,8 @@
 
 namespace rl::castle_excellent {
 
-CastleExcellentMapModel::CastleExcellentMapModel(CastleExcellentSession* session) : TileMapModel(session), session_(session) {
+CastleExcellentMapModel::CastleExcellentMapModel(CastleExcellentSession* session)
+    : TileMapModel(session), session_(session) {
     connect(session_, &sdk::Session::contentChanged, this, &sdk::EditorModel::contentChanged);
     connect(session_, &CastleExcellentSession::startChanged, this, [this] {
         emit contentChanged();
@@ -53,7 +54,8 @@ QVector<sdk::Tool> CastleExcellentMapModel::tools() const {
 
 QImage CastleExcellentMapModel::render() const {
     const QString startKey = session_->selectedStart();
-    if (imageRevision_ == session_->revision() && imageDivisor_ == divisor_ && imageStart_ == startKey && !image_.isNull()) {
+    if (imageRevision_ == session_->revision() && imageDivisor_ == divisor_ && imageStart_ == startKey &&
+        !image_.isNull()) {
         return image_;
     }
     imageStart_ = startKey;
@@ -119,9 +121,7 @@ void CastleExcellentMapModel::selectObject(const QString& id) {
     emit toolsChanged();
 }
 
-QString CastleExcellentMapModel::startPoint() const {
-    return session_->selectedStart();
-}
+QString CastleExcellentMapModel::startPoint() const { return session_->selectedStart(); }
 
 QVector<sdk::EditorAction> CastleExcellentMapModel::actions() const {
     sdk::EditorAction open;
@@ -152,16 +152,18 @@ sdk::Inspection CastleExcellentMapModel::inspect() const {
     if (index < 0) {
         inspection.kicker = tr("Castle");
         inspection.title = title();
-        inspection.note = tr("All 100 rooms where the game puts them: ten to a row, the room above is ten "
-                             "less, the room below ten more. Select a room to start Play from selected "
-                             "there; Open room or a double click edits it.");
+        inspection.note =
+            tr("All 100 rooms where the game puts them: ten to a row, the room above is ten "
+               "less, the room below ten more. Select a room to start Play from selected "
+               "there; Open room or a double click edits it.");
         return inspection;
     }
     const CastleExcellentLevels& levels = session_->levels();
     inspection.kicker = tr("Castle map");
     inspection.title = roomLabel(selected_);
     const auto neighbour = [this](int number) {
-        return number >= 1 && number <= kColumns * kRows && roomIndex(number) >= 0 ? roomLabel(number) : QStringLiteral("—");
+        return number >= 1 && number <= kColumns * kRows && roomIndex(number) >= 0 ? roomLabel(number)
+                                                                                   : QStringLiteral("—");
     };
     sdk::Field place;
     place.key = QStringLiteral("place");
@@ -178,13 +180,14 @@ sdk::Inspection CastleExcellentMapModel::inspect() const {
     sdk::Field sides;
     sides.key = QStringLiteral("sides");
     sides.label = tr("Left / right");
-    sides.value = QStringLiteral("%1 / %2")
-                      .arg((selected_ - 1) % kColumns > 0 ? neighbour(selected_ - 1) : QStringLiteral("—"),
-                           (selected_ - 1) % kColumns < kColumns - 1 ? neighbour(selected_ + 1) : QStringLiteral("—"));
+    sides.value = QStringLiteral("%1 / %2").arg(
+        (selected_ - 1) % kColumns > 0 ? neighbour(selected_ - 1) : QStringLiteral("—"),
+        (selected_ - 1) % kColumns < kColumns - 1 ? neighbour(selected_ + 1) : QStringLiteral("—"));
     inspection.fields = {place, objects, above, sides};
-    inspection.note = tr("Play from selected starts in this room at the player's start point. Open room "
-                         "edits its cells and objects. Horizontal exits follow the grid except where the "
-                         "game's edge tables mark a castle wall.");
+    inspection.note =
+        tr("Play from selected starts in this room at the player's start point. Open room "
+           "edits its cells and objects. Horizontal exits follow the grid except where the "
+           "game's edge tables mark a castle wall.");
     return inspection;
 }
 

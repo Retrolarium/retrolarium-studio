@@ -38,13 +38,9 @@ int SmbMetatileModel::count() const {
     return session_->document().metatileGroupSizes(session_->metatiles()).value(group_);
 }
 
-QString SmbMetatileModel::title() const {
-    return tr("Palette %1 blocks").arg(group_);
-}
+QString SmbMetatileModel::title() const { return tr("Palette %1 blocks").arg(group_); }
 
-QSize SmbMetatileModel::gridSize() const {
-    return {kPerRow * 2, std::max(1, (count() + kPerRow - 1) / kPerRow) * 2};
-}
+QSize SmbMetatileModel::gridSize() const { return {kPerRow * 2, std::max(1, (count() + kPerRow - 1) / kPerRow) * 2}; }
 
 int SmbMetatileModel::tileOf(const SmbResourceDocument& document, int index, int quadrant) const {
     const auto found = pending_.constFind(index);
@@ -131,9 +127,7 @@ void SmbMetatileModel::setCurrentBrush(int value) {
     emit selectionChanged();
 }
 
-QString SmbMetatileModel::currentLibraryItem() const {
-    return QStringLiteral("tile:%1").arg(tile_);
-}
+QString SmbMetatileModel::currentLibraryItem() const { return QStringLiteral("tile:%1").arg(tile_); }
 
 void SmbMetatileModel::setCurrentLibraryItem(const QString& id) {
     if (!id.startsWith(QLatin1String("tile:"))) {
@@ -164,16 +158,15 @@ bool SmbMetatileModel::placeObject(const QString& libraryItem, QPoint cell, QStr
     const int block = encoded(at.first);
     const int quadrant = at.second;
     selectObject(QStringLiteral("block:%1").arg(at.first));
-    return session_->edit(tr("Set a pattern of block %1").arg(hex(block)),
-                          [metatiles, block, quadrant, tile](SmbResourceDocument& d) {
-                              d.setMetatileTile(metatiles, block, quadrant, tile);
-                          },
-                          error);
+    return session_->edit(
+        tr("Set a pattern of block %1").arg(hex(block)),
+        [metatiles, block, quadrant, tile](SmbResourceDocument& d) {
+            d.setMetatileTile(metatiles, block, quadrant, tile);
+        },
+        error);
 }
 
-bool SmbMetatileModel::isCellEditable(QPoint cell) const {
-    return blockAt(cell).first >= 0;
-}
+bool SmbMetatileModel::isCellEditable(QPoint cell) const { return blockAt(cell).first >= 0; }
 
 void SmbMetatileModel::beginStroke() {
     stroking_ = true;
@@ -208,15 +201,16 @@ void SmbMetatileModel::endStroke() {
     // Cleared first: the edit redraws from the document.
     pending_.clear();
     QString error;
-    session_->edit(tr("Paint %1").arg(title()),
-                   [pending, metatiles, group](SmbResourceDocument& d) {
-                       for (auto it = pending.constBegin(); it != pending.constEnd(); ++it) {
-                           for (int q = 0; q < 4; ++q) {
-                               d.setMetatileTile(metatiles, (group << 6) | it.key(), q, it.value()[q]);
-                           }
-                       }
-                   },
-                   &error);
+    session_->edit(
+        tr("Paint %1").arg(title()),
+        [pending, metatiles, group](SmbResourceDocument& d) {
+            for (auto it = pending.constBegin(); it != pending.constEnd(); ++it) {
+                for (int q = 0; q < 4; ++q) {
+                    d.setMetatileTile(metatiles, (group << 6) | it.key(), q, it.value()[q]);
+                }
+            }
+        },
+        &error);
 }
 
 // ---------------------------------------------------------------- objects
@@ -261,11 +255,12 @@ bool SmbMetatileModel::setField(const QString& key, const QVariant& value, QStri
         const int target = encoded(selected_);
         const int base = session_->document().resource(metatiles).value(QStringLiteral("tile_base")).toInt();
         const std::array<int, 4> from = session_->document().metatileTiles(metatiles, source);
-        return session_->edit(tr("Copy block %1 into %2").arg(hex(source), hex(target)),
-                              [metatiles, target, from, base](SmbResourceDocument& d) {
-                                  for (int q = 0; q < 4; ++q) d.setMetatileTile(metatiles, target, q, from[q] - base);
-                              },
-                              error);
+        return session_->edit(
+            tr("Copy block %1 into %2").arg(hex(source), hex(target)),
+            [metatiles, target, from, base](SmbResourceDocument& d) {
+                for (int q = 0; q < 4; ++q) d.setMetatileTile(metatiles, target, q, from[q] - base);
+            },
+            error);
     }
     if (selected_ < 0 || !key.startsWith(QLatin1Char('q'))) {
         return TileMapModel::setField(key, value, error);
@@ -274,16 +269,15 @@ bool SmbMetatileModel::setField(const QString& key, const QVariant& value, QStri
     const int tile = value.toInt();
     const QString metatiles = session_->metatiles();
     const int block = encoded(selected_);
-    return session_->edit(tr("Set a pattern of block %1").arg(hex(block)),
-                          [metatiles, block, quadrant, tile](SmbResourceDocument& d) {
-                              d.setMetatileTile(metatiles, block, quadrant, tile);
-                          },
-                          error);
+    return session_->edit(
+        tr("Set a pattern of block %1").arg(hex(block)),
+        [metatiles, block, quadrant, tile](SmbResourceDocument& d) {
+            d.setMetatileTile(metatiles, block, quadrant, tile);
+        },
+        error);
 }
 
-sdk::Library SmbMetatileModel::sheet() const {
-    return library();
-}
+sdk::Library SmbMetatileModel::sheet() const { return library(); }
 
 sdk::Library SmbMetatileModel::library() const {
     const int backdrop = session_->document().dayBackground(session_->palettes());

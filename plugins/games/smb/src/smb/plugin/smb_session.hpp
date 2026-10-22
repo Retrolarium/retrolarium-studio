@@ -21,8 +21,8 @@ struct SmbStart {
     QString area;
     QPoint cell;
     int world = 1;
-    int course = 1;     // route step, from 1, as the kit takes it
-    int level = 1;      // the level number the game shows
+    int course = 1;  // route step, from 1, as the kit takes it
+    int level = 1;   // the level number the game shows
 };
 
 // An open Super Mario Bros. project (`rldisasm preset`): one NES
@@ -116,7 +116,7 @@ public:
 
     // Background palette packet for an area type, and its night state.
     bool night(const QString& area) const;
-    QString lighting() const { return lighting_; }       // "Auto", "Day", "Night"
+    QString lighting() const { return lighting_; }  // "Auto", "Day", "Night"
     void setLighting(const QString& lighting);
 
 signals:

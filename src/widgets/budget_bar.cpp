@@ -26,9 +26,7 @@ void BudgetBar::setBarThickness(int pixels) {
     updateGeometry();
 }
 
-QSize BudgetBar::sizeHint() const {
-    return QSize(80, thickness_);
-}
+QSize BudgetBar::sizeHint() const { return QSize(80, thickness_); }
 
 void BudgetBar::paintEvent(QPaintEvent*) {
     const theme::Tokens& t = theme::current();

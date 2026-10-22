@@ -61,17 +61,15 @@ void DocumentListDelegate::paint(QPainter* painter, const QStyleOptionViewItem& 
 
     const QFont labelFont = theme::font(theme::TextRole::Body, theme::size::kRow);
     const int labelRight = meta.isEmpty() ? right : right - metaWidth - kGap;
-    const QString label = QFontMetrics(labelFont).elidedText(
-        index.data(Qt::DisplayRole).toString(), Qt::ElideRight, labelRight - x);
+    const QString label =
+        QFontMetrics(labelFont).elidedText(index.data(Qt::DisplayRole).toString(), Qt::ElideRight, labelRight - x);
     painter->setFont(labelFont);
     painter->setPen(selected ? t.accentInk : t.text);
-    painter->drawText(QRect(x, r.top(), labelRight - x, r.height()), Qt::AlignVCenter | Qt::AlignLeft,
-                      label);
+    painter->drawText(QRect(x, r.top(), labelRight - x, r.height()), Qt::AlignVCenter | Qt::AlignLeft, label);
     painter->restore();
 }
 
-QSize DocumentListDelegate::sizeHint(const QStyleOptionViewItem& option,
-                                     const QModelIndex& index) const {
+QSize DocumentListDelegate::sizeHint(const QStyleOptionViewItem& option, const QModelIndex& index) const {
     const int height = index.data(DocumentRole::IsGroup).toBool() ? kGroupHeight : kRowHeight;
     return QSize(option.rect.width(), height);
 }
@@ -86,19 +84,15 @@ DocumentList::DocumentList(QWidget* parent) : QListView(parent), model_(new QSta
     setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     setFrameShape(QFrame::NoFrame);
     viewport()->setAutoFillBackground(false);
-    connect(selectionModel(), &QItemSelectionModel::currentChanged, this,
-            [this](const QModelIndex& current) {
-                if (current.isValid() && !current.data(DocumentRole::IsGroup).toBool()) {
-                    emit documentActivated(current.data(DocumentRole::Id).toString());
-                }
-            });
-    connect(&theme::Theme::instance(), &theme::Theme::changed, viewport(),
-            [this] { viewport()->update(); });
+    connect(selectionModel(), &QItemSelectionModel::currentChanged, this, [this](const QModelIndex& current) {
+        if (current.isValid() && !current.data(DocumentRole::IsGroup).toBool()) {
+            emit documentActivated(current.data(DocumentRole::Id).toString());
+        }
+    });
+    connect(&theme::Theme::instance(), &theme::Theme::changed, viewport(), [this] { viewport()->update(); });
 }
 
-void DocumentList::clear() {
-    model_->clear();
-}
+void DocumentList::clear() { model_->clear(); }
 
 void DocumentList::addGroup(const QString& title) {
     auto* item = new QStandardItem(rlValue(title));
@@ -107,8 +101,7 @@ void DocumentList::addGroup(const QString& title) {
     model_->appendRow(item);
 }
 
-void DocumentList::addDocument(const QString& id, const QString& label, const QString& meta,
-                               bool dirty) {
+void DocumentList::addDocument(const QString& id, const QString& label, const QString& meta, bool dirty) {
     auto* item = new QStandardItem(label);
     item->setData(id, DocumentRole::Id);
     item->setData(meta, DocumentRole::Meta);
@@ -122,8 +115,7 @@ void DocumentList::addDocument(const QString& id, const QString& label, const QS
 int DocumentList::rowOf(const QString& id) const {
     for (int row = 0; row < model_->rowCount(); ++row) {
         const QStandardItem* item = model_->item(row);
-        if (!item->data(DocumentRole::IsGroup).toBool() &&
-            item->data(DocumentRole::Id).toString() == id) {
+        if (!item->data(DocumentRole::IsGroup).toBool() && item->data(DocumentRole::Id).toString() == id) {
             return row;
         }
     }
@@ -166,10 +158,8 @@ void DocumentList::setFilter(const QString& text) {
             groupHasVisible = false;
             continue;
         }
-        const bool match = needle.isEmpty() ||
-                           item->text().contains(needle, Qt::CaseInsensitive) ||
-                           item->data(DocumentRole::Meta).toString().contains(needle,
-                                                                              Qt::CaseInsensitive);
+        const bool match = needle.isEmpty() || item->text().contains(needle, Qt::CaseInsensitive) ||
+                           item->data(DocumentRole::Meta).toString().contains(needle, Qt::CaseInsensitive);
         setRowHidden(row, !match);
         groupHasVisible = groupHasVisible || match;
     }

@@ -40,7 +40,7 @@ struct FlickySoundNote final {
     int durationOffset = -1;
     int start = 0;
     int duration = 1;
-    int note = -1; // -1 is a rest; 0..94 are pitched notes.
+    int note = -1;  // -1 is a rest; 0..94 are pitched notes.
     bool sharedDuration = false;
 };
 
@@ -60,46 +60,51 @@ struct FlickyFmOperator final {
 struct FlickyFmVoice final {
     int algorithm = 0;
     int feedback = 0;
-    std::array<FlickyFmOperator, 4> operators {};
+    std::array<FlickyFmOperator, 4> operators{};
 };
 
 // The native source document edits numeric tokens in the canonical Z80 ASM.
 // Untouched text remains byte-for-byte identical to the imported baseline.
 class FlickySoundDocument final {
 public:
-    static FlickySoundDocument load(const QString &path);
+    static FlickySoundDocument load(const QString& path);
     // Revert goes back to `pristine` (the document as first extracted).
-    void adoptBaseline(const FlickySoundDocument &pristine) { baseline_ = pristine.baseline_; baselineParsed_ = pristine.baselineParsed_; }
-    static FlickySoundDocument fromSource(const QString &source);
+    void adoptBaseline(const FlickySoundDocument& pristine) {
+        baseline_ = pristine.baseline_;
+        baselineParsed_ = pristine.baselineParsed_;
+    }
+    static FlickySoundDocument fromSource(const QString& source);
 
     [[nodiscard]] QString source() const;
-    void save(const QString &path) const;
+    void save(const QString& path) const;
     [[nodiscard]] QStringList headerIds() const;
-    [[nodiscard]] FlickySoundHeader header(const QString &id) const;
+    [[nodiscard]] FlickySoundHeader header(const QString& id) const;
     [[nodiscard]] QStringList sequenceIds() const;
-    [[nodiscard]] QVector<int> sequenceBytes(const QString &id) const;
-    [[nodiscard]] QVector<FlickySoundNote> notes(const QString &id) const;
+    [[nodiscard]] QVector<int> sequenceBytes(const QString& id) const;
+    [[nodiscard]] QVector<FlickySoundNote> notes(const QString& id) const;
     [[nodiscard]] QStringList voiceBankIds() const;
-    [[nodiscard]] int voiceCount(const QString &bank) const;
-    [[nodiscard]] FlickyFmVoice voice(const QString &bank, int index) const;
+    [[nodiscard]] int voiceCount(const QString& bank) const;
+    [[nodiscard]] FlickyFmVoice voice(const QString& bank, int index) const;
     [[nodiscard]] QVector<int> priorityEnvelopeBytes() const;
 
-    void setHeaderValue(const QString &id, const QString &field, int value);
-    void setHeaderVoices(const QString &id, const QString &bank);
-    void setTrackValue(const QString &id, int track, const QString &field,
-                       int value);
-    void setTrackSequence(const QString &id, int track, const QString &sequence);
-    void setSequenceByte(const QString &id, int offset, int value);
-    void setVoice(const QString &bank, int index, const FlickyFmVoice &voice);
+    void setHeaderValue(const QString& id, const QString& field, int value);
+    void setHeaderVoices(const QString& id, const QString& bank);
+    void setTrackValue(const QString& id, int track, const QString& field, int value);
+    void setTrackSequence(const QString& id, int track, const QString& sequence);
+    void setSequenceByte(const QString& id, int offset, int value);
+    void setVoice(const QString& bank, int index, const FlickyFmVoice& voice);
     void setPriorityEnvelopeByte(int offset, int value);
 
-    [[nodiscard]] QString blockText(const QString &id) const;
-    [[nodiscard]] QString baselineBlockText(const QString &id) const;
-    void replaceBlock(const QString &id, const QString &replacement);
-    void restoreBlock(const QString &id);
+    [[nodiscard]] QString blockText(const QString& id) const;
+    [[nodiscard]] QString baselineBlockText(const QString& id) const;
+    void replaceBlock(const QString& id, const QString& replacement);
+    void restoreBlock(const QString& id);
 
 private:
-    struct Span final { int start = 0; int length = 0; };
+    struct Span final {
+        int start = 0;
+        int length = 0;
+    };
     struct ByteBlock final {
         QVector<int> bytes;
         QVector<Span> tokens;
@@ -122,13 +127,12 @@ private:
         QStringList voiceOrder;
     };
 
-    static Parsed parse(const QString &source);
-    void replaceSpan(Span span, const QString &text);
-    void replaceByteTokens(const QString &id,
-                           const QVector<int> &replacement);
-    void replaceText(Span span, const QString &replacement);
-    void checkShape(const Parsed &candidate) const;
-    [[nodiscard]] const ByteBlock &byteBlock(const QString &id) const;
+    static Parsed parse(const QString& source);
+    void replaceSpan(Span span, const QString& text);
+    void replaceByteTokens(const QString& id, const QVector<int>& replacement);
+    void replaceText(Span span, const QString& replacement);
+    void checkShape(const Parsed& candidate) const;
+    [[nodiscard]] const ByteBlock& byteBlock(const QString& id) const;
 
     QString source_;
     QString baseline_;
@@ -136,4 +140,4 @@ private:
     Parsed baselineParsed_;
 };
 
-} // namespace rl::flicky
+}  // namespace rl::flicky

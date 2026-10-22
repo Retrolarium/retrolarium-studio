@@ -21,8 +21,8 @@ class BundleOwner;
 struct SoundEffect {
     QString key;
     QString title;
-    QString trigger;    // how the game starts it ("Square 2 queue · $01")
-    QString note;       // extra inspector text, optional
+    QString trigger;  // how the game starts it ("Square 2 queue · $01")
+    QString note;     // extra inspector text, optional
 };
 
 // The project data an effect plays with: tables the session edits. The
@@ -97,7 +97,7 @@ private:
 
     bool hasTables() const;
     QJsonObject noteAt(const QString& id) const;
-    QJsonObject tableOf(const QString& table) const;        // the trace's table entry
+    QJsonObject tableOf(const QString& table) const;  // the trace's table entry
     // The table value that plays `pitch` (keeping a noise byte's mode bit),
     // or -1.
     int valueFor(const QJsonObject& source, int pitch) const;

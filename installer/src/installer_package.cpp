@@ -222,7 +222,8 @@ bool InstallerPackage::create(const QString& stubPath, const QString& payloadDir
     QJsonArray files;
     for (const QString& path : paths) {
         QFile payload(root.filePath(path));
-        if (!safePath(path) || !payload.open(QIODevice::ReadOnly)) return fail(QStringLiteral("cannot pack %1").arg(path));
+        if (!safePath(path) || !payload.open(QIODevice::ReadOnly))
+            return fail(QStringLiteral("cannot pack %1").arg(path));
         const QByteArray plain = payload.readAll();
         if (static_cast<quint64>(plain.size()) > kMaxFileSize) return fail(QStringLiteral("%1 is too large").arg(path));
         const QByteArray packed = qCompress(plain, 9);

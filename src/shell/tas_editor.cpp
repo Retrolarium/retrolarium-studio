@@ -95,8 +95,8 @@ bool isMameMovie(const EditedMovie& movie) {
 // kit keeps that source's power-on work RAM).
 void markAsMame(EditedMovie* movie) {
     const QString source = movieSource(*movie);
-    const QString marked = source.isEmpty() ? QStringLiteral("source mame")
-                                            : QStringLiteral("source mame from ") + source;
+    const QString marked =
+        source.isEmpty() ? QStringLiteral("source mame") : QStringLiteral("source mame from ") + source;
     for (QString& line : movie->header) {
         if (line.startsWith(QLatin1String("source "))) {
             line = marked;
@@ -148,11 +148,11 @@ void MovieTableModel::setMovie(const EditedMovie& movie) {
     // MAME's masks: the NES joypad, the Mega Drive 3-button pad.
     if (movie_.platform() == QLatin1String("megadrive")) {
         buttons_ = {{QStringLiteral("←"), 0x04}, {QStringLiteral("→"), 0x08}, {QStringLiteral("↑"), 0x01},
-                    {QStringLiteral("↓"), 0x02}, {QStringLiteral("A"), 0x40},  {QStringLiteral("B"), 0x10},
+                    {QStringLiteral("↓"), 0x02}, {QStringLiteral("A"), 0x40}, {QStringLiteral("B"), 0x10},
                     {QStringLiteral("C"), 0x20}, {QStringLiteral("St"), 0x80}};
     } else {
-        buttons_ = {{QStringLiteral("←"), 0x40}, {QStringLiteral("→"), 0x80}, {QStringLiteral("↑"), 0x10},
-                    {QStringLiteral("↓"), 0x20}, {QStringLiteral("B"), 0x02},  {QStringLiteral("A"), 0x01},
+        buttons_ = {{QStringLiteral("←"), 0x40},  {QStringLiteral("→"), 0x80}, {QStringLiteral("↑"), 0x10},
+                    {QStringLiteral("↓"), 0x20},  {QStringLiteral("B"), 0x02}, {QStringLiteral("A"), 0x01},
                     {QStringLiteral("Se"), 0x04}, {QStringLiteral("St"), 0x08}};
     }
     endResetModel();
@@ -190,13 +190,9 @@ void MovieTableModel::setCurrentFrame(int frame) {
     }
 }
 
-int MovieTableModel::rowCount(const QModelIndex& parent) const {
-    return parent.isValid() ? 0 : movie_.frames.size();
-}
+int MovieTableModel::rowCount(const QModelIndex& parent) const { return parent.isValid() ? 0 : movie_.frames.size(); }
 
-int MovieTableModel::columnCount(const QModelIndex& parent) const {
-    return parent.isValid() ? 0 : buttons_.size();
-}
+int MovieTableModel::columnCount(const QModelIndex& parent) const { return parent.isValid() ? 0 : buttons_.size(); }
 
 QVariant MovieTableModel::data(const QModelIndex& index, int role) const {
     if (!index.isValid()) return {};
@@ -204,17 +200,17 @@ QVariant MovieTableModel::data(const QModelIndex& index, int role) const {
     const bool held = (frame.pad1 & buttons_.at(index.column()).mask) != 0;
     const theme::Tokens& t = theme::current();
     switch (role) {
-    case Qt::DisplayRole:
-        return held ? buttons_.at(index.column()).label : QString();
-    case Qt::TextAlignmentRole:
-        return int(Qt::AlignCenter);
-    case Qt::BackgroundRole:
-        if (index.row() == current_ - 1) return held ? t.accent : t.hover;
-        return held ? t.accentSoft : QVariant();
-    case Qt::ForegroundRole:
-        return held ? (index.row() == current_ - 1 ? t.onAccent : t.accentInk) : t.text;
-    default:
-        return {};
+        case Qt::DisplayRole:
+            return held ? buttons_.at(index.column()).label : QString();
+        case Qt::TextAlignmentRole:
+            return int(Qt::AlignCenter);
+        case Qt::BackgroundRole:
+            if (index.row() == current_ - 1) return held ? t.accent : t.hover;
+            return held ? t.accentSoft : QVariant();
+        case Qt::ForegroundRole:
+            return held ? (index.row() == current_ - 1 ? t.onAccent : t.accentInk) : t.text;
+        default:
+            return {};
     }
 }
 
@@ -226,8 +222,7 @@ QVariant MovieTableModel::headerData(int section, Qt::Orientation orientation, i
     if (role == Qt::DisplayRole) {
         // Frame n: the picture after n frames, made with the input of frame n.
         const QString command = movie_.frames.value(section).command;
-        return command.isEmpty() ? QString::number(section + 1)
-                                 : QStringLiteral("%1 %2").arg(section + 1).arg(command);
+        return command.isEmpty() ? QString::number(section + 1) : QStringLiteral("%1 %2").arg(section + 1).arg(command);
     }
     if (role == Qt::TextAlignmentRole) return int(Qt::AlignRight | Qt::AlignVCenter);
     return {};
@@ -320,10 +315,15 @@ namespace {
 // done already (a paint); the others, and the undo, replace again.
 class SpliceCommand final : public QUndoCommand {
 public:
-    SpliceCommand(MovieTableModel* model, int row, QVector<MovieFrame> before, QVector<MovieFrame> after,
-                  bool done, std::function<void(int)> applied, const QString& text)
-        : QUndoCommand(text), model_(model), row_(row), before_(std::move(before)), after_(std::move(after)),
-          done_(done), applied_(std::move(applied)) {}
+    SpliceCommand(MovieTableModel* model, int row, QVector<MovieFrame> before, QVector<MovieFrame> after, bool done,
+                  std::function<void(int)> applied, const QString& text)
+        : QUndoCommand(text),
+          model_(model),
+          row_(row),
+          before_(std::move(before)),
+          after_(std::move(after)),
+          done_(done),
+          applied_(std::move(applied)) {}
 
     void redo() override {
         if (!done_) model_->splice(row_, before_.size(), after_);
@@ -347,8 +347,11 @@ private:
 }  // namespace
 
 TasEditorWindow::TasEditorWindow(runtime::EmulatorRunner* emulator, QWidget* parent)
-    : QFrame(parent), emulator_(emulator), model_(new MovieTableModel(this)),
-      view_(new MovieTableView(this)), undo_(new QUndoStack(this)) {
+    : QFrame(parent),
+      emulator_(emulator),
+      model_(new MovieTableModel(this)),
+      view_(new MovieTableView(this)),
+      undo_(new QUndoStack(this)) {
     setProperty("surface", QStringLiteral("panel"));
     setMinimumWidth(360);
     auto* layout = new QVBoxLayout(this);
@@ -379,8 +382,8 @@ TasEditorWindow::TasEditorWindow(runtime::EmulatorRunner* emulator, QWidget* par
 
     connect(view_, &MovieTableView::painted, this,
             [this](int row, const QVector<MovieFrame>& before, const QVector<MovieFrame>& after) {
-                undo_->push(new SpliceCommand(model_, row, before, after, true, [this](int r) { applied(r); },
-                                              tr("Change buttons")));
+                undo_->push(new SpliceCommand(
+                    model_, row, before, after, true, [this](int r) { applied(r); }, tr("Change buttons")));
             });
     connect(view_, &MovieTableView::playPauseRequested, this, &TasEditorWindow::playOrPause);
     connect(view_->selectionModel(), &QItemSelectionModel::selectionChanged, this, &TasEditorWindow::onSelection);
@@ -415,9 +418,10 @@ bool TasEditorWindow::open(const QString& working, const QString& origin, QStrin
         toMame_ = working_ != origin_ && !isMameMovie(movie);
         EditedMovie original;
         QString ignored;
-        askPath_ = working_ != origin_ &&
-                   (toMame_ || QFileInfo(origin_).suffix().compare(QLatin1String("rlmovie"), Qt::CaseInsensitive) != 0 ||
-                    !readMovie(origin_, &original, &ignored) || original.offset != 0);
+        askPath_ =
+            working_ != origin_ &&
+            (toMame_ || QFileInfo(origin_).suffix().compare(QLatin1String("rlmovie"), Qt::CaseInsensitive) != 0 ||
+             !readMovie(origin_, &original, &ignored) || original.offset != 0);
         undo_->clear();
         model_->setMovie(movie);
     }
@@ -443,8 +447,8 @@ void TasEditorWindow::hideEvent(QHideEvent* event) {
 }
 
 void TasEditorWindow::edit(int row, int count, const QVector<MovieFrame>& frames, const QString& text) {
-    undo_->push(new SpliceCommand(model_, row, model_->movie().frames.mid(row, count), frames, false,
-                                  [this](int r) { applied(r); }, text));
+    undo_->push(new SpliceCommand(
+        model_, row, model_->movie().frames.mid(row, count), frames, false, [this](int r) { applied(r); }, text));
 }
 
 void TasEditorWindow::applied(int row) {
@@ -546,18 +550,16 @@ void TasEditorWindow::stop() {
     if (row >= 0) emulator_->seek(row + 1);
 }
 
-bool TasEditorWindow::isModified() const {
-    return !undo_->isClean();
-}
+bool TasEditorWindow::isModified() const { return !undo_->isClean(); }
 
 bool TasEditorWindow::save() {
     QString target = origin_;
     if (askPath_) {
         const QFileInfo info(origin_);
-        target = QFileDialog::getSaveFileName(
-            this, tr("Save the movie as MAME plays it"),
-            info.dir().filePath(info.completeBaseName() + QStringLiteral("-mame.rlmovie")),
-            tr("Retrolarium movies (*.rlmovie)"));
+        target =
+            QFileDialog::getSaveFileName(this, tr("Save the movie as MAME plays it"),
+                                         info.dir().filePath(info.completeBaseName() + QStringLiteral("-mame.rlmovie")),
+                                         tr("Retrolarium movies (*.rlmovie)"));
         if (target.isEmpty()) return false;
     }
     EditedMovie movie = model_->movie();

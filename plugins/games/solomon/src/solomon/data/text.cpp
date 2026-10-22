@@ -20,15 +20,24 @@ const int kPalettePrograms[] = {1, 5, 13};
 
 QChar markOf(int tile) {
     switch (tile) {
-    case kSpace: return QLatin1Char(' ');
-    case 0x25: return QLatin1Char(',');
-    case kOpenQuote: return QChar(0x201C);
-    case 0x29: return QLatin1Char('.');
-    case 0x2A: return QChar(0x00A9);
-    case 0x2B: return QChar(0x2665);
-    case kCloseQuote: return QChar(0x201D);
-    case 0x3B: return QLatin1Char('\'');
-    default: return QChar();
+        case kSpace:
+            return QLatin1Char(' ');
+        case 0x25:
+            return QLatin1Char(',');
+        case kOpenQuote:
+            return QChar(0x201C);
+        case 0x29:
+            return QLatin1Char('.');
+        case 0x2A:
+            return QChar(0x00A9);
+        case 0x2B:
+            return QChar(0x2665);
+        case kCloseQuote:
+            return QChar(0x201D);
+        case 0x3B:
+            return QLatin1Char('\'');
+        default:
+            return QChar();
     }
 }
 
@@ -44,18 +53,30 @@ int tileOf(QChar c) {
 
 QString programLabel(int program) {
     switch (program) {
-    case 0: return QStringLiteral("HUD");
-    case 2: return rlTr("solomon", "Room clear · thanks");
-    case 3: return rlTr("solomon", "Room clear · released");
-    case 4: return rlTr("solomon", "Room clear · next room");
-    case 6: return rlTr("solomon", "Game over");
-    case 9: return rlTr("solomon", "Title · records");
-    case 10: return rlTr("solomon", "Title · start");
-    case 11: return rlTr("solomon", "Title · copyright");
-    case 15: return rlTr("solomon", "Licence · title");
-    case 16: return rlTr("solomon", "Licence · copyright");
-    case 17: return rlTr("solomon", "Licence · licensed by");
-    default: return rlTr("solomon", "Program %1").arg(program, 2, 10, QLatin1Char('0'));
+        case 0:
+            return QStringLiteral("HUD");
+        case 2:
+            return rlTr("solomon", "Room clear · thanks");
+        case 3:
+            return rlTr("solomon", "Room clear · released");
+        case 4:
+            return rlTr("solomon", "Room clear · next room");
+        case 6:
+            return rlTr("solomon", "Game over");
+        case 9:
+            return rlTr("solomon", "Title · records");
+        case 10:
+            return rlTr("solomon", "Title · start");
+        case 11:
+            return rlTr("solomon", "Title · copyright");
+        case 15:
+            return rlTr("solomon", "Licence · title");
+        case 16:
+            return rlTr("solomon", "Licence · copyright");
+        case 17:
+            return rlTr("solomon", "Licence · licensed by");
+        default:
+            return rlTr("solomon", "Program %1").arg(program, 2, 10, QLatin1Char('0'));
     }
 }
 
@@ -80,7 +101,8 @@ int programBytes(const QJsonObject& program) {
     int bytes = 1;
     for (const QJsonValue& value : program.value(QStringLiteral("commands")).toArray()) {
         const QJsonObject c = value.toObject();
-        bytes += 3 + (c.value(QStringLiteral("literal")).toBool() ? c.value(QStringLiteral("bytes")).toArray().size() : 1);
+        bytes +=
+            3 + (c.value(QStringLiteral("literal")).toBool() ? c.value(QStringLiteral("bytes")).toArray().size() : 1);
     }
     return bytes;
 }
@@ -127,8 +149,10 @@ QVector<int> textToTiles(const QString& text, QString* error) {
         const int tile = tileOf(c);
         if (tile < 0) {
             if (error) {
-                *error = rlTr("solomon", "The font has no \"%1\". It has A-Z, 0-9, space and , . ' \" © ♥; "
-                                         "write other tiles as {XX}.").arg(c);
+                *error = rlTr("solomon",
+                              "The font has no \"%1\". It has A-Z, 0-9, space and , . ' \" © ♥; "
+                              "write other tiles as {XX}.")
+                             .arg(c);
             }
             return {};
         }
@@ -239,7 +263,8 @@ void SolomonText::setTiles(const QString& id, const QVector<int>& tiles) {
         names.replace(a, array(tiles));
         root_.insert(QStringLiteral("special_room_names"), names);
     } else if (kind == QLatin1String("i") || kind == QLatin1String("m")) {
-        const QString key = kind == QLatin1String("i") ? QStringLiteral("ending_initial") : QStringLiteral("ending_messages");
+        const QString key =
+            kind == QLatin1String("i") ? QStringLiteral("ending_initial") : QStringLiteral("ending_messages");
         QJsonArray list = root_.value(key).toArray();
         QJsonObject message = list.at(a).toObject();
         message.insert(QStringLiteral("tiles"), array(tiles));
@@ -264,7 +289,8 @@ void SolomonText::move(const QString& id, int delta) {
         programs.replace(a, program);
         root_.insert(QStringLiteral("static_programs"), programs);
     } else if (kind == QLatin1String("i") || kind == QLatin1String("m")) {
-        const QString key = kind == QLatin1String("i") ? QStringLiteral("ending_initial") : QStringLiteral("ending_messages");
+        const QString key =
+            kind == QLatin1String("i") ? QStringLiteral("ending_initial") : QStringLiteral("ending_messages");
         QJsonArray list = root_.value(key).toArray();
         QJsonObject message = list.at(a).toObject();
         QJsonArray addresses;
@@ -276,8 +302,12 @@ void SolomonText::move(const QString& id, int delta) {
 }
 
 QVector<int> SolomonText::palette(int program) const {
-    const QJsonArray commands = root_.value(QStringLiteral("static_programs")).toArray().at(program).toObject()
-                                    .value(QStringLiteral("commands")).toArray();
+    const QJsonArray commands = root_.value(QStringLiteral("static_programs"))
+                                    .toArray()
+                                    .at(program)
+                                    .toObject()
+                                    .value(QStringLiteral("commands"))
+                                    .toArray();
     for (const QJsonValue& value : commands) {
         const QJsonObject c = value.toObject();
         if (c.value(QStringLiteral("address")).toInt() == 0x3F00) return ints(c.value(QStringLiteral("bytes")));
@@ -286,7 +316,8 @@ QVector<int> SolomonText::palette(int program) const {
 }
 
 void SolomonText::setPaletteEntry(int program, int entry, int value) {
-    if (std::find(std::begin(kPalettePrograms), std::end(kPalettePrograms), program) == std::end(kPalettePrograms)) return;
+    if (std::find(std::begin(kPalettePrograms), std::end(kPalettePrograms), program) == std::end(kPalettePrograms))
+        return;
     QJsonArray programs = root_.value(QStringLiteral("static_programs")).toArray();
     QJsonObject p = programs.at(program).toObject();
     QJsonArray commands = p.value(QStringLiteral("commands")).toArray();
@@ -318,7 +349,8 @@ SolomonText::Usage SolomonText::initialUsage() const {
     for (const QJsonValue& value : root_.value(QStringLiteral("ending_initial")).toArray()) {
         usage.used += messageBytes(value.toObject());
     }
-    usage.capacity = root_.value(QStringLiteral("layout")).toObject().value(QStringLiteral("ending_initial_bytes")).toInt();
+    usage.capacity =
+        root_.value(QStringLiteral("layout")).toObject().value(QStringLiteral("ending_initial_bytes")).toInt();
     return usage;
 }
 
@@ -327,31 +359,39 @@ SolomonText::Usage SolomonText::messageUsage() const {
     for (const QJsonValue& value : root_.value(QStringLiteral("ending_messages")).toArray()) {
         usage.used += messageBytes(value.toObject());
     }
-    usage.capacity = root_.value(QStringLiteral("layout")).toObject().value(QStringLiteral("ending_message_bytes")).toInt();
+    usage.capacity =
+        root_.value(QStringLiteral("layout")).toObject().value(QStringLiteral("ending_message_bytes")).toInt();
     return usage;
 }
 
 QString SolomonText::overflow() const {
     const Usage s = staticUsage();
     if (s.used > s.capacity) {
-        return rlTr("solomon", "The HUD, room-clear, title and licence text share %1 bytes; they need %2. Shorten "
-                               "another line first.").arg(s.capacity).arg(s.used);
+        return rlTr("solomon",
+                    "The HUD, room-clear, title and licence text share %1 bytes; they need %2. Shorten "
+                    "another line first.")
+            .arg(s.capacity)
+            .arg(s.used);
     }
     const Usage i = initialUsage();
     if (i.used > i.capacity) {
-        return rlTr("solomon", "The two fairy lines of the ending share %1 bytes; they need %2.").arg(i.capacity).arg(i.used);
+        return rlTr("solomon", "The two fairy lines of the ending share %1 bytes; they need %2.")
+            .arg(i.capacity)
+            .arg(i.used);
     }
     const Usage m = messageUsage();
     if (m.used > m.capacity) {
         return rlTr("solomon", "The ending messages share %1 bytes; they need %2. Shorten another message first.")
-            .arg(m.capacity).arg(m.used);
+            .arg(m.capacity)
+            .arg(m.used);
     }
     for (const TextString& str : strings()) {
         if (str.tiles.isEmpty() || str.tiles.size() > 64) {
             return rlTr("solomon", "%1 needs 1-64 characters.").arg(str.label);
         }
         if ((str.id.startsWith(QLatin1Char('i')) || str.id.startsWith(QLatin1Char('m'))) && str.tiles.contains(0)) {
-            return rlTr("solomon", "%1 cannot use 0: the digit ends an ending message. Write O instead.").arg(str.label);
+            return rlTr("solomon", "%1 cannot use 0: the digit ends an ending message. Write O instead.")
+                .arg(str.label);
         }
     }
     return {};

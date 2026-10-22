@@ -26,8 +26,6 @@ public:
 
 }  // namespace
 
-void registerPlugin(sdk::PluginRegistry& registry) {
-    registry.add(std::make_unique<FlickyPlugin>());
-}
+void registerPlugin(sdk::PluginRegistry& registry) { registry.add(std::make_unique<FlickyPlugin>()); }
 
 }  // namespace rl::flicky

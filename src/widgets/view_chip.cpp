@@ -19,12 +19,8 @@ constexpr int kPaddingX = 9;
 constexpr int kGap = 6;
 constexpr double kTextPx = 12.0;
 
-QFont keyFont() {
-    return theme::font(theme::TextRole::Body, kTextPx);
-}
-QFont valueFont() {
-    return theme::font(theme::TextRole::BodyMedium, kTextPx);
-}
+QFont keyFont() { return theme::font(theme::TextRole::Body, kTextPx); }
+QFont valueFont() { return theme::font(theme::TextRole::BodyMedium, kTextPx); }
 }  // namespace
 
 ViewChip::ViewChip(const QString& key, const QString& value, QWidget* parent)
@@ -54,9 +50,7 @@ void ViewChip::setValue(const QString& value) {
     update();
 }
 
-void ViewChip::setChoices(const QStringList& choices) {
-    choices_ = choices;
-}
+void ViewChip::setChoices(const QStringList& choices) { choices_ = choices; }
 
 void ViewChip::showChoices() {
     QMenu menu(this);

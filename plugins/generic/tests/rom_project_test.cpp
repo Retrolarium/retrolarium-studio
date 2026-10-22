@@ -122,7 +122,7 @@ int main(int argc, char** argv) {
         nes.replace(0, 4, QByteArray("NES\x1a", 4));
         nes[4] = 1;
         nes[5] = 1;
-        nes[6] = 0x01;   // vertical mirroring, mapper 0
+        nes[6] = 0x01;  // vertical mirroring, mapper 0
         const int chr = 16 + 16384;
         // Tile 0: row 0 all pen 1, row 1 all pen 2, row 2 pen 3 at the left.
         nes[chr + 0] = char(0xff);
@@ -141,7 +141,8 @@ int main(int argc, char** argv) {
         expect(!hex.writeBytes(nes.size() - 1, QByteArray(2, char(1)), QStringLiteral("Past"), &error),
                "nothing written past the end");
         expect(hex.writeBytes(16, QByteArray(1, char(0xa5)), QStringLiteral("Type"), &error), "a byte typed");
-        expect(quint8(session->rom().at(16)) == 0xa5 && hex.isByteDirty(16) && !hex.isByteDirty(15), "the byte changed");
+        expect(quint8(session->rom().at(16)) == 0xa5 && hex.isByteDirty(16) && !hex.isByteDirty(15),
+               "the byte changed");
         session->undoStack()->undo();
         expect(session->rom().at(16) == 0 && !hex.isByteDirty(16), "undone");
         // Bytes typed one after another are one step, holding those bytes only.
@@ -209,7 +210,8 @@ int main(int argc, char** argv) {
         QFile working(nesDir.filePath(QStringLiteral("game.bin")));
         QFile original(nesDir.filePath(QStringLiteral("original/game.bin")));
         expect(working.open(QIODevice::ReadOnly) && original.open(QIODevice::ReadOnly), "both files open");
-        expect(working.readAll() == session->rom() && original.readAll() == nes, "the working copy saved, the original kept");
+        expect(working.readAll() == session->rom() && original.readAll() == nes,
+               "the working copy saved, the original kept");
 
         // A Mega Drive image with a wrong checksum.
         QByteArray md(0x400, '\0');
@@ -223,7 +225,8 @@ int main(int argc, char** argv) {
         rom::HeaderModel mdHeader(drive.get());
         expect(mdHeader.actions().size() == 1, "a wrong checksum can be fixed");
         mdHeader.triggerAction(QStringLiteral("fix-checksum"));
-        expect(quint8(drive->rom().at(0x18e)) == 0x12 && quint8(drive->rom().at(0x18f)) == 0x35, "the checksum written");
+        expect(quint8(drive->rom().at(0x18e)) == 0x12 && quint8(drive->rom().at(0x18f)) == 0x35,
+               "the checksum written");
         expect(mdHeader.actions().isEmpty(), "and then right");
         rom::RomTileModel mdTiles(drive.get());
         expect(mdTiles.penCount() == 16 && mdTiles.tilePixels(16)[0] == 1 && mdTiles.tilePixels(16)[1] == 2,

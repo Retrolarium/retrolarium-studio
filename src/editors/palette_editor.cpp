@@ -34,8 +34,7 @@ QColor inkOver(const QColor& color) {
 // selection outline.
 class Swatch final : public QWidget {
 public:
-    Swatch(const QColor& color, const QString& label, bool selected, int width, int height,
-           QWidget* parent)
+    Swatch(const QColor& color, const QString& label, bool selected, int width, int height, QWidget* parent)
         : QWidget(parent), color_(color), label_(label), selected_(selected) {
         setFixedSize(width + 6, height + 6);
         setCursor(Qt::PointingHandCursor);
@@ -98,9 +97,7 @@ public:
         if (image_.isNull()) return 250;
         return image_.height() * fittedScale(std::max(1, width - 32)) + 32;
     }
-    QSize sizeHint() const override {
-        return hasHeightForWidth() ? QSize(280, heightForWidth(280)) : QSize(280, 250);
-    }
+    QSize sizeHint() const override { return hasHeightForWidth() ? QSize(280, heightForWidth(280)) : QSize(280, 250); }
 
 protected:
     void paintEvent(QPaintEvent*) override {
@@ -143,9 +140,7 @@ private:
     static constexpr int kSceneScale = 2;
     static constexpr int kSceneSize = 128;
 
-    bool isScene() const {
-        return minimumWidth_ > 0 || image_.width() >= kSceneSize || image_.height() >= kSceneSize;
-    }
+    bool isScene() const { return minimumWidth_ > 0 || image_.width() >= kSceneSize || image_.height() >= kSceneSize; }
     int fittedScale(int roomWidth) const {
         const int largest = isScene() ? kSceneScale : kMaxSpriteScale;
         return std::clamp(std::min(roomWidth / image_.width(), kMaxSampleHeight / image_.height()), 1, largest);
@@ -158,8 +153,7 @@ private:
 // One clickable step of a channel picker.
 class Step final : public QWidget {
 public:
-    Step(const QColor& color, bool selected, QWidget* parent)
-        : QWidget(parent), color_(color), selected_(selected) {
+    Step(const QColor& color, bool selected, QWidget* parent) : QWidget(parent), color_(color), selected_(selected) {
         setFixedHeight(30);
         setMinimumWidth(30);
         setCursor(Qt::PointingHandCursor);
@@ -201,8 +195,7 @@ QWidget* sectionTitle(const QString& title, const QString& hint, QWidget* parent
 
 }  // namespace
 
-PaletteEditor::PaletteEditor(sdk::PaletteModel* model, QWidget* parent)
-    : EditorView(model, parent), palette_(model) {
+PaletteEditor::PaletteEditor(sdk::PaletteModel* model, QWidget* parent) : EditorView(model, parent), palette_(model) {
     auto* outer = new QVBoxLayout(this);
     outer->setContentsMargins(0, 0, 0, 0);
     auto* scroll = new QScrollArea(this);
@@ -316,8 +309,8 @@ void PaletteEditor::rebuild() {
         name->setFixedWidth(64);
         lineLayout->addWidget(name);
         for (int e = 0; e < rows.at(r).colors.size(); ++e) {
-            auto* swatch = new Swatch(rows.at(r).colors.at(e), rows.at(r).labels.value(e),
-                                      current == QPoint(e, r), size, size, line);
+            auto* swatch = new Swatch(rows.at(r).colors.at(e), rows.at(r).labels.value(e), current == QPoint(e, r),
+                                      size, size, line);
             swatch->onClick = [model, e, r] {
                 if (model) model->setCurrentEntry(QPoint(e, r));
             };
@@ -333,10 +326,9 @@ void PaletteEditor::rebuild() {
     auto* pickerLayout = new QVBoxLayout(picker);
     pickerLayout->setContentsMargins(0, 0, 0, 0);
     pickerLayout->setSpacing(8);
-    pickerLayout->addWidget(sectionTitle(palette_->pickerTitle(),
-                                         palette_->isReadOnly() ? tr("read only")
-                                                                : tr("click to assign to the selected entry"),
-                                         picker));
+    pickerLayout->addWidget(
+        sectionTitle(palette_->pickerTitle(),
+                     palette_->isReadOnly() ? tr("read only") : tr("click to assign to the selected entry"), picker));
     if (palette_->picker() == sdk::PaletteModel::Picker::Gamut) {
         auto* grid = new QGridLayout;
         grid->setSpacing(0);
@@ -344,8 +336,7 @@ void PaletteEditor::rebuild() {
         const QStringList labels = palette_->gamutLabels();
         const int columns = std::max(1, palette_->gamutColumns());
         for (int i = 0; i < gamut.size(); ++i) {
-            auto* swatch = new Swatch(gamut.at(i), labels.value(i), i == palette_->currentGamutIndex(), 28,
-                                      28, picker);
+            auto* swatch = new Swatch(gamut.at(i), labels.value(i), i == palette_->currentGamutIndex(), 28, 28, picker);
             swatch->onClick = [model, i, report] {
                 QString error;
                 if (model) report(model->assignGamut(i, &error), error);
@@ -405,10 +396,9 @@ void PaletteEditor::rebuild() {
         shown = std::max(shown, 0);
         sample_ = samples.at(shown).label;
 
-        right_->addWidget(sectionTitle(tr("Where it's used"),
-                                       rows.size() > 1 ? tr("follows the selected row")
-                                                       : tr("drawn with this palette, live"),
-                                       rightParent));
+        right_->addWidget(sectionTitle(
+            tr("Where it's used"),
+            rows.size() > 1 ? tr("follows the selected row") : tr("drawn with this palette, live"), rightParent));
         if (samples.size() > 1) {
             auto* tabs = new ui::SegmentedControl(rightParent);
             for (const sdk::PaletteSample& sample : samples) {
@@ -450,8 +440,7 @@ QWidget* PaletteEditor::createToolbar(QWidget* parent) {
         const QString hint = palette_->picker() == sdk::PaletteModel::Picker::Gamut
                                  ? tr("Pick a swatch, then a colour of the palette below.")
                                  : tr("Pick a swatch, then a level on each channel.");
-        layout->addWidget(new ui::Label(palette_->isReadOnly() ? tr("Read only") : hint,
-                                        ui::Label::Role::Small, bar));
+        layout->addWidget(new ui::Label(palette_->isReadOnly() ? tr("Read only") : hint, ui::Label::Role::Small, bar));
     } else {
         layout->addWidget(new ui::Label(tr("View"), ui::Label::Role::Caps, bar));
     }

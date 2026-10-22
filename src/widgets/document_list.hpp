@@ -25,8 +25,7 @@ class DocumentListDelegate final : public QStyledItemDelegate {
 public:
     using QStyledItemDelegate::QStyledItemDelegate;
 
-    void paint(QPainter* painter, const QStyleOptionViewItem& option,
-               const QModelIndex& index) const override;
+    void paint(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index) const override;
     QSize sizeHint(const QStyleOptionViewItem& option, const QModelIndex& index) const override;
 };
 
@@ -39,8 +38,7 @@ public:
 
     void clear();
     void addGroup(const QString& title);
-    void addDocument(const QString& id, const QString& label, const QString& meta = QString(),
-                     bool dirty = false);
+    void addDocument(const QString& id, const QString& label, const QString& meta = QString(), bool dirty = false);
 
     void setDirty(const QString& id, bool dirty);
     void selectDocument(const QString& id);

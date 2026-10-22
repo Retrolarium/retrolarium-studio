@@ -37,8 +37,8 @@ while other documents are open. Play (`Ctrl+F5`) runs the game from power-on
 them and work only while the game runs. MAME is `RETROLARIUM_MAME`, else the one
 chosen in Settings, else the one the kit remembers (`rltool movie mame`), else
 `mame/consoles.exe` next to the studio, else the nearest
-`emulators/mame/mame/consoles.exe` up the tree; the kit is `RETROLARIUM_KIT`, else
-the nearest `../retrolarium-kit/rltool.py`, else `rltool` on `PATH`.
+`emulators/mame/mame/consoles.exe` up the tree; the kit is `RETROLARIUM_KIT`,
+else the nearest `../retrolarium-kit/rltool.py`, else `rltool` on `PATH`.
 
 MAME draws straight into the Playtest surface (`-attach_window`), so it never
 sees its window as focused; the runner passes `-background_input`, without which

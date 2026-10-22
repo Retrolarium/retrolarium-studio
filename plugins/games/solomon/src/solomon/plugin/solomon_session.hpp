@@ -55,7 +55,7 @@ public:
     // One undo step: the edit runs on a copy of every document.
     bool edit(const QString& text, const std::function<void(SolomonState&)>& change, QString* error);
 
-    int startRoom() const { return startRoom_; }   // 1-based
+    int startRoom() const { return startRoom_; }  // 1-based
     void setStartRoom(int room);
     // While a Demo editor is open, Play from selected runs the attract demo
     // instead of a room: looping it, or recording a new one.

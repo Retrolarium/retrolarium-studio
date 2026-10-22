@@ -40,15 +40,15 @@ struct SmbLevelRendering final {
     QHash<QString, QVector<int>> tables;
 
     // Throws SmbError when the engine is unknown or a table is missing.
-    [[nodiscard]] static SmbLevelRendering fromResource(const QJsonObject &resource, const QString &engine);
+    [[nodiscard]] static SmbLevelRendering fromResource(const QJsonObject& resource, const QString& engine);
 
-    [[nodiscard]] bool has(const QString &name) const { return tables.contains(name); }
-    [[nodiscard]] const QVector<int> &table(const QString &name) const;
-    [[nodiscard]] int one(const QString &name) const { return table(name).at(0); }
+    [[nodiscard]] bool has(const QString& name) const { return tables.contains(name); }
+    [[nodiscard]] const QVector<int>& table(const QString& name) const;
+    [[nodiscard]] int one(const QString& name) const { return table(name).at(0); }
     // The metatiles of row object value (identifier 0), top down.
     [[nodiscard]] QVector<int> smallObject(int value, int areaType) const;
     // A sideways pipe's "top" or "bottom" row, left to right.
-    [[nodiscard]] QVector<int> sidePipe(const QString &part) const;
+    [[nodiscard]] QVector<int> sidePipe(const QString& part) const;
 };
 
 struct SmbLevelScene final {
@@ -59,9 +59,9 @@ struct SmbLevelScene final {
     int width = 0;
 };
 
-[[nodiscard]] SmbLevelScene renderSmbLevelScene(const QString &name,
-    const QVector<int> &header, const QVector<SmbAreaObject> &objects,
-    const QVector<SmbEnemyRecord> &enemies, int world,
-    const SmbLevelRendering &rendering);
+[[nodiscard]] SmbLevelScene renderSmbLevelScene(const QString& name, const QVector<int>& header,
+                                                const QVector<SmbAreaObject>& objects,
+                                                const QVector<SmbEnemyRecord>& enemies, int world,
+                                                const SmbLevelRendering& rendering);
 
 }  // namespace rl::smb

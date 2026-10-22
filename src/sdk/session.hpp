@@ -30,8 +30,7 @@ public:
     virtual QVector<DocumentGroup> documents(const QString& kind) const = 0;
 
     // A model for one document; nullptr when the kind has no editor yet.
-    virtual std::unique_ptr<EditorModel> openEditor(const QString& kind,
-                                                    const QString& document) = 0;
+    virtual std::unique_ptr<EditorModel> openEditor(const QString& kind, const QString& document) = 0;
 
     // Writes every changed document. The undo stack becomes clean on success.
     virtual bool save(QString* error) = 0;

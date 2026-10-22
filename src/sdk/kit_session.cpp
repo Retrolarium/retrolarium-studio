@@ -19,7 +19,7 @@ QString failureText(const ProcessResult& result) {
         return result.error;
     }
     if (!result.error.isEmpty()) {
-        return result.error;   // stopped by the runner (a timeout)
+        return result.error;  // stopped by the runner (a timeout)
     }
     const QStringList lines = QString::fromUtf8(result.standardError).split(QLatin1Char('\n'), Qt::SkipEmptyParts);
     for (int i = lines.size() - 1; i >= 0; --i) {
@@ -47,7 +47,8 @@ ProcessSpec specFromPlan(const QJsonObject& plan) {
 QString tabDocument(const ProjectFile& project, const QString& codec) {
     for (const QVariant& value : project.list(QStringLiteral("workspace.tabs"))) {
         const QVariantMap tab = value.toMap();
-        if (tab.value(QStringLiteral("codec")).toString() == codec && tab.value(QStringLiteral("enabled"), true).toBool()) {
+        if (tab.value(QStringLiteral("codec")).toString() == codec &&
+            tab.value(QStringLiteral("enabled"), true).toBool()) {
             return tab.value(QStringLiteral("document")).toString();
         }
     }
@@ -97,9 +98,7 @@ void KitSession::stopRecording() {
     }
 }
 
-bool KitSession::prepareBuild(BuildStep&, QString*) {
-    return true;
-}
+bool KitSession::prepareBuild(BuildStep&, QString*) { return true; }
 
 void KitSession::built(const BuildStep&, const QJsonObject&) {}
 
@@ -132,8 +131,8 @@ void KitSession::buildThenPlan(std::function<void(bool)> next, bool force, const
         next(true);
         return;
     }
-    QStringList arguments = QStringList{QStringLiteral("studio"), QStringLiteral("build"), project_.path()} +
-                            step.arguments;
+    QStringList arguments =
+        QStringList{QStringLiteral("studio"), QStringLiteral("build"), project_.path()} + step.arguments;
     if (!plan.isEmpty()) {
         arguments << QStringLiteral("--plan-json")
                   << QString::fromUtf8(QJsonDocument(QJsonArray::fromStringList(plan)).toJson(QJsonDocument::Compact));
@@ -164,15 +163,17 @@ void KitSession::buildThenPlan(std::function<void(bool)> next, bool force, const
             return;
         }
         const QString path = artifact.value(QStringLiteral("path")).toString();
-        lastBuild_ = QStringLiteral("%1 · %2").arg(QDateTime::currentDateTime().toString(QStringLiteral("HH:mm")), path);
+        lastBuild_ =
+            QStringLiteral("%1 · %2").arg(QDateTime::currentDateTime().toString(QStringLiteral("HH:mm")), path);
         built(step, artifact);
         const QString sha256 = artifact.value(QStringLiteral("sha256")).toString();
         report(Severity::Info, QStringLiteral("build"),
-               sha256.isEmpty() ? tr("Built %1 (%2 bytes).").arg(path).arg(artifact.value(QStringLiteral("size")).toInt())
-                                : tr("Built %1 (%2 bytes, sha256 %3…).")
-                                      .arg(path)
-                                      .arg(artifact.value(QStringLiteral("size")).toInt())
-                                      .arg(sha256.left(12)));
+               sha256.isEmpty()
+                   ? tr("Built %1 (%2 bytes).").arg(path).arg(artifact.value(QStringLiteral("size")).toInt())
+                   : tr("Built %1 (%2 bytes, sha256 %3…).")
+                         .arg(path)
+                         .arg(artifact.value(QStringLiteral("size")).toInt())
+                         .arg(sha256.left(12)));
         if (answer && (json.contains(QStringLiteral("plan")) || json.contains(QStringLiteral("plan_error")))) {
             answer->ran = true;
             answer->plan = json.value(QStringLiteral("plan")).toObject();

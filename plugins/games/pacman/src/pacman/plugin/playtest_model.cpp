@@ -12,13 +12,9 @@ PacmanPlaytestModel::PacmanPlaytestModel(PacmanSession* session) : EmulatorModel
     connect(session_, &sdk::Session::selectedStartChanged, this, &sdk::EditorModel::contentChanged);
 }
 
-QString PacmanPlaytestModel::startLabel() const {
-    return session_->selectedStart();
-}
+QString PacmanPlaytestModel::startLabel() const { return session_->selectedStart(); }
 
-void PacmanPlaytestModel::play() {
-    session_->playSelected();
-}
+void PacmanPlaytestModel::play() { session_->playSelected(); }
 
 bool PacmanPlaytestModel::setField(const QString& key, const QVariant& value, QString* error) {
     if (key != QLatin1String("round")) return EmulatorModel::setField(key, value, error);
@@ -43,9 +39,10 @@ sdk::Inspection PacmanPlaytestModel::inspect() const {
     core.label = tr("Core");
     core.value = coreLabel();
     inspection.fields = {round, core};
-    inspection.note = tr("Play from selected builds the ROM with the kit and starts a one-player game at "
-                         "the start round, past the title (the game stops counting rounds at 23). Play "
-                         "starts from power-on.");
+    inspection.note =
+        tr("Play from selected builds the ROM with the kit and starts a one-player game at "
+           "the start round, past the title (the game stops counting rounds at 23). Play "
+           "starts from power-on.");
     inspection.engineTag = QStringLiteral("pacman-round-playtest");
     return inspection;
 }

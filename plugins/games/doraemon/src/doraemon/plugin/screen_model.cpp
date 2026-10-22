@@ -15,7 +15,7 @@ namespace shell {
 
 namespace {
 
-constexpr int kFill = 0x7f;     // Shell_ClearBothNametables
+constexpr int kFill = 0x7f;  // Shell_ClearBothNametables
 
 QVector<int> hexBytes(const QString& hex) {
     QVector<int> result;
@@ -44,7 +44,8 @@ QString screenLabel(const QString& id) {
 }
 
 QString paletteOf(const QString& id) {
-    if (id.startsWith(QLatin1String("help-")) || id == QLatin1String("ending")) return QStringLiteral("shell-palette-") + id;
+    if (id.startsWith(QLatin1String("help-")) || id == QLatin1String("ending"))
+        return QStringLiteral("shell-palette-") + id;
     return QStringLiteral("shell-palette-title");
 }
 
@@ -78,7 +79,8 @@ QVector<int> cells(const QJsonObject& text, const QString& id, QHash<int, Source
                     if (address < 0 || address >= 1024) continue;
                     const QChar c = t.at(i);
                     table[address] = c == QLatin1Char(' ') ? 0 : c == QLatin1Char('.') ? 0x5b : (c.unicode() & 0xff);
-                    if (sources && address < 960) sources->insert(address, Source{QStringLiteral("title-text"), r, 0, i});
+                    if (sources && address < 960)
+                        sources->insert(address, Source{QStringLiteral("title-text"), r, 0, i});
                 }
             }
         }
@@ -96,8 +98,12 @@ QVector<int> cells(const QJsonObject& text, const QString& id, QHash<int, Source
         return table;
     }
     const int screen = id.right(1).toInt() - 1;
-    const QJsonArray segments =
-        text.value(QStringLiteral("chapter_help_screens")).toArray().at(screen).toObject().value(QStringLiteral("segments")).toArray();
+    const QJsonArray segments = text.value(QStringLiteral("chapter_help_screens"))
+                                    .toArray()
+                                    .at(screen)
+                                    .toObject()
+                                    .value(QStringLiteral("segments"))
+                                    .toArray();
     int at = 0;
     for (int s = 0; s < segments.size(); ++s) {
         const QJsonObject segment = segments.at(s).toObject();
@@ -207,7 +213,7 @@ QImage render(const DoraemonSession* session, const QString& id, const QJsonObje
     const QVector<int> table = cells(text, id, nullptr);
     const QString palette = override.isEmpty() ? paletteOf(id) : override;
     const QVector<int> values = session->bundle().contains(palette) ? session->bundle().tableValues(palette)
-                                                                     : QVector<int>{0x0f, 0x10, 0x00, 0x30};
+                                                                    : QVector<int>{0x0f, 0x10, 0x00, 0x30};
     QImage image(256, 240, QImage::Format_ARGB32);
     QPainter painter(&image);
     QHash<int, QImage> cache;
@@ -254,9 +260,7 @@ DoraemonScreenModel::DoraemonScreenModel(DoraemonSession* session, const QString
     connect(session_, &sdk::Session::contentChanged, this, &sdk::EditorModel::contentChanged);
 }
 
-QJsonObject DoraemonScreenModel::text() const {
-    return stroke_ ? *stroke_ : session_->text();
-}
+QJsonObject DoraemonScreenModel::text() const { return stroke_ ? *stroke_ : session_->text(); }
 
 QVector<sdk::MapLayer> DoraemonScreenModel::layers() const {
     // The title is drawn by PPU records that can move; the other screens
@@ -309,9 +313,7 @@ void DoraemonScreenModel::setCurrentBrush(int value) {
     emit selectionChanged();
 }
 
-QString DoraemonScreenModel::currentLibraryItem() const {
-    return QStringLiteral("tile:%1").arg(tile_);
-}
+QString DoraemonScreenModel::currentLibraryItem() const { return QStringLiteral("tile:%1").arg(tile_); }
 
 void DoraemonScreenModel::setCurrentLibraryItem(const QString& id) {
     if (!id.startsWith(QLatin1String("tile:"))) return;
@@ -496,7 +498,8 @@ bool DoraemonScreenModel::setField(const QString& key, const QVariant& value, QS
         if (!write->movable) return false;
         const QPoint to = key == QLatin1String("column") ? QPoint(value.toInt(), write->cells.y())
                                                          : QPoint(write->cells.x(), value.toInt());
-        const std::optional<QJsonObject> moved = shell::movedWrite(session_->text(), *write, to - write->cells.topLeft());
+        const std::optional<QJsonObject> moved =
+            shell::movedWrite(session_->text(), *write, to - write->cells.topLeft());
         if (!moved) {
             if (error) *error = tr("The write would leave the screen.");
             return false;
@@ -522,17 +525,17 @@ sdk::Library DoraemonScreenModel::sheet() const {
         row = (table.at(960 + (y / 4) * 8 + x / 4) >> (((y % 4) / 2) * 4 + ((x % 4) / 2) * 2)) & 3;
     }
     const QString palette = shell::paletteOf(screen_);
-    QVector<int> colours = session_->bundle().contains(palette) ? session_->bundle().tableValues(palette).mid(row * 4, 4)
-                                                                 : QVector<int>{0x0f, 0x10, 0x00, 0x30};
+    QVector<int> colours = session_->bundle().contains(palette)
+                               ? session_->bundle().tableValues(palette).mid(row * 4, 4)
+                               : QVector<int>{0x0f, 0x10, 0x00, 0x30};
     while (colours.size() < 4) colours << 0x0f;
     for (int tile = 0; tile < 256; ++tile) {
         sdk::LibraryItem item;
         item.id = QStringLiteral("tile:%1").arg(tile);
         item.label = nes::hex(tile);
         // The selected cell's row: the help screens' top rows draw from the other table.
-        item.icon = session_->painter().shellTile(tile, colours,
-                                                  cell_ >= 0 ? shell::patternTable(screen_, cell_ / 32)
-                                                             : shell::patternTable(screen_));
+        item.icon = session_->painter().shellTile(
+            tile, colours, cell_ >= 0 ? shell::patternTable(screen_, cell_ / 32) : shell::patternTable(screen_));
         result.items << item;
     }
     return result;
@@ -546,9 +549,10 @@ sdk::Inspection DoraemonScreenModel::inspect() const {
         if (!write) {
             inspection.kicker = tr("Screen");
             inspection.title = title();
-            inspection.note = tr("Each PPU record of the title writes its tiles from the address it carries: "
-                                 "select the logo or a line of text and drag it, and the build writes it "
-                                 "where it now stands.");
+            inspection.note =
+                tr("Each PPU record of the title writes its tiles from the address it carries: "
+                   "select the logo or a line of text and drag it, and the build writes it "
+                   "where it now stands.");
             return inspection;
         }
         inspection.kicker = tr("Write");

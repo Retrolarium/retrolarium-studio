@@ -50,9 +50,7 @@ QString worldOf(int room) {
 
 }  // namespace
 
-QString roomLabel(int room) {
-    return rlTr("solomon", "Room %1").arg(room);
-}
+QString roomLabel(int room) { return rlTr("solomon", "Room %1").arg(room); }
 
 // ---------------------------------------------------------------- opening
 
@@ -179,20 +177,24 @@ QVector<sdk::DocumentGroup> SolomonSession::listDocuments(const QString& kind) c
         }
         sdk::DocumentGroup group;
         group.title = tr("Mirrors");
-        group.documents << entry(QStringLiteral("sets"), tr("Enemy sets"),
-                                 QStringLiteral("%1 / %2 B").arg(state_.rooms.mirrorSetBytes()).arg(state_.rooms.mirrorSetCapacity()),
-                                 state_.rooms.mirrorSets() != saved_.rooms.mirrorSets())
-                        << entry(QStringLiteral("schedules"), tr("Drop schedules"),
-                                 QStringLiteral("%1").arg(state_.rooms.schedules().size()),
-                                 state_.rooms.schedules() != saved_.rooms.schedules());
+        group.documents
+            << entry(
+                   QStringLiteral("sets"), tr("Enemy sets"),
+                   QStringLiteral("%1 / %2 B").arg(state_.rooms.mirrorSetBytes()).arg(state_.rooms.mirrorSetCapacity()),
+                   state_.rooms.mirrorSets() != saved_.rooms.mirrorSets())
+            << entry(QStringLiteral("schedules"), tr("Drop schedules"),
+                     QStringLiteral("%1").arg(state_.rooms.schedules().size()),
+                     state_.rooms.schedules() != saved_.rooms.schedules());
         groups << group;
     } else if (kind == QLatin1String("screens") && !state_.presentation.isEmpty()) {
         sdk::DocumentGroup group;
         group.title = tr("Title screen");
         const QJsonArray now = state_.presentation.value(QStringLiteral("streams")).toArray();
         const QJsonArray saved = saved_.presentation.value(QStringLiteral("streams")).toArray();
-        group.documents << entry(QStringLiteral("0"), SolomonTitleModel::layerName(0), QStringLiteral("155 B"), now.at(0) != saved.at(0))
-                        << entry(QStringLiteral("1"), SolomonTitleModel::layerName(1), QStringLiteral("247 B"), now.at(1) != saved.at(1));
+        group.documents << entry(QStringLiteral("0"), SolomonTitleModel::layerName(0), QStringLiteral("155 B"),
+                                 now.at(0) != saved.at(0))
+                        << entry(QStringLiteral("1"), SolomonTitleModel::layerName(1), QStringLiteral("247 B"),
+                                 now.at(1) != saved.at(1));
         groups << group;
         if (!state_.text.isEmpty()) {
             sdk::DocumentGroup text;
@@ -225,9 +227,11 @@ QVector<sdk::DocumentGroup> SolomonSession::listDocuments(const QString& kind) c
                 bool dirty = false;
                 const auto notes = SolomonSoundModel::trace(state_.audio, program, 60 * 40);
                 for (const auto& list : notes) {
-                    for (const SolomonNote& note : list) dirty = dirty || now.at(note.command) != saved.at(note.command);
+                    for (const SolomonNote& note : list)
+                        dirty = dirty || now.at(note.command) != saved.at(note.command);
                 }
-                group.documents << entry(QString::number(program), SolomonSoundModel::programLabel(program).section(QStringLiteral(" · "), 1),
+                group.documents << entry(QString::number(program),
+                                         SolomonSoundModel::programLabel(program).section(QStringLiteral(" · "), 1),
                                          QStringLiteral("#%1").arg(program, 2, 10, QLatin1Char('0')), dirty);
             }
             groups << group;
@@ -235,10 +239,11 @@ QVector<sdk::DocumentGroup> SolomonSession::listDocuments(const QString& kind) c
     } else if (kind == QLatin1String("demo") && !state_.presentation.isEmpty()) {
         sdk::DocumentGroup group;
         group.title = tr("Title");
-        group.documents << entry(QStringLiteral("demo"), tr("Attract demo"),
-                                 tr("%n steps", nullptr, state_.presentation.value(QStringLiteral("demo_steps")).toArray().size()),
-                                 state_.presentation.value(QStringLiteral("demo_steps")) !=
-                                     saved_.presentation.value(QStringLiteral("demo_steps")));
+        group.documents << entry(
+            QStringLiteral("demo"), tr("Attract demo"),
+            tr("%n steps", nullptr, state_.presentation.value(QStringLiteral("demo_steps")).toArray().size()),
+            state_.presentation.value(QStringLiteral("demo_steps")) !=
+                saved_.presentation.value(QStringLiteral("demo_steps")));
         groups << group;
     } else if (kind == QLatin1String("animations")) {
         const QJsonArray frames = state_.animations.value(QStringLiteral("frames")).toArray();
@@ -261,8 +266,7 @@ QVector<sdk::DocumentGroup> SolomonSession::listDocuments(const QString& kind) c
             const int first = family.members.first().action;
             groups.last().documents << entry(QStringLiteral("%1:%2").arg(family.group).arg(first),
                                              SolomonAnimationModel::familyLabel(family),
-                                             tr("%n frames", nullptr, family.frames),
-                                             dirty);
+                                             tr("%n frames", nullptr, family.frames), dirty);
         }
     } else if (kind == QLatin1String("graphics")) {
         for (const QString& id : state_.graphics.resourceIds(QStringLiteral("nes.chr-2bpp.v1"))) {
@@ -353,9 +357,11 @@ std::unique_ptr<sdk::EditorModel> SolomonSession::openEditor(const QString& kind
             }
             if (!state_.text.isEmpty()) return std::make_unique<SolomonTextTableModel>(this);
         }
-        if (kind == QLatin1String("palettes") && document.startsWith(QLatin1String("static:")) && !state_.text.isEmpty()) {
+        if (kind == QLatin1String("palettes") && document.startsWith(QLatin1String("static:")) &&
+            !state_.text.isEmpty()) {
             const int program = document.mid(7).toInt();
-            if (program == 1 || program == 5 || program == 13) return std::make_unique<SolomonStaticPaletteModel>(this, program);
+            if (program == 1 || program == 5 || program == 13)
+                return std::make_unique<SolomonStaticPaletteModel>(this, program);
         }
         if (kind == QLatin1String("screens") && !state_.presentation.isEmpty() &&
             (document == QLatin1String("0") || document == QLatin1String("1"))) {
@@ -381,14 +387,15 @@ std::unique_ptr<sdk::EditorModel> SolomonSession::openEditor(const QString& kind
             if (document == QLatin1String("sets")) return std::make_unique<SolomonMirrorSetsModel>(this);
             if (document == QLatin1String("schedules")) return std::make_unique<SolomonSchedulesModel>(this);
         }
-        if (kind == QLatin1String("graphics") && document.section(QLatin1Char('/'), 1).startsWith(QLatin1String("pairs"))) {
+        if (kind == QLatin1String("graphics") &&
+            document.section(QLatin1Char('/'), 1).startsWith(QLatin1String("pairs"))) {
             const QString id = document.section(QLatin1Char('/'), 0, 0);
             const int half = document.section(QLatin1Char('/'), 1).mid(5).toInt();
             if (state_.graphics.resourceIds(QStringLiteral("nes.chr-2bpp.v1")).contains(id) &&
                 half * 256 < state_.graphics.tileCount(id)) {
-                return std::make_unique<nes::ChrTileModel>(
-                    this, id, half * 256, std::min(256, state_.graphics.tileCount(id) - half * 256),
-                    tr("%1 · pairs of table %2").arg(id).arg(half), true, 16);
+                return std::make_unique<nes::ChrTileModel>(this, id, half * 256,
+                                                           std::min(256, state_.graphics.tileCount(id) - half * 256),
+                                                           tr("%1 · pairs of table %2").arg(id).arg(half), true, 16);
             }
         }
         if (kind == QLatin1String("graphics")) {
@@ -396,20 +403,20 @@ std::unique_ptr<sdk::EditorModel> SolomonSession::openEditor(const QString& kind
             const int half = document.section(QLatin1Char('/'), 1).toInt();
             if (state_.graphics.resourceIds(QStringLiteral("nes.chr-2bpp.v1")).contains(id) &&
                 half * 256 < state_.graphics.tileCount(id)) {
-                return std::make_unique<nes::ChrTileModel>(
-                    this, id, half * 256, std::min(256, state_.graphics.tileCount(id) - half * 256),
-                    tr("%1 · table %2").arg(id).arg(half), half == 0);
+                return std::make_unique<nes::ChrTileModel>(this, id, half * 256,
+                                                           std::min(256, state_.graphics.tileCount(id) - half * 256),
+                                                           tr("%1 · table %2").arg(id).arg(half), half == 0);
             }
         }
         if (kind == QLatin1String("palettes") && document.startsWith(QLatin1String("group:"))) {
             const int g = document.mid(6).toInt();
-            if (g >= 0 && g < SolomonRoomPaletteModel::kGroups) return std::make_unique<SolomonRoomPaletteModel>(this, g);
+            if (g >= 0 && g < SolomonRoomPaletteModel::kGroups)
+                return std::make_unique<SolomonRoomPaletteModel>(this, g);
         }
         if (kind == QLatin1String("palettes") &&
             state_.graphics.resourceIds(QStringLiteral("nes.palette-table.v1")).contains(document)) {
             return std::make_unique<nes::PaletteTableModel>(
-                this, document, document == QLatin1String("room-palettes") ? tr("Room palettes")
-                                                                           : tr("Ending fade"));
+                this, document, document == QLatin1String("room-palettes") ? tr("Room palettes") : tr("Ending fade"));
         }
         if (kind == QLatin1String("playtest")) {
             return std::make_unique<SolomonPlaytestModel>(this);
@@ -483,8 +490,7 @@ bool SolomonSession::edit(const QString& text, const std::function<void(SolomonS
     return true;
 }
 
-bool SolomonSession::editBundle(const QString& text, const std::function<void(nes::Bundle&)>& change,
-                                QString* error) {
+bool SolomonSession::editBundle(const QString& text, const std::function<void(nes::Bundle&)>& change, QString* error) {
     return edit(text, [change](SolomonState& s) { change(s.graphics); }, error);
 }
 
@@ -612,8 +618,7 @@ QVector<nes::PreviewPalette> SolomonSession::previewPalettes(const QString&, boo
         const int at = (sprites ? 16 : 0) + p * 4;
         if (at + 4 <= values.size()) {
             result << nes::PreviewPalette{
-                tr("Room %1 %2").arg(sprites ? QStringLiteral("SPR") : QStringLiteral("BG")).arg(p),
-                values.mid(at, 4)};
+                tr("Room %1 %2").arg(sprites ? QStringLiteral("SPR") : QStringLiteral("BG")).arg(p), values.mid(at, 4)};
         }
     }
     return result;
@@ -623,9 +628,8 @@ QStringList SolomonSession::paletteRowLabels(const QString& table) const {
     QStringList labels;
     const int rows = state_.graphics.tableValues(table).size() / 4;
     for (int r = 0; r < rows; ++r) {
-        labels << (table == QLatin1String("room-palettes")
-                       ? (r < 4 ? tr("BG %1").arg(r) : tr("SPR %1").arg(r - 4))
-                       : tr("Step %1").arg(r));
+        labels << (table == QLatin1String("room-palettes") ? (r < 4 ? tr("BG %1").arg(r) : tr("SPR %1").arg(r - 4))
+                                                           : tr("Step %1").arg(r));
     }
     return labels;
 }
@@ -637,8 +641,7 @@ QVector<sdk::PaletteSample> SolomonSession::paletteSamples(const QString& table)
     }
     sdk::PaletteSample sample;
     sample.label = roomLabel(startRoom_);
-    sample.caption = tr("%1, as the game draws it; colour 1 of each row is the world's own").arg(
-        roomLabel(startRoom_));
+    sample.caption = tr("%1, as the game draws it; colour 1 of each row is the world's own").arg(roomLabel(startRoom_));
     sample.image = painter().room(startRoom_ - 1);
     result << sample;
     return result;
@@ -646,9 +649,7 @@ QVector<sdk::PaletteSample> SolomonSession::paletteSamples(const QString& table)
 
 // ---------------------------------------------------------------- build and play
 
-void SolomonSession::built(const BuildStep&, const QJsonObject&) {
-    documents_.remove(QStringLiteral("playtest"));
-}
+void SolomonSession::built(const BuildStep&, const QJsonObject&) { documents_.remove(QStringLiteral("playtest")); }
 
 void SolomonSession::upgradeText() {
     UpgradeStep step;
@@ -699,9 +700,7 @@ void SolomonSession::build() {
     runBuild([](bool) {});
 }
 
-void SolomonSession::play() {
-    launch(true);
-}
+void SolomonSession::play() { launch(true); }
 
 void SolomonSession::playSelected() {
     if (isRecording()) {
@@ -748,8 +747,9 @@ void SolomonSession::applyRecording(const QString& path) {
     }
     const QJsonArray steps = recording.steps;
     QString error;
-    if (!edit(tr("Record the attract demo"),
-              [steps](SolomonState& s) { s.presentation.insert(QStringLiteral("demo_steps"), steps); }, &error)) {
+    if (!edit(
+            tr("Record the attract demo"),
+            [steps](SolomonState& s) { s.presentation.insert(QStringLiteral("demo_steps"), steps); }, &error)) {
         report(sdk::Severity::Error, QStringLiteral("demo"), error);
         return;
     }
@@ -773,8 +773,8 @@ void SolomonSession::launch(bool fromStart) {
         plan.title = tr("Solomon's Key · power-on");
     } else {
         // The kit numbers rooms from 0.
-        plan.arguments = QStringList{QStringLiteral("studio"), QStringLiteral("solomon-point-playtest-plan"), project_.path(),
-                          QStringLiteral("--room"), QString::number(room - 1)};
+        plan.arguments = QStringList{QStringLiteral("studio"), QStringLiteral("solomon-point-playtest-plan"),
+                                     project_.path(), QStringLiteral("--room"), QString::number(room - 1)};
         plan.label = tr("Plan playtest of %1").arg(roomLabel(room));
         plan.title = tr("Solomon's Key · %1").arg(roomLabel(room));
         // The Playtest view covers the boot until the room is up.

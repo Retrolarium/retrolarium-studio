@@ -9,9 +9,7 @@ namespace rl::smb {
 
 namespace {
 
-[[noreturn]] void fail(const QString& message) {
-    throw SmbError(message.toStdString());
-}
+[[noreturn]] void fail(const QString& message) { throw SmbError(message.toStdString()); }
 
 QVector<int> intsOf(const QJsonValue& value) {
     QVector<int> result;
@@ -40,8 +38,10 @@ SmbMusic SmbMusic::fromJson(const QJsonObject& resource) {
         header.lengthTableOffset = h.value(QStringLiteral("length_table_offset")).toInt();
         header.stream = h.value(QStringLiteral("stream_offset")).toInt();
         header.triangle = h.value(QStringLiteral("triangle_offset")).toInt();
-        header.square1 = h.contains(QStringLiteral("square1_offset")) ? h.value(QStringLiteral("square1_offset")).toInt() : -1;
-        header.noise = h.contains(QStringLiteral("noise_offset")) ? h.value(QStringLiteral("noise_offset")).toInt() : -1;
+        header.square1 =
+            h.contains(QStringLiteral("square1_offset")) ? h.value(QStringLiteral("square1_offset")).toInt() : -1;
+        header.noise =
+            h.contains(QStringLiteral("noise_offset")) ? h.value(QStringLiteral("noise_offset")).toInt() : -1;
         music.headers << header;
     }
     music.arena = intsOf(resource.value(QStringLiteral("shared_stream_arena")));
@@ -49,7 +49,8 @@ SmbMusic SmbMusic::fromJson(const QJsonObject& resource) {
     music.lengths = intsOf(resource.value(QStringLiteral("note_lengths")));
     for (const QJsonValue& value : resource.value(QStringLiteral("selectors")).toArray()) {
         const QJsonObject s = value.toObject();
-        music.selectors << qMakePair(s.value(QStringLiteral("name")).toString(), s.value(QStringLiteral("header")).toString());
+        music.selectors << qMakePair(s.value(QStringLiteral("name")).toString(),
+                                     s.value(QStringLiteral("header")).toString());
     }
     for (const QJsonValue& value : resource.value(QStringLiteral("ground_schedule")).toArray()) {
         music.groundSchedule << value.toString();
@@ -134,7 +135,8 @@ SmbMusicTimeline SmbMusic::timeline(const QString& name) const {
         int t = 0;
         int length = -1;
         for (int cursor = start; t < result.duration; ++cursor) {
-            if (channel.events.size() > limit) fail(QStringLiteral("%1 %2 never fills the song.").arg(name, channelLabel(id)));
+            if (channel.events.size() > limit)
+                fail(QStringLiteral("%1 %2 never fills the song.").arg(name, channelLabel(id)));
             const int raw = byteAt(cursor, id);
             SmbMusicEvent e;
             e.offset = cursor;
@@ -218,7 +220,8 @@ QStringList SmbMusic::readersOf(int offset) const {
                     for (const SmbMusicEvent& e : channel.events) {
                         if (seen.contains(e.offset)) continue;
                         seen.insert(e.offset);
-                        const QString reader = QStringLiteral("%1 %2").arg(header.name, channelLabel(channel.id).toLower());
+                        const QString reader =
+                            QStringLiteral("%1 %2").arg(header.name, channelLabel(channel.id).toLower());
                         if (!readers_[e.offset].contains(reader)) readers_[e.offset] << reader;
                     }
                 }
@@ -248,7 +251,8 @@ int SmbMusic::pitchOf(int periodIndex, const QString& channel) const {
 int SmbMusic::periodFor(int pitch, const QString& channel) const {
     // Square 1 reaches only the first 32 entries; 0 is not a note on
     // square 2 and the triangle (the byte would end or rest the stream).
-    const int last = channel == QLatin1String("square1") ? std::min(31, int(periods.size()) - 1) : int(periods.size()) - 1;
+    const int last =
+        channel == QLatin1String("square1") ? std::min(31, int(periods.size()) - 1) : int(periods.size()) - 1;
     for (int i = channel == QLatin1String("square1") ? 0 : 1; i <= last; ++i) {
         if (pitchOf(i, channel) == pitch) return i;
     }
@@ -260,7 +264,8 @@ void SmbMusic::setNotePeriod(const QString& channel, int offset, int periodIndex
     const int raw = arena.at(offset);
     int next = raw;
     if (channel == QLatin1String("square1")) {
-        if (raw == 0 || periodIndex < 0 || periodIndex > 31) fail(QStringLiteral("Square 1 notes use period entries 0-31."));
+        if (raw == 0 || periodIndex < 0 || periodIndex > 31)
+            fail(QStringLiteral("Square 1 notes use period entries 0-31."));
         next = (raw & 0xc1) | (periodIndex * 2);
         if (next == 0) fail(QStringLiteral("That note would read as a control byte."));
     } else if (channel == QLatin1String("square2") || channel == QLatin1String("triangle")) {

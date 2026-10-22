@@ -8,13 +8,13 @@ namespace rl::theme {
 // Text roles of the design. Sizes are CSS pixels of the prototype; the helper
 // converts them to fractional points so 12.5px and 11.5px survive.
 enum class TextRole {
-    Body,           // Barlow 400, 13px
-    BodyMedium,     // Barlow 500
-    Heading,        // Barlow Condensed 600
-    Caps,           // Barlow Condensed 600, uppercase, +0.08em
-    Mono,           // IBM Plex Mono 400
-    MonoMedium,     // IBM Plex Mono 500
-    MonoSemiBold,   // IBM Plex Mono 600
+    Body,          // Barlow 400, 13px
+    BodyMedium,    // Barlow 500
+    Heading,       // Barlow Condensed 600
+    Caps,          // Barlow Condensed 600, uppercase, +0.08em
+    Mono,          // IBM Plex Mono 400
+    MonoMedium,    // IBM Plex Mono 500
+    MonoSemiBold,  // IBM Plex Mono 600
 };
 
 // Registers the bundled fonts. Call once after QApplication exists.

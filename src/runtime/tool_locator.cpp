@@ -68,7 +68,8 @@ QString python() {
         for (const QString& version : versions) {
             const QString executable = core.value(version + QStringLiteral("/InstallPath/ExecutablePath")).toString();
             const QString folder = core.value(version + QStringLiteral("/InstallPath/Default")).toString();
-            candidates << executable << (folder.isEmpty() ? QString() : QDir(folder).filePath(QStringLiteral("python.exe")));
+            candidates << executable
+                       << (folder.isEmpty() ? QString() : QDir(folder).filePath(QStringLiteral("python.exe")));
         }
     }
     QDir programs(QDir(qEnvironmentVariable("LOCALAPPDATA")).filePath(QStringLiteral("Programs/Python")));
@@ -120,9 +121,10 @@ sdk::ProcessSpec ToolLocator::kitCommand(const QStringList& arguments, const QSt
     }
     if (kit.isEmpty()) {
         if (error) {
-            *error = rlTr("studio", "Retrolarium Kit was not found next to the studio. Reinstall "
-                                    "Retrolarium Studio. (A studio built from source finds the kit "
-                                    "through RETROLARIUM_KIT.)");
+            *error = rlTr("studio",
+                          "Retrolarium Kit was not found next to the studio. Reinstall "
+                          "Retrolarium Studio. (A studio built from source finds the kit "
+                          "through RETROLARIUM_KIT.)");
         }
         return spec;
     }
@@ -130,9 +132,11 @@ sdk::ProcessSpec ToolLocator::kitCommand(const QStringList& arguments, const QSt
         const QString interpreter = python();
         if (interpreter.isEmpty()) {
             if (error) {
-                *error = rlTr("studio", "The Python that runs the kit was not found next to the "
-                                        "studio. Reinstall Retrolarium Studio, or put Python on "
-                                        "PATH to run %1.").arg(kit);
+                *error = rlTr("studio",
+                              "The Python that runs the kit was not found next to the "
+                              "studio. Reinstall Retrolarium Studio, or put Python on "
+                              "PATH to run %1.")
+                             .arg(kit);
             }
             return spec;
         }
@@ -167,8 +171,7 @@ QString ToolLocator::emulatorPath(const QString& id) {
     if (!remembered.isEmpty() && QFileInfo(remembered).isFile()) {
         return QFileInfo(remembered).canonicalFilePath();
     }
-    const QString bundled =
-        QDir(QCoreApplication::applicationDirPath()).filePath(QStringLiteral("mame/consoles.exe"));
+    const QString bundled = QDir(QCoreApplication::applicationDirPath()).filePath(QStringLiteral("mame/consoles.exe"));
     if (QFileInfo(bundled).isFile()) {
         return bundled;
     }

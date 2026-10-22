@@ -193,9 +193,9 @@ bool enableSkipWarnings(const QString& workingDirectory, bool* changed, QString*
     bool found = false;
     for (QByteArray& line : lines) {
         const QByteArray trimmed = line.trimmed();
-        const bool option = trimmed.startsWith(kOption) &&
-                            (trimmed.size() == kOption.size() || trimmed.at(kOption.size()) == ' ' ||
-                             trimmed.at(kOption.size()) == '\t');
+        const bool option =
+            trimmed.startsWith(kOption) && (trimmed.size() == kOption.size() || trimmed.at(kOption.size()) == ' ' ||
+                                            trimmed.at(kOption.size()) == '\t');
         if (!option) continue;
         found = true;
         if (trimmed.simplified() == "skip_warnings 1") return true;

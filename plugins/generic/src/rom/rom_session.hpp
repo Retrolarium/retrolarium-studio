@@ -27,7 +27,9 @@ public:
     bool save(QString* error) override;
     bool canRevert(const QString& kind, const QString& document) const override;
     bool revert(const QString& kind, const QString& document, QString* error) override;
-    bool canPlay() const override { return platform_ == QLatin1String("nes") || platform_ == QLatin1String("megadrive"); }
+    bool canPlay() const override {
+        return platform_ == QLatin1String("nes") || platform_ == QLatin1String("megadrive");
+    }
     void play() override;
 
     // "nes", "megadrive" or empty (the hex and the header only).
@@ -83,7 +85,7 @@ private:
     QString platform_;
     QByteArray rom_;
     QByteArray original_;
-    QByteArray saved_;   // the ROM as the project's file holds it
+    QByteArray saved_;  // the ROM as the project's file holds it
     quint64 revision_ = 0;
     quint64 nextRevision_ = 0;
     mutable QString detected_;

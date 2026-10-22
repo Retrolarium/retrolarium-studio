@@ -27,8 +27,7 @@ ProcessRunner::~ProcessRunner() {
     }
 }
 
-bool ProcessRunner::run(const sdk::ProcessSpec& spec,
-                        std::function<void(const sdk::ProcessResult&)> done) {
+bool ProcessRunner::run(const sdk::ProcessSpec& spec, std::function<void(const sdk::ProcessResult&)> done) {
     if (process_) {
         sdk::ProcessResult busy;
         busy.error = tr("Another task is still running.");

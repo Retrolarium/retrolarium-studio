@@ -13,9 +13,7 @@ namespace rl::castle_excellent {
 
 namespace {
 
-QString hex(int value) {
-    return QLatin1Char('$') + QStringLiteral("%1").arg(value, 2, 16, QLatin1Char('0')).toUpper();
-}
+QString hex(int value) { return QLatin1Char('$') + QStringLiteral("%1").arg(value, 2, 16, QLatin1Char('0')).toUpper(); }
 
 // The frames the game's code points at (LDX #hi / LDY #lo / JSR renderer
 // between $AC60 and $B1D6; the same in both revisions): the player's two-
@@ -23,27 +21,27 @@ QString hex(int value) {
 // The code is not edited, so the frames stay where they are.
 constexpr int kPlayerFrames = 16;
 constexpr int kObjectFrames[][2] = {
-    {32, 2},  {34, 2},  {36, 2},  {38, 2},  {40, 2},  {42, 2},  {44, 2},  {46, 2},  {48, 2},  {50, 2},
-    {52, 2},  {54, 2},  {56, 2},  {58, 2},  {60, 1},  {61, 2},  {63, 2},  {65, 2},  {67, 2},  {69, 2},
-    {71, 2},  {73, 2},  {75, 2},  {77, 2},  {79, 2},  {81, 2},  {83, 2},  {85, 2},  {87, 2},  {91, 2},
-    {93, 2},  {95, 2},  {99, 2},  {101, 2}, {103, 2}, {105, 2}, {107, 2}, {109, 2}, {111, 2}, {113, 2},
-    {115, 2}, {123, 2}, {125, 1}, {126, 1}, {127, 1}, {128, 1}, {129, 1}, {130, 1}, {131, 2}, {133, 2},
-    {135, 2}, {137, 2}, {139, 2}, {141, 2}, {143, 2}, {145, 2}, {147, 2}, {149, 2}, {151, 2}, {153, 2},
-    {155, 2}, {157, 2}, {159, 2}, {163, 2}, {165, 2}, {167, 2}, {169, 2}, {171, 2}, {173, 4}, {177, 2},
-    {181, 2}, {183, 2}, {185, 2}, {187, 1}, {188, 1}, {189, 2}, {191, 2}, {193, 2}, {195, 2}, {197, 2},
-    {199, 2}, {201, 2},
+    {32, 2},  {34, 2},  {36, 2},  {38, 2},  {40, 2},  {42, 2},  {44, 2},  {46, 2},  {48, 2},  {50, 2},  {52, 2},
+    {54, 2},  {56, 2},  {58, 2},  {60, 1},  {61, 2},  {63, 2},  {65, 2},  {67, 2},  {69, 2},  {71, 2},  {73, 2},
+    {75, 2},  {77, 2},  {79, 2},  {81, 2},  {83, 2},  {85, 2},  {87, 2},  {91, 2},  {93, 2},  {95, 2},  {99, 2},
+    {101, 2}, {103, 2}, {105, 2}, {107, 2}, {109, 2}, {111, 2}, {113, 2}, {115, 2}, {123, 2}, {125, 1}, {126, 1},
+    {127, 1}, {128, 1}, {129, 1}, {130, 1}, {131, 2}, {133, 2}, {135, 2}, {137, 2}, {139, 2}, {141, 2}, {143, 2},
+    {145, 2}, {147, 2}, {149, 2}, {151, 2}, {153, 2}, {155, 2}, {157, 2}, {159, 2}, {163, 2}, {165, 2}, {167, 2},
+    {169, 2}, {171, 2}, {173, 4}, {177, 2}, {181, 2}, {183, 2}, {185, 2}, {187, 1}, {188, 1}, {189, 2}, {191, 2},
+    {193, 2}, {195, 2}, {197, 2}, {199, 2}, {201, 2},
 };
-constexpr int kSheetColumns = 24;   // sprites per row, with a gap after each frame
+constexpr int kSheetColumns = 24;  // sprites per row, with a gap after each frame
 
 const QStringList& flipNames() {
-    static const QStringList kNames{QStringLiteral("None"), rlTr("castle_excellent", "Horizontal"), rlTr("castle_excellent", "Vertical"),
-                                    rlTr("castle_excellent", "Both")};
+    static const QStringList kNames{QStringLiteral("None"), rlTr("castle_excellent", "Horizontal"),
+                                    rlTr("castle_excellent", "Vertical"), rlTr("castle_excellent", "Both")};
     return kNames;
 }
 
 }  // namespace
 
-CastleExcellentSpriteModel::CastleExcellentSpriteModel(CastleExcellentSession* session) : TileMapModel(session), session_(session) {
+CastleExcellentSpriteModel::CastleExcellentSpriteModel(CastleExcellentSession* session)
+    : TileMapModel(session), session_(session) {
     connect(session_, &sdk::Session::contentChanged, this, &sdk::EditorModel::contentChanged);
     const int total = count();
     QVector<Frame> frames;
@@ -76,7 +74,11 @@ CastleExcellentSpriteModel::CastleExcellentSpriteModel(CastleExcellentSession* s
 }
 
 int CastleExcellentSpriteModel::count() const {
-    return session_->bundle().resource(session_->art().descriptors).value(QStringLiteral("descriptors")).toArray().size();
+    return session_->bundle()
+        .resource(session_->art().descriptors)
+        .value(QStringLiteral("descriptors"))
+        .toArray()
+        .size();
 }
 
 int CastleExcellentSpriteModel::tileOf(int descriptor) const {
@@ -110,9 +112,7 @@ int CastleExcellentSpriteModel::descriptorAt(QPoint cell) const {
     return -1;
 }
 
-QSize CastleExcellentSpriteModel::gridSize() const {
-    return {kSheetColumns, rows_ * 2};
-}
+QSize CastleExcellentSpriteModel::gridSize() const { return {kSheetColumns, rows_ * 2}; }
 
 QString CastleExcellentSpriteModel::frameLabel(int frame) const {
     const Frame& f = frames_.at(frame);
@@ -188,9 +188,7 @@ void CastleExcellentSpriteModel::setCurrentBrush(int value) {
     emit selectionChanged();
 }
 
-QString CastleExcellentSpriteModel::currentLibraryItem() const {
-    return QStringLiteral("tile:%1").arg(tile_);
-}
+QString CastleExcellentSpriteModel::currentLibraryItem() const { return QStringLiteral("tile:%1").arg(tile_); }
 
 void CastleExcellentSpriteModel::setCurrentLibraryItem(const QString& id) {
     if (!id.startsWith(QLatin1String("tile:"))) return;
@@ -207,26 +205,26 @@ int CastleExcellentSpriteModel::cellValue(QPoint cell) const {
     return d < 0 ? -1 : tileOf(d);
 }
 
-bool CastleExcellentSpriteModel::isCellEditable(QPoint cell) const {
-    return descriptorAt(cell) >= 0;
-}
+bool CastleExcellentSpriteModel::isCellEditable(QPoint cell) const { return descriptorAt(cell) >= 0; }
 
-bool CastleExcellentSpriteModel::setDescriptors(const QHash<int, QPair<int, int>>& values, const QString& text, QString* error) {
+bool CastleExcellentSpriteModel::setDescriptors(const QHash<int, QPair<int, int>>& values, const QString& text,
+                                                QString* error) {
     const QString id = session_->art().descriptors;
-    return session_->editBundle(text,
-                                [id, values](nes::Bundle& b) {
-                                    QJsonObject resource = b.resource(id);
-                                    QJsonArray list = resource.value(QStringLiteral("descriptors")).toArray();
-                                    for (auto it = values.constBegin(); it != values.constEnd(); ++it) {
-                                        QJsonObject d = list.at(it.key()).toObject();
-                                        d.insert(QStringLiteral("tile"), it.value().first);
-                                        d.insert(QStringLiteral("attributes"), it.value().second);
-                                        list.replace(it.key(), d);
-                                    }
-                                    resource.insert(QStringLiteral("descriptors"), list);
-                                    b.setResource(id, resource);
-                                },
-                                error);
+    return session_->editBundle(
+        text,
+        [id, values](nes::Bundle& b) {
+            QJsonObject resource = b.resource(id);
+            QJsonArray list = resource.value(QStringLiteral("descriptors")).toArray();
+            for (auto it = values.constBegin(); it != values.constEnd(); ++it) {
+                QJsonObject d = list.at(it.key()).toObject();
+                d.insert(QStringLiteral("tile"), it.value().first);
+                d.insert(QStringLiteral("attributes"), it.value().second);
+                list.replace(it.key(), d);
+            }
+            resource.insert(QStringLiteral("descriptors"), list);
+            b.setResource(id, resource);
+        },
+        error);
 }
 
 bool CastleExcellentSpriteModel::placeObject(const QString& libraryItem, QPoint cell, QString* error) {
@@ -237,8 +235,7 @@ bool CastleExcellentSpriteModel::placeObject(const QString& libraryItem, QPoint 
     }
     const int tile = std::clamp(libraryItem.mid(5).toInt(), 0, 255);
     setCurrentLibraryItem(libraryItem);
-    return setDescriptors({{d, qMakePair(tile, attributesOf(d))}}, tr("Set the patterns of sprite %1").arg(d),
-                          error);
+    return setDescriptors({{d, qMakePair(tile, attributesOf(d))}}, tr("Set the patterns of sprite %1").arg(d), error);
 }
 
 void CastleExcellentSpriteModel::beginStroke() {
@@ -308,16 +305,19 @@ bool CastleExcellentSpriteModel::setField(const QString& key, const QVariant& va
     int tile = tileOf(d);
     int attributes = attributesOf(d);
     switch (key.at(0).toLatin1()) {
-    case 't': tile = std::clamp(value.toInt(), 0, 255); break;
-    case 'p':
-        attributes = (attributes & ~3) | paletteNumber(value.toString());
-        break;
-    case 'f': {
-        const int flip = std::max(0, flipNames().indexOf(value.toString()));
-        attributes = (attributes & ~0xC0) | ((flip & 1) ? 0x40 : 0) | ((flip & 2) ? 0x80 : 0);
-        break;
-    }
-    default: return TileMapModel::setField(key, value, error);
+        case 't':
+            tile = std::clamp(value.toInt(), 0, 255);
+            break;
+        case 'p':
+            attributes = (attributes & ~3) | paletteNumber(value.toString());
+            break;
+        case 'f': {
+            const int flip = std::max(0, flipNames().indexOf(value.toString()));
+            attributes = (attributes & ~0xC0) | ((flip & 1) ? 0x40 : 0) | ((flip & 2) ? 0x80 : 0);
+            break;
+        }
+        default:
+            return TileMapModel::setField(key, value, error);
     }
     return setDescriptors({{d, qMakePair(tile, attributes)}}, tr("Edit sprite %1").arg(d), error);
 }
@@ -359,10 +359,11 @@ sdk::Inspection CastleExcellentSpriteModel::inspect() const {
         sprites.label = tr("Sprites");
         sprites.value = QStringLiteral("%1 · 8x16").arg(count());
         inspection.fields = {sprites};
-        inspection.note = tr("The player's and the objects' frames, each a row of 8x16 sprites: a pattern "
-                             "pair (even from the first pattern table, odd from the second) and its "
-                             "attributes. Paint a pattern pair from the sheet into a sprite, or select a "
-                             "frame to set palettes and flips.");
+        inspection.note =
+            tr("The player's and the objects' frames, each a row of 8x16 sprites: a pattern "
+               "pair (even from the first pattern table, odd from the second) and its "
+               "attributes. Paint a pattern pair from the sheet into a sprite, or select a "
+               "frame to set palettes and flips.");
         return inspection;
     }
     const Frame& frame = frames_.at(selected_);
@@ -387,7 +388,8 @@ sdk::Inspection CastleExcellentSpriteModel::inspect() const {
         palette.type = sdk::Field::Type::Choice;
         for (int p = 0; p < 4; ++p) {
             palette.choices << tr("SPR %1").arg(p);
-            palette.choiceIcons << session_->painter().sprite(CastleExcellentSprite{tileOf(d), (attributes & ~3) | p, 0, 0});
+            palette.choiceIcons << session_->painter().sprite(
+                CastleExcellentSprite{tileOf(d), (attributes & ~3) | p, 0, 0});
         }
         palette.value = tr("SPR %1").arg(attributes & 3);
         sdk::Field flip;
@@ -398,16 +400,16 @@ sdk::Inspection CastleExcellentSpriteModel::inspect() const {
         flip.value = flipNames().at(((attributes & 0x40) ? 1 : 0) | ((attributes & 0x80) ? 2 : 0));
         inspection.fields << tile << palette << flip;
     }
-    inspection.note = frame.player
-                          ? tr("A frame of the player, two sprites side by side. Every animation that "
-                               "shows it changes with it.")
+    inspection.note = frame.player ? tr("A frame of the player, two sprites side by side. Every animation that "
+                                        "shows it changes with it.")
                       : frame.referenced
                           ? tr("A frame the objects' code draws, its sprites 8 pixels apart. Every object "
                                "and animation step that shows it changes with it.")
                           : tr("A sprite no frame of the game's code draws.");
-    inspection.engine = {{tr("Descriptors"),
-                          QStringLiteral("%1-%2").arg(frame.first).arg(frame.first + frame.count - 1)},
-                         {QStringLiteral("CPU"), QStringLiteral("$%1").arg(0xB4B6 + frame.first * 2, 4, 16, QLatin1Char('0')).toUpper()}};
+    inspection.engine = {
+        {tr("Descriptors"), QStringLiteral("%1-%2").arg(frame.first).arg(frame.first + frame.count - 1)},
+        {QStringLiteral("CPU"),
+         QStringLiteral("$%1").arg(0xB4B6 + frame.first * 2, 4, 16, QLatin1Char('0')).toUpper()}};
     return inspection;
 }
 

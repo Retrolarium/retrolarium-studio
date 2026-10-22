@@ -78,9 +78,8 @@ protected:
         painter.setFont(theme::font(theme::TextRole::Body, 12.5));
         painter.setPen(current_ ? t.accentInk : channel_.muted ? t.faint : t.text);
         const QRect text(28, 0, width() - 66, height());
-        const QString label = channel_.detail.isEmpty()
-                                  ? channel_.label
-                                  : QStringLiteral("%1  %2").arg(channel_.label, channel_.detail);
+        const QString label =
+            channel_.detail.isEmpty() ? channel_.label : QStringLiteral("%1  %2").arg(channel_.label, channel_.detail);
         painter.drawText(text, Qt::AlignVCenter, painter.fontMetrics().elidedText(label, Qt::ElideRight, text.width()));
         const QRect mute = muteRect();
         if (channel_.muted) {
@@ -152,8 +151,8 @@ int PianoRoll::pitchAt(int y) const {
 }
 
 QRect PianoRoll::noteRect(int start, int length, int pitch) const {
-    return QRect(kKeyWidth + start * pixelsPerTick_, rowY(pitch) + 1,
-                 std::max(2, length * pixelsPerTick_ - 1), pitch < 0 ? 4 : kRowHeight - 1);
+    return QRect(kKeyWidth + start * pixelsPerTick_, rowY(pitch) + 1, std::max(2, length * pixelsPerTick_ - 1),
+                 pitch < 0 ? 4 : kRowHeight - 1);
 }
 
 QString PianoRoll::noteAt(const QPoint& pos) const {
@@ -290,8 +289,7 @@ void PianoRoll::keyPressEvent(QKeyEvent* event) {
     for (const sdk::SequencerNote& note : model_->notes(model_->currentChannel())) {
         if (note.id == selected && note.pitch >= 0) {
             model_->beginEdit(selected);
-            model_->editNote(selected,
-                             std::clamp(note.pitch + step, model_->pitchMinimum(), model_->pitchMaximum()),
+            model_->editNote(selected, std::clamp(note.pitch + step, model_->pitchMinimum(), model_->pitchMaximum()),
                              note.length);
             model_->endEdit();
         }
@@ -401,14 +399,12 @@ QWidget* SequencerEditor::createToolbar(QWidget* parent) {
         layout->addWidget(chip);
     }
     auto* zoom = new ui::ViewChip(tr("Zoom"), tr("%1 px/tick").arg(roll_->pixelsPerTick()), bar);
-    zoom->setChoices({tr("1 px/tick"), tr("2 px/tick"), tr("4 px/tick"),
-                      tr("8 px/tick"), tr("16 px/tick")});
-    connect(zoom, &ui::ViewChip::valueChosen, this,
-            [this](const QString& value) {
-                // The number wherever a translation puts it in the label.
-                const QRegularExpressionMatch number = QRegularExpression(QStringLiteral("\\d+")).match(value);
-                if (number.hasMatch()) roll_->setPixelsPerTick(number.captured().toInt());
-            });
+    zoom->setChoices({tr("1 px/tick"), tr("2 px/tick"), tr("4 px/tick"), tr("8 px/tick"), tr("16 px/tick")});
+    connect(zoom, &ui::ViewChip::valueChosen, this, [this](const QString& value) {
+        // The number wherever a translation puts it in the label.
+        const QRegularExpressionMatch number = QRegularExpression(QStringLiteral("\\d+")).match(value);
+        if (number.hasMatch()) roll_->setPixelsPerTick(number.captured().toInt());
+    });
     layout->addWidget(zoom);
     layout->addStretch(1);
     const QString hint = sequencer_->isReadOnly() ? sequencer_->readOnlyReason()

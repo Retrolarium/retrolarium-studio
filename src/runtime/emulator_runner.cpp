@@ -35,12 +35,13 @@ namespace rl::runtime {
 namespace {
 constexpr int kLogLines = 400;
 constexpr int kStartupPollMs = 150;
-constexpr int kStartupPolls = 200;      // up anyway after 30 s without the ready file
-constexpr int kQuietStartPolls = 10;    // no ready file named: up after 1.5 s
-constexpr int kStopGraceMs = 2000;      // then the process is killed
-constexpr int kStatusPollMs = 200;      // the control script's status file
+constexpr int kStartupPolls = 200;    // up anyway after 30 s without the ready file
+constexpr int kQuietStartPolls = 10;  // no ready file named: up after 1.5 s
+constexpr int kStopGraceMs = 2000;    // then the process is killed
+constexpr int kStatusPollMs = 200;    // the control script's status file
 constexpr int kMovieFlushMs = 3000;
-constexpr int kRewriteMs = 15;          // a control file the script was reading     // a recording written before the emulator stops
+constexpr int kRewriteMs =
+    15;  // a control file the script was reading     // a recording written before the emulator stops
 
 // MAME runs this as its autoboot script on every machine start, a hard reset
 // included, reading it from disk each time; the runner rewrites it before a
@@ -1135,13 +1136,20 @@ for _, script in ipairs(game_scripts) do dofile(script) end
 // reports the extended-key flag in bit 8 of the native scan code).
 QString mameKey(const QKeyEvent* event) {
     switch (event->nativeScanCode()) {
-    case 0x2a: return QStringLiteral("KEYCODE_LSHIFT");
-    case 0x36: return QStringLiteral("KEYCODE_RSHIFT");
-    case 0x1d: return QStringLiteral("KEYCODE_LCONTROL");
-    case 0x11d: return QStringLiteral("KEYCODE_RCONTROL");
-    case 0x38: return QStringLiteral("KEYCODE_LALT");
-    case 0x138: return QStringLiteral("KEYCODE_RALT");
-    default: break;
+        case 0x2a:
+            return QStringLiteral("KEYCODE_LSHIFT");
+        case 0x36:
+            return QStringLiteral("KEYCODE_RSHIFT");
+        case 0x1d:
+            return QStringLiteral("KEYCODE_LCONTROL");
+        case 0x11d:
+            return QStringLiteral("KEYCODE_RCONTROL");
+        case 0x38:
+            return QStringLiteral("KEYCODE_LALT");
+        case 0x138:
+            return QStringLiteral("KEYCODE_RALT");
+        default:
+            break;
     }
     const int key = event->key();
     const bool keypad = event->modifiers() & Qt::KeypadModifier;
@@ -1155,36 +1163,66 @@ QString mameKey(const QKeyEvent* event) {
         return QStringLiteral("KEYCODE_F%1").arg(key - Qt::Key_F1 + 1);
     }
     switch (key) {
-    case Qt::Key_Up: return QStringLiteral("KEYCODE_UP");
-    case Qt::Key_Down: return QStringLiteral("KEYCODE_DOWN");
-    case Qt::Key_Left: return QStringLiteral("KEYCODE_LEFT");
-    case Qt::Key_Right: return QStringLiteral("KEYCODE_RIGHT");
-    case Qt::Key_Return: return QStringLiteral("KEYCODE_ENTER");
-    case Qt::Key_Enter: return QStringLiteral("KEYCODE_ENTER_PAD");
-    case Qt::Key_Space: return QStringLiteral("KEYCODE_SPACE");
-    case Qt::Key_Tab: return QStringLiteral("KEYCODE_TAB");
-    case Qt::Key_Backspace: return QStringLiteral("KEYCODE_BACKSPACE");
-    case Qt::Key_Escape: return QStringLiteral("KEYCODE_ESC");
-    case Qt::Key_Insert: return QStringLiteral("KEYCODE_INSERT");
-    case Qt::Key_Delete: return QStringLiteral("KEYCODE_DEL");
-    case Qt::Key_Home: return QStringLiteral("KEYCODE_HOME");
-    case Qt::Key_End: return QStringLiteral("KEYCODE_END");
-    case Qt::Key_PageUp: return QStringLiteral("KEYCODE_PGUP");
-    case Qt::Key_PageDown: return QStringLiteral("KEYCODE_PGDN");
-    case Qt::Key_Minus: return keypad ? QStringLiteral("KEYCODE_MINUS_PAD") : QStringLiteral("KEYCODE_MINUS");
-    case Qt::Key_Plus: return keypad ? QStringLiteral("KEYCODE_PLUS_PAD") : QString();
-    case Qt::Key_Asterisk: return keypad ? QStringLiteral("KEYCODE_ASTERISK") : QString();
-    case Qt::Key_Slash: return keypad ? QStringLiteral("KEYCODE_SLASH_PAD") : QStringLiteral("KEYCODE_SLASH");
-    case Qt::Key_Equal: return QStringLiteral("KEYCODE_EQUALS");
-    case Qt::Key_BracketLeft: return QStringLiteral("KEYCODE_OPENBRACE");
-    case Qt::Key_BracketRight: return QStringLiteral("KEYCODE_CLOSEBRACE");
-    case Qt::Key_Semicolon: return QStringLiteral("KEYCODE_COLON");
-    case Qt::Key_Apostrophe: return QStringLiteral("KEYCODE_QUOTE");
-    case Qt::Key_Backslash: return QStringLiteral("KEYCODE_BACKSLASH");
-    case Qt::Key_Comma: return QStringLiteral("KEYCODE_COMMA");
-    case Qt::Key_Period: return keypad ? QStringLiteral("KEYCODE_DEL_PAD") : QStringLiteral("KEYCODE_STOP");
-    case Qt::Key_QuoteLeft: return QStringLiteral("KEYCODE_TILDE");
-    default: return {};
+        case Qt::Key_Up:
+            return QStringLiteral("KEYCODE_UP");
+        case Qt::Key_Down:
+            return QStringLiteral("KEYCODE_DOWN");
+        case Qt::Key_Left:
+            return QStringLiteral("KEYCODE_LEFT");
+        case Qt::Key_Right:
+            return QStringLiteral("KEYCODE_RIGHT");
+        case Qt::Key_Return:
+            return QStringLiteral("KEYCODE_ENTER");
+        case Qt::Key_Enter:
+            return QStringLiteral("KEYCODE_ENTER_PAD");
+        case Qt::Key_Space:
+            return QStringLiteral("KEYCODE_SPACE");
+        case Qt::Key_Tab:
+            return QStringLiteral("KEYCODE_TAB");
+        case Qt::Key_Backspace:
+            return QStringLiteral("KEYCODE_BACKSPACE");
+        case Qt::Key_Escape:
+            return QStringLiteral("KEYCODE_ESC");
+        case Qt::Key_Insert:
+            return QStringLiteral("KEYCODE_INSERT");
+        case Qt::Key_Delete:
+            return QStringLiteral("KEYCODE_DEL");
+        case Qt::Key_Home:
+            return QStringLiteral("KEYCODE_HOME");
+        case Qt::Key_End:
+            return QStringLiteral("KEYCODE_END");
+        case Qt::Key_PageUp:
+            return QStringLiteral("KEYCODE_PGUP");
+        case Qt::Key_PageDown:
+            return QStringLiteral("KEYCODE_PGDN");
+        case Qt::Key_Minus:
+            return keypad ? QStringLiteral("KEYCODE_MINUS_PAD") : QStringLiteral("KEYCODE_MINUS");
+        case Qt::Key_Plus:
+            return keypad ? QStringLiteral("KEYCODE_PLUS_PAD") : QString();
+        case Qt::Key_Asterisk:
+            return keypad ? QStringLiteral("KEYCODE_ASTERISK") : QString();
+        case Qt::Key_Slash:
+            return keypad ? QStringLiteral("KEYCODE_SLASH_PAD") : QStringLiteral("KEYCODE_SLASH");
+        case Qt::Key_Equal:
+            return QStringLiteral("KEYCODE_EQUALS");
+        case Qt::Key_BracketLeft:
+            return QStringLiteral("KEYCODE_OPENBRACE");
+        case Qt::Key_BracketRight:
+            return QStringLiteral("KEYCODE_CLOSEBRACE");
+        case Qt::Key_Semicolon:
+            return QStringLiteral("KEYCODE_COLON");
+        case Qt::Key_Apostrophe:
+            return QStringLiteral("KEYCODE_QUOTE");
+        case Qt::Key_Backslash:
+            return QStringLiteral("KEYCODE_BACKSLASH");
+        case Qt::Key_Comma:
+            return QStringLiteral("KEYCODE_COMMA");
+        case Qt::Key_Period:
+            return keypad ? QStringLiteral("KEYCODE_DEL_PAD") : QStringLiteral("KEYCODE_STOP");
+        case Qt::Key_QuoteLeft:
+            return QStringLiteral("KEYCODE_TILDE");
+        default:
+            return {};
     }
 }
 
@@ -1525,9 +1563,7 @@ QString EmulatorRunner::statePath(int slot) const {
     return QDir(stateDir_).filePath(QStringLiteral("slot%1.sta").arg(slot));
 }
 
-bool EmulatorRunner::slotHasState(int slot) const {
-    return !stateDir_.isEmpty() && QFile::exists(statePath(slot));
-}
+bool EmulatorRunner::slotHasState(int slot) const { return !stateDir_.isEmpty() && QFile::exists(statePath(slot)); }
 
 int EmulatorRunner::slotFrame(int slot) const {
     QFile file(statePath(slot) + QStringLiteral(".input"));
@@ -1580,9 +1616,7 @@ void EmulatorRunner::loadState() {
     sendAction(QStringLiteral("load"), QDir::fromNativeSeparators(statePath(slot_)));
 }
 
-void EmulatorRunner::stopMovie() {
-    sendAction(QStringLiteral("stopmovie"));
-}
+void EmulatorRunner::stopMovie() { sendAction(QStringLiteral("stopmovie")); }
 
 void EmulatorRunner::seek(int frame) {
     if (controls_ && process_) sendAction(QStringLiteral("seek"), QString::number(std::max(0, frame)));
@@ -1604,7 +1638,8 @@ void EmulatorRunner::replay(int frame) {
 }
 
 void EmulatorRunner::setMovieEditing(bool editing) {
-    if (controls_ && process_) sendAction(QStringLiteral("editing"), editing ? QStringLiteral("1") : QStringLiteral("0"));
+    if (controls_ && process_)
+        sendAction(QStringLiteral("editing"), editing ? QStringLiteral("1") : QStringLiteral("0"));
 }
 
 void EmulatorRunner::rewind(int frames) {
@@ -1649,8 +1684,7 @@ void EmulatorRunner::append(const QString& line) {
     emit outputLine(line);
 }
 
-bool EmulatorRunner::writeControl(const sdk::ProcessSpec& spec, const QStringList& gameScripts,
-                                  QString* error) {
+bool EmulatorRunner::writeControl(const sdk::ProcessSpec& spec, const QStringList& gameScripts, QString* error) {
     const QString command = luaPath(stage_->filePath(QStringLiteral("command.txt")));
     const QString keys = luaPath(stage_->filePath(QStringLiteral("keys.txt")));
     const QString picture = luaPath(stage_->filePath(QStringLiteral("picture.txt")));
@@ -1678,7 +1712,7 @@ bool EmulatorRunner::writeControl(const sdk::ProcessSpec& spec, const QStringLis
     const QString actions = luaPath(stage_->filePath(QStringLiteral("actions.txt")));
     const QString status = luaPath(stage_->filePath(QStringLiteral("status.txt")));
     using Mode = MovieRequest::Mode;
-    const QString movieMode = movie_.mode == Mode::Record ? QStringLiteral("record")
+    const QString movieMode = movie_.mode == Mode::Record   ? QStringLiteral("record")
                               : movie_.mode == Mode::Play   ? QStringLiteral("play")
                               : movie_.mode == Mode::Resume ? QStringLiteral("resume")
                                                             : QString();
@@ -1725,9 +1759,8 @@ bool EmulatorRunner::writeControl(const sdk::ProcessSpec& spec, const QStringLis
 }
 
 QString EmulatorRunner::stageCart(const QString& source, QString* error) {
-    const QString path = stage_->filePath(QStringLiteral("cart-%1.%2")
-                                              .arg(++cartSerial_)
-                                              .arg(QFileInfo(source).suffix()));
+    const QString path =
+        stage_->filePath(QStringLiteral("cart-%1.%2").arg(++cartSerial_).arg(QFileInfo(source).suffix()));
     if (!QFile::copy(source, path)) {
         *error = tr("could not copy %1").arg(source);
         return {};
@@ -1800,14 +1833,12 @@ void EmulatorRunner::start(const sdk::ProcessSpec& requested, const QString& tit
     // integer steps, and draw into our native surface.
     arguments.removeAll(QStringLiteral("-nounevenstretch"));
     arguments.removeAll(QStringLiteral("-window"));
-    arguments << QStringLiteral("-attach_window")
-              << QString::number(static_cast<qulonglong>(surface_->winId()))
+    arguments << QStringLiteral("-attach_window") << QString::number(static_cast<qulonglong>(surface_->winId()))
               << QStringLiteral("-window") << QStringLiteral("-keepaspect")
               << QStringLiteral("-unevenstretch")
               // A rewind capture pauses MAME for a redraw: at the default
               // pause brightness the picture would dim and flicker each time.
-              << QStringLiteral("-pause_brightness") << QStringLiteral("1.0")
-              << QStringLiteral("-keyboardprovider")
+              << QStringLiteral("-pause_brightness") << QStringLiteral("1.0") << QStringLiteral("-keyboardprovider")
               << QStringLiteral("win32")
               // MAME reads input, game pads included, only while it believes
               // its window has focus. The surface belongs to our process, so
@@ -1825,8 +1856,7 @@ void EmulatorRunner::start(const sdk::ProcessSpec& requested, const QString& tit
             sendAction(QStringLiteral("speed"), QString::number(speed_));
         }
     } else {
-        append(tr("Fast start and hot reload are off: %1")
-                   .arg(error.isEmpty() ? stage_->errorString() : error));
+        append(tr("Fast start and hot reload are off: %1").arg(error.isEmpty() ? stage_->errorString() : error));
         cart_.clear();
         // Without the control script nothing writes the staged ready file:
         // waiting for it would only hold the view in Starting.
@@ -1835,8 +1865,8 @@ void EmulatorRunner::start(const sdk::ProcessSpec& requested, const QString& tit
         }
         // MAME runs one script: the last, as it would have taken it anyway.
         if (!launch.gameScripts.isEmpty()) {
-            arguments << QStringLiteral("-autoboot_delay") << QStringLiteral("0")
-                      << QStringLiteral("-autoboot_script") << launch.gameScripts.last();
+            arguments << QStringLiteral("-autoboot_delay") << QStringLiteral("0") << QStringLiteral("-autoboot_script")
+                      << launch.gameScripts.last();
         }
     }
 
@@ -1867,8 +1897,7 @@ void EmulatorRunner::start(const sdk::ProcessSpec& requested, const QString& tit
                 result.exitCode = code;
                 result.cancelled = stopping_;
                 result.crashed = status == QProcess::CrashExit && !stopping_;
-                append(stopping_ ? tr("Stopped.")
-                                 : tr("Exited with code %1.").arg(code));
+                append(stopping_ ? tr("Stopped.") : tr("Exited with code %1.").arg(code));
                 // The script's last word, before its folder goes.
                 readStatus();
                 statusTimer_->stop();
@@ -1926,8 +1955,9 @@ void EmulatorRunner::start(const sdk::ProcessSpec& requested, const QString& tit
     emit stateChanged();
 }
 
-bool EmulatorRunner::reload(const sdk::ProcessSpec& requested, const QString& cartSource, const QStringList& gameScripts,
-                            const QString& title, std::function<void(const sdk::ProcessResult&)>& finished) {
+bool EmulatorRunner::reload(const sdk::ProcessSpec& requested, const QString& cartSource,
+                            const QStringList& gameScripts, const QString& title,
+                            std::function<void(const sdk::ProcessResult&)>& finished) {
     sdk::ProcessSpec spec = requested;
     if (spec.readyFile.isEmpty() && !spec.readyWhen.isEmpty()) {
         spec.readyFile = stage_->filePath(QStringLiteral("ready.txt"));
@@ -2011,8 +2041,8 @@ void EmulatorRunner::acknowledgeWarnings(const sdk::ProcessSpec& spec) {
         return;
     }
     const int option = spec.arguments.indexOf(QStringLiteral("-cfg_directory"));
-    const QString configDirectory = QDir(spec.workingDirectory)
-                                        .filePath(option >= 0 ? spec.arguments.value(option + 1) : QStringLiteral("cfg"));
+    const QString configDirectory =
+        QDir(spec.workingDirectory).filePath(option >= 0 ? spec.arguments.value(option + 1) : QStringLiteral("cfg"));
     QStringList names;
     for (const mame::Feature& feature : features) {
         names << QStringLiteral("%1 %2").arg(feature.status, feature.type);
@@ -2145,10 +2175,10 @@ bool EmulatorRunner::togglePause() {
     // process is suspended instead; the picture freezes on the last frame.
     using ProcessCall = LONG(WINAPI*)(HANDLE);
     HMODULE ntdll = GetModuleHandleW(L"ntdll.dll");
-    const auto suspend = reinterpret_cast<ProcessCall>(
-        reinterpret_cast<void*>(GetProcAddress(ntdll, "NtSuspendProcess")));
-    const auto resume = reinterpret_cast<ProcessCall>(
-        reinterpret_cast<void*>(GetProcAddress(ntdll, "NtResumeProcess")));
+    const auto suspend =
+        reinterpret_cast<ProcessCall>(reinterpret_cast<void*>(GetProcAddress(ntdll, "NtSuspendProcess")));
+    const auto resume =
+        reinterpret_cast<ProcessCall>(reinterpret_cast<void*>(GetProcAddress(ntdll, "NtResumeProcess")));
     if (!suspend || !resume) {
         return false;
     }
@@ -2289,10 +2319,10 @@ QString EmulatorRunner::saveScreenshot(const QString& directory, QString* error)
     const QString name = title_.toLower()
                              .replace(QRegularExpression(QStringLiteral("[^a-z0-9]+")), QStringLiteral("-"))
                              .remove(QRegularExpression(QStringLiteral("^-|-$")));
-    const QString path = QDir(directory).filePath(
-        QStringLiteral("%1-%2.png")
-            .arg(name.isEmpty() ? QStringLiteral("playtest") : name,
-                 QDateTime::currentDateTime().toString(QStringLiteral("yyyyMMdd-HHmmss"))));
+    const QString path =
+        QDir(directory).filePath(QStringLiteral("%1-%2.png")
+                                     .arg(name.isEmpty() ? QStringLiteral("playtest") : name,
+                                          QDateTime::currentDateTime().toString(QStringLiteral("yyyyMMdd-HHmmss"))));
     if (image.isNull() || !image.save(path, "PNG")) {
         if (error) {
             *error = tr("Could not save the screenshot to %1.").arg(path);

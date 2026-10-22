@@ -27,8 +27,6 @@ public:
 
 }  // namespace
 
-void registerPlugin(sdk::PluginRegistry& registry) {
-    registry.add(std::make_unique<SmbPlugin>());
-}
+void registerPlugin(sdk::PluginRegistry& registry) { registry.add(std::make_unique<SmbPlugin>()); }
 
 }  // namespace rl::smb

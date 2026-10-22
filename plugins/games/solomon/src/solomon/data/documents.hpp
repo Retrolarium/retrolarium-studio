@@ -18,14 +18,14 @@ public:
     using std::runtime_error::runtime_error;
 };
 
-QJsonObject loadJson(const QString& path);              // throws SolomonError
+QJsonObject loadJson(const QString& path);  // throws SolomonError
 void saveJson(const QString& path, const QJsonObject& root);
 
 constexpr int kWidth = 16;
 constexpr int kHeight = 12;
-constexpr int kItemArenaBytes = 1342;    // item streams of all rooms
-constexpr int kEnemyArenaBytes = 726;    // enemy streams of all rooms
-constexpr int kMaximumEnemies = 17;      // the runtime enemy pool
+constexpr int kItemArenaBytes = 1342;  // item streams of all rooms
+constexpr int kEnemyArenaBytes = 726;  // enemy streams of all rooms
+constexpr int kMaximumEnemies = 17;    // the runtime enemy pool
 
 // A mirror enemy set: the enemies a mirror drops in turn; after the
 // last it goes on from loopOffset.
@@ -44,7 +44,7 @@ struct SolomonSchedule {
     bool operator==(const SolomonSchedule& o) const { return initial == o.initial && loop == o.loop; }
 };
 
-constexpr int kMirrorSetBytes = 42;     // every enemy set with its loop byte
+constexpr int kMirrorSetBytes = 42;  // every enemy set with its loop byte
 
 // The expanded ROM (kit solomon_expansion: mapper 66, 64 KiB PRG) keeps the
 // item and enemy streams in a second PRG bank, each up to 256 bytes, and
@@ -80,7 +80,7 @@ public:
     void setItemCommands(int room, const QJsonArray& commands);
     QJsonObject metadata(int room) const;
     void setMetadata(int room, const QJsonObject& metadata);
-    QPoint metadataPosition(int room, const QString& key) const;   // (-1,-1) when off the room
+    QPoint metadataPosition(int room, const QString& key) const;  // (-1,-1) when off the room
     int spawnLifetime(int room) const;
     QVector<SolomonEnemy> enemies(int room) const;
     void setEnemies(int room, const QVector<SolomonEnemy>& enemies);
@@ -93,13 +93,13 @@ public:
     // The CHR bank a room draws with: bits 2-3 of its terminator.
     static int chrBank(const QJsonArray& commands);
     static int itemStreamBytes(const QJsonArray& commands);
-    int itemBytes() const;                  // all rooms
+    int itemBytes() const;  // all rooms
     QVector<SolomonMirrorSet> mirrorSets() const;
     void setMirrorSet(int index, const SolomonMirrorSet& set);
     int mirrorSetBytes() const;
     QVector<SolomonSchedule> schedules() const;
     void setSchedule(int index, const SolomonSchedule& schedule);
-    int enemyBytes() const;                 // all rooms
+    int enemyBytes() const;  // all rooms
     // Whether the build writes the expanded mapper-66 ROM.
     bool expanded() const { return root_.value(QStringLiteral("expanded_rom")).toBool(); }
     void setExpanded(bool expanded);
@@ -128,11 +128,11 @@ struct SolomonPattern {
 // Every document of a Solomon's Key project, swapped whole by undo.
 struct SolomonState {
     SolomonRooms rooms;
-    QJsonObject art;            // retrolarium.solomon-room-art
-    QJsonObject animations;     // retrolarium.solomon-animations
-    QJsonObject presentation;   // retrolarium.solomon-presentation: title streams, attract demo
-    QJsonObject audio;          // retrolarium.solomon-audio: stream commands and tables
-    SolomonText text;           // retrolarium.solomon-text: screen text and static palettes
+    QJsonObject art;           // retrolarium.solomon-room-art
+    QJsonObject animations;    // retrolarium.solomon-animations
+    QJsonObject presentation;  // retrolarium.solomon-presentation: title streams, attract demo
+    QJsonObject audio;         // retrolarium.solomon-audio: stream commands and tables
+    SolomonText text;          // retrolarium.solomon-text: screen text and static palettes
     nes::Bundle graphics;
 
     bool operator==(const SolomonState& other) const {

@@ -17,13 +17,9 @@ constexpr int kWorldMin = 0x80;
 constexpr int kWorldMax = 0x17F;
 const QStringList kPlacements{QStringLiteral("seesaw"), QStringLiteral("tiger"), QStringLiteral("chick_spawn")};
 
-QString two(int value) {
-    return QStringLiteral("%1").arg(value, 2, 10, QLatin1Char('0'));
-}
+QString two(int value) { return QStringLiteral("%1").arg(value, 2, 10, QLatin1Char('0')); }
 
-QString hex(int value) {
-    return QStringLiteral("$%1").arg(value, 3, 16, QLatin1Char('0')).toUpper();
-}
+QString hex(int value) { return QStringLiteral("$%1").arg(value, 3, 16, QLatin1Char('0')).toUpper(); }
 
 QString placementTitle(const QString& id) {
     if (id == QLatin1String("seesaw")) return rlTr("flicky", "Seesaw");
@@ -75,13 +71,9 @@ BonusRoundModel::Actor BonusRoundModel::parseId(const QString& id) {
     return Actor{parts.at(1), parts.at(2).toInt()};
 }
 
-QString BonusRoundModel::title() const {
-    return tr("Round %1").arg(two(round_ + 1));
-}
+QString BonusRoundModel::title() const { return tr("Round %1").arg(two(round_ + 1)); }
 
-QSize BonusRoundModel::gridSize() const {
-    return {objects::kMapWidth, objects::kMapHeight};
-}
+QSize BonusRoundModel::gridSize() const { return {objects::kMapWidth, objects::kMapHeight}; }
 
 QVector<sdk::Tool> BonusRoundModel::tools() const {
     return {{QStringLiteral("select"), tr("Select and move"), QStringLiteral("select")}};
@@ -114,8 +106,7 @@ QRect BonusRoundModel::bounds(const Actor& actor) const {
         return QRect(-8, -8, 16, 16);
     }
     try {
-        const QJsonArray frames =
-            session_->sequences().animation(animation).value(QStringLiteral("frames")).toArray();
+        const QJsonArray frames = session_->sequences().animation(animation).value(QStringLiteral("frames")).toArray();
         const QJsonArray pieces =
             session_->sequences().mapping(frames.first().toString()).value(QStringLiteral("pieces")).toArray();
         QRect box;
@@ -141,8 +132,8 @@ QVector<sdk::MapObject> BonusRoundModel::objects() const {
             const QRect pixels = bounds(actor).translated(anchor(actor));
             sdk::MapObject object;
             object.id = QStringLiteral("bonus:%1:%2").arg(id).arg(side);
-            object.label = QStringLiteral("%1 · %2").arg(
-                placementTitle(id), sideName(session_->levels().bonusPlacement(id), side));
+            object.label = QStringLiteral("%1 · %2").arg(placementTitle(id),
+                                                         sideName(session_->levels().bonusPlacement(id), side));
             // Cells covering the sprite.
             const int left = pixels.left() >= 0 ? pixels.left() / 8 : (pixels.left() - 7) / 8;
             const int top = pixels.top() >= 0 ? pixels.top() / 8 : (pixels.top() - 7) / 8;
@@ -216,8 +207,7 @@ void BonusRoundModel::endDrag() {
         const QJsonObject was = before_->bonusPlacement(actor.placement);
         const QJsonObject now = session_->levels().bonusPlacement(actor.placement);
         if (was != now) {
-            session_->commitLevels(*before_, session_->levels(),
-                                   tr("Move %1").arg(placementTitle(actor.placement)));
+            session_->commitLevels(*before_, session_->levels(), tr("Move %1").arg(placementTitle(actor.placement)));
         }
     }
     before_.reset();
@@ -228,9 +218,9 @@ QVector<sdk::ViewOption> BonusRoundModel::viewOptions() const {
     phase.key = QStringLiteral("phase");
     phase.label = tr("Frame");
     phase.value = QString::number(session_->bonusPhase());
-    phase.choices = QStringList{QStringLiteral("11"), QStringLiteral("17"), QStringLiteral("30"),
-                                QStringLiteral("60"), QStringLiteral("120"), QStringLiteral("240"),
-                                QStringLiteral("400"), QStringLiteral("600")};
+    phase.choices =
+        QStringList{QStringLiteral("11"),  QStringLiteral("17"),  QStringLiteral("30"),  QStringLiteral("60"),
+                    QStringLiteral("120"), QStringLiteral("240"), QStringLiteral("400"), QStringLiteral("600")};
     return {phase};
 }
 
@@ -258,12 +248,13 @@ sdk::Inspection BonusRoundModel::inspect() const {
         phase.value = session_->bonusPhase();
         phase.hint = QStringLiteral("1–600");
         inspection.fields = {phase};
-        inspection.note = tr("The scene is simulated frame by frame after the round becomes "
-                             "ready, without player input. Pick a seesaw, tiger or the chick "
-                             "spawn to move it; every bonus round shares these placements.");
-        inspection.engine = {{tr("Source"), QStringLiteral("game/bonus/objects.s")},
-                             {tr("Changed"), session_->bonusPlacementsDirty() ? tr("since save")
-                                                                                         : QStringLiteral("no")}};
+        inspection.note =
+            tr("The scene is simulated frame by frame after the round becomes "
+               "ready, without player input. Pick a seesaw, tiger or the chick "
+               "spawn to move it; every bonus round shares these placements.");
+        inspection.engine = {
+            {tr("Source"), QStringLiteral("game/bonus/objects.s")},
+            {tr("Changed"), session_->bonusPlacementsDirty() ? tr("since save") : QStringLiteral("no")}};
         return inspection;
     }
     const QJsonObject p = session_->levels().bonusPlacement(actor.placement);
@@ -288,14 +279,15 @@ sdk::Inspection BonusRoundModel::inspect() const {
     screen.value = tr("%1, %2 px").arg(x - kWorldMin).arg(y - kWorldMin);
     screen.monospace = true;
     inspection.fields = {fx, fy, screen};
-    inspection.note = tr("X is set per side; Y is shared by both sides. Coordinates are "
-                         "sprite space: $080 is the screen's left or top edge.");
+    inspection.note =
+        tr("X is set per side; Y is shared by both sides. Coordinates are "
+           "sprite space: $080 is the screen's left or top edge.");
     const QJsonArray baselineX = p.value(QStringLiteral("baseline_x")).toArray();
-    inspection.engine = {{tr("Placement"), actor.placement},
-                         {tr("Source"), p.value(QStringLiteral("source")).toString()},
-                         {tr("Original"), QStringLiteral("%1, %2")
-                                                          .arg(hex(baselineX.at(actor.side).toInt()),
-                                                               hex(p.value(QStringLiteral("baseline_y")).toInt()))}};
+    inspection.engine = {
+        {tr("Placement"), actor.placement},
+        {tr("Source"), p.value(QStringLiteral("source")).toString()},
+        {tr("Original"), QStringLiteral("%1, %2").arg(hex(baselineX.at(actor.side).toInt()),
+                                                      hex(p.value(QStringLiteral("baseline_y")).toInt()))}};
     return inspection;
 }
 
@@ -320,9 +312,7 @@ bool BonusRoundModel::setField(const QString& key, const QVariant& value, QStrin
     return place(actor, x, y, error, false);
 }
 
-QString BonusRoundModel::startPoint() const {
-    return tr("Round %1").arg(two(round_ + 1));
-}
+QString BonusRoundModel::startPoint() const { return tr("Round %1").arg(two(round_ + 1)); }
 
 QString BonusRoundModel::statusText() const {
     const Actor actor = parseId(selected_);

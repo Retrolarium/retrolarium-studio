@@ -85,16 +85,16 @@ private:
     QFont font_;
     int charWidth_ = 8;
     int rowHeight_ = 20;
-    int anchor_ = 0;          // where a drag or Shift selection starts
-    int placed_ = 0;          // the cursor as the view last saw it
-    bool selfMoving_ = false; // the view moves the cursor itself: it scrolls nothing
+    int anchor_ = 0;           // where a drag or Shift selection starts
+    int placed_ = 0;           // the cursor as the view last saw it
+    bool selfMoving_ = false;  // the view moves the cursor itself: it scrolls nothing
     bool dragging_ = false;
     bool dragMoved_ = false;
-    bool rowPress_ = false;   // the drag began on a row number
+    bool rowPress_ = false;  // the drag began on a row number
     QPoint dragPos_;
-    QTimer scrollTimer_;      // scrolls while a drag is past the top or the bottom
-    bool marking_ = false;    // a selection started from the menu, kept until ended
-    int pendingDigit_ = -1;   // the high nibble typed, waiting for the low one
+    QTimer scrollTimer_;     // scrolls while a drag is past the top or the bottom
+    bool marking_ = false;   // a selection started from the menu, kept until ended
+    int pendingDigit_ = -1;  // the high nibble typed, waiting for the low one
 };
 
 }  // namespace rl::editors

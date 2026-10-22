@@ -21,7 +21,7 @@ struct AnimationMember {
 
 struct AnimationFamily {
     int group = 0;
-    QVector<AnimationMember> members;   // the first is shown as drawn
+    QVector<AnimationMember> members;  // the first is shown as drawn
     int frames = 0;
 };
 
@@ -89,9 +89,9 @@ private:
     int variant_ = 0;
     int bank_ = 0;
     int frame_ = 0;
-    int piece_ = -1;    // 0 left half, 1 right half
-    int tile_ = 0;      // the sheet's current pattern pair
-    bool linked_ = true;    // edits reach the family's mirrored actions
+    int piece_ = -1;      // 0 left half, 1 right half
+    int tile_ = 0;        // the sheet's current pattern pair
+    bool linked_ = true;  // edits reach the family's mirrored actions
 
     mutable QVector<sdk::LibraryItem> sheet_;
     mutable QString sheetKey_;

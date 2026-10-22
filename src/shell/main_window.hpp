@@ -29,7 +29,7 @@ namespace rl::runtime {
 class AudioPlayer;
 class EmulatorRunner;
 class ProcessRunner;
-}
+}  // namespace rl::runtime
 
 namespace rl::ui {
 class Badge;
@@ -37,7 +37,7 @@ class BudgetBar;
 class Label;
 class PrimaryButton;
 class Toast;
-}
+}  // namespace rl::ui
 
 namespace rl::shell {
 
@@ -66,8 +66,7 @@ public:
     void openProject(const QString& path) override;
     void report(const sdk::Diagnostic& diagnostic) override;
     void log(const QString& line) override;
-    void runProcess(const sdk::ProcessSpec& spec,
-                    std::function<void(const sdk::ProcessResult&)> done) override;
+    void runProcess(const sdk::ProcessSpec& spec, std::function<void(const sdk::ProcessResult&)> done) override;
     bool isBusy() const override;
     void cancel() override;
     sdk::ProcessSpec kitCommand(const QStringList& arguments, const QString& workingDirectory,
@@ -157,8 +156,8 @@ private:
     // Run > Movie: asks the kit how this version runs from power-on and what
     // movies it has, then records, resumes or plays one.
     void startMovie(int mode);
-    void launchMovie(const QJsonObject& answer, int mode, const QString& file, const QString& header,
-                     int stopAt, bool closeAtEnd, const QString& origin = QString());
+    void launchMovie(const QJsonObject& answer, int mode, const QString& file, const QString& header, int stopAt,
+                     bool closeAtEnd, const QString& origin = QString());
     // Run > Movie > TAS editor: on the movie that plays, or on one chosen
     // to play first.
     void openTasEditor();

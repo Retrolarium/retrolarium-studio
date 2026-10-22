@@ -17,7 +17,8 @@ struct Button {
     const char* id;
     const char* name;
 };
-constexpr Button kButtons[] = {{"a", "A"}, {"b", "B"}, {"up", "Up"}, {"down", "Down"}, {"left", "Left"}, {"right", "Right"}};
+constexpr Button kButtons[] = {{"a", "A"},       {"b", "B"},       {"up", "Up"},
+                               {"down", "Down"}, {"left", "Left"}, {"right", "Right"}};
 
 // Parses "B+Down", "b down" or "none"; false when a word is not a button.
 bool parseButtons(const QString& text, QJsonArray* buttons) {
@@ -50,7 +51,8 @@ QString DoraemonDemoModel::buttonsText(const QJsonArray& buttons) {
     return names.isEmpty() ? QStringLiteral("none") : names.join(QLatin1Char('+'));
 }
 
-DoraemonDemoModel::DoraemonDemoModel(DoraemonSession* session) : TableModel(session), session_(session), attached_(session) {
+DoraemonDemoModel::DoraemonDemoModel(DoraemonSession* session)
+    : TableModel(session), session_(session), attached_(session) {
     connect(session_, &sdk::Session::contentChanged, this, &sdk::EditorModel::contentChanged);
     connect(session_, &sdk::Session::selectedStartChanged, this, &sdk::EditorModel::toolsChanged);
     // Play from selected runs the demo while this is open.
@@ -61,9 +63,7 @@ DoraemonDemoModel::~DoraemonDemoModel() {
     if (attached_) attached_->attachDemoEditor(false);
 }
 
-QJsonArray DoraemonDemoModel::steps() const {
-    return session_->demo().value(QStringLiteral("steps")).toArray();
-}
+QJsonArray DoraemonDemoModel::steps() const { return session_->demo().value(QStringLiteral("steps")).toArray(); }
 
 QVector<sdk::TableColumn> DoraemonDemoModel::columns() const {
     sdk::TableColumn step;
@@ -89,24 +89,26 @@ QVector<sdk::TableColumn> DoraemonDemoModel::columns() const {
     return {step, buttons, frames, at};
 }
 
-int DoraemonDemoModel::rowCount() const {
-    return steps().size();
-}
+int DoraemonDemoModel::rowCount() const { return steps().size(); }
 
 QString DoraemonDemoModel::cell(int row, int column) const {
     const QJsonArray list = steps();
     if (row < 0 || row >= list.size()) return {};
     const QJsonObject item = list.at(row).toObject();
     switch (column) {
-    case 0: return QString::number(row + 1);
-    case 1: return buttonsText(item.value(QStringLiteral("buttons")).toArray());
-    case 2: return QString::number(item.value(QStringLiteral("frames")).toInt());
-    case 3: {
-        int frames = 0;
-        for (int i = 0; i < row; ++i) frames += list.at(i).toObject().value(QStringLiteral("frames")).toInt();
-        return QStringLiteral("%1.%2 s").arg(frames / 60).arg(frames % 60 * 10 / 60);
-    }
-    default: return {};
+        case 0:
+            return QString::number(row + 1);
+        case 1:
+            return buttonsText(item.value(QStringLiteral("buttons")).toArray());
+        case 2:
+            return QString::number(item.value(QStringLiteral("frames")).toInt());
+        case 3: {
+            int frames = 0;
+            for (int i = 0; i < row; ++i) frames += list.at(i).toObject().value(QStringLiteral("frames")).toInt();
+            return QStringLiteral("%1.%2 s").arg(frames / 60).arg(frames % 60 * 10 / 60);
+        }
+        default:
+            return {};
     }
 }
 
@@ -114,11 +116,11 @@ QStringList DoraemonDemoModel::cellChoices(int, int column) const {
     if (column != 1) return {};
     // The usual holds; any other combination can be typed. In English: the
     // value comes back to parseButtons, and the shell shows it translated.
-    return {QStringLiteral("none"),      QStringLiteral("Up"),       QStringLiteral("Down"),
-            QStringLiteral("Left"),      QStringLiteral("Right"),    QStringLiteral("A"),
-            QStringLiteral("B"),         QStringLiteral("B+Up"),     QStringLiteral("B+Down"),
-            QStringLiteral("B+Left"),    QStringLiteral("B+Right"),  QStringLiteral("A+Left"),
-            QStringLiteral("A+Right"),   QStringLiteral("Up+Left"),  QStringLiteral("Up+Right"),
+    return {QStringLiteral("none"),      QStringLiteral("Up"),        QStringLiteral("Down"),
+            QStringLiteral("Left"),      QStringLiteral("Right"),     QStringLiteral("A"),
+            QStringLiteral("B"),         QStringLiteral("B+Up"),      QStringLiteral("B+Down"),
+            QStringLiteral("B+Left"),    QStringLiteral("B+Right"),   QStringLiteral("A+Left"),
+            QStringLiteral("A+Right"),   QStringLiteral("Up+Left"),   QStringLiteral("Up+Right"),
             QStringLiteral("Down+Left"), QStringLiteral("Down+Right")};
 }
 
@@ -151,7 +153,8 @@ bool DoraemonDemoModel::commit(const QString& text, QJsonArray list) {
 }
 
 bool DoraemonDemoModel::setCell(int row, int column, const QString& value, QString* error) {
-    if (row < 0 || row >= rowCount() || (column != 1 && column != 2)) return TableModel::setCell(row, column, value, error);
+    if (row < 0 || row >= rowCount() || (column != 1 && column != 2))
+        return TableModel::setCell(row, column, value, error);
     QJsonArray list = steps();
     QJsonObject item = list.at(row).toObject();
     if (column == 1) {
@@ -184,9 +187,7 @@ sdk::Budget DoraemonDemoModel::budget() const {
     return budget;
 }
 
-QString DoraemonDemoModel::startPoint() const {
-    return session_->demoStart() ? session_->selectedStart() : QString();
-}
+QString DoraemonDemoModel::startPoint() const { return session_->demoStart() ? session_->selectedStart() : QString(); }
 
 QVector<sdk::EditorAction> DoraemonDemoModel::actions() const {
     sdk::EditorAction add;
@@ -260,12 +261,13 @@ sdk::Inspection DoraemonDemoModel::inspect() const {
     sdk::Inspection inspection;
     inspection.kicker = tr("World 1 demo");
     inspection.title = tr("Step %1").arg(row_ + 1);
-    inspection.note = tr("In the attract mode World 1's demo plays these steps instead of the controller: "
-                         "each holds its buttons for its frames, and the demo ends after the last one. "
-                         "The demo starts the same way every time, so it plays back exactly. Start "
-                         "and Select are never pressed. Worlds 2 and 3 play their demos without "
-                         "steps. Loop demo plays it in the emulator, Record takes it from your "
-                         "controller.");
+    inspection.note =
+        tr("In the attract mode World 1's demo plays these steps instead of the controller: "
+           "each holds its buttons for its frames, and the demo ends after the last one. "
+           "The demo starts the same way every time, so it plays back exactly. Start "
+           "and Select are never pressed. Worlds 2 and 3 play their demos without "
+           "steps. Loop demo plays it in the emulator, Record takes it from your "
+           "controller.");
     inspection.engineTag = QStringLiteral("doraemon.demo@1");
     return inspection;
 }

@@ -20,8 +20,7 @@ public:
     explicit SegmentedControl(QWidget* parent = nullptr);
 
     int addSegment(const QString& text, const QString& id = QString());
-    int addIconSegment(const QString& iconName, const QString& toolTip,
-                       const QString& id = QString());
+    int addIconSegment(const QString& iconName, const QString& toolTip, const QString& id = QString());
     void clear();
 
     int count() const { return buttons_.size(); }

@@ -25,22 +25,22 @@ constexpr double kGroupDensity = 0.6;
 constexpr double kGroupFill = 0.3;
 constexpr int kEdgeBlank = 2;
 
-int bit(const char* data, int index, int shift) {
-    return (quint8(data[index]) >> shift) & 1;
-}
+int bit(const char* data, int index, int shift) { return (quint8(data[index]) >> shift) & 1; }
 
 // Layouts that differ only in the order of the same bits (Mega Drive and
 // Game Boy Advance nibbles, say) score alike: the rarer one loses a close
 // call.
 double prior(const Format& format) {
     switch (format.layout) {
-    case Layout::Gba:
-    case Layout::VirtualBoy:
-    case Layout::NeoGeoPocket:
-    case Layout::Snes3:
-    case Layout::Snes8:
-    case Layout::Mode7: return 0.95;
-    default: return 1.0;
+        case Layout::Gba:
+        case Layout::VirtualBoy:
+        case Layout::NeoGeoPocket:
+        case Layout::Snes3:
+        case Layout::Snes8:
+        case Layout::Mode7:
+            return 0.95;
+        default:
+            return 1.0;
     }
 }
 
@@ -58,18 +58,12 @@ bool widens(const Format& deeper, const Format& shallower) {
 
 const QVector<Format>& formats() {
     static const QVector<Format> all{
-        {QStringLiteral("1bpp"), Layout::OneBit, 1, 8},
-        {QStringLiteral("nes"), Layout::Nes, 2, 16},
-        {QStringLiteral("gb"), Layout::GameBoy, 2, 16},
-        {QStringLiteral("vb"), Layout::VirtualBoy, 2, 16},
-        {QStringLiteral("ngp"), Layout::NeoGeoPocket, 2, 16},
-        {QStringLiteral("snes3"), Layout::Snes3, 3, 24},
-        {QStringLiteral("snes4"), Layout::Snes4, 4, 32},
-        {QStringLiteral("sms"), Layout::MasterSystem, 4, 32},
-        {QStringLiteral("md"), Layout::MegaDrive, 4, 32},
-        {QStringLiteral("gba"), Layout::Gba, 4, 32},
-        {QStringLiteral("snes8"), Layout::Snes8, 8, 64},
-        {QStringLiteral("mode7"), Layout::Mode7, 8, 128},
+        {QStringLiteral("1bpp"), Layout::OneBit, 1, 8},       {QStringLiteral("nes"), Layout::Nes, 2, 16},
+        {QStringLiteral("gb"), Layout::GameBoy, 2, 16},       {QStringLiteral("vb"), Layout::VirtualBoy, 2, 16},
+        {QStringLiteral("ngp"), Layout::NeoGeoPocket, 2, 16}, {QStringLiteral("snes3"), Layout::Snes3, 3, 24},
+        {QStringLiteral("snes4"), Layout::Snes4, 4, 32},      {QStringLiteral("sms"), Layout::MasterSystem, 4, 32},
+        {QStringLiteral("md"), Layout::MegaDrive, 4, 32},     {QStringLiteral("gba"), Layout::Gba, 4, 32},
+        {QStringLiteral("snes8"), Layout::Snes8, 8, 64},      {QStringLiteral("mode7"), Layout::Mode7, 8, 128},
         {QStringLiteral("8bpp"), Layout::EightBit, 8, 64},
     };
     return all;
@@ -89,41 +83,51 @@ Pixels decode(const Format& format, const char* data) {
             const int shift = 7 - x;
             int pen = 0;
             switch (format.layout) {
-            case Layout::OneBit: pen = bit(data, y, shift); break;
-            case Layout::Nes: pen = bit(data, y, shift) | bit(data, 8 + y, shift) << 1; break;
-            case Layout::GameBoy: pen = bit(data, 2 * y, shift) | bit(data, 2 * y + 1, shift) << 1; break;
-            case Layout::VirtualBoy:
-            case Layout::NeoGeoPocket: {
-                const int word = quint8(data[2 * y]) | quint8(data[2 * y + 1]) << 8;
-                pen = (word >> (format.layout == Layout::VirtualBoy ? 2 * x : 14 - 2 * x)) & 3;
-                break;
-            }
-            case Layout::Snes3:
-                pen = bit(data, 2 * y, shift) | bit(data, 2 * y + 1, shift) << 1 | bit(data, 16 + y, shift) << 2;
-                break;
-            case Layout::MasterSystem:
-                pen = bit(data, 4 * y, shift) | bit(data, 4 * y + 1, shift) << 1 | bit(data, 4 * y + 2, shift) << 2 |
-                      bit(data, 4 * y + 3, shift) << 3;
-                break;
-            case Layout::Snes8:
-                for (int pair = 0; pair < 4; ++pair) {
-                    pen |= bit(data, 16 * pair + 2 * y, shift) << (2 * pair) |
-                           bit(data, 16 * pair + 2 * y + 1, shift) << (2 * pair + 1);
+                case Layout::OneBit:
+                    pen = bit(data, y, shift);
+                    break;
+                case Layout::Nes:
+                    pen = bit(data, y, shift) | bit(data, 8 + y, shift) << 1;
+                    break;
+                case Layout::GameBoy:
+                    pen = bit(data, 2 * y, shift) | bit(data, 2 * y + 1, shift) << 1;
+                    break;
+                case Layout::VirtualBoy:
+                case Layout::NeoGeoPocket: {
+                    const int word = quint8(data[2 * y]) | quint8(data[2 * y + 1]) << 8;
+                    pen = (word >> (format.layout == Layout::VirtualBoy ? 2 * x : 14 - 2 * x)) & 3;
+                    break;
                 }
-                break;
-            case Layout::Mode7: pen = quint8(data[2 * (y * 8 + x) + 1]); break;
-            case Layout::Snes4:
-                pen = bit(data, 2 * y, shift) | bit(data, 2 * y + 1, shift) << 1 | bit(data, 16 + 2 * y, shift) << 2 |
-                      bit(data, 17 + 2 * y, shift) << 3;
-                break;
-            case Layout::MegaDrive:
-            case Layout::Gba: {
-                const quint8 byte = quint8(data[y * 4 + x / 2]);
-                const bool high = (x % 2 == 0) == (format.layout == Layout::MegaDrive);
-                pen = high ? byte >> 4 : byte & 0x0f;
-                break;
-            }
-            case Layout::EightBit: pen = quint8(data[y * 8 + x]); break;
+                case Layout::Snes3:
+                    pen = bit(data, 2 * y, shift) | bit(data, 2 * y + 1, shift) << 1 | bit(data, 16 + y, shift) << 2;
+                    break;
+                case Layout::MasterSystem:
+                    pen = bit(data, 4 * y, shift) | bit(data, 4 * y + 1, shift) << 1 |
+                          bit(data, 4 * y + 2, shift) << 2 | bit(data, 4 * y + 3, shift) << 3;
+                    break;
+                case Layout::Snes8:
+                    for (int pair = 0; pair < 4; ++pair) {
+                        pen |= bit(data, 16 * pair + 2 * y, shift) << (2 * pair) |
+                               bit(data, 16 * pair + 2 * y + 1, shift) << (2 * pair + 1);
+                    }
+                    break;
+                case Layout::Mode7:
+                    pen = quint8(data[2 * (y * 8 + x) + 1]);
+                    break;
+                case Layout::Snes4:
+                    pen = bit(data, 2 * y, shift) | bit(data, 2 * y + 1, shift) << 1 |
+                          bit(data, 16 + 2 * y, shift) << 2 | bit(data, 17 + 2 * y, shift) << 3;
+                    break;
+                case Layout::MegaDrive:
+                case Layout::Gba: {
+                    const quint8 byte = quint8(data[y * 4 + x / 2]);
+                    const bool high = (x % 2 == 0) == (format.layout == Layout::MegaDrive);
+                    pen = high ? byte >> 4 : byte & 0x0f;
+                    break;
+                }
+                case Layout::EightBit:
+                    pen = quint8(data[y * 8 + x]);
+                    break;
             }
             pixels[y * 8 + x] = quint8(pen);
         }
@@ -141,52 +145,58 @@ void encode(const Format& format, const Pixels& pixels, char* data) {
                 data[index] = char(quint8(data[index]) | ((pen >> plane) & 1) << shift);
             };
             switch (format.layout) {
-            case Layout::OneBit: set(y, 0); break;
-            case Layout::Nes:
-                set(y, 0);
-                set(8 + y, 1);
-                break;
-            case Layout::GameBoy:
-                set(2 * y, 0);
-                set(2 * y + 1, 1);
-                break;
-            case Layout::VirtualBoy:
-            case Layout::NeoGeoPocket: {
-                const int place = format.layout == Layout::VirtualBoy ? 2 * x : 14 - 2 * x;
-                const int bits = (pen & 3) << place;
-                data[2 * y] = char(quint8(data[2 * y]) | (bits & 0xff));
-                data[2 * y + 1] = char(quint8(data[2 * y + 1]) | (bits >> 8));
-                break;
-            }
-            case Layout::Snes3:
-                set(2 * y, 0);
-                set(2 * y + 1, 1);
-                set(16 + y, 2);
-                break;
-            case Layout::MasterSystem:
-                for (int plane = 0; plane < 4; ++plane) set(4 * y + plane, plane);
-                break;
-            case Layout::Snes8:
-                for (int pair = 0; pair < 4; ++pair) {
-                    set(16 * pair + 2 * y, 2 * pair);
-                    set(16 * pair + 2 * y + 1, 2 * pair + 1);
+                case Layout::OneBit:
+                    set(y, 0);
+                    break;
+                case Layout::Nes:
+                    set(y, 0);
+                    set(8 + y, 1);
+                    break;
+                case Layout::GameBoy:
+                    set(2 * y, 0);
+                    set(2 * y + 1, 1);
+                    break;
+                case Layout::VirtualBoy:
+                case Layout::NeoGeoPocket: {
+                    const int place = format.layout == Layout::VirtualBoy ? 2 * x : 14 - 2 * x;
+                    const int bits = (pen & 3) << place;
+                    data[2 * y] = char(quint8(data[2 * y]) | (bits & 0xff));
+                    data[2 * y + 1] = char(quint8(data[2 * y + 1]) | (bits >> 8));
+                    break;
                 }
-                break;
-            case Layout::Mode7: data[2 * (y * 8 + x) + 1] = char(pen); break;
-            case Layout::Snes4:
-                set(2 * y, 0);
-                set(2 * y + 1, 1);
-                set(16 + 2 * y, 2);
-                set(17 + 2 * y, 3);
-                break;
-            case Layout::MegaDrive:
-            case Layout::Gba: {
-                const bool high = (x % 2 == 0) == (format.layout == Layout::MegaDrive);
-                char& byte = data[y * 4 + x / 2];
-                byte = char(quint8(byte) | (high ? (pen & 0x0f) << 4 : pen & 0x0f));
-                break;
-            }
-            case Layout::EightBit: data[y * 8 + x] = char(pen); break;
+                case Layout::Snes3:
+                    set(2 * y, 0);
+                    set(2 * y + 1, 1);
+                    set(16 + y, 2);
+                    break;
+                case Layout::MasterSystem:
+                    for (int plane = 0; plane < 4; ++plane) set(4 * y + plane, plane);
+                    break;
+                case Layout::Snes8:
+                    for (int pair = 0; pair < 4; ++pair) {
+                        set(16 * pair + 2 * y, 2 * pair);
+                        set(16 * pair + 2 * y + 1, 2 * pair + 1);
+                    }
+                    break;
+                case Layout::Mode7:
+                    data[2 * (y * 8 + x) + 1] = char(pen);
+                    break;
+                case Layout::Snes4:
+                    set(2 * y, 0);
+                    set(2 * y + 1, 1);
+                    set(16 + 2 * y, 2);
+                    set(17 + 2 * y, 3);
+                    break;
+                case Layout::MegaDrive:
+                case Layout::Gba: {
+                    const bool high = (x % 2 == 0) == (format.layout == Layout::MegaDrive);
+                    char& byte = data[y * 4 + x / 2];
+                    byte = char(quint8(byte) | (high ? (pen & 0x0f) << 4 : pen & 0x0f));
+                    break;
+                }
+                case Layout::EightBit:
+                    data[y * 8 + x] = char(pen);
+                    break;
             }
         }
     }
@@ -369,8 +379,8 @@ QVector<Group> groups(const QByteArray& bytes, int from, const QStringList& layo
             const Candidate& other = chosen.at(i);
             if (candidate.group.offset >= other.end() || other.group.offset >= candidate.end()) continue;
             if (widens(format(candidate.group.format), format(other.group.format)) &&
-                candidate.score >= kDeeperShare * other.score &&
-                candidate.group.offset <= other.group.offset && other.end() <= candidate.end()) {
+                candidate.score >= kDeeperShare * other.score && candidate.group.offset <= other.group.offset &&
+                other.end() <= candidate.end()) {
                 chosen.removeAt(i);
                 --i;
                 continue;
@@ -396,7 +406,8 @@ QString detect(const QByteArray& bytes, int from) {
     int best = -1;
     for (const Format& candidate : formats()) {
         qint64 covered = 0;
-        for (const Section& section : sections(bytes, from, candidate)) covered += qint64(section.pictures) * candidate.bytes;
+        for (const Section& section : sections(bytes, from, candidate))
+            covered += qint64(section.pictures) * candidate.bytes;
         scores.append(prior(candidate) * double(covered) / double(length));
         if (best < 0 || scores.last() > scores.at(best)) best = scores.size() - 1;
     }

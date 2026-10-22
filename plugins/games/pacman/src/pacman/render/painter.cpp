@@ -16,20 +16,34 @@ namespace maze {
 
 QString tileName(int tile) {
     switch (tile) {
-    case 0x00: return rlTr("pacman", "empty floor");
-    case 0x01: return rlTr("pacman", "power pellet");
-    case 0x02: return rlTr("pacman", "hidden power pellet");
-    case 0x03: return QStringLiteral("pellet");
-    case 0x04: return rlTr("pacman", "left tunnel edge");
-    case 0x05: return rlTr("pacman", "right tunnel edge");
-    case 0x06: return rlTr("pacman", "tunnel floor");
-    case 0x07: return rlTr("pacman", "cleared floor");
-    case 0x08: return rlTr("pacman", "special floor");
-    case 0x09: return rlTr("pacman", "alternate pellet");
-    case 0x20: return QStringLiteral("space");
-    case 0x2c: return rlTr("pacman", "ghost-house door");
-    case 0x2d: return rlTr("pacman", "maze blank");
-    default: return tile < 0x10 ? QStringLiteral("floor") : QStringLiteral("wall");
+        case 0x00:
+            return rlTr("pacman", "empty floor");
+        case 0x01:
+            return rlTr("pacman", "power pellet");
+        case 0x02:
+            return rlTr("pacman", "hidden power pellet");
+        case 0x03:
+            return QStringLiteral("pellet");
+        case 0x04:
+            return rlTr("pacman", "left tunnel edge");
+        case 0x05:
+            return rlTr("pacman", "right tunnel edge");
+        case 0x06:
+            return rlTr("pacman", "tunnel floor");
+        case 0x07:
+            return rlTr("pacman", "cleared floor");
+        case 0x08:
+            return rlTr("pacman", "special floor");
+        case 0x09:
+            return rlTr("pacman", "alternate pellet");
+        case 0x20:
+            return QStringLiteral("space");
+        case 0x2c:
+            return rlTr("pacman", "ghost-house door");
+        case 0x2d:
+            return rlTr("pacman", "maze blank");
+        default:
+            return tile < 0x10 ? QStringLiteral("floor") : QStringLiteral("wall");
     }
 }
 
@@ -64,7 +78,8 @@ Report inspect(const QVector<int>& grid) {
             report.errors << rlTr("pacman", "A power pellet at %1,%2 would never blink.").arg(row).arg(column);
         }
     }
-    if (at(kDoorRow, kDoorColumn) != 0x2c) report.errors << rlTr("pacman", "The ghost-house door at 11,11 must stay $2C.");
+    if (at(kDoorRow, kDoorColumn) != 0x2c)
+        report.errors << rlTr("pacman", "The ghost-house door at 11,11 must stay $2C.");
     const int spawns[5][2] = {{kPacmanRow, kPacmanColumn}, {10, 11}, {13, 10}, {13, 11}, {13, 12}};
     for (const auto& spawn : spawns) {
         if (at(spawn[0], spawn[1]) >= 0x10) {
@@ -121,7 +136,8 @@ Report inspect(const QVector<int>& grid) {
         }
     }
     if (report.rleBytes > kRleBytes) {
-        report.errors << rlTr("pacman", "The maze needs %1 RLE bytes; the ROM holds %2.").arg(report.rleBytes).arg(kRleBytes);
+        report.errors
+            << rlTr("pacman", "The maze needs %1 RLE bytes; the ROM holds %2.").arg(report.rleBytes).arg(kRleBytes);
     }
     return report;
 }
@@ -181,9 +197,11 @@ QImage PacmanPainter::frame(const QJsonObject& actors, bool alternate, int index
                             const QVector<QVector<int>>& sprites) const {
     const QVector<QVector<int>> palettes = sprites.size() == 4 ? sprites : spritePalettes(ids::kGameplay);
     const QJsonArray tiles =
-        actors.value(alternate ? QStringLiteral("alternate_tile_quads") : QStringLiteral("standard_tile_quads")).toArray();
+        actors.value(alternate ? QStringLiteral("alternate_tile_quads") : QStringLiteral("standard_tile_quads"))
+            .toArray();
     const QJsonArray attributes =
-        actors.value(alternate ? QStringLiteral("alternate_attribute_quads") : QStringLiteral("standard_attribute_quads"))
+        actors
+            .value(alternate ? QStringLiteral("alternate_attribute_quads") : QStringLiteral("standard_attribute_quads"))
             .toArray();
     QImage image(16, 16, QImage::Format_ARGB32);
     image.fill(Qt::transparent);

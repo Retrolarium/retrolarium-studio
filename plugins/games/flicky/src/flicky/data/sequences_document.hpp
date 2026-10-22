@@ -17,51 +17,48 @@ public:
 // sequences. Edits retain unknown JSON fields and preserve record cardinality.
 class FlickySequencesDocument final {
 public:
-    static FlickySequencesDocument load(const QString &path);
+    static FlickySequencesDocument load(const QString& path);
     // Revert goes back to `pristine` (the document as first extracted).
-    void adoptBaseline(const FlickySequencesDocument &pristine) { baseline_ = pristine.baseline_; }
-    static FlickySequencesDocument fromJson(const QJsonObject &root);
+    void adoptBaseline(const FlickySequencesDocument& pristine) { baseline_ = pristine.baseline_; }
+    static FlickySequencesDocument fromJson(const QJsonObject& root);
 
     [[nodiscard]] QJsonObject toJson() const;
-    void save(const QString &path) const;
+    void save(const QString& path) const;
 
     [[nodiscard]] QStringList mappingIds() const;
-    [[nodiscard]] QJsonObject mapping(const QString &id) const;
-    [[nodiscard]] QJsonObject baselineMapping(const QString &id) const;
-    void replaceMapping(const QString &id, const QJsonObject &mapping);
-    void setMappingRenderFlags(const QString &id, int value);
-    void setMappingPiece(const QString &id, int index, const QJsonObject &piece);
-    void restoreMapping(const QString &id);
+    [[nodiscard]] QJsonObject mapping(const QString& id) const;
+    [[nodiscard]] QJsonObject baselineMapping(const QString& id) const;
+    void replaceMapping(const QString& id, const QJsonObject& mapping);
+    void setMappingRenderFlags(const QString& id, int value);
+    void setMappingPiece(const QString& id, int index, const QJsonObject& piece);
+    void restoreMapping(const QString& id);
 
     [[nodiscard]] QStringList animationIds() const;
-    [[nodiscard]] QJsonObject animation(const QString &id) const;
-    [[nodiscard]] QJsonObject baselineAnimation(const QString &id) const;
-    [[nodiscard]] QStringList allowedFrames(const QString &kind) const;
-    void replaceAnimation(const QString &id, const QJsonObject &animation);
-    void setAnimationDelay(const QString &id, int value);
-    void setAnimationFrame(const QString &id, int index, const QString &frame);
-    void restoreAnimation(const QString &id);
+    [[nodiscard]] QJsonObject animation(const QString& id) const;
+    [[nodiscard]] QJsonObject baselineAnimation(const QString& id) const;
+    [[nodiscard]] QStringList allowedFrames(const QString& kind) const;
+    void replaceAnimation(const QString& id, const QJsonObject& animation);
+    void setAnimationDelay(const QString& id, int value);
+    void setAnimationFrame(const QString& id, int index, const QString& frame);
+    void restoreAnimation(const QString& id);
 
     // Optional fixed-size bonus-motion tables are present in newly imported
     // workspaces. Legacy sequences.json files remain readable without them.
     [[nodiscard]] QStringList bonusMotionIds() const;
-    [[nodiscard]] QJsonObject bonusMotion(const QString &id) const;
-    [[nodiscard]] QJsonObject baselineBonusMotion(const QString &id) const;
-    void replaceBonusMotion(const QString &id, const QJsonObject &record);
-    void setBonusMotionWord(const QString &id, int index, int value);
-    void restoreBonusMotion(const QString &id);
+    [[nodiscard]] QJsonObject bonusMotion(const QString& id) const;
+    [[nodiscard]] QJsonObject baselineBonusMotion(const QString& id) const;
+    void replaceBonusMotion(const QString& id, const QJsonObject& record);
+    void setBonusMotionWord(const QString& id, int index, int value);
+    void restoreBonusMotion(const QString& id);
 
 private:
-    static void validate(const QJsonObject &root);
-    static int recordIndex(const QJsonObject &root, const char *section,
-                           const QString &id);
-    static QJsonObject record(const QJsonObject &root, const char *section,
-                              const QString &id);
-    void replaceRecord(const char *section, const QString &id,
-                       const QJsonObject &replacement);
+    static void validate(const QJsonObject& root);
+    static int recordIndex(const QJsonObject& root, const char* section, const QString& id);
+    static QJsonObject record(const QJsonObject& root, const char* section, const QString& id);
+    void replaceRecord(const char* section, const QString& id, const QJsonObject& replacement);
 
     QJsonObject root_;
     QJsonObject baseline_;
 };
 
-} // namespace rl::flicky
+}  // namespace rl::flicky

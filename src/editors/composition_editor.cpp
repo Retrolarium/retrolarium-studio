@@ -137,9 +137,9 @@ void CompositionCanvas::applyFit() {
     // Scroll bars appear only when even 1x does not fit.
     setMinimumSize(view_.size() + QSize(kPadding * 2, kPadding * 2));
     const QSize room = size() - QSize(kPadding * 2, kPadding * 2);
-    const int zoom = std::clamp(std::min(room.width() / std::max(1, view_.width()),
-                                         room.height() / std::max(1, view_.height())),
-                                kMinZoom, kMaxZoom);
+    const int zoom =
+        std::clamp(std::min(room.width() / std::max(1, view_.width()), room.height() / std::max(1, view_.height())),
+                   kMinZoom, kMaxZoom);
     if (zoom != zoom_) {
         zoom_ = zoom;
         update();
@@ -155,9 +155,7 @@ void CompositionCanvas::resizeEvent(QResizeEvent* event) {
     }
 }
 
-QSize CompositionCanvas::sizeHint() const {
-    return view_.size() * zoom_ + QSize(kPadding * 2, kPadding * 2);
-}
+QSize CompositionCanvas::sizeHint() const { return view_.size() * zoom_ + QSize(kPadding * 2, kPadding * 2); }
 
 QRect CompositionCanvas::imageRect() const {
     const QSize size = view_.size() * zoom_;
@@ -167,8 +165,7 @@ QRect CompositionCanvas::imageRect() const {
 QRect CompositionCanvas::toScreen(const QRect& pixels) const {
     const QRect image = imageRect();
     return QRect(image.left() + (pixels.left() - view_.left()) * zoom_,
-                 image.top() + (pixels.top() - view_.top()) * zoom_, pixels.width() * zoom_,
-                 pixels.height() * zoom_);
+                 image.top() + (pixels.top() - view_.top()) * zoom_, pixels.width() * zoom_, pixels.height() * zoom_);
 }
 
 QString CompositionCanvas::pieceAt(const QPoint& pos) const {
@@ -315,16 +312,24 @@ void CompositionCanvas::keyPressEvent(QKeyEvent* event) {
     // Arrow keys nudge the selected piece by one pixel, as one undo step.
     QPoint step;
     switch (event->key()) {
-    case Qt::Key_Left: step = QPoint(-1, 0); break;
-    case Qt::Key_Right: step = QPoint(1, 0); break;
-    case Qt::Key_Up: step = QPoint(0, -1); break;
-    case Qt::Key_Down: step = QPoint(0, 1); break;
-    case Qt::Key_Escape:
-        model_->selectPiece(QString());
-        return;
-    default:
-        QWidget::keyPressEvent(event);
-        return;
+        case Qt::Key_Left:
+            step = QPoint(-1, 0);
+            break;
+        case Qt::Key_Right:
+            step = QPoint(1, 0);
+            break;
+        case Qt::Key_Up:
+            step = QPoint(0, -1);
+            break;
+        case Qt::Key_Down:
+            step = QPoint(0, 1);
+            break;
+        case Qt::Key_Escape:
+            model_->selectPiece(QString());
+            return;
+        default:
+            QWidget::keyPressEvent(event);
+            return;
     }
     const QString selected = model_->selectedPiece();
     if (selected.isEmpty() || model_->isReadOnly()) {
@@ -381,8 +386,9 @@ CompositionEditor::CompositionEditor(sdk::CompositionModel* model, QWidget* pare
     // Ctrl+wheel zooms about the mouse: the picture under it stays put.
     connect(canvas_, &CompositionCanvas::zoomRequested, this, [this](int delta, QPoint anchor) {
         const int next = canvas_->zoom() + delta;
-        zoomKeepingPoint(scroll_, canvas_, anchor, [this] { return canvas_->imageRect(); },
-                         [this, next] { canvas_->setZoom(next); });
+        zoomKeepingPoint(
+            scroll_, canvas_, anchor, [this] { return canvas_->imageRect(); },
+            [this, next] { canvas_->setZoom(next); });
     });
     connect(canvas_, &CompositionCanvas::zoomChanged, this, &EditorView::toolbarChanged);
     connect(canvas_, &CompositionCanvas::actionFailed, this, &EditorView::actionFailed);
@@ -506,8 +512,8 @@ QWidget* CompositionEditor::createToolbar(QWidget* parent) {
     for (int z = kMinZoom; z <= kMaxZoom; ++z) {
         zooms << QStringLiteral("%1×").arg(z);
     }
-    const QString current = canvas_->isFitting() ? tr("Fit · %1×").arg(canvas_->zoom())
-                                                 : QStringLiteral("%1×").arg(canvas_->zoom());
+    const QString current =
+        canvas_->isFitting() ? tr("Fit · %1×").arg(canvas_->zoom()) : QStringLiteral("%1×").arg(canvas_->zoom());
     auto* zoom = new ui::ViewChip(tr("Zoom"), current, bar);
     zoom->setChoices(zooms);
     connect(zoom, &ui::ViewChip::valueChosen, this, [this, fit](const QString& value) {
@@ -515,14 +521,16 @@ QWidget* CompositionEditor::createToolbar(QWidget* parent) {
             canvas_->setFitting(true);
         } else {
             const int next = QString(value).remove(QStringLiteral("×")).toInt();
-            zoomKeepingPoint(scroll_, canvas_, viewportCentre(scroll_, canvas_),
-                             [this] { return canvas_->imageRect(); }, [this, next] { canvas_->setZoom(next); });
+            zoomKeepingPoint(
+                scroll_, canvas_, viewportCentre(scroll_, canvas_), [this] { return canvas_->imageRect(); },
+                [this, next] { canvas_->setZoom(next); });
         }
     });
     layout->addWidget(zoom);
     layout->addStretch(1);
     const QVector<sdk::CompositionPiece> pieces = composition_->pieces();
-    const bool movable = std::any_of(pieces.begin(), pieces.end(), [](const sdk::CompositionPiece& p) { return p.movable; });
+    const bool movable =
+        std::any_of(pieces.begin(), pieces.end(), [](const sdk::CompositionPiece& p) { return p.movable; });
     QString hint;
     if (movable) {
         hint = tr("Drag pieces, or nudge them with the arrow keys");

@@ -63,13 +63,9 @@ FlickyDemoModel::Recording FlickyDemoModel::stepsFromRecording(const QString& te
     return result;
 }
 
-QJsonArray FlickyDemoModel::steps() const {
-    return session_->levels().attractDemoSteps(demo_);
-}
+QJsonArray FlickyDemoModel::steps() const { return session_->levels().attractDemoSteps(demo_); }
 
-QString FlickyDemoModel::title() const {
-    return tr("Demo %1").arg(demo_ + 1);
-}
+QString FlickyDemoModel::title() const { return tr("Demo %1").arg(demo_ + 1); }
 
 QVector<sdk::TableColumn> FlickyDemoModel::columns() const {
     sdk::TableColumn index;
@@ -96,36 +92,36 @@ QVector<sdk::TableColumn> FlickyDemoModel::columns() const {
     return {index, frames, buttons, at};
 }
 
-int FlickyDemoModel::rowCount() const {
-    return steps().size();
-}
+int FlickyDemoModel::rowCount() const { return steps().size(); }
 
 QString FlickyDemoModel::cell(int row, int column) const {
     const QJsonArray list = steps();
     if (row < 0 || row >= list.size()) return {};
     const QJsonObject item = list.at(row).toObject();
     switch (column) {
-    case 0: return QString::number(row + 1);
-    case 1: return QString::number(item.value(QStringLiteral("frames")).toInt());
-    case 2: {
-        QStringList held;
-        for (const QJsonValue& b : item.value(QStringLiteral("buttons")).toArray()) held << b.toString();
-        return held.isEmpty() ? QStringLiteral("-") : held.join(QLatin1Char(' '));
-    }
-    case 3: {
-        int frames = 0;
-        for (int i = 0; i < row; ++i) frames += list.at(i).toObject().value(QStringLiteral("frames")).toInt();
-        return QStringLiteral("%1.%2 s").arg(frames / 60).arg(frames % 60 * 10 / 60);
-    }
-    default: return {};
+        case 0:
+            return QString::number(row + 1);
+        case 1:
+            return QString::number(item.value(QStringLiteral("frames")).toInt());
+        case 2: {
+            QStringList held;
+            for (const QJsonValue& b : item.value(QStringLiteral("buttons")).toArray()) held << b.toString();
+            return held.isEmpty() ? QStringLiteral("-") : held.join(QLatin1Char(' '));
+        }
+        case 3: {
+            int frames = 0;
+            for (int i = 0; i < row; ++i) frames += list.at(i).toObject().value(QStringLiteral("frames")).toInt();
+            return QStringLiteral("%1.%2 s").arg(frames / 60).arg(frames % 60 * 10 / 60);
+        }
+        default:
+            return {};
     }
 }
 
 bool FlickyDemoModel::isRowDirty(int row) const {
     const QJsonArray now = steps();
-    const QJsonArray saved = session_->savedLevels().hasAttractDemos()
-                                 ? session_->savedLevels().attractDemoSteps(demo_)
-                                 : QJsonArray();
+    const QJsonArray saved =
+        session_->savedLevels().hasAttractDemos() ? session_->savedLevels().attractDemoSteps(demo_) : QJsonArray();
     return row >= 0 && row < now.size() && now.at(row) != saved.at(row);
 }
 
@@ -137,7 +133,8 @@ void FlickyDemoModel::setCurrentRow(int row) {
 }
 
 bool FlickyDemoModel::setCell(int row, int column, const QString& value, QString* error) {
-    if (row < 0 || row >= rowCount() || (column != 1 && column != 2)) return TableModel::setCell(row, column, value, error);
+    if (row < 0 || row >= rowCount() || (column != 1 && column != 2))
+        return TableModel::setCell(row, column, value, error);
     QJsonArray list = steps();
     QJsonObject item = list.at(row).toObject();
     if (column == 1) {
@@ -149,7 +146,8 @@ bool FlickyDemoModel::setCell(int row, int column, const QString& value, QString
         }
         item.insert(QStringLiteral("frames"), frames);
     } else {
-        const QStringList words = value.toUpper().split(QRegularExpression(QStringLiteral("[\\s,+]+")), Qt::SkipEmptyParts);
+        const QStringList words =
+            value.toUpper().split(QRegularExpression(QStringLiteral("[\\s,+]+")), Qt::SkipEmptyParts);
         for (const QString& word : words) {
             if (word != QLatin1String("-") && !FlickyLevelDocument::demoButtons().contains(word)) {
                 if (error) *error = tr("Buttons are A, B, C, START, UP, DOWN, LEFT and RIGHT.");
@@ -181,9 +179,7 @@ sdk::Budget FlickyDemoModel::budget() const {
     return budget;
 }
 
-QString FlickyDemoModel::startPoint() const {
-    return session_->demoStart() ? session_->selectedStart() : QString();
-}
+QString FlickyDemoModel::startPoint() const { return session_->demoStart() ? session_->selectedStart() : QString(); }
 
 QVector<sdk::EditorAction> FlickyDemoModel::actions() const {
     sdk::EditorAction loop;

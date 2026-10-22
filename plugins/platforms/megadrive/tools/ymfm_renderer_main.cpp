@@ -20,18 +20,18 @@ namespace {
 
 constexpr uint32_t kVgmRate = 44100;
 
-uint32_t read_u32(const std::vector<uint8_t> &data, size_t offset) {
+uint32_t read_u32(const std::vector<uint8_t>& data, size_t offset) {
     if (offset + 4 > data.size()) throw std::runtime_error("truncated VGM header");
-    return uint32_t(data[offset]) | uint32_t(data[offset + 1]) << 8 |
-           uint32_t(data[offset + 2]) << 16 | uint32_t(data[offset + 3]) << 24;
+    return uint32_t(data[offset]) | uint32_t(data[offset + 1]) << 8 | uint32_t(data[offset + 2]) << 16 |
+           uint32_t(data[offset + 3]) << 24;
 }
 
-void put_u16(std::ofstream &output, uint16_t value) {
+void put_u16(std::ofstream& output, uint16_t value) {
     output.put(char(value));
     output.put(char(value >> 8));
 }
 
-void put_u32(std::ofstream &output, uint32_t value) {
+void put_u32(std::ofstream& output, uint32_t value) {
     output.put(char(value));
     output.put(char(value >> 8));
     output.put(char(value >> 16));
@@ -52,8 +52,7 @@ public:
                 m_noise = data & 7;
                 m_lfsr = 0x8000;
             } else {
-                m_period[m_latch_channel] =
-                    (m_period[m_latch_channel] & 0x3F0) | (data & 15);
+                m_period[m_latch_channel] = (m_period[m_latch_channel] & 0x3F0) | (data & 15);
             }
         } else if (m_latch_volume) {
             m_volume[m_latch_channel] = data & 15;
@@ -61,8 +60,7 @@ public:
             m_noise = data & 7;
             m_lfsr = 0x8000;
         } else {
-            m_period[m_latch_channel] =
-                (m_period[m_latch_channel] & 15) | ((data & 0x3F) << 4);
+            m_period[m_latch_channel] = (m_period[m_latch_channel] & 15) | ((data & 0x3F) << 4);
         }
     }
 
@@ -82,8 +80,7 @@ public:
 private:
     static int32_t amplitude(uint8_t attenuation) {
         static constexpr int16_t levels[16] = {
-            4096, 3254, 2585, 2053, 1631, 1295, 1029, 817,
-            649, 516, 410, 326, 259, 206, 164, 0,
+            4096, 3254, 2585, 2053, 1631, 1295, 1029, 817, 649, 516, 410, 326, 259, 206, 164, 0,
         };
         return levels[attenuation & 15];
     }
@@ -96,14 +93,10 @@ private:
                 m_tone_output[channel] = !m_tone_output[channel];
             }
         }
-        uint16_t noise_period = (m_noise & 3) == 3
-            ? std::max<uint16_t>(1, m_period[2])
-            : uint16_t(16 << (m_noise & 3));
+        uint16_t noise_period = (m_noise & 3) == 3 ? std::max<uint16_t>(1, m_period[2]) : uint16_t(16 << (m_noise & 3));
         if (++m_noise_counter >= noise_period) {
             m_noise_counter = 0;
-            uint16_t feedback = (m_noise & 4)
-                ? ((m_lfsr ^ (m_lfsr >> 3)) & 1)
-                : (m_lfsr & 1);
+            uint16_t feedback = (m_noise & 4) ? ((m_lfsr ^ (m_lfsr >> 3)) & 1) : (m_lfsr & 1);
             m_lfsr = uint16_t((m_lfsr >> 1) | (feedback << 15));
         }
     }
@@ -123,7 +116,9 @@ private:
 class Renderer {
 public:
     Renderer(uint32_t ym_clock, uint32_t psg_clock)
-        : m_chip(m_interface), m_ym_clock(ym_clock), m_psg_clock(psg_clock),
+        : m_chip(m_interface),
+          m_ym_clock(ym_clock),
+          m_psg_clock(psg_clock),
           m_output_rate(m_chip.sample_rate(ym_clock)) {
         if (!ym_clock || !m_output_rate) throw std::runtime_error("VGM has no YM2612 clock");
         m_chip.reset();
@@ -150,7 +145,7 @@ public:
     }
 
     uint32_t output_rate() const { return m_output_rate; }
-    const std::vector<int32_t> &pcm() const { return m_pcm; }
+    const std::vector<int32_t>& pcm() const { return m_pcm; }
 
 private:
     Interface m_interface;
@@ -165,13 +160,13 @@ private:
     std::vector<int32_t> m_pcm;
 };
 
-std::vector<uint8_t> read_file(const std::string &path) {
+std::vector<uint8_t> read_file(const std::string& path) {
     std::ifstream input(path, std::ios::binary);
     if (!input) throw std::runtime_error("cannot open input VGM");
     return std::vector<uint8_t>(std::istreambuf_iterator<char>(input), {});
 }
 
-void write_wav(const std::string &path, uint32_t rate, const std::vector<int32_t> &source) {
+void write_wav(const std::string& path, uint32_t rate, const std::vector<int32_t>& source) {
     int64_t peak = 1;
     for (int32_t value : source) peak = std::max<int64_t>(peak, std::abs(int64_t(value)));
     std::vector<int16_t> pcm;
@@ -192,11 +187,11 @@ void write_wav(const std::string &path, uint32_t rate, const std::vector<int32_t
     put_u16(output, 16);
     output.write("data", 4);
     put_u32(output, uint32_t(pcm.size() * 2));
-    output.write(reinterpret_cast<const char *>(pcm.data()), std::streamsize(pcm.size() * 2));
+    output.write(reinterpret_cast<const char*>(pcm.data()), std::streamsize(pcm.size() * 2));
     if (!output) throw std::runtime_error("failed while writing WAV");
 }
 
-void render_vgm(const std::vector<uint8_t> &data, Renderer &renderer) {
+void render_vgm(const std::vector<uint8_t>& data, Renderer& renderer) {
     if (data.size() < 0x100 || std::string(data.begin(), data.begin() + 4) != "Vgm ")
         throw std::runtime_error("input is not an uncompressed VGM file");
     uint32_t version = read_u32(data, 8);
@@ -232,7 +227,7 @@ void render_vgm(const std::vector<uint8_t> &data, Renderer &renderer) {
 
 }  // namespace
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
     if (argc != 3) {
         std::cerr << "usage: ymfm_renderer <input.vgm> <output.wav>\n";
         return 1;
@@ -243,10 +238,10 @@ int main(int argc, char **argv) {
         Renderer renderer(read_u32(data, 0x2C), read_u32(data, 0x0C));
         render_vgm(data, renderer);
         write_wav(argv[2], renderer.output_rate(), renderer.pcm());
-        std::cout << "[OK] rendered " << renderer.pcm().size() / 2 << " stereo frames at "
-                  << renderer.output_rate() << " Hz\n";
+        std::cout << "[OK] rendered " << renderer.pcm().size() / 2 << " stereo frames at " << renderer.output_rate()
+                  << " Hz\n";
         return 0;
-    } catch (const std::exception &error) {
+    } catch (const std::exception& error) {
         std::cerr << "[ERROR] " << error.what() << "\n";
         return 2;
     }

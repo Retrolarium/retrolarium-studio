@@ -60,8 +60,7 @@ QString strokeSvg(const QString& path, const QColor& color, double width) {
                "<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'>"
                "<path d='%1' fill='none' stroke='%2' stroke-opacity='%3' stroke-width='%4'"
                " stroke-linecap='square' stroke-linejoin='miter'/></svg>")
-        .arg(path, color.name(QColor::HexRgb), QString::number(color.alphaF(), 'f', 3),
-             QString::number(width));
+        .arg(path, color.name(QColor::HexRgb), QString::number(color.alphaF(), 'f', 3), QString::number(width));
 }
 
 }  // namespace
@@ -91,9 +90,7 @@ void Theme::setMode(Mode mode) {
     emit changed(mode_);
 }
 
-void Theme::toggle() {
-    setMode(mode_ == Mode::Dark ? Mode::Light : Mode::Dark);
-}
+void Theme::toggle() { setMode(mode_ == Mode::Dark ? Mode::Light : Mode::Dark); }
 
 QString Theme::assetPath(const QString& name) const {
     if (!assets_ || !assets_->isValid()) {
@@ -136,8 +133,6 @@ void Theme::apply() {
     }
 }
 
-const Tokens& current() {
-    return Theme::instance().tokens();
-}
+const Tokens& current() { return Theme::instance().tokens(); }
 
 }  // namespace rl::theme

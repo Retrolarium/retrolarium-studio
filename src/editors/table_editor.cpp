@@ -39,12 +39,9 @@ QFont cellFont(const sdk::TableColumn& column) {
 
 // ---------------------------------------------------------------- adapter
 
-TableAdapter::TableAdapter(sdk::TableModel* model, QObject* parent)
-    : QAbstractTableModel(parent), model_(model) {}
+TableAdapter::TableAdapter(sdk::TableModel* model, QObject* parent) : QAbstractTableModel(parent), model_(model) {}
 
-int TableAdapter::rowCount(const QModelIndex& parent) const {
-    return parent.isValid() ? 0 : model_->rowCount();
-}
+int TableAdapter::rowCount(const QModelIndex& parent) const { return parent.isValid() ? 0 : model_->rowCount(); }
 
 int TableAdapter::columnCount(const QModelIndex& parent) const {
     return parent.isValid() ? 0 : model_->columns().size();
@@ -103,8 +100,7 @@ void TableAdapter::reload() {
 
 // ---------------------------------------------------------------- delegate
 
-TableDelegate::TableDelegate(sdk::TableModel* model, QObject* parent)
-    : QStyledItemDelegate(parent), model_(model) {}
+TableDelegate::TableDelegate(sdk::TableModel* model, QObject* parent) : QStyledItemDelegate(parent), model_(model) {}
 
 const QVector<sdk::TableColumn>& TableDelegate::columns() const {
     if (columns_.isEmpty()) {
@@ -113,8 +109,7 @@ const QVector<sdk::TableColumn>& TableDelegate::columns() const {
     return columns_;
 }
 
-void TableDelegate::paint(QPainter* painter, const QStyleOptionViewItem& option,
-                          const QModelIndex& index) const {
+void TableDelegate::paint(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index) const {
     const theme::Tokens& t = theme::current();
     const QVector<sdk::TableColumn>& columns = this->columns();
     if (index.column() >= columns.size()) {
@@ -138,15 +133,14 @@ void TableDelegate::paint(QPainter* painter, const QStyleOptionViewItem& option,
     if (column.budget) {
         const sdk::Budget budget = model_->cellBudget(index.row(), index.column());
         painter->setFont(theme::font(theme::TextRole::Mono, 11.5));
-        const QString text = budget.text.isEmpty()
-                                 ? QStringLiteral("%1 / %2").arg(budget.used).arg(budget.capacity)
-                                 : budget.text;
+        const QString text =
+            budget.text.isEmpty() ? QStringLiteral("%1 / %2").arg(budget.used).arg(budget.capacity) : budget.text;
         const int textWidth = painter->fontMetrics().horizontalAdvance(text);
         painter->setPen(selected ? t.accentInk : t.text);
-        painter->drawText(QRect(content.right() - textWidth, r.top(), textWidth + 1, r.height()),
-                          Qt::AlignVCenter, text);
-        const QRect track(content.left(), r.top() + r.height() / 2 - 1,
-                          std::max(0, content.width() - textWidth - 10), 3);
+        painter->drawText(QRect(content.right() - textWidth, r.top(), textWidth + 1, r.height()), Qt::AlignVCenter,
+                          text);
+        const QRect track(content.left(), r.top() + r.height() / 2 - 1, std::max(0, content.width() - textWidth - 10),
+                          3);
         painter->fillRect(track, t.lineStrong);
         if (budget.capacity > 0) {
             const double ratio = std::min(1.0, double(budget.used) / budget.capacity);
@@ -162,8 +156,7 @@ void TableDelegate::paint(QPainter* painter, const QStyleOptionViewItem& option,
     if (choices) {
         painter->setPen(selected ? t.accentInk : t.muted);
         painter->setFont(theme::font(theme::TextRole::Body, 11.0));
-        painter->drawText(QRect(content.right() - 12, r.top(), 12, r.height()), Qt::AlignCenter,
-                          QStringLiteral("▾"));
+        painter->drawText(QRect(content.right() - 12, r.top(), 12, r.height()), Qt::AlignCenter, QStringLiteral("▾"));
         content.setRight(content.right() - 16);
     }
     painter->setFont(cellFont(column));
@@ -174,8 +167,7 @@ void TableDelegate::paint(QPainter* painter, const QStyleOptionViewItem& option,
     painter->restore();
 }
 
-QWidget* TableDelegate::createEditor(QWidget* parent, const QStyleOptionViewItem&,
-                                     const QModelIndex& index) const {
+QWidget* TableDelegate::createEditor(QWidget* parent, const QStyleOptionViewItem&, const QModelIndex& index) const {
     const QStringList choices = model_->cellChoices(index.row(), index.column());
     if (!choices.isEmpty()) {
         // A list, not typing: open it at once and commit on a pick.
@@ -237,8 +229,7 @@ void TableDelegate::updateEditorGeometry(QWidget* editor, const QStyleOptionView
 // ---------------------------------------------------------------- editor
 
 TableEditor::TableEditor(sdk::TableModel* model, QWidget* parent)
-    : EditorView(model, parent), table_(model), adapter_(new TableAdapter(model, this)),
-      view_(new QTableView(this)) {
+    : EditorView(model, parent), table_(model), adapter_(new TableAdapter(model, this)), view_(new QTableView(this)) {
     auto* layout = new QVBoxLayout(this);
     layout->setContentsMargins(0, 0, 0, 0);
     view_->setModel(adapter_);
@@ -263,12 +254,11 @@ TableEditor::TableEditor(sdk::TableModel* model, QWidget* parent)
     shownColumns_ = adapter_->columnCount();
 
     connect(adapter_, &TableAdapter::editRejected, this, &EditorView::actionFailed);
-    connect(view_->selectionModel(), &QItemSelectionModel::currentRowChanged, this,
-            [this](const QModelIndex& current) {
-                if (!syncing_ && current.isValid()) {
-                    table_->setCurrentRow(current.row());
-                }
-            });
+    connect(view_->selectionModel(), &QItemSelectionModel::currentRowChanged, this, [this](const QModelIndex& current) {
+        if (!syncing_ && current.isValid()) {
+            table_->setCurrentRow(current.row());
+        }
+    });
     connect(table_, &sdk::EditorModel::contentChanged, this, [this] {
         // Keep the selection and any open editor's row across a refresh.
         syncing_ = true;
@@ -324,10 +314,9 @@ QWidget* TableEditor::createToolbar(QWidget* parent) {
     auto* layout = new QHBoxLayout(bar);
     layout->setContentsMargins(0, 0, 0, 0);
     layout->setSpacing(8);
-    auto* hint = new ui::Label(table_->isReadOnly()
-                                   ? tr("Read only")
-                                   : tr("Double-click or start typing to edit a cell. "
-                                        "Enter commits, Esc cancels."),
+    auto* hint = new ui::Label(table_->isReadOnly() ? tr("Read only")
+                                                    : tr("Double-click or start typing to edit a cell. "
+                                                         "Enter commits, Esc cancels."),
                                ui::Label::Role::Small, bar);
     layout->addWidget(hint);
     layout->addStretch(1);

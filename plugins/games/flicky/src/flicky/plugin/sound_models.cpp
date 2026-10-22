@@ -18,9 +18,7 @@ namespace rl::flicky {
 
 namespace {
 
-QString hex(int value, int digits) {
-    return QStringLiteral("$%1").arg(value, digits, 16, QLatin1Char('0')).toUpper();
-}
+QString hex(int value, int digits) { return QStringLiteral("$%1").arg(value, digits, 16, QLatin1Char('0')).toUpper(); }
 
 const QColor kChannelColors[] = {QColor(0x94, 0xbc, 0xe3), QColor(0xe3, 0xb5, 0x94), QColor(0xa8, 0xd8, 0x8f),
                                  QColor(0xd8, 0x9a, 0xd8), QColor(0xe8, 0xd5, 0x7a), QColor(0x8f, 0xd8, 0xcf),
@@ -50,9 +48,7 @@ SoundHeaderModel::SoundHeaderModel(FlickySession* session, const QString& id)
     }
 }
 
-FlickySoundHeader SoundHeaderModel::header() const {
-    return session_->sound().header(id_);
-}
+FlickySoundHeader SoundHeaderModel::header() const { return session_->sound().header(id_); }
 
 const QVector<FlickySoundNote>& SoundHeaderModel::sequenceNotes(const QString& sequence) const {
     if (notesRevision_ != session_->soundRevision()) {
@@ -198,8 +194,13 @@ void SoundHeaderModel::preview() {
     if (!host || host->isBusy()) {
         return;
     }
-    QStringList arguments{QStringLiteral("studio"), QStringLiteral("flicky-sound-preview"), session_->projectPath(),
-                          QStringLiteral("--header"), id_, QStringLiteral("--seconds"), QStringLiteral("30")};
+    QStringList arguments{QStringLiteral("studio"),
+                          QStringLiteral("flicky-sound-preview"),
+                          session_->projectPath(),
+                          QStringLiteral("--header"),
+                          id_,
+                          QStringLiteral("--seconds"),
+                          QStringLiteral("30")};
     const QSet<int>& muted = session_->mutedChannels(id_);
     if (!muted.isEmpty()) {
         for (int i = 0; i < header().tracks.size(); ++i) {
@@ -213,8 +214,8 @@ void SoundHeaderModel::preview() {
         const QString source = session_->sound().source();
         const QString directory = QDir(session_->projectDirectory()).filePath(QStringLiteral("build/sound-preview"));
         QDir().mkpath(directory);
-        const QString hash = QString::fromLatin1(
-            QCryptographicHash::hash(source.toUtf8(), QCryptographicHash::Sha256).toHex().left(12));
+        const QString hash =
+            QString::fromLatin1(QCryptographicHash::hash(source.toUtf8(), QCryptographicHash::Sha256).toHex().left(12));
         const QString path = QDir(directory).filePath(QStringLiteral(".flicky-unsaved-%1.asm").arg(hash));
         QSaveFile file(path);
         if (file.open(QIODevice::WriteOnly)) {
@@ -324,17 +325,14 @@ sdk::Inspection SoundHeaderModel::inspect() const {
         inspection.fields = {start, length, pitch};
         inspection.note = note.durationOffset < 0
                               ? tr("This note reuses the previous duration; change the note that sets it.")
-                              : note.sharedDuration
-                                    ? tr("Later notes reuse this duration byte, so they move with it.")
-                                    : tr("Drag up or down for pitch, Shift-drag sideways for length.");
+                          : note.sharedDuration ? tr("Later notes reuse this duration byte, so they move with it.")
+                                                : tr("Drag up or down for pitch, Shift-drag sideways for length.");
         const QString sequence = h.tracks.value(channel).sequence;
-        inspection.engine = {{tr("Sequence"), sequence},
-                             {tr("Note byte"), tr("%1 at +%2")
-                                                               .arg(hex(note.note >= 0 ? 0x81 + note.note : 0x80, 2))
-                                                               .arg(note.offset)},
-                             {tr("Duration"), note.durationOffset >= 0
-                                                              ? QStringLiteral("+%1").arg(note.durationOffset)
-                                                              : QStringLiteral("inherited")}};
+        inspection.engine = {
+            {tr("Sequence"), sequence},
+            {tr("Note byte"), tr("%1 at +%2").arg(hex(note.note >= 0 ? 0x81 + note.note : 0x80, 2)).arg(note.offset)},
+            {tr("Duration"),
+             note.durationOffset >= 0 ? QStringLiteral("+%1").arg(note.durationOffset) : QStringLiteral("inherited")}};
         return inspection;
     }
     inspection.kicker = h.kind.isEmpty() ? tr("Sound") : h.kind.toUpper();
@@ -378,9 +376,10 @@ sdk::Inspection SoundHeaderModel::inspect() const {
         volume.value = track.volume;
         inspection.fields << transpose << volume;
     }
-    inspection.note = tr("Transpose and volume belong to the selected channel. Listen renders "
-                         "the unmuted channels with the source's YMFM renderer, including unsaved "
-                         "edits.");
+    inspection.note =
+        tr("Transpose and volume belong to the selected channel. Listen renders "
+           "the unmuted channels with the source's YMFM renderer, including unsaved "
+           "edits.");
     inspection.engine = {{tr("Header"), id_},
                          {tr("Tracks"), QString::number(h.tracks.size())},
                          {tr("Source"), QStringLiteral("sound/z80_sound_data.asm")}};
@@ -400,20 +399,21 @@ bool SoundHeaderModel::setField(const QString& key, const QVariant& value, QStri
     }
     if (key == QLatin1String("voices")) {
         const QString bank = value.toString();
-        return session_->editSound(tr("Set %1 voices").arg(id),
-                                   [id, bank](FlickySoundDocument& d) { d.setHeaderVoices(id, bank); }, error);
+        return session_->editSound(
+            tr("Set %1 voices").arg(id), [id, bank](FlickySoundDocument& d) { d.setHeaderVoices(id, bank); }, error);
     }
     if (key == QLatin1String("scale") || key == QLatin1String("tempo")) {
         const int v = value.toInt();
-        return session_->editSound(tr("Edit %1 %2").arg(id, key),
-                                   [id, key, v](FlickySoundDocument& d) { d.setHeaderValue(id, key, v); }, error);
+        return session_->editSound(
+            tr("Edit %1 %2").arg(id, key), [id, key, v](FlickySoundDocument& d) { d.setHeaderValue(id, key, v); },
+            error);
     }
     if (key == QLatin1String("transpose") || key == QLatin1String("volume")) {
         const int track = channel_;
         const int v = value.toInt();
-        return session_->editSound(tr("Edit %1 track %2 %3").arg(id).arg(track).arg(key),
-                                   [id, track, key, v](FlickySoundDocument& d) { d.setTrackValue(id, track, key, v); },
-                                   error);
+        return session_->editSound(
+            tr("Edit %1 track %2 %3").arg(id).arg(track).arg(key),
+            [id, track, key, v](FlickySoundDocument& d) { d.setTrackValue(id, track, key, v); }, error);
     }
     return SequencerModel::setField(key, value, error);
 }
@@ -422,10 +422,7 @@ QString SoundHeaderModel::statusText() const {
     int channel = 0;
     FlickySoundNote note;
     if (!selected_.isEmpty() && findNote(selected_, &channel, &note)) {
-        return tr("%1 · %2 at tick %3, %4 ticks")
-            .arg(id_, pitchName(note.note))
-            .arg(note.start)
-            .arg(note.duration);
+        return tr("%1 · %2 at tick %3, %4 ticks").arg(id_, pitchName(note.note)).arg(note.start).arg(note.duration);
     }
     return tr("%1 · %2 tracks").arg(id_).arg(header().tracks.size());
 }
@@ -446,31 +443,61 @@ const Parameter kOperatorParameters[] = {{"DT", 7},   {"MUL", 15}, {"RS", 3},  {
 
 int operatorValue(const FlickyFmOperator& op, int index) {
     switch (index) {
-    case 0: return op.detune;
-    case 1: return op.multiple;
-    case 2: return op.rateScale;
-    case 3: return op.attack;
-    case 4: return op.amplitudeModulation;
-    case 5: return op.decay1;
-    case 6: return op.decay2;
-    case 7: return op.sustain;
-    case 8: return op.release;
-    default: return op.totalLevel;
+        case 0:
+            return op.detune;
+        case 1:
+            return op.multiple;
+        case 2:
+            return op.rateScale;
+        case 3:
+            return op.attack;
+        case 4:
+            return op.amplitudeModulation;
+        case 5:
+            return op.decay1;
+        case 6:
+            return op.decay2;
+        case 7:
+            return op.sustain;
+        case 8:
+            return op.release;
+        default:
+            return op.totalLevel;
     }
 }
 
 void setOperatorValue(FlickyFmOperator& op, int index, int value) {
     switch (index) {
-    case 0: op.detune = value; break;
-    case 1: op.multiple = value; break;
-    case 2: op.rateScale = value; break;
-    case 3: op.attack = value; break;
-    case 4: op.amplitudeModulation = value; break;
-    case 5: op.decay1 = value; break;
-    case 6: op.decay2 = value; break;
-    case 7: op.sustain = value; break;
-    case 8: op.release = value; break;
-    default: op.totalLevel = value; break;
+        case 0:
+            op.detune = value;
+            break;
+        case 1:
+            op.multiple = value;
+            break;
+        case 2:
+            op.rateScale = value;
+            break;
+        case 3:
+            op.attack = value;
+            break;
+        case 4:
+            op.amplitudeModulation = value;
+            break;
+        case 5:
+            op.decay1 = value;
+            break;
+        case 6:
+            op.decay2 = value;
+            break;
+        case 7:
+            op.sustain = value;
+            break;
+        case 8:
+            op.release = value;
+            break;
+        default:
+            op.totalLevel = value;
+            break;
     }
 }
 
@@ -524,9 +551,7 @@ QVector<sdk::TableColumn> FmVoiceModel::columns() const {
     return columns;
 }
 
-int FmVoiceModel::rowCount() const {
-    return session_->sound().voiceCount(bank_) * 4;
-}
+int FmVoiceModel::rowCount() const { return session_->sound().voiceCount(bank_) * 4; }
 
 QString FmVoiceModel::cell(int row, int column) const {
     const int voiceIndex = row / 4;
@@ -568,9 +593,9 @@ bool FmVoiceModel::setCell(int row, int column, const QString& value, QString* e
     else if (column == 3) voice.feedback = number;
     else setOperatorValue(voice.operators[op], column - 4, number);
     const QString bank = bank_;
-    return session_->editSound(tr("Edit %1 voice %2").arg(bank).arg(voiceIndex),
-                               [bank, voiceIndex, voice](FlickySoundDocument& d) { d.setVoice(bank, voiceIndex, voice); },
-                               error);
+    return session_->editSound(
+        tr("Edit %1 voice %2").arg(bank).arg(voiceIndex),
+        [bank, voiceIndex, voice](FlickySoundDocument& d) { d.setVoice(bank, voiceIndex, voice); }, error);
 }
 
 sdk::Inspection FmVoiceModel::inspect() const {
@@ -589,8 +614,9 @@ sdk::Inspection FmVoiceModel::inspect() const {
     fb.label = tr("Feedback");
     fb.value = voice.feedback;
     inspection.fields = {alg, fb};
-    inspection.note = tr("YM2612 operator values, edited in the table. TL is the operator's "
-                         "attenuation: carriers set the voice's loudness.");
+    inspection.note =
+        tr("YM2612 operator values, edited in the table. TL is the operator's "
+           "attenuation: carriers set the voice's loudness.");
     inspection.engineTag = QStringLiteral("flicky.sound.v1");
     inspection.engine = {{tr("Bank"), bank_},
                          {tr("Voices"), QString::number(session_->sound().voiceCount(bank_))},
@@ -628,9 +654,7 @@ QVector<sdk::TableColumn> EnvelopeModel::columns() const {
     return {index, value, decimal};
 }
 
-int EnvelopeModel::rowCount() const {
-    return session_->sound().priorityEnvelopeBytes().size();
-}
+int EnvelopeModel::rowCount() const { return session_->sound().priorityEnvelopeBytes().size(); }
 
 QString EnvelopeModel::cell(int row, int column) const {
     const int value = session_->sound().priorityEnvelopeBytes().value(row);
@@ -663,8 +687,9 @@ bool EnvelopeModel::setCell(int row, int column, const QString& value, QString* 
         if (error) *error = tr("A byte is up to two hex digits.");
         return false;
     }
-    return session_->editSound(tr("Edit envelope byte %1").arg(row),
-                               [row, byte](FlickySoundDocument& d) { d.setPriorityEnvelopeByte(row, byte); }, error);
+    return session_->editSound(
+        tr("Edit envelope byte %1").arg(row),
+        [row, byte](FlickySoundDocument& d) { d.setPriorityEnvelopeByte(row, byte); }, error);
 }
 
 sdk::Inspection EnvelopeModel::inspect() const {
@@ -677,16 +702,15 @@ sdk::Inspection EnvelopeModel::inspect() const {
     value.value = hex(session_->sound().priorityEnvelopeBytes().value(row_), 2);
     value.monospace = true;
     inspection.fields = {value};
-    inspection.note = tr("Sound-effect priorities and PSG envelopes of the Z80 driver "
-                         "(zPriorityAndEnvelopeData).");
+    inspection.note =
+        tr("Sound-effect priorities and PSG envelopes of the Z80 driver "
+           "(zPriorityAndEnvelopeData).");
     inspection.engineTag = QStringLiteral("flicky.sound.v1");
     inspection.engine = {{tr("Block"), QStringLiteral("zPriorityAndEnvelopeData")},
                          {tr("Saved"), hex(session_->savedSound().priorityEnvelopeBytes().value(row_), 2)}};
     return inspection;
 }
 
-QString EnvelopeModel::statusText() const {
-    return tr("Priority & envelopes · byte %1").arg(row_);
-}
+QString EnvelopeModel::statusText() const { return tr("Priority & envelopes · byte %1").arg(row_); }
 
 }  // namespace rl::flicky

@@ -44,8 +44,7 @@ class Divider final : public QFrame {
 public:
     enum class Strength { Line, Strong };
 
-    explicit Divider(Qt::Orientation orientation, Strength strength = Strength::Line,
-                     QWidget* parent = nullptr);
+    explicit Divider(Qt::Orientation orientation, Strength strength = Strength::Line, QWidget* parent = nullptr);
 };
 
 }  // namespace rl::ui

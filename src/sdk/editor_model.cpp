@@ -8,24 +8,24 @@ namespace rl::sdk {
 
 QString editorName(EditorType type) {
     switch (type) {
-    case EditorType::TileMap:
-        return QStringLiteral("TileMapEditor");
-    case EditorType::Tile:
-        return QStringLiteral("TileEditor");
-    case EditorType::Palette:
-        return QStringLiteral("PaletteEditor");
-    case EditorType::Composition:
-        return QStringLiteral("CompositionEditor");
-    case EditorType::Table:
-        return QStringLiteral("TableEditor");
-    case EditorType::Sequencer:
-        return QStringLiteral("SequencerEditor");
-    case EditorType::Hex:
-        return QStringLiteral("HexEditor");
-    case EditorType::Emulator:
-        return QStringLiteral("EmulatorView");
-    case EditorType::None:
-        break;
+        case EditorType::TileMap:
+            return QStringLiteral("TileMapEditor");
+        case EditorType::Tile:
+            return QStringLiteral("TileEditor");
+        case EditorType::Palette:
+            return QStringLiteral("PaletteEditor");
+        case EditorType::Composition:
+            return QStringLiteral("CompositionEditor");
+        case EditorType::Table:
+            return QStringLiteral("TableEditor");
+        case EditorType::Sequencer:
+            return QStringLiteral("SequencerEditor");
+        case EditorType::Hex:
+            return QStringLiteral("HexEditor");
+        case EditorType::Emulator:
+            return QStringLiteral("EmulatorView");
+        case EditorType::None:
+            break;
     }
     return rlTr("studio", "Editor");
 }
@@ -44,9 +44,7 @@ void EditorModel::setCurrentLibraryItem(const QString&) {}
 
 void TileMapModel::setCurrentLayer(const QString&) {}
 void TileMapModel::setCurrentBrush(int) {}
-int TileMapModel::cellValue(QPoint) const {
-    return 0;
-}
+int TileMapModel::cellValue(QPoint) const { return 0; }
 bool CompositionModel::dropItem(const QString&, const QString&, QString* error) {
     if (error) {
         *error = tr("Nothing can be dropped here.");
@@ -54,23 +52,15 @@ bool CompositionModel::dropItem(const QString&, const QString&, QString* error) 
     return false;
 }
 
-QString TileMapModel::lockReason(QPoint) const {
-    return tr("This cell cannot be painted.");
-}
+QString TileMapModel::lockReason(QPoint) const { return tr("This cell cannot be painted."); }
 
-bool TileMapModel::isCellEditable(QPoint) const {
-    return false;
-}
+bool TileMapModel::isCellEditable(QPoint) const { return false; }
 void TileMapModel::beginStroke() {}
-bool TileMapModel::paintCell(QPoint, int) {
-    return false;
-}
+bool TileMapModel::paintCell(QPoint, int) { return false; }
 void TileMapModel::endStroke() {}
 void TileMapModel::selectObject(const QString&) {}
 void TileMapModel::beginDrag(const QString&) {}
-bool TileMapModel::dragObject(const QString&, QPoint) {
-    return false;
-}
+bool TileMapModel::dragObject(const QString&, QPoint) { return false; }
 void TileMapModel::endDrag() {}
 bool TileMapModel::placeObject(const QString&, QPoint, QString* error) {
     if (error) {
@@ -85,18 +75,14 @@ bool TileMapModel::removeObject(const QString&, QString* error) {
     return false;
 }
 
-bool TileModel::isTileDirty(int) const {
-    return false;
-}
+bool TileModel::isTileDirty(int) const { return false; }
 QVector<Tool> TileModel::tools() const {
     return {{QStringLiteral("pencil"), tr("Pencil"), QStringLiteral("pencil")},
             {QStringLiteral("fill"), tr("Fill"), QStringLiteral("fill")},
             {QStringLiteral("pick"), tr("Pick a pen"), QStringLiteral("pick")}};
 }
 void TileModel::beginStroke() {}
-bool TileModel::setPixel(QPoint, int) {
-    return false;
-}
+bool TileModel::setPixel(QPoint, int) { return false; }
 void TileModel::endStroke() {}
 bool TileModel::fill(QPoint, int, QString* error) {
     if (error) {
@@ -118,22 +104,12 @@ bool PaletteModel::setChannel(int, int, QString* error) {
     return false;
 }
 
-Budget TableModel::cellBudget(int, int) const {
-    return {};
-}
-int TableModel::maxLength(int, int) const {
-    return -1;
-}
-bool TableModel::isRowDirty(int) const {
-    return false;
-}
-QStringList TableModel::cellChoices(int, int) const {
-    return {};
-}
+Budget TableModel::cellBudget(int, int) const { return {}; }
+int TableModel::maxLength(int, int) const { return -1; }
+bool TableModel::isRowDirty(int) const { return false; }
+QStringList TableModel::cellChoices(int, int) const { return {}; }
 
-QVector<QImage> TableModel::cellChoiceIcons(int, int) const {
-    return {};
-}
+QVector<QImage> TableModel::cellChoiceIcons(int, int) const { return {}; }
 
 bool TableModel::setCell(int, int, const QString&, QString* error) {
     if (error) {
@@ -142,19 +118,13 @@ bool TableModel::setCell(int, int, const QString&, QString* error) {
     return false;
 }
 
-QRect CompositionModel::focusRect() const {
-    return QRect(QPoint(0, 0), canvasSize());
-}
+QRect CompositionModel::focusRect() const { return QRect(QPoint(0, 0), canvasSize()); }
 void CompositionModel::selectPiece(const QString&) {}
 void CompositionModel::beginDrag(const QString&) {}
-bool CompositionModel::dragPiece(const QString&, QPoint) {
-    return false;
-}
+bool CompositionModel::dragPiece(const QString&, QPoint) { return false; }
 void CompositionModel::endDrag() {}
 void CompositionModel::setCurrentFrame(int) {}
-int CompositionModel::frameDurationMs(int) const {
-    return 100;
-}
+int CompositionModel::frameDurationMs(int) const { return 100; }
 bool CompositionModel::moveFrame(int, int, QString* error) {
     if (error) {
         *error = tr("Frames cannot be reordered here.");
@@ -172,17 +142,13 @@ QString SequencerModel::pitchName(int pitch) const {
 }
 void SequencerModel::selectNote(const QString&) {}
 void SequencerModel::beginEdit(const QString&) {}
-bool SequencerModel::editNote(const QString&, int, int) {
-    return false;
-}
+bool SequencerModel::editNote(const QString&, int, int) { return false; }
 void SequencerModel::endEdit() {}
 void SequencerModel::preview() {}
 void SequencerModel::stopPreview() {}
 void SequencerModel::setPreviewLoops(bool) {}
 
-bool HexModel::isByteDirty(int) const {
-    return false;
-}
+bool HexModel::isByteDirty(int) const { return false; }
 
 void HexModel::setCursor(int offset) {
     offset = std::clamp(offset, 0, std::max(0, size() - 1));

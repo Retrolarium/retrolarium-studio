@@ -31,9 +31,7 @@ PacmanDemoModel::~PacmanDemoModel() {
     if (attached_) attached_->attachDemoEditor(false);
 }
 
-QJsonArray PacmanDemoModel::steps() const {
-    return session_->demo().value(QStringLiteral("steps")).toArray();
-}
+QJsonArray PacmanDemoModel::steps() const { return session_->demo().value(QStringLiteral("steps")).toArray(); }
 
 int PacmanDemoModel::capacity() const {
     return session_->demo().value(QStringLiteral("layout")).toObject().value(QStringLiteral("pairs")).toInt(28);
@@ -63,31 +61,31 @@ QVector<sdk::TableColumn> PacmanDemoModel::columns() const {
     return {step, direction, frames, at};
 }
 
-int PacmanDemoModel::rowCount() const {
-    return steps().size();
-}
+int PacmanDemoModel::rowCount() const { return steps().size(); }
 
 QString PacmanDemoModel::cell(int row, int column) const {
     const QJsonArray list = steps();
     if (row < 0 || row >= list.size()) return {};
     const QJsonObject item = list.at(row).toObject();
     switch (column) {
-    case 0: return QString::number(row + 1);
-    case 1: return item.value(QStringLiteral("direction")).toString();
-    case 2: return row == 0 ? tr("%1 (fixed)").arg(kFirstUpdates)
+        case 0:
+            return QString::number(row + 1);
+        case 1:
+            return item.value(QStringLiteral("direction")).toString();
+        case 2:
+            return row == 0 ? tr("%1 (fixed)").arg(kFirstUpdates)
                             : QString::number(item.value(QStringLiteral("frames")).toInt());
-    case 3: {
-        int frames = 0;
-        for (int i = 0; i < row; ++i) frames += list.at(i).toObject().value(QStringLiteral("frames")).toInt();
-        return QStringLiteral("%1.%2 s").arg(frames / 60).arg(frames % 60 * 10 / 60);
-    }
-    default: return {};
+        case 3: {
+            int frames = 0;
+            for (int i = 0; i < row; ++i) frames += list.at(i).toObject().value(QStringLiteral("frames")).toInt();
+            return QStringLiteral("%1.%2 s").arg(frames / 60).arg(frames % 60 * 10 / 60);
+        }
+        default:
+            return {};
     }
 }
 
-QStringList PacmanDemoModel::cellChoices(int, int column) const {
-    return column == 1 ? directions() : QStringList();
-}
+QStringList PacmanDemoModel::cellChoices(int, int column) const { return column == 1 ? directions() : QStringList(); }
 
 bool PacmanDemoModel::isRowDirty(int row) const {
     const QJsonArray now = steps();
@@ -118,7 +116,8 @@ bool PacmanDemoModel::commit(const QString& text, QJsonArray list) {
 }
 
 bool PacmanDemoModel::setCell(int row, int column, const QString& value, QString* error) {
-    if (row < 0 || row >= rowCount() || (column != 1 && column != 2)) return TableModel::setCell(row, column, value, error);
+    if (row < 0 || row >= rowCount() || (column != 1 && column != 2))
+        return TableModel::setCell(row, column, value, error);
     QJsonArray list = steps();
     QJsonObject item = list.at(row).toObject();
     if (column == 1) {
@@ -155,9 +154,7 @@ sdk::Budget PacmanDemoModel::budget() const {
     return budget;
 }
 
-QString PacmanDemoModel::startPoint() const {
-    return session_->demoStart() ? session_->selectedStart() : QString();
-}
+QString PacmanDemoModel::startPoint() const { return session_->demoStart() ? session_->selectedStart() : QString(); }
 
 QVector<sdk::EditorAction> PacmanDemoModel::actions() const {
     sdk::EditorAction add;

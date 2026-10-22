@@ -40,11 +40,11 @@ QVector<int> intsOf(const QJsonValue& value) {
 // The action slots of the frame-offset table, as the engine indexes them.
 const QStringList& actionNames() {
     static const QStringList names{
-        rlTr("smb", "Big · jump"),   rlTr("smb", "Big · swim"),   rlTr("smb", "Big · stand"),
-        rlTr("smb", "Big · skid"),   rlTr("smb", "Big · walk"),   rlTr("smb", "Big · climb"),
-        rlTr("smb", "Big · crouch"), rlTr("smb", "Big · throw"),  rlTr("smb", "Small · jump"),
-        rlTr("smb", "Small · swim"), rlTr("smb", "Small · stand"), rlTr("smb", "Small · skid"),
-        rlTr("smb", "Small · walk"), rlTr("smb", "Small · climb"), rlTr("smb", "Small · killed"),
+        rlTr("smb", "Big · jump"),        rlTr("smb", "Big · swim"),    rlTr("smb", "Big · stand"),
+        rlTr("smb", "Big · skid"),        rlTr("smb", "Big · walk"),    rlTr("smb", "Big · climb"),
+        rlTr("smb", "Big · crouch"),      rlTr("smb", "Big · throw"),   rlTr("smb", "Small · jump"),
+        rlTr("smb", "Small · swim"),      rlTr("smb", "Small · stand"), rlTr("smb", "Small · skid"),
+        rlTr("smb", "Small · walk"),      rlTr("smb", "Small · climb"), rlTr("smb", "Small · killed"),
         rlTr("smb", "Small · throw slot")};
     return names;
 }
@@ -83,18 +83,22 @@ QVector<int> SmbPlayerFramesModel::framesOf(const QStringList& frameNames, const
     return result;
 }
 
-QString SmbPlayerFramesModel::animationLabel(const QString& animation) {
-    return frameLabel(animation);
-}
+QString SmbPlayerFramesModel::animationLabel(const QString& animation) { return frameLabel(animation); }
 
 bool SmbPlayerFramesModel::mirrored(int frame, int cell) {
     // ChkForPlayerAttrib: graphics offsets $50 (big crouch), $B8 (small
     // stand), $C0 (growing) and $C8 (big stand) flip the right sprite of the
     // fourth row; while dying (small killed, $B0) the third row's too.
     switch (frame) {
-    case 10: case 23: case 24: case 25: return cell == 7;
-    case 22: return cell == 5 || cell == 7;
-    default: return false;
+        case 10:
+        case 23:
+        case 24:
+        case 25:
+            return cell == 7;
+        case 22:
+            return cell == 5 || cell == 7;
+        default:
+            return false;
     }
 }
 
@@ -107,13 +111,9 @@ QVector<int> SmbPlayerFramesModel::frameList() const {
     return framesOf(frameNames(session_->document(), session_->playerFrames()), animation_);
 }
 
-int SmbPlayerFramesModel::global() const {
-    return frameList().value(frame_, 0);
-}
+int SmbPlayerFramesModel::global() const { return frameList().value(frame_, 0); }
 
-QString SmbPlayerFramesModel::title() const {
-    return animationLabel(animation_);
-}
+QString SmbPlayerFramesModel::title() const { return animationLabel(animation_); }
 
 QVector<int> SmbPlayerFramesModel::tiles(int frame) const {
     return session_->document().playerFrameTiles(session_->playerFrames(), frame);
@@ -158,9 +158,7 @@ QImage SmbPlayerFramesModel::frameImage(const SmbSession* session, int frame, in
     return image;
 }
 
-QImage SmbPlayerFramesModel::render() const {
-    return frameImage(session_, global(), palette_);
-}
+QImage SmbPlayerFramesModel::render() const { return frameImage(session_, global(), palette_); }
 
 QVector<sdk::ViewOption> SmbPlayerFramesModel::viewOptions() const {
     sdk::ViewOption palette;
@@ -229,7 +227,7 @@ void SmbPlayerFramesModel::setCurrentFrame(int frame) {
 }
 
 int SmbPlayerFramesModel::frameDurationMs(int) const {
-    return 133;     // about eight frames at 60 Hz, a walking pace
+    return 133;  // about eight frames at 60 Hz, a walking pace
 }
 
 QString SmbPlayerFramesModel::currentLibraryItem() const {
@@ -256,17 +254,18 @@ bool SmbPlayerFramesModel::setTile(int piece, int tile, QString* error) {
     const QString id = session_->playerFrames();
     const int frame = global();
     const QStringList names = frameNames(session_->document(), id);
-    return session_->edit(tr("Set a pattern of %1").arg(frameLabel(names.value(frame))),
-                          [id, frame, piece, tile](SmbResourceDocument& d) {
-                              QJsonObject r = d.resource(id);
-                              QJsonArray framesJson = r.value(QStringLiteral("frames")).toArray();
-                              QJsonArray tilesJson = framesJson.at(frame).toArray();
-                              tilesJson.replace(piece, tile);
-                              framesJson.replace(frame, tilesJson);
-                              r.insert(QStringLiteral("frames"), framesJson);
-                              d.setResource(id, r);
-                          },
-                          error);
+    return session_->edit(
+        tr("Set a pattern of %1").arg(frameLabel(names.value(frame))),
+        [id, frame, piece, tile](SmbResourceDocument& d) {
+            QJsonObject r = d.resource(id);
+            QJsonArray framesJson = r.value(QStringLiteral("frames")).toArray();
+            QJsonArray tilesJson = framesJson.at(frame).toArray();
+            tilesJson.replace(piece, tile);
+            framesJson.replace(frame, tilesJson);
+            r.insert(QStringLiteral("frames"), framesJson);
+            d.setResource(id, r);
+        },
+        error);
 }
 
 bool SmbPlayerFramesModel::setField(const QString& key, const QVariant& value, QString* error) {
@@ -344,30 +343,29 @@ sdk::Inspection SmbPlayerFramesModel::inspect() const {
     empty.choices = QStringList{tr("No"), QStringLiteral("Yes")};
     empty.value = t.at(piece_) == blank ? QStringLiteral("Yes") : tr("No");
     inspection.fields = {tile, empty};
-    inspection.note = tr("Click a pattern in the Patterns sheet to put it here, or type its number. Patterns "
-                         "are shared: other frames that use one change with it in Tiles.");
+    inspection.note =
+        tr("Click a pattern in the Patterns sheet to put it here, or type its number. Patterns "
+           "are shared: other frames that use one change with it in Tiles.");
     if (mirrored(frameIndex, piece_)) {
         sdk::Field flip;
         flip.key = QStringLiteral("flip");
         flip.label = tr("Drawn");
         flip.value = tr("mirrored by the engine");
         inspection.fields << flip;
-        inspection.note += tr(" The engine flips this cell, so it usually holds the same pattern as "
-                              "the cell to its left.");
+        inspection.note +=
+            tr(" The engine flips this cell, so it usually holds the same pattern as "
+               "the cell to its left.");
     }
     return inspection;
 }
 
-sdk::Library SmbPlayerFramesModel::sheet() const {
-    return library();
-}
+sdk::Library SmbPlayerFramesModel::sheet() const { return library(); }
 
 sdk::Library SmbPlayerFramesModel::library() const {
     // The sprite pattern table in the chosen player colours, as a sheet.
     sdk::Library library;
     library.grid = true;
-    library.hint = piece_ >= 0 ? tr("click: into the cell · or drag onto a cell")
-                               : tr("drag onto a cell");
+    library.hint = piece_ >= 0 ? tr("click: into the cell · or drag onto a cell") : tr("drag onto a cell");
     const QVector<QRgb> pens = colors();
     const int base = session_->document().playerTileBase(session_->playerFrames());
     const int blank = session_->document().playerBlankTile(session_->playerFrames());
@@ -405,17 +403,18 @@ bool SmbPlayerFramesModel::moveFrame(int from, int to, QString* error) {
     const QString id = session_->playerFrames();
     const int a = list.at(from);
     const int b = list.at(to);
-    const bool ok = session_->edit(tr("Move a frame of %1").arg(title()),
-                                   [id, a, b](SmbResourceDocument& d) {
-                                       QJsonObject r = d.resource(id);
-                                       QJsonArray frames = r.value(QStringLiteral("frames")).toArray();
-                                       const QJsonValue first = frames.at(a);
-                                       frames.replace(a, frames.at(b));
-                                       frames.replace(b, first);
-                                       r.insert(QStringLiteral("frames"), frames);
-                                       d.setResource(id, r);
-                                   },
-                                   error);
+    const bool ok = session_->edit(
+        tr("Move a frame of %1").arg(title()),
+        [id, a, b](SmbResourceDocument& d) {
+            QJsonObject r = d.resource(id);
+            QJsonArray frames = r.value(QStringLiteral("frames")).toArray();
+            const QJsonValue first = frames.at(a);
+            frames.replace(a, frames.at(b));
+            frames.replace(b, first);
+            r.insert(QStringLiteral("frames"), frames);
+            d.setResource(id, r);
+        },
+        error);
     if (ok) {
         frame_ = to;
         emit contentChanged();
@@ -463,7 +462,9 @@ QVector<sdk::TableColumn> SmbPlayerActionsModel::columns() const {
 }
 
 int SmbPlayerActionsModel::rowCount() const {
-    return intsOf(session_->document().resource(session_->playerFrames()).value(QStringLiteral("frame_offsets"))).size() + 2;
+    return intsOf(session_->document().resource(session_->playerFrames()).value(QStringLiteral("frame_offsets")))
+               .size() +
+           2;
 }
 
 QString SmbPlayerActionsModel::cell(int row, int column) const {
@@ -517,15 +518,16 @@ bool SmbPlayerActionsModel::setValue(int row, const QString& text, QString* erro
             if (error) *error = tr("Name a frame, like Big walk 1, or give its number 0-%1.").arg(names.size() - 1);
             return false;
         }
-        return session_->edit(tr("%1 shows %2").arg(actionNames().value(row), frameLabel(names.at(frame))),
-                              [id, row, frame](SmbResourceDocument& d) {
-                                  QJsonObject res = d.resource(id);
-                                  QJsonArray offsets = res.value(QStringLiteral("frame_offsets")).toArray();
-                                  offsets.replace(row, frame * kTilesPerFrame);
-                                  res.insert(QStringLiteral("frame_offsets"), offsets);
-                                  d.setResource(id, res);
-                              },
-                              error);
+        return session_->edit(
+            tr("%1 shows %2").arg(actionNames().value(row), frameLabel(names.at(frame))),
+            [id, row, frame](SmbResourceDocument& d) {
+                QJsonObject res = d.resource(id);
+                QJsonArray offsets = res.value(QStringLiteral("frame_offsets")).toArray();
+                offsets.replace(row, frame * kTilesPerFrame);
+                res.insert(QStringLiteral("frame_offsets"), offsets);
+                d.setResource(id, res);
+            },
+            error);
     }
     const int k = row - offsetCount;
     QString t = text.trimmed();
@@ -535,15 +537,16 @@ bool SmbPlayerActionsModel::setValue(int row, const QString& text, QString* erro
         if (error) *error = tr("Give a pattern 0-255 (or $00-$FF).");
         return false;
     }
-    return session_->edit(tr("Swim kick pattern"),
-                          [id, k, tile](SmbResourceDocument& d) {
-                              QJsonObject res = d.resource(id);
-                              QJsonArray kick = res.value(QStringLiteral("swim_kick_tiles")).toArray();
-                              kick.replace(k, tile);
-                              res.insert(QStringLiteral("swim_kick_tiles"), kick);
-                              d.setResource(id, res);
-                          },
-                          error);
+    return session_->edit(
+        tr("Swim kick pattern"),
+        [id, k, tile](SmbResourceDocument& d) {
+            QJsonObject res = d.resource(id);
+            QJsonArray kick = res.value(QStringLiteral("swim_kick_tiles")).toArray();
+            kick.replace(k, tile);
+            res.insert(QStringLiteral("swim_kick_tiles"), kick);
+            d.setResource(id, res);
+        },
+        error);
 }
 
 QStringList SmbPlayerActionsModel::cellChoices(int row, int column) const {
@@ -599,8 +602,9 @@ sdk::Inspection SmbPlayerActionsModel::inspect() const {
         }
         frame.value = cell(row_, 1);
         inspection.fields = {frame};
-        inspection.note = tr("The first frame the game shows for this action; walking, swimming and "
-                             "climbing step on through the frames after it.");
+        inspection.note =
+            tr("The first frame the game shows for this action; walking, swimming and "
+               "climbing step on through the frames after it.");
     } else {
         inspection.kicker = tr("Swim kick");
         sdk::Field pattern;
@@ -610,8 +614,9 @@ sdk::Inspection SmbPlayerActionsModel::inspect() const {
         pattern.value = cell(row_, 1);
         pattern.monospace = true;
         inspection.fields = {pattern};
-        inspection.note = tr("While swimming the game swaps these two patterns into the bottom row for "
-                             "the kick.");
+        inspection.note =
+            tr("While swimming the game swaps these two patterns into the bottom row for "
+               "the kick.");
     }
     inspection.engine = {{tr("Byte"), cell(row_, 2)}};
     return inspection;

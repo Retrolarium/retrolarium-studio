@@ -24,8 +24,6 @@ public:
 
 }  // namespace
 
-void registerPlugin(sdk::PluginRegistry& registry) {
-    registry.add(std::make_unique<RomPlugin>());
-}
+void registerPlugin(sdk::PluginRegistry& registry) { registry.add(std::make_unique<RomPlugin>()); }
 
 }  // namespace rl::rom

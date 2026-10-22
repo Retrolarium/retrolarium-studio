@@ -20,11 +20,10 @@ struct CastleExcellentState {
     CastleExcellentLevels levels;
     nes::Bundle graphics;
     QJsonObject demo;
-    QJsonObject screens;    // documents/screens.json, empty before it is added
+    QJsonObject screens;  // documents/screens.json, empty before it is added
 
     bool operator==(const CastleExcellentState& other) const {
-        return levels == other.levels && graphics == other.graphics && demo == other.demo &&
-               screens == other.screens;
+        return levels == other.levels && graphics == other.graphics && demo == other.demo && screens == other.screens;
     }
 };
 
@@ -133,8 +132,8 @@ private:
     CastleExcellentArt art_;
     quint64 revision_ = 0;
     quint64 nextRevision_ = 1;
-    CastleExcellentStart start_;                 // its room; pixels come from placedStarts_
-    QHash<int, QPoint> placedStarts_;   // room -> where the user put the player
+    CastleExcellentStart start_;       // its room; pixels come from placedStarts_
+    QHash<int, QPoint> placedStarts_;  // room -> where the user put the player
 
     mutable std::unique_ptr<CastleExcellentPainter> painter_;
     mutable quint64 painterRevision_ = ~quint64(0);

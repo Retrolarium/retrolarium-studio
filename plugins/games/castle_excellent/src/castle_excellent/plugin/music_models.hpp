@@ -67,7 +67,7 @@ private:
 
     int draftVersion_ = 0;
     mutable QVector<QVector<CastleExcellentMusicNote>> trace_;
-    mutable QString traceKey_;      // session revision, or the draft's version
+    mutable QString traceKey_;  // session revision, or the draft's version
 };
 
 // One MML sequence alone on the piano roll, on the voice that plays it (the
@@ -115,7 +115,7 @@ private:
 
     CastleExcellentSession* session_;
     int stream_;
-    int voice_ = 0;                 // 0 pulse 1, 2 triangle
+    int voice_ = 0;  // 0 pulse 1, 2 triangle
     QString selected_;
     bool editing_ = false;
     QJsonObject draft_;

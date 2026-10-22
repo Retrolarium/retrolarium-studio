@@ -26,8 +26,6 @@ public:
 
 }  // namespace
 
-void registerPlugin(sdk::PluginRegistry& registry) {
-    registry.add(std::make_unique<DoraemonPlugin>());
-}
+void registerPlugin(sdk::PluginRegistry& registry) { registry.add(std::make_unique<DoraemonPlugin>()); }
 
 }  // namespace rl::doraemon

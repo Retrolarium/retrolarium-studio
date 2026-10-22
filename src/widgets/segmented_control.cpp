@@ -19,9 +19,7 @@ SegmentedControl::SegmentedControl(QWidget* parent)
     layout_->setSpacing(1);
     group_->setExclusive(true);
     setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-    connect(group_, &QButtonGroup::idClicked, this, [this](int index) {
-        emit currentChanged(index, idAt(index));
-    });
+    connect(group_, &QButtonGroup::idClicked, this, [this](int index) { emit currentChanged(index, idAt(index)); });
     connect(&theme::Theme::instance(), &theme::Theme::changed, this, [this] { update(); });
 }
 
@@ -53,8 +51,7 @@ int SegmentedControl::addSegment(const QString& text, const QString& id) {
     return buttons_.size() - 1;
 }
 
-int SegmentedControl::addIconSegment(const QString& iconName, const QString& toolTip,
-                                     const QString& id) {
+int SegmentedControl::addIconSegment(const QString& iconName, const QString& toolTip, const QString& id) {
     QToolButton* button = makeButton(id.isEmpty() ? iconName : id);
     button->setProperty("variant", QStringLiteral("segmentIcon"));
     button->setIcon(theme::icon(iconName, theme::IconTone::Muted));
@@ -74,13 +71,9 @@ void SegmentedControl::clear() {
     ids_.clear();
 }
 
-int SegmentedControl::currentIndex() const {
-    return group_->checkedId();
-}
+int SegmentedControl::currentIndex() const { return group_->checkedId(); }
 
-QString SegmentedControl::currentId() const {
-    return idAt(currentIndex());
-}
+QString SegmentedControl::currentId() const { return idAt(currentIndex()); }
 
 QString SegmentedControl::idAt(int index) const {
     return index >= 0 && index < ids_.size() ? ids_.at(index) : QString();

@@ -14,8 +14,6 @@ std::vector<std::uint8_t> enigmaCompress(const std::vector<std::uint16_t>& words
     return retrolarium::core::enigmaCompress(bytes);
 }
 
-std::size_t enigmaCompressedSize(const std::vector<std::uint16_t>& words) {
-    return enigmaCompress(words).size();
-}
+std::size_t enigmaCompressedSize(const std::vector<std::uint16_t>& words) { return enigmaCompress(words).size(); }
 
 }  // namespace rl::megadrive

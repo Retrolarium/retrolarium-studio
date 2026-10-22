@@ -26,8 +26,8 @@ public:
 
     QVariantMap parse() {
         QVariantMap root;
-        QStringList table;       // current table path
-        bool arrayTable = false; // current table is the last element of an array
+        QStringList table;        // current table path
+        bool arrayTable = false;  // current table is the last element of an array
         while (true) {
             skipBlankLinesAndComments();
             if (atEnd()) {
@@ -63,9 +63,7 @@ public:
 private:
     bool atEnd() const { return pos_ >= text_.size(); }
     QChar peek() const { return atEnd() ? QChar() : text_.at(pos_); }
-    QChar peekAt(int offset) const {
-        return pos_ + offset < text_.size() ? text_.at(pos_ + offset) : QChar();
-    }
+    QChar peekAt(int offset) const { return pos_ + offset < text_.size() ? text_.at(pos_ + offset) : QChar(); }
 
     [[noreturn]] void fail(const QString& message) const {
         const int line = text_.leftRef(pos_).count(QLatin1Char('\n')) + 1;
@@ -110,8 +108,7 @@ private:
     void skipArrayFiller() {
         while (!atEnd()) {
             const QChar c = peek();
-            if (c == QLatin1Char(' ') || c == QLatin1Char('\t') || c == QLatin1Char('\r') ||
-                c == QLatin1Char('\n')) {
+            if (c == QLatin1Char(' ') || c == QLatin1Char('\t') || c == QLatin1Char('\r') || c == QLatin1Char('\n')) {
                 ++pos_;
             } else if (c == QLatin1Char('#')) {
                 skipComment();
@@ -189,27 +186,41 @@ private:
             }
             const QChar e = text_.at(pos_++);
             switch (e.unicode()) {
-            case 'n': result.append(QLatin1Char('\n')); break;
-            case 't': result.append(QLatin1Char('\t')); break;
-            case 'r': result.append(QLatin1Char('\r')); break;
-            case 'b': result.append(QChar(8)); break;
-            case 'f': result.append(QChar(12)); break;
-            case '"': result.append(QLatin1Char('"')); break;
-            case '\\': result.append(QLatin1Char('\\')); break;
-            case 'u':
-            case 'U': {
-                const int digits = e == QLatin1Char('u') ? 4 : 8;
-                bool ok = false;
-                const uint code = text_.mid(pos_, digits).toUInt(&ok, 16);
-                if (!ok) {
-                    fail(rlTr("studio", "bad unicode escape"));
+                case 'n':
+                    result.append(QLatin1Char('\n'));
+                    break;
+                case 't':
+                    result.append(QLatin1Char('\t'));
+                    break;
+                case 'r':
+                    result.append(QLatin1Char('\r'));
+                    break;
+                case 'b':
+                    result.append(QChar(8));
+                    break;
+                case 'f':
+                    result.append(QChar(12));
+                    break;
+                case '"':
+                    result.append(QLatin1Char('"'));
+                    break;
+                case '\\':
+                    result.append(QLatin1Char('\\'));
+                    break;
+                case 'u':
+                case 'U': {
+                    const int digits = e == QLatin1Char('u') ? 4 : 8;
+                    bool ok = false;
+                    const uint code = text_.mid(pos_, digits).toUInt(&ok, 16);
+                    if (!ok) {
+                        fail(rlTr("studio", "bad unicode escape"));
+                    }
+                    pos_ += digits;
+                    result.append(QString::fromUcs4(&code, 1));
+                    break;
                 }
-                pos_ += digits;
-                result.append(QString::fromUcs4(&code, 1));
-                break;
-            }
-            default:
-                fail(rlTr("studio", "unknown escape \\%1").arg(e));
+                default:
+                    fail(rlTr("studio", "unknown escape \\%1").arg(e));
             }
         }
     }
@@ -272,9 +283,8 @@ private:
         const int start = pos_;
         while (!atEnd()) {
             const QChar d = peek();
-            if (d == QLatin1Char(',') || d == QLatin1Char(']') || d == QLatin1Char('#') ||
-                d == QLatin1Char('\n') || d == QLatin1Char('\r') || d == QLatin1Char(' ') ||
-                d == QLatin1Char('\t')) {
+            if (d == QLatin1Char(',') || d == QLatin1Char(']') || d == QLatin1Char('#') || d == QLatin1Char('\n') ||
+                d == QLatin1Char('\r') || d == QLatin1Char(' ') || d == QLatin1Char('\t')) {
                 break;
             }
             ++pos_;
@@ -288,9 +298,8 @@ private:
         }
         token.remove(QLatin1Char('_'));
         bool ok = false;
-        const qlonglong integer = token.startsWith(QLatin1String("0x"))
-                                      ? token.mid(2).toLongLong(&ok, 16)
-                                      : token.toLongLong(&ok, 10);
+        const qlonglong integer =
+            token.startsWith(QLatin1String("0x")) ? token.mid(2).toLongLong(&ok, 16) : token.toLongLong(&ok, 10);
         if (ok) {
             return integer;
         }
@@ -421,20 +430,15 @@ ProjectFile ProjectFile::parse(const QString& text, const QString& path, QString
         result.valid_ = true;
     } catch (const std::exception& e) {
         if (error) {
-            *error = QStringLiteral("%1: %2").arg(QFileInfo(path).fileName(),
-                                                  QString::fromUtf8(e.what()));
+            *error = QStringLiteral("%1: %2").arg(QFileInfo(path).fileName(), QString::fromUtf8(e.what()));
         }
     }
     return result;
 }
 
-QString ProjectFile::directory() const {
-    return QFileInfo(path_).absolutePath();
-}
+QString ProjectFile::directory() const { return QFileInfo(path_).absolutePath(); }
 
-QVariant ProjectFile::value(const QString& dottedKey) const {
-    return lookup(root_, dottedKey);
-}
+QVariant ProjectFile::value(const QString& dottedKey) const { return lookup(root_, dottedKey); }
 
 QString ProjectFile::resolve(const QString& relativePath) const {
     return QDir::cleanPath(QDir(directory()).absoluteFilePath(relativePath));

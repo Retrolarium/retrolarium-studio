@@ -85,21 +85,13 @@ GameNames GameNames::forProject(const ProjectFile& project, QString* error) {
     return GameNames();
 }
 
-const GameNames& GameNames::current() {
-    return installed();
-}
+const GameNames& GameNames::current() { return installed(); }
 
-void GameNames::install(const GameNames& names) {
-    installed() = names;
-}
+void GameNames::install(const GameNames& names) { installed() = names; }
 
-QString GameNames::name(const QString& category, const QString& key) const {
-    return names_.value(category).value(key);
-}
+QString GameNames::name(const QString& category, const QString& key) const { return names_.value(category).value(key); }
 
-QString GameNames::name(const QString& category, int id) const {
-    return numbered_.value(category).value(id);
-}
+QString GameNames::name(const QString& category, int id) const { return numbered_.value(category).value(id); }
 
 QMap<int, QString> GameNames::numbered(const QString& category) const {
     QMap<int, QString> result;
@@ -117,9 +109,7 @@ QString gameName(const char* category, int id, const QString& fallback) {
     return name.isEmpty() ? fallback : name;
 }
 
-QJsonValue gameCatalog(const char* key) {
-    return GameNames::current().catalog(QString::fromLatin1(key));
-}
+QJsonValue gameCatalog(const char* key) { return GameNames::current().catalog(QString::fromLatin1(key)); }
 
 QString gameName(const char* category, const QString& key, const QString& fallback) {
     const QString name = GameNames::current().name(QString::fromLatin1(category), key);

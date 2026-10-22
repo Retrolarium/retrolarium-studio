@@ -12,13 +12,9 @@ SmbPlaytestModel::SmbPlaytestModel(SmbSession* session) : EmulatorModel(session)
     connect(session_, &sdk::Session::selectedStartChanged, this, &sdk::EditorModel::contentChanged);
 }
 
-bool SmbPlaytestModel::isRecording() const {
-    return session_->isRecording();
-}
+bool SmbPlaytestModel::isRecording() const { return session_->isRecording(); }
 
-QString SmbPlaytestModel::startLabel() const {
-    return session_->selectedStart();
-}
+QString SmbPlaytestModel::startLabel() const { return session_->selectedStart(); }
 
 QString SmbPlaytestModel::coreLabel() const {
     const QString revision = session_->document().revision();
@@ -28,9 +24,7 @@ QString SmbPlaytestModel::coreLabel() const {
     return revision == QLatin1String("pal") ? QStringLiteral("MAME · nespal") : QStringLiteral("MAME · nes");
 }
 
-void SmbPlaytestModel::play() {
-    session_->playSelected();
-}
+void SmbPlaytestModel::play() { session_->playSelected(); }
 
 sdk::Inspection SmbPlaytestModel::inspect() const {
     const SmbStart start = session_->start();
@@ -51,9 +45,10 @@ sdk::Inspection SmbPlaytestModel::inspect() const {
     core.label = tr("Core");
     core.value = coreLabel();
     inspection.fields = {course, cell, core};
-    inspection.note = tr("Play from selected builds the ROM with the kit and starts MAME with the "
-                         "player where the level editor puts it; Play starts from power-on. Drag "
-                         "the player in Levels to move the start point.");
+    inspection.note =
+        tr("Play from selected builds the ROM with the kit and starts MAME with the "
+           "player where the level editor puts it; Play starts from power-on. Drag "
+           "the player in Levels to move the start point.");
     inspection.engineTag = QStringLiteral("smb-point-playtest");
     return inspection;
 }

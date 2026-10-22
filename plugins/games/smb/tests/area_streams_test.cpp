@@ -22,9 +22,7 @@ namespace {
 
 using Position = std::tuple<int, int, int, int, QString>;  // page, column, row, payload, kind
 
-[[noreturn]] void fail(const QString& message) {
-    throw std::runtime_error(message.toStdString());
-}
+[[noreturn]] void fail(const QString& message) { throw std::runtime_error(message.toStdString()); }
 
 QVector<Position> objectPositions(const QVector<SmbAreaObject>& objects) {
     const QVector<int> pages = objectPages(objects);
@@ -55,9 +53,7 @@ QVector<Position> sorted(QVector<Position> positions) {
     return positions;
 }
 
-int objectBytes(const QVector<SmbAreaObject>& objects) {
-    return 2 * int(objects.size());
-}
+int objectBytes(const QVector<SmbAreaObject>& objects) { return 2 * int(objects.size()); }
 
 int enemyBytes(const QVector<SmbEnemyRecord>& enemies) {
     int bytes = 0;
@@ -73,7 +69,8 @@ int main(int argc, char* argv[]) {
         if (argc < 2) fail(QStringLiteral("usage: smb_area_streams_test <smb1_ju_level_scenes.json>"));
         QFile source(QString::fromLocal8Bit(argv[1]));
         if (!source.open(QIODevice::ReadOnly)) fail(QStringLiteral("cannot open the corpus"));
-        const QJsonArray areas = QJsonDocument::fromJson(source.readAll()).object().value(QStringLiteral("areas")).toArray();
+        const QJsonArray areas =
+            QJsonDocument::fromJson(source.readAll()).object().value(QStringLiteral("areas")).toArray();
         if (areas.size() != 34) fail(QStringLiteral("the corpus does not hold 34 areas"));
         int checks = 0;
         int unsortedAreas = 0;
@@ -100,7 +97,8 @@ int main(int argc, char* argv[]) {
                 QVector<SmbAreaObject> edited = objects;
                 removeObject(edited, i);
                 QVector<Position> expected = objectsBefore;
-                expected.removeOne(Position(page, objects.at(i).column, objects.at(i).row, objects.at(i).control, QString()));
+                expected.removeOne(
+                    Position(page, objects.at(i).column, objects.at(i).row, objects.at(i).control, QString()));
                 if (objectPositions(edited) != expected) {
                     fail(QStringLiteral("%1: removing object %2 moved other objects").arg(name).arg(i));
                 }

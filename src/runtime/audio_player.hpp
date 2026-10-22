@@ -35,12 +35,12 @@ private:
     void armPassEnd();
     void passEnded();
 
-    QString copy_;      // a private copy, so the source can be rebuilt meanwhile
+    QString copy_;  // a private copy, so the source can be rebuilt meanwhile
     bool playing_ = false;
     bool looping_ = false;
-    bool startedLooping_ = false;   // how the sound playing now was started
-    qint64 durationMs_ = 0;         // one pass; 0 when the header is unreadable
-    QElapsedTimer clock_;           // since the sound playing now started
+    bool startedLooping_ = false;  // how the sound playing now was started
+    qint64 durationMs_ = 0;        // one pass; 0 when the header is unreadable
+    QElapsedTimer clock_;          // since the sound playing now started
     QTimer* passEnd_ = nullptr;
     QProcess* fallback_ = nullptr;
 };

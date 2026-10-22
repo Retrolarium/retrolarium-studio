@@ -57,21 +57,21 @@ QString first(const nes::Bundle& bundle, const char* codec) {
 // is played by UpdateSoundEffects ($C2F9) from the next frame.
 QVector<nes::SoundEffect> soundEffects() {
     const QString tuned = rlTr("castle_excellent", "Its tunable bytes are in SFX parameters.");
-    return {{QStringLiteral("castle-excellent:1"), rlTr("castle_excellent", "Jump"), rlTr("castle_excellent", "Start routine $C20D"), QString()},
+    return {{QStringLiteral("castle-excellent:1"), rlTr("castle_excellent", "Jump"),
+             rlTr("castle_excellent", "Start routine $C20D"), QString()},
             {QStringLiteral("castle-excellent:2"), rlTr("castle_excellent", "Crush"),
              rlTr("castle_excellent", "Start routine $C233"), QString()},
             {QStringLiteral("castle-excellent:3"), rlTr("castle_excellent", "Item collected"),
              rlTr("castle_excellent", "Start routine $C272"), tuned},
-            {QStringLiteral("castle-excellent:4"), rlTr("castle_excellent", "Flame"), rlTr("castle_excellent", "Start routine $C29A"), tuned},
+            {QStringLiteral("castle-excellent:4"), rlTr("castle_excellent", "Flame"),
+             rlTr("castle_excellent", "Start routine $C29A"), tuned},
             {QStringLiteral("castle-excellent:5"), rlTr("castle_excellent", "Cell opens"),
              rlTr("castle_excellent", "Start routine $C2BD"), QString()}};
 }
 
 }  // namespace
 
-QString roomLabel(int room) {
-    return rlTr("castle_excellent", "Room %1").arg(room);
-}
+QString roomLabel(int room) { return rlTr("castle_excellent", "Room %1").arg(room); }
 
 // ---------------------------------------------------------------- opening
 
@@ -162,8 +162,7 @@ QVector<sdk::DocumentGroup> CastleExcellentSession::documents(const QString& kin
             const QVector<CastleExcellentObject> objects = state_.levels.objects(r);
             const bool dirty = state_.levels.cells(r) != saved_.levels.cells(r) || objects != saved_.levels.objects(r);
             group.documents << entry(QString::number(r + 1), roomLabel(state_.levels.roomNumber(r)),
-                                     objects.isEmpty() ? QString() : tr("%1 obj").arg(objects.size()),
-                                     dirty);
+                                     objects.isEmpty() ? QString() : tr("%1 obj").arg(objects.size()), dirty);
         }
         groups << group;
     } else if (kind == QLatin1String("graphics")) {
@@ -176,12 +175,11 @@ QVector<sdk::DocumentGroup> CastleExcellentSession::documents(const QString& kin
                 for (int t = half * 256; t < std::min(count, half * 256 + 256) && !dirty; ++t) {
                     dirty = state_.graphics.tilePixels(id, t) != saved_.graphics.tilePixels(id, t);
                 }
-                group.documents << entry(QStringLiteral("%1/%2").arg(id).arg(half),
-                                         half == 0 ? tr("Pattern table 0") : tr("Pattern table 1"),
-                                         id == art_.chr ? (half == 0 ? QStringLiteral("sprites")
-                                                                     : tr("room cells"))
-                                                        : tr("256 tiles"),
-                                         dirty);
+                group.documents << entry(
+                    QStringLiteral("%1/%2").arg(id).arg(half),
+                    half == 0 ? tr("Pattern table 0") : tr("Pattern table 1"),
+                    id == art_.chr ? (half == 0 ? QStringLiteral("sprites") : tr("room cells")) : tr("256 tiles"),
+                    dirty);
             }
             groups << group;
         }
@@ -189,21 +187,25 @@ QVector<sdk::DocumentGroup> CastleExcellentSession::documents(const QString& kin
         sdk::DocumentGroup group;
         group.title = tr("Metatiles");
         if (!art_.cellVisuals.isEmpty()) {
-            group.documents << entry(QStringLiteral("cells"), tr("Room metatiles"),
-                                     QStringLiteral("%1 · 16x8").arg(painter().cellTypeCount()),
-                                     state_.graphics.resource(art_.cellVisuals) != saved_.graphics.resource(art_.cellVisuals));
+            group.documents << entry(
+                QStringLiteral("cells"), tr("Room metatiles"),
+                QStringLiteral("%1 · 16x8").arg(painter().cellTypeCount()),
+                state_.graphics.resource(art_.cellVisuals) != saved_.graphics.resource(art_.cellVisuals));
         }
         groups << group;
     } else if (kind == QLatin1String("animations") && !art_.descriptors.isEmpty()) {
-        const QJsonArray now = state_.graphics.resource(art_.descriptors).value(QStringLiteral("descriptors")).toArray();
-        const QJsonArray saved = saved_.graphics.resource(art_.descriptors).value(QStringLiteral("descriptors")).toArray();
+        const QJsonArray now =
+            state_.graphics.resource(art_.descriptors).value(QStringLiteral("descriptors")).toArray();
+        const QJsonArray saved =
+            saved_.graphics.resource(art_.descriptors).value(QStringLiteral("descriptors")).toArray();
         QVector<sdk::DocumentGroup> byGroup;
         const QVector<CastleExcellentAnimation>& animations = castleExcellentAnimations();
         for (int i = 0; i < animations.size(); ++i) {
             const CastleExcellentAnimation& a = animations.at(i);
             bool dirty = false;
             for (const CastleExcellentAnimationFrame& f : a.frames) {
-                for (int s = 0; s < f.offsets.size(); ++s) dirty = dirty || now.at(f.first + s) != saved.at(f.first + s);
+                for (int s = 0; s < f.offsets.size(); ++s)
+                    dirty = dirty || now.at(f.first + s) != saved.at(f.first + s);
             }
             auto group = std::find_if(byGroup.begin(), byGroup.end(),
                                       [&a](const sdk::DocumentGroup& g) { return g.title == a.group; });
@@ -239,8 +241,8 @@ QVector<sdk::DocumentGroup> CastleExcellentSession::documents(const QString& kin
             const QVector<int> saved = saved_.graphics.tableValues(QStringLiteral("screen-palettes"));
             for (const QString& id : screens::ids()) {
                 const int first = screens::paletteFirst(id);
-                screenGroup.documents << entry(QStringLiteral("screen:") + id, screens::label(id),
-                                               tr("32 colours"), now.mid(first, 32) != saved.mid(first, 32));
+                screenGroup.documents << entry(QStringLiteral("screen:") + id, screens::label(id), tr("32 colours"),
+                                               now.mid(first, 32) != saved.mid(first, 32));
             }
             groups << screenGroup;
         }
@@ -262,8 +264,8 @@ QVector<sdk::DocumentGroup> CastleExcellentSession::documents(const QString& kin
         const QJsonArray saved = saved_.screens.value(QStringLiteral("screens")).toArray();
         for (int i = 0; i < screens::ids().size(); ++i) {
             const QString id = screens::ids().at(i);
-            group.documents << entry(id, screens::label(id), list.isEmpty() ? tr("not added yet")
-                                                                            : QStringLiteral("32 × 30"),
+            group.documents << entry(id, screens::label(id),
+                                     list.isEmpty() ? tr("not added yet") : QStringLiteral("32 × 30"),
                                      !list.isEmpty() && list.at(i) != saved.at(i));
         }
         groups << group;
@@ -317,9 +319,10 @@ QVector<sdk::DocumentGroup> CastleExcellentSession::documents(const QString& kin
             // Opening it adds the document from the project's own source.
             group.documents << entry(QStringLiteral("demo"), tr("Title demo"), tr("not added yet"));
         } else {
-            group.documents << entry(QStringLiteral("demo"), tr("Title demo"),
-                                     tr("%n steps", nullptr, state_.demo.value(QStringLiteral("steps")).toArray().size()),
-                                     state_.demo != saved_.demo);
+            group.documents << entry(
+                QStringLiteral("demo"), tr("Title demo"),
+                tr("%n steps", nullptr, state_.demo.value(QStringLiteral("steps")).toArray().size()),
+                state_.demo != saved_.demo);
         }
         groups << group;
     } else if (kind == QLatin1String("playtest")) {
@@ -349,9 +352,9 @@ std::unique_ptr<sdk::EditorModel> CastleExcellentSession::openEditor(const QStri
             if (state_.graphics.resourceIds(QStringLiteral("nes.chr-2bpp.v1")).contains(id) &&
                 half * 256 < state_.graphics.tileCount(id)) {
                 // Rooms draw sprites from table 0 and cells from table 1.
-                return std::make_unique<nes::ChrTileModel>(
-                    this, id, half * 256, std::min(256, state_.graphics.tileCount(id) - half * 256),
-                    tr("%1 · table %2").arg(id).arg(half), half == 0);
+                return std::make_unique<nes::ChrTileModel>(this, id, half * 256,
+                                                           std::min(256, state_.graphics.tileCount(id) - half * 256),
+                                                           tr("%1 · table %2").arg(id).arg(half), half == 0);
             }
         }
         if (kind == QLatin1String("palettes") && document.startsWith(QLatin1String("screen:")) &&
@@ -366,7 +369,8 @@ std::unique_ptr<sdk::EditorModel> CastleExcellentSession::openEditor(const QStri
             state_.graphics.resourceIds(QStringLiteral("nes.palette-table.v1")).contains(document)) {
             return std::make_unique<nes::PaletteTableModel>(this, document, tr("Room palettes"));
         }
-        if ((kind == QLatin1String("screens") || (kind == QLatin1String("text") && document == QLatin1String("ending"))) &&
+        if ((kind == QLatin1String("screens") ||
+             (kind == QLatin1String("text") && document == QLatin1String("ending"))) &&
             state_.screens.isEmpty()) {
             upgradeDocuments(kind, document);
             return nullptr;
@@ -384,15 +388,19 @@ std::unique_ptr<sdk::EditorModel> CastleExcellentSession::openEditor(const QStri
         if (kind == QLatin1String("metatiles") && document == QLatin1String("cells") && !art_.cellVisuals.isEmpty()) {
             return std::make_unique<CastleExcellentCellModel>(this);
         }
-        if (kind == QLatin1String("animations") && document.startsWith(QLatin1String("anim:")) && !art_.descriptors.isEmpty()) {
+        if (kind == QLatin1String("animations") && document.startsWith(QLatin1String("anim:")) &&
+            !art_.descriptors.isEmpty()) {
             const int index = document.mid(5).toInt();
-            if (index >= 0 && index < castleExcellentAnimations().size()) return std::make_unique<CastleExcellentAnimationModel>(this, index);
+            if (index >= 0 && index < castleExcellentAnimations().size())
+                return std::make_unique<CastleExcellentAnimationModel>(this, index);
         }
-        if (kind == QLatin1String("animations") && document == QLatin1String("sprites") && !art_.descriptors.isEmpty()) {
+        if (kind == QLatin1String("animations") && document == QLatin1String("sprites") &&
+            !art_.descriptors.isEmpty()) {
             return std::make_unique<CastleExcellentSpriteModel>(this);
         }
         if (kind == QLatin1String("sound") && document.startsWith(QLatin1String("sfx:"))) {
-            const QStringList watched = state_.graphics.resourceIds(QStringLiteral("castle-excellent.sfx-parameters.v1"));
+            const QStringList watched =
+                state_.graphics.resourceIds(QStringLiteral("castle-excellent.sfx-parameters.v1"));
             for (const nes::SoundEffect& effect : soundEffects()) {
                 if (QStringLiteral("sfx:") + effect.key == document) {
                     return std::make_unique<nes::SoundEffectModel>(this, effect, project_.path(), project_.directory(),
@@ -458,7 +466,8 @@ void CastleExcellentSession::setState(const CastleExcellentState& state, quint64
     }
 }
 
-bool CastleExcellentSession::edit(const QString& text, const std::function<void(CastleExcellentState&)>& change, QString* error) {
+bool CastleExcellentSession::edit(const QString& text, const std::function<void(CastleExcellentState&)>& change,
+                                  QString* error) {
     CastleExcellentState next = state_;
     try {
         change(next);
@@ -478,7 +487,7 @@ bool CastleExcellentSession::edit(const QString& text, const std::function<void(
 }
 
 bool CastleExcellentSession::editBundle(const QString& text, const std::function<void(nes::Bundle&)>& change,
-                               QString* error) {
+                                        QString* error) {
     return edit(text, [change](CastleExcellentState& s) { change(s.graphics); }, error);
 }
 
@@ -567,8 +576,8 @@ QVector<nes::PreviewPalette> CastleExcellentSession::previewPalettes(const QStri
     for (int p = 0; p < 4; ++p) {
         const int at = (sprites ? 16 : 0) + p * 4;
         if (at + 4 <= room.size()) {
-            result << nes::PreviewPalette{tr("Room %1 %2").arg(sprites ? QStringLiteral("SPR") : QStringLiteral("BG")).arg(p),
-                                          room.mid(at, 4)};
+            result << nes::PreviewPalette{
+                tr("Room %1 %2").arg(sprites ? QStringLiteral("SPR") : QStringLiteral("BG")).arg(p), room.mid(at, 4)};
         }
     }
     for (const QString& id : state_.graphics.resourceIds(QStringLiteral("nes.palette-table.v1"))) {
@@ -629,9 +638,7 @@ void CastleExcellentSession::build() {
     runBuild([](bool) {});
 }
 
-void CastleExcellentSession::play() {
-    launch(true);
-}
+void CastleExcellentSession::play() { launch(true); }
 
 void CastleExcellentSession::playSelected() {
     if (isRecording()) stopRecording();
@@ -663,11 +670,13 @@ bool CastleExcellentSession::editMusic(const QString& text, const QJsonObject& n
 // ---------------------------------------------------------------- demo
 
 int CastleExcellentSession::demoCapacity() const {
-    const int capacity = state_.demo.value(QStringLiteral("layout")).toObject().value(QStringLiteral("capacity")).toInt();
+    const int capacity =
+        state_.demo.value(QStringLiteral("layout")).toObject().value(QStringLiteral("capacity")).toInt();
     return capacity > 0 ? capacity : 72;
 }
 
-bool CastleExcellentSession::editDemo(const QString& text, const std::function<void(QJsonObject&)>& change, QString* error) {
+bool CastleExcellentSession::editDemo(const QString& text, const std::function<void(QJsonObject&)>& change,
+                                      QString* error) {
     QJsonObject next = state_.demo;
     change(next);
     const QJsonArray steps = next.value(QStringLiteral("steps")).toArray();
@@ -725,7 +734,8 @@ void CastleExcellentSession::upgradeDocuments(const QString& kind, const QString
 
 void CastleExcellentSession::launchDemo(bool record) {
     EmulatorPlan plan;
-    plan.arguments = QStringList{QStringLiteral("studio"), QStringLiteral("castle-excellent-demo-plan"), project_.path()};
+    plan.arguments =
+        QStringList{QStringLiteral("studio"), QStringLiteral("castle-excellent-demo-plan"), project_.path()};
     plan.label = record ? tr("Plan demo recording") : tr("Plan title demo");
     const QString name = profile().name;
     plan.title = record ? tr("%1 · recording the demo").arg(name) : tr("%1 · title demo").arg(name);
@@ -759,8 +769,9 @@ void CastleExcellentSession::applyRecording(const QString& path) {
     }
     const QJsonArray steps = recording.steps;
     QString error;
-    if (!editDemo(tr("Record the title demo"),
-                  [steps](QJsonObject& demo) { demo.insert(QStringLiteral("steps"), steps); }, &error)) {
+    if (!editDemo(
+            tr("Record the title demo"), [steps](QJsonObject& demo) { demo.insert(QStringLiteral("steps"), steps); },
+            &error)) {
         report(sdk::Severity::Error, QStringLiteral("demo"), error);
         return;
     }
@@ -780,9 +791,15 @@ void CastleExcellentSession::launch(bool fromStart) {
         plan.label = tr("Plan playtest from power-on");
         plan.title = tr("%1 · power-on").arg(name);
     } else {
-        plan.arguments = QStringList{QStringLiteral("studio"), QStringLiteral("castle-excellent-point-playtest-plan"), project_.path(),
-                          QStringLiteral("--room"), QString::number(start.room), QStringLiteral("--x"),
-                          QString::number(start.pixel.x()), QStringLiteral("--y"), QString::number(start.pixel.y() + 16)};
+        plan.arguments = QStringList{QStringLiteral("studio"),
+                                     QStringLiteral("castle-excellent-point-playtest-plan"),
+                                     project_.path(),
+                                     QStringLiteral("--room"),
+                                     QString::number(start.room),
+                                     QStringLiteral("--x"),
+                                     QString::number(start.pixel.x()),
+                                     QStringLiteral("--y"),
+                                     QString::number(start.pixel.y() + 16)};
         plan.label = tr("Plan playtest of %1").arg(roomLabel(start.room));
         plan.title = QStringLiteral("%1 · %2").arg(name, roomLabel(start.room));
         // The Playtest view covers the title and the way to the room.

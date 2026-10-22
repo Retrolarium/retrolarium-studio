@@ -15,14 +15,14 @@ namespace rl::solomon {
 
 namespace {
 
-constexpr int kTitleBank = 3;           // CNROM bank and background table the title uses
+constexpr int kTitleBank = 3;  // CNROM bank and background table the title uses
 constexpr int kTitleTable = 0x100;
 const int kPreviewPalette[4] = {0x0f, 0x11, 0x21, 0x30};
 
 const QStringList& buttonNames() {
     // The demo document's names: never translated.
-    static const QStringList kNames{QStringLiteral("A"),  QStringLiteral("B"),    QStringLiteral("SELECT"),
-                                    QStringLiteral("START"), QStringLiteral("UP"), QStringLiteral("DOWN"),
+    static const QStringList kNames{QStringLiteral("A"),     QStringLiteral("B"),    QStringLiteral("SELECT"),
+                                    QStringLiteral("START"), QStringLiteral("UP"),   QStringLiteral("DOWN"),
                                     QStringLiteral("LEFT"),  QStringLiteral("RIGHT")};
     return kNames;
 }
@@ -42,7 +42,12 @@ int titleAddress(int row, int column) {
 }
 
 QJsonArray tokensOf(const QJsonObject& presentation, int stream) {
-    return presentation.value(QStringLiteral("streams")).toArray().at(stream).toObject().value(QStringLiteral("tokens")).toArray();
+    return presentation.value(QStringLiteral("streams"))
+        .toArray()
+        .at(stream)
+        .toObject()
+        .value(QStringLiteral("tokens"))
+        .toArray();
 }
 
 }  // namespace
@@ -64,7 +69,7 @@ QHash<int, QPair<int, int>> titleWriters(const QJsonObject& presentation, int st
             for (int i = 0; i < tiles.size(); ++i) {
                 const int address = start + i;
                 if (address < 0x2800 || address >= 0x2bc0) continue;
-                writers.insert(address - 0x2800, qMakePair(t, i));     // later writes win
+                writers.insert(address - 0x2800, qMakePair(t, i));  // later writes win
             }
         }
     }
@@ -78,17 +83,11 @@ SolomonTitleModel::SolomonTitleModel(SolomonSession* session, int stream)
     connect(session_, &sdk::Session::contentChanged, this, &sdk::EditorModel::contentChanged);
 }
 
-QJsonObject SolomonTitleModel::presentation() const {
-    return stroking_ ? draft_ : session_->state().presentation;
-}
+QJsonObject SolomonTitleModel::presentation() const { return stroking_ ? draft_ : session_->state().presentation; }
 
-QString SolomonTitleModel::layerName(int stream) {
-    return stream == 0 ? tr("Logo layer") : tr("Castle layer");
-}
+QString SolomonTitleModel::layerName(int stream) { return stream == 0 ? tr("Logo layer") : tr("Castle layer"); }
 
-QString SolomonTitleModel::title() const {
-    return tr("Title · %1").arg(layerName(stream_).toLower());
-}
+QString SolomonTitleModel::title() const { return tr("Title · %1").arg(layerName(stream_).toLower()); }
 
 const SolomonTitleModel::Layer& SolomonTitleModel::layer(int stream) const {
     // Draft versions count up from the session revision's top half so a
@@ -106,8 +105,12 @@ const SolomonTitleModel::Layer& SolomonTitleModel::layer(int stream) const {
             for (auto it = writers.constBegin(); it != writers.constEnd(); ++it) {
                 if (it.key() < 0 || it.key() >= 32 * 30) continue;
                 l.writers[it.key()] = it.value();
-                l.values[it.key()] =
-                    tokens.at(it.value().first).toObject().value(QStringLiteral("tiles")).toArray().at(it.value().second).toInt();
+                l.values[it.key()] = tokens.at(it.value().first)
+                                         .toObject()
+                                         .value(QStringLiteral("tiles"))
+                                         .toArray()
+                                         .at(it.value().second)
+                                         .toInt();
             }
         }
     }
@@ -131,7 +134,8 @@ const QImage& SolomonTitleModel::tile(int value, bool faint) const {
     QImage image(8, 8, QImage::Format_ARGB32);
     const nes::Bundle& g = session_->bundle();
     const QString chr = QStringLiteral("chr-bank-%1").arg(kTitleBank);
-    const QVector<quint8> pixels = g.contains(chr) ? g.tilePixels(chr, kTitleTable + (value & 0xff)) : QVector<quint8>(64, 0);
+    const QVector<quint8> pixels =
+        g.contains(chr) ? g.tilePixels(chr, kTitleTable + (value & 0xff)) : QVector<quint8>(64, 0);
     for (int y = 0; y < 8; ++y) {
         for (int x = 0; x < 8; ++x) {
             QColor c = QColor::fromRgb(nes::masterColor(kPreviewPalette[pixels.value(y * 8 + x) & 3]));
@@ -151,15 +155,14 @@ QImage SolomonTitleModel::render() const {
         const int s = pass == 0 ? 1 - stream_ : stream_;
         const QVector<int>& values = layer(s).values;
         for (int cell = 0; cell < values.size(); ++cell) {
-            if (values.at(cell) >= 0) painter.drawImage((cell % 32) * 8, (cell / 32) * 8, tile(values.at(cell), pass == 0));
+            if (values.at(cell) >= 0)
+                painter.drawImage((cell % 32) * 8, (cell / 32) * 8, tile(values.at(cell), pass == 0));
         }
     }
     return image;
 }
 
-QVector<sdk::CellBrush> SolomonTitleModel::brushes() const {
-    return {{brush_, nes::hex(brush_), QColor()}};
-}
+QVector<sdk::CellBrush> SolomonTitleModel::brushes() const { return {{brush_, nes::hex(brush_), QColor()}}; }
 
 void SolomonTitleModel::setCurrentBrush(int value) {
     brush_ = std::clamp(value, 0x80, 0xff);
@@ -167,9 +170,7 @@ void SolomonTitleModel::setCurrentBrush(int value) {
     emit selectionChanged();
 }
 
-QString SolomonTitleModel::currentLibraryItem() const {
-    return QStringLiteral("tile:%1").arg(brush_);
-}
+QString SolomonTitleModel::currentLibraryItem() const { return QStringLiteral("tile:%1").arg(brush_); }
 
 void SolomonTitleModel::setCurrentLibraryItem(const QString& id) {
     if (id.startsWith(QLatin1String("tile:"))) setCurrentBrush(id.mid(5).toInt());
@@ -198,9 +199,7 @@ int SolomonTitleModel::cellValue(QPoint cell) const {
     return layer(stream_).values.at(cell.y() * 32 + cell.x());
 }
 
-bool SolomonTitleModel::isCellEditable(QPoint cell) const {
-    return cellValue(cell) >= 0;
-}
+bool SolomonTitleModel::isCellEditable(QPoint cell) const { return cellValue(cell) >= 0; }
 
 QString SolomonTitleModel::lockReason(QPoint) const {
     return tr("This layer writes no tile there; the stream keeps its layout and only its tiles change.");
@@ -244,8 +243,7 @@ bool SolomonTitleModel::paintCell(QPoint cell, int value) {
         emit contentChanged();
         return true;
     }
-    return session_->edit(tr("Paint the %1").arg(title()),
-                          [doc](SolomonState& s) { s.presentation = doc; }, nullptr);
+    return session_->edit(tr("Paint the %1").arg(title()), [doc](SolomonState& s) { s.presentation = doc; }, nullptr);
 }
 
 void SolomonTitleModel::endStroke() {
@@ -260,7 +258,12 @@ void SolomonTitleModel::endStroke() {
 
 sdk::Budget SolomonTitleModel::budget() const {
     const QJsonObject layout = presentation().value(QStringLiteral("layout")).toObject();
-    const int size = layout.value(QStringLiteral("streams")).toArray().at(stream_).toObject().value(QStringLiteral("encoded_size")).toInt();
+    const int size = layout.value(QStringLiteral("streams"))
+                         .toArray()
+                         .at(stream_)
+                         .toObject()
+                         .value(QStringLiteral("encoded_size"))
+                         .toInt();
     sdk::Budget budget;
     budget.used = size;
     budget.capacity = size;
@@ -268,9 +271,7 @@ sdk::Budget SolomonTitleModel::budget() const {
     return budget;
 }
 
-QString SolomonTitleModel::statusText() const {
-    return tr("%1 · brush %2").arg(title(), nes::hex(brush_));
-}
+QString SolomonTitleModel::statusText() const { return tr("%1 · brush %2").arg(title(), nes::hex(brush_)); }
 
 sdk::Inspection SolomonTitleModel::inspect() const {
     sdk::Inspection inspection;
@@ -282,9 +283,10 @@ sdk::Inspection SolomonTitleModel::inspect() const {
     brush.value = nes::hex(brush_);
     brush.monospace = true;
     inspection.fields = {brush};
-    inspection.note = tr("The title screen is two packed streams of cursor moves and tile runs. Paint "
-                         "the cells this layer writes with tiles $80-$FF; codes below $80 are the "
-                         "stream's commands. The other layer shows dimmed. Colours are a preview.");
+    inspection.note =
+        tr("The title screen is two packed streams of cursor moves and tile runs. Paint "
+           "the cells this layer writes with tiles $80-$FF; codes below $80 are the "
+           "stream's commands. The other layer shows dimmed. Colours are a preview.");
     inspection.engineTag = QStringLiteral("solomon.screens@1");
     return inspection;
 }
@@ -304,9 +306,7 @@ SolomonDemoModel::~SolomonDemoModel() {
     if (attached_) attached_->attachDemoEditor(false);
 }
 
-QString SolomonDemoModel::startPoint() const {
-    return session_->demoStart() ? session_->selectedStart() : QString();
-}
+QString SolomonDemoModel::startPoint() const { return session_->demoStart() ? session_->selectedStart() : QString(); }
 
 int SolomonDemoModel::demoCapacity(const QString& revision) {
     // The tables grow into the filler after them, up to the expansion's
@@ -426,20 +426,24 @@ QString SolomonDemoModel::cell(int row, int column) const {
     if (row < 0 || row >= steps.size()) return {};
     const QJsonObject step = steps.at(row).toObject();
     switch (column) {
-    case 0: return QString::number(row + 1);
-    case 1: return QString::number(step.value(QStringLiteral("duration")).toInt());
-    case 2: {
-        QStringList held;
-        for (const QJsonValue& b : step.value(QStringLiteral("buttons")).toArray()) held << b.toString();
-        return held.isEmpty() ? QStringLiteral("-") : held.join(QLatin1Char(' '));
-    }
-    case 3: {
-        int frames = 0;
-        // A step waits its duration plus one tick of the NMI frame counter.
-        for (int i = 0; i < row; ++i) frames += steps.at(i).toObject().value(QStringLiteral("duration")).toInt() + 1;
-        return QStringLiteral("%1.%2 s").arg(frames / 60).arg(frames % 60 * 10 / 60);
-    }
-    default: return {};
+        case 0:
+            return QString::number(row + 1);
+        case 1:
+            return QString::number(step.value(QStringLiteral("duration")).toInt());
+        case 2: {
+            QStringList held;
+            for (const QJsonValue& b : step.value(QStringLiteral("buttons")).toArray()) held << b.toString();
+            return held.isEmpty() ? QStringLiteral("-") : held.join(QLatin1Char(' '));
+        }
+        case 3: {
+            int frames = 0;
+            // A step waits its duration plus one tick of the NMI frame counter.
+            for (int i = 0; i < row; ++i)
+                frames += steps.at(i).toObject().value(QStringLiteral("duration")).toInt() + 1;
+            return QStringLiteral("%1.%2 s").arg(frames / 60).arg(frames % 60 * 10 / 60);
+        }
+        default:
+            return {};
     }
 }
 
@@ -457,7 +461,8 @@ void SolomonDemoModel::setCurrentRow(int row) {
 }
 
 bool SolomonDemoModel::setCell(int row, int column, const QString& value, QString* error) {
-    if (row < 0 || row >= rowCount() || (column != 1 && column != 2)) return TableModel::setCell(row, column, value, error);
+    if (row < 0 || row >= rowCount() || (column != 1 && column != 2))
+        return TableModel::setCell(row, column, value, error);
     QJsonObject doc = session_->state().presentation;
     QJsonArray steps = doc.value(QStringLiteral("demo_steps")).toArray();
     QJsonObject step = steps.at(row).toObject();
@@ -466,15 +471,17 @@ bool SolomonDemoModel::setCell(int row, int column, const QString& value, QStrin
         const int frames = value.trimmed().toInt(&ok);
         if (!ok || frames < 0 || frames > 254) {
             if (error) {
-                *error = tr("A step waits 0-254 frames: the game waits for its frame counter to pass "
-                            "the value, and 255 it never passes.");
+                *error =
+                    tr("A step waits 0-254 frames: the game waits for its frame counter to pass "
+                       "the value, and 255 it never passes.");
             }
             return false;
         }
         step.insert(QStringLiteral("duration"), frames);
     } else {
         // Any order and case in, the game's bit order out.
-        const QStringList words = value.toUpper().split(QRegularExpression(QStringLiteral("[\\s,+]+")), Qt::SkipEmptyParts);
+        const QStringList words =
+            value.toUpper().split(QRegularExpression(QStringLiteral("[\\s,+]+")), Qt::SkipEmptyParts);
         QJsonArray held;
         for (const QString& name : buttonNames()) {
             if (words.contains(name)) held.append(name);
@@ -489,8 +496,8 @@ bool SolomonDemoModel::setCell(int row, int column, const QString& value, QStrin
     }
     steps.replace(row, step);
     doc.insert(QStringLiteral("demo_steps"), steps);
-    return session_->edit(tr("Edit demo step %1").arg(row + 1),
-                          [doc](SolomonState& s) { s.presentation = doc; }, error);
+    return session_->edit(
+        tr("Edit demo step %1").arg(row + 1), [doc](SolomonState& s) { s.presentation = doc; }, error);
 }
 
 sdk::Budget SolomonDemoModel::budget() const {
@@ -515,7 +522,7 @@ sdk::Inspection SolomonDemoModel::inspect() const {
                          "the emulator. Record plays the room with your controller and turns what "
                          "you press into steps when you press Start or Stop recording; the tables "
                          "hold up to %1 steps.")
-                           .arg(demoCapacity(session_->rooms().revision()));
+                          .arg(demoCapacity(session_->rooms().revision()));
     inspection.engineTag = QStringLiteral("solomon.presentation@1");
     return inspection;
 }

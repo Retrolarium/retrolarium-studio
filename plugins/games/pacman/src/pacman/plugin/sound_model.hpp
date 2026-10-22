@@ -54,7 +54,7 @@ public:
     static int streamBytes(const QJsonObject& stream);
 
 private:
-    QJsonObject sound() const;              // the draft while dragging
+    QJsonObject sound() const;  // the draft while dragging
     QJsonObject stream(int channel) const;
     bool commit(const QString& text, const QJsonObject& next, QString* error);
     QJsonObject withCommand(const QJsonObject& sound, int channel, int command, const QJsonObject& value) const;
@@ -64,7 +64,7 @@ private:
     QVector<int> slots_;
     QString title_;
     int channel_ = 0;
-    QString selected_;      // "channel:command"
+    QString selected_;  // "channel:command"
     bool editing_ = false;
     QJsonObject draft_;
 };

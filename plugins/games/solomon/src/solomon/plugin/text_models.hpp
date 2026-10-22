@@ -12,9 +12,9 @@ class SolomonSession;
 struct TextScreen {
     QString id;
     QString label;
-    QStringList strings;    // TextString ids
-    int bank = 3;           // CHR bank whose background table holds the font
-    int paletteProgram = 5; // static palette program the screen loads
+    QStringList strings;     // TextString ids
+    int bank = 3;            // CHR bank whose background table holds the font
+    int paletteProgram = 5;  // static palette program the screen loads
     bool titleBackdrop = false;
 };
 

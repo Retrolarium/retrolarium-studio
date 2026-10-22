@@ -17,10 +17,10 @@ struct MovieChoice {
     QString path;
     QString file;
     QString title;
-    QString kind;           // "tas", "longplay", "attract", "other" or empty
+    QString kind;  // "tas", "longplay", "attract", "other" or empty
     QString author;
     QString description;
-    QString source;         // "mame" for a movie recorded in the studio
+    QString source;  // "mame" for a movie recorded in the studio
     int frames = 0;
     double seconds = 0;
 };

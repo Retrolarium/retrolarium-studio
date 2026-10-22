@@ -15,10 +15,10 @@ Mode modeFromName(const QString& name, Mode fallback = Mode::Dark);
 struct Tokens {
     Mode mode = Mode::Dark;
 
-    QColor bg;          // title/menu bar, editor ground
-    QColor chrome;      // toolbar, rail, status bar, table header
-    QColor panel;       // document list, inspector, bottom panel
-    QColor field;       // input background
+    QColor bg;      // title/menu bar, editor ground
+    QColor chrome;  // toolbar, rail, status bar, table header
+    QColor panel;   // document list, inspector, bottom panel
+    QColor field;   // input background
     QColor text;
     QColor muted;
     QColor faint;
@@ -28,9 +28,9 @@ struct Tokens {
     QColor accentInk;   // selected text, links
     QColor accentSoft;  // selected fill
     QColor hover;
-    QColor canvas;      // ground behind pixel canvases
-    QColor onAccent;    // text on accent fill
-    QColor mark;        // corner registration marks
+    QColor canvas;    // ground behind pixel canvases
+    QColor onAccent;  // text on accent fill
+    QColor mark;      // corner registration marks
 };
 
 const Tokens& tokens(Mode mode);
@@ -53,14 +53,12 @@ inline const QColor kSelectionFill{0x94, 0xbc, 0xe3, 46};
 // Raw ramps of the design system, for the rare place that needs a step
 // outside the semantic set (charts, gallery).
 namespace ramp {
-inline const QColor kAccent[9] = {
-    QColor(0xee, 0xf6, 0xff), QColor(0xd6, 0xeb, 0xff), QColor(0xb5, 0xd9, 0xfd),
-    QColor(0x94, 0xbc, 0xe3), QColor(0x74, 0x9d, 0xc4), QColor(0x59, 0x7e, 0xa3),
-    QColor(0x41, 0x61, 0x80), QColor(0x2c, 0x45, 0x5d), QColor(0x1d, 0x2d, 0x3d)};
-inline const QColor kNeutral[9] = {
-    QColor(0xf5, 0xf5, 0xf8), QColor(0xe7, 0xe7, 0xea), QColor(0xd4, 0xd4, 0xd7),
-    QColor(0xb7, 0xb7, 0xba), QColor(0x98, 0x98, 0x9b), QColor(0x7a, 0x7a, 0x7d),
-    QColor(0x5d, 0x5d, 0x60), QColor(0x42, 0x42, 0x44), QColor(0x2b, 0x2b, 0x2d)};
+inline const QColor kAccent[9] = {QColor(0xee, 0xf6, 0xff), QColor(0xd6, 0xeb, 0xff), QColor(0xb5, 0xd9, 0xfd),
+                                  QColor(0x94, 0xbc, 0xe3), QColor(0x74, 0x9d, 0xc4), QColor(0x59, 0x7e, 0xa3),
+                                  QColor(0x41, 0x61, 0x80), QColor(0x2c, 0x45, 0x5d), QColor(0x1d, 0x2d, 0x3d)};
+inline const QColor kNeutral[9] = {QColor(0xf5, 0xf5, 0xf8), QColor(0xe7, 0xe7, 0xea), QColor(0xd4, 0xd4, 0xd7),
+                                   QColor(0xb7, 0xb7, 0xba), QColor(0x98, 0x98, 0x9b), QColor(0x7a, 0x7a, 0x7d),
+                                   QColor(0x5d, 0x5d, 0x60), QColor(0x42, 0x42, 0x44), QColor(0x2b, 0x2b, 0x2d)};
 }  // namespace ramp
 
 }  // namespace rl::theme

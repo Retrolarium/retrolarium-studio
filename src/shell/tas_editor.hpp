@@ -98,7 +98,7 @@ private:
     int column_ = -1;
     int first_ = -1;
     int last_ = -1;
-    QVector<MovieFrame> before_;   // the frames as they were, from first_ on
+    QVector<MovieFrame> before_;  // the frames as they were, from first_ on
 };
 
 // Run > Movie > TAS editor, docked beside the Playtest picture: the frames of
@@ -168,13 +168,13 @@ private:
     QLabel* status_;
     MovieFrame copied_;
     bool hasCopy_ = false;
-    bool quiet_ = false;         // a selection made here, not by the user
-    bool followPause_ = false;   // paused here: the frame it stops at is selected
-    int followed_ = -1;          // the frame the table last kept in view
+    bool quiet_ = false;        // a selection made here, not by the user
+    bool followPause_ = false;  // paused here: the frame it stops at is selected
+    int followed_ = -1;         // the frame the table last kept in view
     QString working_;
     QString origin_;
-    bool askPath_ = false;   // Save asks for a new file: the origin cannot take MAME's frames
-    bool toMame_ = false;    // the frames saved are marked as MAME's own (no lining up)
+    bool askPath_ = false;  // Save asks for a new file: the origin cannot take MAME's frames
+    bool toMame_ = false;   // the frames saved are marked as MAME's own (no lining up)
 };
 
 }  // namespace rl::shell

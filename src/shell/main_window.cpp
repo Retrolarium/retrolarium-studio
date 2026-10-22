@@ -117,8 +117,7 @@ QString recentLabel(const QString& path) {
 // MAME lines Messages keeps.
 constexpr int kEmulatorMessages = 200;
 
-sdk::Diagnostic message(sdk::Severity severity, const QString& source, const QString& text,
-                        const QString& location) {
+sdk::Diagnostic message(sdk::Severity severity, const QString& source, const QString& text, const QString& location) {
     sdk::Diagnostic d;
     d.severity = severity;
     d.source = source;
@@ -170,7 +169,8 @@ QVector<runtime::WatchCell> watchCells(const QString& repository) {
     for (const QFileInfo& info : movies.entryInfoList({QStringLiteral("*.check.json")}, QDir::Files, QDir::Name)) {
         QFile file(info.absoluteFilePath());
         if (!file.open(QIODevice::ReadOnly)) continue;
-        const QJsonObject all = QJsonDocument::fromJson(file.readAll()).object().value(QStringLiteral("cells")).toObject();
+        const QJsonObject all =
+            QJsonDocument::fromJson(file.readAll()).object().value(QStringLiteral("cells")).toObject();
         for (auto it = all.begin(); it != all.end(); ++it) {
             const QJsonObject cell = it.value().toObject();
             const QString space = cell.value(QStringLiteral("space")).toString(QStringLiteral("program"));
@@ -229,9 +229,8 @@ MainWindow::MainWindow(QWidget* parent) : StudioWindow(parent) {
     connect(rail_, &KindRail::kindChosen, this, &MainWindow::selectKind);
     connect(documents_, &DocumentPanel::documentChosen, this, &MainWindow::selectDocument);
     connect(inspector_, &InspectorPanel::fieldRejected, this, &MainWindow::refuseAction);
-    connect(bottom_, &BottomPanel::summaryChanged, this, [this](const QString& summary) {
-        statusSummary_->setText(summary);
-    });
+    connect(bottom_, &BottomPanel::summaryChanged, this,
+            [this](const QString& summary) { statusSummary_->setText(summary); });
     connect(bottom_, &BottomPanel::diagnosticActivated, this, [this](const sdk::Diagnostic& d) {
         if (!session_ || d.kind.isEmpty()) {
             return;
@@ -246,14 +245,13 @@ MainWindow::MainWindow(QWidget* parent) : StudioWindow(parent) {
     taskTimer_ = new QTimer(this);
     taskTimer_->setInterval(1000);
     connect(taskTimer_, &QTimer::timeout, this, &MainWindow::tickTask);
-    connect(processes_, &runtime::ProcessRunner::started, this,
-            [this](const QString& label, const QString& command) {
-                bottom_->showBuildOutput();
-                log(QStringLiteral("▸ %1").arg(label));
-                log(QStringLiteral("  %1").arg(command));
-                showTask(label);
-                updateActions();
-            });
+    connect(processes_, &runtime::ProcessRunner::started, this, [this](const QString& label, const QString& command) {
+        bottom_->showBuildOutput();
+        log(QStringLiteral("▸ %1").arg(label));
+        log(QStringLiteral("  %1").arg(command));
+        showTask(label);
+        updateActions();
+    });
     connect(processes_, &runtime::ProcessRunner::outputLine, this, &MainWindow::log);
     connect(processes_, &runtime::ProcessRunner::finished, this,
             [this](const QString& label, const sdk::ProcessResult& result) {
@@ -418,9 +416,8 @@ void MainWindow::buildMenus() {
     (theme::Theme::instance().mode() == theme::Mode::Dark ? dark : light)->setChecked(true);
     connect(dark, &QAction::triggered, this, [] { theme::Theme::instance().setMode(theme::Mode::Dark); });
     connect(light, &QAction::triggered, this, [] { theme::Theme::instance().setMode(theme::Mode::Light); });
-    connect(&theme::Theme::instance(), &theme::Theme::changed, view, [dark, light](theme::Mode mode) {
-        (mode == theme::Mode::Dark ? dark : light)->setChecked(true);
-    });
+    connect(&theme::Theme::instance(), &theme::Theme::changed, view,
+            [dark, light](theme::Mode mode) { (mode == theme::Mode::Dark ? dark : light)->setChecked(true); });
     QAction* toggleTheme = view->addAction(tr("Toggle theme"));
     toggleTheme->setShortcut(QKeySequence(QStringLiteral("Ctrl+Shift+L")));
     connect(toggleTheme, &QAction::triggered, this, [] { theme::Theme::instance().toggle(); });
@@ -563,7 +560,8 @@ void MainWindow::buildMenus() {
     connect(resumeMovieAction_, &QAction::triggered, this,
             [this] { startMovie(int(runtime::MovieRequest::Mode::Resume)); });
     playMovieAction_ = movie->addAction(tr("Play movie…"));
-    connect(playMovieAction_, &QAction::triggered, this, [this] { startMovie(int(runtime::MovieRequest::Mode::Play)); });
+    connect(playMovieAction_, &QAction::triggered, this,
+            [this] { startMovie(int(runtime::MovieRequest::Mode::Play)); });
     // Shown only when asked for: on the movie that plays, or on one picked
     // to play.
     tasEditorAction_ = movie->addAction(tr("TAS editor"));
@@ -930,9 +928,7 @@ void MainWindow::hideTask() {
 
 // ---------------------------------------------------------------- projects
 
-QWidget* MainWindow::dialogParent() const {
-    return const_cast<MainWindow*>(this);
-}
+QWidget* MainWindow::dialogParent() const { return const_cast<MainWindow*>(this); }
 
 void MainWindow::openProject(const QString& path) {
     if (confirmDiscard()) {
@@ -968,18 +964,15 @@ void MainWindow::refuseAction(const QString& message) {
     report(d);
 }
 
-void MainWindow::log(const QString& line) {
-    bottom_->appendLog(line);
-}
+void MainWindow::log(const QString& line) { bottom_->appendLog(line); }
 
 void MainWindow::chooseProject() {
     if (!confirmDiscard()) {
         return;
     }
     const QString start = projectPath_.isEmpty() ? QString() : QFileInfo(projectPath_).absolutePath();
-    const QString path = QFileDialog::getOpenFileName(
-        this, tr("Open project"), start,
-        tr("Retrolarium projects (*.rlj);;All files (*)"));
+    const QString path = QFileDialog::getOpenFileName(this, tr("Open project"), start,
+                                                      tr("Retrolarium projects (*.rlj);;All files (*)"));
     if (!path.isEmpty()) {
         openProjectFile(path);
     }
@@ -999,10 +992,10 @@ bool MainWindow::openProjectFile(const QString& path) {
     sdk::Plugin* plugin = sdk::PluginRegistry::instance().pluginFor(project);
     if (!plugin) {
         report(message(sdk::Severity::Error, QStringLiteral("project"),
-                tr("No plugin opens profile '%1' (%2).")
-                    .arg(project.string(QStringLiteral("project.profile")),
-                         project.string(QStringLiteral("project.platform"))),
-                QFileInfo(path).fileName()));
+                       tr("No plugin opens profile '%1' (%2).")
+                           .arg(project.string(QStringLiteral("project.profile")),
+                                project.string(QStringLiteral("project.platform"))),
+                       QFileInfo(path).fileName()));
         return false;
     }
     // The game's own names (config/names.json in its repository) are in place
@@ -1022,9 +1015,9 @@ bool MainWindow::openProjectFile(const QString& path) {
     }
     // A kit task may be writing the game's folder: opening another project
     // stops it, the user's call as on exit.
-    if (isBusy() && !frame::MessageDialog::confirm(this, tr("Open project"), tr("A task is still running"),
-                                                   tr("Opening another project stops it before it finishes."),
-                                                   tr("Open"))) {
+    if (isBusy() &&
+        !frame::MessageDialog::confirm(this, tr("Open project"), tr("A task is still running"),
+                                       tr("Opening another project stops it before it finishes."), tr("Open"))) {
         sdk::GameNames::install(previousNames);
         return false;
     }
@@ -1123,11 +1116,13 @@ void MainWindow::openGameRepository(const QString& descriptor) {
         QVector<RevisionChoice> choices;
         for (const QJsonValue& v : r.value(QStringLiteral("revisions")).toArray()) {
             const QJsonObject o = v.toObject();
-            choices << RevisionChoice{o.value(QStringLiteral("id")).toString(), o.value(QStringLiteral("label")).toString(),
-                                      o.value(QStringLiteral("rom")).toString(),
-                                      o.value(QStringLiteral("rom_status")).toString(),
-                                      o.value(QStringLiteral("edited")).toBool(),
-                                      o.value(QStringLiteral("built_from")).toObject().value(QStringLiteral("label")).toString()};
+            choices << RevisionChoice{
+                o.value(QStringLiteral("id")).toString(),
+                o.value(QStringLiteral("label")).toString(),
+                o.value(QStringLiteral("rom")).toString(),
+                o.value(QStringLiteral("rom_status")).toString(),
+                o.value(QStringLiteral("edited")).toBool(),
+                o.value(QStringLiteral("built_from")).toObject().value(QStringLiteral("label")).toString()};
         }
         const QJsonObject split = r.value(QStringLiteral("split")).toObject();
         const QString splitStatus = split.value(QStringLiteral("status")).toString();
@@ -1136,12 +1131,13 @@ void MainWindow::openGameRepository(const QString& descriptor) {
             note = tr("The game's files are not split from the ROM yet; that runs when you open a version.");
         } else if (splitStatus == QLatin1String("unavailable")) {
             note = tr("Building from the game's sources needs the %1 ROM (%2); editing does not.")
-                       .arg(split.value(QStringLiteral("needs")).toString(), split.value(QStringLiteral("rom")).toString());
+                       .arg(split.value(QStringLiteral("needs")).toString(),
+                            split.value(QStringLiteral("rom")).toString());
         }
         rememberRepository(descriptor);
         const QString key = QStringLiteral("gameRevisions/") + QFileInfo(descriptor).absoluteFilePath();
-        RevisionDialog dialog(r.value(QStringLiteral("game")).toObject().value(QStringLiteral("name")).toString(), choices,
-                              QSettings().value(key).toString(), note, this);
+        RevisionDialog dialog(r.value(QStringLiteral("game")).toObject().value(QStringLiteral("name")).toString(),
+                              choices, QSettings().value(key).toString(), note, this);
         if (dialog.exec() != QDialog::Accepted || dialog.revision().isEmpty()) return;
         QSettings().setValue(key, dialog.revision());
         prepareRevision(descriptor, dialog.revision(), QString());
@@ -1160,9 +1156,9 @@ void MainWindow::rememberRepository(const QString& descriptor) {
 
 void MainWindow::openRom() {
     if (isBusy() || !confirmDiscard()) return;
-    const QString rom = QFileDialog::getOpenFileName(
-        this, tr("Open ROM"), QDir::homePath(),
-        tr("ROM images (*.nes *.fds *.bin *.md *.gen *.sfc *.smc);;All files (*)"));
+    const QString rom =
+        QFileDialog::getOpenFileName(this, tr("Open ROM"), QDir::homePath(),
+                                     tr("ROM images (*.nes *.fds *.bin *.md *.gen *.sfc *.smc);;All files (*)"));
     if (rom.isEmpty()) return;
     openRomFile(rom);
 }
@@ -1171,8 +1167,7 @@ void MainWindow::openRom() {
 // for a ROM, as Open ROM does.
 void MainWindow::dragEnterEvent(QDragEnterEvent* event) {
     const QList<QUrl> urls = event->mimeData()->urls();
-    if (urls.size() == 1 && urls.first().isLocalFile() && QFileInfo(urls.first().toLocalFile()).isFile() &&
-        !isBusy()) {
+    if (urls.size() == 1 && urls.first().isLocalFile() && QFileInfo(urls.first().toLocalFile()).isFile() && !isBusy()) {
         event->acceptProposedAction();
     }
 }
@@ -1269,8 +1264,8 @@ void MainWindow::openRomFile(const QString& rom) {
         return;
     }
     QString error;
-    sdk::ProcessSpec spec = kitCommand({QStringLiteral("studio"), QStringLiteral("identify"), rom},
-                                       QFileInfo(rom).absolutePath(), &error);
+    sdk::ProcessSpec spec =
+        kitCommand({QStringLiteral("studio"), QStringLiteral("identify"), rom}, QFileInfo(rom).absolutePath(), &error);
     if (spec.program.isEmpty()) {
         openRomAsProject(rom);
         return;
@@ -1287,8 +1282,8 @@ void MainWindow::openRomFile(const QString& rom) {
         bool setUp = choice == QLatin1String("source");
         if (choice.isEmpty()) {
             bool remember = false;
-            setUp = askSetUpSource(this, matches.first().toObject().value(QStringLiteral("name")).toString(),
-                                   &remember);
+            setUp =
+                askSetUpSource(this, matches.first().toObject().value(QStringLiteral("name")).toString(), &remember);
             if (remember) {
                 QSettings().setValue(QStringLiteral("openRom/choice"),
                                      setUp ? QStringLiteral("source") : QStringLiteral("rom"));
@@ -1334,10 +1329,11 @@ void MainWindow::openRomAsProject(const QString& rom) {
     }
     QFile::setPermissions(dir.filePath(file), QFile::permissions(dir.filePath(file)) | QFileDevice::WriteOwner);
     const QString platform = romPlatform(rom);
-    const QString text = QStringLiteral("# A ROM opened as it is in Retrolarium Studio.\n"
-                                        "schema = \"retrolarium.project\"\nschema_version = 1\n\n"
-                                        "[project]\nid = %1\nname = %2\nplatform = %3\nprofile = \"rom.v1\"\n"
-                                        "source_mode = \"rom\"\n\n[source]\nrom = %4\noriginal = %5\nsha256 = \"%6\"\n")
+    const QString text = QStringLiteral(
+                             "# A ROM opened as it is in Retrolarium Studio.\n"
+                             "schema = \"retrolarium.project\"\nschema_version = 1\n\n"
+                             "[project]\nid = %1\nname = %2\nplatform = %3\nprofile = \"rom.v1\"\n"
+                             "source_mode = \"rom\"\n\n[source]\nrom = %4\noriginal = %5\nsha256 = \"%6\"\n")
                              .arg(tomlString(stem), tomlString(info.completeBaseName()),
                                   tomlString(platform.isEmpty() ? QStringLiteral("unknown") : platform),
                                   tomlString(file), tomlString(QStringLiteral("original/") + file), digest);
@@ -1359,8 +1355,8 @@ void MainWindow::openRomAsProject(const QString& rom) {
 
 void MainWindow::setUpGameSource(const QString& rom) {
     // Downloaded games go where the user finds them: their edits live there.
-    const QString games =
-        QDir(QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation)).filePath(QStringLiteral("Retrolarium"));
+    const QString games = QDir(QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation))
+                              .filePath(QStringLiteral("Retrolarium"));
     QStringList arguments{QStringLiteral("studio"), QStringLiteral("open-rom"), rom, QStringLiteral("--games"), games};
     for (const QString& known : QSettings().value(QString::fromLatin1(kRepositoriesKey)).toStringList()) {
         if (QFileInfo(known).isFile()) arguments << QStringLiteral("--known") << known;
@@ -1405,7 +1401,8 @@ void MainWindow::setUpGameSource(const QString& rom) {
 
 void MainWindow::prepareRevision(const QString& descriptor, const QString& revision, const QString& rom) {
     const QString name = QFileInfo(descriptor).fileName();
-    QStringList arguments{QStringLiteral("studio"), QStringLiteral("prepare"), descriptor, QStringLiteral("--revision"), revision};
+    QStringList arguments{QStringLiteral("studio"), QStringLiteral("prepare"), descriptor, QStringLiteral("--revision"),
+                          revision};
     if (!rom.isEmpty()) arguments << QStringLiteral("--rom") << rom;
     QString error;
     sdk::ProcessSpec spec = kitCommand(arguments, QFileInfo(descriptor).absolutePath(), &error);
@@ -1427,11 +1424,12 @@ void MainWindow::prepareRevision(const QString& descriptor, const QString& revis
         if (status == QLatin1String("ready")) {
             const QJsonObject split = r.value(QStringLiteral("split")).toObject();
             if (split.value(QStringLiteral("status")).toString() == QLatin1String("failed")) {
-                report(message(sdk::Severity::Warning, QStringLiteral("project"),
-                               tr("The asset split failed; editing works from the ROM, building from "
-                                  "the sources needs it. %1")
-                                   .arg(split.value(QStringLiteral("output")).toString().section(QLatin1Char('\n'), -3)),
-                               name));
+                report(
+                    message(sdk::Severity::Warning, QStringLiteral("project"),
+                            tr("The asset split failed; editing works from the ROM, building from "
+                               "the sources needs it. %1")
+                                .arg(split.value(QStringLiteral("output")).toString().section(QLatin1Char('\n'), -3)),
+                            name));
             }
             openProjectFile(r.value(QStringLiteral("project")).toString());
             return;
@@ -1454,9 +1452,9 @@ void MainWindow::prepareRevision(const QString& descriptor, const QString& revis
         ask.addButton(tr("Cancel"), 0);
         ask.addButton(tr("Choose ROM…"), 1, true);
         if (ask.exec() != 1) return;
-        const QString file = QFileDialog::getOpenFileName(
-            this, tr("Choose the ROM"), QDir::homePath(),
-            tr("ROM images (*.nes *.fds *.bin *.md *.gen *.sfc *.smc);;All files (*)"));
+        const QString file =
+            QFileDialog::getOpenFileName(this, tr("Choose the ROM"), QDir::homePath(),
+                                         tr("ROM images (*.nes *.fds *.bin *.md *.gen *.sfc *.smc);;All files (*)"));
         if (!file.isEmpty()) prepareRevision(descriptor, revision, file);
     });
 }
@@ -1469,7 +1467,8 @@ QString MainWindow::currentDescriptor() const {
     QString error;
     for (const QFileInfo& info : repository.entryInfoList({QStringLiteral("*.rlj")}, QDir::Files)) {
         const sdk::ProjectFile candidate = sdk::ProjectFile::load(info.absoluteFilePath(), &error);
-        if (candidate.string(QStringLiteral("schema")) == QLatin1String("retrolarium.game")) return info.absoluteFilePath();
+        if (candidate.string(QStringLiteral("schema")) == QLatin1String("retrolarium.game"))
+            return info.absoluteFilePath();
     }
     return {};
 }
@@ -1480,17 +1479,16 @@ void MainWindow::resetRevision() {
     const QString revision = QFileInfo(projectPath_).absoluteDir().dirName();
     const sdk::Profile profile = session_->profile();
     if (!frame::MessageDialog::confirm(
-            this, tr("Reset to the original"),
-            tr("Discard every edit to %1 (%2)?").arg(profile.name, profile.revision),
+            this, tr("Reset to the original"), tr("Discard every edit to %1 (%2)?").arg(profile.name, profile.revision),
             tr("The game's data goes back to how it is in the ROM. Saved and unsaved edits to this "
                "version are lost; other versions keep theirs."),
             tr("Discard edits"))) {
         return;
     }
     QString error;
-    sdk::ProcessSpec spec = kitCommand({QStringLiteral("studio"), QStringLiteral("reset"), descriptor,
-                                        QStringLiteral("--revision"), revision},
-                                       QFileInfo(descriptor).absolutePath(), &error);
+    sdk::ProcessSpec spec = kitCommand(
+        {QStringLiteral("studio"), QStringLiteral("reset"), descriptor, QStringLiteral("--revision"), revision},
+        QFileInfo(descriptor).absolutePath(), &error);
     if (spec.program.isEmpty()) {
         report(message(sdk::Severity::Error, QStringLiteral("project"), error, QFileInfo(descriptor).fileName()));
         return;
@@ -1503,8 +1501,7 @@ void MainWindow::resetRevision() {
         if (!result.succeeded()) {
             if (!result.cancelled) {
                 report(message(sdk::Severity::Error, QStringLiteral("project"),
-                               tr("Resetting failed: %1").arg(processError(result)),
-                               QFileInfo(descriptor).fileName()));
+                               tr("Resetting failed: %1").arg(processError(result)), QFileInfo(descriptor).fileName()));
             }
         }
         openProjectFile(project);
@@ -1520,13 +1517,14 @@ void MainWindow::createPatch() {
     }
     QString error2;
     const sdk::ProjectFile project = sdk::ProjectFile::load(projectPath_, &error2);
-    const QString suggested = QDir(QDir::homePath()).filePath(project.string(QStringLiteral("project.id")) + QStringLiteral(".ips"));
-    const QString output = QFileDialog::getSaveFileName(this, tr("Create IPS patch"), suggested,
-                                                        tr("IPS patches (*.ips)"));
+    const QString suggested =
+        QDir(QDir::homePath()).filePath(project.string(QStringLiteral("project.id")) + QStringLiteral(".ips"));
+    const QString output =
+        QFileDialog::getSaveFileName(this, tr("Create IPS patch"), suggested, tr("IPS patches (*.ips)"));
     if (output.isEmpty()) return;
-    sdk::ProcessSpec spec = kitCommand({QStringLiteral("studio"), QStringLiteral("patch"), projectPath_,
-                                        QStringLiteral("--output"), output},
-                                       QFileInfo(projectPath_).absolutePath(), &error);
+    sdk::ProcessSpec spec = kitCommand(
+        {QStringLiteral("studio"), QStringLiteral("patch"), projectPath_, QStringLiteral("--output"), output},
+        QFileInfo(projectPath_).absolutePath(), &error);
     if (spec.program.isEmpty()) {
         report(message(sdk::Severity::Error, QStringLiteral("project"), error, QFileInfo(projectPath_).fileName()));
         return;
@@ -1593,8 +1591,7 @@ bool MainWindow::confirmDiscard(bool remembered) {
         return true;
     }
     enum Answer { Cancel, Discard, Save };
-    frame::MessageDialog box(tr("Unsaved changes"),
-                             tr("Save changes to %1?").arg(session_->profile().name),
+    frame::MessageDialog box(tr("Unsaved changes"), tr("Save changes to %1?").arg(session_->profile().name),
                              tr("The project has edits that are not saved. Closing without "
                                 "saving loses them."),
                              this);
@@ -1804,8 +1801,9 @@ void MainWindow::installEditor() {
                                     .arg(label));
         } else {
             emptyTitle_->setText(tr("%1 cannot be opened").arg(label));
-            emptyNote_->setText(tr("The project has no data for this document, or the kit could not "
-                                   "add it. Messages says why."));
+            emptyNote_->setText(
+                tr("The project has no data for this document, or the kit could not "
+                   "add it. Messages says why."));
         }
         editorStack_->setCurrentWidget(emptyEditor_);
         inspector_->showMessage(label.toUpper(), document_.isEmpty() ? label : document_,
@@ -1852,8 +1850,9 @@ void MainWindow::updateToolbarRow() {
             button->setToolTip(action.tooltip);
             connect(button, &QAbstractButton::clicked, this, [this, action] {
                 if (!action.confirmHeading.isEmpty() &&
-                    !frame::MessageDialog::confirm(this, action.label, action.confirmHeading, action.confirmText,
-                                                   action.confirmAction.isEmpty() ? action.label : action.confirmAction)) {
+                    !frame::MessageDialog::confirm(
+                        this, action.label, action.confirmHeading, action.confirmText,
+                        action.confirmAction.isEmpty() ? action.label : action.confirmAction)) {
                     return;
                 }
                 // The model acts before the Playtest view replaces its editor.
@@ -1892,8 +1891,7 @@ void MainWindow::updateProjectChrome() {
     projectButton_->setMinimumWidth(projectButton_->layout()->sizeHint().width());
     const QString title = profile.revision.isEmpty()
                               ? QStringLiteral("%1 [%2]").arg(profile.name, profile.platform)
-                              : QStringLiteral("%1 (%2) [%3]").arg(profile.name, profile.revision,
-                                                                   profile.platform);
+                              : QStringLiteral("%1 (%2) [%3]").arg(profile.name, profile.revision, profile.platform);
     setWindowTitle(title + tr(" — Retrolarium"));
     titleBar()->setTitle(title, tr("Retrolarium"));
     closeAction_->setEnabled(true);
@@ -1961,12 +1959,10 @@ void MainWindow::updateDirtyState() {
     redoAction_->setEnabled(undo && undo->canRedo());
     undoButton_->setEnabled(undoAction_->isEnabled());
     redoButton_->setEnabled(redoAction_->isEnabled());
-    undoButton_->setToolTip(undo && undo->canUndo()
-                                ? tr("Undo %1 (Ctrl+Z)").arg(undo->undoText())
-                                : tr("Undo (Ctrl+Z)"));
-    redoButton_->setToolTip(undo && undo->canRedo()
-                                ? tr("Redo %1 (Ctrl+Y)").arg(undo->redoText())
-                                : tr("Redo (Ctrl+Y)"));
+    undoButton_->setToolTip(undo && undo->canUndo() ? tr("Undo %1 (Ctrl+Z)").arg(undo->undoText())
+                                                    : tr("Undo (Ctrl+Z)"));
+    redoButton_->setToolTip(undo && undo->canRedo() ? tr("Redo %1 (Ctrl+Y)").arg(undo->redoText())
+                                                    : tr("Redo (Ctrl+Y)"));
     const bool modified = open && session_->isModified();
     const bool movieModified = tasEditor_ && tasEditor_->isModified();
     saveAction_->setEnabled(modified || movieModified);
@@ -2004,9 +2000,8 @@ void MainWindow::updateStatus(const QString& transient) {
     }
     statusLeft_->setText(left);
     const sdk::Profile profile = session_->profile();
-    statusRight_->setText(tr("%1 · %2 · undo %3")
-                              .arg(profile.platform, profile.cpu)
-                              .arg(session_->undoStack()->index()));
+    statusRight_->setText(
+        tr("%1 · %2 · undo %3").arg(profile.platform, profile.cpu).arg(session_->undoStack()->index()));
 }
 
 void MainWindow::refreshDiagnostics() {
@@ -2038,8 +2033,7 @@ void MainWindow::revertDocument() {
     }
     if (!frame::MessageDialog::confirm(
             this, tr("Revert document"), tr("Revert %1?").arg(crumbDocument_->text()),
-            tr("It returns to the state it had when the project was created. This can be undone."),
-            tr("Revert"))) {
+            tr("It returns to the state it had when the project was created. This can be undone."), tr("Revert"))) {
         return;
     }
     QString error;
@@ -2050,31 +2044,22 @@ void MainWindow::revertDocument() {
 
 // ---------------------------------------------------------------- host services
 
-void MainWindow::runProcess(const sdk::ProcessSpec& spec,
-                            std::function<void(const sdk::ProcessResult&)> done) {
+void MainWindow::runProcess(const sdk::ProcessSpec& spec, std::function<void(const sdk::ProcessResult&)> done) {
     processes_->run(spec, std::move(done));
 }
 
-bool MainWindow::isBusy() const {
-    return processes_->isBusy();
-}
+bool MainWindow::isBusy() const { return processes_->isBusy(); }
 
-void MainWindow::cancel() {
-    processes_->cancel();
-}
+void MainWindow::cancel() { processes_->cancel(); }
 
 sdk::ProcessSpec MainWindow::kitCommand(const QStringList& arguments, const QString& workingDirectory,
                                         QString* error) const {
     return runtime::ToolLocator::kitCommand(arguments, workingDirectory, error);
 }
 
-QString MainWindow::toolPath(const QString& name) const {
-    return runtime::ToolLocator::toolPath(name);
-}
+QString MainWindow::toolPath(const QString& name) const { return runtime::ToolLocator::toolPath(name); }
 
-QString MainWindow::emulatorPath(const QString& id) const {
-    return runtime::ToolLocator::emulatorPath(id);
-}
+QString MainWindow::emulatorPath(const QString& id) const { return runtime::ToolLocator::emulatorPath(id); }
 
 QString MainWindow::emulatorKind() const {
     if (!session_) {
@@ -2097,9 +2082,7 @@ void MainWindow::showPlaytest() {
     }
 }
 
-void MainWindow::stopEmulator() {
-    emulator_->stop();
-}
+void MainWindow::stopEmulator() { emulator_->stop(); }
 
 void MainWindow::launchEmulator(const sdk::ProcessSpec& spec, const QString& title,
                                 std::function<void(const sdk::ProcessResult&)> finished) {
@@ -2119,21 +2102,13 @@ void MainWindow::launchEmulator(const sdk::ProcessSpec& spec, const QString& tit
     emulator_->start(spec, title, std::move(finished));
 }
 
-void MainWindow::playAudio(const QString& wavPath) {
-    audio_->play(wavPath);
-}
+void MainWindow::playAudio(const QString& wavPath) { audio_->play(wavPath); }
 
-void MainWindow::stopAudio() {
-    audio_->stop();
-}
+void MainWindow::stopAudio() { audio_->stop(); }
 
-bool MainWindow::audioLoops() const {
-    return audio_->isLooping();
-}
+bool MainWindow::audioLoops() const { return audio_->isLooping(); }
 
-void MainWindow::setAudioLoop(bool loop) {
-    audio_->setLooping(loop);
-}
+void MainWindow::setAudioLoop(bool loop) { audio_->setLooping(loop); }
 
 void MainWindow::updateActions() {
     const bool open = session_ != nullptr;
@@ -2145,7 +2120,7 @@ void MainWindow::updateActions() {
     playAction_->setEnabled(canPlay && !busy);
     const QString label = canPlay ? session_->playSelectedLabel() : QString();
     playSelectedAction_->setEnabled(!start.isEmpty() && !busy);
-    playSelectedAction_->setText(!label.isEmpty() ? label
+    playSelectedAction_->setText(!label.isEmpty()  ? label
                                  : start.isEmpty() ? tr("Play from selected")
                                                    : tr("Play from %1").arg(start));
     playSelectedButton_->setText(label.isEmpty() ? tr("Play from selected") : label);
@@ -2153,9 +2128,8 @@ void MainWindow::updateActions() {
     buildButton_->setText(busy ? tr("Cancel") : tr("Build"));
     playButton_->setEnabled(canPlay && !busy);
     playSelectedButton_->setEnabled(!start.isEmpty() && !busy);
-    playSelectedButton_->setToolTip(start.isEmpty()
-                                        ? tr("Pick a start point in an editor (F4)")
-                                        : tr("Save, build and play from %1 (F4)").arg(start));
+    playSelectedButton_->setToolTip(start.isEmpty() ? tr("Pick a start point in an editor (F4)")
+                                                    : tr("Save, build and play from %1 (F4)").arg(start));
 
     using Phase = runtime::EmulatorRunner::Phase;
     const Phase phase = emulator_->phase();
@@ -2172,8 +2146,7 @@ void MainWindow::updateActions() {
                                         : tr("Pause the movie where it is (Pause, Space)"));
         stopButton_->setToolTip(tr("Pause and go back to the selected frame (Shift+F5)"));
     } else {
-        pauseButton_->setToolTip(paused ? tr("Resume the playtest (Pause)")
-                                        : tr("Pause the playtest (Pause)"));
+        pauseButton_->setToolTip(paused ? tr("Resume the playtest (Pause)") : tr("Pause the playtest (Pause)"));
         stopButton_->setToolTip(tr("Stop the playtest (Shift+F5)"));
     }
     stopGameAction_->setEnabled(live);
@@ -2215,8 +2188,8 @@ void MainWindow::togglePlaytestPause() {
         return;
     }
     if (!emulator_->togglePause()) {
-        report(message(sdk::Severity::Warning, QStringLiteral("playtest"),
-                       tr("The emulator could not be paused."), QString()));
+        report(message(sdk::Severity::Warning, QStringLiteral("playtest"), tr("The emulator could not be paused."),
+                       QString()));
         return;
     }
     notifyEmulation(emulator_->isPaused() ? tr("Paused") : tr("Resumed"));
@@ -2282,7 +2255,7 @@ void MainWindow::showEmulationEvent(const QString& event) {
         text = tr("Movie ended: you have control");
     } else if (event == QLatin1String("stopped")) {
         text = emulator_->movie().mode == runtime::MovieRequest::Mode::Play ? tr("Movie stopped")
-                                                                             : tr("Movie stopped and saved");
+                                                                            : tr("Movie stopped and saved");
     } else if (event == QLatin1String("recording")) {
         text = tr("End of movie: paused, recording on (Pause to go on)");
     } else if (event == QLatin1String("rewound")) {
@@ -2387,8 +2360,8 @@ void MainWindow::startMovie(int mode) {
     } else {
         QString error;
         const sdk::ProjectFile project = sdk::ProjectFile::load(projectPath_, &error);
-        const QString rom = QFileInfo(projectPath_).absoluteDir().absoluteFilePath(
-            project.string(QStringLiteral("source.rom")));
+        const QString rom =
+            QFileInfo(projectPath_).absoluteDir().absoluteFilePath(project.string(QStringLiteral("source.rom")));
         arguments << QStringLiteral("--rom") << rom << QStringLiteral("--movies-root")
                   << QDir(QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation))
                          .filePath(QStringLiteral("movies"));
@@ -2417,13 +2390,14 @@ void MainWindow::startMovie(int mode) {
             if (dialog.exec() != QDialog::Accepted) return;
             const MovieDescription description = dialog.description();
             QDir().mkpath(folder);
-            QString header = QStringLiteral("platform %1\nsource mame\nrom %2\n")
-                                 .arg(answer.value(QStringLiteral("platform")).toString(),
-                                      answer.value(QStringLiteral("rom")).toObject().value(QStringLiteral("sha1")).toString());
+            QString header =
+                QStringLiteral("platform %1\nsource mame\nrom %2\n")
+                    .arg(answer.value(QStringLiteral("platform")).toString(),
+                         answer.value(QStringLiteral("rom")).toObject().value(QStringLiteral("sha1")).toString());
             const QList<QPair<QString, QString>> fields{{QStringLiteral("title"), description.title},
-                                                         {QStringLiteral("kind"), description.kind},
-                                                         {QStringLiteral("author"), description.author},
-                                                         {QStringLiteral("description"), description.description}};
+                                                        {QStringLiteral("kind"), description.kind},
+                                                        {QStringLiteral("author"), description.author},
+                                                        {QStringLiteral("description"), description.description}};
             for (const auto& field : fields) {
                 QString value = field.second;
                 value.remove(QStringLiteral("]==]"));
@@ -2432,8 +2406,8 @@ void MainWindow::startMovie(int mode) {
             launchMovie(answer, mode, movieFileName(folder, description.title), header, 0, false);
             return;
         }
-        const auto purpose = mode == int(Mode::Play) ? PickMovieDialog::Purpose::Play
-                                                     : PickMovieDialog::Purpose::Resume;
+        const auto purpose =
+            mode == int(Mode::Play) ? PickMovieDialog::Purpose::Play : PickMovieDialog::Purpose::Resume;
         PickMovieDialog dialog(purpose, game, movieChoices(answer.value(QStringLiteral("movies")).toArray()), this);
         if (dialog.exec() != QDialog::Accepted || dialog.path().isEmpty()) {
             openEditorOnLaunch_ = false;
@@ -2444,10 +2418,10 @@ void MainWindow::startMovie(int mode) {
         if (mode == int(Mode::Resume)) {
             header = studioMovieHeader(path);
             if (header.isEmpty()) {
-                report(message(sdk::Severity::Error, QStringLiteral("playtest"),
-                               tr("%1 was not recorded in the studio: it can play, not go on.")
-                                   .arg(QFileInfo(path).fileName()),
-                               QString()));
+                report(message(
+                    sdk::Severity::Error, QStringLiteral("playtest"),
+                    tr("%1 was not recorded in the studio: it can play, not go on.").arg(QFileInfo(path).fileName()),
+                    QString()));
                 return;
             }
         }
@@ -2458,9 +2432,9 @@ void MainWindow::startMovie(int mode) {
                                      .filePath(QStringLiteral("movies/playing.rlmovie"));
         QDir().mkpath(QFileInfo(prepared).absolutePath());
         QString error;
-        sdk::ProcessSpec again = kitCommand(arguments + QStringList{QStringLiteral("--movie"), path,
-                                                                    QStringLiteral("--prepared"), prepared},
-                                            directory, &error);
+        sdk::ProcessSpec again =
+            kitCommand(arguments + QStringList{QStringLiteral("--movie"), path, QStringLiteral("--prepared"), prepared},
+                       directory, &error);
         again.label = tr("Prepare %1").arg(QFileInfo(path).fileName());
         const int stopAt = dialog.stopAt();
         const bool closeAtEnd = dialog.closeAtEnd();
@@ -2513,18 +2487,22 @@ void MainWindow::launchMovie(const QJsonObject& answer, int mode, const QString&
     log(QStringLiteral("▸ %1").arg(title));
     log(QStringLiteral("  %1").arg(runtime::displayCommand(spec)));
     const bool recording = mode != int(Mode::Play);
-    emulator_->start(spec, title, [this, recording, file](const sdk::ProcessResult&) {
-        if (recording && QFileInfo::exists(file)) {
-            const QString text = tr("Movie saved: %1").arg(QDir::toNativeSeparators(file));
-            if (toast_) toast_->showMessage(text);
-            report(message(sdk::Severity::Info, QStringLiteral("playtest"), text, QFileInfo(file).fileName()));
-        }
-    }, movie);
+    emulator_->start(
+        spec, title,
+        [this, recording, file](const sdk::ProcessResult&) {
+            if (recording && QFileInfo::exists(file)) {
+                const QString text = tr("Movie saved: %1").arg(QDir::toNativeSeparators(file));
+                if (toast_) toast_->showMessage(text);
+                report(message(sdk::Severity::Info, QStringLiteral("playtest"), text, QFileInfo(file).fileName()));
+            }
+        },
+        movie);
     // The movie's title over the picture as it starts.
     QString movieTitle = QFileInfo(file).completeBaseName();
     QFile text(file);
-    const QString lines = !header.isEmpty() ? header
-                          : text.open(QIODevice::ReadOnly) ? QString::fromUtf8(text.read(4096)) : QString();
+    const QString lines = !header.isEmpty()                ? header
+                          : text.open(QIODevice::ReadOnly) ? QString::fromUtf8(text.read(4096))
+                                                           : QString();
     for (const QString& line : lines.split(QLatin1Char('\n'))) {
         if (line.startsWith(QLatin1String("title "))) movieTitle = line.mid(6).trimmed();
     }
@@ -2574,8 +2552,6 @@ void MainWindow::closeTasEditor() {
     scheduleDirtyState();
 }
 
-bool MainWindow::tasEditorShown() const {
-    return tasEditor_ != nullptr && tasEditor_->isVisible();
-}
+bool MainWindow::tasEditorShown() const { return tasEditor_ != nullptr && tasEditor_->isVisible(); }
 
 }  // namespace rl::shell

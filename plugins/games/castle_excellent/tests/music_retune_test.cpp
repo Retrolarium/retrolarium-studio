@@ -30,7 +30,12 @@ void expect(bool condition, const QString& message) {
 }
 
 QString streamText(const QJsonObject& music, int stream) {
-    return music.value(QStringLiteral("streams")).toArray().at(stream).toObject().value(QStringLiteral("text")).toString();
+    return music.value(QStringLiteral("streams"))
+        .toArray()
+        .at(stream)
+        .toObject()
+        .value(QStringLiteral("text"))
+        .toString();
 }
 
 QVector<int> pitches(const QVector<CastleExcellentMusicNote>& notes) {
@@ -68,7 +73,8 @@ int main(int argc, char** argv) {
 
         int moved = 0;
         for (int track = 0; track < kTracks; ++track) {
-            const QVector<QVector<CastleExcellentMusicNote>> before = CastleExcellentMusic::trace(music, track, kFrames);
+            const QVector<QVector<CastleExcellentMusicNote>> before =
+                CastleExcellentMusic::trace(music, track, kFrames);
             for (int channel = 0; channel < before.size(); ++channel) {
                 int tried = 0;
                 for (int i = 0; i < before.at(channel).size() && tried < kNotesPerChannel; ++i) {
@@ -77,10 +83,12 @@ int main(int argc, char** argv) {
                     ++tried;
                     const QString text = streamText(music, note.stream);
                     const QString up = CastleExcellentMusic::retune(music, note, channel, note.pitch + 12, text);
-                    if (up.isEmpty()) continue;   // no octave above on this channel
-                    expect(CastleExcellentMusic::checkText(up).isEmpty(), QStringLiteral("retuning made bad MML: %1").arg(up));
+                    if (up.isEmpty()) continue;  // no octave above on this channel
+                    expect(CastleExcellentMusic::checkText(up).isEmpty(),
+                           QStringLiteral("retuning made bad MML: %1").arg(up));
                     const QJsonObject raised = CastleExcellentMusic::withText(music, note.stream, up);
-                    const QVector<QVector<CastleExcellentMusicNote>> after = CastleExcellentMusic::trace(raised, track, kFrames);
+                    const QVector<QVector<CastleExcellentMusicNote>> after =
+                        CastleExcellentMusic::trace(raised, track, kFrames);
                     // Every time the track plays that spot of the stream (a
                     // loop plays it again) it plays an octave up; nothing
                     // else changes.
@@ -95,31 +103,47 @@ int main(int argc, char** argv) {
                         }
                         expect(actual == expected,
                                QStringLiteral("track %1 channel %2 note %3 up: channel %4 does not play as expected")
-                                   .arg(track).arg(channel).arg(i).arg(c));
+                                   .arg(track)
+                                   .arg(channel)
+                                   .arg(i)
+                                   .arg(c));
                     }
 
                     const CastleExcellentMusicNote raisedNote = after.at(channel).at(i);
-                    const QString down =
-                        CastleExcellentMusic::retune(raised, raisedNote, channel, note.pitch, streamText(raised, note.stream));
-                    expect(!down.isEmpty(), QStringLiteral("track %1 channel %2 note %3 cannot go back").arg(track).arg(channel).arg(i));
+                    const QString down = CastleExcellentMusic::retune(raised, raisedNote, channel, note.pitch,
+                                                                      streamText(raised, note.stream));
+                    expect(!down.isEmpty(),
+                           QStringLiteral("track %1 channel %2 note %3 cannot go back").arg(track).arg(channel).arg(i));
                     const QJsonObject restored = CastleExcellentMusic::withText(raised, note.stream, down);
                     for (int c = 0; c < before.size(); ++c) {
-                        expect(pitches(CastleExcellentMusic::trace(restored, track, kFrames).at(c)) == pitches(before.at(c)),
+                        expect(pitches(CastleExcellentMusic::trace(restored, track, kFrames).at(c)) ==
+                                   pitches(before.at(c)),
                                QStringLiteral("track %1 channel %2 note %3 back does not play as before")
-                                   .arg(track).arg(channel).arg(i));
+                                   .arg(track)
+                                   .arg(channel)
+                                   .arg(i));
                     }
                     // A second time up and back changes nothing more: no
                     // switches pile up.
-                    const CastleExcellentMusicNote again = CastleExcellentMusic::trace(restored, track, kFrames).at(channel).at(i);
+                    const CastleExcellentMusicNote again =
+                        CastleExcellentMusic::trace(restored, track, kFrames).at(channel).at(i);
                     const QString up2 = CastleExcellentMusic::retune(restored, again, channel, note.pitch + 12, down);
-                    expect(!up2.isEmpty(), QStringLiteral("track %1 channel %2 note %3 cannot go up again").arg(track).arg(channel).arg(i));
+                    expect(!up2.isEmpty(), QStringLiteral("track %1 channel %2 note %3 cannot go up again")
+                                               .arg(track)
+                                               .arg(channel)
+                                               .arg(i));
                     const QJsonObject raised2 = CastleExcellentMusic::withText(restored, note.stream, up2);
-                    const CastleExcellentMusicNote raisedAgain = CastleExcellentMusic::trace(raised2, track, kFrames).at(channel).at(i);
+                    const CastleExcellentMusicNote raisedAgain =
+                        CastleExcellentMusic::trace(raised2, track, kFrames).at(channel).at(i);
                     const QString down2 = CastleExcellentMusic::retune(raised2, raisedAgain, channel, note.pitch, up2);
                     expect(down2 == down,
                            QStringLiteral("track %1 channel %2 note %3 (at %4): up and back again keeps changing "
                                           "the stream:|  %5|  %6|  %7")
-                               .arg(track).arg(channel).arg(i).arg(note.position).arg(text, down, down2)
+                               .arg(track)
+                               .arg(channel)
+                               .arg(i)
+                               .arg(note.position)
+                               .arg(text, down, down2)
                                .replace(QLatin1Char('|'), QLatin1Char('\n')));
                     ++moved;
                 }

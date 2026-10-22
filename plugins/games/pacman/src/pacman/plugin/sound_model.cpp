@@ -17,7 +17,7 @@ namespace rl::pacman {
 
 namespace {
 
-constexpr int kBaseMidi = 45;       // pacman_sound.BASE_MIDI_NOTE
+constexpr int kBaseMidi = 45;  // pacman_sound.BASE_MIDI_NOTE
 
 const QColor kColours[2] = {QColor(0xe0, 0xb0, 0x40), QColor(0x60, 0xa8, 0xe0)};
 
@@ -41,7 +41,10 @@ int PacmanSoundModel::streamBytes(const QJsonObject& stream) {
     for (const QJsonValue& v : stream.value(QStringLiteral("commands")).toArray()) {
         const QJsonObject c = v.toObject();
         const int opcode = c.value(QStringLiteral("opcode")).toInt();
-        bytes += c.value(QStringLiteral("kind")).toString() == QLatin1String("control") && !(opcode >= 0xf1 && opcode <= 0xf6) ? 1 : 2;
+        bytes += c.value(QStringLiteral("kind")).toString() == QLatin1String("control") &&
+                         !(opcode >= 0xf1 && opcode <= 0xf6)
+                     ? 1
+                     : 2;
     }
     return bytes;
 }
@@ -51,13 +54,16 @@ PacmanSoundModel::PacmanSoundModel(PacmanSession* session, QVector<int> streams,
     connect(session_, &sdk::Session::contentChanged, this, &sdk::EditorModel::contentChanged);
 }
 
-QJsonObject PacmanSoundModel::sound() const {
-    return editing_ ? draft_ : session_->resource(ids::kSound);
-}
+QJsonObject PacmanSoundModel::sound() const { return editing_ ? draft_ : session_->resource(ids::kSound); }
 
 QJsonObject PacmanSoundModel::stream(int channel) const {
-    return sound().value(QStringLiteral("slots")).toArray().at(slots_.value(channel)).toObject()
-        .value(QStringLiteral("stream")).toObject();
+    return sound()
+        .value(QStringLiteral("slots"))
+        .toArray()
+        .at(slots_.value(channel))
+        .toObject()
+        .value(QStringLiteral("stream"))
+        .toObject();
 }
 
 QVector<sdk::SequencerChannel> PacmanSoundModel::channels() const {
@@ -119,7 +125,8 @@ void PacmanSoundModel::selectNote(const QString& id) {
     }
 }
 
-QJsonObject PacmanSoundModel::withCommand(const QJsonObject& from, int channel, int command, const QJsonObject& value) const {
+QJsonObject PacmanSoundModel::withCommand(const QJsonObject& from, int channel, int command,
+                                          const QJsonObject& value) const {
     QJsonObject next = from;
     QJsonArray all = next.value(QStringLiteral("slots")).toArray();
     QJsonObject slot = all.at(slots_.at(channel)).toObject();
@@ -201,7 +208,8 @@ bool PacmanSoundModel::setField(const QString& key, const QVariant& value, QStri
     if (key == QLatin1String("duty") || key == QLatin1String("volume")) {
         const int reg = stream(channel_).value(QStringLiteral("prologue")).toArray().at(1).toInt();
         int next = reg;
-        if (key == QLatin1String("duty")) next = (reg & 0x3f) | (std::max(0, int(kDuties.indexOf(value.toString()))) << 6);
+        if (key == QLatin1String("duty"))
+            next = (reg & 0x3f) | (std::max(0, int(kDuties.indexOf(value.toString()))) << 6);
         else next = (reg & 0xf0) | std::clamp(value.toInt(), 0, 15);
         return commit(tr("Set the voice of %1").arg(title_), withPrologue(now, channel_, 1, next), error);
     }
@@ -240,8 +248,15 @@ void PacmanSoundModel::preview() {
         session_->report(sdk::Severity::Error, QStringLiteral("sound"), tr("Cannot write %1.").arg(document));
         return;
     }
-    QStringList arguments{QStringLiteral("audio"), QStringLiteral("render-wav"), document, QStringLiteral("--output"), wav,
-                          QStringLiteral("--resource"), ids::kSound, QStringLiteral("--slot"), QString::number(slots_.value(0))};
+    QStringList arguments{QStringLiteral("audio"),
+                          QStringLiteral("render-wav"),
+                          document,
+                          QStringLiteral("--output"),
+                          wav,
+                          QStringLiteral("--resource"),
+                          ids::kSound,
+                          QStringLiteral("--slot"),
+                          QString::number(slots_.value(0))};
     for (int c = 1; c < slots_.size(); ++c) arguments << QStringLiteral("--mix-slot") << QString::number(slots_.at(c));
     QString error;
     sdk::ProcessSpec spec = host->kitCommand(arguments, session_->projectDirectory(), &error);
@@ -298,8 +313,9 @@ sdk::Inspection PacmanSoundModel::inspect() const {
     inspection.engineTag = QStringLiteral("pacman.sound-streams.v1");
     const int channel = selected_.isEmpty() ? -1 : selected_.section(QLatin1Char(':'), 0, 0).toInt();
     const int command = selected_.section(QLatin1Char(':'), 1, 1).toInt();
-    const QJsonObject c = channel >= 0 ? stream(channel).value(QStringLiteral("commands")).toArray().at(command).toObject()
-                                       : QJsonObject();
+    const QJsonObject c = channel >= 0
+                              ? stream(channel).value(QStringLiteral("commands")).toArray().at(command).toObject()
+                              : QJsonObject();
     if (c.isEmpty()) {
         const int reg = stream(channel_).value(QStringLiteral("prologue")).toArray().at(1).toInt();
         inspection.kicker = slots_.size() > 1 ? tr("Tune") : tr("Sound effect");
@@ -322,10 +338,11 @@ sdk::Inspection PacmanSoundModel::inspect() const {
         volume.minimum = 0;
         volume.maximum = 15;
         inspection.fields = {duty, volume};
-        inspection.note = tr("Notes in frames (60 a second), in the order the stream plays them. Drag a "
-                             "note up or down to retune it, stretch it to change its duration; grey notes "
-                             "hold the note before them. Duty and volume (or the decay of each note's "
-                             "envelope) are the voice the stream starts with; the sounds share one arena.");
+        inspection.note =
+            tr("Notes in frames (60 a second), in the order the stream plays them. Drag a "
+               "note up or down to retune it, stretch it to change its duration; grey notes "
+               "hold the note before them. Duty and volume (or the decay of each note's "
+               "envelope) are the voice the stream starts with; the sounds share one arena.");
         return inspection;
     }
     const bool note = c.value(QStringLiteral("kind")).toString() == QLatin1String("note");
@@ -355,8 +372,6 @@ sdk::Inspection PacmanSoundModel::inspect() const {
     return inspection;
 }
 
-QString PacmanSoundModel::statusText() const {
-    return tr("Sound · %1").arg(title_);
-}
+QString PacmanSoundModel::statusText() const { return tr("Sound · %1").arg(title_); }
 
 }  // namespace rl::pacman

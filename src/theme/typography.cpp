@@ -68,16 +68,17 @@ void loadFonts() {
     bool all = true;
     for (Face& face : gFaces) {
         const int id = QFontDatabase::addApplicationFont(QString::fromLatin1(face.resource));
-        const QStringList families =
-            id >= 0 ? QFontDatabase::applicationFontFamilies(id) : QStringList();
+        const QStringList families = id >= 0 ? QFontDatabase::applicationFontFamilies(id) : QStringList();
         face.family = families.isEmpty() ? QString() : families.first();
         all = all && !face.family.isEmpty();
     }
     gLoaded = all;
     // Cyrillic text in a Barlow face falls back to the matching Plex face.
-    const QPair<FaceIndex, FaceIndex> fallbacks[] = {
-        {kBarlow, kSans}, {kBarlowMedium, kSansMedium}, {kBarlowSemiBold, kSansSemiBold},
-        {kCondensedMedium, kSansCondensedMedium}, {kCondensedSemiBold, kSansCondensedSemiBold}};
+    const QPair<FaceIndex, FaceIndex> fallbacks[] = {{kBarlow, kSans},
+                                                     {kBarlowMedium, kSansMedium},
+                                                     {kBarlowSemiBold, kSansSemiBold},
+                                                     {kCondensedMedium, kSansCondensedMedium},
+                                                     {kCondensedSemiBold, kSansCondensedSemiBold}};
     for (const auto& [barlow, plex] : fallbacks) {
         if (!gFaces[barlow].family.isEmpty() && !gFaces[plex].family.isEmpty()) {
             QFont::insertSubstitution(gFaces[barlow].family, gFaces[plex].family);
@@ -92,59 +93,55 @@ void setInterfaceLanguage(const QString& code) {
                                                    : QString();
 }
 
-bool fontsLoaded() {
-    return gLoaded;
-}
+bool fontsLoaded() { return gLoaded; }
 
 QString fontReport() {
     QStringList lines;
     for (const Face& face : gFaces) {
-        lines << QStringLiteral("%1 -> %2").arg(QString::fromLatin1(face.resource),
-                                                face.family.isEmpty() ? QStringLiteral("<failed>")
-                                                                      : face.family);
+        lines << QStringLiteral("%1 -> %2")
+                     .arg(QString::fromLatin1(face.resource),
+                          face.family.isEmpty() ? QStringLiteral("<failed>") : face.family);
     }
     return lines.join(QLatin1Char('\n'));
 }
 
-void setLetterSpacingEm(QFont& font, double em) {
-    font.setLetterSpacing(QFont::PercentageSpacing, 100.0 + em * 100.0);
-}
+void setLetterSpacingEm(QFont& font, double em) { font.setLetterSpacing(QFont::PercentageSpacing, 100.0 + em * 100.0); }
 
 QFont font(TextRole role, double cssPixels) {
     QFont result;
-    const bool plex = gCyrillic && role != TextRole::Mono && role != TextRole::MonoMedium &&
-                      role != TextRole::MonoSemiBold;
+    const bool plex =
+        gCyrillic && role != TextRole::Mono && role != TextRole::MonoMedium && role != TextRole::MonoSemiBold;
     switch (role) {
-    case TextRole::Body:
-        result = QFont(familyOr(plex ? kSans : kBarlow, "Segoe UI"));
-        result.setWeight(QFont::Normal);
-        break;
-    case TextRole::BodyMedium:
-        result = QFont(familyOr(plex ? kSansMedium : kBarlowMedium, "Segoe UI"));
-        result.setWeight(QFont::Medium);
-        break;
-    case TextRole::Heading:
-        result = QFont(familyOr(plex ? kSansCondensedSemiBold : kCondensedSemiBold, "Segoe UI Semibold"));
-        result.setWeight(QFont::DemiBold);
-        break;
-    case TextRole::Caps:
-        result = QFont(familyOr(plex ? kSansCondensedSemiBold : kCondensedSemiBold, "Segoe UI Semibold"));
-        result.setWeight(QFont::DemiBold);
-        result.setCapitalization(QFont::AllUppercase);
-        setLetterSpacingEm(result, 0.08);
-        break;
-    case TextRole::Mono:
-        result = QFont(familyOr(kMono, "Consolas"));
-        result.setWeight(QFont::Normal);
-        break;
-    case TextRole::MonoMedium:
-        result = QFont(familyOr(kMonoMedium, "Consolas"));
-        result.setWeight(QFont::Medium);
-        break;
-    case TextRole::MonoSemiBold:
-        result = QFont(familyOr(kMonoSemiBold, "Consolas"));
-        result.setWeight(QFont::DemiBold);
-        break;
+        case TextRole::Body:
+            result = QFont(familyOr(plex ? kSans : kBarlow, "Segoe UI"));
+            result.setWeight(QFont::Normal);
+            break;
+        case TextRole::BodyMedium:
+            result = QFont(familyOr(plex ? kSansMedium : kBarlowMedium, "Segoe UI"));
+            result.setWeight(QFont::Medium);
+            break;
+        case TextRole::Heading:
+            result = QFont(familyOr(plex ? kSansCondensedSemiBold : kCondensedSemiBold, "Segoe UI Semibold"));
+            result.setWeight(QFont::DemiBold);
+            break;
+        case TextRole::Caps:
+            result = QFont(familyOr(plex ? kSansCondensedSemiBold : kCondensedSemiBold, "Segoe UI Semibold"));
+            result.setWeight(QFont::DemiBold);
+            result.setCapitalization(QFont::AllUppercase);
+            setLetterSpacingEm(result, 0.08);
+            break;
+        case TextRole::Mono:
+            result = QFont(familyOr(kMono, "Consolas"));
+            result.setWeight(QFont::Normal);
+            break;
+        case TextRole::MonoMedium:
+            result = QFont(familyOr(kMonoMedium, "Consolas"));
+            result.setWeight(QFont::Medium);
+            break;
+        case TextRole::MonoSemiBold:
+            result = QFont(familyOr(kMonoSemiBold, "Consolas"));
+            result.setWeight(QFont::DemiBold);
+            break;
     }
     if (role == TextRole::Mono || role == TextRole::MonoMedium || role == TextRole::MonoSemiBold) {
         result.setStyleHint(QFont::Monospace);

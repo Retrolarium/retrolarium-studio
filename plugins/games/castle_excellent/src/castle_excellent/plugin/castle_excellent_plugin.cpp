@@ -27,8 +27,6 @@ public:
 
 }  // namespace
 
-void registerPlugin(sdk::PluginRegistry& registry) {
-    registry.add(std::make_unique<CastleExcellentPlugin>());
-}
+void registerPlugin(sdk::PluginRegistry& registry) { registry.add(std::make_unique<CastleExcellentPlugin>()); }
 
 }  // namespace rl::castle_excellent

@@ -36,9 +36,7 @@ constexpr int kStripHeight = 28;
 // errors.
 class SeverityMark final : public QWidget {
 public:
-    SeverityMark(sdk::Severity severity, QWidget* parent) : QWidget(parent), severity_(severity) {
-        setFixedSize(7, 7);
-    }
+    SeverityMark(sdk::Severity severity, QWidget* parent) : QWidget(parent), severity_(severity) { setFixedSize(7, 7); }
 
 protected:
     void paintEvent(QPaintEvent*) override {
@@ -60,12 +58,12 @@ private:
 
 QString severityName(sdk::Severity severity) {
     switch (severity) {
-    case sdk::Severity::Error:
-        return rlTr("studio", "Error");
-    case sdk::Severity::Warning:
-        return rlTr("studio", "Warning");
-    case sdk::Severity::Info:
-        break;
+        case sdk::Severity::Error:
+            return rlTr("studio", "Error");
+        case sdk::Severity::Warning:
+            return rlTr("studio", "Warning");
+        case sdk::Severity::Info:
+            break;
     }
     return rlTr("studio", "Info");
 }
@@ -134,8 +132,7 @@ protected:
         update();
     }
     void mousePressEvent(QMouseEvent* event) override {
-        if (onSelect && (event->button() == Qt::LeftButton ||
-                         (event->button() == Qt::RightButton && !selected_))) {
+        if (onSelect && (event->button() == Qt::LeftButton || (event->button() == Qt::RightButton && !selected_))) {
             onSelect(event->button() == Qt::LeftButton ? event->modifiers() : Qt::NoModifier);
         }
     }
@@ -245,8 +242,7 @@ BottomPanel::BottomPanel(QWidget* parent) : QFrame(parent) {
 }
 
 void BottomPanel::updateChevron() {
-    chevron_->setIcon(theme::icon(expanded_ ? QStringLiteral("chevron-down")
-                                            : QStringLiteral("chevron-right"),
+    chevron_->setIcon(theme::icon(expanded_ ? QStringLiteral("chevron-down") : QStringLiteral("chevron-right"),
                                   theme::IconTone::Faint));
 }
 
@@ -308,7 +304,8 @@ void BottomPanel::selectRow(int index, Qt::KeyboardModifiers modifiers) {
         if (!(modifiers & Qt::ControlModifier)) selected_.clear();
         for (int i = std::min(anchor_, index); i <= std::max(anchor_, index); ++i) selected_.insert(i);
     } else if (modifiers & Qt::ControlModifier) {
-        if (selected_.contains(index)) selected_.remove(index); else selected_.insert(index);
+        if (selected_.contains(index)) selected_.remove(index);
+        else selected_.insert(index);
         anchor_ = index;
     } else {
         selected_ = {index};

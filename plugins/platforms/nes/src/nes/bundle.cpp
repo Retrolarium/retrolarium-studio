@@ -11,9 +11,7 @@ namespace rl::nes {
 
 namespace {
 
-[[noreturn]] void fail(const QString& message) {
-    throw BundleError(message.toStdString());
-}
+[[noreturn]] void fail(const QString& message) { throw BundleError(message.toStdString()); }
 
 }  // namespace
 
@@ -60,13 +58,9 @@ void Bundle::save(const QString& path) const {
     }
 }
 
-QString Bundle::game() const {
-    return root_.value(QStringLiteral("game")).toString();
-}
+QString Bundle::game() const { return root_.value(QStringLiteral("game")).toString(); }
 
-QString Bundle::revision() const {
-    return root_.value(QStringLiteral("revision")).toString();
-}
+QString Bundle::revision() const { return root_.value(QStringLiteral("revision")).toString(); }
 
 int Bundle::indexOf(const QString& id) const {
     const QJsonArray resources = root_.value(QStringLiteral("resources")).toArray();
@@ -107,9 +101,7 @@ void Bundle::setResource(const QString& id, const QJsonObject& resource) {
     root_.insert(QStringLiteral("resources"), resources);
 }
 
-int Bundle::tileCount(const QString& id) const {
-    return resource(id).value(QStringLiteral("tiles")).toArray().size();
-}
+int Bundle::tileCount(const QString& id) const { return resource(id).value(QStringLiteral("tiles")).toArray().size(); }
 
 QVector<quint8> Bundle::tilePixels(const QString& id, int tile) const {
     const QJsonArray tiles = resource(id).value(QStringLiteral("tiles")).toArray();

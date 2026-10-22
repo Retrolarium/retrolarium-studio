@@ -54,16 +54,16 @@ public:
 private:
     sdk::Library library() const;
     QVector<int> tiles(int frame) const;
-    int global() const;     // the current frame's index in the table
+    int global() const;  // the current frame's index in the table
     QVector<int> frameList() const;
     bool setTile(int piece, int tile, QString* error);
     QVector<QRgb> colors() const;
 
     SmbSession* session_;
     QString animation_;
-    int frame_ = 0;         // within the animation
+    int frame_ = 0;  // within the animation
     int piece_ = -1;
-    int palette_ = 0;       // 0 first player, 1 second player, 2 fire
+    int palette_ = 0;  // 0 first player, 1 second player, 2 fire
 };
 
 // Which frame each player action shows (big and small), and the two

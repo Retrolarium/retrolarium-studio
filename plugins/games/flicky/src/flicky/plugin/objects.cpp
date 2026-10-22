@@ -35,10 +35,8 @@ QString title(const QString& field) {
     if (field == QLatin1String("chicks_b")) return rlTr("flicky", "Enemy group B");
     // The pictures each scenery group shows change with the round's art.
     if (field == QLatin1String("background_group_3")) return rlTr("flicky", "Windows");
-    if (field == QLatin1String("background_group_4"))
-        return rlTr("flicky", "Wall pictures (train, flowers, stars)");
-    if (field == QLatin1String("background_group_5"))
-        return rlTr("flicky", "Wall pictures (elephant, pyramids, sky)");
+    if (field == QLatin1String("background_group_4")) return rlTr("flicky", "Wall pictures (train, flowers, stars)");
+    if (field == QLatin1String("background_group_5")) return rlTr("flicky", "Wall pictures (elephant, pyramids, sky)");
     if (field.startsWith(QLatin1String("background_group_"))) {
         return rlTr("flicky", "Scenery %1").arg(field.right(1));
     }
@@ -65,9 +63,7 @@ bool isSingle(const QString& field) {
            field == QLatin1String("cat_door") || field == QLatin1String("exit_door");
 }
 
-bool isVariable(const QString& field) {
-    return FlickyLevelDocument::isVariableObjectField(field);
-}
+bool isVariable(const QString& field) { return FlickyLevelDocument::isVariableObjectField(field); }
 
 QStringList typeCandidates(const QString& field) {
     if (!isVariable(field)) {

@@ -14,12 +14,11 @@ namespace {
 
 const QString kCodec = QStringLiteral("smb.sfx-tables.v1");
 
-bool hasTables(const SmbResourceDocument& document) {
-    return document.resourceIds(kCodec).contains(kSfxTables);
-}
+bool hasTables(const SmbResourceDocument& document) { return document.resourceIds(kCodec).contains(kSfxTables); }
 
 QJsonArray records(const SmbResourceDocument& document) {
-    return hasTables(document) ? document.resource(kSfxTables).value(QStringLiteral("records")).toArray() : QJsonArray();
+    return hasTables(document) ? document.resource(kSfxTables).value(QStringLiteral("records")).toArray()
+                               : QJsonArray();
 }
 
 // Which effects read a table byte.
@@ -42,9 +41,7 @@ QString tableTitle(const QString& table) {
     return table;
 }
 
-bool noiseTable(const QString& table) {
-    return table == QLatin1String("brick_shatter_noise");
-}
+bool noiseTable(const QString& table) { return table == QLatin1String("brick_shatter_noise"); }
 
 class Data final : public nes::SoundEffectData {
 public:
@@ -103,20 +100,28 @@ QVector<nes::SoundEffect> soundEffects() {
         const char* name;
         const char* table;
     };
-    static const Effect kEffects[] = {
-        {"square1", 0x80, "Small jump", nullptr},     {"square1", 0x01, "Big jump", nullptr},
-        {"square1", 0x04, "Stomp", nullptr},          {"square1", 0x08, "Kick", nullptr},
-        {"square1", 0x02, "Bump", nullptr},           {"square1", 0x20, "Fireball", nullptr},
-        {"square2", 0x01, "Coin", nullptr},           {"square2", 0x02, "Power-up appears", "Reveal / vine notes"},
-        {"square2", 0x20, "Power-up", "Power-up notes"}, {"square2", 0x40, "1-up", "1-up notes"},
-        {"square2", 0x04, "Vine", "Reveal / vine notes"}, {"square1", 0x10, "Pipe / damage", nullptr},
-        {"noise", 0x01, "Brick breaks", "Brick noise"}, {"square1", 0x40, "Flagpole", nullptr},
-        {"square2", 0x10, "Timer count", nullptr},    {"square2", 0x08, "Fireworks", nullptr},
-        {"noise", 0x02, "Boss fire", nullptr},        {"square2", 0x80, "Boss falls", nullptr}};
+    static const Effect kEffects[] = {{"square1", 0x80, "Small jump", nullptr},
+                                      {"square1", 0x01, "Big jump", nullptr},
+                                      {"square1", 0x04, "Stomp", nullptr},
+                                      {"square1", 0x08, "Kick", nullptr},
+                                      {"square1", 0x02, "Bump", nullptr},
+                                      {"square1", 0x20, "Fireball", nullptr},
+                                      {"square2", 0x01, "Coin", nullptr},
+                                      {"square2", 0x02, "Power-up appears", "Reveal / vine notes"},
+                                      {"square2", 0x20, "Power-up", "Power-up notes"},
+                                      {"square2", 0x40, "1-up", "1-up notes"},
+                                      {"square2", 0x04, "Vine", "Reveal / vine notes"},
+                                      {"square1", 0x10, "Pipe / damage", nullptr},
+                                      {"noise", 0x01, "Brick breaks", "Brick noise"},
+                                      {"square1", 0x40, "Flagpole", nullptr},
+                                      {"square2", 0x10, "Timer count", nullptr},
+                                      {"square2", 0x08, "Fireworks", nullptr},
+                                      {"noise", 0x02, "Boss fire", nullptr},
+                                      {"square2", 0x80, "Boss falls", nullptr}};
     QVector<nes::SoundEffect> result;
     for (const Effect& e : kEffects) {
         const QString queue = QString::fromLatin1(e.queue);
-        const QString label = queue == QLatin1String("square1") ? rlTr("smb", "Square 1 queue ($FF)")
+        const QString label = queue == QLatin1String("square1")   ? rlTr("smb", "Square 1 queue ($FF)")
                               : queue == QLatin1String("square2") ? rlTr("smb", "Square 2 queue ($FE)")
                                                                   : rlTr("smb", "Noise queue ($FD)");
         const QString note = e.table ? rlTr("smb", "Its notes come from the %1 table (Sound effect tables).")
@@ -128,9 +133,7 @@ QVector<nes::SoundEffect> soundEffects() {
     return result;
 }
 
-std::shared_ptr<nes::SoundEffectData> soundEffectData(SmbSession* session) {
-    return std::make_shared<Data>(session);
-}
+std::shared_ptr<nes::SoundEffectData> soundEffectData(SmbSession* session) { return std::make_shared<Data>(session); }
 
 // ---------------------------------------------------------------- tables
 
@@ -152,7 +155,10 @@ SmbSfxTablesModel::Row SmbSfxTablesModel::rowAt(int row) const {
 QString SmbSfxTablesModel::valueLabel(int record, int value) const {
     const QString table = records(session_->document()).at(record).toObject().value(QStringLiteral("id")).toString();
     if (noiseTable(table)) {
-        return tr("%1 · period %2%3").arg(nes::hex(value)).arg(value & 0x0F).arg(value & 0x80 ? tr(", short loop") : QString());
+        return tr("%1 · period %2%3")
+            .arg(nes::hex(value))
+            .arg(value & 0x0F)
+            .arg(value & 0x80 ? tr(", short loop") : QString());
     }
     try {
         const SmbMusic music = SmbMusic::fromJson(session_->document().resource(session_->music()));
@@ -160,7 +166,9 @@ QString SmbSfxTablesModel::valueLabel(int record, int value) const {
         if (pitch < 0) return tr("%1 · no tone").arg(nes::hex(value));
         // Named as the piano roll names them.
         static const char* const kNames[12] = {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"};
-        return QStringLiteral("%1 · %2%3").arg(nes::hex(value), QString::fromLatin1(kNames[pitch % 12])).arg(pitch / 12);
+        return QStringLiteral("%1 · %2%3")
+            .arg(nes::hex(value), QString::fromLatin1(kNames[pitch % 12]))
+            .arg(pitch / 12);
     } catch (const std::exception&) {
         return nes::hex(value);
     }
@@ -193,7 +201,8 @@ QVector<sdk::TableColumn> SmbSfxTablesModel::columns() const {
 
 int SmbSfxTablesModel::rowCount() const {
     int count = 0;
-    for (const QJsonValue& v : records(session_->document())) count += v.toObject().value(QStringLiteral("values")).toArray().size();
+    for (const QJsonValue& v : records(session_->document()))
+        count += v.toObject().value(QStringLiteral("values")).toArray().size();
     return count;
 }
 
@@ -203,11 +212,16 @@ QString SmbSfxTablesModel::cell(int row, int column) const {
     const QJsonObject record = records(session_->document()).at(at.record).toObject();
     const QString table = record.value(QStringLiteral("id")).toString();
     switch (column) {
-    case 0: return at.index == 0 ? tableTitle(table) : QString();
-    case 1: return QString::number(at.index);
-    case 2: return valueLabel(at.record, record.value(QStringLiteral("values")).toArray().at(at.index).toInt());
-    case 3: return playedBy(table, at.index);
-    default: return {};
+        case 0:
+            return at.index == 0 ? tableTitle(table) : QString();
+        case 1:
+            return QString::number(at.index);
+        case 2:
+            return valueLabel(at.record, record.value(QStringLiteral("values")).toArray().at(at.index).toInt());
+        case 3:
+            return playedBy(table, at.index);
+        default:
+            return {};
     }
 }
 
@@ -233,7 +247,13 @@ QStringList SmbSfxTablesModel::cellChoices(int row, int column) const {
     const QString table = records(session_->document()).at(at.record).toObject().value(QStringLiteral("id")).toString();
     QStringList result;
     if (noiseTable(table)) {
-        const int current = records(session_->document()).at(at.record).toObject().value(QStringLiteral("values")).toArray().at(at.index).toInt();
+        const int current = records(session_->document())
+                                .at(at.record)
+                                .toObject()
+                                .value(QStringLiteral("values"))
+                                .toArray()
+                                .at(at.index)
+                                .toInt();
         for (int period = 0; period < 16; ++period) result << valueLabel(at.record, (current & 0x80) | period);
         return result;
     }
@@ -272,16 +292,18 @@ sdk::Inspection SmbSfxTablesModel::inspect() const {
     inspection.engineTag = kCodec;
     const Row at = rowAt(row_);
     if (at.record >= 0) {
-        const QString table = records(session_->document()).at(at.record).toObject().value(QStringLiteral("id")).toString();
+        const QString table =
+            records(session_->document()).at(at.record).toObject().value(QStringLiteral("id")).toString();
         inspection.title = tr("%1 · byte %2").arg(tableTitle(table)).arg(at.index);
     } else {
         inspection.title = title();
     }
-    inspection.note = tr("The bytes SoundEngine steps through for the 1-up, the power-up, the power-up "
-                         "reveal and vine, and breaking bricks. Note bytes are offsets into the music "
-                         "period table, so a value plays the note music plays with it; changing the period "
-                         "table in Music changes these too. The 1-up, power-up and brick tables are read "
-                         "from their last byte back. Open an effect to hear the change and drag its notes.");
+    inspection.note =
+        tr("The bytes SoundEngine steps through for the 1-up, the power-up, the power-up "
+           "reveal and vine, and breaking bricks. Note bytes are offsets into the music "
+           "period table, so a value plays the note music plays with it; changing the period "
+           "table in Music changes these too. The 1-up, power-up and brick tables are read "
+           "from their last byte back. Open an effect to hear the change and drag its notes.");
     return inspection;
 }
 

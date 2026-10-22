@@ -58,7 +58,7 @@ public:
 private:
     int count() const;
     QString resourceId() const;
-    QString listKey() const;           // "small_blocks", "big_blocks", "tiles"
+    QString listKey() const;  // "small_blocks", "big_blocks", "tiles"
     // The block and quarter under a grid cell; {-1, -1} outside.
     std::array<int, 2> blockAt(QPoint cell) const;
     std::array<int, 4> quarters(int block) const;

@@ -59,7 +59,7 @@ public:
         int count = 0;
         bool player = false;
         bool referenced = true;
-        QPoint at;          // sheet column (in sprites) and row (in 16-pixel rows)
+        QPoint at;  // sheet column (in sprites) and row (in 16-pixel rows)
     };
 
 private:
@@ -73,13 +73,13 @@ private:
 
     CastleExcellentSession* session_;
     QVector<Frame> frames_;
-    QHash<int, QPoint> positions_;      // descriptor -> sheet column, row
+    QHash<int, QPoint> positions_;  // descriptor -> sheet column, row
     int rows_ = 1;
-    int selected_ = -1;                 // frame
+    int selected_ = -1;  // frame
     int tile_ = 0x90;
     int libraryPalette_ = 0;
     bool stroking_ = false;
-    QHash<int, int> pending_;           // descriptor -> tile
+    QHash<int, int> pending_;  // descriptor -> tile
 };
 
 }  // namespace rl::castle_excellent

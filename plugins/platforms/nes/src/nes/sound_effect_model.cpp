@@ -22,7 +22,8 @@ namespace rl::nes {
 namespace {
 
 const char* const kChannels[4] = {"Pulse 1", "Pulse 2", "Triangle", "Noise"};
-const QColor kColours[4] = {QColor(0xe0, 0xb0, 0x40), QColor(0x60, 0xa8, 0xe0), QColor(0x70, 0xc8, 0x70), QColor(0xb0, 0xb0, 0xb0)};
+const QColor kColours[4] = {QColor(0xe0, 0xb0, 0x40), QColor(0x60, 0xa8, 0xe0), QColor(0x70, 0xc8, 0x70),
+                            QColor(0xb0, 0xb0, 0xb0)};
 constexpr double kFrameRate = 60.0988;
 
 // Bundle resources of a BundleOwner: the whole bundle is the document.
@@ -75,8 +76,8 @@ std::shared_ptr<SoundEffectData> bundleSoundEffectData(BundleOwner* owner, QStri
     return std::make_shared<BundleData>(owner, std::move(resources));
 }
 
-SoundEffectModel::SoundEffectModel(sdk::Session* session, SoundEffect effect, QString projectPath, QString projectDirectory,
-                                   std::shared_ptr<SoundEffectData> data)
+SoundEffectModel::SoundEffectModel(sdk::Session* session, SoundEffect effect, QString projectPath,
+                                   QString projectDirectory, std::shared_ptr<SoundEffectData> data)
     : SequencerModel(session),
       session_(session),
       effect_(std::move(effect)),
@@ -97,7 +98,8 @@ QString SoundEffectModel::outputPath(const QString& suffix) const {
 }
 
 QStringList SoundEffectModel::arguments(QString* error) const {
-    QStringList result{QStringLiteral("audio"), QStringLiteral("render-sfx"), projectPath_, QStringLiteral("--effect"), effect_.key};
+    QStringList result{QStringLiteral("audio"), QStringLiteral("render-sfx"), projectPath_, QStringLiteral("--effect"),
+                       effect_.key};
     if (data_ && data_->edited()) {
         const QString document = outputPath(QStringLiteral("bundle.json"));
         QDir().mkpath(QFileInfo(document).absolutePath());
@@ -183,8 +185,14 @@ bool SoundEffectModel::hasTables() const {
 QJsonObject SoundEffectModel::noteAt(const QString& id) const {
     const int channel = id.section(QLatin1Char(':'), 0, 0).toInt();
     const int index = id.section(QLatin1Char(':'), 1, 1).toInt();
-    return trace_.value(QStringLiteral("channels")).toArray().at(channel).toObject()
-        .value(QStringLiteral("notes")).toArray().at(index).toObject();
+    return trace_.value(QStringLiteral("channels"))
+        .toArray()
+        .at(channel)
+        .toObject()
+        .value(QStringLiteral("notes"))
+        .toArray()
+        .at(index)
+        .toObject();
 }
 
 QJsonObject SoundEffectModel::tableOf(const QString& table) const {
@@ -225,7 +233,8 @@ bool SoundEffectModel::setSourceValue(const QJsonObject& source, int value, QStr
     const QString table = source.value(QStringLiteral("table")).toString();
     const int index = source.value(QStringLiteral("index")).toInt();
     if (value == source.value(QStringLiteral("value")).toInt()) return false;
-    return data_->setTableValue(table, index, value, tr("Edit %1 (%2[%3])").arg(effect_.title, table).arg(index), error);
+    return data_->setTableValue(table, index, value, tr("Edit %1 (%2[%3])").arg(effect_.title, table).arg(index),
+                                error);
 }
 
 QVector<sdk::SequencerChannel> SoundEffectModel::channels() const {
@@ -259,18 +268,24 @@ void SoundEffectModel::setChannelMuted(int channel, bool muted) {
 
 QVector<sdk::SequencerNote> SoundEffectModel::notes(int channel) const {
     QVector<sdk::SequencerNote> result;
-    const QJsonArray notes =
-        trace_.value(QStringLiteral("channels")).toArray().at(channel).toObject().value(QStringLiteral("notes")).toArray();
+    const QJsonArray notes = trace_.value(QStringLiteral("channels"))
+                                 .toArray()
+                                 .at(channel)
+                                 .toObject()
+                                 .value(QStringLiteral("notes"))
+                                 .toArray();
     for (int i = 0; i < notes.size(); ++i) {
         const QJsonObject n = notes.at(i).toObject();
         sdk::SequencerNote note;
         note.id = QStringLiteral("%1:%2").arg(channel).arg(i);
         note.start = n.value(QStringLiteral("start")).toInt();
         note.length = std::max(1, n.value(QStringLiteral("length")).toInt());
-        const int pitch = note.id == dragging_ && dragPitch_ >= 0 ? dragPitch_ : n.value(QStringLiteral("pitch")).toInt();
+        const int pitch =
+            note.id == dragging_ && dragPitch_ >= 0 ? dragPitch_ : n.value(QStringLiteral("pitch")).toInt();
         note.pitch = std::clamp(pitch, pitchMinimum(), pitchMaximum());
-        note.pitchEditable = data_ && n.contains(QStringLiteral("source")) &&
-                             !tableOf(n.value(QStringLiteral("source")).toObject().value(QStringLiteral("table")).toString()).isEmpty();
+        note.pitchEditable =
+            data_ && n.contains(QStringLiteral("source")) &&
+            !tableOf(n.value(QStringLiteral("source")).toObject().value(QStringLiteral("table")).toString()).isEmpty();
         result << note;
     }
     return result;
@@ -334,8 +349,8 @@ sdk::Inspection SoundEffectModel::inspect() const {
     length.key = QStringLiteral("length");
     length.label = tr("Length");
     const int frames = trace_.value(QStringLiteral("frames")).toInt();
-    length.value = trace_.isEmpty() ? tr("tracing…")
-                                    : tr("%1 frames · %2 s").arg(frames).arg(frames / kFrameRate, 0, 'f', 2);
+    length.value =
+        trace_.isEmpty() ? tr("tracing…") : tr("%1 frames · %2 s").arg(frames).arg(frames / kFrameRate, 0, 'f', 2);
     inspection.fields = {trigger, length};
     if (!selected_.isEmpty()) {
         const int channel = std::clamp(selected_.section(QLatin1Char(':'), 0, 0).toInt(), 0, 3);
@@ -356,7 +371,8 @@ sdk::Inspection SoundEffectModel::inspect() const {
             value.key = QStringLiteral("value");
             value.label = tr("Table byte");
             value.type = sdk::Field::Type::Choice;
-            value.hint = QStringLiteral("%1[%2]").arg(source.value(QStringLiteral("table")).toString())
+            value.hint = QStringLiteral("%1[%2]")
+                             .arg(source.value(QStringLiteral("table")).toString())
                              .arg(source.value(QStringLiteral("index")).toInt());
             const int current = source.value(QStringLiteral("value")).toInt();
             const bool noise = table.value(QStringLiteral("kind")).toString() == QLatin1String("noise");
@@ -365,7 +381,8 @@ sdk::Inspection SoundEffectModel::inspect() const {
                 const int byte = noise ? (current & 0xF0) | choice.value(QStringLiteral("value")).toInt()
                                        : choice.value(QStringLiteral("value")).toInt();
                 const QString label = noise ? tr("%1 · period %2").arg(hex(byte)).arg(byte & 0x0F)
-                                            : QStringLiteral("%1 · %2").arg(hex(byte), pitchName(choice.value(QStringLiteral("pitch")).toInt()));
+                                            : QStringLiteral("%1 · %2").arg(
+                                                  hex(byte), pitchName(choice.value(QStringLiteral("pitch")).toInt()));
                 value.choices << label;
                 if (byte == current) value.value = label;
             }
@@ -373,11 +390,13 @@ sdk::Inspection SoundEffectModel::inspect() const {
             inspection.fields << value;
         }
     }
-    inspection.note = tr("Played through the game's own sound code: the kit runs the effect's routines "
-                         "frame by frame and records the APU registers. One tick is one frame.");
+    inspection.note =
+        tr("Played through the game's own sound code: the kit runs the effect's routines "
+           "frame by frame and records the APU registers. One tick is one frame.");
     if (hasTables()) {
-        inspection.note += tr(" Notes set from a table byte move up or down to the pitches the table can "
-                              "hold; that byte changes for every place the effect reads it.");
+        inspection.note +=
+            tr(" Notes set from a table byte move up or down to the pitches the table can "
+               "hold; that byte changes for every place the effect reads it.");
     }
     if (!effect_.note.isEmpty()) inspection.note += QLatin1Char(' ') + effect_.note;
     return inspection;
@@ -391,9 +410,7 @@ bool SoundEffectModel::setField(const QString& key, const QVariant& value, QStri
     return setSourceValue(source, byte, error);
 }
 
-QString SoundEffectModel::statusText() const {
-    return tr("Sound effect · %1").arg(effect_.title);
-}
+QString SoundEffectModel::statusText() const { return tr("Sound effect · %1").arg(effect_.title); }
 
 void SoundEffectModel::preview() {
     sdk::Host* host = session_->host();

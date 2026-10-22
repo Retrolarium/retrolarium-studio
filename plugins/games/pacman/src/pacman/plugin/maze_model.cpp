@@ -15,7 +15,7 @@ namespace {
 
 using namespace maze;
 
-constexpr int kSheetTiles = 64;     // the engine keeps a maze tile in six bits
+constexpr int kSheetTiles = 64;  // the engine keeps a maze tile in six bits
 
 }  // namespace
 
@@ -24,13 +24,9 @@ PacmanMazeModel::PacmanMazeModel(PacmanSession* session) : TileMapModel(session)
     connect(session_, &PacmanSession::startChanged, this, &sdk::EditorModel::toolsChanged);
 }
 
-QVector<int> PacmanMazeModel::grid() const {
-    return stroke_ ? *stroke_ : session_->mazeGrid(session_->bundle());
-}
+QVector<int> PacmanMazeModel::grid() const { return stroke_ ? *stroke_ : session_->mazeGrid(session_->bundle()); }
 
-QSize PacmanMazeModel::gridSize() const {
-    return {kColumns, kRows};
-}
+QSize PacmanMazeModel::gridSize() const { return {kColumns, kRows}; }
 
 QVector<sdk::Tool> PacmanMazeModel::tools() const {
     return {{QStringLiteral("select"), tr("Select a cell"), QStringLiteral("select")},
@@ -61,9 +57,7 @@ void PacmanMazeModel::setCurrentBrush(int value) {
     emit selectionChanged();
 }
 
-QString PacmanMazeModel::currentLibraryItem() const {
-    return QStringLiteral("tile:%1").arg(tile_);
-}
+QString PacmanMazeModel::currentLibraryItem() const { return QStringLiteral("tile:%1").arg(tile_); }
 
 void PacmanMazeModel::setCurrentLibraryItem(const QString& id) {
     if (!id.startsWith(QLatin1String("tile:"))) return;
@@ -103,7 +97,6 @@ bool PacmanMazeModel::refusedTile(QPoint cell, int tile) const {
     if (isPowerCell(cell.y(), cell.x())) return tile != 0x01;
     return isPowerTile(tile);
 }
-
 
 bool PacmanMazeModel::commit(const QVector<int>& g, const QString& text, QString* error) {
     return session_->editBundle(
@@ -257,8 +250,8 @@ sdk::Budget PacmanMazeModel::budget() const {
     sdk::Budget budget;
     budget.used = report.rleBytes;
     budget.capacity = kRleBytes;
-    budget.text = tr("%n pellets", nullptr, report.pellets) +
-                  tr(" · RLE %1 / %2 bytes").arg(report.rleBytes).arg(kRleBytes);
+    budget.text =
+        tr("%n pellets", nullptr, report.pellets) + tr(" · RLE %1 / %2 bytes").arg(report.rleBytes).arg(kRleBytes);
     return budget;
 }
 
@@ -282,7 +275,8 @@ sdk::Inspection PacmanMazeModel::inspect() const {
         inspection.note = tr("Every round plays this maze and ends when its last pellet is eaten: the build "
                              "writes the maze's count (up to 255) into the round counter. The four power "
                              "pellets, the door, the spawns and the tunnel ends stay where the engine expects "
-                             "them. Changed cells are outlined. ") + checks;
+                             "them. Changed cells are outlined. ") +
+                          checks;
         return inspection;
     }
     inspection.kicker = tr("Maze cell");
@@ -304,12 +298,13 @@ sdk::Inspection PacmanMazeModel::inspect() const {
 QString PacmanMazeModel::statusText() const {
     if (cell_ < 0) return tr("Maze · 27x22");
     const QVector<int> g = grid();
-    return tr("Maze · row %1, column %2 · %3").arg(cell_ / kColumns).arg(cell_ % kColumns).arg(nes::hex(g.value(cell_)));
+    return tr("Maze · row %1, column %2 · %3")
+        .arg(cell_ / kColumns)
+        .arg(cell_ % kColumns)
+        .arg(nes::hex(g.value(cell_)));
 }
 
-QString PacmanMazeModel::startPoint() const {
-    return session_->selectedStart();
-}
+QString PacmanMazeModel::startPoint() const { return session_->selectedStart(); }
 
 QVector<sdk::ViewOption> PacmanMazeModel::viewOptions() const {
     // Every round plays this maze; the round only picks where Play from

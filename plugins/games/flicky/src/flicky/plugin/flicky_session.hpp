@@ -45,8 +45,7 @@ public:
     sdk::Profile profile() const override;
     QVector<sdk::Kind> kinds() const override;
     QVector<sdk::DocumentGroup> documents(const QString& kind) const override;
-    std::unique_ptr<sdk::EditorModel> openEditor(const QString& kind,
-                                                 const QString& document) override;
+    std::unique_ptr<sdk::EditorModel> openEditor(const QString& kind, const QString& document) override;
     bool save(QString* error) override;
     bool canRevert(const QString& kind, const QString& document) const override;
     bool revert(const QString& kind, const QString& document, QString* error) override;
@@ -64,10 +63,8 @@ public:
     // Levels: whole-document snapshots, dirty by comparison with the saved copy.
     const FlickyLevelDocument& levels() const { return levels_; }
     const FlickyLevelDocument& savedLevels() const { return savedLevels_; }
-    void commitLevels(const FlickyLevelDocument& before, const FlickyLevelDocument& after,
-                      const QString& text);
-    bool editLevels(const QString& text, const std::function<void(FlickyLevelDocument&)>& edit,
-                    QString* error);
+    void commitLevels(const FlickyLevelDocument& before, const FlickyLevelDocument& after, const QString& text);
+    bool editLevels(const QString& text, const std::function<void(FlickyLevelDocument&)>& edit, QString* error);
     void setLevelsLive(const FlickyLevelDocument& levels);
 
     // Graphics and semantics: tracked documents. editX copies, edits and
@@ -78,15 +75,12 @@ public:
     FlickyGraphicsDocument& graphicsLive() { return *graphics_.doc; }
     quint64 graphicsRevision() const { return graphics_.revision; }
     void touchGraphics();
-    void commitGraphics(const FlickyGraphicsDocument& before, quint64 beforeRevision,
-                        const QString& text);
-    bool editGraphics(const QString& text, const std::function<void(FlickyGraphicsDocument&)>& edit,
-                      QString* error);
+    void commitGraphics(const FlickyGraphicsDocument& before, quint64 beforeRevision, const QString& text);
+    bool editGraphics(const QString& text, const std::function<void(FlickyGraphicsDocument&)>& edit, QString* error);
 
     const FlickySemanticsDocument& semantics() const { return *semantics_.doc; }
     const FlickySemanticsDocument& savedSemantics() const { return semantics_.saved; }
-    bool editSemantics(const QString& text,
-                       const std::function<void(FlickySemanticsDocument&)>& edit, QString* error);
+    bool editSemantics(const QString& text, const std::function<void(FlickySemanticsDocument&)>& edit, QString* error);
     FlickySemanticsDocument& semanticsLive() { return *semantics_.doc; }
     quint64 semanticsRevision() const { return semantics_.revision; }
     void touchSemantics();
@@ -97,10 +91,8 @@ public:
     FlickySequencesDocument& sequencesLive() { return *sequences_.doc; }
     quint64 sequencesRevision() const { return sequences_.revision; }
     void touchSequences();
-    void commitSequences(const FlickySequencesDocument& before, quint64 beforeRevision,
-                         const QString& text);
-    bool editSequences(const QString& text,
-                       const std::function<void(FlickySequencesDocument&)>& edit, QString* error);
+    void commitSequences(const FlickySequencesDocument& before, quint64 beforeRevision, const QString& text);
+    bool editSequences(const QString& text, const std::function<void(FlickySequencesDocument&)>& edit, QString* error);
 
     const FlickySoundDocument& sound() const { return *sound_.doc; }
     const FlickySoundDocument& savedSound() const { return sound_.saved; }
@@ -109,8 +101,7 @@ public:
     bool isSoundDirty() const { return sound_.isDirty(); }
     void touchSound();
     void commitSound(const FlickySoundDocument& before, quint64 beforeRevision, const QString& text);
-    bool editSound(const QString& text, const std::function<void(FlickySoundDocument&)>& edit,
-                   QString* error);
+    bool editSound(const QString& text, const std::function<void(FlickySoundDocument&)>& edit, QString* error);
 
     // Round (0-based) "Play from selected" and the Playtest view start
     // from. Opening a level selects it.

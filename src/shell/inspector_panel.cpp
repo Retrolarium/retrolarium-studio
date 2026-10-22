@@ -233,8 +233,7 @@ void InspectorPanel::clearContent() {
     }
 }
 
-void InspectorPanel::showMessage(const QString& kicker, const QString& title,
-                                 const QString& note) {
+void InspectorPanel::showMessage(const QString& kicker, const QString& title, const QString& note) {
     if (model_) {
         disconnect(model_, nullptr, this, nullptr);
         model_ = nullptr;
@@ -290,20 +289,20 @@ void InspectorPanel::rebuild() {
                 }
             };
             if (field.type == sdk::Field::Type::Choice && !readOnly) {
-                QComboBox* combo = grid->addChoice(field.label, field.choices,
-                                                   std::max(0, field.choices.indexOf(field.value.toString())),
-                                                   field.choiceIcons);
+                QComboBox* combo =
+                    grid->addChoice(field.label, field.choices,
+                                    std::max(0, field.choices.indexOf(field.value.toString())), field.choiceIcons);
                 connect(combo, QOverload<int>::of(&QComboBox::activated), this,
                         [combo, apply](int) { apply(combo->currentData()); });
                 continue;
             }
             ui::PropertyField* edit = grid->addField(
-                field.label, field.type == sdk::Field::Type::Choice ? rlValue(field.value.toString())
-                                                                    : field.value.toString(),
+                field.label,
+                field.type == sdk::Field::Type::Choice ? rlValue(field.value.toString()) : field.value.toString(),
                 field.hint);
             edit->setMonospace(field.monospace);
-            const bool editable = !readOnly && (field.type == sdk::Field::Type::Text ||
-                                                field.type == sdk::Field::Type::Integer);
+            const bool editable =
+                !readOnly && (field.type == sdk::Field::Type::Text || field.type == sdk::Field::Type::Integer);
             edit->setReadOnly(!editable);
             if (field.type == sdk::Field::Type::Integer) {
                 edit->setValidator(new QIntValidator(field.minimum, field.maximum, edit));
@@ -330,8 +329,7 @@ void InspectorPanel::rebuild() {
 
     QString note = inspection.note;
     if (model_->isReadOnly() && !model_->readOnlyReason().isEmpty()) {
-        note = note.isEmpty() ? model_->readOnlyReason()
-                              : model_->readOnlyReason() + QStringLiteral("\n\n") + note;
+        note = note.isEmpty() ? model_->readOnlyReason() : model_->readOnlyReason() + QStringLiteral("\n\n") + note;
     }
     if (!note.isEmpty()) {
         auto* label = new ui::Label(note, ui::Label::Role::Small, headBox);
@@ -368,7 +366,8 @@ void InspectorPanel::rebuild() {
         items->setSpacing(6);
         const QString current = model_->currentLibraryItem();
         int index = 0;
-        for (const sdk::LibraryItem& item : inspection.library.grid ? QVector<sdk::LibraryItem>{} : inspection.library.items) {
+        for (const sdk::LibraryItem& item :
+             inspection.library.grid ? QVector<sdk::LibraryItem>{} : inspection.library.items) {
             auto* tile = new LibraryTile(item, item.id == current, libBox);
             QPointer<sdk::EditorModel> model = model_;
             tile->onPick = [model](const QString& id) {

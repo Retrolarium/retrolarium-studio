@@ -4,9 +4,7 @@ namespace rl::theme {
 
 namespace {
 
-QColor rgba(int r, int g, int b, double alpha) {
-    return QColor(r, g, b, static_cast<int>(alpha * 255.0 + 0.5));
-}
+QColor rgba(int r, int g, int b, double alpha) { return QColor(r, g, b, static_cast<int>(alpha * 255.0 + 0.5)); }
 
 Tokens makeDark() {
     Tokens t;
@@ -54,9 +52,7 @@ Tokens makeLight() {
 
 }  // namespace
 
-QString modeName(Mode mode) {
-    return mode == Mode::Light ? QStringLiteral("light") : QStringLiteral("dark");
-}
+QString modeName(Mode mode) { return mode == Mode::Light ? QStringLiteral("light") : QStringLiteral("dark"); }
 
 Mode modeFromName(const QString& name, Mode fallback) {
     if (name.compare(QLatin1String("light"), Qt::CaseInsensitive) == 0) {

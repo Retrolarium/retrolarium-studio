@@ -118,9 +118,10 @@ QVector<sdk::DocumentGroup> RomSession::documents(const QString& kind) const {
         const QVector<tiles::Group> found = tileGroups();
         for (int i = 0; i < found.size(); ++i) {
             const tiles::Group& set = found.at(i);
-            group.documents.append(entry(QStringLiteral("group-%1").arg(i), tr("Tiles %1").arg(i + 1),
-                                         tr("$%1 · %n tiles", nullptr, set.tiles)
-                                             .arg(QStringLiteral("%1").arg(set.offset, 6, 16, QLatin1Char('0')).toUpper())));
+            group.documents.append(
+                entry(QStringLiteral("group-%1").arg(i), tr("Tiles %1").arg(i + 1),
+                      tr("$%1 · %n tiles", nullptr, set.tiles)
+                          .arg(QStringLiteral("%1").arg(set.offset, 6, 16, QLatin1Char('0')).toUpper())));
         }
         return {group};
     }
@@ -315,9 +316,9 @@ void RomSession::write(int offset, const QByteArray& bytes, const QString& text)
     if (before == bytes) return;
     const quint64 beforeRevision = revision_;
     const quint64 afterRevision = ++nextRevision_;
-    undoStack()->push(new RangeCommand(
-        [this](int at, const QByteArray& data, quint64 revision) { applyRange(at, data, revision); }, offset, before,
-        beforeRevision, bytes, afterRevision, text));
+    undoStack()->push(
+        new RangeCommand([this](int at, const QByteArray& data, quint64 revision) { applyRange(at, data, revision); },
+                         offset, before, beforeRevision, bytes, afterRevision, text));
 }
 
 void RomSession::edit(const QString& text, const QByteArray& next) {
@@ -339,8 +340,8 @@ void RomSession::commitFrom(const QString& text, const QByteArray& before, const
     const quint64 beforeRevision = revision_;
     const quint64 afterRevision = ++nextRevision_;
     undoStack()->push(new sdk::SnapshotCommand<QByteArray>(
-        [this](const QByteArray& bytes, quint64 revision) { apply(bytes, revision); }, before, beforeRevision,
-        after, afterRevision, text));
+        [this](const QByteArray& bytes, quint64 revision) { apply(bytes, revision); }, before, beforeRevision, after,
+        afterRevision, text));
 }
 
 void RomSession::play() {
@@ -362,13 +363,13 @@ void RomSession::play() {
                    tr("Cannot write the ROM to run: %1").arg(file.errorString()), QString()});
         return;
     }
-    const QString movies = QDir(QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation))
-                               .filePath(QStringLiteral("movies"));
+    const QString movies =
+        QDir(QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation)).filePath(QStringLiteral("movies"));
     QString error;
-    sdk::ProcessSpec spec = h->kitCommand({QStringLiteral("movie"), QStringLiteral("plan"), QStringLiteral("--rom"),
-                                           copy, QStringLiteral("--movies-root"), movies, QStringLiteral("--mame"),
-                                           mame},
-                                          project_.directory(), &error);
+    sdk::ProcessSpec spec =
+        h->kitCommand({QStringLiteral("movie"), QStringLiteral("plan"), QStringLiteral("--rom"), copy,
+                       QStringLiteral("--movies-root"), movies, QStringLiteral("--mame"), mame},
+                      project_.directory(), &error);
     if (spec.program.isEmpty()) {
         h->report({sdk::Severity::Error, QStringLiteral("playtest"), error, QString()});
         return;

@@ -29,7 +29,8 @@ constexpr int kCommandFrames = 12;
 
 }  // namespace
 
-CastleExcellentDemoModel::CastleExcellentDemoModel(CastleExcellentSession* session) : TableModel(session), session_(session), attached_(session) {
+CastleExcellentDemoModel::CastleExcellentDemoModel(CastleExcellentSession* session)
+    : TableModel(session), session_(session), attached_(session) {
     connect(session_, &sdk::Session::contentChanged, this, &sdk::EditorModel::contentChanged);
     connect(session_, &sdk::Session::selectedStartChanged, this, &sdk::EditorModel::toolsChanged);
     // Play from selected runs the demo while this is open.
@@ -63,9 +64,7 @@ CastleExcellentDemoModel::Recording CastleExcellentDemoModel::stepsFromRecording
     return result;
 }
 
-QJsonArray CastleExcellentDemoModel::steps() const {
-    return session_->demo().value(QStringLiteral("steps")).toArray();
-}
+QJsonArray CastleExcellentDemoModel::steps() const { return session_->demo().value(QStringLiteral("steps")).toArray(); }
 
 QVector<sdk::TableColumn> CastleExcellentDemoModel::columns() const {
     sdk::TableColumn step;
@@ -92,30 +91,31 @@ QVector<sdk::TableColumn> CastleExcellentDemoModel::columns() const {
     return {step, commands, buttons, at};
 }
 
-int CastleExcellentDemoModel::rowCount() const {
-    return steps().size();
-}
+int CastleExcellentDemoModel::rowCount() const { return steps().size(); }
 
 QString CastleExcellentDemoModel::cell(int row, int column) const {
     const QJsonArray list = steps();
     if (row < 0 || row >= list.size()) return {};
     const QJsonObject item = list.at(row).toObject();
     switch (column) {
-    case 0: return QString::number(row + 1);
-    case 1: return QString::number(item.value(QStringLiteral("commands")).toInt());
-    case 2: {
-        QStringList held;
-        for (const QJsonValue& b : item.value(QStringLiteral("buttons")).toArray()) held << b.toString();
-        return held.isEmpty() ? QStringLiteral("-") : held.join(QLatin1Char(' '));
-    }
-    case 3: {
-        int commands = 0;
-        for (int i = 0; i < row; ++i) commands += list.at(i).toObject().value(QStringLiteral("commands")).toInt();
-        // The first command lasts 11 frames.
-        const int frames = commands == 0 ? 0 : commands * kCommandFrames - 1;
-        return QStringLiteral("%1.%2 s").arg(frames / 60).arg(frames % 60 * 10 / 60);
-    }
-    default: return {};
+        case 0:
+            return QString::number(row + 1);
+        case 1:
+            return QString::number(item.value(QStringLiteral("commands")).toInt());
+        case 2: {
+            QStringList held;
+            for (const QJsonValue& b : item.value(QStringLiteral("buttons")).toArray()) held << b.toString();
+            return held.isEmpty() ? QStringLiteral("-") : held.join(QLatin1Char(' '));
+        }
+        case 3: {
+            int commands = 0;
+            for (int i = 0; i < row; ++i) commands += list.at(i).toObject().value(QStringLiteral("commands")).toInt();
+            // The first command lasts 11 frames.
+            const int frames = commands == 0 ? 0 : commands * kCommandFrames - 1;
+            return QStringLiteral("%1.%2 s").arg(frames / 60).arg(frames % 60 * 10 / 60);
+        }
+        default:
+            return {};
     }
 }
 
@@ -133,7 +133,8 @@ void CastleExcellentDemoModel::setCurrentRow(int row) {
 }
 
 bool CastleExcellentDemoModel::setCell(int row, int column, const QString& value, QString* error) {
-    if (row < 0 || row >= rowCount() || (column != 1 && column != 2)) return TableModel::setCell(row, column, value, error);
+    if (row < 0 || row >= rowCount() || (column != 1 && column != 2))
+        return TableModel::setCell(row, column, value, error);
     QJsonArray list = steps();
     QJsonObject item = list.at(row).toObject();
     if (column == 1) {
@@ -146,7 +147,8 @@ bool CastleExcellentDemoModel::setCell(int row, int column, const QString& value
         }
         item.insert(QStringLiteral("commands"), commands);
     } else {
-        const QStringList words = value.toUpper().split(QRegularExpression(QStringLiteral("[\\s,+]+")), Qt::SkipEmptyParts);
+        const QStringList words =
+            value.toUpper().split(QRegularExpression(QStringLiteral("[\\s,+]+")), Qt::SkipEmptyParts);
         for (const QString& word : words) {
             if (word != QLatin1String("-") && !buttonNames().contains(word)) {
                 if (error) *error = tr("Buttons are A, B, UP, DOWN, LEFT and RIGHT.");
@@ -160,8 +162,9 @@ bool CastleExcellentDemoModel::setCell(int row, int column, const QString& value
         item.insert(QStringLiteral("buttons"), held);
     }
     list.replace(row, item);
-    return session_->editDemo(tr("Edit demo step %1").arg(row + 1),
-                              [list](QJsonObject& demo) { demo.insert(QStringLiteral("steps"), list); }, error);
+    return session_->editDemo(
+        tr("Edit demo step %1").arg(row + 1), [list](QJsonObject& demo) { demo.insert(QStringLiteral("steps"), list); },
+        error);
 }
 
 sdk::Budget CastleExcellentDemoModel::budget() const {

@@ -65,13 +65,13 @@ private:
     SmbSession* session_;
     int group_;
     QString packet_;
-    int selected_ = -1;     // block index within the group
+    int selected_ = -1;  // block index within the group
     int tile_ = 0x24;
 
     // A stroke paints into these, drawn over the document, and writes the
     // document once when it ends: rewriting the 2 MB bundle per cell stalls.
     bool stroking_ = false;
-    QHash<int, std::array<int, 4>> pending_;    // block index: its four patterns
+    QHash<int, std::array<int, 4>> pending_;  // block index: its four patterns
 
     mutable QVector<sdk::LibraryItem> library_;
     mutable QString libraryKey_;

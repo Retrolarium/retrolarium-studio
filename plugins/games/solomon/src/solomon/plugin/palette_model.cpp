@@ -12,7 +12,7 @@ namespace rl::solomon {
 namespace {
 
 constexpr int kGroupColourEntries[] = {1, 5, 9, 13};
-constexpr int kPrincessEntry = 10;      // BG 2 colour 2, $16 in the princess rooms
+constexpr int kPrincessEntry = 10;  // BG 2 colour 2, $16 in the princess rooms
 
 }  // namespace
 
@@ -26,13 +26,9 @@ QString SolomonRoomPaletteModel::groupLabel(int group) {
     return group == 12 ? tr("Rooms 49, 50, 52") : tr("Room 53");
 }
 
-QString SolomonRoomPaletteModel::title() const {
-    return tr("%1 palettes").arg(groupLabel(group_));
-}
+QString SolomonRoomPaletteModel::title() const { return tr("%1 palettes").arg(groupLabel(group_)); }
 
-bool SolomonRoomPaletteModel::special() const {
-    return groupColor(session_->state().art, group_) >= 0x80;
-}
+bool SolomonRoomPaletteModel::special() const { return groupColor(session_->state().art, group_) >= 0x80; }
 
 SolomonRoomPaletteModel::Source SolomonRoomPaletteModel::source(int flat) const {
     const bool groupEntry = std::find(std::begin(kGroupColourEntries), std::end(kGroupColourEntries), flat) !=
@@ -85,36 +81,37 @@ int SolomonRoomPaletteModel::currentGamutIndex() const {
 bool SolomonRoomPaletteModel::assignGamut(int index, QString* error) {
     const int flat = flatEntry();
     switch (source(flat)) {
-    case Source::Fixed:
-        if (error) {
-            *error = tr("Rooms 49-56 take colour 1 of the background rows ($00) and BG 2 colour 2 ($16) "
-                        "from the game's code, not from data.");
+        case Source::Fixed:
+            if (error) {
+                *error =
+                    tr("Rooms 49-56 take colour 1 of the background rows ($00) and BG 2 colour 2 ($16) "
+                       "from the game's code, not from data.");
+            }
+            return false;
+        case Source::Group: {
+            const int group = group_;
+            return session_->edit(
+                tr("Set the %1 colour").arg(groupLabel(group_)),
+                [group, index](SolomonState& s) {
+                    QJsonArray colors = s.art.value(QStringLiteral("room_group_colors")).toArray();
+                    QJsonValue value = colors.at(group);
+                    if (value.isObject()) {
+                        QJsonObject o = value.toObject();
+                        o.insert(QStringLiteral("value"), index);
+                        value = o;
+                    } else {
+                        value = index;
+                    }
+                    colors.replace(group, value);
+                    s.art.insert(QStringLiteral("room_group_colors"), colors);
+                },
+                error);
         }
-        return false;
-    case Source::Group: {
-        const int group = group_;
-        return session_->edit(tr("Set the %1 colour").arg(groupLabel(group_)),
-                              [group, index](SolomonState& s) {
-                                  QJsonArray colors = s.art.value(QStringLiteral("room_group_colors")).toArray();
-                                  QJsonValue value = colors.at(group);
-                                  if (value.isObject()) {
-                                      QJsonObject o = value.toObject();
-                                      o.insert(QStringLiteral("value"), index);
-                                      value = o;
-                                  } else {
-                                      value = index;
-                                  }
-                                  colors.replace(group, value);
-                                  s.art.insert(QStringLiteral("room_group_colors"), colors);
-                              },
-                              error);
-    }
-    case Source::Template:
-        return session_->editBundle(tr("Set room palette colour %1").arg(flat),
-                                    [flat, index](nes::Bundle& b) {
-                                        b.setTableValue(QStringLiteral("room-palettes"), flat, index);
-                                    },
-                                    error);
+        case Source::Template:
+            return session_->editBundle(
+                tr("Set room palette colour %1").arg(flat),
+                [flat, index](nes::Bundle& b) { b.setTableValue(QStringLiteral("room-palettes"), flat, index); },
+                error);
     }
     return false;
 }
@@ -156,12 +153,12 @@ sdk::Inspection SolomonRoomPaletteModel::inspect() const {
     from.key = QStringLiteral("source");
     from.label = tr("Comes from");
     const Source s = source(flatEntry());
-    from.value = s == Source::Group ? tr("this group") : s == Source::Fixed ? QStringLiteral("code")
-                                                                                      : tr("all rooms");
+    from.value = s == Source::Group ? tr("this group") : s == Source::Fixed ? QStringLiteral("code") : tr("all rooms");
     inspection.fields = {field, from};
-    inspection.note = tr("Every four rooms load the same palettes with their own colour in entry 1 of "
-                         "the four background rows (marked *). Changing any other entry changes it in "
-                         "every room.");
+    inspection.note =
+        tr("Every four rooms load the same palettes with their own colour in entry 1 of "
+           "the four background rows (marked *). Changing any other entry changes it in "
+           "every room.");
     inspection.engineTag = QStringLiteral("solomon.room-art@1");
     inspection.engine = {{tr("Group"), QString::number(group_)},
                          {tr("Group colour"), nes::hex(groupColor(session_->state().art, group_))}};

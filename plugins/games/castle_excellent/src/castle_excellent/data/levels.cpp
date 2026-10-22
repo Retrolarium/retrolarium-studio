@@ -14,9 +14,7 @@ namespace rl::castle_excellent {
 
 namespace {
 
-[[noreturn]] void fail(const QString& message) {
-    throw CastleExcellentError(message.toStdString());
-}
+[[noreturn]] void fail(const QString& message) { throw CastleExcellentError(message.toStdString()); }
 
 QVector<int> ints(const QJsonValue& value) {
     QVector<int> result;
@@ -40,7 +38,8 @@ CastleExcellentLevels CastleExcellentLevels::load(const QString& path) {
     }
     CastleExcellentLevels levels;
     levels.root_ = json.object();
-    if (levels.root_.value(QStringLiteral("schema")).toString() != QLatin1String("retrolarium.castle-excellent-levels")) {
+    if (levels.root_.value(QStringLiteral("schema")).toString() !=
+        QLatin1String("retrolarium.castle-excellent-levels")) {
         fail(rlTr("castle_excellent", "%1 is not a Castle rooms document.").arg(path));
     }
     levels.width_ = levels.root_.value(QStringLiteral("width")).toInt(20);
@@ -63,13 +62,9 @@ void CastleExcellentLevels::save(const QString& path) const {
     }
 }
 
-int CastleExcellentLevels::roomCount() const {
-    return root_.value(QStringLiteral("rooms")).toArray().size();
-}
+int CastleExcellentLevels::roomCount() const { return root_.value(QStringLiteral("rooms")).toArray().size(); }
 
-QString CastleExcellentLevels::revision() const {
-    return root_.value(QStringLiteral("revision")).toString();
-}
+QString CastleExcellentLevels::revision() const { return root_.value(QStringLiteral("revision")).toString(); }
 
 QJsonObject CastleExcellentLevels::room(int index) const {
     const QJsonArray rooms = root_.value(QStringLiteral("rooms")).toArray();
@@ -123,8 +118,8 @@ QVector<CastleExcellentObject> CastleExcellentLevels::objects(int index) const {
     QVector<CastleExcellentObject> result;
     for (const QJsonValue& value : room(index).value(QStringLiteral("objects")).toArray()) {
         const QJsonObject o = value.toObject();
-        result << CastleExcellentObject{o.value(QStringLiteral("encoded_type")).toInt(), o.value(QStringLiteral("x")).toInt(),
-                               o.value(QStringLiteral("y")).toInt()};
+        result << CastleExcellentObject{o.value(QStringLiteral("encoded_type")).toInt(),
+                                        o.value(QStringLiteral("x")).toInt(), o.value(QStringLiteral("y")).toInt()};
     }
     return result;
 }
@@ -171,8 +166,8 @@ QVector<CastleExcellentObjectPreview> CastleExcellentLevels::objectPreviews() co
          root_.value(QStringLiteral("rendering")).toObject().value(QStringLiteral("object_previews")).toArray()) {
         const QJsonObject p = value.toObject();
         result << CastleExcellentObjectPreview{p.value(QStringLiteral("runtime_type")).toInt(),
-                                      p.value(QStringLiteral("descriptor_offset")).toInt(),
-                                      ints(p.value(QStringLiteral("x_offsets")))};
+                                               p.value(QStringLiteral("descriptor_offset")).toInt(),
+                                               ints(p.value(QStringLiteral("x_offsets")))};
     }
     return result;
 }

@@ -73,13 +73,13 @@ private:
         int palette = 0;
         int x = 0;
         int y = 0;
-        QVector<int> raw;       // per cell: raw y * 16 + raw x, or -1
-        QVector<int> fixed;     // per cell: the padding value where raw is -1
+        QVector<int> raw;    // per cell: raw y * 16 + raw x, or -1
+        QVector<int> fixed;  // per cell: the padding value where raw is -1
     };
     struct Located {
         int panel = -1;
         int selector = -1;
-        int raw = -1;           // raw y * 16 + raw x; -1: a fixed (padding) cell
+        int raw = -1;  // raw y * 16 + raw x; -1: a fixed (padding) cell
         int fixed = kPadding;
     };
     void readPanels();
@@ -96,17 +96,17 @@ private:
     int route_;
     QString name_;
     QVector<Panel> panels_;
-    QVector<int> panelAt_;      // per panel position: index into panels_, or -1
+    QVector<int> panelAt_;  // per panel position: index into panels_, or -1
     int columns_ = 1;
     int rows_ = 1;
     QVector<QJsonObject> annotations_;
     int metatile_ = 1;
     int cell_ = -1;
-    int chapter_ = 6;           // the part's sprite preset (World 2 presets 6-8)
+    int chapter_ = 6;  // the part's sprite preset (World 2 presets 6-8)
     QString layer_ = QStringLiteral("blocks");
-    QString object_;            // "spawn:<cell>" or "secret:<slot>"
-    int enemy_ = 1;             // the enemy state the place tool adds
-    int dragFrom_ = -1;         // the dragged spawn's cell
+    QString object_;     // "spawn:<cell>" or "secret:<slot>"
+    int enemy_ = 1;      // the enemy state the place tool adds
+    int dragFrom_ = -1;  // the dragged spawn's cell
     int dragTo_ = -1;
     // (selector, raw) -> painted metatile
     QHash<QPair<int, int>, int> stroke_;

@@ -14,8 +14,8 @@ namespace rl::doraemon {
 enum class World { One = 1, Two = 2, Three = 3 };
 
 QString worldLabel(World world);
-QString hierarchyId(World world);           // "world1-hierarchy"
-QString chrId(World world);                 // "chr-bank-0" ...
+QString hierarchyId(World world);  // "world1-hierarchy"
+QString chrId(World world);        // "chr-bank-0" ...
 // Palette presets of a world: "world1-palette-00" .. (12 / 9 / 11).
 QStringList paletteIds(const nes::Bundle& bundle, World world);
 

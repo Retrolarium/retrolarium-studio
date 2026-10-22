@@ -67,7 +67,7 @@ public:
     // a 16-entry sprite table (intermission).
     QVector<QVector<int>> spritePalettes(const QString& table) const;
 
-    QImage maze(const QVector<int>& grid) const;                // 176x216
+    QImage maze(const QVector<int>& grid) const;  // 176x216
     // A 16x16 actor frame: `alternate` picks the second table; sprite
     // palette `palette` ORed with each quarter's attribute bits picks from
     // `sprites` (the gameplay table's when empty).
@@ -75,7 +75,7 @@ public:
                  const QVector<QVector<int>>& sprites = {}) const;
     // A 32x30 name table with its attribute bytes (1024 entries) in the
     // background palettes of `table`.
-    QImage nameTable(const QVector<int>& cells, const QString& table) const;   // 256x240
+    QImage nameTable(const QVector<int>& cells, const QString& table) const;  // 256x240
 
 private:
     QVector<quint8> chr_;

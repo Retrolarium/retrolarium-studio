@@ -8,9 +8,9 @@ namespace rl::runtime::mame {
 // A feature MAME lists as imperfect or unemulated for a system: the reason
 // for its "There are known problems with this system" screen.
 struct Feature {
-    QString device;     // device short name: "nes"
-    QString type;       // "graphics", "sound", ...
-    QString status;     // "imperfect" or "unemulated"
+    QString device;  // device short name: "nes"
+    QString type;    // "graphics", "sound", ...
+    QString status;  // "imperfect" or "unemulated"
 };
 
 // The features MAME warns about for a system, from `-listxml <system>`.

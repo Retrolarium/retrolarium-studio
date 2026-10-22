@@ -16,11 +16,9 @@ namespace {
 constexpr int kWidth = 32;
 constexpr int kHeight = 30;
 constexpr int kBlank = 0xff;
-constexpr int kTable = 256;     // the screens draw from the second pattern table
+constexpr int kTable = 256;  // the screens draw from the second pattern table
 
-QString hex(int value) {
-    return nes::hex(value);
-}
+QString hex(int value) { return nes::hex(value); }
 
 }  // namespace
 
@@ -51,15 +49,23 @@ int code(QChar c) {
     if (u >= 'A' && u <= 'Z') return 0x71 + (u - 'A');
     if (u >= '0' && u <= '9') return 0x60 + (u - '0');
     switch (u) {
-    case ' ': return kBlank;
-    case ',': return 0x08;
-    case '.': return 0x6f;
-    case '/': return 0x3d;
-    case '*':
-    case 0x2726: return 0x6c;   // ✦, the sparkle
-    case 0x2665: return 0x6a;   // ♥
-    case 0x00a9: return 0x3c;   // ©
-    default: return -1;
+        case ' ':
+            return kBlank;
+        case ',':
+            return 0x08;
+        case '.':
+            return 0x6f;
+        case '/':
+            return 0x3d;
+        case '*':
+        case 0x2726:
+            return 0x6c;  // ✦, the sparkle
+        case 0x2665:
+            return 0x6a;  // ♥
+        case 0x00a9:
+            return 0x3c;  // ©
+        default:
+            return -1;
     }
 }
 
@@ -67,14 +73,22 @@ QChar character(int code) {
     if (code >= 0x71 && code <= 0x8a) return QChar('A' + code - 0x71);
     if (code >= 0x60 && code <= 0x69) return QChar('0' + code - 0x60);
     switch (code) {
-    case kBlank: return QLatin1Char(' ');
-    case 0x08: return QLatin1Char(',');
-    case 0x6f: return QLatin1Char('.');
-    case 0x3d: return QLatin1Char('/');
-    case 0x6c: return QChar(0x2726);
-    case 0x6a: return QChar(0x2665);
-    case 0x3c: return QChar(0x00a9);
-    default: return QChar();
+        case kBlank:
+            return QLatin1Char(' ');
+        case 0x08:
+            return QLatin1Char(',');
+        case 0x6f:
+            return QLatin1Char('.');
+        case 0x3d:
+            return QLatin1Char('/');
+        case 0x6c:
+            return QChar(0x2726);
+        case 0x6a:
+            return QChar(0x2665);
+        case 0x3c:
+            return QChar(0x00a9);
+        default:
+            return QChar();
     }
 }
 
@@ -103,11 +117,13 @@ QImage tile(const CastleExcellentSession* session, const QJsonObject& screen, in
     const QString id = screen.value(QStringLiteral("id")).toString();
     const QVector<int> colours = bundle.tableValues(QStringLiteral("screen-palettes")).mid(paletteFirst(id), 16);
     const QString model = bundle.paletteModel(QStringLiteral("screen-palettes"));
-    const QVector<quint8> pixels = bundle.contains(chr) ? bundle.tilePixels(chr, kTable + (tile & 0xff)) : QVector<quint8>(64, 0);
+    const QVector<quint8> pixels =
+        bundle.contains(chr) ? bundle.tilePixels(chr, kTable + (tile & 0xff)) : QVector<quint8>(64, 0);
     QImage image(8, 8, QImage::Format_RGB32);
     for (int i = 0; i < 64; ++i) {
         const int pen = pixels.value(i);
-        image.setPixel(i % 8, i / 8, nes::color(colours.value(pen == 0 ? 0 : (palette & 3) * 4 + pen, 0x0f), model).rgb());
+        image.setPixel(i % 8, i / 8,
+                       nes::color(colours.value(pen == 0 ? 0 : (palette & 3) * 4 + pen, 0x0f), model).rgb());
     }
     return image;
 }
@@ -137,7 +153,8 @@ CastleExcellentScreenModel::CastleExcellentScreenModel(CastleExcellentSession* s
 }
 
 QJsonObject CastleExcellentScreenModel::screen() const {
-    return stroke_ ? *stroke_ : session_->screensDocument().value(QStringLiteral("screens")).toArray().at(index_).toObject();
+    return stroke_ ? *stroke_
+                   : session_->screensDocument().value(QStringLiteral("screens")).toArray().at(index_).toObject();
 }
 
 QString CastleExcellentScreenModel::title() const {
@@ -166,9 +183,7 @@ QVector<sdk::Tool> CastleExcellentScreenModel::tools() const {
             {QStringLiteral("pick"), tr("Take a cell's tile or palette as the brush"), QStringLiteral("pick")}};
 }
 
-QImage CastleExcellentScreenModel::render() const {
-    return screens::render(session_, screen());
-}
+QImage CastleExcellentScreenModel::render() const { return screens::render(session_, screen()); }
 
 QVector<sdk::CellBrush> CastleExcellentScreenModel::brushes() const {
     if (layer_ == QLatin1String("palettes")) {
@@ -181,9 +196,7 @@ QVector<sdk::CellBrush> CastleExcellentScreenModel::brushes() const {
     return {{kBlank, tr("Blank"), QColor()}, {tile_, tr("Tile %1").arg(hex(tile_)), QColor()}};
 }
 
-int CastleExcellentScreenModel::currentBrush() const {
-    return layer_ == QLatin1String("palettes") ? palette_ : tile_;
-}
+int CastleExcellentScreenModel::currentBrush() const { return layer_ == QLatin1String("palettes") ? palette_ : tile_; }
 
 void CastleExcellentScreenModel::setCurrentBrush(int value) {
     if (layer_ == QLatin1String("palettes")) palette_ = std::clamp(value, 0, 3);
@@ -192,9 +205,7 @@ void CastleExcellentScreenModel::setCurrentBrush(int value) {
     emit selectionChanged();
 }
 
-QString CastleExcellentScreenModel::currentLibraryItem() const {
-    return QStringLiteral("tile:%1").arg(tile_);
-}
+QString CastleExcellentScreenModel::currentLibraryItem() const { return QStringLiteral("tile:%1").arg(tile_); }
 
 void CastleExcellentScreenModel::setCurrentLibraryItem(const QString& id) {
     if (!id.startsWith(QLatin1String("tile:"))) return;
@@ -275,10 +286,11 @@ void CastleExcellentScreenModel::endStroke() {
         return;
     }
     QString error;
-    commit(painted, tr("Paint %1 in %2")
-                        .arg(layer_ == QLatin1String("palettes") ? QStringLiteral("palettes") : QStringLiteral("tiles"),
-                             title()),
-           &error);
+    commit(
+        painted,
+        tr("Paint %1 in %2")
+            .arg(layer_ == QLatin1String("palettes") ? QStringLiteral("palettes") : QStringLiteral("tiles"), title()),
+        &error);
 }
 
 QVector<sdk::MapObject> CastleExcellentScreenModel::objects() const {
@@ -317,8 +329,8 @@ bool CastleExcellentScreenModel::setField(const QString& key, const QVariant& va
         tiles.replace(cell_, std::clamp(value.toInt(), 0, 255));
         s.insert(QStringLiteral("tiles"), tiles);
     } else if (key == QLatin1String("palette")) {
-        s.insert(QStringLiteral("attributes"),
-                 screens::withPalette(s.value(QStringLiteral("attributes")).toArray(), cell_, std::clamp(value.toInt(), 0, 3)));
+        s.insert(QStringLiteral("attributes"), screens::withPalette(s.value(QStringLiteral("attributes")).toArray(),
+                                                                    cell_, std::clamp(value.toInt(), 0, 3)));
     } else {
         return TileMapModel::setField(key, value, error);
     }
@@ -390,7 +402,8 @@ sdk::Inspection CastleExcellentScreenModel::inspect() const {
     tile.minimum = 0;
     tile.maximum = 255;
     const QChar c = screens::character(tiles.at(cell_).toInt());
-    tile.hint = c.isNull() ? hex(tiles.at(cell_).toInt()) : QStringLiteral("%1 · '%2'").arg(hex(tiles.at(cell_).toInt()), QString(c));
+    tile.hint = c.isNull() ? hex(tiles.at(cell_).toInt())
+                           : QStringLiteral("%1 · '%2'").arg(hex(tiles.at(cell_).toInt()), QString(c));
     tile.monospace = true;
     sdk::Field palette;
     palette.key = QStringLiteral("palette");
@@ -401,8 +414,9 @@ sdk::Inspection CastleExcellentScreenModel::inspect() const {
     palette.maximum = 3;
     palette.hint = tr("16x16 block");
     inspection.fields = {tile, palette};
-    inspection.note = tr("Pick a tile in the sheet and paint, or type its number. Palettes are set per "
-                         "16x16 block by the attribute table.");
+    inspection.note =
+        tr("Pick a tile in the sheet and paint, or type its number. Palettes are set per "
+           "16x16 block by the attribute table.");
     return inspection;
 }
 
@@ -421,7 +435,8 @@ QString CastleExcellentScreenModel::statusText() const {
 
 // ---------------------------------------------------------------- text
 
-CastleExcellentScreenTextModel::CastleExcellentScreenTextModel(CastleExcellentSession* session) : TableModel(session), session_(session) {
+CastleExcellentScreenTextModel::CastleExcellentScreenTextModel(CastleExcellentSession* session)
+    : TableModel(session), session_(session) {
     connect(session_, &sdk::Session::contentChanged, this, &sdk::EditorModel::contentChanged);
     findLines();
 }
@@ -430,8 +445,13 @@ void CastleExcellentScreenTextModel::findLines() {
     // The ending's lines as the source drew them: runs of font codes between
     // the picture tiles, each free to grow over the blanks after it.
     lines_.clear();
-    const QJsonArray tiles =
-        session_->savedScreens().value(QStringLiteral("screens")).toArray().at(0).toObject().value(QStringLiteral("tiles")).toArray();
+    const QJsonArray tiles = session_->savedScreens()
+                                 .value(QStringLiteral("screens"))
+                                 .toArray()
+                                 .at(0)
+                                 .toObject()
+                                 .value(QStringLiteral("tiles"))
+                                 .toArray();
     for (int row = 0; row < kHeight; ++row) {
         int x = 0;
         while (x < kWidth) {
@@ -454,7 +474,8 @@ void CastleExcellentScreenTextModel::findLines() {
 QString CastleExcellentScreenTextModel::text(const QJsonObject& document, int row) const {
     QString result;
     if (row == lines_.size()) {
-        for (const QJsonValue& v : document.value(QStringLiteral("game_over")).toArray()) result += screens::character(v.toInt());
+        for (const QJsonValue& v : document.value(QStringLiteral("game_over")).toArray())
+            result += screens::character(v.toInt());
         return result.trimmed();
     }
     const Line& line = lines_.at(row);
@@ -487,15 +508,12 @@ QVector<sdk::TableColumn> CastleExcellentScreenTextModel::columns() const {
     return {where, text, length};
 }
 
-int CastleExcellentScreenTextModel::rowCount() const {
-    return lines_.size() + 1;
-}
+int CastleExcellentScreenTextModel::rowCount() const { return lines_.size() + 1; }
 
 QString CastleExcellentScreenTextModel::cell(int row, int column) const {
     if (row < 0 || row >= rowCount()) return {};
     if (column == 0) {
-        return row == lines_.size() ? tr("GAME OVER message")
-                                    : tr("Ending · row %1").arg(lines_.at(row).row);
+        return row == lines_.size() ? tr("GAME OVER message") : tr("Ending · row %1").arg(lines_.at(row).row);
     }
     return text(session_->screensDocument(), row);
 }
@@ -514,7 +532,8 @@ sdk::Budget CastleExcellentScreenTextModel::cellBudget(int row, int column) cons
 }
 
 bool CastleExcellentScreenTextModel::isRowDirty(int row) const {
-    return row >= 0 && row < rowCount() && text(session_->screensDocument(), row) != text(session_->savedScreens(), row);
+    return row >= 0 && row < rowCount() &&
+           text(session_->screensDocument(), row) != text(session_->savedScreens(), row);
 }
 
 void CastleExcellentScreenTextModel::setCurrentRow(int row) {

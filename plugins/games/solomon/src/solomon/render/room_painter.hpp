@@ -21,7 +21,7 @@ public:
         bool items = true;
         bool enemies = true;
         bool start = true;
-        int bonusLayout = 0;    // room 51's random bonus layout
+        int bonusLayout = 0;  // room 51's random bonus layout
     };
 
     // `draft` draws rooms an editor holds while a drag or stroke lasts.
@@ -45,7 +45,7 @@ public:
 
 private:
     struct Bank {
-        QVector<quint8> pixels;     // 512 tiles, 64 pens each
+        QVector<quint8> pixels;  // 512 tiles, 64 pens each
     };
     const Bank& bank(int index) const;
     void drawPattern(QImage& image, int x, int y, const SolomonPattern& pattern, const QVector<int>& palette,

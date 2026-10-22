@@ -40,9 +40,7 @@ QSize RailButton::sizeHint() const {
     return QSize(62, kPadTop + kIconSize + kGap + metrics.height() + kPadBottom);
 }
 
-QSize RailButton::minimumSizeHint() const {
-    return sizeHint();
-}
+QSize RailButton::minimumSizeHint() const { return sizeHint(); }
 
 void RailButton::enterEvent(QEvent* event) {
     hovered_ = true;
@@ -69,8 +67,7 @@ void RailButton::paintEvent(QPaintEvent*) {
     painter.drawPixmap((width() - kIconSize) / 2, kPadTop, glyph);
     painter.setFont(labelFont());
     painter.setPen(ink);
-    painter.drawText(QRect(0, kPadTop + kIconSize + kGap, width(), height()),
-                     Qt::AlignHCenter | Qt::AlignTop, text());
+    painter.drawText(QRect(0, kPadTop + kIconSize + kGap, width(), height()), Qt::AlignHCenter | Qt::AlignTop, text());
 }
 
 }  // namespace rl::ui

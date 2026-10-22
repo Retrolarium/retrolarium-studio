@@ -72,13 +72,9 @@ HexView::HexView(sdk::HexModel* model, QWidget* parent) : QAbstractScrollArea(pa
     updateScroll();
 }
 
-int HexView::rowCount() const {
-    return (model_->size() + kColumns - 1) / kColumns;
-}
+int HexView::rowCount() const { return (model_->size() + kColumns - 1) / kColumns; }
 
-int HexView::visibleRows() const {
-    return std::max(1, viewport()->height() / rowHeight_);
-}
+int HexView::visibleRows() const { return std::max(1, viewport()->height() / rowHeight_); }
 
 void HexView::updateScroll() {
     verticalScrollBar()->setRange(0, std::max(0, rowCount() - visibleRows()));
@@ -311,26 +307,41 @@ void HexView::keyPressEvent(QKeyEvent* event) {
         return;
     }
     switch (event->key()) {
-    case Qt::Key_Left: moveCursor(cursor - 1, shift); return;
-    case Qt::Key_Right: moveCursor(cursor + 1, shift); return;
-    case Qt::Key_Up: moveCursor(cursor - kColumns, shift); return;
-    case Qt::Key_Down: moveCursor(cursor + kColumns, shift); return;
-    case Qt::Key_PageUp: moveCursor(cursor - kColumns * visibleRows(), shift); return;
-    case Qt::Key_PageDown: moveCursor(cursor + kColumns * visibleRows(), shift); return;
-    case Qt::Key_Home: moveCursor(control ? 0 : cursor - cursor % kColumns, shift); return;
-    case Qt::Key_End:
-        moveCursor(control ? model_->size() - 1 : cursor - cursor % kColumns + kColumns - 1, shift);
-        return;
-    case Qt::Key_Escape:
-        if (pendingDigit_ >= 0) {
-            pendingDigit_ = -1;
-            viewport()->update();
-        } else {
-            marking_ = false;
-            model_->clearSelection();
-        }
-        return;
-    default: break;
+        case Qt::Key_Left:
+            moveCursor(cursor - 1, shift);
+            return;
+        case Qt::Key_Right:
+            moveCursor(cursor + 1, shift);
+            return;
+        case Qt::Key_Up:
+            moveCursor(cursor - kColumns, shift);
+            return;
+        case Qt::Key_Down:
+            moveCursor(cursor + kColumns, shift);
+            return;
+        case Qt::Key_PageUp:
+            moveCursor(cursor - kColumns * visibleRows(), shift);
+            return;
+        case Qt::Key_PageDown:
+            moveCursor(cursor + kColumns * visibleRows(), shift);
+            return;
+        case Qt::Key_Home:
+            moveCursor(control ? 0 : cursor - cursor % kColumns, shift);
+            return;
+        case Qt::Key_End:
+            moveCursor(control ? model_->size() - 1 : cursor - cursor % kColumns + kColumns - 1, shift);
+            return;
+        case Qt::Key_Escape:
+            if (pendingDigit_ >= 0) {
+                pendingDigit_ = -1;
+                viewport()->update();
+            } else {
+                marking_ = false;
+                model_->clearSelection();
+            }
+            return;
+        default:
+            break;
     }
     // Only hexadecimal digits change a byte; nothing deletes or inserts.
     const QString text = event->text();

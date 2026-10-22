@@ -45,7 +45,8 @@ void DoraemonTextModel::readRows() {
         }
         return;
     }
-    rows_ << Row{tr("GAME OVER"), QStringLiteral("game_over"), 0, 0, d.value(QStringLiteral("game_over")).toString().size()};
+    rows_ << Row{tr("GAME OVER"), QStringLiteral("game_over"), 0, 0,
+                 d.value(QStringLiteral("game_over")).toString().size()};
     const QJsonArray records = d.value(QStringLiteral("title_records")).toArray();
     for (int i = 0; i < records.size(); ++i) {
         const QJsonObject r = records.at(i).toObject();
@@ -65,18 +66,29 @@ void DoraemonTextModel::readRows() {
     }
 }
 
-QString DoraemonTextModel::title() const {
-    return credits_ ? tr("Ending credits") : tr("Title, game over and help");
-}
+QString DoraemonTextModel::title() const { return credits_ ? tr("Ending credits") : tr("Title, game over and help"); }
 
 QString DoraemonTextModel::text(const QJsonObject& d, const Row& row) const {
     if (row.where == QLatin1String("game_over")) return d.value(QStringLiteral("game_over")).toString();
     if (row.where == QLatin1String("title")) {
-        return d.value(QStringLiteral("title_records")).toArray().at(row.index).toObject().value(QStringLiteral("text")).toString();
+        return d.value(QStringLiteral("title_records"))
+            .toArray()
+            .at(row.index)
+            .toObject()
+            .value(QStringLiteral("text"))
+            .toString();
     }
     if (row.where == QLatin1String("help")) {
-        return d.value(QStringLiteral("chapter_help_screens")).toArray().at(row.index).toObject()
-            .value(QStringLiteral("segments")).toArray().at(row.segment).toObject().value(QStringLiteral("text")).toString();
+        return d.value(QStringLiteral("chapter_help_screens"))
+            .toArray()
+            .at(row.index)
+            .toObject()
+            .value(QStringLiteral("segments"))
+            .toArray()
+            .at(row.segment)
+            .toObject()
+            .value(QStringLiteral("text"))
+            .toString();
     }
     return d.value(QStringLiteral("ending_credit_rows")).toArray().at(row.index).toString();
 }
@@ -117,7 +129,8 @@ int DoraemonTextModel::maxLength(int row, int column) const {
 }
 
 bool DoraemonTextModel::isRowDirty(int row) const {
-    return row >= 0 && row < rows_.size() && text(session_->text(), rows_.at(row)) != text(session_->savedText(), rows_.at(row));
+    return row >= 0 && row < rows_.size() &&
+           text(session_->text(), rows_.at(row)) != text(session_->savedText(), rows_.at(row));
 }
 
 void DoraemonTextModel::setCurrentRow(int row) {
@@ -133,7 +146,8 @@ bool DoraemonTextModel::setCell(int row, int column, const QString& value, QStri
     QString t = value.toUpper();
     for (const QChar c : t) {
         if (!allowed(c)) {
-            if (error) *error = tr("The game writes A-Z, 0-9, space, '.', '&' and '@' (the copyright sign); not '%1'.").arg(c);
+            if (error)
+                *error = tr("The game writes A-Z, 0-9, space, '.', '&' and '@' (the copyright sign); not '%1'.").arg(c);
             return false;
         }
     }
@@ -224,11 +238,10 @@ sdk::Inspection DoraemonTextModel::inspect() const {
         item.icon = line.copy(i * 8, 0, 8, 8);
         inspection.library.items << item;
     }
-    inspection.note = credits_
-                          ? tr("One of the 380 rows the ending scrolls past, 32 places wide; text is centred. "
-                               "The game writes A-Z, 0-9, '.', '&' and '@'.")
-                          : tr("The text keeps its places; shorter text is padded with blanks. The game "
-                               "writes A-Z, 0-9, '.', '&' and '@' (the copyright sign).");
+    inspection.note = credits_ ? tr("One of the 380 rows the ending scrolls past, 32 places wide; text is centred. "
+                                    "The game writes A-Z, 0-9, '.', '&' and '@'.")
+                               : tr("The text keeps its places; shorter text is padded with blanks. The game "
+                                    "writes A-Z, 0-9, '.', '&' and '@' (the copyright sign).");
     return inspection;
 }
 

@@ -24,9 +24,7 @@ StudioWindow::StudioWindow(QWidget* parent)
     }
 }
 
-QMenuBar* StudioWindow::menus() const {
-    return titleBar_->menuBar();
-}
+QMenuBar* StudioWindow::menus() const { return titleBar_->menuBar(); }
 
 void StudioWindow::showEvent(QShowEvent* event) {
     QMainWindow::showEvent(event);

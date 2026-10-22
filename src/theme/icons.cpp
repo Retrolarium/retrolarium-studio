@@ -59,11 +59,9 @@ QHash<QString, Glyph>& glyphs() {
         add("palettes",
             "M12 22a10 10 0 1 1 10-10c0 2.8-2.2 4-4 4h-2a2 2 0 0 0-1.5 3.3A2 2 0 0 1 12 22z"
             " M7.5 10.5h.01 M12 7.5h.01 M16.5 10.5h.01");
-        add("sprites",
-            "M3 3h18v18H3z M7 3v18 M17 3v18 M3 7.5h4 M3 12h18 M3 16.5h4 M17 7.5h4 M17 16.5h4");
+        add("sprites", "M3 3h18v18H3z M7 3v18 M17 3v18 M3 7.5h4 M3 12h18 M3 16.5h4 M17 7.5h4 M17 16.5h4");
         add("text", "M4 7V4h16v3 M9 20h6 M12 4v16");
-        add("sound",
-            "M9 18V5l12-2v13 M6 15a3 3 0 1 0 0 6a3 3 0 0 0 0-6z M18 13a3 3 0 1 0 0 6a3 3 0 0 0 0-6z");
+        add("sound", "M9 18V5l12-2v13 M6 15a3 3 0 1 0 0 6a3 3 0 0 0 0-6z M18 13a3 3 0 1 0 0 6a3 3 0 0 0 0-6z");
         add("playtest", "M6 3l14 9-14 9z");
         add("chunks", "M3 3h18v18H3z M9 3v18 M15 3v18 M3 9h18 M3 15h18");
         add("collision", "M3 21h18 M3 21V15l6-6 4 4 8-8v16");
@@ -101,8 +99,7 @@ QHash<QString, Glyph>& glyphs() {
             "M8 12a4 4 0 1 0 8 0a4 4 0 1 0-8 0 M12 2v2 M12 20v2 M4.93 4.93l1.41 1.41 M17.66 17.66"
             "l1.41 1.41 M2 12h2 M20 12h2 M6.34 17.66l-1.41 1.41 M19.07 4.93l-1.41 1.41");
         add("moon", "M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z");
-        add("settings",
-            "M4 21v-7 M4 10V3 M12 21v-9 M12 8V3 M20 21v-5 M20 12V3 M1 14h6 M9 8h6 M17 16h6");
+        add("settings", "M4 21v-7 M4 10V3 M12 21v-9 M12 8V3 M20 21v-5 M20 12V3 M1 14h6 M9 8h6 M17 16h6");
         add("folder",
             "M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3"
             "H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z");
@@ -156,8 +153,7 @@ QPixmap render(const QString& name, const QSize& deviceSize, const QColor& color
         QPainter painter(&pixmap);
         painter.setRenderHint(QPainter::Antialiasing, true);
         const int side = std::min(deviceSize.width(), deviceSize.height());
-        const QRectF square((deviceSize.width() - side) / 2.0, (deviceSize.height() - side) / 2.0,
-                            side, side);
+        const QRectF square((deviceSize.width() - side) / 2.0, (deviceSize.height() - side) / 2.0, side, side);
         renderer.render(&painter, square);
     }
     cache.insert(key, pixmap);
@@ -171,24 +167,24 @@ QColor toneColor(IconTone tone, QIcon::Mode mode, QIcon::State state) {
     }
     const bool on = state == QIcon::On;
     switch (tone) {
-    case IconTone::Muted:
-        if (on || mode == QIcon::Selected) return t.accentInk;
-        if (mode == QIcon::Active) return t.text;
-        return t.muted;
-    case IconTone::Rail:
-        if (on || mode == QIcon::Active || mode == QIcon::Selected) return t.text;
-        return t.muted;
-    case IconTone::Text:
-        if (mode == QIcon::Selected) return t.accentInk;
-        return t.text;
-    case IconTone::Faint:
-        if (mode == QIcon::Active) return t.muted;
-        if (mode == QIcon::Selected) return t.accentInk;
-        return t.faint;
-    case IconTone::Accent:
-        return mode == QIcon::Active ? t.accentInk : t.accent;
-    case IconTone::OnAccent:
-        return t.onAccent;
+        case IconTone::Muted:
+            if (on || mode == QIcon::Selected) return t.accentInk;
+            if (mode == QIcon::Active) return t.text;
+            return t.muted;
+        case IconTone::Rail:
+            if (on || mode == QIcon::Active || mode == QIcon::Selected) return t.text;
+            return t.muted;
+        case IconTone::Text:
+            if (mode == QIcon::Selected) return t.accentInk;
+            return t.text;
+        case IconTone::Faint:
+            if (mode == QIcon::Active) return t.muted;
+            if (mode == QIcon::Selected) return t.accentInk;
+            return t.faint;
+        case IconTone::Accent:
+            return mode == QIcon::Active ? t.accentInk : t.accent;
+        case IconTone::OnAccent:
+            return t.onAccent;
     }
     return t.muted;
 }
@@ -221,21 +217,16 @@ private:
 
 }  // namespace
 
-QIcon icon(const QString& name, IconTone tone) {
-    return QIcon(new GlyphEngine(name, tone));
-}
+QIcon icon(const QString& name, IconTone tone) { return QIcon(new GlyphEngine(name, tone)); }
 
-QPixmap iconPixmap(const QString& name, int logicalSize, const QColor& color,
-                   double devicePixelRatio) {
+QPixmap iconPixmap(const QString& name, int logicalSize, const QColor& color, double devicePixelRatio) {
     const int device = static_cast<int>(std::lround(logicalSize * devicePixelRatio));
     QPixmap pixmap = render(name, QSize(device, device), color);
     pixmap.setDevicePixelRatio(devicePixelRatio);
     return pixmap;
 }
 
-bool hasIcon(const QString& name) {
-    return glyphs().contains(name);
-}
+bool hasIcon(const QString& name) { return glyphs().contains(name); }
 
 QStringList iconNames() {
     QStringList names = glyphs().keys();

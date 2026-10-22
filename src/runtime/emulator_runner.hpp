@@ -48,12 +48,12 @@ protected:
 struct MovieRequest {
     enum class Mode { None, Record, Play, Resume };
     Mode mode = Mode::None;
-    QString file;      // the .rlmovie written or read
-    QString origin;    // Play: the movie chosen, when `file` is a prepared copy
-    QString header;    // a recording's header lines, each ending in a newline
-    QString stateKey;  // the save-state folder for this image (its SHA-1)
-    int stopAt = 0;            // Play: end the run at this frame (0: no)
-    bool closeAtEnd = false;   // Play: end the run when the movie ends
+    QString file;             // the .rlmovie written or read
+    QString origin;           // Play: the movie chosen, when `file` is a prepared copy
+    QString header;           // a recording's header lines, each ending in a newline
+    QString stateKey;         // the save-state folder for this image (its SHA-1)
+    int stopAt = 0;           // Play: end the run at this frame (0: no)
+    bool closeAtEnd = false;  // Play: end the run when the movie ends
 };
 
 // A RAM cell the watch overlay shows: its name and bytes of the main CPU.
@@ -97,8 +97,7 @@ public:
     // hard-resets into it, with the new environment and ready file.
     // A movie run is never a hot reload: it starts the machine from power-on.
     void start(const sdk::ProcessSpec& spec, const QString& title,
-               std::function<void(const sdk::ProcessResult&)> finished,
-               const MovieRequest& movie = {});
+               std::function<void(const sdk::ProcessResult&)> finished, const MovieRequest& movie = {});
     // Asks the emulator to close and returns; it is killed if it lingers.
     void stop();
     // Ends the emulator before returning.
@@ -205,10 +204,10 @@ private:
     // The running game's temporary folder: control script, command file and
     // cartridge copies.
     std::unique_ptr<QTemporaryDir> stage_;
-    QString cart_;                  // the copy MAME has mounted
+    QString cart_;  // the copy MAME has mounted
     int cartSerial_ = 0;
     QSet<QString> keys_;
-    QStringList signature_;         // what a launch must match to reload
+    QStringList signature_;  // what a launch must match to reload
     std::function<void(const sdk::ProcessResult&)> finished_;
     QString title_;
     QStringList log_;

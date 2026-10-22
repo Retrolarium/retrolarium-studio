@@ -68,7 +68,7 @@ private:
     int tile_ = 2;
     int libraryPalette_ = 0;
     bool stroking_ = false;
-    QHash<int, std::array<int, 2>> pending_;     // cell -> left, right
+    QHash<int, std::array<int, 2>> pending_;  // cell -> left, right
 };
 
 }  // namespace rl::castle_excellent

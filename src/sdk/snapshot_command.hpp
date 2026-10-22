@@ -17,8 +17,7 @@ class SnapshotCommand final : public QUndoCommand {
 public:
     using Apply = std::function<void(const T&, quint64)>;
 
-    SnapshotCommand(Apply apply, T before, quint64 beforeRevision, T after, quint64 afterRevision,
-                    const QString& text)
+    SnapshotCommand(Apply apply, T before, quint64 beforeRevision, T after, quint64 afterRevision, const QString& text)
         : QUndoCommand(text),
           apply_(std::move(apply)),
           before_(std::move(before)),

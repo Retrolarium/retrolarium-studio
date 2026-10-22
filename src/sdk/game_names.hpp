@@ -48,8 +48,8 @@ public:
     QJsonValue catalog(const QString& key) const { return catalogs_.value(key); }
 
 private:
-    QHash<QString, QHash<QString, QString>> names_;   // category -> key -> name
-    QHash<QString, QHash<int, QString>> numbered_;     // category -> id -> name
+    QHash<QString, QHash<QString, QString>> names_;  // category -> key -> name
+    QHash<QString, QHash<int, QString>> numbered_;   // category -> id -> name
     QJsonObject catalogs_;
 };
 

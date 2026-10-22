@@ -25,11 +25,11 @@ inline constexpr int kCramChannelMask = 0x0EEE;
 
 // A plane name-table word: priority, palette line, flips and pattern index.
 struct TileWord {
-    int pattern = 0;       // bits 0-10
-    bool hflip = false;    // bit 11
-    bool vflip = false;    // bit 12
-    int palette = 0;       // bits 13-14
-    bool priority = false; // bit 15
+    int pattern = 0;        // bits 0-10
+    bool hflip = false;     // bit 11
+    bool vflip = false;     // bit 12
+    int palette = 0;        // bits 13-14
+    bool priority = false;  // bit 15
 };
 
 [[nodiscard]] constexpr TileWord decodeTileWord(int word) {

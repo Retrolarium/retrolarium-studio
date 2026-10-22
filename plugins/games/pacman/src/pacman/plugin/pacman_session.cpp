@@ -32,7 +32,6 @@ const QString kFruit = QStringLiteral("fruit-by-stage");
 const QString kRoundProfiles = QStringLiteral("round-profiles");
 const QString kRenderTables = QStringLiteral("render-tables");
 
-
 using sdk::loadJsonObject;
 using sdk::saveJsonObject;
 using sdk::tabDocument;
@@ -73,26 +72,30 @@ struct RoundTable {
 };
 const RoundTable kRoundTables[] = {
     {"round-profiles", QT_TRANSLATE_NOOP("pacman", "Rounds"),
-     QT_TRANSLATE_NOOP("pacman", "Per round: the speed and timing set, how long ghosts stay frightened, the "
-                                 "pellet-threshold and release-target sets, the fruit group and the seconds "
-                                 "between ghost releases.")},
+     QT_TRANSLATE_NOOP("pacman",
+                       "Per round: the speed and timing set, how long ghosts stay frightened, the "
+                       "pellet-threshold and release-target sets, the fruit group and the seconds "
+                       "between ghost releases.")},
     {"round-speed-sets", QT_TRANSLATE_NOOP("pacman", "Speed sets"),
-     QT_TRANSLATE_NOOP("pacman", "The 22 bytes a speed and timing set copies to the level parameters ($009F-$00B4): "
-                                 "the fixed-point speeds of Pac-Man and the ghosts.")},
+     QT_TRANSLATE_NOOP("pacman",
+                       "The 22 bytes a speed and timing set copies to the level parameters ($009F-$00B4): "
+                       "the fixed-point speeds of Pac-Man and the ghosts.")},
     {"round-timing-sets", QT_TRANSLATE_NOOP("pacman", "Scatter and chase timing"),
-     QT_TRANSLATE_NOOP("pacman", "The eight scatter and chase durations of sets 0-3. Set 4 reads the first four "
-                                 "pellet-threshold pairs instead, as the original does.")},
+     QT_TRANSLATE_NOOP("pacman",
+                       "The eight scatter and chase durations of sets 0-3. Set 4 reads the first four "
+                       "pellet-threshold pairs instead, as the original does.")},
     {"round-pellet-thresholds", QT_TRANSLATE_NOOP("pacman", "Pellet thresholds"),
      QT_TRANSLATE_NOOP("pacman", "The pellet counts that let ghosts out of the house, a pair per set.")},
     {"round-release-targets", QT_TRANSLATE_NOOP("pacman", "Release targets"),
-     QT_TRANSLATE_NOOP("pacman", "How many ghosts leave the house at once and the pellet target after them. A "
-                                 "restarted round uses Restart, less the pellets already eaten.")},
+     QT_TRANSLATE_NOOP("pacman",
+                       "How many ghosts leave the house at once and the pellet target after them. A "
+                       "restarted round uses Restart, less the pellets already eaten.")},
 };
 
 // Sound slots shown together: the two-channel tunes.
 const QVector<QPair<QString, QVector<int>>>& tunes() {
-    static const QVector<QPair<QString, QVector<int>>> kTunes{
-        {rlTr("pacman", "Player ready"), {0, 1}}, {QStringLiteral("Intermission"), {13, 14}}};
+    static const QVector<QPair<QString, QVector<int>>> kTunes{{rlTr("pacman", "Player ready"), {0, 1}},
+                                                              {QStringLiteral("Intermission"), {13, 14}}};
     return kTunes;
 }
 
@@ -108,7 +111,8 @@ std::unique_ptr<PacmanSession> PacmanSession::open(const sdk::ProjectFile& proje
         if (document.isEmpty()) throw nes::BundleError("The project has no Pac-Man maze tab.");
         session->bundlePath_ = project.resolve(document);
         session->state_.bundle = nes::Bundle::load(session->bundlePath_);
-        for (const QString& id : {ids::kMaze, ids::kChr, ids::kActors, ids::kScreens, ids::kSound, ids::kGameplay, ids::kTitle}) {
+        for (const QString& id :
+             {ids::kMaze, ids::kChr, ids::kActors, ids::kScreens, ids::kSound, ids::kGameplay, ids::kTitle}) {
             if (!session->state_.bundle.contains(id)) {
                 throw nes::BundleError(tr("The resource bundle lacks %1.").arg(id).toStdString());
             }
@@ -174,9 +178,11 @@ QVector<sdk::DocumentGroup> PacmanSession::documents(const QString& kind) const 
         for (const RoundTable& table : kRoundTables) {
             const QString id = QString::fromLatin1(table.id);
             if (!state_.bundle.contains(id)) continue;
-            rounds.documents << entry(QStringLiteral("table:") + id, rlTr("pacman", table.title),
-                                      tr("%n rows", nullptr, int(state_.bundle.resource(id).value(QStringLiteral("records")).toArray().size())),
-                                      saved_.bundle.contains(id) && changed(id));
+            rounds.documents << entry(
+                QStringLiteral("table:") + id, rlTr("pacman", table.title),
+                tr("%n rows", nullptr,
+                   int(state_.bundle.resource(id).value(QStringLiteral("records")).toArray().size())),
+                saved_.bundle.contains(id) && changed(id));
         }
         if (!rounds.documents.isEmpty()) groups << rounds;
     } else if (kind == QLatin1String("graphics")) {
@@ -188,15 +194,15 @@ QVector<sdk::DocumentGroup> PacmanSession::documents(const QString& kind) const 
                 dirty = state_.bundle.tilePixels(ids::kChr, t) != saved_.bundle.tilePixels(ids::kChr, t);
             }
             group.documents << entry(QStringLiteral("%1/%2").arg(ids::kChr).arg(half),
-                                     half == 0 ? tr("Background") : tr("Sprites"),
-                                     tr("256 tiles"), dirty);
+                                     half == 0 ? tr("Background") : tr("Sprites"), tr("256 tiles"), dirty);
         }
         groups << group;
     } else if (kind == QLatin1String("palettes")) {
         sdk::DocumentGroup group;
         group.title = tr("Palettes");
         for (const QString& id : state_.bundle.resourceIds(kPaletteCodec)) {
-            group.documents << entry(id, paletteLabel(id), tr("%n colours", nullptr, state_.bundle.tableValues(id).size()),
+            group.documents << entry(id, paletteLabel(id),
+                                     tr("%n colours", nullptr, state_.bundle.tableValues(id).size()),
                                      state_.bundle.tableValues(id) != saved_.bundle.tableValues(id));
         }
         groups << group;
@@ -205,7 +211,8 @@ QVector<sdk::DocumentGroup> PacmanSession::documents(const QString& kind) const 
         const QJsonObject saved = saved_.bundle.resource(ids::kActors);
         const auto frameDirty = [&now, &saved](const PacmanFrame& f) {
             for (const char* key : {"tile_quads", "attribute_quads"}) {
-                const QString name = (f.alternate ? QStringLiteral("alternate_") : QStringLiteral("standard_")) + QLatin1String(key);
+                const QString name =
+                    (f.alternate ? QStringLiteral("alternate_") : QStringLiteral("standard_")) + QLatin1String(key);
                 if (now.value(name).toArray().at(f.index) != saved.value(name).toArray().at(f.index)) return true;
             }
             return false;
@@ -213,7 +220,8 @@ QVector<sdk::DocumentGroup> PacmanSession::documents(const QString& kind) const 
         const QVector<PacmanAnimation>& animations = pacmanAnimations();
         for (int i = 0; i < animations.size(); ++i) {
             const PacmanAnimation& a = animations.at(i);
-            auto group = std::find_if(groups.begin(), groups.end(), [&a](const sdk::DocumentGroup& g) { return g.title == a.group; });
+            auto group = std::find_if(groups.begin(), groups.end(),
+                                      [&a](const sdk::DocumentGroup& g) { return g.title == a.group; });
             if (group == groups.end()) {
                 sdk::DocumentGroup g;
                 g.title = a.group;
@@ -230,17 +238,19 @@ QVector<sdk::DocumentGroup> PacmanSession::documents(const QString& kind) const 
         const QJsonObject now = state_.bundle.resource(ids::kScreens);
         const QJsonObject saved = saved_.bundle.resource(ids::kScreens);
         for (const QString& id : screens::ids()) {
-            group.documents << entry(id, screens::label(id), QStringLiteral("32 × 30"),
-                                     screens::cells(now, id, attractAttributes()) !=
-                                         screens::cells(saved, id, attractAttributes()));
+            group.documents << entry(
+                id, screens::label(id), QStringLiteral("32 × 30"),
+                screens::cells(now, id, attractAttributes()) != screens::cells(saved, id, attractAttributes()));
         }
         groups << group;
     } else if (kind == QLatin1String("text")) {
         sdk::DocumentGroup group;
         group.title = QStringLiteral("Text");
-        group.documents << entry(QStringLiteral("text"), tr("Game text"),
-                                 tr("%n lines", nullptr, state_.bundle.resource(ids::kScreens).value(QStringLiteral("text_fields")).toArray().size()),
-                                 changed(ids::kScreens));
+        group.documents << entry(
+            QStringLiteral("text"), tr("Game text"),
+            tr("%n lines", nullptr,
+               state_.bundle.resource(ids::kScreens).value(QStringLiteral("text_fields")).toArray().size()),
+            changed(ids::kScreens));
         groups << group;
     } else if (kind == QLatin1String("sound")) {
         const QJsonArray now = state_.bundle.resource(ids::kSound).value(QStringLiteral("slots")).toArray();
@@ -260,22 +270,23 @@ QVector<sdk::DocumentGroup> PacmanSession::documents(const QString& kind) const 
         effects.title = tr("Sound effects");
         for (int slot = 0; slot < now.size(); ++slot) {
             if (inTunes.contains(slot)) continue;
-            effects.documents << entry(QStringLiteral("slot:%1").arg(slot),
-                                       now.at(slot).toObject().value(QStringLiteral("label")).toString(),
-                                       QStringLiteral("%1 B").arg(PacmanSoundModel::streamBytes(
-                                           now.at(slot).toObject().value(QStringLiteral("stream")).toObject())),
-                                       now.at(slot) != saved.at(slot));
+            effects.documents << entry(
+                QStringLiteral("slot:%1").arg(slot), now.at(slot).toObject().value(QStringLiteral("label")).toString(),
+                QStringLiteral("%1 B").arg(
+                    PacmanSoundModel::streamBytes(now.at(slot).toObject().value(QStringLiteral("stream")).toObject())),
+                now.at(slot) != saved.at(slot));
         }
         groups << music << effects;
     } else if (kind == QLatin1String("demo")) {
         sdk::DocumentGroup group;
         group.title = tr("Attract mode");
         // Opening it adds the document from the project's own source.
-        group.documents << entry(QStringLiteral("demo"), tr("Attract demo"),
-                                 state_.demo.isEmpty()
-                                     ? tr("not added yet")
-                                     : tr("%n steps", nullptr, state_.demo.value(QStringLiteral("steps")).toArray().size()),
-                                 !state_.demo.isEmpty() && state_.demo != saved_.demo);
+        group.documents << entry(
+            QStringLiteral("demo"), tr("Attract demo"),
+            state_.demo.isEmpty()
+                ? tr("not added yet")
+                : tr("%n steps", nullptr, state_.demo.value(QStringLiteral("steps")).toArray().size()),
+            !state_.demo.isEmpty() && state_.demo != saved_.demo);
         groups << group;
     } else if (kind == QLatin1String("playtest")) {
         sdk::DocumentGroup group;
@@ -311,10 +322,9 @@ std::unique_ptr<sdk::EditorModel> PacmanSession::openEditor(const QString& kind,
         if (kind == QLatin1String("graphics")) {
             const int half = document.section(QLatin1Char('/'), 1).toInt();
             if (document.section(QLatin1Char('/'), 0, 0) == ids::kChr && (half == 0 || half == 1)) {
-                return std::make_unique<nes::ChrTileModel>(this, ids::kChr, half * 256, 256,
-                                                           half == 0 ? tr("Background patterns")
-                                                                     : tr("Sprite patterns"),
-                                                           half == 1);
+                return std::make_unique<nes::ChrTileModel>(
+                    this, ids::kChr, half * 256, 256, half == 0 ? tr("Background patterns") : tr("Sprite patterns"),
+                    half == 1);
             }
         }
         if (kind == QLatin1String("palettes") && state_.bundle.resourceIds(kPaletteCodec).contains(document)) {
@@ -322,7 +332,8 @@ std::unique_ptr<sdk::EditorModel> PacmanSession::openEditor(const QString& kind,
         }
         if (kind == QLatin1String("animations") && document.startsWith(QLatin1String("anim:"))) {
             const int index = document.mid(5).toInt();
-            if (index >= 0 && index < pacmanAnimations().size()) return std::make_unique<PacmanAnimationModel>(this, index);
+            if (index >= 0 && index < pacmanAnimations().size())
+                return std::make_unique<PacmanAnimationModel>(this, index);
         }
         if (kind == QLatin1String("screens") && screens::ids().contains(document)) {
             return std::make_unique<PacmanScreenModel>(this, document);
@@ -342,7 +353,8 @@ std::unique_ptr<sdk::EditorModel> PacmanSession::openEditor(const QString& kind,
                 const QJsonArray streams = state_.bundle.resource(ids::kSound).value(QStringLiteral("slots")).toArray();
                 if (slot >= 0 && slot < streams.size()) {
                     return std::make_unique<PacmanSoundModel>(
-                        this, QVector<int>{slot}, streams.at(slot).toObject().value(QStringLiteral("label")).toString());
+                        this, QVector<int>{slot},
+                        streams.at(slot).toObject().value(QStringLiteral("label")).toString());
                 }
             }
         }
@@ -392,9 +404,9 @@ void PacmanSession::setState(const PacmanState& state, quint64 revision) {
 
 bool PacmanSession::edit(const QString& text, const PacmanState& next, QString*) {
     if (next == state_) return true;
-    undoStack()->push(new sdk::SnapshotCommand<PacmanState>(
-        [this](const PacmanState& s, quint64 revision) { setState(s, revision); }, state_, revision_, next,
-        nextRevision_++, text));
+    undoStack()->push(
+        new sdk::SnapshotCommand<PacmanState>([this](const PacmanState& s, quint64 revision) { setState(s, revision); },
+                                              state_, revision_, next, nextRevision_++, text));
     return true;
 }
 
@@ -579,8 +591,10 @@ QVector<sdk::PaletteSample> PacmanSession::paletteSamples(const QString& table) 
         image.fill(backdrop);
         QPainter p(&image);
         // The fruit of each round, from the round table.
-        const QJsonArray rounds = state_.bundle.contains(kRoundProfiles)
-            ? state_.bundle.resource(kRoundProfiles).value(QStringLiteral("records")).toArray() : QJsonArray();
+        const QJsonArray rounds =
+            state_.bundle.contains(kRoundProfiles)
+                ? state_.bundle.resource(kRoundProfiles).value(QStringLiteral("records")).toArray()
+                : QJsonArray();
         for (int r = 0; r < 16 && r < rounds.size(); ++r) {
             QVector<QVector<int>> sprites = art.spritePalettes(ids::kGameplay);
             sprites[3][1] = colours.value(r, sprites[3][1]);
@@ -608,9 +622,7 @@ void PacmanSession::build() {
     runBuild([](bool) {});
 }
 
-void PacmanSession::play() {
-    launch(true);
-}
+void PacmanSession::play() { launch(true); }
 
 void PacmanSession::playSelected() {
     if (isRecording()) stopRecording();
@@ -726,9 +738,10 @@ void PacmanSession::launchDemo(bool record) {
     plan.readyVariable = QStringLiteral("PACMAN_DEMO_READY");
     if (record) {
         plan.recordTo = QStringLiteral("build/demo-recording.txt");
-        plan.recordingMessage = tr("Recording: Pac-Man runs the first step's way for 255 frames, then follows the "
-                                   "controller until he is caught, you press Start or Stop recording, or the "
-                                   "demo's steps are full.");
+        plan.recordingMessage =
+            tr("Recording: Pac-Man runs the first step's way for 255 frames, then follows the "
+               "controller until he is caught, you press Start or Stop recording, or the "
+               "demo's steps are full.");
         plan.recorded = [this](const QString& path) { applyRecording(path); };
     }
     plan.prepare = [this](sdk::ProcessSpec& game) { useColours(game); };
@@ -769,8 +782,8 @@ void PacmanSession::launch(bool fromStart) {
         plan.label = tr("Plan playtest from power-on");
         plan.title = tr("Pac-Man · power-on");
     } else {
-        plan.arguments = QStringList{QStringLiteral("studio"), QStringLiteral("pacman-round-playtest-plan"), project_.path(),
-                          QStringLiteral("--round"), QString::number(round)};
+        plan.arguments = QStringList{QStringLiteral("studio"), QStringLiteral("pacman-round-playtest-plan"),
+                                     project_.path(), QStringLiteral("--round"), QString::number(round)};
         plan.label = tr("Plan playtest of round %1").arg(round);
         plan.title = tr("Pac-Man · Round %1").arg(round);
         // The Playtest view covers the title and the way into the round.

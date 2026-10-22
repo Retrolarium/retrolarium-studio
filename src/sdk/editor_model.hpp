@@ -84,17 +84,17 @@ struct MapLayer {
 // An object placed on a tile map, in cell units.
 struct MapObject {
     QString id;
-    QString label;      // shown in the tag above a selected object
+    QString label;  // shown in the tag above a selected object
     QRect cells;
     bool movable = true;
-    bool outlined = true;   // false: only drawn when selected (grid cells)
+    bool outlined = true;  // false: only drawn when selected (grid cells)
 };
 
 // A value that can be painted into the cell layer, with its overlay color.
 struct CellBrush {
     int value = 0;
     QString label;
-    QColor overlay;     // translucent color over the rendered map; invalid = none
+    QColor overlay;  // translucent color over the rendered map; invalid = none
 };
 
 // Grid-based maps: levels, screens, name tables. The model renders the map
@@ -108,8 +108,8 @@ public:
 
     EditorType type() const override { return EditorType::TileMap; }
 
-    virtual QSize gridSize() const = 0;     // cells
-    virtual QSize cellSize() const = 0;     // pixels per cell in render()
+    virtual QSize gridSize() const = 0;            // cells
+    virtual QSize cellSize() const = 0;            // pixels per cell in render()
     virtual int pageColumns() const { return 0; }  // 0: a single screen
     // A tall strip (a credits roll): opens fitted to its width and scrolls
     // down, instead of shrinking to show it whole.
@@ -171,7 +171,7 @@ public:
     EditorType type() const override { return EditorType::Tile; }
 
     virtual int tileCount() const = 0;
-    virtual int penCount() const = 0;                   // 2 to 256
+    virtual int penCount() const = 0;  // 2 to 256
     virtual QVector<QColor> penColors() const = 0;
     // Pixels per tile: 8x8, or 8x16 for sprite pattern pairs.
     virtual QSize tileSize() const { return {8, 8}; }
@@ -203,16 +203,16 @@ public:
 };
 
 struct PaletteRow {
-    QString label;              // "BG 0", "Line 1"
+    QString label;  // "BG 0", "Line 1"
     QVector<QColor> colors;
-    QStringList labels;         // small value label in each swatch
+    QStringList labels;  // small value label in each swatch
 };
 
 // "Where it's used": a rendered sample for one palette row.
 struct PaletteSample {
     int row = 0;
-    QString label;      // small mono tag above the image: "Line 1"
-    QString caption;    // what the image shows: "Round 05"
+    QString label;    // small mono tag above the image: "Line 1"
+    QString caption;  // what the image shows: "Round 05"
     QImage image;
     // A scrolling scene may be cut from the right down to this many pixels
     // to show it at a larger scale; 0 shows the whole image.
@@ -232,11 +232,11 @@ public:
     EditorType type() const override { return EditorType::Palette; }
 
     virtual QVector<PaletteRow> rows() const = 0;
-    virtual QPoint currentEntry() const = 0;            // x: entry, y: row
+    virtual QPoint currentEntry() const = 0;  // x: entry, y: row
     virtual void setCurrentEntry(QPoint entry) = 0;
 
     virtual Picker picker() const = 0;
-    virtual QString pickerTitle() const = 0;            // "9-bit RGB · 0–7 per channel"
+    virtual QString pickerTitle() const = 0;  // "9-bit RGB · 0–7 per channel"
 
     // Gamut picker.
     virtual QVector<QColor> gamut() const { return {}; }
@@ -257,10 +257,10 @@ public:
 struct TableColumn {
     QString key;
     QString label;
-    int width = 0;              // 0: stretch
+    int width = 0;  // 0: stretch
     bool monospace = false;
     bool editable = false;
-    bool budget = false;        // shows cellBudget() as a bar and "n / max"
+    bool budget = false;  // shows cellBudget() as a bar and "n / max"
     bool muted = false;
 };
 
@@ -277,7 +277,7 @@ public:
     virtual int rowCount() const = 0;
     virtual QString cell(int row, int column) const = 0;
     virtual Budget cellBudget(int row, int column) const;
-    virtual int maxLength(int row, int column) const;   // -1: unlimited
+    virtual int maxLength(int row, int column) const;  // -1: unlimited
     virtual bool isRowDirty(int row) const;
 
     virtual int currentRow() const = 0;
@@ -335,7 +335,7 @@ struct CompositionPiece {
 struct CompositionFrame {
     QString id;
     QString label;
-    QString detail;         // "8 ticks"
+    QString detail;  // "8 ticks"
 };
 
 // Pieces arranged on a canvas (sprite mappings, metatiles), optionally with a
@@ -376,17 +376,17 @@ public:
 
 struct SequencerChannel {
     QString id;
-    QString label;          // "FM 1"
-    QString detail;         // sequence or voice name
+    QString label;   // "FM 1"
+    QString detail;  // sequence or voice name
     QColor color;
     bool muted = false;
 };
 
 struct SequencerNote {
     QString id;
-    int start = 0;          // ticks
-    int length = 1;         // ticks
-    int pitch = -1;         // -1: rest
+    int start = 0;   // ticks
+    int length = 1;  // ticks
+    int pitch = -1;  // -1: rest
     bool lengthEditable = false;
     bool pitchEditable = true;
 };
@@ -438,9 +438,9 @@ public:
 
     EditorType type() const override { return EditorType::Emulator; }
 
-    virtual QSize screenSize() const = 0;   // native resolution, for the aspect
-    virtual QString coreLabel() const = 0;  // "MAME · genesis"
-    virtual QString startLabel() const = 0; // "Round 07"
+    virtual QSize screenSize() const = 0;    // native resolution, for the aspect
+    virtual QString coreLabel() const = 0;   // "MAME · genesis"
+    virtual QString startLabel() const = 0;  // "Round 07"
     virtual void play() = 0;
     // The game records the player's input now: the view marks the picture.
     // Emit contentChanged() when it changes.

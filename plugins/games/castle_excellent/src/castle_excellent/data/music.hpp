@@ -9,13 +9,13 @@ namespace rl::castle_excellent {
 
 // One note or rest a channel of a track set plays, and the MML that plays it.
 struct CastleExcellentMusicNote {
-    int start = 0;          // frames
+    int start = 0;  // frames
     int length = 1;
-    int pitch = -1;         // MIDI note; -1 for a rest
-    int stream = 0;         // index into the document's streams
-    int position = 0;       // of the note letter in the stream's text
-    int span = 1;           // letter, accidental, length and dot
-    int octave = 0;         // the octave offset in effect (semitones, mod 256)
+    int pitch = -1;    // MIDI note; -1 for a rest
+    int stream = 0;    // index into the document's streams
+    int position = 0;  // of the note letter in the stream's text
+    int span = 1;      // letter, accidental, length and dot
+    int octave = 0;    // the octave offset in effect (semitones, mod 256)
 };
 
 // The music document (castle-excellent.mml-music.v1): 21 MML streams in a fixed arena

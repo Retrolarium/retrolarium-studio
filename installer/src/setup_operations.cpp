@@ -29,7 +29,8 @@ const QString kProduct = QStringLiteral("Retrolarium Studio");
 const QString kStudioName = QStringLiteral("retrolarium-studio.exe");
 // HKEY_CURRENT_USER subkeys. Reading and removing them goes through Win32:
 // QSettings creates a native key as soon as it opens one.
-const QString kUninstallKey = QStringLiteral("Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\RetrolariumStudio");
+const QString kUninstallKey =
+    QStringLiteral("Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\RetrolariumStudio");
 const QString kExtensionKey = QStringLiteral("Software\\Classes\\.rlj");
 const QString kProjectTypeKey = QStringLiteral("Software\\Classes\\Retrolarium.Project");
 const QString kSettingsKey = QStringLiteral("Software\\Retrolarium\\Retrolarium Studio");
@@ -40,9 +41,7 @@ const QStringList kKeptPaths{QStringLiteral("mame/roms"), QStringLiteral("mame/c
 // uninstalling remove only these and leave anything else the user put there.
 const QString kInstallListName = QStringLiteral("installed-files.txt");
 
-QString nativePath(const QString& path) {
-    return QDir::toNativeSeparators(QDir::cleanPath(path));
-}
+QString nativePath(const QString& path) { return QDir::toNativeSeparators(QDir::cleanPath(path)); }
 
 QString registryString(const QString& key, const QString& value) {
     wchar_t data[2048] = {};
@@ -62,9 +61,7 @@ void deleteKey(const QString& key) {
 }
 
 // Written through QSettings, which takes the full path.
-QString writable(const QString& key) {
-    return QStringLiteral("HKEY_CURRENT_USER\\") + key;
-}
+QString writable(const QString& key) { return QStringLiteral("HKEY_CURRENT_USER\\") + key; }
 
 QString shellFolder(int csidl) {
     wchar_t path[MAX_PATH] = {};
@@ -131,9 +128,7 @@ bool writeInstallList(const QString& directory, const PayloadManifest& manifest)
     return file.write(text) == text.size();
 }
 
-bool listed(const QStringList& names, const QString& name) {
-    return names.contains(name, Qt::CaseInsensitive);
-}
+bool listed(const QStringList& names, const QString& name) { return names.contains(name, Qt::CaseInsensitive); }
 
 // Windows' Installed Apps entry names another installation that still exists.
 bool registeredElsewhere(const QString& directory) {
@@ -157,7 +152,8 @@ bool createShortcut(const QString& shortcutPath, const QString& target, const QS
             reinterpret_cast<const wchar_t*>(nativePath(QFileInfo(target).absolutePath()).utf16()));
     }
     if (SUCCEEDED(result)) result = link->SetDescription(reinterpret_cast<const wchar_t*>(description.utf16()));
-    if (SUCCEEDED(result)) result = link->SetIconLocation(reinterpret_cast<const wchar_t*>(nativePath(target).utf16()), 0);
+    if (SUCCEEDED(result))
+        result = link->SetIconLocation(reinterpret_cast<const wchar_t*>(nativePath(target).utf16()), 0);
     IPersistFile* persist = nullptr;
     if (SUCCEEDED(result)) result = link->QueryInterface(IID_IPersistFile, reinterpret_cast<void**>(&persist));
     if (SUCCEEDED(result)) {
@@ -201,8 +197,9 @@ bool registerInstallation(const QString& directory, const QString& version, quin
     uninstall.setValue(QStringLiteral("Publisher"), QStringLiteral("Retrolarium"));
     uninstall.setValue(QStringLiteral("InstallLocation"), nativePath(directory));
     uninstall.setValue(QStringLiteral("DisplayIcon"), nativePath(QDir(directory).filePath(kStudioName)));
-    uninstall.setValue(QStringLiteral("UninstallString"),
-                       QStringLiteral("\"%1\" --uninstall").arg(nativePath(QDir(directory).filePath(kUninstallerName))));
+    uninstall.setValue(
+        QStringLiteral("UninstallString"),
+        QStringLiteral("\"%1\" --uninstall").arg(nativePath(QDir(directory).filePath(kUninstallerName))));
     uninstall.setValue(QStringLiteral("EstimatedSize"), static_cast<quint32>((bytes + 1023) / 1024));
     uninstall.setValue(QStringLiteral("NoModify"), 1);
     uninstall.sync();
@@ -215,7 +212,8 @@ bool registerInstallation(const QString& directory, const QString& version, quin
     QSettings type(writable(kProjectTypeKey), QSettings::NativeFormat);
     type.setValue(QStringLiteral("Default"), rlTr("setup", "Retrolarium project"));
     type.setValue(QStringLiteral("DefaultIcon/Default"), studio + QStringLiteral(",0"));
-    type.setValue(QStringLiteral("shell/open/command/Default"), QStringLiteral("\"%1\" \"%2\"").arg(studio, QStringLiteral("%1")));
+    type.setValue(QStringLiteral("shell/open/command/Default"),
+                  QStringLiteral("\"%1\" \"%2\"").arg(studio, QStringLiteral("%1")));
     type.sync();
     SHChangeNotify(SHCNE_ASSOCCHANGED, SHCNF_IDLIST, nullptr, nullptr);
     if (uninstall.status() != QSettings::NoError || type.status() != QSettings::NoError) {
@@ -268,13 +266,9 @@ namespace {
 QString gLanguage = QStringLiteral("en");
 }  // namespace
 
-void setLanguage(const QString& code) {
-    gLanguage = code;
-}
+void setLanguage(const QString& code) { gLanguage = code; }
 
-QString language() {
-    return gLanguage;
-}
+QString language() { return gLanguage; }
 
 QString defaultInstallDirectory() {
     QString base = shellFolder(CSIDL_LOCAL_APPDATA);
@@ -286,9 +280,7 @@ QString installedDirectory() {
     return QDir::fromNativeSeparators(registryString(kUninstallKey, QStringLiteral("InstallLocation"))).trimmed();
 }
 
-QString installedVersion() {
-    return registryString(kUninstallKey, QStringLiteral("DisplayVersion")).trimmed();
-}
+QString installedVersion() { return registryString(kUninstallKey, QStringLiteral("DisplayVersion")).trimmed(); }
 
 QString desktopShortcutPath() {
     const QString desktop = shellFolder(CSIDL_DESKTOPDIRECTORY);
@@ -339,8 +331,8 @@ bool replaceableDirectory(const QString& directory) {
     const QDir dir(directory);
     if (!dir.exists() || dir.isEmpty(QDir::AllEntries | QDir::Hidden | QDir::NoDotAndDotDot)) return true;
     // Either program is enough: repairing is for an installation missing one.
-    return !dir.isRoot() && (QFile::exists(dir.filePath(kInstallListName)) || QFile::exists(dir.filePath(kStudioName)) ||
-                             QFile::exists(dir.filePath(kUninstallerName)));
+    return !dir.isRoot() && (QFile::exists(dir.filePath(kInstallListName)) ||
+                             QFile::exists(dir.filePath(kStudioName)) || QFile::exists(dir.filePath(kUninstallerName)));
 }
 
 bool install(const Request& request, const Progress& progress, QString* error) {
@@ -401,7 +393,8 @@ bool install(const Request& request, const Progress& progress, QString* error) {
     if (update) {
         userFilesKept = keepUserFiles(target, staging.path());
         if (!QDir().rename(target, previous)) {
-            if (error) *error = rlTr("setup", "Could not replace the earlier version: a program may still use its files.");
+            if (error)
+                *error = rlTr("setup", "Could not replace the earlier version: a program may still use its files.");
             return false;
         }
     }
@@ -511,12 +504,13 @@ bool uninstall(const Request& request, const Progress& progress, QString* error,
 
 bool launchStudio(const QString& directory, QString* error) {
     const QString studio = nativePath(QDir(directory).filePath(kStudioName));
-    const HINSTANCE result = ShellExecuteW(nullptr, L"open", reinterpret_cast<const wchar_t*>(studio.utf16()), nullptr,
-                                           reinterpret_cast<const wchar_t*>(nativePath(directory).utf16()),
-                                           SW_SHOWNORMAL);
+    const HINSTANCE result =
+        ShellExecuteW(nullptr, L"open", reinterpret_cast<const wchar_t*>(studio.utf16()), nullptr,
+                      reinterpret_cast<const wchar_t*>(nativePath(directory).utf16()), SW_SHOWNORMAL);
     if (reinterpret_cast<INT_PTR>(result) <= 32) {
-        if (error) *error = rlTr("setup", "Windows could not start the studio (error %1).")
-                                .arg(reinterpret_cast<INT_PTR>(result));
+        if (error)
+            *error =
+                rlTr("setup", "Windows could not start the studio (error %1).").arg(reinterpret_cast<INT_PTR>(result));
         return false;
     }
     return true;

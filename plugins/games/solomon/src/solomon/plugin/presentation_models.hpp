@@ -99,7 +99,7 @@ public:
         QJsonArray steps;
         int keptFrames = 0;
         int droppedFrames = 0;
-        bool pressed = false;   // any button at all
+        bool pressed = false;  // any button at all
     };
     static Recording stepsFromRecording(const QString& text, int capacity);
     // How many steps the demo tables may hold for a revision.

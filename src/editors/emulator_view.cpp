@@ -207,8 +207,13 @@ private:
 class EmulatorStage final : public QWidget {
 public:
     EmulatorStage(sdk::EmulatorModel* model, runtime::EmulatorRunner* runner, QWidget* parent)
-        : QWidget(parent), model_(model), runner_(runner), surface_(new runtime::EmulatorSurface(this)),
-          cover_(new ScreenCover(this)), record_(new RecordBadge(this)), busy_(new BusyCard(this)) {
+        : QWidget(parent),
+          model_(model),
+          runner_(runner),
+          surface_(new runtime::EmulatorSurface(this)),
+          cover_(new ScreenCover(this)),
+          record_(new RecordBadge(this)),
+          busy_(new BusyCard(this)) {
         setMinimumHeight(240);
         surface_->hide();
         runner_->setSurface(surface_);
@@ -272,8 +277,9 @@ protected:
         painter.setPen(QColor(255, 255, 255, 140));
         const QSize native = model_->screenSize();
         painter.drawText(screen, Qt::AlignCenter,
-                         rlTr("studio", "Play from selected runs %1 · Play starts from power-on\n"
-                                        "%2 · %3 × %4 · aspect-fit")
+                         rlTr("studio",
+                              "Play from selected runs %1 · Play starts from power-on\n"
+                              "%2 · %3 × %4 · aspect-fit")
                              .arg(model_->startLabel(), model_->coreLabel())
                              .arg(native.width())
                              .arg(native.height()));
@@ -364,19 +370,17 @@ void EmulatorView::updateState() {
     stage_->refresh();
     using Phase = runtime::EmulatorRunner::Phase;
     switch (runner_->phase()) {
-    case Phase::Starting:
-        stage_->setBusy(runner_->isReloading() ? tr("Reloading the game…")
-                                               : tr("Starting the emulator…"),
-                        runner_->title());
-        break;
-    case Phase::Stopping:
-        stage_->setBusy(tr("Stopping…"), runner_->title());
-        break;
-    case Phase::Running:
-    case Phase::Idle:
-        stage_->setBusy(busyStep_.isEmpty() ? QString() : busyStep_ + QStringLiteral("…"),
-                        tr("Retrolarium Kit"));
-        break;
+        case Phase::Starting:
+            stage_->setBusy(runner_->isReloading() ? tr("Reloading the game…") : tr("Starting the emulator…"),
+                            runner_->title());
+            break;
+        case Phase::Stopping:
+            stage_->setBusy(tr("Stopping…"), runner_->title());
+            break;
+        case Phase::Running:
+        case Phase::Idle:
+            stage_->setBusy(busyStep_.isEmpty() ? QString() : busyStep_ + QStringLiteral("…"), tr("Retrolarium Kit"));
+            break;
     }
     emit toolbarChanged();
 }
@@ -395,7 +399,7 @@ QWidget* EmulatorView::createToolbar(QWidget* parent) {
         auto* b = new QPushButton(text, bar);
         b->setFont(theme::font(theme::TextRole::Body, 12.0));
         b->setEnabled(enabled);
-        b->setFocusPolicy(Qt::NoFocus);  // a click keeps the keyboard with the game
+        b->setFocusPolicy(Qt::NoFocus);             // a click keeps the keyboard with the game
         b->setMinimumWidth(b->sizeHint().width());  // a narrow pane squeezes the status, not the labels
         return b;
     };
@@ -441,16 +445,16 @@ QWidget* EmulatorView::createToolbar(QWidget* parent) {
     // How the picture shows, for every game: square pixels or the 4:3 TV
     // the machine assumes, and the studio's colours when the plugin gave
     // them. Remembered across runs.
-    auto* pixels = new ui::ViewChip(tr("Pixels"),
-                                    runner_->squarePixels() ? QStringLiteral("Square") : tr("TV 4:3"), bar);
+    auto* pixels =
+        new ui::ViewChip(tr("Pixels"), runner_->squarePixels() ? QStringLiteral("Square") : tr("TV 4:3"), bar);
     pixels->setChoices({QStringLiteral("Square"), tr("TV 4:3")});
     connect(pixels, &ui::ViewChip::valueChosen, this, [this](const QString& value) {
         runner_->setPicture(value == QLatin1String("Square"), runner_->studioColours());
         QSettings().setValue(QStringLiteral("playtest/squarePixels"), runner_->squarePixels());
     });
     layout->addWidget(pixels);
-    auto* colours = new ui::ViewChip(tr("Colours"),
-                                     runner_->studioColours() ? QStringLiteral("Studio") : tr("Emulator"), bar);
+    auto* colours =
+        new ui::ViewChip(tr("Colours"), runner_->studioColours() ? QStringLiteral("Studio") : tr("Emulator"), bar);
     colours->setChoices({QStringLiteral("Studio"), tr("Emulator")});
     connect(colours, &ui::ViewChip::valueChosen, this, [this](const QString& value) {
         runner_->setPicture(runner_->squarePixels(), value == QLatin1String("Studio"));
@@ -470,10 +474,11 @@ QWidget* EmulatorView::createToolbar(QWidget* parent) {
         } else if (phase == Phase::Stopping) {
             text = tr("Stopping…");
         } else if (running) {
-            text = runner_->isPaused()                 ? tr("Paused")
-                   : stage_->surface()->hasFocus() ? tr("Running · arrows, Z X, Enter, right Shift or a game pad · hold Tab to fast-forward · "
-                                                        "Backspace rewinds")
-                                                   : tr("Running · click the picture for the keyboard");
+            text = runner_->isPaused() ? tr("Paused")
+                   : stage_->surface()->hasFocus()
+                       ? tr("Running · arrows, Z X, Enter, right Shift or a game pad · hold Tab to fast-forward · "
+                            "Backspace rewinds")
+                       : tr("Running · click the picture for the keyboard");
         }
         state->setText(text);
     };

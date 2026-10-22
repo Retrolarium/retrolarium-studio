@@ -56,7 +56,7 @@ private:
     MapCanvas* canvas_;
     QString tool_;
     QString pickLayer_;
-    QString pickedItem_;     // the library item last seen, to notice a new pick
+    QString pickedItem_;  // the library item last seen, to notice a new pick
     bool restoring_ = false;
     bool fitted_ = false;
 };
@@ -81,7 +81,7 @@ public:
     QRect mapRect() const;
 
 signals:
-    void zoomRequested(int delta, QPoint anchor);   // anchor: the mouse, canvas coordinates
+    void zoomRequested(int delta, QPoint anchor);  // anchor: the mouse, canvas coordinates
     void actionFailed(const QString& message);
 
 protected:
@@ -112,7 +112,7 @@ private:
     QImage image_;
     int scaled(int pixels) const { return pixels * zoom_ / 4; }
 
-    int zoom_ = 8;      // quarters
+    int zoom_ = 8;  // quarters
     bool grid_ = true;
     QString tool_ = QStringLiteral("select");
 
@@ -120,9 +120,9 @@ private:
     // A stroke paints many cells, each a contentChanged: render once after them.
     bool renderPending_ = false;
     bool painting_ = false;
-    QImage previewIcon_;    // the Add tool's item, and its footprint in cells
+    QImage previewIcon_;  // the Add tool's item, and its footprint in cells
     QSize previewCells_;
-    bool lockReported_ = false;    // this stroke already said why a cell is locked
+    bool lockReported_ = false;  // this stroke already said why a cell is locked
     Qt::MouseButton paintButton_ = Qt::NoButton;
     int paintValue_ = 0;
     QPoint lastPaintCell_;

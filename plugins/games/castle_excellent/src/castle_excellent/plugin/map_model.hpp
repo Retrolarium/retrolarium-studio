@@ -45,8 +45,8 @@ private:
     int roomIndex(int number) const;
 
     CastleExcellentSession* session_;
-    int selected_ = -1;             // room number, 1-100
-    int divisor_ = 4;               // rooms drawn at 1/divisor of their size
+    int selected_ = -1;  // room number, 1-100
+    int divisor_ = 4;    // rooms drawn at 1/divisor of their size
     mutable QImage image_;
     mutable quint64 imageRevision_ = ~quint64(0);
     mutable int imageDivisor_ = 0;

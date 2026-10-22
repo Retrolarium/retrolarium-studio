@@ -15,12 +15,8 @@ constexpr int kPaddingX = 10;
 constexpr int kGap = 6;
 constexpr int kSpacing = 2;
 
-QFont labelFont() {
-    return theme::font(theme::TextRole::Caps, 12.5);
-}
-QFont countFont() {
-    return theme::font(theme::TextRole::Body, 11.5);
-}
+QFont labelFont() { return theme::font(theme::TextRole::Caps, 12.5); }
+QFont countFont() { return theme::font(theme::TextRole::Body, 11.5); }
 }  // namespace
 
 PanelTabs::PanelTabs(QWidget* parent) : QWidget(parent) {
@@ -125,13 +121,13 @@ void PanelTabs::paintEvent(QPaintEvent*) {
         painter.setFont(lf);
         painter.setPen(current || i == hovered_ ? t.text : t.muted);
         const int labelWidth = labelMetrics.horizontalAdvance(tabs_.at(i).label);
-        painter.drawText(QRect(r.left() + kPaddingX, 0, r.width() - kPaddingX, kHeight),
-                         Qt::AlignVCenter, tabs_.at(i).label);
+        painter.drawText(QRect(r.left() + kPaddingX, 0, r.width() - kPaddingX, kHeight), Qt::AlignVCenter,
+                         tabs_.at(i).label);
         if (!tabs_.at(i).count.isEmpty()) {
             painter.setFont(cf);
             painter.setPen(t.faint);
-            painter.drawText(QRect(r.left() + kPaddingX + labelWidth + kGap, 0, r.width(), kHeight),
-                             Qt::AlignVCenter, tabs_.at(i).count);
+            painter.drawText(QRect(r.left() + kPaddingX + labelWidth + kGap, 0, r.width(), kHeight), Qt::AlignVCenter,
+                             tabs_.at(i).count);
         }
         if (current) {
             painter.fillRect(QRect(r.left(), kHeight - 2, r.width(), 2), t.accent);

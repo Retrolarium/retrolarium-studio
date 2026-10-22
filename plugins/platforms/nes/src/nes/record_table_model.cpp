@@ -13,9 +13,7 @@ namespace {
 
 const QString kNone = QStringLiteral("—");
 
-QString fieldName(const QJsonObject& field) {
-    return field.value(QStringLiteral("name")).toString();
-}
+QString fieldName(const QJsonObject& field) { return field.value(QStringLiteral("name")).toString(); }
 
 // What a choice shows: the game's name for its value when the field names a
 // category of them ("names": "fruits"), else its label in the interface
@@ -54,9 +52,7 @@ QJsonObject RecordTableModel::resource(bool saved) const {
     return bundle.contains(resource_) ? bundle.resource(resource_) : QJsonObject();
 }
 
-QJsonArray RecordTableModel::fields() const {
-    return resource().value(QStringLiteral("fields")).toArray();
-}
+QJsonArray RecordTableModel::fields() const { return resource().value(QStringLiteral("fields")).toArray(); }
 
 bool RecordTableModel::locked(const QJsonObject& field, int row) const {
     for (const QJsonValue& value : field.value(QStringLiteral("locked")).toArray()) {
@@ -96,9 +92,7 @@ QVector<sdk::TableColumn> RecordTableModel::columns() const {
     return result;
 }
 
-int RecordTableModel::rowCount() const {
-    return resource().value(QStringLiteral("records")).toArray().size();
-}
+int RecordTableModel::rowCount() const { return resource().value(QStringLiteral("records")).toArray().size(); }
 
 QString RecordTableModel::cell(int row, int column) const {
     const QJsonObject r = resource();
@@ -165,8 +159,8 @@ bool RecordTableModel::setCell(int row, int column, const QString& value, QStrin
         const int number = text.startsWith(QLatin1Char('$')) ? text.mid(1).toInt(&ok, 16) : text.toInt(&ok);
         const int minimum = field.value(QStringLiteral("minimum")).toInt();
         const int maximum = field.value(QStringLiteral("maximum")).toInt(255);
-        const bool isNone = field.contains(QStringLiteral("none")) &&
-                            (number & 0xff) == field.value(QStringLiteral("none")).toInt();
+        const bool isNone =
+            field.contains(QStringLiteral("none")) && (number & 0xff) == field.value(QStringLiteral("none")).toInt();
         if (!ok || number < minimum || number > maximum || isNone) {
             if (error) *error = tr("%1 is %2 to %3.").arg(label).arg(minimum).arg(maximum);
             return false;
@@ -191,27 +185,30 @@ bool RecordTableModel::setCell(int row, int column, const QString& value, QStrin
     const QJsonValue previous = records.at(row).toObject().value(name);
     const QString id = resource_;
     const QString undoText = other >= 0 ? tr("Swap in %1").arg(title_) : tr("Edit %1").arg(title_);
-    return owner_->editBundle(undoText, [id, row, name, next, other, previous](Bundle& bundle) {
-        QJsonObject r = bundle.resource(id);
-        QJsonArray list = r.value(QStringLiteral("records")).toArray();
-        const auto set = [&list, &name](int index, const QJsonValue& v) {
-            QJsonObject record = list.at(index).toObject();
-            record.insert(name, v);
-            list.replace(index, record);
-        };
-        set(row, next);
-        if (other >= 0) set(other, previous);
-        r.insert(QStringLiteral("records"), list);
-        bundle.setResource(id, r);
-    }, error);
+    return owner_->editBundle(
+        undoText,
+        [id, row, name, next, other, previous](Bundle& bundle) {
+            QJsonObject r = bundle.resource(id);
+            QJsonArray list = r.value(QStringLiteral("records")).toArray();
+            const auto set = [&list, &name](int index, const QJsonValue& v) {
+                QJsonObject record = list.at(index).toObject();
+                record.insert(name, v);
+                list.replace(index, record);
+            };
+            set(row, next);
+            if (other >= 0) set(other, previous);
+            r.insert(QStringLiteral("records"), list);
+            bundle.setResource(id, r);
+        },
+        error);
 }
 
 sdk::Inspection RecordTableModel::inspect() const {
     sdk::Inspection inspection;
     inspection.kicker = title_;
     inspection.title = cell(row_, 0);
-    inspection.note = note_.isEmpty() ? tr("One row per record as the game keeps it; edit a cell to change its byte.")
-                                      : note_;
+    inspection.note =
+        note_.isEmpty() ? tr("One row per record as the game keeps it; edit a cell to change its byte.") : note_;
     const QJsonObject record = resource().value(QStringLiteral("records")).toArray().at(row_).toObject();
     for (const QJsonValue& value : fields()) {
         const QJsonObject field = value.toObject();
@@ -224,8 +221,6 @@ sdk::Inspection RecordTableModel::inspect() const {
     return inspection;
 }
 
-QString RecordTableModel::statusText() const {
-    return tr("%1 · %n records", nullptr, rowCount()).arg(title_);
-}
+QString RecordTableModel::statusText() const { return tr("%1 · %n records", nullptr, rowCount()).arg(title_); }
 
 }  // namespace rl::nes

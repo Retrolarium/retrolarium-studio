@@ -10,13 +10,9 @@ namespace rl::flicky {
 
 namespace {
 
-QString hex(int value, int digits) {
-    return QStringLiteral("$%1").arg(value, digits, 16, QLatin1Char('0')).toUpper();
-}
+QString hex(int value, int digits) { return QStringLiteral("$%1").arg(value, digits, 16, QLatin1Char('0')).toUpper(); }
 
-QString two(int value) {
-    return QStringLiteral("%1").arg(value, 2, 10, QLatin1Char('0'));
-}
+QString two(int value) { return QStringLiteral("%1").arg(value, 2, 10, QLatin1Char('0')); }
 
 // Trailing number of an id such as Level_Palette7.
 int suffix(const QString& id, const QString& prefix) {
@@ -82,13 +78,9 @@ void SemanticsPaletteModel::setCurrentEntry(QPoint entry) {
     }
 }
 
-QString SemanticsPaletteModel::pickerTitle() const {
-    return tr("9-bit RGB · 0–7 per channel");
-}
+QString SemanticsPaletteModel::pickerTitle() const { return tr("9-bit RGB · 0–7 per channel"); }
 
-QStringList SemanticsPaletteModel::channelNames() const {
-    return {tr("Red"), tr("Green"), tr("Blue")};
-}
+QStringList SemanticsPaletteModel::channelNames() const { return {tr("Red"), tr("Green"), tr("Blue")}; }
 
 QVector<int> SemanticsPaletteModel::currentChannels() const {
     const int word = session_->semantics().colour(id_, entry_);
@@ -104,9 +96,9 @@ bool SemanticsPaletteModel::setChannel(int channel, int level, QString* error) {
     const int word = megadrive::cramWord(rgb[0], rgb[1], rgb[2]);
     const QString id = id_;
     const int entry = entry_;
-    return session_->editSemantics(tr("Edit %1 color %2").arg(id).arg(entry),
-                                   [id, entry, word](FlickySemanticsDocument& s) { s.setColour(id, entry, word); },
-                                   error);
+    return session_->editSemantics(
+        tr("Edit %1 color %2").arg(id).arg(entry),
+        [id, entry, word](FlickySemanticsDocument& s) { s.setColour(id, entry, word); }, error);
 }
 
 QVector<sdk::PaletteSample> SemanticsPaletteModel::samples() const {
@@ -171,13 +163,13 @@ sdk::Inspection SemanticsPaletteModel::inspect() const {
     roundsField.label = tr("Rounds");
     roundsField.value = used.isEmpty() ? tr("title, ending") : used.join(QStringLiteral(", "));
     inspection.fields = {value, channels, slot, roundsField};
-    inspection.note = tr("Mega Drive colors have three bits per channel. Entry 0 of a "
-                         "line is transparent in tiles and sprites.");
+    inspection.note =
+        tr("Mega Drive colors have three bits per channel. Entry 0 of a "
+           "line is transparent in tiles and sprites.");
     inspection.engineTag = QStringLiteral("flicky.semantics.v1");
     inspection.engine = {{tr("Palette"), id_},
                          {tr("CRAM word"), hex(word, 4)},
-                         {tr("Saved"),
-                          hex(session_->savedSemantics().colour(id_, entry_), 4)},
+                         {tr("Saved"), hex(session_->savedSemantics().colour(id_, entry_), 4)},
                          {tr("Source"), QStringLiteral("graphics/semantics.json")}};
     return inspection;
 }
@@ -219,9 +211,7 @@ QVector<sdk::TableColumn> TextModel::columns() const {
     return {name, text, length};
 }
 
-int TextModel::rowCount() const {
-    return session_->semantics().textIds().size();
-}
+int TextModel::rowCount() const { return session_->semantics().textIds().size(); }
 
 QString TextModel::cell(int row, int column) const {
     const QString id = idAt(row);
@@ -238,9 +228,7 @@ sdk::Budget TextModel::cellBudget(int row, int) const {
     return budget;
 }
 
-int TextModel::maxLength(int row, int) const {
-    return session_->semantics().textCapacity(idAt(row));
-}
+int TextModel::maxLength(int row, int) const { return session_->semantics().textCapacity(idAt(row)); }
 
 bool TextModel::isRowDirty(int row) const {
     const QString id = idAt(row);
@@ -267,9 +255,8 @@ bool TextModel::setText(int row, const QString& value, QString* error) {
         }
         return false;
     }
-    return session_->editSemantics(tr("Edit text %1").arg(id),
-                                   [id, value](FlickySemanticsDocument& s) { s.setTextValue(id, value); },
-                                   error);
+    return session_->editSemantics(
+        tr("Edit text %1").arg(id), [id, value](FlickySemanticsDocument& s) { s.setTextValue(id, value); }, error);
 }
 
 bool TextModel::setCell(int row, int column, const QString& value, QString* error) {
@@ -322,8 +309,9 @@ sdk::Inspection TextModel::inspect() const {
     length.monospace = true;
     inspection.fields = {text, length};
     inspection.preview = value;
-    inspection.note = tr("Each string has a fixed slot in the ROM. Printable ASCII only; "
-                         "quotes and backslashes are not allowed.");
+    inspection.note =
+        tr("Each string has a fixed slot in the ROM. Printable ASCII only; "
+           "quotes and backslashes are not allowed.");
     // The game's font has kana where ASCII has lowercase letters.
     const auto lowercase = [](QChar c) { return c >= QLatin1Char('a') && c <= QLatin1Char('z'); };
     if (std::any_of(value.begin(), value.end(), lowercase)) {
