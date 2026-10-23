@@ -114,6 +114,20 @@ QString recentLabel(const QString& path) {
     return name.isEmpty() ? QFileInfo(path).fileName() : name;
 }
 
+// The repository .rlj of a version's project
+// (<repository>/.retrolarium/<version>/<game>-<version>.rlj), or empty.
+QString repositoryDescriptor(const QString& projectPath) {
+    QDir repository = QFileInfo(projectPath).absoluteDir();
+    if (!repository.cdUp() || repository.dirName() != QLatin1String(".retrolarium") || !repository.cdUp()) return {};
+    QString error;
+    for (const QFileInfo& info : repository.entryInfoList({QStringLiteral("*.rlj")}, QDir::Files)) {
+        const sdk::ProjectFile candidate = sdk::ProjectFile::load(info.absoluteFilePath(), &error);
+        if (candidate.string(QStringLiteral("schema")) == QLatin1String("retrolarium.game"))
+            return info.absoluteFilePath();
+    }
+    return {};
+}
+
 // MAME lines Messages keeps.
 constexpr int kEmulatorMessages = 200;
 
@@ -978,7 +992,7 @@ void MainWindow::chooseProject() {
     }
 }
 
-bool MainWindow::openProjectFile(const QString& path) {
+bool MainWindow::openProjectFile(const QString& path, bool prepared) {
     QString error;
     const sdk::ProjectFile project = sdk::ProjectFile::load(path, &error);
     if (!project.isValid()) {
@@ -987,6 +1001,14 @@ bool MainWindow::openProjectFile(const QString& path) {
     }
     if (project.string(QStringLiteral("schema")) == QLatin1String("retrolarium.game")) {
         openGameRepository(project.path());
+        return true;
+    }
+    // A version of a game repository (Recent, the command line) is got ready
+    // by the kit first, as when the game is opened: a newer kit brings the
+    // project up to date with it, the game's sources included.
+    const QString repository = prepared ? QString() : repositoryDescriptor(project.path());
+    if (!repository.isEmpty()) {
+        prepareRevision(repository, QFileInfo(project.path()).absoluteDir().dirName(), QString(), project.path());
         return true;
     }
     sdk::Plugin* plugin = sdk::PluginRegistry::instance().pluginFor(project);
@@ -1390,7 +1412,7 @@ void MainWindow::setUpGameSource(const QString& rom) {
                                    .arg(QDir::toNativeSeparators(QFileInfo(descriptor).absolutePath())),
                                name));
             }
-            openProjectFile(r.value(QStringLiteral("project")).toString());
+            openProjectFile(r.value(QStringLiteral("project")).toString(), true);
         } else {
             // A game the studio has no editors for, or a ROM it does not
             // know after all: it opens as it is.
@@ -1399,24 +1421,32 @@ void MainWindow::setUpGameSource(const QString& rom) {
     });
 }
 
-void MainWindow::prepareRevision(const QString& descriptor, const QString& revision, const QString& rom) {
+void MainWindow::prepareRevision(const QString& descriptor, const QString& revision, const QString& rom,
+                                 const QString& project) {
     const QString name = QFileInfo(descriptor).fileName();
     QStringList arguments{QStringLiteral("studio"), QStringLiteral("prepare"), descriptor, QStringLiteral("--revision"),
                           revision};
     if (!rom.isEmpty()) arguments << QStringLiteral("--rom") << rom;
     QString error;
     sdk::ProcessSpec spec = kitCommand(arguments, QFileInfo(descriptor).absolutePath(), &error);
+    // A project opened by its own file still opens when the kit cannot get
+    // it ready; the reason is in Messages.
+    const auto openAsItIs = [this, project] {
+        if (!project.isEmpty()) openProjectFile(project, true);
+    };
     if (spec.program.isEmpty()) {
         report(message(sdk::Severity::Error, QStringLiteral("project"), error, name));
+        openAsItIs();
         return;
     }
     spec.label = tr("Get %1 ready").arg(revision);
-    runProcess(spec, [this, descriptor, revision, name](const sdk::ProcessResult& result) {
+    runProcess(spec, [this, descriptor, revision, name, project, openAsItIs](const sdk::ProcessResult& result) {
         if (!result.succeeded()) {
             if (!result.cancelled) {
                 report(message(sdk::Severity::Error, QStringLiteral("project"),
                                tr("Getting the game ready failed: %1").arg(processError(result)), name));
             }
+            openAsItIs();
             return;
         }
         const QJsonObject r = QJsonDocument::fromJson(result.standardOutput).object();
@@ -1431,7 +1461,7 @@ void MainWindow::prepareRevision(const QString& descriptor, const QString& revis
                                 .arg(split.value(QStringLiteral("output")).toString().section(QLatin1Char('\n'), -3)),
                             name));
             }
-            openProjectFile(r.value(QStringLiteral("project")).toString());
+            openProjectFile(r.value(QStringLiteral("project")).toString(), true);
             return;
         }
         if (status == QLatin1String("build-failed")) {
@@ -1440,6 +1470,15 @@ void MainWindow::prepareRevision(const QString& descriptor, const QString& revis
                            tr("Building this version from the game's sources failed: %1")
                                .arg(r.value(QStringLiteral("message")).toString().section(QLatin1Char('\n'), -3)),
                            name));
+            openAsItIs();
+            return;
+        }
+        if (!project.isEmpty()) {
+            // A project opened by its own file: its ROM was there when it was
+            // made, so a missing one is reported, not asked for.
+            report(message(sdk::Severity::Warning, QStringLiteral("project"),
+                           r.value(QStringLiteral("message")).toString(), name));
+            openAsItIs();
             return;
         }
         // The revision's ROM is missing, or the file given is another one.
@@ -1461,16 +1500,7 @@ void MainWindow::prepareRevision(const QString& descriptor, const QString& revis
 
 QString MainWindow::currentDescriptor() const {
     if (!session_ || projectPath_.isEmpty()) return {};
-    // A version's project is <repository>/.retrolarium/<version>/<game>-<version>.rlj.
-    QDir repository = QFileInfo(projectPath_).absoluteDir();
-    if (!repository.cdUp() || repository.dirName() != QLatin1String(".retrolarium") || !repository.cdUp()) return {};
-    QString error;
-    for (const QFileInfo& info : repository.entryInfoList({QStringLiteral("*.rlj")}, QDir::Files)) {
-        const sdk::ProjectFile candidate = sdk::ProjectFile::load(info.absoluteFilePath(), &error);
-        if (candidate.string(QStringLiteral("schema")) == QLatin1String("retrolarium.game"))
-            return info.absoluteFilePath();
-    }
-    return {};
+    return repositoryDescriptor(projectPath_);
 }
 
 void MainWindow::resetRevision() {

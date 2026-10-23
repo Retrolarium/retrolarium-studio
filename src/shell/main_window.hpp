@@ -56,7 +56,8 @@ public:
     explicit MainWindow(QWidget* parent = nullptr);
     ~MainWindow() override;
 
-    bool openProjectFile(const QString& path);
+    // prepared: the kit has just got a game version's project ready.
+    bool openProjectFile(const QString& path, bool prepared = false);
     bool hasProject() const { return session_ != nullptr; }
     // Navigates to a document, as if picked in the rail and document list.
     void showDocument(const QString& kind, const QString& document);
@@ -140,7 +141,10 @@ private:
     void setUpGameSource(const QString& rom);
     void openRomAsProject(const QString& rom);
     void rememberRepository(const QString& descriptor);
-    void prepareRevision(const QString& descriptor, const QString& revision, const QString& rom);
+    // project: the version's project being opened by its own file, which
+    // opens as it is when the kit cannot get it ready.
+    void prepareRevision(const QString& descriptor, const QString& revision, const QString& rom,
+                         const QString& project = QString());
     // The repository .rlj of a generated revision project, or empty.
     QString currentDescriptor() const;
     // Discards the open version's edits through the kit, then reopens it.
