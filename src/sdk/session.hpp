@@ -52,6 +52,9 @@ public:
     virtual void play() {}
     // The selected start point ("Round 07"); empty when there is none.
     virtual QString selectedStart() const { return {}; }
+    // The game's player as a small sprite, shown on the start point chip;
+    // null when the game draws none.
+    virtual QImage playerIcon() const { return {}; }
     // The Play from selected button's text when it runs something other
     // than a start point ("Play demo"); empty for the usual one.
     virtual QString playSelectedLabel() const { return {}; }

@@ -1061,6 +1061,15 @@ QVector<sdk::Diagnostic> FlickySession::diagnostics() const {
     return result;
 }
 
+QImage FlickySession::playerIcon() const {
+    // A project still being read has no art yet.
+    try {
+        return placementPreview(QStringLiteral("player"), 0);
+    } catch (const std::exception&) {
+        return {};
+    }
+}
+
 QString FlickySession::selectedStart() const {
     if (demoStart()) {
         return tr("Demo %1").arg(demo_ + 1);

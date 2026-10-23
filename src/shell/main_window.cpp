@@ -1837,7 +1837,9 @@ void MainWindow::updateToolbarRow() {
         // Where "Play from selected" starts, when this document sets it.
         const QString start = model_ ? model_->startPoint() : QString();
         if (!start.isEmpty()) {
-            auto* chip = new ui::ViewChip(tr("Start point"), start, content);
+            auto* chip = new ui::ViewChip(tr("Playtest start"), start, content);
+            // The game's player on it, so the start stands out in the row.
+            if (session_) chip->setPicture(session_->playerIcon());
             chip->setToolTip(tr("Play from selected (F4) starts here"));
             // Where the start is put by hand, a click picks it for the Add
             // tool: it follows the cursor until a click sets it down.

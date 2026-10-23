@@ -562,6 +562,15 @@ void CastleExcellentSession::clearStart(int room) {
     emit selectedStartChanged();
 }
 
+QImage CastleExcellentSession::playerIcon() const {
+    // A project still being read has no art yet.
+    try {
+        return painter().player();
+    } catch (const std::exception&) {
+        return {};
+    }
+}
+
 QString CastleExcellentSession::selectedStart() const {
     if (demoStart()) return tr("Title demo");
     const CastleExcellentStart start = this->start();

@@ -57,6 +57,7 @@ public:
     bool canPlay() const override { return true; }
     void play() override;
     QString selectedStart() const override;
+    QImage playerIcon() const override;
     void playSelected() override;
     QString playSelectedLabel() const override;
 

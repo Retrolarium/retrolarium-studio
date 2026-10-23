@@ -776,6 +776,15 @@ void SmbSession::selectStart(const QString& area) {
     emit selectedStartChanged();
 }
 
+QImage SmbSession::playerIcon() const {
+    // A project still being read has no art yet.
+    try {
+        return painter_ ? painter_->player() : QImage();
+    } catch (const std::exception&) {
+        return {};
+    }
+}
+
 QString SmbSession::selectedStart() const {
     if (demoStart()) return tr("Title demo");
     if (start_.area.isEmpty()) {

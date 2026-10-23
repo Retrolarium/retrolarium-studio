@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QAbstractButton>
+#include <QImage>
 
 class QMenu;
 
@@ -22,6 +23,9 @@ public:
 
     // Choices shown in a drop-down; picking one sets the value and emits.
     void setChoices(const QStringList& choices);
+    // A small picture before the key (the game's player on the start chip),
+    // its transparent edges cut and scaled up in whole steps to the chip.
+    void setPicture(const QImage& picture);
 
     QSize sizeHint() const override;
     QSize minimumSizeHint() const override;
@@ -40,6 +44,7 @@ private:
     QString key_;
     QString value_;
     QStringList choices_;
+    QImage picture_;
     bool hovered_ = false;
 };
 

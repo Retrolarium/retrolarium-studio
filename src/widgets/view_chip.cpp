@@ -19,8 +19,34 @@ constexpr int kPaddingX = 9;
 constexpr int kGap = 6;
 constexpr double kTextPx = 12.0;
 
+constexpr int kPictureHeight = 20;
+
 QFont keyFont() { return theme::font(theme::TextRole::Body, kTextPx); }
 QFont valueFont() { return theme::font(theme::TextRole::BodyMedium, kTextPx); }
+
+// Pixel art without its transparent edges, in whole steps up to the chip's
+// picture height (or down to it, smoothly, when it is taller).
+QImage chipPicture(const QImage& source) {
+    if (source.isNull()) return {};
+    const QImage image = source.convertToFormat(QImage::Format_ARGB32);
+    int left = image.width(), top = image.height(), right = -1, bottom = -1;
+    for (int y = 0; y < image.height(); ++y) {
+        const auto* line = reinterpret_cast<const QRgb*>(image.constScanLine(y));
+        for (int x = 0; x < image.width(); ++x) {
+            if (qAlpha(line[x]) != 0) {
+                left = std::min(left, x);
+                right = std::max(right, x);
+                top = std::min(top, y);
+                bottom = std::max(bottom, y);
+            }
+        }
+    }
+    if (right < 0) return {};
+    const QImage cut = image.copy(QRect(QPoint(left, top), QPoint(right, bottom)));
+    const int factor = kPictureHeight / cut.height();
+    if (factor >= 1) return cut.scaled(cut.size() * factor, Qt::IgnoreAspectRatio, Qt::FastTransformation);
+    return cut.scaledToHeight(kPictureHeight, Qt::SmoothTransformation);
+}
 }  // namespace
 
 ViewChip::ViewChip(const QString& key, const QString& value, QWidget* parent)
@@ -52,6 +78,12 @@ void ViewChip::setValue(const QString& value) {
 
 void ViewChip::setChoices(const QStringList& choices) { choices_ = choices; }
 
+void ViewChip::setPicture(const QImage& picture) {
+    picture_ = chipPicture(picture);
+    updateGeometry();
+    update();
+}
+
 void ViewChip::showChoices() {
     QMenu menu(this);
     for (const QString& choice : choices_) {
@@ -68,7 +100,8 @@ void ViewChip::showChoices() {
 }
 
 QSize ViewChip::sizeHint() const {
-    const int width = kPaddingX * 2 + QFontMetrics(keyFont()).horizontalAdvance(key_) + kGap +
+    const int width = kPaddingX * 2 + (picture_.isNull() ? 0 : picture_.width() + kGap) +
+                      QFontMetrics(keyFont()).horizontalAdvance(key_) + kGap +
                       QFontMetrics(valueFont()).horizontalAdvance(rlValue(value_));
     return QSize(width, kHeight);
 }
@@ -78,7 +111,8 @@ QSize ViewChip::minimumSizeHint() const {
     const QFontMetrics key(keyFont());
     const QFontMetrics value(valueFont());
     const QString stub = QStringLiteral("Wm…");
-    const int width = kPaddingX * 2 + std::min(key.horizontalAdvance(key_), key.horizontalAdvance(stub)) + kGap +
+    const int width = kPaddingX * 2 + (picture_.isNull() ? 0 : picture_.width() + kGap) +
+                      std::min(key.horizontalAdvance(key_), key.horizontalAdvance(stub)) + kGap +
                       std::min(value.horizontalAdvance(rlValue(value_)), value.horizontalAdvance(stub));
     return QSize(width, kHeight);
 }
@@ -107,21 +141,26 @@ void ViewChip::paintEvent(QPaintEvent*) {
 
     const QFont kf = keyFont();
     const QFont vf = valueFont();
+    int left = kPaddingX;
+    if (!picture_.isNull()) {
+        painter.drawImage(left, (box.height() - picture_.height()) / 2, picture_);
+        left += picture_.width() + kGap;
+    }
     // When the chip is narrower than its text, the value keeps at least half
     // of the room and both elide.
     const QString value = rlValue(value_);
-    const int room = std::max(0, box.width() - kPaddingX * 2 - kGap);
+    const int room = std::max(0, box.width() - left - kPaddingX - kGap);
     const int fullKey = QFontMetrics(kf).horizontalAdvance(key_);
     const int fullValue = QFontMetrics(vf).horizontalAdvance(value);
     const int valueWidth = std::min(fullValue, std::max(room - fullKey, room / 2));
     const int keyWidth = std::min(fullKey, room - valueWidth);
     painter.setFont(kf);
     painter.setPen(t.muted);
-    painter.drawText(QRect(kPaddingX, 0, keyWidth + 1, box.height()), Qt::AlignVCenter,
+    painter.drawText(QRect(left, 0, keyWidth + 1, box.height()), Qt::AlignVCenter,
                      QFontMetrics(kf).elidedText(key_, Qt::ElideRight, keyWidth + 1));
     painter.setFont(vf);
     painter.setPen(isChecked() || !isCheckable() ? t.text : t.muted);
-    const int valueLeft = kPaddingX + keyWidth + kGap;
+    const int valueLeft = left + keyWidth + kGap;
     painter.drawText(QRect(valueLeft, 0, valueWidth + 1, box.height()), Qt::AlignVCenter,
                      QFontMetrics(vf).elidedText(value, Qt::ElideRight, valueWidth + 1));
 }
