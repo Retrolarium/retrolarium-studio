@@ -4465,8 +4465,8 @@
         <translation>Слот %1</translation>
     </message>
     <message>
-        <source>Running · arrows, Z X, Enter, right Shift or a game pad · hold Tab to fast-forward · Backspace rewinds</source>
-        <translation>Идёт · стрелки, Z X, Enter, правый Shift или геймпад · удерживайте Tab для ускорения · Backspace — назад</translation>
+        <source>Running · arrows, Z X, Enter, right Shift or a game pad · hold Tab to fast-forward</source>
+        <translation>Идёт · стрелки, Z X, Enter, правый Shift или геймпад · удерживайте Tab для ускорения</translation>
     </message>
 </context>
 <context>
@@ -8043,6 +8043,10 @@
         <source>The movie may have lost its last seconds: the emulator did not answer.</source>
         <translation>Ролик мог потерять последние секунды: эмулятор не ответил.</translation>
     </message>
+    <message>
+        <source>MAME did not describe %1</source>
+        <translation>MAME не описал %1</translation>
+    </message>
 </context>
 <context>
     <name>rl::runtime::ProcessRunner</name>
@@ -8343,10 +8347,6 @@
     <message>
         <source>Previous, next state slot</source>
         <translation>Предыдущий, следующий слот сейва</translation>
-    </message>
-    <message>
-        <source>Rewind a frame, a second</source>
-        <translation>Кадр назад, секунда назад</translation>
     </message>
 </context>
 <context>
@@ -8737,10 +8737,6 @@
         <translation>Ждём кит.</translation>
     </message>
     <message>
-        <source>Start point</source>
-        <translation>Точка старта</translation>
-    </message>
-    <message>
         <source> — Retrolarium</source>
         <translation> — Retrolarium</translation>
     </message>
@@ -9093,14 +9089,6 @@
         <translation>Воспроизведение ролика «%1»</translation>
     </message>
     <message>
-        <source>Rewind a frame</source>
-        <translation>Кадр назад</translation>
-    </message>
-    <message>
-        <source>Rewind a second</source>
-        <translation>Секунда назад</translation>
-    </message>
-    <message>
         <source>Show input</source>
         <translation>Показывать нажатые кнопки</translation>
     </message>
@@ -9177,10 +9165,6 @@
         <translation>Удалить кадр</translation>
     </message>
     <message>
-        <source>TAS editor</source>
-        <translation>Редактор TAS</translation>
-    </message>
-    <message>
         <source>Play the movie from the selected frame (Pause, Space)</source>
         <translation>Играть ролик с выбранного кадра (Pause, пробел)</translation>
     </message>
@@ -9199,6 +9183,10 @@
     <message>
         <source>End of the movie</source>
         <translation>Конец ролика</translation>
+    </message>
+    <message>
+        <source>Playtest start</source>
+        <translation>Старт плейтеста</translation>
     </message>
 </context>
 <context>
@@ -11581,10 +11569,6 @@
         <translation>Наборы врагов зеркал делят %1 байт; нужно %2. Сначала укоротите другой набор%3.</translation>
     </message>
     <message>
-        <source>, or switch the ROM to Expanded</source>
-        <translation>или переключите ROM на «Расширенный»</translation>
-    </message>
-    <message>
         <source>Edit mirror enemy set %1</source>
         <translation>Правка набора врагов зеркала %1</translation>
     </message>
@@ -11645,10 +11629,6 @@
     <message>
         <source>Items</source>
         <translation>Предметы</translation>
-    </message>
-    <message>
-        <source>Enemies</source>
-        <translation>Враги</translation>
     </message>
     <message>
         <source>Paint blocks (right button takes a cell)</source>
@@ -11739,10 +11719,6 @@
         <translation>объект</translation>
     </message>
     <message>
-        <source>this room: items %1 / %2 B, enemies %3 / %4 · expanded ROM: %5 / %6 B</source>
-        <translation>эта комната: предметы %1 / %2 Б, враги %3 / %4 · расширенный ROM: %5 / %6 Б</translation>
-    </message>
-    <message>
         <source>this room: items %1 B, enemies %2 / %3 · all rooms: items %4 / %5 B, enemies %6 / %7 B</source>
         <translation>эта комната: предметы %1 Б, враги %2 / %3 · все комнаты: предметы %4 / %5 Б, враги %6 / %7 Б</translation>
     </message>
@@ -11831,10 +11807,6 @@
         <translation>Скорость таймера</translation>
     </message>
     <message>
-        <source>Original</source>
-        <translation>Оригинал</translation>
-    </message>
-    <message>
         <source>Palette group</source>
         <translation>Группа палитр</translation>
     </message>
@@ -11853,14 +11825,6 @@
     <message>
         <source>Edit an enemy in %1</source>
         <translation>Правка врага в %1</translation>
-    </message>
-    <message>
-        <source>Expand the ROM</source>
-        <translation>Расширить ROM</translation>
-    </message>
-    <message>
-        <source>Return to the original ROM</source>
-        <translation>Вернуться к оригинальному ROM</translation>
     </message>
     <message>
         <source>Edit the key of %1</source>
@@ -11975,12 +11939,8 @@
         <translation>Перетаскивайте предметы и врагов из листа в комнату. Дверь, ключ, зеркала и старт игрока двигаются, но не удаляются.</translation>
     </message>
     <message>
-        <source>%1, expanding the ROM</source>
-        <translation>%1 с расширением ROM</translation>
-    </message>
-    <message>
-        <source>The original ROM has no more room for items and enemies: the project now builds the expanded ROM (mapper 66). Set the room&apos;s ROM field back to Original once the lists fit again.</source>
-        <translation>В оригинальном ROM больше нет места для предметов и врагов: проект теперь собирает расширенный ROM (маппер 66). Когда списки снова поместятся, поле ROM комнаты можно вернуть на «Оригинал».</translation>
+        <source>Entities</source>
+        <translation>Сущности</translation>
     </message>
 </context>
 <context>
@@ -12370,6 +12330,10 @@
     <message>
         <source>Mirrors</source>
         <translation>Зеркала</translation>
+    </message>
+    <message>
+        <source>Return to the original ROM</source>
+        <translation>Вернуться к оригинальному ROM</translation>
     </message>
 </context>
 <context>
@@ -13264,14 +13228,6 @@
         <translation>Расписания сбросов %1 нет.</translation>
     </message>
     <message>
-        <source>The item lists of all rooms share %1 bytes; they need %2. Remove an item in any room, or switch the ROM to Expanded.</source>
-        <translation>Списки предметов всех комнат делят %1 байт; нужно %2. Удалите предмет в любой комнате или переключите ROM на «Расширенный».</translation>
-    </message>
-    <message>
-        <source>The enemy lists of all rooms share %1 bytes; they need %2. Remove an enemy in any room, or switch the ROM to Expanded.</source>
-        <translation>Списки врагов всех комнат делят %1 байт; нужно %2. Удалите врага в любой комнате или переключите ROM на «Расширенный».</translation>
-    </message>
-    <message>
         <source>Room %1&apos;s item list needs %2 bytes; the game reads at most %3 per room.</source>
         <translation>Списку предметов комнаты %1 нужно %2 байт; игра читает не больше %3 на комнату.</translation>
     </message>
@@ -13476,10 +13432,6 @@
         <translation>Наборы врагов зеркал делят %1 байт; им нужно %2. Укоротите набор.</translation>
     </message>
     <message>
-        <source>The mirror enemy sets share %1 bytes; they need %2. Shorten a set, or switch the ROM to Expanded.</source>
-        <translation>Наборы врагов зеркал делят %1 байт; им нужно %2. Укоротите набор или переключите ROM на «Расширенный».</translation>
-    </message>
-    <message>
         <source>Enemy $%1</source>
         <translation>Враг $%1</translation>
     </message>
@@ -13527,6 +13479,14 @@
         <source>%1 · start</source>
         <translation>%1 · старт</translation>
     </message>
+    <message>
+        <source>The item lists of all rooms share %1 bytes; they need %2. Remove an item in any room.</source>
+        <translation>Списки предметов всех комнат делят %1 байт; нужно %2. Удалите предмет в любой комнате.</translation>
+    </message>
+    <message>
+        <source>The enemy lists of all rooms share %1 bytes; they need %2. Remove an enemy in any room.</source>
+        <translation>Списки врагов всех комнат делят %1 байт; нужно %2. Удалите врага в любой комнате.</translation>
+    </message>
 </context>
 <context>
     <name>studio</name>
@@ -13539,10 +13499,6 @@
 %2 · %3 × %4 · aspect-fit</source>
         <translation>«Играть с выбранного» запускает %1 · «Играть» начинает с включения
 %2 · %3 × %4 · вписано с сохранением пропорций</translation>
-    </message>
-    <message>
-        <source>MAME did not describe %1</source>
-        <translation>MAME не описал %1</translation>
     </message>
     <message>
         <source>%1 is not a MAME configuration I can update</source>

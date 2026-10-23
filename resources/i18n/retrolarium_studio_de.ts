@@ -4450,8 +4450,8 @@
         <translation>Platz %1</translation>
     </message>
     <message>
-        <source>Running · arrows, Z X, Enter, right Shift or a game pad · hold Tab to fast-forward · Backspace rewinds</source>
-        <translation>Läuft · Pfeiltasten, Z X, Enter, rechte Umschalttaste oder ein Gamepad · Tab halten zum Vorspulen · Rücktaste spult zurück</translation>
+        <source>Running · arrows, Z X, Enter, right Shift or a game pad · hold Tab to fast-forward</source>
+        <translation>Läuft · Pfeiltasten, Z X, Enter, rechte Umschalttaste oder ein Gamepad · Tab halten zum Vorspulen</translation>
     </message>
 </context>
 <context>
@@ -8010,6 +8010,10 @@
         <source>The movie may have lost its last seconds: the emulator did not answer.</source>
         <translation>Dem Movie fehlen vielleicht die letzten Sekunden: Der Emulator hat nicht geantwortet.</translation>
     </message>
+    <message>
+        <source>MAME did not describe %1</source>
+        <translation>MAME hat %1 nicht beschrieben</translation>
+    </message>
 </context>
 <context>
     <name>rl::runtime::ProcessRunner</name>
@@ -8310,10 +8314,6 @@
     <message>
         <source>Previous, next state slot</source>
         <translation>Vorheriger, nächster Speicherplatz</translation>
-    </message>
-    <message>
-        <source>Rewind a frame, a second</source>
-        <translation>Ein Einzelbild, eine Sekunde zurück</translation>
     </message>
 </context>
 <context>
@@ -8742,10 +8742,6 @@
         <translation>Warte auf das Kit.</translation>
     </message>
     <message>
-        <source>Start point</source>
-        <translation>Startpunkt</translation>
-    </message>
-    <message>
         <source> — Retrolarium</source>
         <translation> — Retrolarium</translation>
     </message>
@@ -9057,14 +9053,6 @@
         <translation>Movie „%1“ wird abgespielt</translation>
     </message>
     <message>
-        <source>Rewind a frame</source>
-        <translation>Einzelbild zurück</translation>
-    </message>
-    <message>
-        <source>Rewind a second</source>
-        <translation>Eine Sekunde zurück</translation>
-    </message>
-    <message>
         <source>Show input</source>
         <translation>Gedrückte Tasten anzeigen</translation>
     </message>
@@ -9141,10 +9129,6 @@
         <translation>Einzelbild löschen</translation>
     </message>
     <message>
-        <source>TAS editor</source>
-        <translation>TAS-Editor</translation>
-    </message>
-    <message>
         <source>Play the movie from the selected frame (Pause, Space)</source>
         <translation>Movie ab dem gewählten Einzelbild abspielen (Pause, Leertaste)</translation>
     </message>
@@ -9163,6 +9147,10 @@
     <message>
         <source>End of the movie</source>
         <translation>Ende des Movies</translation>
+    </message>
+    <message>
+        <source>Playtest start</source>
+        <translation>Teststart</translation>
     </message>
 </context>
 <context>
@@ -11535,10 +11523,6 @@
         <translation>Die Gegnersätze der Spiegel teilen sich %1 Byte; das braucht %2. Kürze zuerst einen anderen Satz%3.</translation>
     </message>
     <message>
-        <source>, or switch the ROM to Expanded</source>
-        <translation>, oder stelle die ROM auf Erweitert</translation>
-    </message>
-    <message>
         <source>Edit mirror enemy set %1</source>
         <translation>Gegnersatz %1 des Spiegels bearbeiten</translation>
     </message>
@@ -11599,10 +11583,6 @@
     <message>
         <source>Items</source>
         <translation>Gegenstände</translation>
-    </message>
-    <message>
-        <source>Enemies</source>
-        <translation>Gegner</translation>
     </message>
     <message>
         <source>Paint blocks (right button takes a cell)</source>
@@ -11693,10 +11673,6 @@
         <translation>ein Objekt</translation>
     </message>
     <message>
-        <source>this room: items %1 / %2 B, enemies %3 / %4 · expanded ROM: %5 / %6 B</source>
-        <translation>dieser Raum: Gegenstände %1 / %2 B, Gegner %3 / %4 · erweiterte ROM: %5 / %6 B</translation>
-    </message>
-    <message>
         <source>this room: items %1 B, enemies %2 / %3 · all rooms: items %4 / %5 B, enemies %6 / %7 B</source>
         <translation>dieser Raum: Gegenstände %1 B, Gegner %2 / %3 · alle Räume: Gegenstände %4 / %5 B, Gegner %6 / %7 B</translation>
     </message>
@@ -11785,10 +11761,6 @@
         <translation>Timer-Tempo</translation>
     </message>
     <message>
-        <source>Original</source>
-        <translation>Original</translation>
-    </message>
-    <message>
         <source>Palette group</source>
         <translation>Palettengruppe</translation>
     </message>
@@ -11807,14 +11779,6 @@
     <message>
         <source>Edit an enemy in %1</source>
         <translation>Einen Gegner in %1 bearbeiten</translation>
-    </message>
-    <message>
-        <source>Expand the ROM</source>
-        <translation>ROM erweitern</translation>
-    </message>
-    <message>
-        <source>Return to the original ROM</source>
-        <translation>Zur Original-ROM zurück</translation>
     </message>
     <message>
         <source>Edit the key of %1</source>
@@ -11928,12 +11892,8 @@
         <translation>Ziehe Gegenstände und Gegner aus dem Blatt in den Raum. Tür, Schlüssel, Spiegel und der Start der Spielfigur werden verschoben, nicht gelöscht.</translation>
     </message>
     <message>
-        <source>%1, expanding the ROM</source>
-        <translation>%1, mit ROM-Erweiterung</translation>
-    </message>
-    <message>
-        <source>The original ROM has no more room for items and enemies: the project now builds the expanded ROM (mapper 66). Set the room&apos;s ROM field back to Original once the lists fit again.</source>
-        <translation>In der Original-ROM ist kein Platz mehr für Gegenstände und Gegner: Das Projekt baut jetzt die erweiterte ROM (Mapper 66). Sobald die Listen wieder passen, lässt sich das ROM-Feld des Raums wieder auf „Original“ stellen.</translation>
+        <source>Entities</source>
+        <translation>Wesen</translation>
     </message>
 </context>
 <context>
@@ -12318,6 +12278,10 @@
     <message>
         <source>Mirrors</source>
         <translation>Spiegel</translation>
+    </message>
+    <message>
+        <source>Return to the original ROM</source>
+        <translation>Zur Original-ROM zurück</translation>
     </message>
 </context>
 <context>
@@ -13211,14 +13175,6 @@
         <translation>Abwurfplan %1 gibt es nicht.</translation>
     </message>
     <message>
-        <source>The item lists of all rooms share %1 bytes; they need %2. Remove an item in any room, or switch the ROM to Expanded.</source>
-        <translation>Die Gegenstandslisten aller Räume teilen sich %1 Byte; sie brauchen %2. Entferne einen Gegenstand in einem beliebigen Raum, oder stelle die ROM auf Erweitert.</translation>
-    </message>
-    <message>
-        <source>The enemy lists of all rooms share %1 bytes; they need %2. Remove an enemy in any room, or switch the ROM to Expanded.</source>
-        <translation>Die Gegnerlisten aller Räume teilen sich %1 Byte; sie brauchen %2. Entferne einen Gegner in einem beliebigen Raum, oder stelle die ROM auf Erweitert.</translation>
-    </message>
-    <message>
         <source>Room %1&apos;s item list needs %2 bytes; the game reads at most %3 per room.</source>
         <translation>Die Gegenstandsliste von Raum %1 braucht %2 Byte; das Spiel liest höchstens %3 pro Raum.</translation>
     </message>
@@ -13423,10 +13379,6 @@
         <translation>Die Gegnersätze der Spiegel teilen sich %1 Byte; sie brauchen %2. Kürze einen Satz.</translation>
     </message>
     <message>
-        <source>The mirror enemy sets share %1 bytes; they need %2. Shorten a set, or switch the ROM to Expanded.</source>
-        <translation>Die Gegnersätze der Spiegel teilen sich %1 Byte; sie brauchen %2. Kürze einen Satz oder stelle die ROM auf Erweitert.</translation>
-    </message>
-    <message>
         <source>Enemy $%1</source>
         <translation>Gegner $%1</translation>
     </message>
@@ -13474,6 +13426,14 @@
         <source>%1 · start</source>
         <translation>%1 · Start</translation>
     </message>
+    <message>
+        <source>The item lists of all rooms share %1 bytes; they need %2. Remove an item in any room.</source>
+        <translation>Die Gegenstandslisten aller Räume teilen sich %1 Byte; sie brauchen %2. Entferne einen Gegenstand in einem beliebigen Raum.</translation>
+    </message>
+    <message>
+        <source>The enemy lists of all rooms share %1 bytes; they need %2. Remove an enemy in any room.</source>
+        <translation>Die Gegnerlisten aller Räume teilen sich %1 Byte; sie brauchen %2. Entferne einen Gegner in einem beliebigen Raum.</translation>
+    </message>
 </context>
 <context>
     <name>studio</name>
@@ -13486,10 +13446,6 @@
 %2 · %3 × %4 · aspect-fit</source>
         <translation>Ab Auswahl spielen führt %1 aus · Spielen startet ab dem Einschalten
 %2 · %3 × %4 · seitenverhältnistreu</translation>
-    </message>
-    <message>
-        <source>MAME did not describe %1</source>
-        <translation>MAME hat %1 nicht beschrieben</translation>
     </message>
     <message>
         <source>%1 is not a MAME configuration I can update</source>

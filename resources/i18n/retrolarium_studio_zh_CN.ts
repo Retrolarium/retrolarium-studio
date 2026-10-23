@@ -4435,8 +4435,8 @@
         <translation>槽 %1</translation>
     </message>
     <message>
-        <source>Running · arrows, Z X, Enter, right Shift or a game pad · hold Tab to fast-forward · Backspace rewinds</source>
-        <translation>运行中 · 方向键、Z X、Enter、右 Shift 或手柄 · 按住 Tab 快进 · Backspace 倒回</translation>
+        <source>Running · arrows, Z X, Enter, right Shift or a game pad · hold Tab to fast-forward</source>
+        <translation>运行中 · 方向键、Z X、Enter、右 Shift 或手柄 · 按住 Tab 快进</translation>
     </message>
 </context>
 <context>
@@ -7977,6 +7977,10 @@
         <source>The movie may have lost its last seconds: the emulator did not answer.</source>
         <translation>录像可能丢失了最后几秒：模拟器没有响应。</translation>
     </message>
+    <message>
+        <source>MAME did not describe %1</source>
+        <translation>MAME 没有描述 %1</translation>
+    </message>
 </context>
 <context>
     <name>rl::runtime::ProcessRunner</name>
@@ -8277,10 +8281,6 @@
     <message>
         <source>Previous, next state slot</source>
         <translation>上一个、下一个存档槽</translation>
-    </message>
-    <message>
-        <source>Rewind a frame, a second</source>
-        <translation>后退一帧、后退一秒</translation>
     </message>
 </context>
 <context>
@@ -8707,10 +8707,6 @@
         <translation>正在等待工具包。</translation>
     </message>
     <message>
-        <source>Start point</source>
-        <translation>起点</translation>
-    </message>
-    <message>
         <source> — Retrolarium</source>
         <translation> — Retrolarium</translation>
     </message>
@@ -9021,14 +9017,6 @@
         <translation>正在播放录像“%1”</translation>
     </message>
     <message>
-        <source>Rewind a frame</source>
-        <translation>后退一帧</translation>
-    </message>
-    <message>
-        <source>Rewind a second</source>
-        <translation>后退一秒</translation>
-    </message>
-    <message>
         <source>Show input</source>
         <translation>显示按下的按键</translation>
     </message>
@@ -9105,10 +9093,6 @@
         <translation>删除帧</translation>
     </message>
     <message>
-        <source>TAS editor</source>
-        <translation>TAS 编辑器</translation>
-    </message>
-    <message>
         <source>Play the movie from the selected frame (Pause, Space)</source>
         <translation>从所选帧播放录像（Pause、空格）</translation>
     </message>
@@ -9127,6 +9111,10 @@
     <message>
         <source>End of the movie</source>
         <translation>录像结束</translation>
+    </message>
+    <message>
+        <source>Playtest start</source>
+        <translation>试玩起点</translation>
     </message>
 </context>
 <context>
@@ -11489,10 +11477,6 @@
         <translation>镜子的敌人组共用 %1 字节；此操作需要 %2。请先缩短另一个组%3。</translation>
     </message>
     <message>
-        <source>, or switch the ROM to Expanded</source>
-        <translation>，或将 ROM 切换为“扩展”</translation>
-    </message>
-    <message>
         <source>Edit mirror enemy set %1</source>
         <translation>编辑镜子敌人组 %1</translation>
     </message>
@@ -11553,10 +11537,6 @@
     <message>
         <source>Items</source>
         <translation>道具</translation>
-    </message>
-    <message>
-        <source>Enemies</source>
-        <translation>敌人</translation>
     </message>
     <message>
         <source>Paint blocks (right button takes a cell)</source>
@@ -11647,10 +11627,6 @@
         <translation>一个物件</translation>
     </message>
     <message>
-        <source>this room: items %1 / %2 B, enemies %3 / %4 · expanded ROM: %5 / %6 B</source>
-        <translation>此房间：道具 %1 / %2 B，敌人 %3 / %4 · 扩展 ROM：%5 / %6 B</translation>
-    </message>
-    <message>
         <source>this room: items %1 B, enemies %2 / %3 · all rooms: items %4 / %5 B, enemies %6 / %7 B</source>
         <translation>此房间：道具 %1 B，敌人 %2 / %3 · 全部房间：道具 %4 / %5 B，敌人 %6 / %7 B</translation>
     </message>
@@ -11739,10 +11715,6 @@
         <translation>计时器速度</translation>
     </message>
     <message>
-        <source>Original</source>
-        <translation>原始</translation>
-    </message>
-    <message>
         <source>Palette group</source>
         <translation>调色板组</translation>
     </message>
@@ -11761,14 +11733,6 @@
     <message>
         <source>Edit an enemy in %1</source>
         <translation>编辑 %1 中的敌人</translation>
-    </message>
-    <message>
-        <source>Expand the ROM</source>
-        <translation>扩展 ROM</translation>
-    </message>
-    <message>
-        <source>Return to the original ROM</source>
-        <translation>恢复为原始 ROM</translation>
     </message>
     <message>
         <source>Edit the key of %1</source>
@@ -11881,12 +11845,8 @@
         <translation>把道具和敌人从图集拖到房间中。门、钥匙、镜子和玩家角色的起点只能移动，不能删除。</translation>
     </message>
     <message>
-        <source>%1, expanding the ROM</source>
-        <translation>%1（扩展 ROM）</translation>
-    </message>
-    <message>
-        <source>The original ROM has no more room for items and enemies: the project now builds the expanded ROM (mapper 66). Set the room&apos;s ROM field back to Original once the lists fit again.</source>
-        <translation>原始 ROM 已没有空间容纳更多物品和敌人：项目现在构建扩展 ROM（映射器 66）。列表重新放得下后，可以把房间的 ROM 字段改回“原始”。</translation>
+        <source>Entities</source>
+        <translation>角色</translation>
     </message>
 </context>
 <context>
@@ -12266,6 +12226,10 @@
     <message>
         <source>Mirrors</source>
         <translation>镜子</translation>
+    </message>
+    <message>
+        <source>Return to the original ROM</source>
+        <translation>恢复为原始 ROM</translation>
     </message>
 </context>
 <context>
@@ -13158,14 +13122,6 @@
         <translation>不存在投放计划 %1。</translation>
     </message>
     <message>
-        <source>The item lists of all rooms share %1 bytes; they need %2. Remove an item in any room, or switch the ROM to Expanded.</source>
-        <translation>所有房间的道具列表共用 %1 字节；它们需要 %2。请在任意房间中删除一个道具，或将 ROM 切换为“扩展”。</translation>
-    </message>
-    <message>
-        <source>The enemy lists of all rooms share %1 bytes; they need %2. Remove an enemy in any room, or switch the ROM to Expanded.</source>
-        <translation>所有房间的敌人列表共用 %1 字节；它们需要 %2。请在任意房间中删除一个敌人，或将 ROM 切换为“扩展”。</translation>
-    </message>
-    <message>
         <source>Room %1&apos;s item list needs %2 bytes; the game reads at most %3 per room.</source>
         <translation>房间 %1 的道具列表需要 %2 字节；游戏每个房间最多读取 %3。</translation>
     </message>
@@ -13370,10 +13326,6 @@
         <translation>镜子的敌人组共用 %1 字节；它们需要 %2。请缩短一个组。</translation>
     </message>
     <message>
-        <source>The mirror enemy sets share %1 bytes; they need %2. Shorten a set, or switch the ROM to Expanded.</source>
-        <translation>镜子的敌人组共用 %1 字节；它们需要 %2。请缩短一个组，或将 ROM 切换为“扩展”。</translation>
-    </message>
-    <message>
         <source>Enemy $%1</source>
         <translation>敌人 $%1</translation>
     </message>
@@ -13421,6 +13373,14 @@
         <source>%1 · start</source>
         <translation>%1 · 起点</translation>
     </message>
+    <message>
+        <source>The item lists of all rooms share %1 bytes; they need %2. Remove an item in any room.</source>
+        <translation>所有房间的道具列表共用 %1 字节；它们需要 %2。请在任意房间中删除一个道具。</translation>
+    </message>
+    <message>
+        <source>The enemy lists of all rooms share %1 bytes; they need %2. Remove an enemy in any room.</source>
+        <translation>所有房间的敌人列表共用 %1 字节；它们需要 %2。请在任意房间中删除一个敌人。</translation>
+    </message>
 </context>
 <context>
     <name>studio</name>
@@ -13433,10 +13393,6 @@
 %2 · %3 × %4 · aspect-fit</source>
         <translation>“从所选处游玩”运行 %1 · “游玩”从开机开始
 %2 · %3 × %4 · 按比例适应</translation>
-    </message>
-    <message>
-        <source>MAME did not describe %1</source>
-        <translation>MAME 没有描述 %1</translation>
     </message>
     <message>
         <source>%1 is not a MAME configuration I can update</source>

@@ -4465,8 +4465,8 @@
         <translation>Slot %1</translation>
     </message>
     <message>
-        <source>Running · arrows, Z X, Enter, right Shift or a game pad · hold Tab to fast-forward · Backspace rewinds</source>
-        <translation>Działa · strzałki, Z X, Enter, prawy Shift lub gamepad · przytrzymaj Tab, aby przyspieszyć · Backspace cofa</translation>
+        <source>Running · arrows, Z X, Enter, right Shift or a game pad · hold Tab to fast-forward</source>
+        <translation>Działa · strzałki, Z X, Enter, prawy Shift lub gamepad · przytrzymaj Tab, aby przyspieszyć</translation>
     </message>
 </context>
 <context>
@@ -8043,6 +8043,10 @@
         <source>The movie may have lost its last seconds: the emulator did not answer.</source>
         <translation>Film mógł stracić ostatnie sekundy: emulator nie odpowiedział.</translation>
     </message>
+    <message>
+        <source>MAME did not describe %1</source>
+        <translation>MAME nie opisał %1</translation>
+    </message>
 </context>
 <context>
     <name>rl::runtime::ProcessRunner</name>
@@ -8343,10 +8347,6 @@
     <message>
         <source>Previous, next state slot</source>
         <translation>Poprzedni, następny slot stanu</translation>
-    </message>
-    <message>
-        <source>Rewind a frame, a second</source>
-        <translation>Klatka wstecz, sekunda wstecz</translation>
     </message>
 </context>
 <context>
@@ -8777,10 +8777,6 @@
         <translation>Czekam na zestaw narzędzi.</translation>
     </message>
     <message>
-        <source>Start point</source>
-        <translation>Punkt startowy</translation>
-    </message>
-    <message>
         <source> — Retrolarium</source>
         <translation> — Retrolarium</translation>
     </message>
@@ -9093,14 +9089,6 @@
         <translation>Odtwarzanie filmu „%1”</translation>
     </message>
     <message>
-        <source>Rewind a frame</source>
-        <translation>Poprzednia klatka</translation>
-    </message>
-    <message>
-        <source>Rewind a second</source>
-        <translation>Sekunda wstecz</translation>
-    </message>
-    <message>
         <source>Show input</source>
         <translation>Pokaż wciśnięte przyciski</translation>
     </message>
@@ -9177,10 +9165,6 @@
         <translation>Usuń klatkę</translation>
     </message>
     <message>
-        <source>TAS editor</source>
-        <translation>Edytor TAS</translation>
-    </message>
-    <message>
         <source>Play the movie from the selected frame (Pause, Space)</source>
         <translation>Odtwórz film od wybranej klatki (Pause, spacja)</translation>
     </message>
@@ -9199,6 +9183,10 @@
     <message>
         <source>End of the movie</source>
         <translation>Koniec filmu</translation>
+    </message>
+    <message>
+        <source>Playtest start</source>
+        <translation>Start testu</translation>
     </message>
 </context>
 <context>
@@ -11581,10 +11569,6 @@
         <translation>Zestawy wrogów luster dzielą %1 bajtów; to wymaga %2. Najpierw skróć inny zestaw%3.</translation>
     </message>
     <message>
-        <source>, or switch the ROM to Expanded</source>
-        <translation>, albo przełącz ROM na Rozszerzony</translation>
-    </message>
-    <message>
         <source>Edit mirror enemy set %1</source>
         <translation>Edycja zestawu wrogów lustra %1</translation>
     </message>
@@ -11645,10 +11629,6 @@
     <message>
         <source>Items</source>
         <translation>Przedmioty</translation>
-    </message>
-    <message>
-        <source>Enemies</source>
-        <translation>Wrogowie</translation>
     </message>
     <message>
         <source>Paint blocks (right button takes a cell)</source>
@@ -11739,10 +11719,6 @@
         <translation>obiekt</translation>
     </message>
     <message>
-        <source>this room: items %1 / %2 B, enemies %3 / %4 · expanded ROM: %5 / %6 B</source>
-        <translation>ten pokój: przedmioty %1 / %2 B, wrogowie %3 / %4 · rozszerzony ROM: %5 / %6 B</translation>
-    </message>
-    <message>
         <source>this room: items %1 B, enemies %2 / %3 · all rooms: items %4 / %5 B, enemies %6 / %7 B</source>
         <translation>ten pokój: przedmioty %1 B, wrogowie %2 / %3 · wszystkie pokoje: przedmioty %4 / %5 B, wrogowie %6 / %7 B</translation>
     </message>
@@ -11831,10 +11807,6 @@
         <translation>Prędkość czasu</translation>
     </message>
     <message>
-        <source>Original</source>
-        <translation>Oryginał</translation>
-    </message>
-    <message>
         <source>Palette group</source>
         <translation>Grupa palet</translation>
     </message>
@@ -11853,14 +11825,6 @@
     <message>
         <source>Edit an enemy in %1</source>
         <translation>Edycja wroga w %1</translation>
-    </message>
-    <message>
-        <source>Expand the ROM</source>
-        <translation>Rozszerz ROM</translation>
-    </message>
-    <message>
-        <source>Return to the original ROM</source>
-        <translation>Wróć do oryginalnego ROM-u</translation>
     </message>
     <message>
         <source>Edit the key of %1</source>
@@ -11975,12 +11939,8 @@
         <translation>Przeciągaj przedmioty i wrogów z arkusza do pokoju. Drzwi, klucz, lustra i start gracza się przesuwa, a nie usuwa.</translation>
     </message>
     <message>
-        <source>%1, expanding the ROM</source>
-        <translation>%1, z rozszerzeniem ROM-u</translation>
-    </message>
-    <message>
-        <source>The original ROM has no more room for items and enemies: the project now builds the expanded ROM (mapper 66). Set the room&apos;s ROM field back to Original once the lists fit again.</source>
-        <translation>W oryginalnym ROM-ie nie ma już miejsca na przedmioty i wrogów: projekt buduje teraz rozszerzony ROM (mapper 66). Gdy listy znów się zmieszczą, pole ROM pokoju można przełączyć z powrotem na „Oryginał”.</translation>
+        <source>Entities</source>
+        <translation>Postacie</translation>
     </message>
 </context>
 <context>
@@ -12370,6 +12330,10 @@
     <message>
         <source>Mirrors</source>
         <translation>Lustra</translation>
+    </message>
+    <message>
+        <source>Return to the original ROM</source>
+        <translation>Wróć do oryginalnego ROM-u</translation>
     </message>
 </context>
 <context>
@@ -13264,14 +13228,6 @@
         <translation>Nie ma harmonogramu zrzutów %1.</translation>
     </message>
     <message>
-        <source>The item lists of all rooms share %1 bytes; they need %2. Remove an item in any room, or switch the ROM to Expanded.</source>
-        <translation>Listy przedmiotów wszystkich pokojów dzielą %1 bajtów; potrzebują %2. Usuń przedmiot w dowolnym pokoju albo przełącz ROM na Rozszerzony.</translation>
-    </message>
-    <message>
-        <source>The enemy lists of all rooms share %1 bytes; they need %2. Remove an enemy in any room, or switch the ROM to Expanded.</source>
-        <translation>Listy wrogów wszystkich pokojów dzielą %1 bajtów; potrzebują %2. Usuń wroga w dowolnym pokoju albo przełącz ROM na Rozszerzony.</translation>
-    </message>
-    <message>
         <source>Room %1&apos;s item list needs %2 bytes; the game reads at most %3 per room.</source>
         <translation>Lista przedmiotów pokoju %1 potrzebuje %2 bajtów; gra czyta najwyżej %3 na pokój.</translation>
     </message>
@@ -13476,10 +13432,6 @@
         <translation>Zestawy wrogów luster dzielą %1 bajtów; potrzebują %2. Skróć zestaw.</translation>
     </message>
     <message>
-        <source>The mirror enemy sets share %1 bytes; they need %2. Shorten a set, or switch the ROM to Expanded.</source>
-        <translation>Zestawy wrogów luster dzielą %1 bajtów; potrzebują %2. Skróć zestaw albo przełącz ROM na Rozszerzony.</translation>
-    </message>
-    <message>
         <source>Enemy $%1</source>
         <translation>Wróg $%1</translation>
     </message>
@@ -13527,6 +13479,14 @@
         <source>%1 · start</source>
         <translation>%1 · start</translation>
     </message>
+    <message>
+        <source>The item lists of all rooms share %1 bytes; they need %2. Remove an item in any room.</source>
+        <translation>Listy przedmiotów wszystkich pokojów dzielą %1 bajtów; potrzebują %2. Usuń przedmiot w dowolnym pokoju.</translation>
+    </message>
+    <message>
+        <source>The enemy lists of all rooms share %1 bytes; they need %2. Remove an enemy in any room.</source>
+        <translation>Listy wrogów wszystkich pokojów dzielą %1 bajtów; potrzebują %2. Usuń wroga w dowolnym pokoju.</translation>
+    </message>
 </context>
 <context>
     <name>studio</name>
@@ -13539,10 +13499,6 @@
 %2 · %3 × %4 · aspect-fit</source>
         <translation>Graj od zaznaczenia uruchamia %1 · Graj startuje od włączenia
 %2 · %3 × %4 · z zachowaniem proporcji</translation>
-    </message>
-    <message>
-        <source>MAME did not describe %1</source>
-        <translation>MAME nie opisał %1</translation>
     </message>
     <message>
         <source>%1 is not a MAME configuration I can update</source>

@@ -4435,8 +4435,8 @@
         <translation>スロット %1</translation>
     </message>
     <message>
-        <source>Running · arrows, Z X, Enter, right Shift or a game pad · hold Tab to fast-forward · Backspace rewinds</source>
-        <translation>実行中 · 矢印キー、Z X、Enter、右 Shift、ゲームパッド · Tab 長押しで早送り · Backspace で巻き戻し</translation>
+        <source>Running · arrows, Z X, Enter, right Shift or a game pad · hold Tab to fast-forward</source>
+        <translation>実行中 · 矢印キー、Z X、Enter、右 Shift、ゲームパッド · Tab 長押しで早送り</translation>
     </message>
 </context>
 <context>
@@ -7977,6 +7977,10 @@
         <source>The movie may have lost its last seconds: the emulator did not answer.</source>
         <translation>ムービーの最後の数秒が失われた可能性があります。エミュレーターが応答しませんでした。</translation>
     </message>
+    <message>
+        <source>MAME did not describe %1</source>
+        <translation>MAME が %1 の情報を返しませんでした</translation>
+    </message>
 </context>
 <context>
     <name>rl::runtime::ProcessRunner</name>
@@ -8277,10 +8281,6 @@
     <message>
         <source>Previous, next state slot</source>
         <translation>前、次のステートスロット</translation>
-    </message>
-    <message>
-        <source>Rewind a frame, a second</source>
-        <translation>1コマ戻す、1秒戻す</translation>
     </message>
 </context>
 <context>
@@ -8707,10 +8707,6 @@
         <translation>キットを待っています。</translation>
     </message>
     <message>
-        <source>Start point</source>
-        <translation>開始位置</translation>
-    </message>
-    <message>
         <source> — Retrolarium</source>
         <translation> — Retrolarium</translation>
     </message>
@@ -9021,14 +9017,6 @@
         <translation>ムービー「%1」を再生中</translation>
     </message>
     <message>
-        <source>Rewind a frame</source>
-        <translation>1コマ戻す</translation>
-    </message>
-    <message>
-        <source>Rewind a second</source>
-        <translation>1秒戻す</translation>
-    </message>
-    <message>
         <source>Show input</source>
         <translation>押したボタンを表示</translation>
     </message>
@@ -9105,10 +9093,6 @@
         <translation>フレームを削除</translation>
     </message>
     <message>
-        <source>TAS editor</source>
-        <translation>TAS エディタ</translation>
-    </message>
-    <message>
         <source>Play the movie from the selected frame (Pause, Space)</source>
         <translation>選んだフレームからムービーを再生（Pause、Space）</translation>
     </message>
@@ -9127,6 +9111,10 @@
     <message>
         <source>End of the movie</source>
         <translation>ムービーの終わり</translation>
+    </message>
+    <message>
+        <source>Playtest start</source>
+        <translation>テスト開始位置</translation>
     </message>
 </context>
 <context>
@@ -11489,10 +11477,6 @@
         <translation>鏡の敵セットは %1 バイトを共有しています。これには %2 バイト必要です。先に別のセットを短くしてください%3。</translation>
     </message>
     <message>
-        <source>, or switch the ROM to Expanded</source>
-        <translation>、または ROM を「拡張」に切り替えてください</translation>
-    </message>
-    <message>
         <source>Edit mirror enemy set %1</source>
         <translation>鏡の敵セット %1 を編集</translation>
     </message>
@@ -11553,10 +11537,6 @@
     <message>
         <source>Items</source>
         <translation>アイテム</translation>
-    </message>
-    <message>
-        <source>Enemies</source>
-        <translation>敵</translation>
     </message>
     <message>
         <source>Paint blocks (right button takes a cell)</source>
@@ -11647,10 +11627,6 @@
         <translation>オブジェクト</translation>
     </message>
     <message>
-        <source>this room: items %1 / %2 B, enemies %3 / %4 · expanded ROM: %5 / %6 B</source>
-        <translation>このルーム: アイテム %1 / %2 B、敵 %3 / %4 · 拡張 ROM: %5 / %6 B</translation>
-    </message>
-    <message>
         <source>this room: items %1 B, enemies %2 / %3 · all rooms: items %4 / %5 B, enemies %6 / %7 B</source>
         <translation>このルーム: アイテム %1 B、敵 %2 / %3 · 全ルーム: アイテム %4 / %5 B、敵 %6 / %7 B</translation>
     </message>
@@ -11739,10 +11715,6 @@
         <translation>タイマーの速さ</translation>
     </message>
     <message>
-        <source>Original</source>
-        <translation>オリジナル</translation>
-    </message>
-    <message>
         <source>Palette group</source>
         <translation>パレットグループ</translation>
     </message>
@@ -11761,14 +11733,6 @@
     <message>
         <source>Edit an enemy in %1</source>
         <translation>%1 の敵を編集</translation>
-    </message>
-    <message>
-        <source>Expand the ROM</source>
-        <translation>ROM を拡張</translation>
-    </message>
-    <message>
-        <source>Return to the original ROM</source>
-        <translation>オリジナルの ROM に戻す</translation>
     </message>
     <message>
         <source>Edit the key of %1</source>
@@ -11881,12 +11845,8 @@
         <translation>シートからアイテムと敵をルームへドラッグします。扉、鍵、鏡、プレイヤーの開始位置は移動のみで、削除はできません。</translation>
     </message>
     <message>
-        <source>%1, expanding the ROM</source>
-        <translation>%1（ROM を拡張）</translation>
-    </message>
-    <message>
-        <source>The original ROM has no more room for items and enemies: the project now builds the expanded ROM (mapper 66). Set the room&apos;s ROM field back to Original once the lists fit again.</source>
-        <translation>オリジナルの ROM にはアイテムと敵を入れる余地がもうありません。プロジェクトは拡張 ROM（マッパー 66）をビルドするようになりました。リストが再び収まったら、部屋の ROM 欄を「オリジナル」に戻せます。</translation>
+        <source>Entities</source>
+        <translation>キャラクター</translation>
     </message>
 </context>
 <context>
@@ -12266,6 +12226,10 @@
     <message>
         <source>Mirrors</source>
         <translation>ミラー</translation>
+    </message>
+    <message>
+        <source>Return to the original ROM</source>
+        <translation>オリジナルの ROM に戻す</translation>
     </message>
 </context>
 <context>
@@ -13158,14 +13122,6 @@
         <translation>出現スケジュール %1 はありません。</translation>
     </message>
     <message>
-        <source>The item lists of all rooms share %1 bytes; they need %2. Remove an item in any room, or switch the ROM to Expanded.</source>
-        <translation>全ルームのアイテムリストは %1 バイトを共有していますが、%2 バイト必要です。どこかのルームのアイテムを削除するか、ROM を「拡張」に切り替えてください。</translation>
-    </message>
-    <message>
-        <source>The enemy lists of all rooms share %1 bytes; they need %2. Remove an enemy in any room, or switch the ROM to Expanded.</source>
-        <translation>全ルームの敵リストは %1 バイトを共有していますが、%2 バイト必要です。どこかのルームの敵を削除するか、ROM を「拡張」に切り替えてください。</translation>
-    </message>
-    <message>
         <source>Room %1&apos;s item list needs %2 bytes; the game reads at most %3 per room.</source>
         <translation>ルーム %1 のアイテムリストには %2 バイト必要ですが、ゲームが 1 ルームで読むのは最大 %3 バイトです。</translation>
     </message>
@@ -13370,10 +13326,6 @@
         <translation>鏡の敵セットは %1 バイトを共有しています。%2 バイト必要です。セットを短くしてください。</translation>
     </message>
     <message>
-        <source>The mirror enemy sets share %1 bytes; they need %2. Shorten a set, or switch the ROM to Expanded.</source>
-        <translation>鏡の敵セットは %1 バイトを共有しています。%2 バイト必要です。セットを短くするか、ROM を「拡張」に切り替えてください。</translation>
-    </message>
-    <message>
         <source>Enemy $%1</source>
         <translation>敵 $%1</translation>
     </message>
@@ -13421,6 +13373,14 @@
         <source>%1 · start</source>
         <translation>%1 · 開始位置</translation>
     </message>
+    <message>
+        <source>The item lists of all rooms share %1 bytes; they need %2. Remove an item in any room.</source>
+        <translation>全ルームのアイテムリストは %1 バイトを共有していますが、%2 バイト必要です。どこかのルームのアイテムを削除してください。</translation>
+    </message>
+    <message>
+        <source>The enemy lists of all rooms share %1 bytes; they need %2. Remove an enemy in any room.</source>
+        <translation>全ルームの敵リストは %1 バイトを共有していますが、%2 バイト必要です。どこかのルームの敵を削除してください。</translation>
+    </message>
 </context>
 <context>
     <name>studio</name>
@@ -13433,10 +13393,6 @@
 %2 · %3 × %4 · aspect-fit</source>
         <translation>「選択位置からプレイ」は %1 を実行 · 「プレイ」は電源投入から
 %2 · %3 × %4 · 縦横比を保って拡大</translation>
-    </message>
-    <message>
-        <source>MAME did not describe %1</source>
-        <translation>MAME が %1 の情報を返しませんでした</translation>
     </message>
     <message>
         <source>%1 is not a MAME configuration I can update</source>
