@@ -103,8 +103,12 @@ private:
     QString objectAt(QPoint cell) const;
     void paintLine(QPoint from, QPoint to, int value);
     void updateCursor();
+    // The scroll area the canvas sits in, which a middle-button drag moves.
+    QScrollArea* scrollArea() const;
     // The widget area a hover outline at `cell` covers.
     QRect hoverRect(QPoint cell) const;
+    // The Add tool's preview on screen: its footprint, or its icon's size.
+    QSize previewSize() const;
     void setHoverCell(QPoint cell);
     void renderNow();
 
@@ -120,6 +124,9 @@ private:
     // A stroke paints many cells, each a contentChanged: render once after them.
     bool renderPending_ = false;
     bool painting_ = false;
+    // A middle-button drag moving the map, from this screen point.
+    bool panning_ = false;
+    QPoint panFrom_;
     QImage previewIcon_;  // the Add tool's item, and its footprint in cells
     QSize previewCells_;
     bool lockReported_ = false;  // this stroke already said why a cell is locked

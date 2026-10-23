@@ -119,10 +119,18 @@ QRect MapCanvas::hoverRect(QPoint cell) const {
     const int cw = std::max(1, scaled(model_->cellSize().width()));
     const int ch = std::max(1, scaled(model_->cellSize().height()));
     // The Add tool's preview can cover more than the cell.
-    const QSize cells =
-        tool_ == QLatin1String("place") && !previewIcon_.isNull() ? previewCells_.expandedTo(QSize(1, 1)) : QSize(1, 1);
-    return QRect(map.left() + cell.x() * cw, map.top() + cell.y() * ch, cw * cells.width(), ch * cells.height())
+    const QSize size = tool_ == QLatin1String("place") && !previewIcon_.isNull() ? previewSize() : QSize(cw, ch);
+    return QRect(map.left() + cell.x() * cw, map.top() + cell.y() * ch, size.width(), size.height())
         .adjusted(-3, -3, 3, 3);
+}
+
+QSize MapCanvas::previewSize() const {
+    const int cw = std::max(1, scaled(model_->cellSize().width()));
+    const int ch = std::max(1, scaled(model_->cellSize().height()));
+    if (!previewCells_.isEmpty()) return QSize(cw * previewCells_.width(), ch * previewCells_.height());
+    // No footprint given: the item at its own size (its icon is in map
+    // pixels), at least a cell.
+    return QSize(scaled(previewIcon_.width()), scaled(previewIcon_.height())).expandedTo(QSize(cw, ch));
 }
 
 void MapCanvas::setHoverCell(QPoint cell) {
@@ -164,7 +172,7 @@ void MapCanvas::setTool(const QString& tool) {
 
 void MapCanvas::setPlacePreview(const QImage& icon, QSize cells) {
     previewIcon_ = icon;
-    previewCells_ = cells.isEmpty() ? QSize(1, 1) : cells;
+    previewCells_ = cells;
     update();
 }
 
@@ -243,8 +251,22 @@ void MapCanvas::paintLine(QPoint from, QPoint to, int value) {
     }
 }
 
+QScrollArea* MapCanvas::scrollArea() const {
+    for (QWidget* widget = parentWidget(); widget; widget = widget->parentWidget()) {
+        if (auto* area = qobject_cast<QScrollArea*>(widget)) return area;
+    }
+    return nullptr;
+}
+
 void MapCanvas::mousePressEvent(QMouseEvent* event) {
     setFocus();
+    // The middle button drags the map around, whatever the tool.
+    if (event->button() == Qt::MiddleButton) {
+        panning_ = true;
+        panFrom_ = event->globalPos();
+        setCursor(Qt::ClosedHandCursor);
+        return;
+    }
     // A second button during a stroke or a drag would restart it and lose
     // what was painted so far.
     if (painting_ || !dragging_.isEmpty()) {
@@ -317,6 +339,15 @@ void MapCanvas::mousePressEvent(QMouseEvent* event) {
 }
 
 void MapCanvas::mouseMoveEvent(QMouseEvent* event) {
+    if (panning_) {
+        const QPoint delta = event->globalPos() - panFrom_;
+        panFrom_ = event->globalPos();
+        if (QScrollArea* area = scrollArea()) {
+            area->horizontalScrollBar()->setValue(area->horizontalScrollBar()->value() - delta.x());
+            area->verticalScrollBar()->setValue(area->verticalScrollBar()->value() - delta.y());
+        }
+        return;
+    }
     const QPoint cell = cellAt(event->pos());
     setHoverCell(cell);
     if (painting_ && insideMap(cell) && cell != lastPaintCell_) {
@@ -328,6 +359,13 @@ void MapCanvas::mouseMoveEvent(QMouseEvent* event) {
 }
 
 void MapCanvas::mouseReleaseEvent(QMouseEvent* event) {
+    if (panning_) {
+        if (event->button() == Qt::MiddleButton) {
+            panning_ = false;
+            updateCursor();
+        }
+        return;
+    }
     if (painting_) {
         // Only the button that began the stroke ends it.
         if (event->button() != paintButton_) {
@@ -520,11 +558,16 @@ void MapCanvas::paintEvent(QPaintEvent* event) {
         const QRect r(map.left() + hoverCell_.x() * cw, map.top() + hoverCell_.y() * ch, cw, ch);
         const bool editable = tool_ != QLatin1String("paint") || model_->isCellEditable(hoverCell_);
         if (tool_ == QLatin1String("place") && !previewIcon_.isNull()) {
-            // Where the item lands: itself, see-through, over its footprint.
-            const QRect footprint(r.topLeft(), QSize(cw * previewCells_.width(), ch * previewCells_.height()));
+            // Where the item lands: itself, see-through, over its footprint
+            // (or at its own size when the model gives none).
+            const QRect footprint(r.topLeft(), previewSize());
+            const QRect picture =
+                previewCells_.isEmpty()
+                    ? QRect(r.topLeft(), QSize(scaled(previewIcon_.width()), scaled(previewIcon_.height())))
+                    : footprint;
             painter.save();
             painter.setOpacity(0.55);
-            painter.drawImage(footprint, previewIcon_);
+            painter.drawImage(picture, previewIcon_);
             painter.restore();
             paint::hairlineRect(painter, footprint, QColor(255, 255, 255, 200));
         } else {
@@ -746,19 +789,8 @@ QWidget* TileMapEditor::createToolbar(QWidget* parent) {
     layout->setContentsMargins(0, 0, 0, 0);
     layout->setSpacing(8);
 
-    const QVector<sdk::Tool> tools = map_->tools();
-    if (!tools.isEmpty()) {
-        auto* segment = new ui::SegmentedControl(bar);
-        for (const sdk::Tool& tool : tools) {
-            segment->addIconSegment(tool.icon, tool.label, tool.id);
-        }
-        segment->setCurrentId(tool_);
-        connect(segment, &ui::SegmentedControl::currentChanged, this,
-                [this](int, const QString& id) { chooseTool(id); });
-        layout->addWidget(segment);
-        layout->addWidget(toolbarSeparator(bar), 0, Qt::AlignVCenter);
-    }
-
+    // The layers come first: they stay put while the tools after them
+    // change with the layer.
     const QVector<sdk::MapLayer> layers = map_->layers();
     if (layers.size() > 1) {
         auto* segment = new ui::SegmentedControl(bar);
@@ -768,6 +800,19 @@ QWidget* TileMapEditor::createToolbar(QWidget* parent) {
         segment->setCurrentId(map_->currentLayer());
         connect(segment, &ui::SegmentedControl::currentChanged, this,
                 [this](int, const QString& id) { map_->setCurrentLayer(id); });
+        layout->addWidget(segment);
+        layout->addWidget(toolbarSeparator(bar), 0, Qt::AlignVCenter);
+    }
+
+    const QVector<sdk::Tool> tools = map_->tools();
+    if (!tools.isEmpty()) {
+        auto* segment = new ui::SegmentedControl(bar);
+        for (const sdk::Tool& tool : tools) {
+            segment->addIconSegment(tool.icon, tool.label, tool.id);
+        }
+        segment->setCurrentId(tool_);
+        connect(segment, &ui::SegmentedControl::currentChanged, this,
+                [this](int, const QString& id) { chooseTool(id); });
         layout->addWidget(segment);
         layout->addWidget(toolbarSeparator(bar), 0, Qt::AlignVCenter);
     }

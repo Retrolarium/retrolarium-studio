@@ -188,13 +188,15 @@ sdk::Library CastleExcellentRoomModel::sheet() const {
             sdk::LibraryItem item;
             item.id = QStringLiteral("cell:%1").arg(type);
             item.label = tr("Cell %1").arg(hex(type));
-            // The 16x8 cell as it is: a copy stacked under it to fill the
-            // square drew half of an arch as a whole, doubled one.
+            // The 16x8 cell as it is (the sheet's cells take its shape): a
+            // copy stacked under it to fill a square drew half of an arch as
+            // a whole, doubled one.
             item.icon = session_->painter().cellIcon(type);
             cellSheet_ << item;
         }
     }
     library.grid = true;
+    library.cell = QSize(16, 8);
     library.hint = tr("click: brush · drag onto a cell");
     library.items = cellSheet_;
     return library;
