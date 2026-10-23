@@ -155,9 +155,9 @@ QVector<sdk::CellBrush> LevelsModel::brushes() const {
     if (isReadOnly() || session_->levelLayer() != kLayout) {
         return {};
     }
-    // Solid cells are mostly platforms, already orange in the scene; tinting
-    // the empty ones too keeps the two apart.
-    return {{0, tr("Empty"), QColor(45, 130, 205, 96)}, {1, QStringLiteral("Solid"), QColor(250, 150, 30, 175)}};
+    // No tint: the layout draws its platforms from these very cells, and a
+    // tint showed the round in other colours than the game's.
+    return {{0, tr("Empty"), QColor()}, {1, QStringLiteral("Solid"), QColor()}};
 }
 
 void LevelsModel::setCurrentBrush(int value) { brush_ = value == 0 ? 0 : 1; }
