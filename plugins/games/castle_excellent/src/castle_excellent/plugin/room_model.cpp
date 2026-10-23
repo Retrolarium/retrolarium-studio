@@ -188,13 +188,9 @@ sdk::Library CastleExcellentRoomModel::sheet() const {
             sdk::LibraryItem item;
             item.id = QStringLiteral("cell:%1").arg(type);
             item.label = tr("Cell %1").arg(hex(type));
-            // Square, as the sheet draws: the 16x8 cell over a second copy.
-            QImage icon(16, 16, QImage::Format_RGB32);
-            const QImage cell = session_->painter().cellIcon(type);
-            QPainter p(&icon);
-            p.drawImage(0, 0, cell);
-            p.drawImage(0, 8, cell);
-            item.icon = icon;
+            // The 16x8 cell as it is: a copy stacked under it to fill the
+            // square drew half of an arch as a whole, doubled one.
+            item.icon = session_->painter().cellIcon(type);
             cellSheet_ << item;
         }
     }
