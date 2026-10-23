@@ -6,7 +6,6 @@
 #include <QDir>
 #include <QFile>
 #include <QHash>
-#include <QProcess>
 #include <QSaveFile>
 #include <QXmlStreamReader>
 #include <QXmlStreamWriter>
@@ -14,8 +13,6 @@
 namespace rl::runtime::mame {
 
 namespace {
-
-constexpr int kListTimeoutMs = 15000;
 
 void writeWarnings(QXmlStreamWriter& xml, const QVector<Feature>& features, const QString& indent) {
     const QString now = QString::number(QDateTime::currentSecsSinceEpoch());
@@ -36,30 +33,28 @@ void writeWarnings(QXmlStreamWriter& xml, const QVector<Feature>& features, cons
 
 }  // namespace
 
-QVector<Feature> warnedFeatures(const QString& program, const QString& system, QString* error) {
+QHash<QString, QVector<Feature>>& featureCache() {
     static QHash<QString, QVector<Feature>> cache;
-    const QString key = program + QLatin1Char('|') + system;
-    const auto found = cache.constFind(key);
-    if (found != cache.constEnd()) {
-        return *found;
+    return cache;
+}
+
+bool cachedFeatures(const QString& program, const QString& system, QVector<Feature>* features) {
+    const auto found = featureCache().constFind(program + QLatin1Char('|') + system);
+    if (found == featureCache().constEnd()) {
+        return false;
     }
-    QProcess process;
-    process.setProgram(program);
-    process.setArguments({QStringLiteral("-listxml"), system});
-    process.setProcessChannelMode(QProcess::SeparateChannels);
-    process.start();
-    if (!process.waitForFinished(kListTimeoutMs) || process.exitCode() != 0) {
-        process.kill();
-        // Remembered too: asking again would block every launch as long.
-        cache.insert(key, {});
-        if (error) {
-            *error = rlTr("studio", "MAME did not describe %1").arg(system);
-        }
-        return {};
-    }
+    *features = *found;
+    return true;
+}
+
+void rememberFeatures(const QString& program, const QString& system, const QVector<Feature>& features) {
+    featureCache().insert(program + QLatin1Char('|') + system, features);
+}
+
+QVector<Feature> parseFeatures(const QByteArray& listXml, const QString& system, QString* error) {
     // The system's own <machine> element; devices follow as machines of their own.
     QVector<Feature> features;
-    QXmlStreamReader xml(process.readAllStandardOutput());
+    QXmlStreamReader xml(listXml);
     int depth = 0;
     bool inSystem = false;
     while (!xml.atEnd()) {
@@ -82,13 +77,11 @@ QVector<Feature> warnedFeatures(const QString& program, const QString& system, Q
         }
     }
     if (xml.hasError()) {
-        cache.insert(key, {});
         if (error) {
             *error = xml.errorString();
         }
         return {};
     }
-    cache.insert(key, features);
     return features;
 }
 

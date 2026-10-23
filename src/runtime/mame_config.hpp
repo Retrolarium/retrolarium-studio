@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QByteArray>
 #include <QString>
 #include <QVector>
 
@@ -13,9 +14,12 @@ struct Feature {
     QString status;  // "imperfect" or "unemulated"
 };
 
-// The features MAME warns about for a system, from `-listxml <system>`.
-// Cached per program and system.
-QVector<Feature> warnedFeatures(const QString& program, const QString& system, QString* error);
+// The features MAME warns about for a system, as `-listxml <system>` lists
+// them; the caller runs MAME (a cold one takes seconds) and the studio
+// remembers the answer per program and system for as long as it runs.
+QVector<Feature> parseFeatures(const QByteArray& listXml, const QString& system, QString* error);
+bool cachedFeatures(const QString& program, const QString& system, QVector<Feature>* features);
+void rememberFeatures(const QString& program, const QString& system, const QVector<Feature>& features);
 
 // Marks the warning for these features as shown just now in the system's
 // configuration (cfg/<system>.cfg), so MAME's "skip_warnings" setting skips

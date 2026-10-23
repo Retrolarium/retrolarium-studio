@@ -264,8 +264,6 @@ private:
     QAction* pauseGameAction_ = nullptr;
     QAction* stopGameAction_ = nullptr;
     QAction* frameAdvanceAction_ = nullptr;
-    QAction* rewindAction_ = nullptr;
-    QAction* rewindSecondAction_ = nullptr;
     QAction* showInputAction_ = nullptr;
     QAction* showWatchAction_ = nullptr;
     QMenu* speedMenu_ = nullptr;
@@ -280,7 +278,6 @@ private:
     QAction* resumeMovieAction_ = nullptr;
     QAction* playMovieAction_ = nullptr;
     QAction* stopMovieAction_ = nullptr;
-    QAction* tasEditorAction_ = nullptr;
     class TasEditorWindow* tasEditor_ = nullptr;
     bool openEditorOnLaunch_ = false;
     QMenu* recentMenu_ = nullptr;

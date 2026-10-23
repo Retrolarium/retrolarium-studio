@@ -1,5 +1,6 @@
 #pragma once
 
+#include "runtime/mame_config.hpp"
 #include "sdk/types.hpp"
 
 #include <QImage>
@@ -188,13 +189,21 @@ private:
     void writeKeys();
     void writeActions();
     void writePicture();
-    void acknowledgeWarnings(const sdk::ProcessSpec& spec);
+    void acknowledgeWarnings(const sdk::ProcessSpec& spec, const QString& system,
+                             const QVector<mame::Feature>& features);
+    // Starts MAME itself, once its known-problems screen is taken care of.
+    void launchProcess(const sdk::ProcessSpec& spec, const QStringList& arguments);
+    // Ends a launch still waiting for MAME to describe the system; false
+    // when there is none.
+    bool cancelProbe();
     bool writeControl(const sdk::ProcessSpec& spec, const QStringList& gameScripts, QString* error);
     QString stageCart(const QString& source, QString* error);
     bool reload(const sdk::ProcessSpec& spec, const QString& cartSource, const QStringList& gameScripts,
                 const QString& title, std::function<void(const sdk::ProcessResult&)>& finished);
 
     QProcess* process_ = nullptr;
+    // MAME describing the system (-listxml) before a launch goes on.
+    QProcess* probe_ = nullptr;
     Phase phase_ = Phase::Idle;
     QTimer* startupTimer_;
     int startupChecks_ = 0;

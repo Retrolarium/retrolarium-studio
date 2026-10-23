@@ -35,10 +35,11 @@ namespace rl::runtime {
 namespace {
 constexpr int kLogLines = 400;
 constexpr int kStartupPollMs = 150;
-constexpr int kStartupPolls = 200;    // up anyway after 30 s without the ready file
-constexpr int kQuietStartPolls = 10;  // no ready file named: up after 1.5 s
-constexpr int kStopGraceMs = 2000;    // then the process is killed
-constexpr int kStatusPollMs = 200;    // the control script's status file
+constexpr int kStartupPolls = 200;         // up anyway after 30 s without the ready file
+constexpr int kQuietStartPolls = 10;       // no ready file named: up after 1.5 s
+constexpr int kStopGraceMs = 2000;         // then the process is killed
+constexpr int kDescribeTimeoutMs = 15000;  // MAME's -listxml for one system
+constexpr int kStatusPollMs = 200;         // the control script's status file
 constexpr int kMovieFlushMs = 3000;
 constexpr int kRewriteMs =
     15;  // a control file the script was reading     // a recording written before the emulator stops
@@ -50,7 +51,8 @@ constexpr int kRewriteMs =
 //   process environment is fixed when MAME starts);
 // - when the game names a ready file, runs unthrottled and muted until the
 //   game reports ready, so the boot and the steering to the start point take
-//   a fraction of a second (the Playtest view covers the picture meanwhile);
+//   a fraction of a second (the Playtest view covers the picture meanwhile),
+//   then waits paused until the studio shows the picture ("shown");
 // - watches the command file: a line naming a cartridge copy mounts it, which
 //   hard-resets the machine into the new build;
 // - presses the game's inputs for the keys the studio forwards (MAME cannot
@@ -269,6 +271,9 @@ end
 local fast = ready_file ~= ""
 local was_throttled, was_frameskip, was_muted = video.throttled, video.frameskip, sound.ui_mute
 local hidden, frames, unmute_at = fast, 0, nil
+-- Ready, the game waits paused and muted for the studio to show its picture
+-- ("shown"), so the picture and the sound start together.
+local start_hold, start_held_at, shown = false, 0, false
 local forwarding = false
 if fast then
     video.throttled = false
@@ -381,6 +386,9 @@ _G.retrolarium_movie = {frame = 0}
 -- evenly instead of forgetting the start. A seek forward starts from the
 -- latest state before its frame too. An edit of the movie drops the states
 -- from the edited frame on ("invalidate").
+-- Off: taking a state pauses the machine for a redraw every second, and the
+-- game stuttered for it. Nothing in the studio rewinds or seeks now.
+local keep_states = false
 local rewind_every, rewind_keep = 60, 15
 local far_every, far_keep = 300, 60
 local far_budget = 768 * 1024 * 1024
@@ -506,7 +514,8 @@ local function write_status()
     file:write(string.format("mode %s\nframe %d\nlength %d\nspeed %d\npaused %d\nack %d\nevent %d %s\n",
         mode == "" and "none" or mode, done, #log, speed,
         -- the pauses a capture or a rewind makes are not the game's
-        machine.paused and not capture_pending and rewind_pending == nil and not unpause_next and 1 or 0, ack,
+        machine.paused and not capture_pending and rewind_pending == nil and not unpause_next and not start_hold
+            and 1 or 0, ack,
         events, event))
     file:close()
     os.remove(status_file)
@@ -886,6 +895,8 @@ local function run_action(verb, argument)
             log = read_runs(argument) or log
             if not machine.paused then set_pads(log[done + 1]) end
         end
+    elseif verb == "shown" then
+        shown = true
     elseif verb == "overlay" then
         show_input = argument:find("input", 1, true) ~= nil
         show_watch = argument:find("watch", 1, true) ~= nil
@@ -976,7 +987,7 @@ local function control_tick()
         -- The machine as it starts, before its first frame: a movie edited
         -- from its first frames on goes back here.
         first_capture = false
-        if done == 0 and not capture_pending then
+        if keep_states and done == 0 and not capture_pending then
             capture_pending = true
             emu.pause()
         end
@@ -1013,7 +1024,7 @@ local function control_tick()
             rewind_pending[3] = "load"
             emu.pause()
         -- A frame advance pauses by itself; its frame is not captured.
-        elseif done % rewind_every == 0 and not stepping then
+        elseif keep_states and done % rewind_every == 0 and not stepping then
             capture_pending = true
             video.throttled = false
             emu.pause()
@@ -1105,12 +1116,25 @@ on_frame(function()
         end
     end
     if hidden then
-        -- A script that never reports would keep the game fast: give up after
-        -- a minute of game time.
-        if exists(ready_file) or frames > 3600 then
-            if frames > 3600 and not exists(ready_file) then
-                print("Retrolarium: the game never reported ready; showing it anyway.")
+        if start_hold then
+            -- On once the studio shows the picture (or after two seconds of a
+            -- studio that does not say so), and a quarter second at least:
+            -- sound made unthrottled drains from the speakers meanwhile.
+            local held = real_ms() - start_held_at
+            if held >= 250 and (shown or held >= 2000) then
+                hidden, start_hold = false, false
+                video.throttled, video.frameskip = was_throttled, was_frameskip
+                sound.ui_mute = was_muted
+                if not user_paused then emu.unpause() end
             end
+        elseif exists(ready_file) then
+            -- Up: paused and muted until the studio shows it.
+            start_hold, start_held_at = true, real_ms()
+            emu.pause()
+        elseif frames > 3600 then
+            -- A script that never reports would keep the game fast: give up
+            -- after a minute of game time.
+            print("Retrolarium: the game never reported ready; showing it anyway.")
             hidden = false
             video.throttled, video.frameskip = was_throttled, was_frameskip
             -- Sound made while unthrottled is still queued for the speakers;
@@ -1227,13 +1251,12 @@ QString mameKey(const QKeyEvent* event) {
 }
 
 // Keys the studio keeps while the game has the keyboard: playtest controls,
-// frame advance and speed (\ - =, as FCEUX has them) and rewind (Backspace;
-// no game pad mapping uses it).
+// frame advance and speed (\ - =, as FCEUX has them).
 bool isStudioKey(const QKeyEvent* event) {
     const int key = event->key();
     const bool keypad = event->modifiers() & Qt::KeypadModifier;
     return (key >= Qt::Key_F1 && key <= Qt::Key_F35) || key == Qt::Key_Pause || key == Qt::Key_Backslash ||
-           key == Qt::Key_Backspace || (!keypad && (key == Qt::Key_Minus || key == Qt::Key_Equal));
+           (!keypad && (key == Qt::Key_Minus || key == Qt::Key_Equal));
 }
 
 QString luaPath(const QString& path) {
@@ -1368,6 +1391,11 @@ void EmulatorRunner::watchStartup() {
         if (QFile::exists(readyFile_)) {
             startupTimer_->stop();
             setPhase(Phase::Running);
+            // The game waits paused for its picture to show: picture and
+            // sound start together.
+            if (controls_) {
+                sendAction(QStringLiteral("shown"));
+            }
             return;
         }
     }
@@ -1870,8 +1898,55 @@ void EmulatorRunner::start(const sdk::ProcessSpec& requested, const QString& tit
         }
     }
 
-    acknowledgeWarnings(spec);
+    // MAME describes the system (-listxml) before its known-problems screen
+    // can be marked as seen, once per system while the studio runs. A cold
+    // MAME takes seconds for that, so it runs beside the studio, which shows
+    // the game as starting meanwhile.
+    const QString system = spec.arguments.value(0).startsWith(QLatin1Char('-')) ? QString() : spec.arguments.value(0);
+    QVector<mame::Feature> features;
+    if (system.isEmpty() || mame::cachedFeatures(spec.program, system, &features)) {
+        acknowledgeWarnings(spec, system, features);
+        launchProcess(spec, arguments);
+        return;
+    }
+    probe_ = new QProcess(this);
+    QProcess* probe = probe_;
+    const auto described = [this, probe, spec, arguments, system](bool answered) {
+        if (probe != probe_) {
+            return;  // stopped, or another launch since
+        }
+        probe_ = nullptr;
+        probe->deleteLater();
+        QString error;
+        QVector<mame::Feature> found;
+        if (answered) {
+            found = mame::parseFeatures(probe->readAllStandardOutput(), system, &error);
+        } else {
+            error = tr("MAME did not describe %1").arg(system);
+        }
+        // Remembered either way: asking again would hold every launch as long.
+        mame::rememberFeatures(spec.program, system, found);
+        if (!error.isEmpty()) {
+            append(tr("MAME warning check: %1").arg(error));
+        }
+        acknowledgeWarnings(spec, system, found);
+        launchProcess(spec, arguments);
+    };
+    connect(
+        probe, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), this,
+        [described](int code, QProcess::ExitStatus status) { described(status == QProcess::NormalExit && code == 0); });
+    connect(probe, &QProcess::errorOccurred, this, [described](QProcess::ProcessError error) {
+        if (error == QProcess::FailedToStart) {
+            described(false);
+        }
+    });
+    QTimer::singleShot(kDescribeTimeoutMs, probe, [probe] { probe->kill(); });
+    phase_ = Phase::Starting;
+    emit stateChanged();
+    probe->start(spec.program, {QStringLiteral("-listxml"), system});
+}
 
+void EmulatorRunner::launchProcess(const sdk::ProcessSpec& spec, const QStringList& arguments) {
     process_ = new QProcess(this);
     process_->setProgram(spec.program);
     process_->setArguments(arguments);
@@ -2025,21 +2100,14 @@ bool EmulatorRunner::reload(const sdk::ProcessSpec& requested, const QString& ca
     return true;
 }
 
-void EmulatorRunner::acknowledgeWarnings(const sdk::ProcessSpec& spec) {
+void EmulatorRunner::acknowledgeWarnings(const sdk::ProcessSpec& spec, const QString& system,
+                                         const QVector<mame::Feature>& features) {
     // MAME's "known problems" screen waits for a key; an embedded MAME never
     // gets one. Mark it as seen in the system's configuration instead.
-    const QString system = spec.arguments.value(0);
-    if (system.isEmpty() || system.startsWith(QLatin1Char('-'))) {
+    if (system.isEmpty() || features.isEmpty()) {
         return;
     }
     QString error;
-    const QVector<mame::Feature> features = mame::warnedFeatures(spec.program, system, &error);
-    if (features.isEmpty()) {
-        if (!error.isEmpty()) {
-            append(tr("MAME warning check: %1").arg(error));
-        }
-        return;
-    }
     const int option = spec.arguments.indexOf(QStringLiteral("-cfg_directory"));
     const QString configDirectory =
         QDir(spec.workingDirectory).filePath(option >= 0 ? spec.arguments.value(option + 1) : QStringLiteral("cfg"));
@@ -2084,8 +2152,31 @@ void EmulatorRunner::finishMovie() {
     append(tr("The movie may have lost its last seconds: the emulator did not answer."));
 }
 
+bool EmulatorRunner::cancelProbe() {
+    if (!probe_) {
+        return false;
+    }
+    // Its answer, when it comes, belongs to no launch.
+    QProcess* probe = probe_;
+    probe_ = nullptr;
+    probe->kill();
+    phase_ = Phase::Idle;
+    controls_ = false;
+    stage_.reset();
+    cart_.clear();
+    auto finished = std::move(finished_);
+    finished_ = {};
+    emit stateChanged();
+    if (finished) {
+        sdk::ProcessResult result;
+        result.cancelled = true;
+        finished(result);
+    }
+    return true;
+}
+
 void EmulatorRunner::stop() {
-    if (!process_ || phase_ == Phase::Stopping) {
+    if (cancelProbe() || !process_ || phase_ == Phase::Stopping) {
         return;
     }
     finishMovie();
@@ -2111,7 +2202,7 @@ void EmulatorRunner::stop() {
 }
 
 void EmulatorRunner::stopNow() {
-    if (!process_) {
+    if (cancelProbe() || !process_) {
         return;
     }
     finishMovie();

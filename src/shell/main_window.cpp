@@ -493,14 +493,6 @@ void MainWindow::buildMenus() {
         emulator_->frameAdvance();
         notifyEmulation(paused ? tr("Frame %1").arg(emulator_->movieFrame() + 1) : tr("Paused"));
     });
-    // Rewind, as TAS tools have it: back a frame (or a second) at a press,
-    // paused there; the run keeps its last seconds.
-    rewindAction_ = build->addAction(tr("Rewind a frame"));
-    rewindAction_->setShortcut(QKeySequence(Qt::Key_Backspace));
-    connect(rewindAction_, &QAction::triggered, this, [this] { emulator_->rewind(1); });
-    rewindSecondAction_ = build->addAction(tr("Rewind a second"));
-    rewindSecondAction_->setShortcut(QKeySequence(QStringLiteral("Shift+Backspace")));
-    connect(rewindSecondAction_, &QAction::triggered, this, [this] { emulator_->rewind(60); });
     speedMenu_ = build->addMenu(tr("Speed"));
     speedMenu_->setFont(menuFont);
     speedGroup_ = new QActionGroup(this);
@@ -576,22 +568,6 @@ void MainWindow::buildMenus() {
     playMovieAction_ = movie->addAction(tr("Play movie…"));
     connect(playMovieAction_, &QAction::triggered, this,
             [this] { startMovie(int(runtime::MovieRequest::Mode::Play)); });
-    // Shown only when asked for: on the movie that plays, or on one picked
-    // to play.
-    tasEditorAction_ = movie->addAction(tr("TAS editor"));
-    tasEditorAction_->setCheckable(true);
-    connect(tasEditorAction_, &QAction::triggered, this, [this](bool checked) {
-        if (!checked) {
-            closeTasEditor();
-        } else if (emulator_->phase() == runtime::EmulatorRunner::Phase::Running &&
-                   emulator_->movieMode() == QLatin1String("play")) {
-            openTasEditor();
-        } else {
-            tasEditorAction_->setChecked(false);
-            openEditorOnLaunch_ = true;
-            startMovie(int(runtime::MovieRequest::Mode::Play));
-        }
-    });
     movie->addSeparator();
     stopMovieAction_ = movie->addAction(tr("Stop movie"));
     connect(stopMovieAction_, &QAction::triggered, this, [this] { emulator_->stopMovie(); });
@@ -2191,8 +2167,6 @@ void MainWindow::updateActions() {
 
     const bool controls = running && emulator_->hasControls();
     frameAdvanceAction_->setEnabled(controls);
-    rewindAction_->setEnabled(controls);
-    rewindSecondAction_->setEnabled(controls);
     saveStateAction_->setEnabled(controls);
     loadStateAction_->setEnabled(controls);
     previousSlotAction_->setEnabled(controls);
@@ -2206,8 +2180,6 @@ void MainWindow::updateActions() {
     recordMovieAction_->setEnabled(movies);
     resumeMovieAction_->setEnabled(movies);
     playMovieAction_->setEnabled(movies);
-    tasEditorAction_->setEnabled(movies || (tasEditor_ && !tasEditor_->isHidden()));
-    tasEditorAction_->setChecked(tasEditor_ && !tasEditor_->isHidden());
     stopMovieAction_->setEnabled(running && emulator_->movieMode() != QLatin1String("none"));
 }
 
