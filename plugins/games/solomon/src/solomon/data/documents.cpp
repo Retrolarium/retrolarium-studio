@@ -274,28 +274,23 @@ void SolomonRooms::setExpanded(bool expanded) {
 QString SolomonRooms::overflow() const {
     // The enemy sets the mirrors drop have their own area, smaller in the
     // original layout: switching back to it must not leave them over.
+    // The studio builds the original layout only for now; the expanded one
+    // (the kit's mapper-66 build) comes back with the next release.
     if (mirrorSetBytes() > mirrorSetCapacity()) {
-        return expanded() ? rlTr("solomon", "The mirror enemy sets share %1 bytes; they need %2. Shorten a set.")
-                                .arg(mirrorSetCapacity())
-                                .arg(mirrorSetBytes())
-                          : rlTr("solomon",
-                                 "The mirror enemy sets share %1 bytes; they need %2. Shorten a set, or "
-                                 "switch the ROM to Expanded.")
-                                .arg(mirrorSetCapacity())
-                                .arg(mirrorSetBytes());
+        return rlTr("solomon", "The mirror enemy sets share %1 bytes; they need %2. Shorten a set.")
+            .arg(mirrorSetCapacity())
+            .arg(mirrorSetBytes());
     }
     if (!expanded()) {
         if (itemBytes() > kItemArenaBytes) {
             return rlTr("solomon",
-                        "The item lists of all rooms share %1 bytes; they need %2. Remove an item in any "
-                        "room, or switch the ROM to Expanded.")
+                        "The item lists of all rooms share %1 bytes; they need %2. Remove an item in any room.")
                 .arg(kItemArenaBytes)
                 .arg(itemBytes());
         }
         if (enemyBytes() > kEnemyArenaBytes) {
             return rlTr("solomon",
-                        "The enemy lists of all rooms share %1 bytes; they need %2. Remove an enemy in any "
-                        "room, or switch the ROM to Expanded.")
+                        "The enemy lists of all rooms share %1 bytes; they need %2. Remove an enemy in any room.")
                 .arg(kEnemyArenaBytes)
                 .arg(enemyBytes());
         }

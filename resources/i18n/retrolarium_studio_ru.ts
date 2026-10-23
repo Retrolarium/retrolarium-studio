@@ -11974,6 +11974,14 @@
         <source>Drag items and enemies from the sheet onto the room. The door, key, mirrors and the player&apos;s start are moved, not deleted.</source>
         <translation>Перетаскивайте предметы и врагов из листа в комнату. Дверь, ключ, зеркала и старт игрока двигаются, но не удаляются.</translation>
     </message>
+    <message>
+        <source>%1, expanding the ROM</source>
+        <translation>%1 с расширением ROM</translation>
+    </message>
+    <message>
+        <source>The original ROM has no more room for items and enemies: the project now builds the expanded ROM (mapper 66). Set the room&apos;s ROM field back to Original once the lists fit again.</source>
+        <translation>В оригинальном ROM больше нет места для предметов и врагов: проект теперь собирает расширенный ROM (маппер 66). Когда списки снова поместятся, поле ROM комнаты можно вернуть на «Оригинал».</translation>
+    </message>
 </context>
 <context>
     <name>rl::solomon::SolomonRoomPaletteModel</name>

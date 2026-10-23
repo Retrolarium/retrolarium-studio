@@ -11927,6 +11927,14 @@
         <source>Drag items and enemies from the sheet onto the room. The door, key, mirrors and the player&apos;s start are moved, not deleted.</source>
         <translation>Arrastra objetos y enemigos de la hoja a la sala. La puerta, la llave, los espejos y el inicio del jugador se mueven, no se borran.</translation>
     </message>
+    <message>
+        <source>%1, expanding the ROM</source>
+        <translation>%1, ampliando la ROM</translation>
+    </message>
+    <message>
+        <source>The original ROM has no more room for items and enemies: the project now builds the expanded ROM (mapper 66). Set the room&apos;s ROM field back to Original once the lists fit again.</source>
+        <translation>La ROM original no tiene más espacio para objetos y enemigos: el proyecto ahora genera la ROM ampliada (mapper 66). Cuando las listas vuelvan a caber, el campo ROM de la sala puede volver a «Original».</translation>
+    </message>
 </context>
 <context>
     <name>rl::solomon::SolomonRoomPaletteModel</name>

@@ -11880,6 +11880,14 @@
         <source>Drag items and enemies from the sheet onto the room. The door, key, mirrors and the player&apos;s start are moved, not deleted.</source>
         <translation>把道具和敌人从图集拖到房间中。门、钥匙、镜子和玩家角色的起点只能移动，不能删除。</translation>
     </message>
+    <message>
+        <source>%1, expanding the ROM</source>
+        <translation>%1（扩展 ROM）</translation>
+    </message>
+    <message>
+        <source>The original ROM has no more room for items and enemies: the project now builds the expanded ROM (mapper 66). Set the room&apos;s ROM field back to Original once the lists fit again.</source>
+        <translation>原始 ROM 已没有空间容纳更多物品和敌人：项目现在构建扩展 ROM（映射器 66）。列表重新放得下后，可以把房间的 ROM 字段改回“原始”。</translation>
+    </message>
 </context>
 <context>
     <name>rl::solomon::SolomonRoomPaletteModel</name>

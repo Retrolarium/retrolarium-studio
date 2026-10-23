@@ -114,6 +114,13 @@ std::unique_ptr<SolomonSession> SolomonSession::open(const sdk::ProjectFile& pro
             if (!steps.isEmpty()) s.presentation.insert(QStringLiteral("demo_steps"), steps);
         };
         session->edit(tr("Shorten a 255-frame demo step to 254"), clamp, nullptr);
+        // This release builds the original ROM only: a project switched to
+        // the expanded one goes back, as an edit the next build saves. Rooms
+        // that outgrew the original areas then show as over in Messages.
+        if (session->state_.rooms.expanded()) {
+            session->edit(
+                tr("Return to the original ROM"), [](SolomonState& s) { s.rooms.setExpanded(false); }, nullptr);
+        }
         session->painter();
     } catch (const std::exception& e) {
         if (error) {
@@ -602,6 +609,15 @@ void SolomonSession::attachDemoEditor(bool attach) {
 QString SolomonSession::playSelectedLabel() const {
     if (isRecording()) return tr("Stop recording");
     return demoStart() ? tr("Play demo") : QString();
+}
+
+QImage SolomonSession::playerIcon() const {
+    // A project still being read has no art yet.
+    try {
+        return painter().playerIcon(0, false);
+    } catch (const std::exception&) {
+        return {};
+    }
 }
 
 QString SolomonSession::selectedStart() const {

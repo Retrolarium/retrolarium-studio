@@ -17,9 +17,11 @@ constexpr int kEmptyPattern = 0x10;
 constexpr int kBrownPattern = 0x00;
 constexpr int kWhitePattern = 0x03;
 
+// The room header's positions, moved on the items layer: the player's start
+// sits with the door and key it plays against.
 const QStringList& metadataKeys() {
     static const QStringList kKeys{QStringLiteral("door"), QStringLiteral("key"), QStringLiteral("mirror_1"),
-                                   QStringLiteral("mirror_2")};
+                                   QStringLiteral("mirror_2"), QStringLiteral("player_start")};
     return kKeys;
 }
 
@@ -174,7 +176,8 @@ QString SolomonRoomModel::title() const { return roomLabel(session_->rooms().roo
 QVector<sdk::MapLayer> SolomonRoomModel::layers() const {
     return {{QStringLiteral("blocks"), tr("Blocks")},
             {QStringLiteral("items"), tr("Items")},
-            {QStringLiteral("enemies"), tr("Enemies")}};
+            // Not only enemies live there: the friendly creatures do too.
+            {QStringLiteral("enemies"), tr("Entities")}};
 }
 
 void SolomonRoomModel::setCurrentLayer(const QString& id) {
@@ -331,6 +334,13 @@ sdk::Library SolomonRoomModel::sheet() const {
             symbol.icon = session_->painter().patternIcon(symbolPattern(number), bank(), group());
             library.items.prepend(symbol);
         }
+        // The player's start, first: dropped, it moves the room's one start.
+        sdk::LibraryItem start;
+        start.id = QStringLiteral("special:start");
+        start.label = metadataLabel(QStringLiteral("player_start"));
+        const QPoint at = rooms().metadataPosition(room_, QStringLiteral("player_start"));
+        start.icon = session_->painter().playerIcon(bank(), at.x() >= kWidth / 2);
+        library.items.prepend(start);
         return library;
     }
     if (layer_ == QLatin1String("enemies")) return enemyLibrary();
@@ -426,10 +436,6 @@ QVector<sdk::MapObject> SolomonRoomModel::objects() const {
             add(QStringLiteral("enemy:%1").arg(i), enemyName(enemies.at(i).type),
                 QRect(enemies.at(i).position, QSize(1, 1)));
         }
-        const QPoint start = r.metadataPosition(room_, QStringLiteral("player_start"));
-        if (start.x() >= 0)
-            add(QStringLiteral("meta:player_start"), metadataLabel(QStringLiteral("player_start")),
-                QRect(start, QSize(1, 1)));
     }
     return result;
 }
@@ -506,11 +512,11 @@ void SolomonRoomModel::endDrag() {
 }
 
 bool SolomonRoomModel::commit(const SolomonRooms& next, const QString& text, QString* error) {
-    // Refuse only what makes things worse: an edit that frees bytes is fine
-    // even while the rooms are still over.
+    // Only an edit that adds bytes can be over: blocks and moves add none,
+    // and an edit that frees bytes is fine even while the rooms are still over.
     const QString overflow = next.overflow();
-    if (!overflow.isEmpty() &&
-        next.itemBytes() + next.enemyBytes() >= session_->rooms().itemBytes() + session_->rooms().enemyBytes()) {
+    const SolomonRooms& now = session_->rooms();
+    if (!overflow.isEmpty() && next.itemBytes() + next.enemyBytes() > now.itemBytes() + now.enemyBytes()) {
         if (error) *error = overflow;
         return false;
     }
@@ -538,6 +544,14 @@ bool SolomonRoomModel::placeObject(const QString& libraryItem, QPoint cell, QStr
         if (!commit(next, tr("Add %1 to %2").arg(enemyName(type), title()), error)) return false;
         setCurrentLayer(QStringLiteral("enemies"));
         selectObject(QStringLiteral("enemy:%1").arg(enemies.size() - 1));
+        return true;
+    }
+    if (libraryItem == QLatin1String("special:start")) {
+        if (!moveTo(next, QStringLiteral("meta:player_start"), cell)) return false;
+        if (!commit(next, tr("Move %1 in %2").arg(metadataLabel(QStringLiteral("player_start")), title()), error))
+            return false;
+        setCurrentLayer(QStringLiteral("items"));
+        selectObject(QStringLiteral("meta:player_start"));
         return true;
     }
     if (libraryItem == QLatin1String("special:symbol")) {
@@ -652,19 +666,6 @@ QString SolomonRoomModel::objectLabel(const QString& id) const {
 sdk::Budget SolomonRoomModel::budget() const {
     const SolomonRooms& r = rooms();
     sdk::Budget budget;
-    if (r.expanded()) {
-        const int capacity = expandedDataBytes(r.revision());
-        budget.used = r.itemBytes() + r.enemyBytes();
-        budget.capacity = capacity;
-        budget.text = tr("this room: items %1 / %2 B, enemies %3 / %4 · expanded ROM: %5 / %6 B")
-                          .arg(SolomonRooms::itemStreamBytes(r.itemCommands(room_)))
-                          .arg(kExpandedStreamLimit)
-                          .arg(r.enemies(room_).size())
-                          .arg(kMaximumEnemies)
-                          .arg(budget.used)
-                          .arg(capacity);
-        return budget;
-    }
     budget.used = r.itemBytes();
     budget.capacity = kItemArenaBytes;
     budget.text = tr("this room: items %1 B, enemies %2 / %3 · all rooms: items %4 / %5 B, enemies %6 / %7 B")
@@ -824,10 +825,7 @@ sdk::Inspection SolomonRoomModel::inspect() const {
                                  r.metadata(room_).value(QStringLiteral("status_rate_raw")).toInt() & 0x0f, 0, 15),
                          integer(QStringLiteral("spawn_lifetime"), tr("%1 lifetime").arg(enemyFamilyName(0x50)),
                                  r.spawnLifetime(room_), 0, 255, tr("also %1").arg(enemyFamilyName(0x5c))),
-                         choice(QStringLiteral("room_constellation"), tr("Constellation"), sign, signs),
-                         choice(QStringLiteral("rom_layout"), QStringLiteral("ROM"),
-                                r.expanded() ? QStringLiteral("Expanded") : tr("Original"),
-                                {tr("Original"), QStringLiteral("Expanded")})};
+                         choice(QStringLiteral("room_constellation"), tr("Constellation"), sign, signs)};
     inspection.note = layer_ == QLatin1String("blocks")
                           ? tr("Brown blocks break and can be made by the player; white blocks are solid. "
                                "The right button takes a cell's blocks as the brush.")
@@ -915,18 +913,6 @@ bool SolomonRoomModel::setField(const QString& key, const QVariant& value, QStri
         special.insert(QStringLiteral("random_bonus_room"), bonus);
         next.setSpecialRooms(special);
         return commit(next, tr("Edit the bonus items"), error);
-    }
-    if (key == QLatin1String("rom_layout")) {
-        const bool expanded = value.toString().startsWith(QLatin1String("Expanded"));
-        next.setExpanded(expanded);
-        const QString overflow = next.overflow();
-        if (!overflow.isEmpty()) {
-            if (error) *error = overflow;
-            return false;
-        }
-        return session_->edit(
-            expanded ? tr("Expand the ROM") : tr("Return to the original ROM"),
-            [next](SolomonState& s) { s.rooms = next; }, error);
     }
     if (key == QLatin1String("key_status") || key == QLatin1String("time_rate")) {
         QJsonObject metadata = next.metadata(room_);

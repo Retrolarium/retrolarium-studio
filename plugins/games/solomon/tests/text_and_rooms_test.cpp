@@ -1,7 +1,7 @@
 // Solomon's Key text and rooms against a prepared Solomon project: every
 // screen string reads back to the same tiles through the editor's text
-// (codes as {XX} included), and mirror enemy sets grown in the expanded
-// layout stop a switch back to the original one, whose area is smaller.
+// (codes as {XX} included), and mirror enemy sets or items grown past
+// their areas show as over.
 // Reads the project only.
 //   solomon_text_and_rooms_test <solomon project .rlj>
 
@@ -12,7 +12,10 @@
 
 #include <QCoreApplication>
 #include <QFileInfo>
+#include <QJsonArray>
+#include <QJsonObject>
 
+#include <algorithm>
 #include <iostream>
 #include <stdexcept>
 
@@ -59,26 +62,35 @@ int main(int argc, char** argv) {
         const QString roomsDocument = rl::sdk::tabDocument(project, QStringLiteral("solomon.rooms@3"));
         expect(!roomsDocument.isEmpty(), QStringLiteral("the project has no rooms tab"));
         SolomonRooms rooms(loadJson(project.resolve(roomsDocument)));
+        rooms.setExpanded(false);
         const QVector<SolomonMirrorSet> sets = rooms.mirrorSets();
         expect(!sets.isEmpty(), QStringLiteral("the rooms have no mirror enemy sets"));
-        rooms.setExpanded(true);
-        // Grow the first set past the original area but within the expanded one.
+        // Mirror enemy sets grown past their area are over.
         SolomonMirrorSet grown = sets.first();
         while (rooms.mirrorSetBytes() + grown.types.size() - sets.first().types.size() <= kMirrorSetBytes) {
             grown.types << sets.first().types.first();
         }
         rooms.setMirrorSet(0, grown);
-        expect(rooms.mirrorSetBytes() > kMirrorSetBytes, QStringLiteral("the sets did not grow"));
-        expect(rooms.mirrorSetBytes() <= rooms.mirrorSetCapacity(),
-               QStringLiteral("the sets grew past the expanded area"));
-        expect(!rooms.overflow().contains(QLatin1String("mirror")),
-               QStringLiteral("the expanded layout refuses the grown sets: %1").arg(rooms.overflow()));
-        rooms.setExpanded(false);
         expect(rooms.overflow().contains(QLatin1String("mirror enemy sets")),
                QStringLiteral("the original layout takes %1 bytes of mirror sets").arg(rooms.mirrorSetBytes()));
 
+        // The game fills its item area: one more item is over, and the room
+        // editor refuses it (the studio builds the original layout only).
+        SolomonRooms items(loadJson(project.resolve(roomsDocument)));
+        items.setExpanded(false);
+        QJsonArray commands = items.itemCommands(0);
+        commands.insert(std::max(0, int(commands.size()) - 1),
+                        QJsonObject{{QStringLiteral("kind"), QStringLiteral("item")},
+                                    {QStringLiteral("position"), pointJson(QPoint(0, 0))},
+                                    {QStringLiteral("type"), 0x08}});
+        items.setItemCommands(0, commands);
+        expect(items.itemBytes() > kItemArenaBytes,
+               QStringLiteral("one more item fits the original %1-byte item area").arg(kItemArenaBytes));
+        expect(items.overflow().contains(QLatin1String("item lists")),
+               QStringLiteral("the original layout takes %1 bytes of items").arg(items.itemBytes()));
+
         std::cout << strings << " strings read back; the original layout refuses " << rooms.mirrorSetBytes()
-                  << " bytes of mirror sets\n";
+                  << " bytes of mirror sets and an item past " << kItemArenaBytes << " bytes\n";
     } catch (const std::exception& e) {
         std::cerr << "FAIL: " << e.what() << "\n";
         return 1;

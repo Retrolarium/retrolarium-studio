@@ -168,7 +168,7 @@ bool SolomonMirrorSetsModel::setCell(int row, int column, const QString& value, 
             *error = tr("The mirror enemy sets share %1 bytes; this needs %2. Shorten another set first%3.")
                          .arg(next.mirrorSetCapacity())
                          .arg(next.mirrorSetBytes())
-                         .arg(next.expanded() ? QString() : tr(", or switch the ROM to Expanded"));
+                         .arg(QString());
         }
         return false;
     }
