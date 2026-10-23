@@ -1,0 +1,127 @@
+// Alien Soldier against a prepared project: every document of every view
+// opens in its editor and inspects, the stages and screens draw, every text
+// record reads back to the same glyphs through the editor's text, and every
+// song and effect has notes on some channel. Reads the project only (the
+// text edits are undone).
+//   alien_soldier_session_test <Alien Soldier project .rlj>
+
+#include "alien_soldier/data/scene.hpp"
+#include "alien_soldier/plugin/session.hpp"
+#include "sdk/editor_model.hpp"
+#include "sdk/game_names.hpp"
+#include "sdk/project_file.hpp"
+
+#include <QCoreApplication>
+#include <QFileInfo>
+#include <QImage>
+#include <QSet>
+
+#include <iostream>
+#include <stdexcept>
+
+using namespace rl;
+using namespace rl::alien_soldier;
+
+namespace {
+
+void expect(bool condition, const QString& message) {
+    if (!condition) throw std::runtime_error(message.toStdString());
+}
+
+// More than one colour: the scene drew something.
+bool drawn(const QImage& image) {
+    QSet<QRgb> colours;
+    for (int y = 0; y < image.height(); y += 4) {
+        for (int x = 0; x < image.width(); x += 4) {
+            colours.insert(image.pixel(x, y));
+            if (colours.size() > 1) return true;
+        }
+    }
+    return false;
+}
+
+}  // namespace
+
+int main(int argc, char** argv) {
+    QCoreApplication app(argc, argv);
+    if (argc != 2) {
+        std::cerr << "usage: alien_soldier_session_test <Alien Soldier project .rlj>\n";
+        return 2;
+    }
+    const QString path = QString::fromLocal8Bit(argv[1]);
+    if (!QFileInfo::exists(path)) {
+        std::cout << "skipped: no prepared Alien Soldier project at " << path.toStdString() << "\n";
+        return 0;
+    }
+    try {
+        QString error;
+        const sdk::ProjectFile project = sdk::ProjectFile::load(path, &error);
+        expect(!project.path().isEmpty(), error);
+        sdk::GameNames::install(sdk::GameNames::forProject(project));
+        std::unique_ptr<AlienSoldierSession> session = AlienSoldierSession::open(project, &error);
+        expect(session != nullptr, error);
+
+        int opened = 0, rows = 0, notes = 0;
+        for (const sdk::Kind& kind : session->kinds()) {
+            int documents = 0;
+            for (const sdk::DocumentGroup& group : session->documents(kind.id)) {
+                for (const sdk::DocumentEntry& entry : group.documents) {
+                    std::unique_ptr<sdk::EditorModel> model = session->openEditor(kind.id, entry.id);
+                    expect(model != nullptr, QStringLiteral("%1 %2 does not open").arg(kind.id, entry.id));
+                    model->inspect();
+                    model->statusText();
+                    if (auto* table = qobject_cast<sdk::TableModel*>(model.get())) {
+                        for (int row = 0; row < table->rowCount(); ++row) {
+                            for (int column = 0; column < table->columns().size(); ++column) table->cell(row, column);
+                        }
+                        // A text reads back to the glyphs it shows.
+                        if (kind.id == QLatin1String("text")) {
+                            for (int row = 0; row < table->rowCount(); ++row) {
+                                const QString text = table->cell(row, 1), bytes = table->cell(row, 3);
+                                QString failure;
+                                expect(table->setCell(row, 1, text, &failure),
+                                       QStringLiteral("%1 row %2 does not take its own text: %3")
+                                           .arg(entry.id)
+                                           .arg(row)
+                                           .arg(failure));
+                                expect(table->cell(row, 3) == bytes,
+                                       QStringLiteral("%1 row %2 changes when it takes its own text")
+                                           .arg(entry.id)
+                                           .arg(row));
+                                ++rows;
+                            }
+                        }
+                    }
+                    if (auto* sequencer = qobject_cast<sdk::SequencerModel*>(model.get())) {
+                        int found = 0;
+                        for (int channel = 0; channel < sequencer->channels().size(); ++channel) {
+                            found += sequencer->notes(channel).size();
+                        }
+                        expect(found > 0, QStringLiteral("%1 has no notes").arg(entry.id));
+                        notes += found;
+                    }
+                    ++documents;
+                    ++opened;
+                }
+            }
+            expect(documents > 0, QStringLiteral("the %1 view lists nothing").arg(kind.id));
+        }
+
+        int stages = 0;
+        for (int index = 0; index < session->stageCount(); ++index) {
+            const Scene& scene = session->stage(index);
+            if (!scene.planes[0].present) continue;
+            expect(drawn(renderScene(scene, QRect(0, 0, 320, 224))),
+                   QStringLiteral("stage slot %1 draws nothing").arg(index + 1));
+            ++stages;
+        }
+        expect(stages > 20, QStringLiteral("only %1 stages draw").arg(stages));
+
+        std::cout << "[OK] " << opened << " documents open, " << stages << " stages draw, " << rows
+                  << " text records read back, " << notes << " notes\n";
+        return 0;
+    } catch (const std::exception& e) {
+        std::cerr << "FAIL: " << e.what() << "\n";
+        return 1;
+    }
+}

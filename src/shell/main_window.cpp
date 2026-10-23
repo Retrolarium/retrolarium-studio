@@ -1920,11 +1920,11 @@ void MainWindow::updateProjectChrome() {
     closeAction_->setEnabled(true);
     switchRevisionAction_->setEnabled(!currentDescriptor().isEmpty());
     resetAction_->setEnabled(switchRevisionAction_->isEnabled());
-    // An IPS patch needs a ROM base: every project but a source build.
+    // An IPS patch needs a ROM base: a ROM project, or the ROM a source-built game keeps in its snapshot.
     QString error;
     const QString mode = sdk::ProjectFile::load(projectPath_, &error).string(QStringLiteral("project.source_mode"));
     patchAction_->setEnabled(mode == QLatin1String("rom") || mode == QLatin1String("binary-profile") ||
-                             mode == QLatin1String("flicky-content"));
+                             mode == QLatin1String("flicky-content") || mode == QLatin1String("source"));
 }
 
 void MainWindow::updateBreadcrumb() {

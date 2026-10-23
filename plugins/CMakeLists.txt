@@ -13,6 +13,50 @@ target_include_directories(platform_megadrive PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
 target_link_libraries(platform_megadrive PRIVATE retrolarium::core)
 studio_enable_warnings(platform_megadrive)
 
+# Alien Soldier data: the source snapshot's documents and the scenes (VRAM,
+# CRAM and planes) drawn from them. QtCore, plus QtGui for QImage.
+add_library(alien_soldier_data STATIC
+    games/alien_soldier/src/alien_soldier/data/documents.cpp
+    games/alien_soldier/src/alien_soldier/data/documents.hpp
+    games/alien_soldier/src/alien_soldier/data/scene.cpp
+    games/alien_soldier/src/alien_soldier/data/scene.hpp
+)
+target_include_directories(alien_soldier_data PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/games/alien_soldier/src)
+target_link_libraries(alien_soldier_data PUBLIC platform_megadrive Qt5::Core Qt5::Gui)
+studio_enable_warnings(alien_soldier_data)
+
+# Alien Soldier plugin: the session and the editor models over alien_soldier_data.
+add_library(alien_soldier_plugin STATIC
+    games/alien_soldier/src/alien_soldier/plugin/alien_soldier_plugin.cpp
+    games/alien_soldier/src/alien_soldier/plugin/alien_soldier_plugin.hpp
+    games/alien_soldier/src/alien_soldier/plugin/animations_model.cpp
+    games/alien_soldier/src/alien_soldier/plugin/animations_model.hpp
+    games/alien_soldier/src/alien_soldier/plugin/demo_model.cpp
+    games/alien_soldier/src/alien_soldier/plugin/demo_model.hpp
+    games/alien_soldier/src/alien_soldier/plugin/levels_model.cpp
+    games/alien_soldier/src/alien_soldier/plugin/levels_model.hpp
+    games/alien_soldier/src/alien_soldier/plugin/map_edits.cpp
+    games/alien_soldier/src/alien_soldier/plugin/map_edits.hpp
+    games/alien_soldier/src/alien_soldier/plugin/metatiles_model.cpp
+    games/alien_soldier/src/alien_soldier/plugin/metatiles_model.hpp
+    games/alien_soldier/src/alien_soldier/plugin/palettes_model.cpp
+    games/alien_soldier/src/alien_soldier/plugin/palettes_model.hpp
+    games/alien_soldier/src/alien_soldier/plugin/playtest_model.cpp
+    games/alien_soldier/src/alien_soldier/plugin/playtest_model.hpp
+    games/alien_soldier/src/alien_soldier/plugin/screens_model.cpp
+    games/alien_soldier/src/alien_soldier/plugin/screens_model.hpp
+    games/alien_soldier/src/alien_soldier/plugin/session.cpp
+    games/alien_soldier/src/alien_soldier/plugin/session.hpp
+    games/alien_soldier/src/alien_soldier/plugin/sound_model.cpp
+    games/alien_soldier/src/alien_soldier/plugin/sound_model.hpp
+    games/alien_soldier/src/alien_soldier/plugin/text_model.cpp
+    games/alien_soldier/src/alien_soldier/plugin/text_model.hpp
+    games/alien_soldier/src/alien_soldier/plugin/tiles_model.cpp
+    games/alien_soldier/src/alien_soldier/plugin/tiles_model.hpp
+)
+target_link_libraries(alien_soldier_plugin PUBLIC alien_soldier_data studio_sdk)
+studio_enable_warnings(alien_soldier_plugin)
+
 # Flicky data: documents, codecs, the source writer and the scene renderer.
 # QtCore, plus QtGui for the renderer's QImage.
 add_library(flicky_data STATIC
@@ -343,7 +387,7 @@ add_library(studio_builtin_plugins STATIC
     builtin_plugins.hpp
 )
 target_include_directories(studio_builtin_plugins PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(studio_builtin_plugins PUBLIC castle_excellent_plugin doraemon_plugin flicky_plugin pacman_plugin rom_plugin smb_plugin solomon_plugin studio_sdk)
+target_link_libraries(studio_builtin_plugins PUBLIC alien_soldier_plugin castle_excellent_plugin doraemon_plugin flicky_plugin pacman_plugin rom_plugin smb_plugin solomon_plugin studio_sdk)
 studio_enable_warnings(studio_builtin_plugins)
 
 # Tests against the projects the kit prepared in the game repositories
@@ -354,6 +398,12 @@ add_executable(flicky_sound_document_test
 )
 target_link_libraries(flicky_sound_document_test PRIVATE flicky_data studio_sdk)
 studio_add_test(flicky_sound_document_test games:flicky_src/.retrolarium/ue/flicky-ue.rlj)
+
+add_executable(alien_soldier_session_test
+    games/alien_soldier/tests/session_test.cpp
+)
+target_link_libraries(alien_soldier_session_test PRIVATE alien_soldier_plugin)
+studio_add_test(alien_soldier_session_test games:alien_soldier_src/.retrolarium/jp/alien-soldier-jp.rlj)
 
 add_executable(castle_excellent_music_retune_test
     games/castle_excellent/tests/music_retune_test.cpp

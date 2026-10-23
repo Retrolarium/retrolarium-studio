@@ -1,5 +1,6 @@
 #include "builtin_plugins.hpp"
 
+#include "alien_soldier/plugin/alien_soldier_plugin.hpp"
 #include "castle_excellent/plugin/castle_excellent_plugin.hpp"
 #include "doraemon/plugin/doraemon_plugin.hpp"
 #include "flicky/plugin/flicky_plugin.hpp"
@@ -14,6 +15,7 @@ namespace rl::plugins {
 // The one place that names concrete plugins. Add a line per plugin.
 void registerBuiltinPlugins() {
     sdk::PluginRegistry& registry = sdk::PluginRegistry::instance();
+    alien_soldier::registerPlugin(registry);
     castle_excellent::registerPlugin(registry);
     doraemon::registerPlugin(registry);
     flicky::registerPlugin(registry);
