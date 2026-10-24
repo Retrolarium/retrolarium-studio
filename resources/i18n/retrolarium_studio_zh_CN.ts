@@ -3403,6 +3403,30 @@
         <source>The game scans the city&apos;s objects after the first %1 in order of X: moved, this one takes its place in that order.</source>
         <translation>游戏按 X 的顺序扫描城市中前 %1 个之后的物体：移动后，此物体会排到该顺序中的对应位置。</translation>
     </message>
+    <message>
+        <source>Give an object the picked type (or put the start down)</source>
+        <translation>把所选类型赋给物体（或放下起点）</translation>
+    </message>
+    <message>
+        <source>The game&apos;s list of objects here keeps its length: put the type on an object to change it, or drag an object to move it.</source>
+        <translation>这里游戏的物体列表长度固定：把类型放到物体上即可更改它，拖动物体即可移动它。</translation>
+    </message>
+    <message>
+        <source>Make %1 a %2</source>
+        <translation>把 %1 改为 %2</translation>
+    </message>
+    <message>
+        <source>click: pick · drag onto an object</source>
+        <translation>单击：选择 · 拖到物体上</translation>
+    </message>
+    <message>
+        <source>where Play from selected (F4) drops Doraemon; not level data</source>
+        <translation>“从所选处游玩”（F4）放下哆啦A梦的位置；不是关卡数据</translation>
+    </message>
+    <message>
+        <source>type %1 · put it on an object to change that object&apos;s type</source>
+        <translation>类型 %1 · 放到物体上即可更改其类型</translation>
+    </message>
 </context>
 <context>
     <name>rl::doraemon::DoraemonMusicModel</name>
@@ -8901,10 +8925,6 @@
         <translation>“从所选处游玩”（F4）从这里开始</translation>
     </message>
     <message>
-        <source>Play from selected (F4) starts here. Click, then click the map to move it.</source>
-        <translation>“从所选处游玩”（F4）从这里开始。单击，再单击地图即可移动它。</translation>
-    </message>
-    <message>
         <source>Pick a start point in an editor (F4)</source>
         <translation>请在编辑器中选择起点（F4）</translation>
     </message>
@@ -9119,6 +9139,10 @@
     <message>
         <source>Playtest start</source>
         <translation>试玩起点</translation>
+    </message>
+    <message>
+        <source>Play from selected (F4) starts here. Click, then click the map to move it, or drag it onto the map.</source>
+        <translation>“从所选处游玩”（F4）从这里开始。单击后再单击地图即可移动它，也可以把它拖到地图上。</translation>
     </message>
 </context>
 <context>

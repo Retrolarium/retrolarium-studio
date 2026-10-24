@@ -3410,6 +3410,30 @@
         <source>The game scans the city&apos;s objects after the first %1 in order of X: moved, this one takes its place in that order.</source>
         <translation>Il gioco scorre gli oggetti della città dopo i primi %1 in ordine di X: spostato, questo prende il suo posto in quell&apos;ordine.</translation>
     </message>
+    <message>
+        <source>Give an object the picked type (or put the start down)</source>
+        <translation>Dare a un oggetto il tipo scelto (o posare la partenza)</translation>
+    </message>
+    <message>
+        <source>The game&apos;s list of objects here keeps its length: put the type on an object to change it, or drag an object to move it.</source>
+        <translation>L’elenco degli oggetti del gioco qui mantiene la sua lunghezza: metti il tipo su un oggetto per cambiarlo, o trascina un oggetto per spostarlo.</translation>
+    </message>
+    <message>
+        <source>Make %1 a %2</source>
+        <translation>Trasformare %1 in %2</translation>
+    </message>
+    <message>
+        <source>click: pick · drag onto an object</source>
+        <translation>clic: scegli · trascina su un oggetto</translation>
+    </message>
+    <message>
+        <source>where Play from selected (F4) drops Doraemon; not level data</source>
+        <translation>dove Gioca dalla selezione (F4) mette Doraemon; non sono dati del livello</translation>
+    </message>
+    <message>
+        <source>type %1 · put it on an object to change that object&apos;s type</source>
+        <translation>tipo %1 · mettilo su un oggetto per cambiarne il tipo</translation>
+    </message>
 </context>
 <context>
     <name>rl::doraemon::DoraemonMusicModel</name>
@@ -8937,10 +8961,6 @@
         <translation>Gioca dalla selezione (F4) parte da qui</translation>
     </message>
     <message>
-        <source>Play from selected (F4) starts here. Click, then click the map to move it.</source>
-        <translation>Gioca dalla selezione (F4) parte da qui. Fai clic, poi fai clic sulla mappa per spostarlo.</translation>
-    </message>
-    <message>
         <source>Pick a start point in an editor (F4)</source>
         <translation>Scegli un punto di partenza in un editor (F4)</translation>
     </message>
@@ -9155,6 +9175,10 @@
     <message>
         <source>Playtest start</source>
         <translation>Partenza del test</translation>
+    </message>
+    <message>
+        <source>Play from selected (F4) starts here. Click, then click the map to move it, or drag it onto the map.</source>
+        <translation>Gioca dalla selezione (F4) parte da qui. Fai clic, poi fai clic sulla mappa per spostarlo, oppure trascinalo sulla mappa.</translation>
     </message>
 </context>
 <context>

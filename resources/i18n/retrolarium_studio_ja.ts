@@ -3403,6 +3403,30 @@
         <source>The game scans the city&apos;s objects after the first %1 in order of X: moved, this one takes its place in that order.</source>
         <translation>ゲームは街のオブジェクトを最初の%1個以降はXの順に調べます。移動すると、このオブジェクトはその順序の位置に並び替えられます。</translation>
     </message>
+    <message>
+        <source>Give an object the picked type (or put the start down)</source>
+        <translation>オブジェクトを選んだ種類にする（または開始位置を置く）</translation>
+    </message>
+    <message>
+        <source>The game&apos;s list of objects here keeps its length: put the type on an object to change it, or drag an object to move it.</source>
+        <translation>ここではゲームのオブジェクト一覧の長さは変わりません。種類をオブジェクトの上に置くと変更でき、オブジェクトはドラッグで移動できます。</translation>
+    </message>
+    <message>
+        <source>Make %1 a %2</source>
+        <translation>%1 を %2 にする</translation>
+    </message>
+    <message>
+        <source>click: pick · drag onto an object</source>
+        <translation>クリック: 選択 · オブジェクトへドラッグ</translation>
+    </message>
+    <message>
+        <source>where Play from selected (F4) drops Doraemon; not level data</source>
+        <translation>「選択位置からプレイ」（F4）でドラえもんが現れる位置。レベルデータではありません</translation>
+    </message>
+    <message>
+        <source>type %1 · put it on an object to change that object&apos;s type</source>
+        <translation>種類 %1 · オブジェクトの上に置くとその種類を変更します</translation>
+    </message>
 </context>
 <context>
     <name>rl::doraemon::DoraemonMusicModel</name>
@@ -8901,10 +8925,6 @@
         <translation>「選択位置からプレイ」（F4）はここから始まります</translation>
     </message>
     <message>
-        <source>Play from selected (F4) starts here. Click, then click the map to move it.</source>
-        <translation>「選択位置からプレイ」（F4）はここから始まります。クリックしてからマップをクリックすると移動します。</translation>
-    </message>
-    <message>
         <source>Pick a start point in an editor (F4)</source>
         <translation>エディタで開始位置を選んでください（F4）</translation>
     </message>
@@ -9119,6 +9139,10 @@
     <message>
         <source>Playtest start</source>
         <translation>テスト開始位置</translation>
+    </message>
+    <message>
+        <source>Play from selected (F4) starts here. Click, then click the map to move it, or drag it onto the map.</source>
+        <translation>「選択位置からプレイ」（F4）はここから始まります。クリックしてからマップをクリックするか、マップへドラッグすると移動します。</translation>
     </message>
 </context>
 <context>
