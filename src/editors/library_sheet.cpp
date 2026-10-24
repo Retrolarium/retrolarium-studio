@@ -186,9 +186,10 @@ SheetPane::SheetPane(sdk::EditorModel* model, QWidget* parent)
     layout->addStretch(1);
 
     QPointer<sdk::EditorModel> guarded = model_;
-    sheet_->onPick = [guarded](const QString& id) {
+    sheet_->onPick = [this, guarded](const QString& id) {
         if (guarded) {
             guarded->setCurrentLibraryItem(id);
+            emit picked(id);
         }
     };
     // Strokes change the model on every move: refresh once per event loop.

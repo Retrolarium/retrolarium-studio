@@ -25,6 +25,7 @@ public:
     bool setField(const QString& key, const QVariant& value, QString* error) override;
     QString statusText() const override;
     QString startPoint() const override;
+    QString startLibraryItem() const override { return QStringLiteral("special:start"); }
     QString currentLibraryItem() const override;
     sdk::Library sheet() const override;
     void setCurrentLibraryItem(const QString& id) override;

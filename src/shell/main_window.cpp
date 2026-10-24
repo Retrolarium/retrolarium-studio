@@ -2,6 +2,7 @@
 
 #include "editors/editor_view.hpp"
 #include "editors/emulator_view.hpp"
+#include "editors/mime.hpp"
 #include "frame/studio_dialog.hpp"
 #include "frame/title_bar.hpp"
 #include "runtime/audio_player.hpp"
@@ -1851,7 +1852,10 @@ void MainWindow::updateToolbarRow() {
             // tool: it follows the cursor until a click sets it down.
             const QString item = model_->startLibraryItem();
             if (!item.isEmpty()) {
-                chip->setToolTip(tr("Play from selected (F4) starts here. Click, then click the map to move it."));
+                chip->setToolTip(
+                    tr("Play from selected (F4) starts here. Click, then click the map to move it, or drag it "
+                       "onto the map."));
+                chip->setDragData(QString::fromLatin1(editors::kLibraryItemMime), item.toUtf8());
                 connect(chip, &QAbstractButton::clicked, this, [this, item] {
                     if (editor_) editor_->armPlacement(item);
                 });

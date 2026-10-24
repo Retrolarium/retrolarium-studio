@@ -5,8 +5,12 @@
 #include "theme/theme.hpp"
 #include "theme/typography.hpp"
 
+#include <QApplication>
+#include <QDrag>
 #include <QFontMetrics>
 #include <QMenu>
+#include <QMimeData>
+#include <QMouseEvent>
 #include <QPainter>
 
 #include <algorithm>
@@ -77,6 +81,38 @@ void ViewChip::setValue(const QString& value) {
 }
 
 void ViewChip::setChoices(const QStringList& choices) { choices_ = choices; }
+
+void ViewChip::setDragData(const QString& mimeType, const QByteArray& data) {
+    dragType_ = mimeType;
+    dragData_ = data;
+}
+
+void ViewChip::mousePressEvent(QMouseEvent* event) {
+    pressPos_ = event->pos();
+    QAbstractButton::mousePressEvent(event);
+}
+
+void ViewChip::mouseMoveEvent(QMouseEvent* event) {
+    if (dragType_.isEmpty() || !(event->buttons() & Qt::LeftButton) ||
+        (event->pos() - pressPos_).manhattanLength() < QApplication::startDragDistance()) {
+        QAbstractButton::mouseMoveEvent(event);
+        return;
+    }
+    // A drag, not a click: the release must not click the chip.
+    setDown(false);
+    auto* mime = new QMimeData;
+    mime->setData(dragType_, dragData_);
+    auto* drag = new QDrag(this);
+    drag->setMimeData(mime);
+    const QImage picture = chipPicture(picture_);
+    if (!picture.isNull()) {
+        const QPixmap pixmap =
+            QPixmap::fromImage(picture.scaled(picture.size() * 2, Qt::KeepAspectRatio, Qt::FastTransformation));
+        drag->setPixmap(pixmap);
+        drag->setHotSpot(QPoint(pixmap.width() / 2, pixmap.height() / 2));
+    }
+    drag->exec(Qt::CopyAction);
+}
 
 void ViewChip::setPicture(const QImage& picture) {
     picture_ = chipPicture(picture);

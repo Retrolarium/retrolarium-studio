@@ -26,6 +26,9 @@ public:
     // A small picture before the key (the game's player on the start chip),
     // its transparent edges cut and scaled up in whole steps to the chip.
     void setPicture(const QImage& picture);
+    // Pressing and dragging the chip drags this (a library item onto a map)
+    // instead of clicking it.
+    void setDragData(const QString& mimeType, const QByteArray& data);
 
     QSize sizeHint() const override;
     QSize minimumSizeHint() const override;
@@ -37,6 +40,8 @@ protected:
     void paintEvent(QPaintEvent* event) override;
     void enterEvent(QEvent* event) override;
     void leaveEvent(QEvent* event) override;
+    void mousePressEvent(QMouseEvent* event) override;
+    void mouseMoveEvent(QMouseEvent* event) override;
 
 private:
     void showChoices();
@@ -46,6 +51,9 @@ private:
     QStringList choices_;
     QImage picture_;
     bool hovered_ = false;
+    QString dragType_;
+    QByteArray dragData_;
+    QPoint pressPos_;
 };
 
 }  // namespace rl::ui

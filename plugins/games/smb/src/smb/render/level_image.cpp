@@ -64,7 +64,9 @@ int enemyPalette(int id, const QVector<int>& attributes, int firebar, int platfo
 }
 
 QVector<bool> horizontalFlips(int id) {
-    if (id == 0x07 || id == 0x0c || id == 0x0d || id == 0x35 || id == 0x32) {
+    // The retainer: only the bottom right sprite mirrors the left one.
+    if (id == 0x35) return {false, false, false, false, false, true};
+    if (id == 0x07 || id == 0x0c || id == 0x0d || id == 0x32) {
         return {false, true, false, true, false, true};
     }
     if (id == 0x11) return {true, true, true, true, false, true};

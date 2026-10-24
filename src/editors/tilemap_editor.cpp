@@ -20,6 +20,7 @@
 #include <QPainter>
 #include <QScrollArea>
 #include <QScrollBar>
+#include <QShortcut>
 #include <QShowEvent>
 #include <QSplitter>
 #include <QTimer>
@@ -446,7 +447,7 @@ void MapCanvas::dropEvent(QDropEvent* event) {
     const QPoint cell = cellAt(event->pos());
     const QString item = QString::fromUtf8(event->mimeData()->data(kLibraryItemMime));
     QString error;
-    if (insideMap(cell) && !model_->placeObject(item, cell, &error)) {
+    if (insideMap(cell) && !(onDrop ? onDrop(item, cell, &error) : model_->placeObject(item, cell, &error))) {
         emit actionFailed(error);
     }
     event->acceptProposedAction();
@@ -606,9 +607,49 @@ TileMapEditor::TileMapEditor(sdk::TileMapModel* model, QWidget* parent)
     split->addWidget(scroll_);
     auto* sheet = new SheetPane(model, split);
     split->addWidget(sheet);
+    // A block clicked in the sheet is a brush to paint with; an object is
+    // something to put down (rememberPick takes the Add tool for it).
+    connect(sheet, &SheetPane::picked, this, [this] {
+        if (!map_->brushes().isEmpty() && offersTool(QStringLiteral("paint")) && tool_ != QLatin1String("paint")) {
+            chooseTool(QStringLiteral("paint"));
+            emit toolbarChanged();
+        }
+    });
+    // A drop puts one item down: the brush, the picked item and the tool
+    // stay as they were.
+    canvas_->onDrop = [this](const QString& item, QPoint cell, QString* error) {
+        const QString before = map_->currentLibraryItem();
+        const bool hasBrush = !map_->brushes().isEmpty();
+        const int brush = map_->currentBrush();
+        const QString tool = tool_;
+        restoring_ = true;
+        const bool placed = map_->placeObject(item, cell, error);
+        if (!before.isEmpty() && map_->currentLibraryItem() != before && libraryHas(before)) {
+            map_->setCurrentLibraryItem(before);
+        }
+        if (hasBrush && !map_->brushes().isEmpty() && map_->currentBrush() != brush) map_->setCurrentBrush(brush);
+        restoring_ = false;
+        pickedItem_ = map_->currentLibraryItem();
+        if (tool_ != tool && offersTool(tool)) chooseTool(tool);
+        updatePlacePreview();
+        emit toolbarChanged();
+        return placed;
+    };
     split->setStretchFactor(0, 1);
     split->setStretchFactor(1, 0);
     layout->addWidget(split);
+
+    // Esc anywhere in the window puts the Add or Paint tool down: the Select
+    // tool comes back and the picked item no longer follows the cursor.
+    // Only while one of them is on, so Esc keeps its other uses.
+    putDown_ = new QShortcut(QKeySequence(Qt::Key_Escape), this);
+    putDown_->setContext(Qt::WindowShortcut);
+    putDown_->setEnabled(false);
+    connect(putDown_, &QShortcut::activated, this, [this] {
+        if (!offersTool(QStringLiteral("select"))) return;
+        chooseTool(QStringLiteral("select"));
+        emit toolbarChanged();
+    });
 
     const QVector<sdk::Tool> tools = map_->tools();
     const bool remembered =
@@ -690,6 +731,7 @@ bool TileMapEditor::findLibraryItem(const QString& item, QImage* icon, QSize* ce
 }
 
 void TileMapEditor::updatePlacePreview() {
+    if (putDown_) putDown_->setEnabled(tool_ == QLatin1String("place") || tool_ == QLatin1String("paint"));
     QImage icon;
     QSize cells;
     if (tool_ == QLatin1String("place") && findLibraryItem(map_->currentLibraryItem(), &icon, &cells)) {

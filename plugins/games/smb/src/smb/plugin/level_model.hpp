@@ -31,6 +31,7 @@ public:
     void setViewOption(const QString& key, const QString& value) override;
     QString statusText() const override;
     QString startPoint() const override;
+    QString startLibraryItem() const override { return QStringLiteral("start"); }
     QString currentLibraryItem() const override { return libraryItem_; }
     void setCurrentLibraryItem(const QString& id) override;
 

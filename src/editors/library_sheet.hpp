@@ -65,6 +65,10 @@ public:
 
     QSize sizeHint() const override;
 
+signals:
+    // A tile clicked (not dragged): the model has made it current.
+    void picked(const QString& id);
+
 private:
     void refresh();
 

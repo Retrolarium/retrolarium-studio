@@ -6,7 +6,10 @@
 #include <QPoint>
 #include <QString>
 
+#include <functional>
+
 class QScrollArea;
+class QShortcut;
 
 namespace rl::sdk {
 class TileMapModel;
@@ -58,6 +61,7 @@ private:
     QString pickLayer_;
     QString pickedItem_;  // the library item last seen, to notice a new pick
     bool restoring_ = false;
+    QShortcut* putDown_ = nullptr;  // Esc: the Add or Paint tool back to Select
     bool fitted_ = false;
 };
 
@@ -73,6 +77,8 @@ public:
     bool gridVisible() const { return grid_; }
     void setGridVisible(bool visible);
     void setTool(const QString& tool);
+    // Puts a dropped library item down; the model's placeObject when unset.
+    std::function<bool(const QString& item, QPoint cell, QString* error)> onDrop;
     // What the Add tool puts down: drawn translucent under the cursor.
     void setPlacePreview(const QImage& icon, QSize cells);
     void refresh();
