@@ -174,6 +174,9 @@ private:
     QString emulatorKind() const;
     void releaseEditor();
 
+    // Drives the window through its own actions in a scripted test run.
+    friend class Autotest;
+
     std::unique_ptr<sdk::Session> session_;
     std::unique_ptr<sdk::EditorModel> model_;
     std::unique_ptr<editors::EditorView> editor_;

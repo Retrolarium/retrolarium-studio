@@ -114,6 +114,14 @@ QString recentLabel(const QString& path) {
     return name.isEmpty() ? QFileInfo(path).fileName() : name;
 }
 
+// Where downloaded games and ROM projects go: the user's Documents, or the
+// test run's own home (RETROLARIUM_STUDIO_HOME, tools/autotest).
+QString documentsDirectory() {
+    const QString home = qEnvironmentVariable("RETROLARIUM_STUDIO_HOME");
+    return home.isEmpty() ? QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation)
+                          : QDir(home).filePath(QStringLiteral("Documents"));
+}
+
 // The repository .rlj of a version's project
 // (<repository>/.retrolarium/<version>/<game>-<version>.rlj), or empty.
 QString repositoryDescriptor(const QString& projectPath) {
@@ -1300,8 +1308,7 @@ void MainWindow::openRomAsProject(const QString& rom) {
     // beside it, and the project; the same ROM finds its folder again.
     const QFileInfo info(rom);
     const QString digest = fileSha256(rom);
-    const QDir root(QDir(QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation))
-                        .filePath(QStringLiteral("Retrolarium/ROMs")));
+    const QDir root(QDir(documentsDirectory()).filePath(QStringLiteral("Retrolarium/ROMs")));
     QString stem = info.completeBaseName();
     stem.replace(QRegularExpression(QStringLiteral(R"([\\/:*?"<>|])")), QStringLiteral("_"));
     QString folder = root.filePath(stem);
@@ -1353,8 +1360,7 @@ void MainWindow::openRomAsProject(const QString& rom) {
 
 void MainWindow::setUpGameSource(const QString& rom) {
     // Downloaded games go where the user finds them: their edits live there.
-    const QString games = QDir(QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation))
-                              .filePath(QStringLiteral("Retrolarium"));
+    const QString games = QDir(documentsDirectory()).filePath(QStringLiteral("Retrolarium"));
     QStringList arguments{QStringLiteral("studio"), QStringLiteral("open-rom"), rom, QStringLiteral("--games"), games};
     for (const QString& known : QSettings().value(QString::fromLatin1(kRepositoriesKey)).toStringList()) {
         if (QFileInfo(known).isFile()) arguments << QStringLiteral("--known") << known;

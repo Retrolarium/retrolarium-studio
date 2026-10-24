@@ -176,6 +176,8 @@ studio_enable_warnings(studio_gallery)
 add_library(studio_shell STATIC
     src/shell/about_dialog.cpp
     src/shell/about_dialog.hpp
+    src/shell/autotest.cpp
+    src/shell/autotest.hpp
     src/shell/bottom_panel.cpp
     src/shell/bottom_panel.hpp
     src/shell/inspector_panel.cpp

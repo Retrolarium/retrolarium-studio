@@ -1,5 +1,6 @@
 #include "builtin_plugins.hpp"
 #include "gallery/theme_gallery.hpp"
+#include "shell/autotest.hpp"
 #include "shell/main_window.hpp"
 #include "theme/brand.hpp"
 #include "theme/theme.hpp"
@@ -11,8 +12,11 @@
 
 #include <QApplication>
 #include <QCommandLineParser>
+#include <QDir>
 #include <QFile>
 #include <QScreen>
+#include <QSettings>
+#include <QStandardPaths>
 #include <QStyle>
 #include <QTimer>
 #include <QTranslator>
@@ -82,6 +86,15 @@ int main(int argc, char* argv[]) {
     QApplication::setOrganizationName(QStringLiteral("Retrolarium"));
     QApplication::setApplicationVersion(QStringLiteral(RETROLARIUM_STUDIO_VERSION));
 
+    // A test run (tools/autotest) keeps its settings and data in its own
+    // home: nothing of the user's is read or changed.
+    const QString home = qEnvironmentVariable("RETROLARIUM_STUDIO_HOME");
+    if (!home.isEmpty()) {
+        QSettings::setDefaultFormat(QSettings::IniFormat);
+        QSettings::setPath(QSettings::IniFormat, QSettings::UserScope, QDir(home).filePath(QStringLiteral("settings")));
+        QStandardPaths::setTestModeEnabled(true);
+    }
+
     // The interface language: the studio's own text, then Qt's dialogs.
     const QString language = rl::shell::SettingsDialog::language();
     rl::theme::setInterfaceLanguage(language);
@@ -119,8 +132,12 @@ int main(int argc, char* argv[]) {
     const QCommandLineOption documentOption(
         QStringLiteral("document"), QStringLiteral("Open kind/document after the project, e.g. levels/round-07."),
         QStringLiteral("kind/document"));
-    parser.addOptions(
-        {themeOption, screenshotOption, sizeOption, fontReportOption, switchOption, galleryOption, documentOption});
+    const QCommandLineOption autotestOption(
+        QStringLiteral("autotest"),
+        QStringLiteral("Run a scripted interface test (tools/autotest) and exit with its result."),
+        QStringLiteral("scenario"));
+    parser.addOptions({themeOption, screenshotOption, sizeOption, fontReportOption, switchOption, galleryOption,
+                       documentOption, autotestOption});
     parser.addPositionalArgument(QStringLiteral("project"), QStringLiteral("Project file (.rlj) to open."));
     parser.process(app);
 
@@ -189,6 +206,12 @@ int main(int argc, char* argv[]) {
         window.show();
     } else {
         window.showMaximized();
+    }
+    if (parser.isSet(autotestOption)) {
+        if (auto* studio = qobject_cast<rl::shell::MainWindow*>(&window)) {
+            auto* test = new rl::shell::Autotest(studio, parser.value(autotestOption));
+            QTimer::singleShot(0, test, &rl::shell::Autotest::start);
+        }
     }
     return app.exec();
 }
