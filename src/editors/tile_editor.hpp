@@ -27,6 +27,14 @@ public:
     QWidget* createToolbar(QWidget* parent) override;
     QString currentTool() const { return tool_; }
 
+protected:
+    // The atlas has the keys from the moment the editor opens: a click on
+    // its empty room gives them back, and arrows pressed elsewhere in the
+    // editor go to it.
+    void showEvent(QShowEvent* event) override;
+    void mousePressEvent(QMouseEvent* event) override;
+    void keyPressEvent(QKeyEvent* event) override;
+
 private:
     void chooseTool(const QString& id);
     // Scrolls the atlas to the selected tile.

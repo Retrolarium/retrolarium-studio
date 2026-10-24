@@ -8,6 +8,7 @@
 #include "widgets/segmented_control.hpp"
 #include "widgets/view_chip.hpp"
 
+#include <QApplication>
 #include <QHBoxLayout>
 #include <QHash>
 #include <QImage>
@@ -16,6 +17,7 @@
 #include <QPainter>
 #include <QScrollArea>
 #include <QScrollBar>
+#include <QShowEvent>
 #include <QTimer>
 #include <QVBoxLayout>
 
@@ -403,6 +405,31 @@ TileEditor::TileEditor(sdk::TileModel* model, QWidget* parent) : EditorView(mode
     connect(tiles_, &sdk::EditorModel::selectionChanged, this, &TileEditor::showCurrentTile);
     // A model may open on a tile far down (a ROM's graphics): once laid out.
     QTimer::singleShot(0, this, &TileEditor::showCurrentTile);
+}
+
+void TileEditor::showEvent(QShowEvent* event) {
+    EditorView::showEvent(event);
+    // Once the editor is in place, so the document list's click is over.
+    QTimer::singleShot(0, atlas_, [this] { atlas_->setFocus(Qt::OtherFocusReason); });
+}
+
+void TileEditor::mousePressEvent(QMouseEvent* event) {
+    atlas_->setFocus(Qt::MouseFocusReason);
+    EditorView::mousePressEvent(event);
+}
+
+void TileEditor::keyPressEvent(QKeyEvent* event) {
+    switch (event->key()) {
+        case Qt::Key_Left:
+        case Qt::Key_Right:
+        case Qt::Key_Up:
+        case Qt::Key_Down:
+            atlas_->setFocus(Qt::OtherFocusReason);
+            QApplication::sendEvent(atlas_, event);
+            return;
+        default:
+            EditorView::keyPressEvent(event);
+    }
 }
 
 void TileEditor::showCurrentTile() {
