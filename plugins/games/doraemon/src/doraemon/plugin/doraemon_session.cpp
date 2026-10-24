@@ -1145,6 +1145,17 @@ QString DoraemonSession::selectedStart() const {
     return tr("World %1").arg(startWorld_);
 }
 
+QImage DoraemonSession::playerIcon() const {
+    // Doraemon standing in World 1 (metasprite 0, the first sprite colours);
+    // a project still being read has no art yet.
+    try {
+        QPoint origin;
+        return metaspriteImage(this, World::One, 0, painter().colours(World::One, 0, 4), &origin);
+    } catch (const std::exception&) {
+        return {};
+    }
+}
+
 void DoraemonSession::setStartWorld(int world) {
     const int next = std::clamp(world, 1, 3);
     if (next == startWorld_ && !hasStartPoint()) return;

@@ -80,6 +80,9 @@ private:
     sdk::Inspection inspectSchedule() const;
     bool setScheduleField(const QString& key, const QVariant& value, QString* error);
     bool objectLayer() const { return layer_ == QLatin1String("objects"); }
+    // World 1's playtest start on this map, in big blocks; (-1, -1) when
+    // it is not here.
+    QPoint startCell() const;
     QVector<int> cells() const;
     bool commit(const QVector<int>& cells, const QString& text, QString* error);
     int presetAt(int cell) const;
@@ -95,6 +98,7 @@ private:
     QHash<int, int> stroke_;  // cell -> painted block
     QString layer_ = QStringLiteral("blocks");
     int object_ = -1;                    // selected placement
+    bool startSelected_ = false;         // the playtest start is selected
     int scheduled_ = -1;                 // selected World 3 schedule slot
     std::optional<QJsonArray> dragged_;  // the list while a placement is dragged
     mutable QImage base_;

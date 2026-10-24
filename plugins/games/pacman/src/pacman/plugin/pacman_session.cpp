@@ -486,6 +486,16 @@ QString PacmanSession::selectedStart() const {
     return tr("Round %1").arg(round_);
 }
 
+QImage PacmanSession::playerIcon() const {
+    // Pac-Man as a round starts (actor frame 4); a project still being read
+    // has no art yet.
+    try {
+        return painter().frame(state_.bundle.resource(ids::kActors), false, 4, 0);
+    } catch (const std::exception&) {
+        return {};
+    }
+}
+
 QString PacmanSession::playSelectedLabel() const {
     if (isRecording()) return tr("Stop recording");
     return demoStart() ? tr("Play demo") : QString();

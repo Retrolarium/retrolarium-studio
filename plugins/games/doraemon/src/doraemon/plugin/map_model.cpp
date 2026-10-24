@@ -25,8 +25,17 @@ DoraemonMapModel::DoraemonMapModel(DoraemonSession* session, World world, QStrin
     session_->painter().mapCells(world_, map_, &width_, &height_);
     connect(session_, &sdk::Session::contentChanged, this, &sdk::EditorModel::contentChanged);
     connect(session_, &sdk::Session::selectedStartChanged, this, &sdk::EditorModel::toolsChanged);
-    // Play from selected starts the world of the map being edited.
-    session_->setStartWorld(int(world_));
+    connect(session_, &sdk::Session::selectedStartChanged, this, &sdk::EditorModel::contentChanged);
+    // Play from selected starts the world of the map being edited; a start
+    // placed in it stays.
+    if (session_->startWorld() != int(world_)) session_->setStartWorld(int(world_));
+}
+
+QPoint DoraemonMapModel::startCell() const {
+    if (world_ != World::One) return {-1, -1};
+    const QPoint block = session_->startBlock();
+    if (block.x() < 0 || session_->startUnderground() != (map_ != QLatin1String("city"))) return {-1, -1};
+    return block;
 }
 
 QString DoraemonMapModel::startPoint() const { return session_->selectedStart(); }
@@ -78,6 +87,12 @@ QImage DoraemonMapModel::render() const {
         QPoint at;
         const QImage sprite = objectImage(v.toObject(), &at);
         painter.drawImage(at, sprite);
+    }
+    // The playtest start: Doraemon in the middle of its block.
+    const QPoint start = startCell();
+    if (start.x() >= 0) {
+        const QImage icon = session_->playerIcon();
+        painter.drawImage(start.x() * 32 + (32 - icon.width()) / 2, start.y() * 32 + (32 - icon.height()) / 2, icon);
     }
     if (world_ == World::Three && objectLayer() && session_->bundle().contains(QStringLiteral("world3-schedule"))) {
         QFont font = painter.font();
@@ -160,6 +175,14 @@ bool DoraemonMapModel::commit(const QVector<int>& next, const QString& text, QSt
 }
 
 bool DoraemonMapModel::placeObject(const QString& libraryItem, QPoint cell, QString* error) {
+    if (libraryItem == QLatin1String("start") && world_ == World::One) {
+        // Play from selected drops Doraemon into this block.
+        const QPoint block = objectLayer() ? QPoint(cell.x() / 4, cell.y() / 4) : cell;
+        if (!isCellEditable(block)) return false;
+        session_->setStartBlock(block, map_ != QLatin1String("city"));
+        selectObject(QStringLiteral("start"));
+        return true;
+    }
     if (!libraryItem.startsWith(QLatin1String("block:")) || !isCellEditable(cell)) return false;
     setCurrentLibraryItem(libraryItem);
     QVector<int> next = cells();
@@ -214,6 +237,13 @@ QVector<sdk::MapObject> DoraemonMapModel::objects() const {
             }
             result << o;
         }
+        if (startCell().x() >= 0) {
+            sdk::MapObject o;
+            o.id = QStringLiteral("start");
+            o.label = tr("Playtest start");
+            o.cells = QRect(startCell() * 4, QSize(4, 4));
+            result << o;
+        }
         if (world_ == World::Three && session_->bundle().contains(QStringLiteral("world3-schedule"))) {
             for (int slot = 0; slot < 64 * 4; ++slot) {
                 QRect pixels;
@@ -257,16 +287,30 @@ QVector<sdk::MapObject> DoraemonMapModel::objects() const {
         o.outlined = false;
         result << o;
     }
+    // Last, so it is on top of its cell.
+    if (startCell().x() >= 0) {
+        sdk::MapObject o;
+        o.id = QStringLiteral("start");
+        o.label = tr("Playtest start");
+        o.cells = QRect(startCell(), QSize(1, 1));
+        result << o;
+    }
     return result;
 }
 
 QString DoraemonMapModel::selectedObject() const {
+    if (startSelected_) return QStringLiteral("start");
     if (objectLayer() && scheduled_ >= 0) return QStringLiteral("sched:%1").arg(scheduled_);
     if (objectLayer()) return object_ >= 0 ? QStringLiteral("obj:%1").arg(object_) : QString();
     return cell_ >= 0 ? QStringLiteral("cell:%1").arg(cell_) : QString();
 }
 
 void DoraemonMapModel::selectObject(const QString& id) {
+    const bool start = id == QLatin1String("start");
+    if (start != startSelected_) {
+        startSelected_ = start;
+        emit selectionChanged();
+    }
     if (objectLayer()) {
         const int object = id.startsWith(QLatin1String("obj:")) ? id.mid(4).toInt() : -1;
         const int scheduled = id.startsWith(QLatin1String("sched:")) ? id.mid(6).toInt() : -1;
@@ -289,11 +333,10 @@ void DoraemonMapModel::selectObject(const QString& id) {
         emit selectionChanged();
         emit toolsChanged();
     }
-    // Play from selected starts at the picked city or underground block (the
-    // kit drops in through a manhole) or World 3 room.
-    if (cell_ >= 0 && world_ == World::One) {
-        session_->setStartBlock(QPoint(cell_ % width_, cell_ / width_), map_ != QLatin1String("city"));
-    } else if (cell_ >= 0 && world_ == World::Three) {
+    // Play from selected starts in the picked World 3 room; World 1 starts
+    // where the playtest start is placed (the kit drops into an underground
+    // block through a manhole).
+    if (cell_ >= 0 && world_ == World::Three) {
         session_->setStartRoom(((cell_ / width_) / kRoomCells) * 8 + (cell_ % width_) / kRoomCells);
     }
 }
@@ -330,6 +373,14 @@ bool DoraemonMapModel::setField(const QString& key, const QVariant& value, QStri
 
 sdk::Library DoraemonMapModel::sheet() const {
     sdk::Library result;
+    // The start among the objects; the blocks' sheet stays a 16-wide grid.
+    if (world_ == World::One && objectLayer()) {
+        sdk::LibraryItem start;
+        start.id = QStringLiteral("start");
+        start.label = tr("Playtest start");
+        start.icon = session_->playerIcon();
+        result.items << start;
+    }
     if (objectLayer()) return result;
     result.grid = true;
     result.columns = 16;
@@ -412,6 +463,28 @@ constexpr int kAlwaysScanned = 45;  // city records after these stay ordered by 
 // Placement types: $00-$0B enemies; $80-$8C / $C0-$CC descriptor objects,
 // bit 6 hidden until shot.
 bool isDescriptor(int type) { return (type & 0x80) != 0; }
+
+// The game scans the city's records after the first kAlwaysScanned in order
+// of X: a record moved among them takes its place in that order. Returns
+// where record `moved` ends up.
+int sortScannedTail(QJsonArray& list, int moved) {
+    if (list.size() <= kAlwaysScanned) return moved;
+    QVector<int> order;
+    for (int i = kAlwaysScanned; i < list.size(); ++i) order << i;
+    std::stable_sort(order.begin(), order.end(), [&list](int a, int b) {
+        return list.at(a).toObject().value(QStringLiteral("x")).toInt() <
+               list.at(b).toObject().value(QStringLiteral("x")).toInt();
+    });
+    QJsonArray sorted;
+    for (int i = 0; i < kAlwaysScanned; ++i) sorted << list.at(i);
+    int at = moved;
+    for (int i = 0; i < order.size(); ++i) {
+        sorted << list.at(order.at(i));
+        if (order.at(i) == moved) at = kAlwaysScanned + i;
+    }
+    list = sorted;
+    return at;
+}
 
 // The game's names (its repository's names.json): World 1's enemies by their
 // metasprite base, its descriptor objects by index, World 3's types.
@@ -551,6 +624,13 @@ void DoraemonMapModel::beginDrag(const QString& id) {
 }
 
 bool DoraemonMapModel::dragObject(const QString& id, QPoint topLeftCell) {
+    if (id == QLatin1String("start")) {
+        const QPoint at = objectLayer() ? QPoint(topLeftCell.x() / 4, topLeftCell.y() / 4) : topLeftCell;
+        const QPoint block(std::clamp(at.x(), 0, width_ - 1), std::clamp(at.y(), 0, height_ - 1));
+        if (block == startCell()) return false;
+        session_->setStartBlock(block, map_ != QLatin1String("city"));
+        return true;
+    }
     if (!dragged_ || !id.startsWith(QLatin1String("obj:"))) return false;
     const int i = id.mid(4).toInt();
     if (i < 0 || i >= dragged_->size()) return false;
@@ -577,15 +657,9 @@ bool DoraemonMapModel::dragObject(const QString& id, QPoint topLeftCell) {
     // The drag moves the drawn sprite; the record holds its origin cell.
     const QPoint offset = origin - QPoint(record.value(QStringLiteral("x")).toInt() * 8,
                                           record.value(QStringLiteral("y")).toInt() * 8 - 1);
-    int x = std::clamp(topLeftCell.x() - offset.x() / 8, 1, std::min(255, width_ * 4 - 1));
+    // The scanned tail is put back in order of X when the drag ends.
+    const int x = std::clamp(topLeftCell.x() - offset.x() / 8, 1, std::min(255, width_ * 4 - 1));
     const int y = std::clamp(topLeftCell.y() - offset.y() / 8, 0, std::min(255, height_ * 4 - 1));
-    if (map_ == QLatin1String("city") && i >= kAlwaysScanned) {
-        // Keep the scanned tail ordered by X between its neighbours.
-        const int low = i > kAlwaysScanned ? dragged_->at(i - 1).toObject().value(QStringLiteral("x")).toInt() : 1;
-        const int high =
-            i + 1 < dragged_->size() ? dragged_->at(i + 1).toObject().value(QStringLiteral("x")).toInt() : 255;
-        x = std::clamp(x, low, high);
-    }
     if (record.value(QStringLiteral("x")).toInt() == x && record.value(QStringLiteral("y")).toInt() == y) return false;
     record.insert(QStringLiteral("x"), x);
     record.insert(QStringLiteral("y"), y);
@@ -596,8 +670,15 @@ bool DoraemonMapModel::dragObject(const QString& id, QPoint topLeftCell) {
 
 void DoraemonMapModel::endDrag() {
     if (!dragged_) return;
-    const QJsonArray next = *dragged_;
+    QJsonArray next = *dragged_;
     dragged_.reset();
+    if (map_ == QLatin1String("city") && object_ >= kAlwaysScanned) {
+        const int at = sortScannedTail(next, object_);
+        if (at != object_) {
+            object_ = at;
+            emit selectionChanged();
+        }
+    }
     if (next == records()) return;
     QString error;
     if (!commitRecords(next,
@@ -709,8 +790,8 @@ sdk::Inspection DoraemonMapModel::inspectObject() const {
         inspection.fields << hidden;
     }
     inspection.note = map_ == QLatin1String("city") && object_ >= kAlwaysScanned
-                          ? tr("The game scans the city's objects after the first %1 in order of X, so this "
-                               "one stays between its neighbours' columns.")
+                          ? tr("The game scans the city's objects after the first %1 in order of X: moved, "
+                               "this one takes its place in that order.")
                                 .arg(kAlwaysScanned)
                           : tr("Enemies take their sprite, colours and health from the enemy table; objects "
                                "from their descriptor.");
@@ -862,16 +943,13 @@ bool DoraemonMapModel::setObjectField(const QString& key, const QVariant& value,
         return false;
     }
     list.replace(object_, record);
-    if (map_ == QLatin1String("city")) {
-        QVector<int> tail;
-        for (int i = kAlwaysScanned; i < list.size(); ++i)
-            tail << list.at(i).toObject().value(QStringLiteral("x")).toInt();
-        if (!std::is_sorted(tail.begin(), tail.end())) {
-            if (error) *error = tr("The city's objects after the first %1 stay ordered by X.").arg(kAlwaysScanned);
-            return false;
-        }
+    int at = object_;
+    if (map_ == QLatin1String("city") && object_ >= kAlwaysScanned) at = sortScannedTail(list, object_);
+    if (!commitRecords(list, tr("Edit %1").arg(objectName(record.value(QStringLiteral("type")).toInt())), error)) {
+        return false;
     }
-    return commitRecords(list, tr("Edit %1").arg(objectName(record.value(QStringLiteral("type")).toInt())), error);
+    if (at != object_) selectObject(QStringLiteral("obj:%1").arg(at));
+    return true;
 }
 
 QString DoraemonMapModel::statusText() const {

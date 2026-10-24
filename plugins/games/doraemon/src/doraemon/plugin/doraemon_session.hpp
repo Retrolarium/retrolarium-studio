@@ -46,6 +46,7 @@ public:
     void play() override;
     void playSelected() override;
     QString selectedStart() const override;
+    QImage playerIcon() const override;
     QString playSelectedLabel() const override;
 
     // nes::BundleOwner
@@ -102,6 +103,9 @@ public:
     void setStartStage(int stage);
     void setStartRoom(int room);
     bool hasStartPoint() const { return startBlock_.x() >= 0 || startStage_ >= 0 || startRoom_ > 0; }
+    // World 1's start block, (-1, -1) when the start is elsewhere.
+    QPoint startBlock() const { return startWorld_ == 1 ? startBlock_ : QPoint(-1, -1); }
+    bool startUnderground() const { return startUnderground_; }
     // Demo steps from a recording ("<buttons> <updates>" lines); empty when
     // nothing was recorded.
     static QJsonArray stepsFromRecording(const QString& text, int capacity);
