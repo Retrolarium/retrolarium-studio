@@ -7,11 +7,15 @@
 #include "widgets/label.hpp"
 #include "widgets/primary_button.hpp"
 
+#include <QGuiApplication>
 #include <QHBoxLayout>
 #include <QPushButton>
+#include <QScreen>
 #include <QShortcut>
 #include <QShowEvent>
 #include <QVBoxLayout>
+
+#include <algorithm>
 
 namespace rl::frame {
 
@@ -40,6 +44,17 @@ StudioDialog::StudioDialog(const QString& title, QWidget* parent)
 void StudioDialog::showEvent(QShowEvent* event) {
     QDialog::showEvent(event);
     theme::applyWindowFrame(this, theme::current());
+    // On the screen, whole: centred on a window that hangs off the screen it
+    // came up out of sight, and the window behind it could not be used.
+    const QWidget* owner = parentWidget() ? parentWidget()->window() : nullptr;
+    QScreen* screen = owner && owner->screen() ? owner->screen() : QGuiApplication::primaryScreen();
+    if (!screen) return;
+    const QRect area = screen->availableGeometry();
+    QRect frame = frameGeometry();
+    if (owner) frame.moveCenter(owner->frameGeometry().intersected(area).center());
+    frame.moveLeft(std::clamp(frame.left(), area.left(), std::max(area.left(), area.right() - frame.width() + 1)));
+    frame.moveTop(std::clamp(frame.top(), area.top(), std::max(area.top(), area.bottom() - frame.height() + 1)));
+    if (frame.topLeft() != frameGeometry().topLeft()) move(frame.topLeft());
 }
 
 bool StudioDialog::nativeEvent(const QByteArray& eventType, void* message, long* result) {

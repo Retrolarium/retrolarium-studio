@@ -1222,10 +1222,14 @@ QString tomlString(const QString& value) {
     return QLatin1Char('"') + escaped + QLatin1Char('"');
 }
 
-// A known game's ROM: set up its source, or open it as it is? Asked unless
-// the answer was kept.
-bool askSetUpSource(QWidget* parent, const QString& name, bool* remember) {
+// A known game's ROM: set up its source, or open it as it is? Asked every
+// time until the source is set up: opening the bytes is the rare wish.
+bool askSetUpSource(QWidget* parent, const QString& name) {
     frame::StudioDialog dialog(QObject::tr("Open ROM"), parent);
+    // The size of its text, as a message is: a wrapped label left free made
+    // the dialog grow tall and wide on some screens.
+    dialog.setWindowFlag(Qt::MSWindowsFixedSizeDialogHint, true);
+    dialog.layout()->setSizeConstraint(QLayout::SetFixedSize);
     auto* layout = new QVBoxLayout(dialog.body());
     layout->setContentsMargins(20, 16, 20, 16);
     layout->setSpacing(12);
@@ -1236,9 +1240,9 @@ bool askSetUpSource(QWidget* parent, const QString& name, bool* remember) {
                                         "is: its bytes, its tiles, its header and a playtest."),
                             &dialog);
     text->setWordWrap(true);
+    text->setMinimumWidth(320);
+    text->setMaximumWidth(440);
     text->setFont(theme::font(theme::TextRole::Body, 13.0));
-    auto* keep = new QCheckBox(QObject::tr("Do not ask again"), &dialog);
-    keep->setFont(theme::font(theme::TextRole::Body, 13.0));
     auto* buttons = new QHBoxLayout;
     auto* asRom = new QPushButton(QObject::tr("Open the ROM"), &dialog);
     asRom->setAutoDefault(false);
@@ -1249,53 +1253,51 @@ bool askSetUpSource(QWidget* parent, const QString& name, bool* remember) {
     buttons->addWidget(source);
     layout->addWidget(heading);
     layout->addWidget(text);
-    layout->addWidget(keep);
+    layout->addSpacing(6);
     layout->addLayout(buttons);
-    dialog.setMinimumWidth(460);
     QObject::connect(source, &QPushButton::clicked, &dialog, &QDialog::accept);
     QObject::connect(asRom, &QPushButton::clicked, &dialog, &QDialog::reject);
-    const bool setUp = dialog.exec() == QDialog::Accepted;
-    *remember = keep->isChecked();
-    return setUp;
+    return dialog.exec() == QDialog::Accepted;
 }
 
 }  // namespace
 
 void MainWindow::openRomFile(const QString& rom) {
-    // A ROM opened as it is before, or saved from such a project, opens that
-    // project again.
+    // A known game whose source was set up from this very ROM opens there.
     const QString digest = fileSha256(rom);
-    const QString remembered = QSettings().value(QStringLiteral("romProjects/") + digest).toString();
-    if (!remembered.isEmpty() && QFileInfo::exists(remembered)) {
-        openProjectFile(remembered);
+    const QString source = QSettings().value(QStringLiteral("sourceProjects/") + digest).toString();
+    if (!source.isEmpty() && QFileInfo::exists(source)) {
+        openProjectFile(source, true);
         return;
     }
+    // A ROM opened as it is before, or saved from such a project, opens that
+    // project again, unless the studio knows the game (then it asks again).
+    const QString remembered = QSettings().value(QStringLiteral("romProjects/") + digest).toString();
+    const auto openAsRom = [this, rom, remembered] {
+        if (!remembered.isEmpty() && QFileInfo::exists(remembered)) {
+            openProjectFile(remembered);
+        } else {
+            openRomAsProject(rom);
+        }
+    };
     QString error;
     sdk::ProcessSpec spec =
         kitCommand({QStringLiteral("studio"), QStringLiteral("identify"), rom}, QFileInfo(rom).absolutePath(), &error);
     if (spec.program.isEmpty()) {
-        openRomAsProject(rom);
+        openAsRom();
         return;
     }
     spec.label = tr("Identify %1").arg(QFileInfo(rom).fileName());
-    runProcess(spec, [this, rom](const sdk::ProcessResult& result) {
+    runProcess(spec, [this, rom, openAsRom](const sdk::ProcessResult& result) {
         const QJsonArray matches =
             QJsonDocument::fromJson(result.standardOutput).object().value(QStringLiteral("matches")).toArray();
         if (!result.succeeded() || matches.isEmpty()) {
-            openRomAsProject(rom);
+            openAsRom();
             return;
         }
-        const QString choice = QSettings().value(QStringLiteral("openRom/choice")).toString();
-        bool setUp = choice == QLatin1String("source");
-        if (choice.isEmpty()) {
-            bool remember = false;
-            setUp =
-                askSetUpSource(this, matches.first().toObject().value(QStringLiteral("name")).toString(), &remember);
-            if (remember) {
-                QSettings().setValue(QStringLiteral("openRom/choice"),
-                                     setUp ? QStringLiteral("source") : QStringLiteral("rom"));
-            }
-        }
+        // openRom/choice "source" answers for scripted runs (tools/autotest).
+        const bool setUp = QSettings().value(QStringLiteral("openRom/choice")).toString() == QLatin1String("source") ||
+                           askSetUpSource(this, matches.first().toObject().value(QStringLiteral("name")).toString());
         if (setUp) {
             setUpGameSource(rom);
         } else {
@@ -1395,6 +1397,9 @@ void MainWindow::setUpGameSource(const QString& rom) {
                                    .arg(QDir::toNativeSeparators(QFileInfo(descriptor).absolutePath())),
                                name));
             }
+            // Set up: this ROM opens its source from now on, without asking.
+            QSettings().setValue(QStringLiteral("sourceProjects/") + fileSha256(rom),
+                                 r.value(QStringLiteral("project")).toString());
             openProjectFile(r.value(QStringLiteral("project")).toString(), true);
         } else {
             // A game the studio has no editors for, or a ROM it does not
