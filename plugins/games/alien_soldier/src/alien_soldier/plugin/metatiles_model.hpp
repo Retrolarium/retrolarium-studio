@@ -8,14 +8,15 @@ namespace rl::alien_soldier {
 
 class AlienSoldierSession;
 
-// A stage's chunks, eight to a row: each 256-pixel chunk is 8x8 patterns,
-// and painting a cell puts the brush's pattern (32x32, four tiles by four)
-// into that slot of the chunk.
+// A block set's chunks for one plane, eight to a row, drawn with the tiles
+// and colours of the set's first stage: each 256-pixel chunk is 8x8
+// patterns, and painting a cell puts the brush's pattern (32x32, four tiles
+// by four) into that slot of the chunk.
 class MetatilesModel final : public sdk::TileMapModel {
     Q_OBJECT
 
 public:
-    MetatilesModel(AlienSoldierSession* session, int stage);
+    MetatilesModel(AlienSoldierSession* session, int set, bool planeB);
 
     QString title() const override;
     sdk::Inspection inspect() const override;
@@ -42,12 +43,14 @@ public:
     void endStroke() override;
 
 private:
-    int plane() const;
+    int plane() const { return plane_; }
     // The RAM offset of a cell's chunk slot, or -1.
     int slotOffset(QPoint cell) const;
 
     AlienSoldierSession* session_;
-    int stage_;
+    int set_;
+    int stage_ = 0;
+    int plane_;
     int brush_ = 0;
     QJsonObject strokeBefore_;
     quint64 strokeRevision_ = 0;

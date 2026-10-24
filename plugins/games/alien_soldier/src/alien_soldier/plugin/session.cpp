@@ -114,6 +114,69 @@ QString AlienSoldierSession::stageLabel(int index) const {
     return name.isEmpty() ? tr("Stage slot %1").arg(two(index + 1)) : tr("Stage %1 · %2").arg(two(index + 1), name);
 }
 
+QVector<BlockSet> AlienSoldierSession::blockSets() const {
+    QVector<BlockSet> sets;
+    for (const QJsonValue& value : doc(Doc::Stages).value(QStringLiteral("block_sets")).toArray()) {
+        const QJsonObject item = value.toObject();
+        BlockSet set;
+        set.id = item.value(QStringLiteral("id")).toString();
+        set.plane = item.value(QStringLiteral("plane")).toInt();
+        for (const QJsonValue& stage : item.value(QStringLiteral("stages")).toArray()) set.stages << stage.toInt();
+        if (!set.stages.isEmpty()) sets << set;
+    }
+    return sets;
+}
+
+int AlienSoldierSession::blockSetOf(int stage) const {
+    const QVector<BlockSet> sets = blockSets();
+    for (int index = 0; index < sets.size(); ++index) {
+        if (sets[index].stages.contains(stage)) return index;
+    }
+    return -1;
+}
+
+QString AlienSoldierSession::blockSetLabel(int set) const {
+    const QVector<BlockSet> sets = blockSets();
+    if (set < 0 || set >= sets.size()) return {};
+    const QVector<int>& stages = sets[set].stages;
+    bool runs = true;
+    for (int index = 1; index < stages.size(); ++index) runs = runs && stages[index] == stages[index - 1] + 1;
+    if (stages.size() == 1) return tr("Stage %1").arg(two(stages.first() + 1));
+    if (runs) return tr("Stages %1–%2").arg(two(stages.first() + 1), two(stages.last() + 1));
+    QStringList numbers;
+    for (int stage : stages) numbers << two(stage + 1);
+    return tr("Stages %1").arg(numbers.join(QStringLiteral(", ")));
+}
+
+QRect AlienSoldierSession::stageArea(int stage) const {
+    const QJsonObject area = doc(Doc::Stages)
+                                 .value(QStringLiteral("scenes"))
+                                 .toArray()
+                                 .at(stage)
+                                 .toObject()
+                                 .value(QStringLiteral("area"))
+                                 .toObject();
+    if (area.isEmpty()) return {};
+    return QRect(area.value(QStringLiteral("x")).toInt(), area.value(QStringLiteral("y")).toInt(),
+                 area.value(QStringLiteral("width")).toInt(), area.value(QStringLiteral("height")).toInt());
+}
+
+QPoint AlienSoldierSession::stageStart(int stage) const {
+    const QString label = doc(Doc::Stages)
+                              .value(QStringLiteral("scenes"))
+                              .toArray()
+                              .at(stage)
+                              .toObject()
+                              .value(QStringLiteral("record"))
+                              .toString();
+    const QJsonArray records = doc(Doc::Levels).value(QStringLiteral("records")).toArray();
+    const QJsonObject record = records.at(indexOfLabel(records, label)).toObject();
+    const int x = record.value(QStringLiteral("camera_x")).toInt();
+    const int y = record.value(QStringLiteral("camera_y")).toInt();
+    // The plane streamer reads the coarse map at row -Y.
+    return {x, (0x10000 - y) & 0x1FFF};
+}
+
 // ---------------------------------------------------------------- documents
 
 QVector<sdk::DocumentGroup> AlienSoldierSession::documents(const QString& kind) const {
@@ -123,20 +186,41 @@ QVector<sdk::DocumentGroup> AlienSoldierSession::documents(const QString& kind) 
         result.title = title;
         return result;
     };
-    if (kind == QLatin1String("levels") || kind == QLatin1String("metatiles")) {
-        sdk::DocumentGroup stages = group(tr("Stages"));
-        const QJsonArray scenes = doc(Doc::Stages).value(QStringLiteral("scenes")).toArray();
-        const bool levelsDirty = documents_.tracked(Doc::Levels).isDirty();
-        const bool mapsDirty = documents_.tracked(Doc::Maps).isDirty();
-        for (int index = 0; index < scenes.size(); ++index) {
-            const QJsonObject scene = scenes.at(index).toObject();
-            const bool drawable = !scene.value(QStringLiteral("planes")).toArray().at(0).isNull() ||
-                                  !scene.value(QStringLiteral("planes")).toArray().at(1).isNull();
-            stages.documents.append(entry(QStringLiteral("stage-") + two(index + 1), stageLabel(index),
-                                          drawable ? QString() : tr("no map"),
-                                          kind == QLatin1String("levels") ? levelsDirty : mapsDirty));
+    if (kind == QLatin1String("levels")) {
+        // A level per block set: the whole layout, then each stage's part.
+        const bool dirty = documents_.tracked(Doc::Levels).isDirty() || documents_.tracked(Doc::Maps).isDirty();
+        const QVector<BlockSet> sets = blockSets();
+        for (int set = 0; set < sets.size(); ++set) {
+            sdk::DocumentGroup level = group(blockSetLabel(set));
+            level.documents.append(entry(QStringLiteral("set-%1").arg(set + 1), tr("Whole level"), {}, dirty));
+            for (int stage : sets[set].stages) {
+                level.documents.append(entry(QStringLiteral("stage-") + two(stage + 1), stageLabel(stage), {}, dirty));
+            }
+            groups.append(level);
         }
-        groups.append(stages);
+        sdk::DocumentGroup other = group(tr("Without a map"));
+        for (int stage = 0; stage < stageCount(); ++stage) {
+            if (blockSetOf(stage) < 0)
+                other.documents.append(
+                    entry(QStringLiteral("stage-") + two(stage + 1), stageLabel(stage), tr("no map"), dirty));
+        }
+        if (!other.documents.isEmpty()) groups.append(other);
+    } else if (kind == QLatin1String("metatiles")) {
+        // The chunks and patterns of each block set, plane B's beside them.
+        const bool dirty = documents_.tracked(Doc::Maps).isDirty();
+        const QVector<BlockSet> sets = blockSets();
+        for (int set = 0; set < sets.size(); ++set) {
+            sdk::DocumentGroup blocks = group(blockSetLabel(set));
+            const Scene& scene = stage(sets[set].stages.first());
+            for (int plane = 0; plane < 2; ++plane) {
+                const int chunks = chunkCount(scene, plane);
+                if (chunks == 0) continue;
+                blocks.documents.append(
+                    entry(QStringLiteral("set-%1-%2").arg(set + 1).arg(QLatin1Char(plane ? 'b' : 'a')),
+                          plane ? tr("Plane B") : tr("Plane A"), tr("%n chunks", nullptr, chunks), dirty));
+            }
+            if (!blocks.documents.isEmpty()) groups.append(blocks);
+        }
     } else if (kind == QLatin1String("tiles")) {
         sdk::DocumentGroup compressed = group(tr("Compressed"));
         for (const QJsonValue& value : doc(Doc::Compressed).value(QStringLiteral("payloads")).toArray()) {
@@ -246,15 +330,24 @@ std::unique_ptr<sdk::EditorModel> AlienSoldierSession::openEditor(const QString&
         const int number = document.mid(6).toInt(&ok);
         return ok ? number - 1 : -1;
     };
+    // "set-N" (a level), "set-N-a"/"set-N-b" (a block set's plane).
+    const auto setOf = [this, &document]() {
+        if (!document.startsWith(QLatin1String("set-"))) return -1;
+        bool ok = false;
+        const int number = document.mid(4).section(QLatin1Char('-'), 0, 0).toInt(&ok);
+        return ok && number >= 1 && number <= blockSets().size() ? number - 1 : -1;
+    };
     if (kind == QLatin1String("levels")) {
+        const int set = setOf();
+        if (set >= 0) return std::make_unique<LevelsModel>(this, set, -1);
         const int stage = stageOf();
         if (stage < 0 || stage >= stageCount()) return nullptr;
         if (stage < passwordStages()) setPlayStage(stage);
-        return std::make_unique<LevelsModel>(this, stage);
+        return std::make_unique<LevelsModel>(this, blockSetOf(stage), stage);
     }
     if (kind == QLatin1String("metatiles")) {
-        const int stage = stageOf();
-        return stage < 0 || stage >= stageCount() ? nullptr : std::make_unique<MetatilesModel>(this, stage);
+        const int set = setOf();
+        return set < 0 ? nullptr : std::make_unique<MetatilesModel>(this, set, document.endsWith(QLatin1String("-b")));
     }
     if (kind == QLatin1String("tiles")) {
         if (document.startsWith(QLatin1String("c:")))

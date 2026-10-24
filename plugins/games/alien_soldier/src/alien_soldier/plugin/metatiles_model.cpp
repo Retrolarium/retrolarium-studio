@@ -19,17 +19,19 @@ QString hex(int value) { return QStringLiteral("$%1").arg(value, 2, 16, QLatin1C
 
 }  // namespace
 
-MetatilesModel::MetatilesModel(AlienSoldierSession* session, int stage)
-    : TileMapModel(session), session_(session), stage_(stage) {
+MetatilesModel::MetatilesModel(AlienSoldierSession* session, int set, bool planeB)
+    : TileMapModel(session), session_(session), set_(set), plane_(planeB ? 1 : 0) {
+    const QVector<BlockSet> sets = session_->blockSets();
+    if (set_ >= 0 && set_ < sets.size()) stage_ = sets[set_].stages.first();
     connect(session_, &AlienSoldierSession::documentChanged, this, [this](Doc doc) {
         if (doc == Doc::Maps || doc == Doc::Tiles || doc == Doc::Compressed || doc == Doc::Palettes)
             emit contentChanged();
     });
 }
 
-int MetatilesModel::plane() const { return session_->stage(stage_).planes[0].present ? 0 : 1; }
-
-QString MetatilesModel::title() const { return tr("%1 · chunks").arg(session_->stageLabel(stage_)); }
+QString MetatilesModel::title() const {
+    return tr("%1 · %2").arg(session_->blockSetLabel(set_), plane_ ? tr("Plane B") : tr("Plane A"));
+}
 
 bool MetatilesModel::isReadOnly() const { return chunkCount(session_->stage(stage_), plane()) == 0; }
 
@@ -154,15 +156,15 @@ QString MetatilesModel::statusText() const {
 sdk::Inspection MetatilesModel::inspect() const {
     sdk::Inspection inspection;
     inspection.kicker = tr("Chunks");
-    inspection.title = session_->stageLabel(stage_);
+    inspection.title = title();
     sdk::Field brush;
     brush.key = QStringLiteral("brush");
     brush.label = tr("Pattern");
     brush.value = hex(brush_);
     inspection.fields = {brush};
     inspection.note =
-        tr("A chunk is 8x8 patterns and a pattern 4x4 tiles. Chunks other stages share change there too; "
-           "the build compresses each map again into its slot.");
+        tr("A chunk is 8x8 patterns and a pattern 4x4 tiles. Every stage of the level draws with these "
+           "chunks; the build compresses each map again into its slot.");
     return inspection;
 }
 

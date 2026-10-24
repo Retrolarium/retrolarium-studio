@@ -6,11 +6,20 @@
 
 #include <QHash>
 #include <QJsonObject>
+#include <QRect>
 
 #include <functional>
 #include <memory>
 
 namespace rl::alien_soldier {
+
+// Stages that load the same chunks and patterns: one level of the game's
+// data (stages.json, block_sets).
+struct BlockSet {
+    QString id;     // the first chunks payload
+    int plane = 0;  // the plane that draws with it
+    QVector<int> stages;
+};
 
 // An open Alien Soldier project: the documents of its source snapshot, the
 // scenes drawn from them, and what Play from selected starts.
@@ -53,6 +62,16 @@ public:
     const Scene& screen(int index) const;
     int stageCount() const;
     QString stageLabel(int index) const;
+
+    // The levels: block sets with their stages, and the set a stage is in
+    // (-1 when it loads no map).
+    QVector<BlockSet> blockSets() const;
+    int blockSetOf(int stage) const;
+    QString blockSetLabel(int set) const;
+    // A stage's area in scene coordinates (empty when the kit gives none)
+    // and the scene position its camera starts at.
+    QRect stageArea(int stage) const;
+    QPoint stageStart(int stage) const;
 
     // Where Play from selected starts: a stage slot the password screen opens.
     int playStage() const { return playStage_; }

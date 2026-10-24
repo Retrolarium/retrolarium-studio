@@ -117,6 +117,29 @@ int main(int argc, char** argv) {
         }
         expect(stages > 20, QStringLiteral("only %1 stages draw").arg(stages));
 
+        // The levels follow the block sets: every stage of a set shows its own
+        // part of the layout, and the first stage's objects stand in it.
+        const QVector<BlockSet> sets = session->blockSets();
+        expect(sets.size() >= 10, QStringLiteral("only %1 block sets").arg(sets.size()));
+        expect(sets.first().stages == QVector<int>({0, 1, 2, 3}), QStringLiteral("stages 1-4 are not one level"));
+        for (const BlockSet& set : sets) {
+            for (int stage : set.stages) {
+                const QRect area = session->stageArea(stage);
+                expect(!area.isEmpty(), QStringLiteral("stage %1 has no area").arg(stage + 1));
+                const QString id = QStringLiteral("stage-%1").arg(stage + 1, 2, 10, QLatin1Char('0'));
+                std::unique_ptr<sdk::EditorModel> model = session->openEditor(QStringLiteral("levels"), id);
+                auto* map = qobject_cast<sdk::TileMapModel*>(model.get());
+                expect(map && map->gridSize() * 8 == area.size(), QStringLiteral("%1 shows another area").arg(id));
+                expect(drawn(map->render()), QStringLiteral("%1 draws nothing").arg(id));
+                if (stage == 0) {
+                    const QRect grid(QPoint(0, 0), map->gridSize());
+                    for (const sdk::MapObject& object : map->objects())
+                        expect(grid.contains(object.cells.center()),
+                               QStringLiteral("stage 1 object %1 is off the stage").arg(object.id));
+                }
+            }
+        }
+
         std::cout << "[OK] " << opened << " documents open, " << stages << " stages draw, " << rows
                   << " text records read back, " << notes << " notes\n";
         return 0;

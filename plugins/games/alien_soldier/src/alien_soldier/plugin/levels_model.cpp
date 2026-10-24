@@ -6,6 +6,8 @@
 
 #include <QJsonArray>
 #include <QPainter>
+#include <QPainterPath>
+#include <QSet>
 
 #include <algorithm>
 #include <stdexcept>
@@ -24,10 +26,18 @@ const QStringList kRecordFields = {
     QStringLiteral("secondary_camera_y"), QStringLiteral("player_x"),        QStringLiteral("player_y"),
     QStringLiteral("sprite_priority"),    QStringLiteral("plane_a_mode"),    QStringLiteral("plane_b_mode"),
     QStringLiteral("spawn_director"),     QStringLiteral("palette_primary"), QStringLiteral("palette_secondary")};
+// Sprite positions count from 128 pixels above and left of the screen.
+constexpr int kSpriteOrigin = 128;
 
 QString hex(int value, int digits) { return QStringLiteral("$%1").arg(value, digits, 16, QLatin1Char('0')).toUpper(); }
 
-int placementIndex(const QString& id) { return id.startsWith(QLatin1Char('p')) ? id.mid(1).toInt() : -1; }
+// "p<stage>.<index>": a placement of a stage's spawn list.
+QPair<int, int> placementOf(const QString& id) {
+    if (!id.startsWith(QLatin1Char('p'))) return {-1, -1};
+    const QStringList parts = id.mid(1).split(QLatin1Char('.'));
+    if (parts.size() != 2) return {-1, -1};
+    return {parts.at(0).toInt(), parts.at(1).toInt()};
+}
 
 // The name of an object type: the game's (config/names.json, objects) or
 // its handler's label.
@@ -39,8 +49,8 @@ QString typeName(const QJsonObject& levels, int type) {
 
 }  // namespace
 
-LevelsModel::LevelsModel(AlienSoldierSession* session, int stage)
-    : TileMapModel(session), session_(session), stage_(stage) {
+LevelsModel::LevelsModel(AlienSoldierSession* session, int set, int stage)
+    : TileMapModel(session), session_(session), set_(set), stage_(stage) {
     connect(session_, &AlienSoldierSession::documentChanged, this, [this](Doc doc) {
         if (doc == Doc::Levels || doc == Doc::Maps || doc == Doc::Tiles || doc == Doc::Compressed ||
             doc == Doc::Palettes) {
@@ -50,13 +60,40 @@ LevelsModel::LevelsModel(AlienSoldierSession* session, int stage)
     connect(session_, &AlienSoldierSession::playStageChanged, this, &sdk::EditorModel::toolsChanged);
 }
 
-QString LevelsModel::title() const { return session_->stageLabel(stage_); }
+QVector<int> LevelsModel::stages() const {
+    if (stage_ >= 0) return {stage_};
+    const QVector<BlockSet> sets = session_->blockSets();
+    return set_ >= 0 && set_ < sets.size() ? sets[set_].stages : QVector<int>();
+}
 
-QJsonObject LevelsModel::record() const {
+int LevelsModel::sceneStage() const {
+    const QVector<int> shown = stages();
+    return shown.isEmpty() ? 0 : shown.first();
+}
+
+QRect LevelsModel::area() const {
+    QRect united;
+    for (int stage : stages()) united = united.united(session_->stageArea(stage));
+    if (!united.isEmpty()) return united;
+    // A stage the kit gives no area: the part of the coarse map holding chunks.
+    const Scene& scene = session_->stage(sceneStage());
+    QSize extent = scene.extent(0);
+    if (extent.isEmpty()) extent = scene.extent(1);
+    if (extent.isEmpty()) extent = QSize(320, 224);
+    return QRect(QPoint(0, 0), extent);
+}
+
+QPoint LevelsModel::world(QPoint cell) const { return area().topLeft() + cell * 8; }
+
+QString LevelsModel::title() const {
+    return stage_ >= 0 ? session_->stageLabel(stage_) : tr("%1 · whole level").arg(session_->blockSetLabel(set_));
+}
+
+QJsonObject LevelsModel::record(int stage) const {
     const QString label = session_->doc(Doc::Stages)
                               .value(QStringLiteral("scenes"))
                               .toArray()
-                              .at(stage_)
+                              .at(stage)
                               .toObject()
                               .value(QStringLiteral("record"))
                               .toString();
@@ -65,24 +102,38 @@ QJsonObject LevelsModel::record() const {
     return index < 0 ? QJsonObject() : records.at(index).toObject();
 }
 
-QString LevelsModel::spawnList() const { return record().value(QStringLiteral("spawn_list")).toString(); }
+QString LevelsModel::spawnList(int stage) const { return record(stage).value(QStringLiteral("spawn_list")).toString(); }
 
-QJsonObject LevelsModel::placement(int index) const {
+QVector<QPair<int, int>> LevelsModel::placements() const {
+    QVector<QPair<int, int>> result;
     const QJsonArray lists = session_->doc(Doc::Levels).value(QStringLiteral("spawn_lists")).toArray();
-    const QJsonObject list = lists.at(indexOfLabel(lists, spawnList())).toObject();
+    QSet<QString> seen;
+    for (int stage : stages()) {
+        const QString list = spawnList(stage);
+        // Stages may share a list (the empty one, say); it shows once.
+        if (seen.contains(list)) continue;
+        seen.insert(list);
+        const int found = indexOfLabel(lists, list);
+        if (found < 0) continue;
+        const int count = lists.at(found).toObject().value(QStringLiteral("placements")).toArray().size();
+        for (int index = 0; index < count; ++index) result.append({stage, index});
+    }
+    return result;
+}
+
+QJsonObject LevelsModel::placement(int stage, int index) const {
+    const QJsonArray lists = session_->doc(Doc::Levels).value(QStringLiteral("spawn_lists")).toArray();
+    const QJsonObject list = lists.at(indexOfLabel(lists, spawnList(stage))).toObject();
     return list.value(QStringLiteral("placements")).toArray().at(index).toObject();
 }
 
-bool LevelsModel::isReadOnly() const { return record().isEmpty(); }
+bool LevelsModel::isReadOnly() const { return stage_ >= 0 && record(stage_).isEmpty(); }
 
 QString LevelsModel::readOnlyReason() const { return tr("This stage slot applies no stage record."); }
 
 QSize LevelsModel::gridSize() const {
-    const Scene& scene = session_->stage(stage_);
-    QSize extent = scene.extent(0);
-    if (extent.isEmpty()) extent = scene.extent(1);
-    if (extent.isEmpty()) extent = QSize(320, 224);
-    return {extent.width() / 8, extent.height() / 8};
+    const QRect shown = area();
+    return {shown.width() / 8, shown.height() / 8};
 }
 
 QVector<sdk::MapLayer> LevelsModel::layers() const { return {{kObjects, tr("Objects")}, {kChunks, tr("Chunks")}}; }
@@ -105,15 +156,43 @@ QVector<sdk::Tool> LevelsModel::tools() const {
 }
 
 QImage LevelsModel::render() const {
-    const Scene& scene = session_->stage(stage_);
-    const QSize size = gridSize() * 8;
-    QImage image = renderScene(scene, QRect(QPoint(0, 0), size), planeA_, planeB_);
+    const Scene& scene = session_->stage(sceneStage());
+    const QRect shown = area();
+    QImage image = renderScene(scene, shown, planeA_, planeB_);
+    QPainter painter(&image);
+    if (stage_ < 0) {
+        // The level: what no stage covers is dimmed; each stage starts at a
+        // marked line with its number.
+        QPainterPath outside;
+        outside.addRect(QRectF(QPointF(0, 0), QSizeF(shown.size())));
+        QPainterPath covered;
+        for (int stage : stages()) {
+            const QRect part = session_->stageArea(stage).translated(-shown.topLeft());
+            if (!part.isEmpty()) covered.addRect(QRectF(part));
+        }
+        painter.fillPath(outside.subtracted(covered), QColor(0, 0, 0, 150));
+        QFont font = painter.font();
+        font.setPixelSize(12);
+        font.setBold(true);
+        painter.setFont(font);
+        for (int stage : stages()) {
+            const QRect part = session_->stageArea(stage).translated(-shown.topLeft());
+            if (part.isEmpty()) continue;
+            const QPoint start = session_->stageStart(stage) - shown.topLeft();
+            painter.setPen(QPen(QColor(255, 220, 90), 2));
+            painter.drawLine(start.x(), part.top(), start.x(), part.bottom());
+            painter.fillRect(QRect(start.x() + 2, std::max(part.top(), start.y()) + 2, 22, 16), QColor(0, 0, 0, 170));
+            painter.drawText(QRect(start.x() + 2, std::max(part.top(), start.y()) + 2, 22, 16), Qt::AlignCenter,
+                             QStringLiteral("%1").arg(stage + 1, 2, 10, QLatin1Char('0')));
+        }
+    }
     if (layer_ == kChunks) {
-        // The 256-pixel chunk grid.
-        QPainter painter(&image);
+        // The 256-pixel chunk grid, on the world's chunk boundaries.
         painter.setPen(QColor(255, 255, 255, 60));
-        for (int x = 256; x < size.width(); x += 256) painter.drawLine(x, 0, x, size.height());
-        for (int y = 256; y < size.height(); y += 256) painter.drawLine(0, y, size.width(), y);
+        for (int x = (256 - shown.x() % 256) % 256; x < shown.width(); x += 256)
+            painter.drawLine(x, 0, x, shown.height());
+        for (int y = (256 - shown.y() % 256) % 256; y < shown.height(); y += 256)
+            painter.drawLine(0, y, shown.width(), y);
     }
     return image;
 }
@@ -141,12 +220,14 @@ void LevelsModel::setViewOption(const QString& key, const QString& value) {
 }
 
 QString LevelsModel::startPoint() const {
-    return stage_ < session_->passwordStages() ? session_->stageLabel(stage_) : QString();
+    const int stage = sceneStage();
+    return stage < session_->passwordStages() ? session_->stageLabel(stage) : QString();
 }
 
 QString LevelsModel::statusText() const {
-    return selected_.isEmpty() ? session_->stageLabel(stage_)
-                               : tr("%1 · object %2").arg(session_->stageLabel(stage_), selected_.mid(1));
+    const auto [stage, index] = placementOf(selected_);
+    if (stage < 0) return title();
+    return tr("%1 · object %2").arg(session_->stageLabel(stage)).arg(index);
 }
 
 // ---------------------------------------------------------------- objects
@@ -154,17 +235,17 @@ QString LevelsModel::statusText() const {
 QVector<sdk::MapObject> LevelsModel::objects() const {
     QVector<sdk::MapObject> result;
     if (layer_ != kObjects) return result;
-    const QJsonArray lists = session_->doc(Doc::Levels).value(QStringLiteral("spawn_lists")).toArray();
-    const int found = indexOfLabel(lists, spawnList());
-    if (found < 0) return result;
-    const QJsonArray placements = lists.at(found).toObject().value(QStringLiteral("placements")).toArray();
-    for (int index = 0; index < placements.size(); ++index) {
-        const QJsonObject item = placements.at(index).toObject();
+    const QRect shown = area();
+    for (const auto& [stage, index] : placements()) {
+        const QJsonObject item = placement(stage, index);
+        // An object appears at its X in the world and its Y on the screen,
+        // which the stage's camera start puts in the world.
+        const int x = item.value(QStringLiteral("x")).toInt();
+        const int y = session_->stageStart(stage).y() + item.value(QStringLiteral("y")).toInt() - kSpriteOrigin;
         sdk::MapObject object;
-        object.id = QStringLiteral("p%1").arg(index);
+        object.id = QStringLiteral("p%1.%2").arg(stage).arg(index);
         object.label = typeName(session_->doc(Doc::Levels), item.value(QStringLiteral("type")).toInt());
-        object.cells = QRect(item.value(QStringLiteral("x")).toInt() / 8 - 1,
-                             item.value(QStringLiteral("y")).toInt() / 8 - 1, 2, 2);
+        object.cells = QRect((x - shown.x()) / 8 - 1, (y - shown.y()) / 8 - 1, 2, 2);
         result.append(object);
     }
     return result;
@@ -183,20 +264,22 @@ void LevelsModel::beginDrag(const QString& id) {
 }
 
 bool LevelsModel::dragObject(const QString& id, QPoint topLeftCell) {
-    const int index = placementIndex(id);
-    if (index < 0) return false;
-    const QString list = spawnList();
+    const auto [stage, index] = placementOf(id);
+    if (stage < 0) return false;
+    const QString list = spawnList(stage);
     QJsonObject& levels = session_->live(Doc::Levels);
     QJsonArray lists = levels.value(QStringLiteral("spawn_lists")).toArray();
     const int at = indexOfLabel(lists, list);
     if (at < 0) return false;
+    const QPoint position = world(topLeftCell + QPoint(1, 1));
     QJsonObject spawn = lists.at(at).toObject();
-    QJsonArray placements = spawn.value(QStringLiteral("placements")).toArray();
-    QJsonObject item = placements.at(index).toObject();
-    item.insert(QStringLiteral("x"), std::clamp((topLeftCell.x() + 1) * 8, 0, 0xFFFF));
-    item.insert(QStringLiteral("y"), std::clamp((topLeftCell.y() + 1) * 8, 0, 0xFFFF));
-    placements.replace(index, item);
-    spawn.insert(QStringLiteral("placements"), placements);
+    QJsonArray items = spawn.value(QStringLiteral("placements")).toArray();
+    QJsonObject item = items.at(index).toObject();
+    item.insert(QStringLiteral("x"), std::clamp(position.x(), 0, 0xFFFF));
+    item.insert(QStringLiteral("y"),
+                std::clamp(position.y() - session_->stageStart(stage).y() + kSpriteOrigin, 0, 0xFFFF));
+    items.replace(index, item);
+    spawn.insert(QStringLiteral("placements"), items);
     lists.replace(at, spawn);
     levels.insert(QStringLiteral("spawn_lists"), lists);
     session_->touch(Doc::Levels);
@@ -207,7 +290,7 @@ void LevelsModel::endDrag() { session_->commit(Doc::Levels, strokeBefore_, strok
 
 // ---------------------------------------------------------------- chunks
 
-int LevelsModel::chunkCount() const { return rl::alien_soldier::chunkCount(session_->stage(stage_), 0); }
+int LevelsModel::chunkCount() const { return rl::alien_soldier::chunkCount(session_->stage(sceneStage()), 0); }
 
 QVector<sdk::CellBrush> LevelsModel::brushes() const {
     QVector<sdk::CellBrush> result;
@@ -225,7 +308,7 @@ void LevelsModel::setCurrentBrush(int value) {
 sdk::Library LevelsModel::sheet() const {
     sdk::Library library;
     if (layer_ != kChunks) return library;
-    const Scene& scene = session_->stage(stage_);
+    const Scene& scene = session_->stage(sceneStage());
     library.hint = tr("pick a chunk, then paint the coarse map");
     library.grid = true;
     library.columns = 4;
@@ -245,16 +328,18 @@ void LevelsModel::setCurrentLibraryItem(const QString& id) { setCurrentBrush(id.
 QString LevelsModel::currentLibraryItem() const { return QString::number(brush_); }
 
 int LevelsModel::coarseValueIndex(QPoint cell, QString* payload) const {
-    const Scene& scene = session_->stage(stage_);
-    const int offset = scene.coarseOffset(0, cell.x() * 8, cell.y() * 8);
+    const Scene& scene = session_->stage(sceneStage());
+    const QPoint at = world(cell);
+    const int offset = scene.coarseOffset(0, at.x(), at.y());
     const MapValue value = mapValueAt(session_->doc(Doc::Maps), session_->doc(Doc::Screens), scene, offset);
     if (payload) *payload = value.payload;
     return value.index;
 }
 
 int LevelsModel::cellValue(QPoint cell) const {
-    const Scene& scene = session_->stage(stage_);
-    const int offset = scene.coarseOffset(0, cell.x() * 8, cell.y() * 8);
+    const Scene& scene = session_->stage(sceneStage());
+    const QPoint at = world(cell);
+    const int offset = scene.coarseOffset(0, at.x(), at.y());
     return offset < 0 || offset >= scene.ram.size() ? 0 : quint8(scene.ram.at(offset));
 }
 
@@ -272,8 +357,9 @@ void LevelsModel::beginStroke() {
 }
 
 bool LevelsModel::paintCell(QPoint cell, int value) {
-    const Scene& scene = session_->stage(stage_);
-    const int offset = scene.coarseOffset(0, cell.x() * 8, cell.y() * 8);
+    const Scene& scene = session_->stage(sceneStage());
+    const QPoint at = world(cell);
+    const int offset = scene.coarseOffset(0, at.x(), at.y());
     const MapValue target = mapValueAt(session_->doc(Doc::Maps), session_->doc(Doc::Screens), scene, offset);
     if (target.index < 0 || target.doc != Doc::Maps || value < 0 || value >= std::max(1, chunkCount())) return false;
     if (cellValue(cell) == value) return true;
@@ -293,9 +379,9 @@ void LevelsModel::endStroke() { session_->commit(Doc::Maps, strokeBefore_, strok
 sdk::Inspection LevelsModel::inspect() const {
     sdk::Inspection inspection;
     const QJsonObject levels = session_->doc(Doc::Levels);
-    const int index = placementIndex(selected_);
-    if (index >= 0 && layer_ == kObjects) {
-        const QJsonObject item = placement(index);
+    const auto [placedStage, index] = placementOf(selected_);
+    if (placedStage >= 0 && layer_ == kObjects) {
+        const QJsonObject item = placement(placedStage, index);
         const int type = item.value(QStringLiteral("type")).toInt();
         inspection.kicker = tr("Object");
         inspection.title = typeName(levels, type);
@@ -323,10 +409,28 @@ sdk::Inspection LevelsModel::inspect() const {
         }
         inspection.note =
             tr("The type picks the object's handler (a multiple of 4); bit 1 keeps it to the easy game, "
-               "bit 0 to the hard one. The number of objects is the stage's own.");
+               "bit 0 to the hard one. X is in the world, Y on the screen (from 128); the object appears "
+               "when the camera comes within a screen of it. The number of objects is the stage's own.");
         return inspection;
     }
-    const QJsonObject stageRecord = record();
+    if (stage_ < 0) {
+        const QVector<BlockSet> sets = session_->blockSets();
+        inspection.kicker = tr("Level");
+        inspection.title = session_->blockSetLabel(set_);
+        if (set_ >= 0 && set_ < sets.size()) {
+            const QJsonArray all = session_->doc(Doc::Stages).value(QStringLiteral("block_sets")).toArray();
+            QStringList payloads;
+            for (const QJsonValue& value : all.at(set_).toObject().value(QStringLiteral("payloads")).toArray())
+                payloads << value.toString();
+            inspection.engineTag = QStringLiteral("alien-soldier.stages.v1");
+            inspection.engine = {{tr("Block set"), sets[set_].id}, {tr("Maps"), payloads.join(QStringLiteral(", "))}};
+        }
+        inspection.note =
+            tr("The stages of a level load the same chunks and patterns and share one coarse map. Each "
+               "starts at its marked line; what no stage's camera reaches is dimmed.");
+        return inspection;
+    }
+    const QJsonObject stageRecord = record(stage_);
     inspection.kicker = tr("Stage");
     inspection.title = session_->stageLabel(stage_);
     for (const QString& key : kRecordFields) {
@@ -342,11 +446,12 @@ sdk::Inspection LevelsModel::inspect() const {
     }
     inspection.engineTag = QStringLiteral("alien-soldier.levels.v1");
     inspection.engine = {{tr("Record"), stageRecord.value(QStringLiteral("label")).toString()},
-                         {tr("Objects"), spawnList()},
+                         {tr("Objects"), spawnList(stage_)},
                          {tr("Palettes"), stageRecord.value(QStringLiteral("palette_list")).toString()}};
     inspection.note =
         tr("The stage record sets where the cameras and the player start and how its planes enter; "
-           "the kit refuses values its readers do not index.");
+           "the kit refuses values its readers do not index. The stage shows the part of the level its "
+           "camera covers, from its start to the next stage's arena.");
     return inspection;
 }
 
@@ -358,27 +463,28 @@ bool LevelsModel::setField(const QString& key, const QVariant& value, QString* e
         if (error) *error = tr("A number from 0 to 65535.");
         return false;
     }
-    const int index = placementIndex(selected_);
-    if (index >= 0 && kPlacementFields.contains(key)) {
-        const QString list = spawnList();
+    const QPair<int, int> placed = placementOf(selected_);
+    const int index = placed.second;
+    if (placed.first >= 0 && kPlacementFields.contains(key)) {
+        const QString list = spawnList(placed.first);
         return session_->edit(
             Doc::Levels, tr("Change object"),
             [&](QJsonObject& levels) {
                 QJsonArray lists = levels.value(QStringLiteral("spawn_lists")).toArray();
                 const int at = indexOfLabel(lists, list);
                 QJsonObject spawn = lists.at(at).toObject();
-                QJsonArray placements = spawn.value(QStringLiteral("placements")).toArray();
-                QJsonObject item = placements.at(index).toObject();
+                QJsonArray items = spawn.value(QStringLiteral("placements")).toArray();
+                QJsonObject item = items.at(index).toObject();
                 item.insert(key, number);
-                placements.replace(index, item);
-                spawn.insert(QStringLiteral("placements"), placements);
+                items.replace(index, item);
+                spawn.insert(QStringLiteral("placements"), items);
                 lists.replace(at, spawn);
                 levels.insert(QStringLiteral("spawn_lists"), lists);
             },
             error);
     }
-    if (!kRecordFields.contains(key)) return false;
-    const QString label = record().value(QStringLiteral("label")).toString();
+    if (stage_ < 0 || !kRecordFields.contains(key)) return false;
+    const QString label = record(stage_).value(QStringLiteral("label")).toString();
     return session_->edit(
         Doc::Levels, tr("Change stage"),
         [&](QJsonObject& levels) {

@@ -3,21 +3,25 @@
 #include "sdk/editor_model.hpp"
 
 #include <QJsonObject>
+#include <QPair>
 
 namespace rl::alien_soldier {
 
 class AlienSoldierSession;
 
-// One stage slot: both planes as the game draws them at the stage's start
-// (plane B with its quarter-speed scroll), its placed objects, and its
-// coarse map. Objects move and change in the inspector; the chunks layer
-// paints the coarse map's chunk indices (a cell of 8 pixels stands for the
-// 256-pixel chunk around it).
+// A level (a block set) or one stage of it: the part of the coarse map the
+// stage's camera covers (the kit works it out), both planes as the game
+// draws them at the stage's start (plane B with its quarter-speed scroll),
+// and the stage's placed objects. A whole level shows every stage of the set
+// on the layout they share, the rest of the map dimmed. Objects move and
+// change in the inspector; the chunks layer paints the coarse map's chunk
+// indices (a cell of 8 pixels stands for the 256-pixel chunk around it).
 class LevelsModel final : public sdk::TileMapModel {
     Q_OBJECT
 
 public:
-    LevelsModel(AlienSoldierSession* session, int stage);
+    // `stage` -1 is the whole level of block set `set`.
+    LevelsModel(AlienSoldierSession* session, int set, int stage);
 
     QString title() const override;
     sdk::Inspection inspect() const override;
@@ -58,15 +62,24 @@ public:
     void endDrag() override;
 
 private:
-    QJsonObject record() const;
-    QString spawnList() const;
-    QJsonObject placement(int index) const;
+    // The stages shown, and the one whose scene draws them.
+    QVector<int> stages() const;
+    int sceneStage() const;
+    // The scene area shown (cell (0, 0) is its top left corner).
+    QRect area() const;
+    QPoint world(QPoint cell) const;
+    QJsonObject record(int stage) const;
+    QString spawnList(int stage) const;
+    // The placed objects shown, as (stage, index in its spawn list).
+    QVector<QPair<int, int>> placements() const;
+    QJsonObject placement(int stage, int index) const;
     // The coarse map byte a cell's world position reads, and the payload
     // value it is (-1 when no map document holds it).
     int coarseValueIndex(QPoint cell, QString* payload) const;
     int chunkCount() const;
 
     AlienSoldierSession* session_;
+    int set_;
     int stage_;
     QString layer_ = QStringLiteral("objects");
     QString selected_;
