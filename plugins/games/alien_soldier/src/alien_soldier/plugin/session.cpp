@@ -337,13 +337,18 @@ QVector<sdk::DocumentGroup> AlienSoldierSession::documents(const QString& kind) 
         }
         groups.append(scripts);
     } else if (kind == QLatin1String("screens")) {
+        // The game's screens, then the credits' picture scenes.
         sdk::DocumentGroup screens = group(tr("Screens"));
+        sdk::DocumentGroup credits = group(tr("Credits"));
+        const bool dirty = documents_.tracked(Doc::Screens).isDirty() || documents_.tracked(Doc::Compressed).isDirty();
         for (const QJsonValue& value : doc(Doc::Screens).value(QStringLiteral("screens")).toArray()) {
-            const QString id = value.toObject().value(QStringLiteral("id")).toString();
-            screens.documents.append(
-                entry(id, ScreensModel::screenTitle(id), QString(), documents_.tracked(Doc::Screens).isDirty()));
+            const QJsonObject screen = value.toObject();
+            const QString id = screen.value(QStringLiteral("id")).toString();
+            const bool scene = screen.value(QStringLiteral("kind")).toString() == QLatin1String("credits");
+            (scene ? credits : screens).documents.append(entry(id, ScreensModel::screenTitle(id), QString(), dirty));
         }
         groups.append(screens);
+        if (!credits.documents.isEmpty()) groups.append(credits);
     } else if (kind == QLatin1String("text")) {
         QMap<QString, sdk::DocumentGroup> byGroup;
         QStringList order;

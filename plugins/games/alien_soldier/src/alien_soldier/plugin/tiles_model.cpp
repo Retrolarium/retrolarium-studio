@@ -92,6 +92,12 @@ QVector<QColor> TilesModel::penColors() const {
     QVector<int> cram;
     if (!paletteList_.isEmpty()) {
         cram = paletteList(palettes, paletteList_);
+    } else if (colours_.contains(QStringLiteral("colours"))) {
+        // A credits scene's own sixteen colours, on the line shown.
+        cram = QVector<int>(64, 0);
+        const QJsonArray colours = colours_.value(QStringLiteral("colours")).toArray();
+        for (int index = 0; index < colours.size() && index < 16; ++index)
+            cram[line_ * 16 + index] = colours.at(index).toInt() & 0xEEE;
     } else if (colours_.contains(QStringLiteral("list"))) {
         cram = paletteList(palettes, colours_.value(QStringLiteral("list")).toString());
         if (colours_.contains(QStringLiteral("command")))

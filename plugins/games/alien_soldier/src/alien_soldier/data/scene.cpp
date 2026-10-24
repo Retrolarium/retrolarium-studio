@@ -300,6 +300,25 @@ Scene screenScene(const Documents& documents, int index) {
     }
     const QJsonObject palette = screen.value(QStringLiteral("palette")).toObject();
     const QJsonObject palettes = documents[Doc::Palettes];
+    const QJsonObject table = screen.value(QStringLiteral("name_table")).toObject();
+    if (!table.isEmpty()) {
+        scene.nameTable = table.value(QStringLiteral("vram")).toInt() & 0xFFFF;
+        scene.nameTableRows = table.value(QStringLiteral("rows")).toInt();
+        // The scene's sixteen colours go to the line its map's tiles use (the
+        // game copies them into line 1 or 3 in turn).
+        QVector<int> lines(4, 0);
+        for (int cell = 0; cell < 64 * scene.nameTableRows; ++cell) {
+            const megadrive::TileWord word =
+                megadrive::decodeTileWord(nameTableWord(scene, QPoint(cell % 64, cell / 64)));
+            if (word.pattern) ++lines[word.palette];
+        }
+        const int line = int(std::max_element(lines.cbegin(), lines.cend()) - lines.cbegin());
+        scene.cram = QVector<int>(64, 0);
+        const QJsonArray colours = palette.value(QStringLiteral("colours")).toArray();
+        for (int index = 0; index < colours.size() && index < 16; ++index)
+            scene.cram[line * 16 + index] = colours.at(index).toInt() & 0xEEE;
+        return scene;
+    }
     if (palette.contains(QStringLiteral("list"))) {
         scene.cram = paletteList(palettes, palette.value(QStringLiteral("list")).toString());
     } else {
@@ -343,6 +362,32 @@ QImage renderScene(const Scene& scene, const QRect& area, bool drawA, bool drawB
                 }
             }
             if (chosen) line[sx] = cramColor(scene.cram.value(chosen));
+        }
+    }
+    return image;
+}
+
+int nameTableWord(const Scene& scene, QPoint cell) {
+    if (scene.nameTable < 0 || cell.x() < 0 || cell.y() < 0 || cell.x() >= 64 || cell.y() >= scene.nameTableRows)
+        return 0;
+    return ramWord(scene.vram, (scene.nameTable + (cell.y() * 64 + cell.x()) * 2) & 0xFFFF);
+}
+
+QImage renderNameTable(const Scene& scene) {
+    QImage image(64 * 8, std::max(1, scene.nameTableRows) * 8, QImage::Format_ARGB32);
+    image.fill(cramColor(scene.cram.value(scene.backdrop)));
+    for (int row = 0; row < scene.nameTableRows; ++row) {
+        for (int column = 0; column < 64; ++column) {
+            const megadrive::TileWord word = megadrive::decodeTileWord(nameTableWord(scene, QPoint(column, row)));
+            const QVector<quint8> pixels = tilePixels(scene.vram.mid(word.pattern * 32, 32));
+            for (int py = 0; py < 8; ++py) {
+                for (int px = 0; px < 8; ++px) {
+                    const int value = pixels.value((word.vflip ? 7 - py : py) * 8 + (word.hflip ? 7 - px : px));
+                    if (value)
+                        image.setPixel(column * 8 + px, row * 8 + py,
+                                       cramColor(scene.cram.value(word.palette * 16 + value)));
+                }
+            }
         }
     }
     return image;

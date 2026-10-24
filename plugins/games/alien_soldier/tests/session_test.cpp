@@ -160,6 +160,18 @@ int main(int argc, char** argv) {
         expect(contexts.isEmpty() || sprites * 10 >= contexts.size(),
                QStringLiteral("only %1 recorded objects draw").arg(sprites));
 
+        // Every screen draws, the credits' scenes from their name tables.
+        int screens = 0;
+        for (const sdk::DocumentGroup& group : session->documents(QStringLiteral("screens"))) {
+            for (const sdk::DocumentEntry& entry : group.documents) {
+                std::unique_ptr<sdk::EditorModel> model = session->openEditor(QStringLiteral("screens"), entry.id);
+                auto* map = qobject_cast<sdk::TileMapModel*>(model.get());
+                expect(map && drawn(map->render()), QStringLiteral("screen %1 draws nothing").arg(entry.id));
+                ++screens;
+            }
+        }
+        expect(screens >= 20, QStringLiteral("only %1 screens").arg(screens));
+
         // The hero's sprite sheet: every frame put together from its pieces.
         std::unique_ptr<sdk::EditorModel> hero = session->openEditor(QStringLiteral("tiles"), QStringLiteral("hero"));
         auto* sheet = qobject_cast<sdk::TileModel*>(hero.get());
@@ -172,8 +184,8 @@ int main(int argc, char** argv) {
         expect(painted * 10 >= sheet->tileCount() * 9, QStringLiteral("only %1 hero frames draw").arg(painted));
 
         std::cout << "[OK] " << opened << " documents open, " << stages << " stages draw, " << sprites
-                  << " objects draw, " << sheet->tileCount() << " hero frames, " << rows << " text records read back, "
-                  << notes << " notes\n";
+                  << " objects draw, " << screens << " screens draw, " << sheet->tileCount() << " hero frames, " << rows
+                  << " text records read back, " << notes << " notes\n";
         return 0;
     } catch (const std::exception& e) {
         std::cerr << "FAIL: " << e.what() << "\n";

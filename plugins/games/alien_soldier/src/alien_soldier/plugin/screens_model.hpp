@@ -27,7 +27,7 @@ public:
     void setViewOption(const QString& key, const QString& value) override;
     QString statusText() const override;
 
-    QSize gridSize() const override { return {40, 28}; }
+    QSize gridSize() const override;
     QSize cellSize() const override { return {8, 8}; }
     QVector<sdk::MapLayer> layers() const override;
     QString currentLayer() const override;
@@ -51,6 +51,9 @@ public:
 private:
     int index() const;
     int wordOffset(QPoint cell) const;
+    // A credits scene: its map is a compressed payload in a plane's name table.
+    bool isTable() const;
+    QString tableSource() const;
 
     AlienSoldierSession* session_;
     QString id_;
@@ -58,8 +61,10 @@ private:
     int brush_ = 0;
     QJsonObject beforeMaps_;
     QJsonObject beforeScreens_;
+    QJsonObject beforeCompressed_;
     quint64 revisionMaps_ = 0;
     quint64 revisionScreens_ = 0;
+    quint64 revisionCompressed_ = 0;
 };
 
 }  // namespace rl::alien_soldier

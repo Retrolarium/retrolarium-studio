@@ -15,7 +15,17 @@ namespace rl::alien_soldier {
 
 ScreensModel::ScreensModel(AlienSoldierSession* session, const QString& id)
     : TileMapModel(session), session_(session), id_(id) {
-    plane_ = session_->screen(index()).planes[0].present ? 0 : 1;
+    const Scene& scene = session_->screen(index());
+    plane_ = scene.planes[0].present ? 0 : 1;
+    // A credits scene's brush starts as its first drawn word, so the tile
+    // sheet shows the line its colours are on.
+    for (int cell = 0; scene.nameTable >= 0 && cell < 64 * scene.nameTableRows; ++cell) {
+        const int word = nameTableWord(scene, QPoint(cell % 64, cell / 64));
+        if (word & 0x7FF) {
+            brush_ = word;
+            break;
+        }
+    }
     connect(session_, &AlienSoldierSession::documentChanged, this, [this](Doc doc) {
         if (doc == Doc::Screens || doc == Doc::Maps || doc == Doc::Tiles || doc == Doc::Compressed ||
             doc == Doc::Palettes) {
@@ -28,7 +38,31 @@ QString ScreensModel::screenTitle(const QString& id) {
     if (id == QLatin1String("title")) return rlTr("alien_soldier", "Title");
     if (id == QLatin1String("options")) return rlTr("alien_soldier", "Options");
     if (id == QLatin1String("story")) return rlTr("alien_soldier", "Story");
+    if (id == QLatin1String("password")) return rlTr("alien_soldier", "Password");
+    if (id == QLatin1String("weapon-setup")) return rlTr("alien_soldier", "Weapon setup");
+    if (id == QLatin1String("credits-intro")) return rlTr("alien_soldier", "Credits opening");
+    if (id == QLatin1String("ending")) return rlTr("alien_soldier", "Ending");
+    if (id.startsWith(QLatin1String("credits-"))) return rlTr("alien_soldier", "Credits scene %1").arg(id.mid(8));
     return id;
+}
+
+bool ScreensModel::isTable() const { return session_->screen(index()).nameTable >= 0; }
+
+QString ScreensModel::tableSource() const {
+    return session_->doc(Doc::Screens)
+        .value(QStringLiteral("screens"))
+        .toArray()
+        .at(index())
+        .toObject()
+        .value(QStringLiteral("name_table"))
+        .toObject()
+        .value(QStringLiteral("source"))
+        .toString();
+}
+
+QSize ScreensModel::gridSize() const {
+    if (isTable()) return {64, std::max(1, session_->screen(index()).nameTableRows)};
+    return {40, 28};
 }
 
 int ScreensModel::index() const {
@@ -42,6 +76,11 @@ int ScreensModel::index() const {
 QVector<sdk::MapLayer> ScreensModel::layers() const {
     QVector<sdk::MapLayer> result;
     const Scene& scene = session_->screen(index());
+    if (scene.nameTable >= 0) {
+        result.append(scene.nameTable == 0xE000 ? sdk::MapLayer{QStringLiteral("plane-b"), tr("Plane B")}
+                                                : sdk::MapLayer{QStringLiteral("plane-a"), tr("Plane A")});
+        return result;
+    }
     if (scene.planes[0].present) result.append({QStringLiteral("plane-a"), tr("Plane A")});
     if (scene.planes[1].present) result.append({QStringLiteral("plane-b"), tr("Plane B")});
     return result;
@@ -62,7 +101,10 @@ QVector<sdk::Tool> ScreensModel::tools() const {
             {QStringLiteral("pick"), tr("Pick a tile"), QStringLiteral("pick")}};
 }
 
-QImage ScreensModel::render() const { return renderScene(session_->screen(index()), QRect(0, 0, 320, 224)); }
+QImage ScreensModel::render() const {
+    const Scene& scene = session_->screen(index());
+    return scene.nameTable >= 0 ? renderNameTable(scene) : renderScene(scene, QRect(0, 0, 320, 224));
+}
 
 int ScreensModel::wordOffset(QPoint cell) const {
     const Scene& scene = session_->screen(index());
@@ -74,6 +116,7 @@ int ScreensModel::wordOffset(QPoint cell) const {
 }
 
 int ScreensModel::cellValue(QPoint cell) const {
+    if (isTable()) return nameTableWord(session_->screen(index()), cell);
     const int offset = wordOffset(cell);
     const Scene& scene = session_->screen(index());
     if (offset < 0 || offset + 1 >= scene.ram.size()) return 0;
@@ -81,6 +124,7 @@ int ScreensModel::cellValue(QPoint cell) const {
 }
 
 bool ScreensModel::isCellEditable(QPoint cell) const {
+    if (isTable()) return QRect(QPoint(0, 0), gridSize()).contains(cell);
     const int offset = wordOffset(cell);
     return offset >= 0 &&
            mapValueAt(session_->doc(Doc::Maps), session_->doc(Doc::Screens), session_->screen(index()), offset).index >=
@@ -128,11 +172,35 @@ QString ScreensModel::currentLibraryItem() const { return QString::number(brush_
 void ScreensModel::beginStroke() {
     beforeMaps_ = session_->doc(Doc::Maps);
     beforeScreens_ = session_->doc(Doc::Screens);
+    beforeCompressed_ = session_->doc(Doc::Compressed);
     revisionMaps_ = session_->revision(Doc::Maps);
     revisionScreens_ = session_->revision(Doc::Screens);
+    revisionCompressed_ = session_->revision(Doc::Compressed);
 }
 
 bool ScreensModel::paintCell(QPoint cell, int value) {
+    if (isTable()) {
+        // The word sits in the compressed payload's bytes, four hex digits
+        // a word, sixteen words to a 32-byte "tile" of the document.
+        if (!isCellEditable(cell)) return false;
+        if (cellValue(cell) == (value & 0xFFFF)) return true;
+        QJsonObject& document = session_->live(Doc::Compressed);
+        QJsonArray payloads = document.value(QStringLiteral("payloads")).toArray();
+        const int at = indexOfLabel(payloads, tableSource());
+        if (at < 0) return false;
+        QJsonObject payload = payloads.at(at).toObject();
+        QJsonArray tiles = payload.value(QStringLiteral("tiles")).toArray();
+        const int word = cell.y() * 64 + cell.x();
+        QString hex = tiles.at(word / 16).toString();
+        if (hex.size() < 64) return false;
+        hex.replace((word % 16) * 4, 4, QStringLiteral("%1").arg(value & 0xFFFF, 4, 16, QLatin1Char('0')).toUpper());
+        tiles.replace(word / 16, hex);
+        payload.insert(QStringLiteral("tiles"), tiles);
+        payloads.replace(at, payload);
+        document.insert(QStringLiteral("payloads"), payloads);
+        session_->touch(Doc::Compressed);
+        return true;
+    }
     const int offset = wordOffset(cell);
     if (offset < 0) return false;
     if (cellValue(cell) == value) return true;
@@ -160,6 +228,7 @@ bool ScreensModel::paintCell(QPoint cell, int value) {
 void ScreensModel::endStroke() {
     session_->commit(Doc::Screens, beforeScreens_, revisionScreens_, tr("Paint screen"));
     session_->commit(Doc::Maps, beforeMaps_, revisionMaps_, tr("Paint screen"));
+    session_->commit(Doc::Compressed, beforeCompressed_, revisionCompressed_, tr("Paint screen"));
 }
 
 QVector<sdk::ViewOption> ScreensModel::viewOptions() const { return {}; }

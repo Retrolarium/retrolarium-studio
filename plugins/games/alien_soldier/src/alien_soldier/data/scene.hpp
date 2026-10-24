@@ -69,6 +69,10 @@ struct Scene {
     int backdrop = 0x10;  // CRAM index of the background colour
     QVector<RamWrite> writes;
     QVector<RamTransform> transforms;
+    // A credits scene's map sits in a plane's name table in VRAM, 64 cells
+    // wide: its address (or -1) and rows.
+    int nameTable = -1;
+    int nameTableRows = 0;
 
     // The map entries a world position (plane coordinates) reads.
     int coarseOffset(int plane, int x, int y) const;  // into ram, or -1
@@ -93,6 +97,9 @@ Scene screenScene(const Documents& documents, int screen);
 // Composite both planes (A over B, high priority first, colour 0 clear) of
 // the world area `area` (plane A coordinates; plane B follows its origin).
 QImage renderScene(const Scene& scene, const QRect& area, bool planeA = true, bool planeB = true);
+// A scene's name table in VRAM, whole (64 cells by its rows).
+QImage renderNameTable(const Scene& scene);
+int nameTableWord(const Scene& scene, QPoint cell);
 
 // A plane's chunk (256x256) or pattern (32x32) as it draws, colour 0 clear.
 QImage chunkImage(const Scene& scene, int plane, int chunk);
