@@ -370,7 +370,17 @@ void SmbResourceDocument::setPhysicsValue(const QString& world, int table, int i
     }
     values.replace(index, value);
     t.insert(QStringLiteral("values"), values);
+    const QJsonValue before = resource.value(QStringLiteral("physics_tables"));
     tables.replace(table, t);
+    // All Night Nippon's normal and extended worlds read one physics table:
+    // a world with the same tables shares them and takes the edit too.
+    for (const QString& other : resourceIds(resource.value(QStringLiteral("codec")).toString())) {
+        QJsonObject shared = this->resource(other);
+        if (other != world && shared.value(QStringLiteral("physics_tables")) == before) {
+            shared.insert(QStringLiteral("physics_tables"), tables);
+            setResource(other, shared);
+        }
+    }
     resource.insert(QStringLiteral("physics_tables"), tables);
     setResource(world, resource);
 }

@@ -787,7 +787,9 @@ QImage SmbSession::playerIcon() const {
 
 QString SmbSession::selectedStart() const {
     if (demoStart()) return tr("Title demo");
-    if (start_.area.isEmpty()) {
+    // The Vs. board starts only from power-on: the kit has no way into a
+    // level there.
+    if (start_.area.isEmpty() || document_.revision() == QLatin1String("vs_smb")) {
         return {};
     }
     return tr("%1 · column %2").arg(areaLabel(start_.area)).arg(start_.cell.x());

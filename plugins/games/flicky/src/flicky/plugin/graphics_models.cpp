@@ -319,6 +319,32 @@ sdk::Budget SegaTilemapModel::budget() const {
 
 bool SegaTilemapModel::setWord(int word, QString* error) {
     const int cell = cell_;
+    // The ROM keeps the original stream while the map is unchanged; any other
+    // map must pack into the same slot.
+    std::vector<std::uint16_t> words;
+    bool original = true;
+    for (int index = 0; index < 48; ++index) {
+        const int value = index == cell ? word : session_->graphics().segaTilemapWord(index);
+        words.push_back(static_cast<std::uint16_t>(value));
+        original = original && value == session_->graphics().baselineSegaTilemapWord(index);
+    }
+    if (!original) {
+        std::size_t size = 0;
+        try {
+            size = megadrive::enigmaCompressedSize(words);
+        } catch (const std::exception& e) {
+            if (error) *error = QString::fromUtf8(e.what());
+            return false;
+        }
+        if (size > static_cast<std::size_t>(kSegaTilemapCapacity)) {
+            if (error) {
+                *error = tr("The SEGA screen packs into %1 bytes; this change needs %2.")
+                             .arg(kSegaTilemapCapacity)
+                             .arg(size);
+            }
+            return false;
+        }
+    }
     return session_->editGraphics(
         tr("Edit SEGA cell %1").arg(cell),
         [cell, word](FlickyGraphicsDocument& g) { g.setSegaTilemapWord(cell, word); }, error);

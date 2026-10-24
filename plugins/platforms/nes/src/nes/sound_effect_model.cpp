@@ -149,7 +149,12 @@ void SoundEffectModel::requestTrace() {
         if (!self) return;
         self->tracing_ = false;
         if (!result.succeeded()) {
-            if (!result.cancelled) self->report(tr("Tracing %1 failed.").arg(self->effect_.title));
+            if (!result.cancelled) {
+                self->report(
+                    tr("Tracing %1 failed: %2")
+                        .arg(self->effect_.title,
+                             QString::fromUtf8(result.standardError).trimmed().section(QLatin1Char('\n'), -1)));
+            }
             return;
         }
         QFile file(output);

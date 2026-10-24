@@ -338,7 +338,8 @@ QVector<int> SmbLevelRendering::sidePipe(const QString& part) const {
 SmbLevelScene renderSmbLevelScene(const QString& name, const QVector<int>& header,
                                   const QVector<SmbAreaObject>& objects, const QVector<SmbEnemyRecord>& enemies,
                                   int world, const SmbLevelRendering& rendering) {
-    if (header.size() != 6 || world < 0 || world > 7) {
+    // Lost Levels has a ninth world, All Night Nippon letter worlds after it.
+    if (header.size() != 6 || world < 0) {
         throw SmbError("invalid SMB level renderer input");
     }
     const QString prefix = name.section(QLatin1Char('_'), 0, -2);
