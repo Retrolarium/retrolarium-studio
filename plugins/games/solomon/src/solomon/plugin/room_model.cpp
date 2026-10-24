@@ -514,8 +514,9 @@ void SolomonRoomModel::endDrag() {
 bool SolomonRoomModel::commit(const SolomonRooms& next, const QString& text, QString* error) {
     // Only an edit that adds bytes can be over: blocks and moves add none,
     // and an edit that frees bytes is fine even while the rooms are still over.
-    const QString overflow = next.overflow();
     const SolomonRooms& now = session_->rooms();
+    // An added enemy is refused for the enemy lists, not for items already over.
+    const QString overflow = next.overflow(next.enemyBytes() > now.enemyBytes());
     if (!overflow.isEmpty() && next.itemBytes() + next.enemyBytes() > now.itemBytes() + now.enemyBytes()) {
         if (error) *error = overflow;
         return false;

@@ -107,7 +107,9 @@ public:
     int enemyCapacity() const { return expanded() ? expandedDataBytes(revision()) - itemBytes() : kEnemyArenaBytes; }
     int mirrorSetCapacity() const { return expanded() ? kExpandedMirrorSetBytes : kMirrorSetBytes; }
     // Why the rooms do not fit what the ROM keeps for them; empty when they do.
-    QString overflow() const;
+    // What does not fit, the item lists' area first (the enemy lists' with
+    // enemiesFirst, for an edit that grows those); empty when all fits.
+    QString overflow(bool enemiesFirst = false) const;
 
     bool operator==(const SolomonRooms& other) const { return root_ == other.root_; }
     bool operator!=(const SolomonRooms& other) const { return root_ != other.root_; }

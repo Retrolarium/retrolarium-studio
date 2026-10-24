@@ -271,7 +271,7 @@ void SolomonRooms::setExpanded(bool expanded) {
     else root_.remove(QStringLiteral("expanded_rom"));
 }
 
-QString SolomonRooms::overflow() const {
+QString SolomonRooms::overflow(bool enemiesFirst) const {
     // The enemy sets the mirrors drop have their own area, smaller in the
     // original layout: switching back to it must not leave them over.
     // The studio builds the original layout only for now; the expanded one
@@ -282,6 +282,12 @@ QString SolomonRooms::overflow() const {
             .arg(mirrorSetBytes());
     }
     if (!expanded()) {
+        if (enemiesFirst && enemyBytes() > kEnemyArenaBytes) {
+            return rlTr("solomon",
+                        "The enemy lists of all rooms share %1 bytes; they need %2. Remove an enemy in any room.")
+                .arg(kEnemyArenaBytes)
+                .arg(enemyBytes());
+        }
         if (itemBytes() > kItemArenaBytes) {
             return rlTr("solomon",
                         "The item lists of all rooms share %1 bytes; they need %2. Remove an item in any room.")
