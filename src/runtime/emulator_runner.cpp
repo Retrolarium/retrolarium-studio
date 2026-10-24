@@ -149,8 +149,9 @@ local function take_command()
     if fallback ~= nil then fallback:load(next_cart) end
 end
 
--- Fields by the keyboard keys MAME's input settings give them.
-local fields_by_key = {}
+-- Fields by the keyboard keys MAME's input settings give them, and the pad
+-- buttons those settings use.
+local fields_by_key, joy_in_use = {}, {}
 for _, port in pairs(machine.ioport.ports) do
     for _, field in pairs(port.fields) do
         local tokens = machine.input:seq_to_tokens(field:input_seq("standard")) or ""
@@ -158,8 +159,12 @@ for _, port in pairs(machine.ioport.ports) do
             fields_by_key[token] = fields_by_key[token] or {}
             table.insert(fields_by_key[token], field)
         end
+        for token in string.gmatch(tokens, "JOYCODE_[%w_]+") do joy_in_use[token] = true end
     end
 end
+-- A and S are the turbo buttons (below), not the second pad's buttons MAME
+-- gives them: pressed for pad 2 they opened Castle Excellent's tape menu.
+local turbo_keys = {KEYCODE_A = true, KEYCODE_S = true}
 local key_aliases = {
     KEYCODE_Z = "KEYCODE_LCONTROL", KEYCODE_X = "KEYCODE_LALT",
     KEYCODE_ENTER = "KEYCODE_1", KEYCODE_RSHIFT = "KEYCODE_5",
@@ -185,6 +190,7 @@ local function apply_keys(press)
     keys_text = text
     local wanted = {}
     for token in string.gmatch(text, "KEYCODE_[%w_]+") do
+        if turbo_keys[token] then token = "" end
         for _, field in ipairs(fields_by_key[token] or {}) do wanted[field] = true end
         -- Keys the studio adds, since Alt and Ctrl belong to the window:
         -- Z and X are buttons 1 and 2, Enter is start, right Shift select.
@@ -274,6 +280,40 @@ local hidden, frames, unmute_at = fast, 0, nil
 -- Ready, the game waits paused and muted for the studio to show its picture
 -- ("shown"), so the picture and the sound start together.
 local start_hold, start_held_at, shown = false, 0, false
+
+-- Turbo, as on turbo pads: while A or S (or a pad's third or fourth button)
+-- is held, buttons 1 and 2 (B and A on a NES pad) go down two frames and up
+-- two. The keys are always turbo; a pad's buttons only when MAME gives them
+-- nothing else.
+local turbo_sources = {
+    {key = "KEYCODE_A", joy = "JOYCODE_1_BUTTON3", target = "KEYCODE_LCONTROL"},
+    {key = "KEYCODE_S", joy = "JOYCODE_1_BUTTON4", target = "KEYCODE_LALT"},
+}
+local turbo_held = {}
+local function apply_turbo(press)
+    local wanted = {}
+    if press and (frames // 2) % 2 == 0 then
+        local keys = " " .. keys_text .. " "
+        for _, source in ipairs(turbo_sources) do
+            local pressed = string.find(keys, "[^%w_]" .. source.key .. "[^%w_]") ~= nil
+            if not pressed and not joy_in_use[source.joy] then
+                local code = machine.input:code_from_token(source.joy)
+                pressed = code ~= nil and machine.input:code_pressed(code)
+            end
+            if pressed then
+                for _, field in ipairs(fields_by_key[source.target] or {}) do wanted[field] = true end
+            end
+        end
+    end
+    -- A button the player holds down by its own key stays as it is.
+    for field in pairs(turbo_held) do
+        if not wanted[field] and not held[field] then field:clear_value() end
+    end
+    for field in pairs(wanted) do
+        if not turbo_held[field] and not held[field] then field:set_value(1) end
+    end
+    turbo_held = wanted
+end
 local forwarding = false
 if fast then
     video.throttled = false
@@ -1102,6 +1142,8 @@ on_frame(function()
         apply_keys(movie_mode ~= "play" and movie_mode ~= "resume" and latched_load == nil and replay_to == nil
             and rewind_pending == nil)
     end
+    apply_turbo(movie_mode ~= "play" and movie_mode ~= "resume" and latched_load == nil and replay_to == nil
+        and rewind_pending == nil)
     if frames % 6 == 0 then take_command() end
     if frames == 1 or frames % 15 == 0 then apply_picture() end
     if hidden and ready_check ~= nil then
