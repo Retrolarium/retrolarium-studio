@@ -40,11 +40,15 @@ QString documentPath(Doc doc) {
             return QStringLiteral("content/sound/pcm.json");
         case Doc::Stages:
             return QStringLiteral("content/levels/stages.json");
+        case Doc::Objects:
+            return QStringLiteral("content/graphics/objects.json");
+        case Doc::Art:
+            return QStringLiteral("content/graphics/art.json");
     }
     return {};
 }
 
-bool isEditable(Doc doc) { return doc != Doc::Stages; }
+bool isEditable(Doc doc) { return doc != Doc::Stages && doc != Doc::Objects && doc != Doc::Art; }
 
 QJsonObject loadJson(const QString& path) {
     QFile file(path);
@@ -80,7 +84,9 @@ Documents Documents::load(const QString& snapshot) {
         const Doc doc = static_cast<Doc>(index);
         Tracked& tracked = documents.tracked_[index];
         tracked.path = root.absoluteFilePath(documentPath(doc));
-        tracked.doc = loadJson(tracked.path);
+        // A derived document a project lacks (an older kit wrote it) is empty
+        // until the kit reads the source again.
+        tracked.doc = isEditable(doc) || QFileInfo::exists(tracked.path) ? loadJson(tracked.path) : QJsonObject();
         tracked.saved = tracked.doc;
         // The kit keeps each document as first exported beside the snapshot
         // (../original/<path>); without it, Revert goes back to the opened one.

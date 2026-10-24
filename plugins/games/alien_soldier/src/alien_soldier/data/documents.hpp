@@ -27,10 +27,12 @@ enum class Doc {
     Sound,
     Envelopes,
     Pcm,
-    Stages,  // derived: what each stage loads, never edited
+    Stages,   // derived: what each stage loads, never edited
+    Objects,  // derived: what each sprite mapping block draws with
+    Art,      // derived: each art payload's group and colours
 };
 
-inline constexpr int kDocCount = 14;
+inline constexpr int kDocCount = 16;
 
 // The document's path relative to the snapshot ("content/levels/levels.json").
 QString documentPath(Doc doc);

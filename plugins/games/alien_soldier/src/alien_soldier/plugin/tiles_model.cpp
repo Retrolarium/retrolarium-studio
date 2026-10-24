@@ -22,16 +22,22 @@ QString pixelsHex(const QVector<quint8>& pixels) {
 TilesModel::TilesModel(AlienSoldierSession* session, Doc doc, const QString& label)
     : TileModel(session), session_(session), doc_(doc), label_(label) {
     const QJsonArray lists = session_->doc(Doc::Palettes).value(QStringLiteral("lists")).toArray();
-    // The first stage's colours to start with; any list can be picked.
-    const QString first = session_->doc(Doc::Stages)
-                              .value(QStringLiteral("scenes"))
-                              .toArray()
-                              .at(0)
-                              .toObject()
-                              .value(QStringLiteral("palette_list"))
-                              .toString();
-    paletteList_ =
-        indexOfLabel(lists, first) >= 0 ? first : lists.at(0).toObject().value(QStringLiteral("label")).toString();
+    const QJsonArray art = session_->doc(Doc::Art).value(QStringLiteral("payloads")).toArray();
+    const QJsonObject entry = art.at(indexOfLabel(art, label_)).toObject();
+    colours_ = entry.value(QStringLiteral("colours")).toObject();
+    line_ = entry.value(QStringLiteral("line")).toInt();
+    if (colours_.isEmpty()) {
+        // The first stage's colours to start with; any list can be picked.
+        const QString first = session_->doc(Doc::Stages)
+                                  .value(QStringLiteral("scenes"))
+                                  .toArray()
+                                  .at(0)
+                                  .toObject()
+                                  .value(QStringLiteral("palette_list"))
+                                  .toString();
+        paletteList_ =
+            indexOfLabel(lists, first) >= 0 ? first : lists.at(0).toObject().value(QStringLiteral("label")).toString();
+    }
     connect(session_, &AlienSoldierSession::documentChanged, this, [this](Doc changed) {
         if (changed == doc_ || changed == Doc::Palettes) emit contentChanged();
     });
@@ -82,7 +88,21 @@ void TilesModel::setTile(QJsonObject& document, int index, const QString& hex) c
 int TilesModel::tileCount() const { return tiles(session_->doc(doc_)).size(); }
 
 QVector<QColor> TilesModel::penColors() const {
-    const QVector<int> cram = paletteList(session_->doc(Doc::Palettes), paletteList_);
+    const QJsonObject palettes = session_->doc(Doc::Palettes);
+    QVector<int> cram;
+    if (!paletteList_.isEmpty()) {
+        cram = paletteList(palettes, paletteList_);
+    } else if (colours_.contains(QStringLiteral("list"))) {
+        cram = paletteList(palettes, colours_.value(QStringLiteral("list")).toString());
+        if (colours_.contains(QStringLiteral("command")))
+            playPaletteCommand(cram, palettes, colours_.value(QStringLiteral("command")).toString());
+    } else {
+        cram = QVector<int>(64, 0);
+        for (const QJsonValue& value : colours_.value(QStringLiteral("commands")).toArray()) {
+            const QJsonArray pair = value.toArray();
+            playPaletteCommand(cram, palettes, pair.at(0).toString(), pair.at(1).toInt());
+        }
+    }
     QVector<QColor> colors;
     for (int pen = 0; pen < 16; ++pen) colors.append(QColor::fromRgb(cramColor(cram.value(line_ * 16 + pen))));
     return colors;
@@ -154,7 +174,8 @@ QVector<sdk::ViewOption> TilesModel::viewOptions() const {
     sdk::ViewOption palette;
     palette.key = QStringLiteral("palette");
     palette.label = tr("Colours");
-    palette.value = paletteList_;
+    palette.value = paletteList_.isEmpty() ? tr("As in the game") : paletteList_;
+    if (!colours_.isEmpty()) palette.choices << tr("As in the game");
     for (const QJsonValue& value : session_->doc(Doc::Palettes).value(QStringLiteral("lists")).toArray()) {
         palette.choices << value.toObject().value(QStringLiteral("label")).toString();
     }
@@ -167,7 +188,7 @@ QVector<sdk::ViewOption> TilesModel::viewOptions() const {
 }
 
 void TilesModel::setViewOption(const QString& key, const QString& value) {
-    if (key == QLatin1String("palette")) paletteList_ = value;
+    if (key == QLatin1String("palette")) paletteList_ = value == tr("As in the game") ? QString() : value;
     if (key == QLatin1String("line")) line_ = std::clamp(value.toInt(), 0, 3);
     emit toolsChanged();
     emit contentChanged();

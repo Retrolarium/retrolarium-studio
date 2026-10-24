@@ -16,6 +16,7 @@
 #include <QImage>
 #include <QSet>
 
+#include <algorithm>
 #include <iostream>
 #include <stdexcept>
 
@@ -140,8 +141,39 @@ int main(int argc, char** argv) {
             }
         }
 
-        std::cout << "[OK] " << opened << " documents open, " << stages << " stages draw, " << rows
-                  << " text records read back, " << notes << " notes\n";
+        // Objects the game repository records draw with their own tiles: more
+        // colours than an outline has.
+        int sprites = 0;
+        const QJsonObject contexts = session->doc(Doc::Objects).value(QStringLiteral("contexts")).toObject();
+        for (auto it = contexts.begin(); it != contexts.end(); ++it) {
+            if (it.value().toObject().value(QStringLiteral("borrowed")).toBool()) continue;
+            std::unique_ptr<sdk::EditorModel> model = session->openEditor(QStringLiteral("objects"), it.key());
+            auto* canvas = qobject_cast<sdk::CompositionModel*>(model.get());
+            expect(canvas != nullptr, QStringLiteral("object %1 does not open").arg(it.key()));
+            const QImage image = canvas->render();
+            QSet<QRgb> colours;
+            for (int y = 0; y < image.height(); ++y) {
+                for (int x = 0; x < image.width(); ++x) colours.insert(image.pixel(x, y));
+            }
+            if (colours.size() > 3) ++sprites;
+        }
+        expect(contexts.isEmpty() || sprites * 10 >= contexts.size(),
+               QStringLiteral("only %1 recorded objects draw").arg(sprites));
+
+        // The hero's sprite sheet: every frame put together from its pieces.
+        std::unique_ptr<sdk::EditorModel> hero = session->openEditor(QStringLiteral("tiles"), QStringLiteral("hero"));
+        auto* sheet = qobject_cast<sdk::TileModel*>(hero.get());
+        expect(sheet && sheet->tileCount() > 50, QStringLiteral("the hero sheet has too few frames"));
+        int painted = 0;
+        for (int frame = 0; frame < sheet->tileCount(); ++frame) {
+            const QVector<quint8> pixels = sheet->tilePixels(frame);
+            if (std::count_if(pixels.cbegin(), pixels.cend(), [](quint8 pen) { return pen != 0; }) > 64) ++painted;
+        }
+        expect(painted * 10 >= sheet->tileCount() * 9, QStringLiteral("only %1 hero frames draw").arg(painted));
+
+        std::cout << "[OK] " << opened << " documents open, " << stages << " stages draw, " << sprites
+                  << " objects draw, " << sheet->tileCount() << " hero frames, " << rows << " text records read back, "
+                  << notes << " notes\n";
         return 0;
     } catch (const std::exception& e) {
         std::cerr << "FAIL: " << e.what() << "\n";

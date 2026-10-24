@@ -2,8 +2,10 @@
 
 #include "alien_soldier/plugin/animations_model.hpp"
 #include "alien_soldier/plugin/demo_model.hpp"
+#include "alien_soldier/plugin/hero_sheet_model.hpp"
 #include "alien_soldier/plugin/levels_model.hpp"
 #include "alien_soldier/plugin/metatiles_model.hpp"
+#include "alien_soldier/plugin/objects_model.hpp"
 #include "alien_soldier/plugin/palettes_model.hpp"
 #include "alien_soldier/plugin/playtest_model.hpp"
 #include "alien_soldier/plugin/screens_model.hpp"
@@ -96,6 +98,7 @@ QVector<sdk::Kind> AlienSoldierSession::kinds() const {
         kind("tiles", tr("Tiles"), sdk::EditorType::Tile),
         kind("metatiles", tr("Metatiles"), sdk::EditorType::TileMap, "tileset"),
         kind("palettes", tr("Palettes"), sdk::EditorType::Palette),
+        kind("objects", tr("Objects"), sdk::EditorType::Composition, "sprites"),
         kind("sprites", tr("Animations"), sdk::EditorType::Composition),
         kind("screens", tr("Screens"), sdk::EditorType::TileMap, "tileset"),
         kind("text", tr("Text"), sdk::EditorType::Table),
@@ -222,28 +225,78 @@ QVector<sdk::DocumentGroup> AlienSoldierSession::documents(const QString& kind) 
             if (!blocks.documents.isEmpty()) groups.append(blocks);
         }
     } else if (kind == QLatin1String("tiles")) {
-        sdk::DocumentGroup compressed = group(tr("Compressed"));
-        for (const QJsonValue& value : doc(Doc::Compressed).value(QStringLiteral("payloads")).toArray()) {
-            const QJsonObject payload = value.toObject();
-            const QString label = payload.value(QStringLiteral("label")).toString();
-            compressed.documents.append(entry(
-                QStringLiteral("c:") + label, label,
-                QStringLiteral("%1").arg(payload.value(QStringLiteral("tiles")).toArray().size()),
-                payloadDirty(doc(Doc::Compressed), savedDoc(Doc::Compressed), QStringLiteral("payloads"), label)));
-        }
-        sdk::DocumentGroup plain = group(tr("Uncompressed"));
-        for (const QJsonValue& value : doc(Doc::Tiles).value(QStringLiteral("payloads")).toArray()) {
-            const QJsonObject payload = value.toObject();
-            const QString label = payload.value(QStringLiteral("label")).toString();
-            int count = 0;
-            for (const QJsonValue& block : payload.value(QStringLiteral("blocks")).toArray()) {
-                count += block.toObject().value(QStringLiteral("tiles")).toArray().size();
+        // The art by what draws with it (art.json); the player's pieces are
+        // one sprite sheet, and screen maps belong to the screens.
+        QMap<QString, sdk::DocumentGroup> byGroup;
+        QStringList order;
+        const auto add = [&](const QString& key, const QString& title, const sdk::DocumentEntry& item) {
+            if (!byGroup.contains(key)) {
+                byGroup.insert(key, group(title));
+                order << key;
             }
-            plain.documents.append(
-                entry(QStringLiteral("u:") + label, label, QString::number(count),
-                      payloadDirty(doc(Doc::Tiles), savedDoc(Doc::Tiles), QStringLiteral("payloads"), label)));
+            byGroup[key].documents.append(item);
+        };
+        const QJsonArray compressed = doc(Doc::Compressed).value(QStringLiteral("payloads")).toArray();
+        const QJsonArray plain = doc(Doc::Tiles).value(QStringLiteral("payloads")).toArray();
+        const bool heroDirty = documents_.tracked(Doc::Tiles).isDirty();
+        QJsonArray art = doc(Doc::Art).value(QStringLiteral("payloads")).toArray();
+        if (art.isEmpty()) {
+            // A project the kit has not read again yet: every payload, as it comes.
+            for (const QJsonValue& value : compressed) {
+                QJsonObject item;
+                item.insert(QStringLiteral("label"), value.toObject().value(QStringLiteral("label")));
+                item.insert(QStringLiteral("group"), QStringLiteral("other"));
+                art.append(item);
+            }
+            for (const QJsonValue& value : plain) {
+                QJsonObject item;
+                item.insert(QStringLiteral("label"), value.toObject().value(QStringLiteral("label")));
+                item.insert(QStringLiteral("group"), QStringLiteral("other"));
+                art.append(item);
+            }
         }
-        groups << compressed << plain;
+        for (const QJsonValue& value : art) {
+            const QJsonObject item = value.toObject();
+            const QString label = item.value(QStringLiteral("label")).toString();
+            const QString kind = item.value(QStringLiteral("group")).toString();
+            if (kind == QLatin1String("map")) continue;
+            if (kind == QLatin1String("hero")) {
+                if (!byGroup.contains(kind))
+                    add(kind, tr("Hero"), entry(QStringLiteral("hero"), tr("Hero sprite sheet"), {}, heroDirty));
+                continue;
+            }
+            const bool isCompressed = indexOfLabel(compressed, label) >= 0;
+            const QJsonObject payload = isCompressed ? compressed.at(indexOfLabel(compressed, label)).toObject()
+                                                     : plain.at(indexOfLabel(plain, label)).toObject();
+            int count = payload.value(QStringLiteral("tiles")).toArray().size();
+            for (const QJsonValue& block : payload.value(QStringLiteral("blocks")).toArray())
+                count += block.toObject().value(QStringLiteral("tiles")).toArray().size();
+            const Doc owner = isCompressed ? Doc::Compressed : Doc::Tiles;
+            const sdk::DocumentEntry document = entry(
+                (isCompressed ? QStringLiteral("c:") : QStringLiteral("u:")) + label, label, QString::number(count),
+                payloadDirty(doc(owner), savedDoc(owner), QStringLiteral("payloads"), label));
+            if (kind == QLatin1String("level")) {
+                const int set = item.value(QStringLiteral("set")).toInt(-1);
+                add(QStringLiteral("level-%1").arg(set), set >= 0 ? blockSetLabel(set) : tr("Stages"), document);
+            } else {
+                const QString title = kind == QLatin1String("weapons")   ? tr("Weapons")
+                                      : kind == QLatin1String("objects") ? tr("Objects")
+                                      : kind == QLatin1String("bosses")  ? tr("Bosses")
+                                      : kind == QLatin1String("screen")  ? tr("Screens and fonts")
+                                      : kind == QLatin1String("credits") ? tr("Credits")
+                                                                         : tr("Other");
+                add(kind, title, document);
+            }
+        }
+        // The hero first, then objects, the levels in order, the rest.
+        QStringList sorted;
+        for (const char* key : {"hero", "weapons", "objects", "bosses"})
+            if (order.contains(QLatin1String(key))) sorted << QString::fromLatin1(key);
+        for (const QString& key : order)
+            if (key.startsWith(QLatin1String("level-"))) sorted << key;
+        for (const char* key : {"screen", "credits", "other"})
+            if (order.contains(QLatin1String(key))) sorted << QString::fromLatin1(key);
+        for (const QString& key : sorted) groups << byGroup.value(key);
     } else if (kind == QLatin1String("palettes")) {
         sdk::DocumentGroup blocks = group(tr("Palette commands"));
         for (const QJsonValue& value : doc(Doc::Palettes).value(QStringLiteral("blocks")).toArray()) {
@@ -254,6 +307,24 @@ QVector<sdk::DocumentGroup> AlienSoldierSession::documents(const QString& kind) 
                       payloadDirty(doc(Doc::Palettes), savedDoc(Doc::Palettes), QStringLiteral("blocks"), label)));
         }
         groups.append(blocks);
+    } else if (kind == QLatin1String("objects")) {
+        // The mapping blocks by the source file that holds them.
+        const QJsonObject objects = doc(Doc::Objects);
+        const QJsonObject contexts = objects.value(QStringLiteral("contexts")).toObject();
+        const QJsonArray blocks = doc(Doc::Mappings).value(QStringLiteral("blocks")).toArray();
+        const bool dirty = documents_.tracked(Doc::Mappings).isDirty();
+        for (const QJsonValue& value : objects.value(QStringLiteral("groups")).toArray()) {
+            const QJsonObject item = value.toObject();
+            sdk::DocumentGroup file = group(item.value(QStringLiteral("id")).toString());
+            for (const QJsonValue& label : item.value(QStringLiteral("blocks")).toArray()) {
+                const QJsonObject block = blocks.at(indexOfLabel(blocks, label.toString())).toObject();
+                const int count = block.value(QStringLiteral("mappings")).toArray().size();
+                const QString meta = contexts.contains(label.toString()) ? tr("%n frames", nullptr, count)
+                                                                         : tr("%n frames · not seen", nullptr, count);
+                file.documents.append(entry(label.toString(), label.toString(), meta, dirty));
+            }
+            groups.append(file);
+        }
     } else if (kind == QLatin1String("sprites")) {
         sdk::DocumentGroup scripts = group(tr("Animations"));
         for (const QJsonValue& value : doc(Doc::Animations).value(QStringLiteral("scripts")).toArray()) {
@@ -350,6 +421,7 @@ std::unique_ptr<sdk::EditorModel> AlienSoldierSession::openEditor(const QString&
         return set < 0 ? nullptr : std::make_unique<MetatilesModel>(this, set, document.endsWith(QLatin1String("-b")));
     }
     if (kind == QLatin1String("tiles")) {
+        if (document == QLatin1String("hero")) return std::make_unique<HeroSheetModel>(this);
         if (document.startsWith(QLatin1String("c:")))
             return std::make_unique<TilesModel>(this, Doc::Compressed, document.mid(2));
         if (document.startsWith(QLatin1String("u:")))
@@ -357,6 +429,7 @@ std::unique_ptr<sdk::EditorModel> AlienSoldierSession::openEditor(const QString&
         return nullptr;
     }
     if (kind == QLatin1String("palettes")) return std::make_unique<PalettesModel>(this, document);
+    if (kind == QLatin1String("objects")) return std::make_unique<ObjectsModel>(this, document);
     if (kind == QLatin1String("sprites")) return std::make_unique<AnimationsModel>(this, document);
     if (kind == QLatin1String("screens")) return std::make_unique<ScreensModel>(this, document);
     if (kind == QLatin1String("text")) return std::make_unique<TextModel>(this, document);
@@ -460,8 +533,9 @@ bool AlienSoldierSession::revert(const QString& kind, const QString& document, Q
     if (kind == QLatin1String("levels")) docs = {Doc::Levels};
     else if (kind == QLatin1String("metatiles")) docs = {Doc::Maps};
     else if (kind == QLatin1String("tiles"))
-        docs = {document.startsWith(QLatin1String("u:")) ? Doc::Tiles : Doc::Compressed};
+        docs = {document.startsWith(QLatin1String("c:")) ? Doc::Compressed : Doc::Tiles};
     else if (kind == QLatin1String("palettes")) docs = {Doc::Palettes};
+    else if (kind == QLatin1String("objects")) docs = {Doc::Mappings};
     else if (kind == QLatin1String("sprites")) docs = {Doc::Animations, Doc::Mappings};
     else if (kind == QLatin1String("screens")) docs = {Doc::Screens};
     else if (kind == QLatin1String("text")) docs = {Doc::Text};

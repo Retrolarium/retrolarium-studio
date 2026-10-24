@@ -10,8 +10,10 @@ namespace rl::alien_soldier {
 class AlienSoldierSession;
 
 // One art payload's 4bpp tiles, compressed (LZSS or the tile codec, packed
-// again into the payload's slot on build) or not. The pens are a CRAM line
-// of a palette list the user picks, since the art does not say which.
+// again into the payload's slot on build) or not. The pens start as the
+// colours the game shows the art in (art.json: a recorded object's palette
+// commands, or the palette list of the stage or screen that loads it, and
+// the line its tiles use most); any palette list and line can be picked.
 class TilesModel final : public sdk::TileModel {
     Q_OBJECT
 
@@ -50,8 +52,9 @@ private:
     QString label_;
     int tile_ = 0;
     int pen_ = 1;
-    QString paletteList_;
+    QString paletteList_;  // empty: as in the game
     int line_ = 0;
+    QJsonObject colours_;  // art.json's for the payload
     QJsonObject strokeBefore_;
     quint64 strokeRevision_ = 0;
 };

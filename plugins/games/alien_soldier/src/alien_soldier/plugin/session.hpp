@@ -45,6 +45,7 @@ public:
     void playSelected() override;
 
     const QJsonObject& doc(Doc doc) const { return documents_[doc]; }
+    const Documents& docs() const { return documents_; }
     const QJsonObject& savedDoc(Doc doc) const { return documents_.tracked(doc).saved; }
     // One edit of a document as one undo step; false (with `error`) when
     // `change` throws.

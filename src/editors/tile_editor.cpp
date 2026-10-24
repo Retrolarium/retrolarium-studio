@@ -161,8 +161,10 @@ void TileAtlas::keyPressEvent(QKeyEvent* event) {
 // ---------------------------------------------------------------- pixels
 
 PixelCanvas::PixelCanvas(sdk::TileModel* model, QWidget* parent) : QWidget(parent), model_(model) {
-    // A tall tile at the 8x8 scale would not fit the window.
-    pixel_ = model_->tileSize().height() > 8 ? 26 : kPixel;
+    // A tall tile at the 8x8 scale would not fit the window; a big one (a
+    // whole sprite frame) gets smaller pixels still.
+    const QSize size = model_->tileSize();
+    pixel_ = size.height() > 8 ? std::max(4, std::min(26, 416 / std::max(size.width(), size.height()))) : kPixel;
     setMouseTracking(true);
     setCursor(Qt::CrossCursor);
     setFixedSize(sizeHint());

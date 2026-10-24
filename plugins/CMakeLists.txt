@@ -20,6 +20,8 @@ add_library(alien_soldier_data STATIC
     games/alien_soldier/src/alien_soldier/data/documents.hpp
     games/alien_soldier/src/alien_soldier/data/scene.cpp
     games/alien_soldier/src/alien_soldier/data/scene.hpp
+    games/alien_soldier/src/alien_soldier/data/sprites.cpp
+    games/alien_soldier/src/alien_soldier/data/sprites.hpp
 )
 target_include_directories(alien_soldier_data PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/games/alien_soldier/src)
 target_link_libraries(alien_soldier_data PUBLIC platform_megadrive Qt5::Core Qt5::Gui)
@@ -33,12 +35,18 @@ add_library(alien_soldier_plugin STATIC
     games/alien_soldier/src/alien_soldier/plugin/animations_model.hpp
     games/alien_soldier/src/alien_soldier/plugin/demo_model.cpp
     games/alien_soldier/src/alien_soldier/plugin/demo_model.hpp
+    games/alien_soldier/src/alien_soldier/plugin/hero_sheet_model.cpp
+    games/alien_soldier/src/alien_soldier/plugin/hero_sheet_model.hpp
     games/alien_soldier/src/alien_soldier/plugin/levels_model.cpp
     games/alien_soldier/src/alien_soldier/plugin/levels_model.hpp
     games/alien_soldier/src/alien_soldier/plugin/map_edits.cpp
     games/alien_soldier/src/alien_soldier/plugin/map_edits.hpp
+    games/alien_soldier/src/alien_soldier/plugin/mapping_canvas.cpp
+    games/alien_soldier/src/alien_soldier/plugin/mapping_canvas.hpp
     games/alien_soldier/src/alien_soldier/plugin/metatiles_model.cpp
     games/alien_soldier/src/alien_soldier/plugin/metatiles_model.hpp
+    games/alien_soldier/src/alien_soldier/plugin/objects_model.cpp
+    games/alien_soldier/src/alien_soldier/plugin/objects_model.hpp
     games/alien_soldier/src/alien_soldier/plugin/palettes_model.cpp
     games/alien_soldier/src/alien_soldier/plugin/palettes_model.hpp
     games/alien_soldier/src/alien_soldier/plugin/playtest_model.cpp
