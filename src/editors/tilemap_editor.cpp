@@ -178,18 +178,25 @@ void MapCanvas::setPlacePreview(const QImage& icon, QSize cells) {
 
 void MapCanvas::updateCursor() { setCursor(tool_ == QLatin1String("select") ? Qt::ArrowCursor : Qt::CrossCursor); }
 
+QMargins MapCanvas::margins() const {
+    const QMargins m = model_->renderMargins();
+    return QMargins(scaled(m.left()), scaled(m.top()), scaled(m.right()), scaled(m.bottom()));
+}
+
 QSize MapCanvas::sizeHint() const {
-    const QSize map(scaled(model_->gridSize().width() * model_->cellSize().width()),
-                    scaled(model_->gridSize().height() * model_->cellSize().height()));
+    const QMargins m = margins();
+    const QSize map(scaled(model_->gridSize().width() * model_->cellSize().width()) + m.left() + m.right(),
+                    scaled(model_->gridSize().height() * model_->cellSize().height()) + m.top() + m.bottom());
     return QSize(map.width() + kPadSide * 2, map.height() + kPadTop + kPadBottom);
 }
 
 QRect MapCanvas::mapRect() const {
+    // The cells; the frame around them is centred with them.
     const QSize hint = sizeHint();
-    const QSize map(hint.width() - kPadSide * 2, hint.height() - kPadTop - kPadBottom);
-    const int x = std::max(kPadSide, (width() - map.width()) / 2);
-    const int y = std::max(kPadTop, (height() - map.height() - kPadTop - kPadBottom) / 2 + kPadTop);
-    return QRect(QPoint(x, y), map);
+    const QSize framed(hint.width() - kPadSide * 2, hint.height() - kPadTop - kPadBottom);
+    const int x = std::max(kPadSide, (width() - framed.width()) / 2);
+    const int y = std::max(kPadTop, (height() - framed.height() - kPadTop - kPadBottom) / 2 + kPadTop);
+    return QRect(QPoint(x, y), framed).marginsRemoved(margins());
 }
 
 QPoint MapCanvas::cellAt(const QPoint& pos) const {
@@ -459,7 +466,7 @@ void MapCanvas::paintEvent(QPaintEvent* event) {
     const QSize grid = model_->gridSize();
 
     if (!image_.isNull()) {
-        painter.drawImage(map, image_);
+        painter.drawImage(map.marginsAdded(margins()), image_);
     }
 
     // Cell overlay (collision and similar layers).
@@ -764,8 +771,9 @@ void TileMapEditor::showEvent(QShowEvent* event) {
 void TileMapEditor::fitZoom() {
     const QSize grid = map_->gridSize();
     const QSize cell = map_->cellSize();
-    const int mapWidth = std::max(1, grid.width() * cell.width());
-    const int mapHeight = std::max(1, grid.height() * cell.height());
+    const QMargins frame = map_->renderMargins();
+    const int mapWidth = std::max(1, grid.width() * cell.width() + frame.left() + frame.right());
+    const int mapHeight = std::max(1, grid.height() * cell.height() + frame.top() + frame.bottom());
     const QSize room = scroll_->viewport()->size() - QSize(kPadSide * 2, kPadTop + kPadBottom);
     // The largest step up to 4x that shows the whole map; a scrolling level
     // (pages) always fits its height and scrolls sideways, so short and long

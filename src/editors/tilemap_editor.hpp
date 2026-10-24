@@ -115,6 +115,8 @@ private:
     sdk::TileMapModel* model_;
     QImage image_;
     int scaled(int pixels) const { return pixels * zoom_ / 4; }
+    // The model's frame around the cells, at the zoom.
+    QMargins margins() const;
 
     int zoom_ = 8;  // quarters
     bool grid_ = true;

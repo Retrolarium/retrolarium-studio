@@ -3,6 +3,7 @@
 #include "sdk/types.hpp"
 
 #include <QByteArray>
+#include <QMargins>
 #include <QObject>
 #include <QPoint>
 #include <QRect>
@@ -125,8 +126,12 @@ public:
     // (take a cell's value as the current brush).
     virtual QVector<Tool> tools() const = 0;
 
-    // The map at one pixel per pixel: gridSize() * cellSize().
+    // The map at one pixel per pixel: gridSize() * cellSize(), grown by
+    // renderMargins().
     virtual QImage render() const = 0;
+    // Pixels render() draws around the cells: a frame the game shows that
+    // holds no cells (a room's walls and floor).
+    virtual QMargins renderMargins() const { return {}; }
 
     // Cell layer. brushes() is empty when the current layer has no cells.
     virtual QVector<CellBrush> brushes() const { return {}; }

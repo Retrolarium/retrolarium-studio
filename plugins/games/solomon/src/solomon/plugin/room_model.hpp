@@ -29,7 +29,10 @@ public:
     sdk::Library sheet() const override;
     void setCurrentLibraryItem(const QString& id) override;
 
-    QSize gridSize() const override { return {kWidth, kHeight}; }
+    // Column 15 lies behind the right wall: the grid is the 15 played,
+    // between the walls and above the floor render() draws around them.
+    QSize gridSize() const override { return {kWidth - 1, kHeight}; }
+    QMargins renderMargins() const override { return {8, 0, 8, 16}; }
     QSize cellSize() const override { return {16, 16}; }
     QVector<sdk::MapLayer> layers() const override;
     QString currentLayer() const override { return layer_; }

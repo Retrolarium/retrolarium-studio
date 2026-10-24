@@ -203,7 +203,7 @@ QVector<sdk::Tool> SolomonRoomModel::tools() const {
 }
 
 QImage SolomonRoomModel::render() const {
-    return session_->painter().room(room_, SolomonPainter::Options(), draft_ ? &*draft_ : nullptr);
+    return session_->painter().framedRoom(room_, SolomonPainter::Options(), draft_ ? &*draft_ : nullptr);
 }
 
 // ---------------------------------------------------------------- blocks
@@ -220,7 +220,7 @@ void SolomonRoomModel::setCurrentBrush(int value) {
 }
 
 int SolomonRoomModel::cellValue(QPoint cell) const {
-    if (cell.x() < 0 || cell.y() < 0 || cell.x() >= kWidth || cell.y() >= kHeight) return -1;
+    if (cell.x() < 0 || cell.y() < 0 || cell.x() >= kWidth - 1 || cell.y() >= kHeight) return -1;
     return (rooms().block(room_, cell, false) ? 1 : 0) | (rooms().block(room_, cell, true) ? 2 : 0);
 }
 
@@ -496,7 +496,7 @@ void SolomonRoomModel::beginDrag(const QString& id) {
 bool SolomonRoomModel::dragObject(const QString& id, QPoint topLeftCell) {
     if (!draft_) return false;
     const QSize size = id.startsWith(QLatin1String("constellation")) ? QSize(3, 2) : QSize(1, 1);
-    const QPoint cell(std::clamp(topLeftCell.x(), 0, kWidth - size.width()),
+    const QPoint cell(std::clamp(topLeftCell.x(), 0, kWidth - 1 - size.width()),
                       std::clamp(topLeftCell.y(), 0, kHeight - size.height()));
     if (!moveTo(*draft_, id, cell)) return false;
     emit contentChanged();
@@ -524,7 +524,7 @@ bool SolomonRoomModel::commit(const SolomonRooms& next, const QString& text, QSt
 }
 
 bool SolomonRoomModel::placeObject(const QString& libraryItem, QPoint cell, QString* error) {
-    if (cell.x() < 0 || cell.y() < 0 || cell.x() >= kWidth || cell.y() >= kHeight) return false;
+    if (cell.x() < 0 || cell.y() < 0 || cell.x() >= kWidth - 1 || cell.y() >= kHeight) return false;
     SolomonRooms next = session_->rooms();
     if (libraryItem.startsWith(QLatin1String("block:"))) {
         setCurrentLibraryItem(libraryItem);

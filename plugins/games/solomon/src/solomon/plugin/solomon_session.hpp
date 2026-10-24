@@ -78,6 +78,9 @@ private:
     // Reads the tables a newer kit takes from the game (constellations) into
     // the graphics bundle, then opens the view again.
     void upgradeTables(const QString& kind, const QString& document);
+    // The tables were read once this session: a game whose profile has no
+    // frame table yet (an older release) opens its rooms without it.
+    bool tablesRead_ = false;
     void launchDemo(bool record);
     void applyRecording(const QString& path);
 

@@ -27,6 +27,9 @@ public:
     // `draft` draws rooms an editor holds while a drag or stroke lasts.
     QImage room(int index, const Options& options, const SolomonRooms* draft = nullptr) const;
     QImage room(int index) const { return room(index, Options()); }
+    // The room as the game frames it, 256x208: the 15 columns played
+    // between the walls (the 16th lies behind them) and the floor below.
+    QImage framedRoom(int index, const Options& options, const SolomonRooms* draft = nullptr) const;
     // A pattern as an icon in a room's colours (16x16).
     QImage patternIcon(int pattern, int bank, int group, bool transparentZero = false) const;
     // An enemy type's first frame (16x16, transparent around), or null.

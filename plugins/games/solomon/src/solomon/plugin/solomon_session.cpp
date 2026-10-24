@@ -342,7 +342,17 @@ QVector<sdk::DocumentGroup> SolomonSession::listDocuments(const QString& kind) c
 
 std::unique_ptr<sdk::EditorModel> SolomonSession::openEditor(const QString& kind, const QString& document) {
     try {
-        if (kind == QLatin1String("rooms") && !state_.graphics.contains(QStringLiteral("render-tables"))) {
+        // A project made before the kit read the game's render tables (the
+        // newest: the room frame's patterns) reads them first.
+        const QJsonObject tables =
+            state_.graphics.contains(QStringLiteral("render-tables"))
+                ? state_.graphics.resource(QStringLiteral("render-tables")).value(QStringLiteral("tables")).toObject()
+                : QJsonObject();
+        // Once a session: a game whose profile has no such table yet (an
+        // older release) would otherwise ask for it again and again.
+        const bool missing = !tablesRead_ && !tables.contains(QStringLiteral("room_frame_patterns"));
+        if (kind == QLatin1String("rooms") && missing) {
+            tablesRead_ = true;
             upgradeTables(kind, document);
             return nullptr;
         }

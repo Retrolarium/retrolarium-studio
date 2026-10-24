@@ -4,6 +4,7 @@
 #include "sdk/i18n.hpp"
 
 #include <QJsonArray>
+#include <QPainter>
 
 namespace rl::solomon {
 
@@ -98,6 +99,45 @@ void SolomonPainter::drawPattern(QImage& image, int x, int y, const SolomonPatte
             }
         }
     }
+}
+
+QImage SolomonPainter::framedRoom(int index, const Options& options, const SolomonRooms* draft) const {
+    const QImage inner = room(index, options, draft);
+    QImage image(kWidth * kCell, (kHeight + 1) * kCell, QImage::Format_RGB32);
+    image.fill(Qt::black);
+    {
+        QPainter painter(&image);
+        painter.drawImage(QPoint(8, 0), inner, QRect(0, 0, (kWidth - 1) * kCell, kHeight * kCell));
+    }
+    // DrawRoomNametableFrame: the room fills name table columns 0-29 from
+    // row 4; columns 30 and 31 and rows 28-29 hold the frame, and the screen
+    // is scrolled 8 pixels, so column 31 shows at the left. Each four-byte
+    // pattern repeats down a column or across a row, its last byte first.
+    const QVector<int> patterns = renderTable(state_->graphics, QStringLiteral("room_frame_patterns"));
+    if (patterns.size() < 16) return image;
+    const SolomonRooms& rooms = draft ? *draft : state_->rooms;
+    const Bank& b = bank(SolomonRooms::chrBank(rooms.itemCommands(index)));
+    const QVector<int> colors = palette(groupOf(index));
+    const auto drawTile = [&](int tile, int left, int top) {
+        for (int ty = 0; ty < 8; ++ty) {
+            for (int tx = 0; tx < 8; ++tx) {
+                const int pen = b.pixels.at((0x100 + (tile & 0xff)) * 64 + ty * 8 + tx);
+                image.setPixel(left + tx, top + ty, rgb(colors.value(pen)));
+            }
+        }
+    };
+    const auto screenX = [](int column) { return column == 31 ? 0 : column == 30 ? 248 : 8 + column * 8; };
+    for (int row = 4; row < 28; ++row) {
+        const int phase = 3 - (row - 4) % 4;
+        drawTile(patterns.at(phase), screenX(31), (row - 4) * 8);
+        drawTile(patterns.at(4 + phase), screenX(30), (row - 4) * 8);
+    }
+    for (int column = 0; column < 32; ++column) {
+        const int phase = 3 - column % 4;
+        drawTile(patterns.at(8 + phase), screenX(column), 24 * 8);
+        drawTile(patterns.at(12 + phase), screenX(column), 25 * 8);
+    }
+    return image;
 }
 
 void SolomonPainter::drawSprite(QImage& image, const QJsonObject& frame, const Bank& b, int x, int y,
