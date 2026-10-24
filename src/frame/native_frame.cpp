@@ -89,6 +89,13 @@ void NativeFrame::apply() {
 }
 
 void NativeFrame::toggleMaximized() {
+#ifdef Q_OS_WIN
+    // By the system's state: Qt's can fall behind it (after the screen
+    // changed under a maximized window) and then the button did nothing.
+    const HWND hwnd = reinterpret_cast<HWND>(window_->winId());
+    ShowWindow(hwnd, IsZoomed(hwnd) ? SW_RESTORE : SW_MAXIMIZE);
+    return;
+#endif
     if (window_->isMaximized()) {
         window_->showNormal();
     } else {
@@ -207,6 +214,15 @@ bool NativeFrame::handle(const QByteArray& eventType, void* message, long* resul
                 showSystemMenu(hwnd, GET_X_LPARAM(msg->lParam), GET_Y_LPARAM(msg->lParam));
                 *result = 0;
                 return true;
+            }
+            break;
+        case WM_DISPLAYCHANGE:
+            // The screen changed size (a virtual machine's window, a new
+            // monitor): a maximized window fills the new work area again
+            // instead of keeping the old size it can no longer leave.
+            if (IsZoomed(hwnd)) {
+                ShowWindow(hwnd, SW_RESTORE);
+                ShowWindow(hwnd, SW_MAXIMIZE);
             }
             break;
         case WM_SYSCOMMAND:
