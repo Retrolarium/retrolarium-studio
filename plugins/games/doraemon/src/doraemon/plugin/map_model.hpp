@@ -25,6 +25,8 @@ public:
 
     QString title() const override { return label_; }
     QString startPoint() const override;
+    // World 1's start is put on the map by hand.
+    QString startLibraryItem() const override;
     sdk::Budget budget() const override;
     sdk::Inspection inspect() const override;
     bool setField(const QString& key, const QVariant& value, QString* error) override;
@@ -69,6 +71,8 @@ private:
     // A placement's sprite in its area's colours, where it is drawn.
     QImage objectImage(const QJsonObject& record, QPoint* topLeft) const;
     QString objectName(int type) const;
+    // The objects layer's palette: the start (World 1) and every type.
+    sdk::Library objectLibrary() const;
     QStringList typeChoices() const;
     sdk::Inspection inspectObject() const;
     bool setObjectField(const QString& key, const QVariant& value, QString* error);
@@ -94,6 +98,7 @@ private:
     int width_ = 0;
     int height_ = 0;
     int block_ = 0;
+    QString objectItem_ = QStringLiteral("type:0");  // the objects layer's pick
     int cell_ = -1;
     QHash<int, int> stroke_;  // cell -> painted block
     QString layer_ = QStringLiteral("blocks");

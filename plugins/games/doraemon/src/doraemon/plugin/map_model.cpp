@@ -40,6 +40,10 @@ QPoint DoraemonMapModel::startCell() const {
 
 QString DoraemonMapModel::startPoint() const { return session_->selectedStart(); }
 
+QString DoraemonMapModel::startLibraryItem() const {
+    return world_ == World::One ? QStringLiteral("start") : QString();
+}
+
 QVector<int> DoraemonMapModel::cells() const {
     QVector<int> result = session_->painter().mapCells(world_, map_);
     for (auto it = stroke_.constBegin(); it != stroke_.constEnd(); ++it) {
@@ -55,7 +59,9 @@ int DoraemonMapModel::presetAt(int cell) const {
 
 QVector<sdk::Tool> DoraemonMapModel::tools() const {
     if (objectLayer()) {
-        return {{QStringLiteral("select"), tr("Select and move objects"), QStringLiteral("select")}};
+        return {{QStringLiteral("select"), tr("Select and move objects"), QStringLiteral("select")},
+                {QStringLiteral("place"), tr("Give an object the picked type (or put the start down)"),
+                 QStringLiteral("place")}};
     }
     return {
         {QStringLiteral("select"), tr("Select a block"), QStringLiteral("select")},
@@ -117,6 +123,8 @@ QImage DoraemonMapModel::render() const {
 }
 
 QVector<sdk::CellBrush> DoraemonMapModel::brushes() const {
+    // The objects layer has a palette of types, no brush.
+    if (objectLayer()) return {};
     return {{block_, tr("Big block %1").arg(nes::hex(block_)), QColor()}};
 }
 
@@ -126,9 +134,23 @@ void DoraemonMapModel::setCurrentBrush(int value) {
     emit selectionChanged();
 }
 
-QString DoraemonMapModel::currentLibraryItem() const { return QStringLiteral("block:%1").arg(block_); }
+QString DoraemonMapModel::currentLibraryItem() const {
+    return objectLayer() ? objectItem_ : QStringLiteral("block:%1").arg(block_);
+}
 
 void DoraemonMapModel::setCurrentLibraryItem(const QString& id) {
+    const bool start = id == QLatin1String("start") && world_ == World::One;
+    if (start || id.startsWith(QLatin1String("type:"))) {
+        // An object type or the start: the objects layer offers them.
+        if (layers().isEmpty()) return;
+        if (!objectLayer()) setCurrentLayer(QStringLiteral("objects"));
+        if (id != objectItem_) {
+            objectItem_ = id;
+            emit toolsChanged();
+            emit selectionChanged();
+        }
+        return;
+    }
     if (!id.startsWith(QLatin1String("block:"))) return;
     const int block = std::clamp(id.mid(6).toInt(), 0, 255);
     if (block != block_) {
@@ -183,7 +205,41 @@ bool DoraemonMapModel::placeObject(const QString& libraryItem, QPoint cell, QStr
         selectObject(QStringLiteral("start"));
         return true;
     }
-    if (!libraryItem.startsWith(QLatin1String("block:")) || !isCellEditable(cell)) return false;
+    if (libraryItem.startsWith(QLatin1String("type:"))) {
+        // The game's lists keep their length: a type changes the object it
+        // is put on.
+        const QPoint at = objectLayer() ? cell : QPoint(cell.x() * 4, cell.y() * 4);
+        const QVector<sdk::MapObject> placed = objects();
+        QString hit;
+        for (int i = placed.size() - 1; i >= 0 && hit.isEmpty() && objectLayer(); --i) {
+            if (placed.at(i).id.startsWith(QLatin1String("obj:")) && placed.at(i).cells.contains(at)) {
+                hit = placed.at(i).id;
+            }
+        }
+        if (hit.isEmpty()) {
+            if (error) {
+                *error =
+                    tr("The game's list of objects here keeps its length: put the type on an object to "
+                       "change it, or drag an object to move it.");
+            }
+            return false;
+        }
+        const int index = hit.mid(4).toInt();
+        QJsonArray list = records();
+        QJsonObject record = list.at(index).toObject();
+        const int type = record.value(QStringLiteral("type")).toInt();
+        int next = libraryItem.mid(5).toInt();
+        // A descriptor object keeps whether it is hidden.
+        if (world_ == World::One && (next & 0x80) && (type & 0x80)) next |= type & 0x40;
+        if (next == type) return true;
+        record.insert(QStringLiteral("type"), next);
+        list.replace(index, record);
+        selectObject(hit);
+        return commitRecords(list, tr("Make %1 a %2").arg(objectName(type), objectName(next)), error);
+    }
+    const QPoint blockCell = objectLayer() ? QPoint(cell.x() / 4, cell.y() / 4) : cell;
+    if (!libraryItem.startsWith(QLatin1String("block:")) || !isCellEditable(blockCell)) return false;
+    cell = blockCell;
     setCurrentLibraryItem(libraryItem);
     QVector<int> next = cells();
     next[cell.y() * width_ + cell.x()] = block_;
@@ -373,14 +429,7 @@ bool DoraemonMapModel::setField(const QString& key, const QVariant& value, QStri
 
 sdk::Library DoraemonMapModel::sheet() const {
     sdk::Library result;
-    // The start among the objects; the blocks' sheet stays a 16-wide grid.
-    if (world_ == World::One && objectLayer()) {
-        sdk::LibraryItem start;
-        start.id = QStringLiteral("start");
-        start.label = tr("Playtest start");
-        start.icon = session_->playerIcon();
-        result.items << start;
-    }
+    // The objects' palette is the inspector's list (objectLibrary).
     if (objectLayer()) return result;
     result.grid = true;
     result.columns = 16;
@@ -404,7 +453,11 @@ sdk::Budget DoraemonMapModel::budget() const {
 }
 
 sdk::Inspection DoraemonMapModel::inspect() const {
-    if (objectLayer()) return inspectObject();
+    if (objectLayer()) {
+        sdk::Inspection inspection = inspectObject();
+        inspection.library = objectLibrary();
+        return inspection;
+    }
     sdk::Inspection inspection;
     inspection.engineTag = QStringLiteral("doraemon.hierarchy.v1");
     if (cell_ < 0 || cell_ >= width_ * height_) {
@@ -527,6 +580,42 @@ QString DoraemonMapModel::objectName(int type) const {
     const QJsonArray metasprites =
         session_->resource(QStringLiteral("world1-enemy-properties")).value(QStringLiteral("metasprites")).toArray();
     return enemyName(metasprites.at(type).toInt());
+}
+
+sdk::Library DoraemonMapModel::objectLibrary() const {
+    sdk::Library library;
+    if (world_ != World::One && world_ != World::Three) return library;
+    library.hint = tr("click: pick · drag onto an object");
+    if (world_ == World::One) {
+        sdk::LibraryItem start;
+        start.id = QStringLiteral("start");
+        start.label = tr("Playtest start");
+        start.hint = tr("where Play from selected (F4) drops Doraemon; not level data");
+        start.icon = session_->playerIcon();
+        library.items << start;
+    }
+    QVector<int> types;
+    if (world_ == World::Three) {
+        for (int t = 0; t < 32; ++t) types << t;
+    } else {
+        for (int t = 0; t < 12; ++t) types << t;
+        for (int d = 0; d < 13; ++d) types << (0x80 | d);
+    }
+    for (int type : types) {
+        sdk::LibraryItem item;
+        item.id = QStringLiteral("type:%1").arg(type);
+        item.label = objectName(type);
+        item.hint = tr("type %1 · put it on an object to change that object's type").arg(nes::hex(type));
+        try {
+            QJsonObject record{{QStringLiteral("type"), type}, {QStringLiteral("x"), 4}, {QStringLiteral("y"), 4}};
+            if (world_ == World::Three) record.insert(QStringLiteral("room"), 0);
+            QPoint at;
+            item.icon = objectImage(record, &at);
+        } catch (const std::exception&) {
+        }
+        library.items << item;
+    }
+    return library;
 }
 
 QStringList DoraemonMapModel::typeChoices() const {
