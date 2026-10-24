@@ -3355,10 +3355,6 @@
         <translation>Nein</translation>
     </message>
     <message>
-        <source>The game scans the city&apos;s objects after the first %1 in order of X, so this one stays between its neighbours&apos; columns.</source>
-        <translation>Das Spiel durchläuft die Objekte der Stadt nach den ersten %1 in X-Reihenfolge, dieses bleibt also zwischen den Spalten seiner Nachbarn.</translation>
-    </message>
-    <message>
         <source>Enemies take their sprite, colours and health from the enemy table; objects from their descriptor.</source>
         <translation>Gegner nehmen Sprite, Farben und Lebenspunkte aus der Gegnertabelle; Objekte aus ihrem Deskriptor.</translation>
     </message>
@@ -3403,12 +3399,16 @@
         <translation>%1 bearbeiten</translation>
     </message>
     <message>
-        <source>The city&apos;s objects after the first %1 stay ordered by X.</source>
-        <translation>Die Objekte der Stadt nach den ersten %1 bleiben nach X sortiert.</translation>
-    </message>
-    <message>
         <source>World 3&apos;s thirteen persistent objects: the chests, keys and other things the rooms keep. Drag one to move it, across rooms too. Creatures come from each room&apos;s spawn schedule: its four channels sit in the room&apos;s top-left corner with their counts; pick one to change it.</source>
         <translation>Die dreizehn bleibenden Objekte von Welt 3: die Truhen, Schlüssel und anderen Dinge, die die Räume behalten. Ziehe eines, um es zu verschieben, auch über Räume hinweg. Kreaturen kommen aus dem Erscheinungsplan jedes Raums: Seine vier Kanäle stehen mit ihren Anzahlen in der oberen linken Ecke des Raums; wähle einen, um ihn zu ändern.</translation>
+    </message>
+    <message>
+        <source>Playtest start</source>
+        <translation>Teststart</translation>
+    </message>
+    <message>
+        <source>The game scans the city&apos;s objects after the first %1 in order of X: moved, this one takes its place in that order.</source>
+        <translation>Das Spiel geht die Objekte der Stadt nach den ersten %1 in der Reihenfolge von X durch: Verschoben nimmt dieses seinen Platz in dieser Reihenfolge ein.</translation>
     </message>
 </context>
 <context>
@@ -5989,6 +5989,10 @@
         <source>Cell %1 · %2, %3</source>
         <translation>Zelle %1 · %2, %3</translation>
     </message>
+    <message>
+        <source>The SEGA screen packs into %1 bytes; this change needs %2.</source>
+        <translation>Der SEGA-Bildschirm muss in %1 Bytes passen; diese Änderung braucht %2.</translation>
+    </message>
 </context>
 <context>
     <name>rl::flicky::SemanticsPaletteModel</name>
@@ -6535,10 +6539,6 @@
         <translation>%1 verfolgen</translation>
     </message>
     <message>
-        <source>Tracing %1 failed.</source>
-        <translation>Verfolgen von %1 fehlgeschlagen.</translation>
-    </message>
-    <message>
         <source>Cannot read %1.</source>
         <translation>%1 kann nicht gelesen werden.</translation>
     </message>
@@ -6612,6 +6612,10 @@
     <message>
         <source>unused</source>
         <translation>unbenutzt</translation>
+    </message>
+    <message>
+        <source>Tracing %1 failed: %2</source>
+        <translation>Verfolgen von %1 fehlgeschlagen: %2</translation>
     </message>
 </context>
 <context>

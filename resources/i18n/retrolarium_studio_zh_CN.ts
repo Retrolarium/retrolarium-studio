@@ -3348,10 +3348,6 @@
         <translation>否</translation>
     </message>
     <message>
-        <source>The game scans the city&apos;s objects after the first %1 in order of X, so this one stays between its neighbours&apos; columns.</source>
-        <translation>游戏会按 X 顺序扫描城市中第 %1 个之后的物件，所以这个物件必须位于相邻物件的列之间。</translation>
-    </message>
-    <message>
         <source>Enemies take their sprite, colours and health from the enemy table; objects from their descriptor.</source>
         <translation>敌人的精灵、颜色和生命值来自敌人表；物件的来自其描述符。</translation>
     </message>
@@ -3396,12 +3392,16 @@
         <translation>编辑 %1</translation>
     </message>
     <message>
-        <source>The city&apos;s objects after the first %1 stay ordered by X.</source>
-        <translation>城市中第 %1 个之后的物件保持按 X 排序。</translation>
-    </message>
-    <message>
         <source>World 3&apos;s thirteen persistent objects: the chests, keys and other things the rooms keep. Drag one to move it, across rooms too. Creatures come from each room&apos;s spawn schedule: its four channels sit in the room&apos;s top-left corner with their counts; pick one to change it.</source>
         <translation>世界 3 的十三个常驻物件：宝箱、钥匙以及房间保留的其他物品。拖动即可移动，也可以跨房间移动。生物来自各房间的生成计划：它的四个通道连同数量显示在房间左上角；选择一个即可修改。</translation>
+    </message>
+    <message>
+        <source>Playtest start</source>
+        <translation>试玩起点</translation>
+    </message>
+    <message>
+        <source>The game scans the city&apos;s objects after the first %1 in order of X: moved, this one takes its place in that order.</source>
+        <translation>游戏按 X 的顺序扫描城市中前 %1 个之后的物体：移动后，此物体会排到该顺序中的对应位置。</translation>
     </message>
 </context>
 <context>
@@ -5968,6 +5968,10 @@
         <source>Cell %1 · %2, %3</source>
         <translation>格子 %1 · %2, %3</translation>
     </message>
+    <message>
+        <source>The SEGA screen packs into %1 bytes; this change needs %2.</source>
+        <translation>SEGA 画面必须压缩进 %1 字节；此修改需要 %2 字节。</translation>
+    </message>
 </context>
 <context>
     <name>rl::flicky::SemanticsPaletteModel</name>
@@ -6512,10 +6516,6 @@
         <translation>跟踪 %1</translation>
     </message>
     <message>
-        <source>Tracing %1 failed.</source>
-        <translation>跟踪 %1 失败。</translation>
-    </message>
-    <message>
         <source>Cannot read %1.</source>
         <translation>无法读取 %1。</translation>
     </message>
@@ -6588,6 +6588,10 @@
     <message>
         <source>unused</source>
         <translation>未使用</translation>
+    </message>
+    <message>
+        <source>Tracing %1 failed: %2</source>
+        <translation>跟踪 %1 失败：%2</translation>
     </message>
 </context>
 <context>

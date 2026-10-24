@@ -3355,10 +3355,6 @@
         <translation>Não</translation>
     </message>
     <message>
-        <source>The game scans the city&apos;s objects after the first %1 in order of X, so this one stays between its neighbours&apos; columns.</source>
-        <translation>O jogo percorre os objetos da cidade depois dos primeiros %1 em ordem de X, então este fica entre as colunas dos vizinhos.</translation>
-    </message>
-    <message>
         <source>Enemies take their sprite, colours and health from the enemy table; objects from their descriptor.</source>
         <translation>Os inimigos tiram sprite, cores e vida da tabela de inimigos; os objetos, do seu descritor.</translation>
     </message>
@@ -3403,12 +3399,16 @@
         <translation>Editar %1</translation>
     </message>
     <message>
-        <source>The city&apos;s objects after the first %1 stay ordered by X.</source>
-        <translation>Os objetos da cidade depois dos primeiros %1 ficam ordenados por X.</translation>
-    </message>
-    <message>
         <source>World 3&apos;s thirteen persistent objects: the chests, keys and other things the rooms keep. Drag one to move it, across rooms too. Creatures come from each room&apos;s spawn schedule: its four channels sit in the room&apos;s top-left corner with their counts; pick one to change it.</source>
         <translation>Os treze objetos persistentes do Mundo 3: os baús, as chaves e as outras coisas que as salas guardam. Arraste um para movê-lo, inclusive entre salas. As criaturas vêm do cronograma de surgimento de cada sala: seus quatro canais ficam no canto superior esquerdo da sala, com as contagens; escolha um para mudá-lo.</translation>
+    </message>
+    <message>
+        <source>Playtest start</source>
+        <translation>Início do teste</translation>
+    </message>
+    <message>
+        <source>The game scans the city&apos;s objects after the first %1 in order of X: moved, this one takes its place in that order.</source>
+        <translation>O jogo percorre os objetos da cidade depois dos primeiros %1 em ordem de X: ao ser movido, este toma seu lugar nessa ordem.</translation>
     </message>
 </context>
 <context>
@@ -5989,6 +5989,10 @@
         <source>Cell %1 · %2, %3</source>
         <translation>Célula %1 · %2, %3</translation>
     </message>
+    <message>
+        <source>The SEGA screen packs into %1 bytes; this change needs %2.</source>
+        <translation>A tela da SEGA precisa caber em %1 bytes; esta mudança precisa de %2.</translation>
+    </message>
 </context>
 <context>
     <name>rl::flicky::SemanticsPaletteModel</name>
@@ -6535,10 +6539,6 @@
         <translation>Rastrear %1</translation>
     </message>
     <message>
-        <source>Tracing %1 failed.</source>
-        <translation>Falha ao rastrear %1.</translation>
-    </message>
-    <message>
         <source>Cannot read %1.</source>
         <translation>Não foi possível ler %1.</translation>
     </message>
@@ -6612,6 +6612,10 @@
     <message>
         <source>unused</source>
         <translation>não usado</translation>
+    </message>
+    <message>
+        <source>Tracing %1 failed: %2</source>
+        <translation>Falha ao rastrear %1: %2</translation>
     </message>
 </context>
 <context>

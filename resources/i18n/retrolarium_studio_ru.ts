@@ -3362,10 +3362,6 @@
         <translation>Нет</translation>
     </message>
     <message>
-        <source>The game scans the city&apos;s objects after the first %1 in order of X, so this one stays between its neighbours&apos; columns.</source>
-        <translation>Игра просматривает объекты города после первых %1 по порядку X, поэтому этот остаётся между столбцами соседей.</translation>
-    </message>
-    <message>
         <source>Enemies take their sprite, colours and health from the enemy table; objects from their descriptor.</source>
         <translation>Враги берут спрайт, цвета и здоровье из таблицы врагов; объекты — из своего дескриптора.</translation>
     </message>
@@ -3410,12 +3406,16 @@
         <translation>Правка %1</translation>
     </message>
     <message>
-        <source>The city&apos;s objects after the first %1 stay ordered by X.</source>
-        <translation>Объекты города после первых %1 остаются упорядоченными по X.</translation>
-    </message>
-    <message>
         <source>World 3&apos;s thirteen persistent objects: the chests, keys and other things the rooms keep. Drag one to move it, across rooms too. Creatures come from each room&apos;s spawn schedule: its four channels sit in the room&apos;s top-left corner with their counts; pick one to change it.</source>
         <translation>Тринадцать постоянных объектов мира 3: сундуки, ключи и другие вещи, которые хранят комнаты. Перетащите объект, чтобы сдвинуть его, в том числе в другую комнату. Существа появляются по расписанию каждой комнаты: её четыре канала стоят в левом верхнем углу комнаты со своими счётчиками; выберите канал, чтобы изменить его.</translation>
+    </message>
+    <message>
+        <source>Playtest start</source>
+        <translation>Старт плейтеста</translation>
+    </message>
+    <message>
+        <source>The game scans the city&apos;s objects after the first %1 in order of X: moved, this one takes its place in that order.</source>
+        <translation>Игра просматривает объекты города после первых %1 по порядку X: перемещённый объект встаёт на своё место в этом порядке.</translation>
     </message>
 </context>
 <context>
@@ -6010,6 +6010,10 @@
         <source>Cell %1 · %2, %3</source>
         <translation>Клетка %1 · %2, %3</translation>
     </message>
+    <message>
+        <source>The SEGA screen packs into %1 bytes; this change needs %2.</source>
+        <translation>Экран SEGA должен уместиться в %1 байт; этому изменению нужно %2.</translation>
+    </message>
 </context>
 <context>
     <name>rl::flicky::SemanticsPaletteModel</name>
@@ -6558,10 +6562,6 @@
         <translation>Трассировка %1</translation>
     </message>
     <message>
-        <source>Tracing %1 failed.</source>
-        <translation>Трассировка %1 не удалась.</translation>
-    </message>
-    <message>
         <source>Cannot read %1.</source>
         <translation>Не удаётся прочитать %1.</translation>
     </message>
@@ -6636,6 +6636,10 @@
     <message>
         <source>unused</source>
         <translation>не используется</translation>
+    </message>
+    <message>
+        <source>Tracing %1 failed: %2</source>
+        <translation>Трассировка %1 не удалась: %2</translation>
     </message>
 </context>
 <context>

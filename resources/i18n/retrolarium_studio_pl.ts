@@ -3362,10 +3362,6 @@
         <translation>Nie</translation>
     </message>
     <message>
-        <source>The game scans the city&apos;s objects after the first %1 in order of X, so this one stays between its neighbours&apos; columns.</source>
-        <translation>Gra przegląda obiekty miasta po pierwszych %1 w kolejności X, więc ten pozostaje między kolumnami sąsiadów.</translation>
-    </message>
-    <message>
         <source>Enemies take their sprite, colours and health from the enemy table; objects from their descriptor.</source>
         <translation>Wrogowie biorą sprite, kolory i zdrowie z tablicy wrogów; obiekty z deskryptora.</translation>
     </message>
@@ -3410,12 +3406,16 @@
         <translation>Edytuj %1</translation>
     </message>
     <message>
-        <source>The city&apos;s objects after the first %1 stay ordered by X.</source>
-        <translation>Obiekty miasta po pierwszych %1 pozostają posortowane według X.</translation>
-    </message>
-    <message>
         <source>World 3&apos;s thirteen persistent objects: the chests, keys and other things the rooms keep. Drag one to move it, across rooms too. Creatures come from each room&apos;s spawn schedule: its four channels sit in the room&apos;s top-left corner with their counts; pick one to change it.</source>
         <translation>Trzynaście trwałych obiektów Świata 3: skrzynie, klucze i inne rzeczy, które przechowują pokoje. Przeciągnij jeden, aby go przesunąć, także między pokojami. Stwory pochodzą z harmonogramu pojawiania się każdego pokoju: jego cztery kanały stoją w lewym górnym rogu pokoju razem z liczbami; wybierz jeden, aby go zmienić.</translation>
+    </message>
+    <message>
+        <source>Playtest start</source>
+        <translation>Start testu</translation>
+    </message>
+    <message>
+        <source>The game scans the city&apos;s objects after the first %1 in order of X: moved, this one takes its place in that order.</source>
+        <translation>Gra przegląda obiekty miasta po pierwszych %1 w kolejności X: przesunięty, ten zajmuje swoje miejsce w tej kolejności.</translation>
     </message>
 </context>
 <context>
@@ -6010,6 +6010,10 @@
         <source>Cell %1 · %2, %3</source>
         <translation>Komórka %1 · %2, %3</translation>
     </message>
+    <message>
+        <source>The SEGA screen packs into %1 bytes; this change needs %2.</source>
+        <translation>Ekran SEGA musi zmieścić się w %1 bajtach; ta zmiana wymaga %2.</translation>
+    </message>
 </context>
 <context>
     <name>rl::flicky::SemanticsPaletteModel</name>
@@ -6558,10 +6562,6 @@
         <translation>Śledzenie %1</translation>
     </message>
     <message>
-        <source>Tracing %1 failed.</source>
-        <translation>Śledzenie %1 nie powiodło się.</translation>
-    </message>
-    <message>
         <source>Cannot read %1.</source>
         <translation>Nie można odczytać %1.</translation>
     </message>
@@ -6636,6 +6636,10 @@
     <message>
         <source>unused</source>
         <translation>nieużywany</translation>
+    </message>
+    <message>
+        <source>Tracing %1 failed: %2</source>
+        <translation>Śledzenie %1 nie powiodło się: %2</translation>
     </message>
 </context>
 <context>

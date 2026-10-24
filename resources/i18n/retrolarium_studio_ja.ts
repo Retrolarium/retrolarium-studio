@@ -3348,10 +3348,6 @@
         <translation>いいえ</translation>
     </message>
     <message>
-        <source>The game scans the city&apos;s objects after the first %1 in order of X, so this one stays between its neighbours&apos; columns.</source>
-        <translation>ゲームは街のオブジェクトのうち最初の %1 個より後のものを X 順に調べるので、このオブジェクトは隣のオブジェクトの列の間にとどまります。</translation>
-    </message>
-    <message>
         <source>Enemies take their sprite, colours and health from the enemy table; objects from their descriptor.</source>
         <translation>敵のスプライト、色、体力は敵テーブルから、オブジェクトのものはそのディスクリプタから取られます。</translation>
     </message>
@@ -3396,12 +3392,16 @@
         <translation>%1 を編集</translation>
     </message>
     <message>
-        <source>The city&apos;s objects after the first %1 stay ordered by X.</source>
-        <translation>街のオブジェクトのうち最初の %1 個より後のものは X 順のままです。</translation>
-    </message>
-    <message>
         <source>World 3&apos;s thirteen persistent objects: the chests, keys and other things the rooms keep. Drag one to move it, across rooms too. Creatures come from each room&apos;s spawn schedule: its four channels sit in the room&apos;s top-left corner with their counts; pick one to change it.</source>
         <translation>ワールド 3 の常設オブジェクト 13 個です。宝箱や鍵など、ルームが保持するものです。ドラッグで移動でき、ルームをまたいでも動かせます。生き物は各ルームの出現スケジュールから現れます。4 つのチャンネルが個数とともにルームの左上に並んでいるので、選んで変更してください。</translation>
+    </message>
+    <message>
+        <source>Playtest start</source>
+        <translation>テスト開始位置</translation>
+    </message>
+    <message>
+        <source>The game scans the city&apos;s objects after the first %1 in order of X: moved, this one takes its place in that order.</source>
+        <translation>ゲームは街のオブジェクトを最初の%1個以降はXの順に調べます。移動すると、このオブジェクトはその順序の位置に並び替えられます。</translation>
     </message>
 </context>
 <context>
@@ -5968,6 +5968,10 @@
         <source>Cell %1 · %2, %3</source>
         <translation>セル %1 · %2, %3</translation>
     </message>
+    <message>
+        <source>The SEGA screen packs into %1 bytes; this change needs %2.</source>
+        <translation>SEGA画面は%1バイトに収める必要がありますが、この変更には%2バイト必要です。</translation>
+    </message>
 </context>
 <context>
     <name>rl::flicky::SemanticsPaletteModel</name>
@@ -6512,10 +6516,6 @@
         <translation>%1 をトレース</translation>
     </message>
     <message>
-        <source>Tracing %1 failed.</source>
-        <translation>%1 のトレースに失敗しました。</translation>
-    </message>
-    <message>
         <source>Cannot read %1.</source>
         <translation>%1 を読み込めません。</translation>
     </message>
@@ -6588,6 +6588,10 @@
     <message>
         <source>unused</source>
         <translation>未使用</translation>
+    </message>
+    <message>
+        <source>Tracing %1 failed: %2</source>
+        <translation>%1 のトレースに失敗しました: %2</translation>
     </message>
 </context>
 <context>
