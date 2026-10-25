@@ -64,9 +64,11 @@ int enemyPalette(int id, const QVector<int>& attributes, int firebar, int platfo
 }
 
 QVector<bool> horizontalFlips(int id) {
-    // The retainer: only the bottom right sprite mirrors the left one.
-    if (id == 0x35) return {false, false, false, false, false, true};
-    if (id == 0x07 || id == 0x0c || id == 0x0d || id == 0x32) {
+    // The retainer too: the game sets its alternate state to 3, which
+    // mirrors the whole right column (the bottom right sprite alone is
+    // flipped first, then the column). All Night Nippon skips the symmetry
+    // for it (SmbLevelPainter::enemy).
+    if (id == 0x07 || id == 0x0c || id == 0x0d || id == 0x35 || id == 0x32) {
         return {false, true, false, true, false, true};
     }
     if (id == 0x11) return {true, true, true, true, false, true};
@@ -256,7 +258,10 @@ QImage SmbLevelPainter::enemy(int id, const QString& areaType) const {
         if (tiles.isEmpty()) {
             return {};
         }
-        const QVector<bool> flipX = horizontalFlips(id);
+        // All Night Nippon's retainer is drawn as its tiles stand: the game
+        // jumps past the symmetry code for it (ram_ann_render_clear_skip).
+        const bool annRetainer = id == 0x35 && document_.revision() == QLatin1String("ann_fds");
+        const QVector<bool> flipX = annRetainer ? QVector<bool>() : horizontalFlips(id);
         const QVector<bool> flipY = verticalFlips(id);
         image = QImage(16, 24, QImage::Format_ARGB32);
         image.fill(Qt::transparent);
