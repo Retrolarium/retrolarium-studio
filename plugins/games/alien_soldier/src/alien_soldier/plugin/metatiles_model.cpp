@@ -72,13 +72,8 @@ int MetatilesModel::slotOffset(QPoint cell) const {
     return int(scene.planes[plane()].chunks - kRamBase) + chunk * 64 + (cell.y() % 8) * 8 + cell.x() % 8;
 }
 
-QVector<sdk::CellBrush> MetatilesModel::brushes() const {
-    QVector<sdk::CellBrush> result;
-    const int patterns = patternCount(session_->stage(stage_), plane());
-    for (int pattern = 0; pattern < std::min(patterns, 256); ++pattern)
-        result.append({pattern, tr("Pattern %1").arg(hex(pattern)), QColor()});
-    return result;
-}
+// The pattern sheet beside the chunks picks the brush; no button row.
+QVector<sdk::CellBrush> MetatilesModel::brushes() const { return {}; }
 
 void MetatilesModel::setCurrentBrush(int value) {
     brush_ = value;
@@ -108,7 +103,7 @@ sdk::Library MetatilesModel::sheet() const {
     library.hint = tr("pick a pattern, then paint chunk slots");
     library.grid = true;
     library.columns = 8;
-    library.cell = QSize(32, 32);
+    library.cell = QSize(64, 64);  // the patterns at 2x
     const int patterns = std::min(patternCount(scene, plane()), 256);
     for (int pattern = 0; pattern < patterns; ++pattern) {
         sdk::LibraryItem item;

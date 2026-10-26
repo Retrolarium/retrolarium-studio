@@ -33,33 +33,48 @@ bool listPlays(const QJsonObject& palettes, const QString& list, const QString& 
 
 }  // namespace
 
-PalettesModel::PalettesModel(AlienSoldierSession* session, const QString& label)
-    : PaletteModel(session), session_(session), label_(label) {
+PalettesModel::PalettesModel(AlienSoldierSession* session, const QString& label, int command)
+    : PaletteModel(session), session_(session), label_(label), command_(command) {
     connect(session_, &AlienSoldierSession::documentChanged, this, [this](Doc doc) {
         if (doc == Doc::Palettes) emit contentChanged();
     });
 }
 
-int PalettesModel::word(int row, int entry) const {
-    return commandsOf(session_->doc(Doc::Palettes), label_)
-        .at(row)
-        .toObject()
-        .value(QStringLiteral("colours"))
-        .toArray()
-        .at(entry)
-        .toInt();
+QString PalettesModel::title() const {
+    const int commands = int(commandsOf(session_->doc(Doc::Palettes), label_).size());
+    return commands > 1 ? QStringLiteral("%1 · %2").arg(label_).arg(command_ + 1) : label_;
+}
+
+QJsonObject PalettesModel::command() const {
+    return commandsOf(session_->doc(Doc::Palettes), label_).at(command_).toObject();
+}
+
+int PalettesModel::colourAt(QPoint entry) const {
+    const QJsonObject item = command();
+    const int index = entry.y() * 16 + entry.x() - item.value(QStringLiteral("destination")).toInt() / 2;
+    return index >= 0 && index < item.value(QStringLiteral("colours")).toArray().size() ? index : -1;
+}
+
+int PalettesModel::word(QPoint entry) const {
+    const int index = colourAt(entry);
+    return index < 0 ? 0 : command().value(QStringLiteral("colours")).toArray().at(index).toInt();
 }
 
 QVector<sdk::PaletteRow> PalettesModel::rows() const {
     QVector<sdk::PaletteRow> result;
-    for (const QJsonValue& value : commandsOf(session_->doc(Doc::Palettes), label_)) {
-        const QJsonObject command = value.toObject();
+    for (int line = 0; line < 4; ++line) {
         sdk::PaletteRow row;
-        const int first = command.value(QStringLiteral("destination")).toInt() / 2;
-        row.label = tr("Line %1 · colour %2").arg(first / 16).arg(first % 16);
-        for (const QJsonValue& colour : command.value(QStringLiteral("colours")).toArray()) {
-            row.colors.append(QColor::fromRgb(cramColor(colour.toInt())));
-            row.labels << QStringLiteral("%1").arg(colour.toInt(), 3, 16, QLatin1Char('0')).toUpper();
+        row.label = tr("Line %1").arg(line);
+        for (int entry = 0; entry < 16; ++entry) {
+            if (colourAt(QPoint(entry, line)) < 0) {
+                // Not this command's: CRAM keeps what others wrote there.
+                row.colors.append(QColor(0x1c, 0x1e, 0x24));
+                row.labels << QString();
+                continue;
+            }
+            const int value = word(QPoint(entry, line));
+            row.colors.append(QColor::fromRgb(cramColor(value)));
+            row.labels << QStringLiteral("%1").arg(value, 3, 16, QLatin1Char('0')).toUpper();
         }
         result.append(row);
     }
@@ -76,14 +91,19 @@ QString PalettesModel::pickerTitle() const { return tr("9-bit RGB · 0–7 per c
 QStringList PalettesModel::channelNames() const { return {tr("Red"), tr("Green"), tr("Blue")}; }
 
 QVector<int> PalettesModel::currentChannels() const {
-    const int value = word(entry_.y(), entry_.x());
+    const int value = word(entry_);
     return {(value >> 1) & 7, (value >> 5) & 7, (value >> 9) & 7};
 }
 
 bool PalettesModel::setChannel(int channel, int level, QString* error) {
     if (channel < 0 || channel > 2 || level < 0 || level > 7) return false;
+    const int entry = colourAt(entry_);
+    if (entry < 0) {
+        if (error) *error = tr("This command does not write that colour.");
+        return false;
+    }
     const int shift = 1 + channel * 4;
-    const int row = entry_.y(), entry = entry_.x();
+    const int row = command_;
     return session_->edit(
         Doc::Palettes, tr("Change colour"),
         [&](QJsonObject& palettes) {
@@ -140,17 +160,18 @@ QVector<sdk::PaletteSample> PalettesModel::samples() const {
 }
 
 QString PalettesModel::statusText() const {
-    return tr("%1 · line %2, entry %3").arg(label_).arg(entry_.y()).arg(entry_.x());
+    return tr("%1 · line %2, entry %3").arg(title()).arg(entry_.y()).arg(entry_.x());
 }
 
 sdk::Inspection PalettesModel::inspect() const {
     sdk::Inspection inspection;
     inspection.kicker = tr("Palette commands");
-    inspection.title = label_;
+    inspection.title = title();
     sdk::Field value;
     value.key = QStringLiteral("word");
     value.label = tr("CRAM word");
-    value.value = QStringLiteral("$%1").arg(word(entry_.y(), entry_.x()), 4, 16, QLatin1Char('0')).toUpper();
+    value.value = colourAt(entry_) < 0 ? QStringLiteral("—")
+                                       : QStringLiteral("$%1").arg(word(entry_), 4, 16, QLatin1Char('0')).toUpper();
     value.monospace = true;
     inspection.fields = {value};
     inspection.note =

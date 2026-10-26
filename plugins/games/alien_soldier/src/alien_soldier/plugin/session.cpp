@@ -2,7 +2,6 @@
 
 #include "alien_soldier/plugin/animations_model.hpp"
 #include "alien_soldier/plugin/demo_model.hpp"
-#include "alien_soldier/plugin/hero_sheet_model.hpp"
 #include "alien_soldier/plugin/levels_model.hpp"
 #include "alien_soldier/plugin/metatiles_model.hpp"
 #include "alien_soldier/plugin/objects_model.hpp"
@@ -164,17 +163,82 @@ QRect AlienSoldierSession::stageArea(int stage) const {
                  area.value(QStringLiteral("width")).toInt(), area.value(QStringLiteral("height")).toInt());
 }
 
+QVector<QRect> AlienSoldierSession::stageParts(int stage) const {
+    const QJsonArray parts = doc(Doc::Stages)
+                                 .value(QStringLiteral("scenes"))
+                                 .toArray()
+                                 .at(stage)
+                                 .toObject()
+                                 .value(QStringLiteral("area"))
+                                 .toObject()
+                                 .value(QStringLiteral("parts"))
+                                 .toArray();
+    if (parts.isEmpty()) {
+        const QRect area = stageArea(stage);
+        return area.isEmpty() ? QVector<QRect>() : QVector<QRect>{area};
+    }
+    QVector<QRect> found;
+    for (const QJsonValue& value : parts) {
+        const QJsonObject part = value.toObject();
+        found.append(QRect(part.value(QStringLiteral("x")).toInt(), part.value(QStringLiteral("y")).toInt(),
+                           part.value(QStringLiteral("width")).toInt(), part.value(QStringLiteral("height")).toInt()));
+    }
+    return found;
+}
+
+QString AlienSoldierSession::stagePartLabel(int stage, int part) const {
+    const int arenas = int(stageArenas(stage).size());
+    const QString name = sdk::gameName("stages", stage, QString());
+    const QStringList names = name.split(QStringLiteral(" / "));
+    if (arenas > 0 && names.size() == arenas + 1 && part >= 0 && part < names.size())
+        return tr("Stage %1 · %2").arg(two(stage + 1), names.at(part).trimmed());
+    // One name and one arena: the boss is fought there (Flying-Neo), the
+    // stage itself is the run up to it.
+    if (arenas == 1 && names.size() == 1 && !name.isEmpty())
+        return part == 0 ? tr("Stage %1").arg(two(stage + 1)) : stageLabel(stage);
+    return part == 0 ? stageLabel(stage) : tr("%1 · arena").arg(stageLabel(stage));
+}
+
+bool AlienSoldierSession::stageApart(int stage) const {
+    return doc(Doc::Stages)
+        .value(QStringLiteral("scenes"))
+        .toArray()
+        .at(stage)
+        .toObject()
+        .value(QStringLiteral("area"))
+        .toObject()
+        .value(QStringLiteral("apart"))
+        .toBool();
+}
+
+QVector<QRect> AlienSoldierSession::stageArenas(int stage) const {
+    QVector<QRect> found;
+    const QJsonArray arenas = doc(Doc::Stages)
+                                  .value(QStringLiteral("scenes"))
+                                  .toArray()
+                                  .at(stage)
+                                  .toObject()
+                                  .value(QStringLiteral("arenas"))
+                                  .toArray();
+    for (const QJsonValue& value : arenas) {
+        const QJsonObject arena = value.toObject();
+        if (arena.value(QStringLiteral("inline")).toBool()) continue;  // shown with the stage
+        found.append(QRect(arena.value(QStringLiteral("x")).toInt(), arena.value(QStringLiteral("y")).toInt(),
+                           arena.value(QStringLiteral("width")).toInt(),
+                           arena.value(QStringLiteral("height")).toInt()));
+    }
+    return found;
+}
+
 QPoint AlienSoldierSession::stageStart(int stage) const {
-    const QString label = doc(Doc::Stages)
-                              .value(QStringLiteral("scenes"))
-                              .toArray()
-                              .at(stage)
-                              .toObject()
-                              .value(QStringLiteral("record"))
-                              .toString();
+    const QJsonObject scene = doc(Doc::Stages).value(QStringLiteral("scenes")).toArray().at(stage).toObject();
+    const QString label = scene.value(QStringLiteral("record")).toString();
     const QJsonArray records = doc(Doc::Levels).value(QStringLiteral("records")).toArray();
     const QJsonObject record = records.at(indexOfLabel(records, label)).toObject();
-    const int x = record.value(QStringLiteral("camera_x")).toInt();
+    // The stage's handlers may move the camera off the record's X at once.
+    const QJsonObject area = scene.value(QStringLiteral("area")).toObject();
+    const int x = area.contains(QStringLiteral("start")) ? area.value(QStringLiteral("start")).toInt()
+                                                         : record.value(QStringLiteral("camera_x")).toInt();
     const int y = record.value(QStringLiteral("camera_y")).toInt();
     // The plane streamer reads the coarse map at row -Y.
     return {x, (0x10000 - y) & 0x1FFF};
@@ -197,7 +261,13 @@ QVector<sdk::DocumentGroup> AlienSoldierSession::documents(const QString& kind) 
             sdk::DocumentGroup level = group(blockSetLabel(set));
             level.documents.append(entry(QStringLiteral("set-%1").arg(set + 1), tr("Whole level"), {}, dirty));
             for (int stage : sets[set].stages) {
-                level.documents.append(entry(QStringLiteral("stage-") + two(stage + 1), stageLabel(stage), {}, dirty));
+                level.documents.append(
+                    entry(QStringLiteral("stage-") + two(stage + 1), stagePartLabel(stage, 0), {}, dirty));
+                const int arenas = int(stageArenas(stage).size());
+                for (int arena = 0; arena < arenas; ++arena) {
+                    level.documents.append(entry(QStringLiteral("arena-%1-%2").arg(two(stage + 1)).arg(arena + 1),
+                                                 stagePartLabel(stage, arena + 1), {}, dirty));
+                }
             }
             groups.append(level);
         }
@@ -238,7 +308,6 @@ QVector<sdk::DocumentGroup> AlienSoldierSession::documents(const QString& kind) 
         };
         const QJsonArray compressed = doc(Doc::Compressed).value(QStringLiteral("payloads")).toArray();
         const QJsonArray plain = doc(Doc::Tiles).value(QStringLiteral("payloads")).toArray();
-        const bool heroDirty = documents_.tracked(Doc::Tiles).isDirty();
         QJsonArray art = doc(Doc::Art).value(QStringLiteral("payloads")).toArray();
         if (art.isEmpty()) {
             // A project the kit has not read again yet: every payload, as it comes.
@@ -260,11 +329,6 @@ QVector<sdk::DocumentGroup> AlienSoldierSession::documents(const QString& kind) 
             const QString label = item.value(QStringLiteral("label")).toString();
             const QString kind = item.value(QStringLiteral("group")).toString();
             if (kind == QLatin1String("map")) continue;
-            if (kind == QLatin1String("hero")) {
-                if (!byGroup.contains(kind))
-                    add(kind, tr("Hero"), entry(QStringLiteral("hero"), tr("Hero sprite sheet"), {}, heroDirty));
-                continue;
-            }
             const bool isCompressed = indexOfLabel(compressed, label) >= 0;
             const QJsonObject payload = isCompressed ? compressed.at(indexOfLabel(compressed, label)).toObject()
                                                      : plain.at(indexOfLabel(plain, label)).toObject();
@@ -279,7 +343,9 @@ QVector<sdk::DocumentGroup> AlienSoldierSession::documents(const QString& kind) 
                 const int set = item.value(QStringLiteral("set")).toInt(-1);
                 add(QStringLiteral("level-%1").arg(set), set >= 0 ? blockSetLabel(set) : tr("Stages"), document);
             } else {
-                const QString title = kind == QLatin1String("weapons")   ? tr("Weapons")
+                // The hero's art as tiles too; its frames are in Objects.
+                const QString title = kind == QLatin1String("hero")      ? tr("Hero")
+                                      : kind == QLatin1String("weapons") ? tr("Weapons")
                                       : kind == QLatin1String("objects") ? tr("Objects")
                                       : kind == QLatin1String("bosses")  ? tr("Bosses")
                                       : kind == QLatin1String("screen")  ? tr("Screens and fonts")
@@ -299,12 +365,21 @@ QVector<sdk::DocumentGroup> AlienSoldierSession::documents(const QString& kind) 
         for (const QString& key : sorted) groups << byGroup.value(key);
     } else if (kind == QLatin1String("palettes")) {
         sdk::DocumentGroup blocks = group(tr("Palette commands"));
+        // Each command apart, as colour RAM holds it ("label#N").
         for (const QJsonValue& value : doc(Doc::Palettes).value(QStringLiteral("blocks")).toArray()) {
             const QJsonObject block = value.toObject();
             const QString label = block.value(QStringLiteral("label")).toString();
-            blocks.documents.append(
-                entry(label, label, QString::number(block.value(QStringLiteral("commands")).toArray().size()),
-                      payloadDirty(doc(Doc::Palettes), savedDoc(Doc::Palettes), QStringLiteral("blocks"), label)));
+            const QJsonArray commands = block.value(QStringLiteral("commands")).toArray();
+            const bool dirty =
+                payloadDirty(doc(Doc::Palettes), savedDoc(Doc::Palettes), QStringLiteral("blocks"), label);
+            for (int command = 0; command < commands.size(); ++command) {
+                const int colours =
+                    int(commands.at(command).toObject().value(QStringLiteral("colours")).toArray().size());
+                blocks.documents.append(
+                    entry(QStringLiteral("%1#%2").arg(label).arg(command + 1),
+                          commands.size() > 1 ? QStringLiteral("%1 · %2").arg(label).arg(command + 1) : label,
+                          QString::number(colours), dirty));
+            }
         }
         groups.append(blocks);
     } else if (kind == QLatin1String("objects")) {
@@ -416,6 +491,13 @@ std::unique_ptr<sdk::EditorModel> AlienSoldierSession::openEditor(const QString&
     if (kind == QLatin1String("levels")) {
         const int set = setOf();
         if (set >= 0) return std::make_unique<LevelsModel>(this, set, -1);
+        if (document.startsWith(QLatin1String("arena-"))) {
+            // "arena-SS-N": stage SS's N-th arena.
+            const int stage = document.section(QLatin1Char('-'), 1, 1).toInt() - 1;
+            const int arena = document.section(QLatin1Char('-'), 2, 2).toInt() - 1;
+            if (stage < 0 || stage >= stageCount() || arena < 0 || arena >= stageArenas(stage).size()) return nullptr;
+            return std::make_unique<LevelsModel>(this, blockSetOf(stage), stage, arena);
+        }
         const int stage = stageOf();
         if (stage < 0 || stage >= stageCount()) return nullptr;
         if (stage < passwordStages()) setPlayStage(stage);
@@ -426,15 +508,21 @@ std::unique_ptr<sdk::EditorModel> AlienSoldierSession::openEditor(const QString&
         return set < 0 ? nullptr : std::make_unique<MetatilesModel>(this, set, document.endsWith(QLatin1String("-b")));
     }
     if (kind == QLatin1String("tiles")) {
-        if (document == QLatin1String("hero")) return std::make_unique<HeroSheetModel>(this);
         if (document.startsWith(QLatin1String("c:")))
             return std::make_unique<TilesModel>(this, Doc::Compressed, document.mid(2));
         if (document.startsWith(QLatin1String("u:")))
             return std::make_unique<TilesModel>(this, Doc::Tiles, document.mid(2));
         return nullptr;
     }
-    if (kind == QLatin1String("palettes")) return std::make_unique<PalettesModel>(this, document);
-    if (kind == QLatin1String("objects")) return std::make_unique<ObjectsModel>(this, document);
+    if (kind == QLatin1String("palettes")) {
+        // "label#N", or a bare label (the first command) from older views.
+        const QString label = document.section(QLatin1Char('#'), 0, 0);
+        const int command = document.contains(QLatin1Char('#')) ? document.section(QLatin1Char('#'), 1).toInt() - 1 : 0;
+        return command < 0 ? nullptr : std::make_unique<PalettesModel>(this, label, command);
+    }
+    if (kind == QLatin1String("objects")) {
+        return std::make_unique<ObjectsModel>(this, document);
+    }
     if (kind == QLatin1String("sprites")) return std::make_unique<AnimationsModel>(this, document);
     if (kind == QLatin1String("screens")) return std::make_unique<ScreensModel>(this, document);
     if (kind == QLatin1String("text")) return std::make_unique<TextModel>(this, document);
@@ -456,23 +544,32 @@ void AlienSoldierSession::setDocument(Doc which, const QJsonObject& value, quint
     changed(which);
 }
 
-void AlienSoldierSession::changed(Doc which) {
+void AlienSoldierSession::changed(Doc which, bool lists) {
     switch (which) {
+        case Doc::Levels: {
+            // Moving or changing objects leaves the scenes alone.
+            const QJsonArray records = documents_.tracked(Doc::Levels).doc.value(QStringLiteral("records")).toArray();
+            if (records == sceneRecords_) break;
+            sceneRecords_ = records;
+            [[fallthrough]];
+        }
         case Doc::Maps:
         case Doc::Tiles:
         case Doc::Compressed:
         case Doc::Palettes:
-        case Doc::Levels:
         case Doc::Screens:
             stages_.clear();
             screens_.clear();
+            ++sceneGeneration_;
             break;
         default:
             break;
     }
     emit documentChanged(which);
     emit contentChanged();
-    for (const sdk::Kind& k : kinds()) emit documentsChanged(k.id);
+    if (lists) {
+        for (const sdk::Kind& k : kinds()) emit documentsChanged(k.id);
+    }
 }
 
 bool AlienSoldierSession::edit(Doc which, const QString& text, const std::function<void(QJsonObject&)>& change,
@@ -494,7 +591,9 @@ bool AlienSoldierSession::edit(Doc which, const QString& text, const std::functi
     return true;
 }
 
-void AlienSoldierSession::touch(Doc which) { changed(which); }
+// A stroke's step: the lists (names, unsaved marks) change only when it is
+// committed.
+void AlienSoldierSession::touch(Doc which) { changed(which, false); }
 
 void AlienSoldierSession::commit(Doc which, const QJsonObject& before, quint64 beforeRevision, const QString& text) {
     Tracked& tracked = documents_.tracked(which);

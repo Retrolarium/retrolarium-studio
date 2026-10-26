@@ -117,6 +117,12 @@ int main(int argc, char** argv) {
             ++stages;
         }
         expect(stages > 20, QStringLiteral("only %1 stages draw").arg(stages));
+        // Seven Force's initializer moves its pattern words to high priority
+        // (adds $8000) before the stage draws.
+        const Scene& sevenForce = session->stage(19);
+        expect(sevenForce.transforms.size() == 1 && sevenForce.transforms.first().add == 0x8000 &&
+                   (quint8(sevenForce.ram.at(sevenForce.transforms.first().offset + 0x20)) & 0x80),
+               QStringLiteral("Seven Force draws its maps unrewritten"));
 
         // The levels follow the block sets: every stage of a set shows its own
         // part of the layout, and the first stage's objects stand in it.
@@ -137,8 +143,40 @@ int main(int argc, char** argv) {
                     for (const sdk::MapObject& object : map->objects())
                         expect(grid.contains(object.cells.center()),
                                QStringLiteral("stage 1 object %1 is off the stage").arg(object.id));
+                    // Without the planes, the objects' sprites are left.
+                    map->setViewOption(QStringLiteral("plane-a"), QStringLiteral("off"));
+                    map->setViewOption(QStringLiteral("plane-b"), QStringLiteral("off"));
+                    expect(drawn(map->render()), QStringLiteral("stage 1 draws no objects"));
                 }
             }
+        }
+
+        // Back Stringer's web, where the fight moves after Viblack, is shown
+        // apart; Z-Leo's fight above his stage is part of it.
+        expect(session->stageArenas(15).size() == 1, QStringLiteral("stage 16 lists no arena"));
+        {
+            std::unique_ptr<sdk::EditorModel> model =
+                session->openEditor(QStringLiteral("levels"), QStringLiteral("arena-16-1"));
+            auto* map = qobject_cast<sdk::TileMapModel*>(model.get());
+            expect(map && drawn(map->render()), QStringLiteral("stage 16's arena draws nothing"));
+        }
+        expect(session->stageArenas(24).isEmpty() && session->stageParts(24).size() == 2 &&
+                   !session->stage(24).arenas.empty(),
+               QStringLiteral("Z-Leo's fight is not shown with his stage"));
+        // Flying-Neo fights over the train on a screen of its own; Xi-Tiger's
+        // stage is a screen apart from the train's run.
+        expect(session->stageArenas(7).size() == 1 && session->stageArenas(7).first().width() > 320,
+               QStringLiteral("Flying-Neo's fight is not a screen apart"));
+        expect(session->stageApart(8) && !session->stageApart(7),
+               QStringLiteral("Xi-Tiger's stage is in the train's run"));
+        // Epsilon 1's floor, below a raster split, closes the bottom of his
+        // screen.
+        {
+            const Scene& epsilon = session->stage(16);
+            const QImage floor = renderScene(epsilon, epsilon.floorRect);
+            expect(!epsilon.floorRect.isEmpty() && epsilon.floorRect.bottom() == epsilon.floorRect.top() + 23 &&
+                       drawn(floor),
+                   QStringLiteral("Epsilon 1's floor does not draw"));
         }
 
         // Objects the game repository records draw with their own tiles: more
@@ -172,20 +210,9 @@ int main(int argc, char** argv) {
         }
         expect(screens >= 20, QStringLiteral("only %1 screens").arg(screens));
 
-        // The hero's sprite sheet: every frame put together from its pieces.
-        std::unique_ptr<sdk::EditorModel> hero = session->openEditor(QStringLiteral("tiles"), QStringLiteral("hero"));
-        auto* sheet = qobject_cast<sdk::TileModel*>(hero.get());
-        expect(sheet && sheet->tileCount() > 50, QStringLiteral("the hero sheet has too few frames"));
-        int painted = 0;
-        for (int frame = 0; frame < sheet->tileCount(); ++frame) {
-            const QVector<quint8> pixels = sheet->tilePixels(frame);
-            if (std::count_if(pixels.cbegin(), pixels.cend(), [](quint8 pen) { return pen != 0; }) > 64) ++painted;
-        }
-        expect(painted * 10 >= sheet->tileCount() * 9, QStringLiteral("only %1 hero frames draw").arg(painted));
-
         std::cout << "[OK] " << opened << " documents open, " << stages << " stages draw, " << sprites
-                  << " objects draw, " << screens << " screens draw, " << sheet->tileCount() << " hero frames, " << rows
-                  << " text records read back, " << notes << " notes\n";
+                  << " objects draw, " << screens << " screens draw, " << rows << " text records read back, " << notes
+                  << " notes\n";
         return 0;
     } catch (const std::exception& e) {
         std::cerr << "FAIL: " << e.what() << "\n";

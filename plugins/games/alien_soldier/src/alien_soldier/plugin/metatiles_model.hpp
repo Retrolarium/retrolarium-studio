@@ -26,6 +26,8 @@ public:
 
     QSize gridSize() const override;
     QSize cellSize() const override { return {32, 32}; }
+    // Chunks open at 2x, beside the pattern sheet that picks the brush.
+    int openingZoom() const override { return 8; }
     QVector<sdk::Tool> tools() const override;
     QImage render() const override;
     QVector<sdk::CellBrush> brushes() const override;

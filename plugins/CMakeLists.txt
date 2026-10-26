@@ -35,8 +35,6 @@ add_library(alien_soldier_plugin STATIC
     games/alien_soldier/src/alien_soldier/plugin/animations_model.hpp
     games/alien_soldier/src/alien_soldier/plugin/demo_model.cpp
     games/alien_soldier/src/alien_soldier/plugin/demo_model.hpp
-    games/alien_soldier/src/alien_soldier/plugin/hero_sheet_model.cpp
-    games/alien_soldier/src/alien_soldier/plugin/hero_sheet_model.hpp
     games/alien_soldier/src/alien_soldier/plugin/levels_model.cpp
     games/alien_soldier/src/alien_soldier/plugin/levels_model.hpp
     games/alien_soldier/src/alien_soldier/plugin/map_edits.cpp

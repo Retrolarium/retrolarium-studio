@@ -115,6 +115,9 @@ public:
     // A tall strip (a credits roll): opens fitted to its width and scrolls
     // down, instead of shrinking to show it whole.
     virtual bool scrollsDown() const { return false; }
+    // The zoom to open at, in quarters (8 is 2x), with the view at the map's
+    // left edge; 0 opens fitted to the map.
+    virtual int openingZoom() const { return 0; }
 
     virtual QVector<MapLayer> layers() const { return {}; }
     virtual QString currentLayer() const { return {}; }

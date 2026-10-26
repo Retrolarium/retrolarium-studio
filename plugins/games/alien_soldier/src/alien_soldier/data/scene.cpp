@@ -3,6 +3,7 @@
 #include "megadrive/vdp.hpp"
 
 #include <QJsonArray>
+#include <QPainter>
 
 #include <algorithm>
 
@@ -60,8 +61,12 @@ void applyWrites(Scene& scene, const Documents& documents, const QJsonArray& wri
 void applyVram(Scene& scene, const Documents& documents, const QJsonArray& loads) {
     for (const QJsonValue& value : loads) {
         const QJsonObject load = value.toObject();
-        const QByteArray bytes = vramSource(documents, load.value(QStringLiteral("command")).toInt(),
-                                            load.value(QStringLiteral("source")).toString());
+        // Tiles the kit works out (the moon's resampled surface) come with
+        // their bytes.
+        const QByteArray bytes = load.contains(QStringLiteral("data"))
+                                     ? QByteArray::fromHex(load.value(QStringLiteral("data")).toString().toLatin1())
+                                     : vramSource(documents, load.value(QStringLiteral("command")).toInt(),
+                                                  load.value(QStringLiteral("source")).toString());
         const int at = load.value(QStringLiteral("vram")).toInt() & 0xFFFF;
         const int length = std::min<int>(bytes.size(), kVramSize - at);
         std::copy(bytes.cbegin(), bytes.cbegin() + length, scene.vram.begin() + at);
@@ -77,6 +82,7 @@ Plane planeOf(const QJsonValue& value) {
     plane.chunks = quint32(object.value(QStringLiteral("chunks")).toDouble());
     plane.patterns = quint32(object.value(QStringLiteral("patterns")).toDouble());
     plane.yOffset = object.value(QStringLiteral("y_offset")).toInt();
+    plane.fixedX = object.value(QStringLiteral("fixed_x")).toInt(-1);
     return plane;
 }
 
@@ -223,14 +229,56 @@ int Scene::writerOf(int offset) const {
 }
 
 int untransform(const RamTransform& transform, int shown) {
-    if (transform.rows) {
-        const int word = (shown - 0xC180) & 0xFFFF;
-        return word <= 0x1FFF ? word : -1;
-    }
-    const int raw = (shown - 0x6000) & 0xFFFF;
+    const int raw = (shown - transform.add) & 0xFFFF;
     if (raw & ~0x1FFF) return -1;
+    if (transform.rows) return raw;
     const int tile = raw & 0x7FF;
-    return (raw & 0x1800) | (tile ? (tile + 0x100) & 0x7FF : 0);
+    if (!tile) return raw & 0x1800;
+    // The stored index is the one the move brings to the shown index; none
+    // when that is 0 (the game leaves 0 alone).
+    const int stored = (tile - transform.tiles) & 0x7FF;
+    return stored ? (raw & 0x1800) | stored : -1;
+}
+
+namespace {
+
+// Plays the map rewrites of a stage's initializer or a title screen. Screens
+// of older projects name only the routine: the title's values then.
+void applyTransforms(Scene& scene, const QJsonArray& transforms) {
+    for (const QJsonValue& value : transforms) {
+        const QJsonObject item = value.toObject();
+        RamTransform transform;
+        transform.offset = int(quint32(item.value(QStringLiteral("ram")).toString().toUInt(nullptr, 0)) - kRamBase);
+        transform.words = item.value(QStringLiteral("groups")).toInt() * 16;
+        transform.rows = item.value(QStringLiteral("routine")).toString() == QLatin1String("adjust-rows");
+        transform.add = item.value(QStringLiteral("add")).toInt(transform.rows ? 0xC180 : 0x6000);
+        transform.tiles = item.value(QStringLiteral("tiles")).toInt(0xFF00);
+        scene.transforms.append(transform);
+        for (int word = 0; word < transform.words; ++word) {
+            const int offset = transform.offset + word * 2;
+            if (offset < 0 || offset + 1 >= kRamSize) break;
+            int value16 = ramWord(scene.ram, offset);
+            if (transform.rows) {
+                value16 = ((value16 & 0x1FFF) + transform.add) & 0xFFFF;
+            } else {
+                int tile = value16 & 0x7FF;
+                if (tile) tile = (tile + transform.tiles) & 0x7FF;
+                value16 = ((tile | (value16 & 0x1800)) + transform.add) & 0xFFFF;
+            }
+            scene.ram[offset] = char(value16 >> 8);
+            scene.ram[offset + 1] = char(value16 & 0xFF);
+        }
+    }
+}
+
+}  // namespace
+
+const Scene& Scene::at(int x) const {
+    const Scene* found = this;
+    for (std::size_t index = 0; index < later.size(); ++index) {
+        if (x >= laterFrom[index]) found = &later[index];
+    }
+    return *found;
 }
 
 Scene stageScene(const Documents& documents, int stage) {
@@ -241,12 +289,18 @@ Scene stageScene(const Documents& documents, int stage) {
     const QJsonObject item = stages.value(QStringLiteral("scenes")).toArray().at(stage).toObject();
     scene.backdrop = stages.value(QStringLiteral("backdrop")).toInt(0x10);
     applyWrites(scene, documents, item.value(QStringLiteral("map_writes")).toArray());
+    applyTransforms(scene, item.value(QStringLiteral("transforms")).toArray());
     applyVram(scene, documents, item.value(QStringLiteral("vram")).toArray());
     const QJsonArray planes = item.value(QStringLiteral("planes")).toArray();
     scene.planes[0] = planeOf(planes.at(0));
     scene.planes[1] = planeOf(planes.at(1));
-    // Plane B scrolls at a quarter of plane A's speed from the record's
-    // cameras; its map is offset by the difference of their Y positions.
+    // Plane B scrolls at a quarter of plane A's speed in the stages that say
+    // so (Scroll_UpdateQuarterHorizontalPosition). Drawn still it goes one
+    // pixel for one, in one piece (a quarter speed would stretch it four
+    // times), lined up as the game shows it on the stage's last screen, the
+    // boss's: there plane B is at a quarter of the camera X. Other stages
+    // line it up with plane A at the record's cameras. Its map is offset by
+    // the difference of the cameras' Y positions.
     const QJsonObject record = findByLabel(documents[Doc::Levels].value(QStringLiteral("records")).toArray(),
                                            item.value(QStringLiteral("record")).toString());
     const int cameraX = signedWord(record.value(QStringLiteral("camera_x")).toInt());
@@ -254,12 +308,102 @@ Scene stageScene(const Documents& documents, int stage) {
     const int secondaryX = signedWord(record.value(QStringLiteral("secondary_camera_x")).toInt());
     const int secondaryY = signedWord(record.value(QStringLiteral("secondary_camera_y")).toInt());
     scene.planes[1].yOffset += cameraY - secondaryY;
-    scene.planes[1].origin = QPoint(secondaryX - (cameraX >> 2), 0);
-    scene.planes[1].shift = 2;
+    // Handlers that set plane B's camera X to plane A's line the planes up
+    // whatever the record says (the train).
+    scene.planes[1].origin =
+        QPoint(item.value(QStringLiteral("plane_b_follows")).toBool() ? 0 : secondaryX - cameraX, 0);
+    // A backdrop narrower than what the screens read (the game shows a part
+    // of it) repeats: the chunk columns up to the last one they reach that
+    // draws a tile in the stage's rows.
+    if (scene.planes[1].present) {
+        // The stage's own run (its first part), not an arena above it.
+        const QJsonObject whole = item.value(QStringLiteral("area")).toObject();
+        const QJsonArray parts = whole.value(QStringLiteral("parts")).toArray();
+        const QJsonObject area = parts.isEmpty() ? whole : parts.first().toObject();
+        const int last = area.value(QStringLiteral("x")).toInt() + area.value(QStringLiteral("width")).toInt(320) - 320;
+        if (!area.isEmpty() && item.value(QStringLiteral("plane_b_quarter")).toBool())
+            scene.planes[1].origin = QPoint((last >> 2) - last, scene.planes[1].origin.y());
+        const int top = area.value(QStringLiteral("y")).toInt(0) + scene.planes[1].origin.y();
+        const int height = area.value(QStringLiteral("height")).toInt(224);
+        const int right = last + 320 + scene.planes[1].origin.x();
+        const auto blank = [&scene](int tile) {
+            for (int at = tile * 32; at < tile * 32 + 32 && at < scene.vram.size(); ++at) {
+                if (scene.vram.at(at)) return false;
+            }
+            return true;
+        };
+        int columns = 0;
+        for (int column = 0; column < std::min(32, (right + 255) / 256); ++column) {
+            for (int y = top; y < top + height && columns <= column; y += 8) {
+                for (int x = column * 256; x < (column + 1) * 256; x += 8) {
+                    const int tile = scene.defined(1, x, y) ? scene.nameWord(1, x, y) & 0x7FF : 0;
+                    if (tile && !blank(tile)) {
+                        columns = column + 1;
+                        break;
+                    }
+                }
+            }
+        }
+        scene.planes[1].wrap = columns * 256;
+    }
+    // The floor below the split runs the width of the stage's screens, from
+    // its line to the bottom of the first.
+    const QJsonObject floor = item.value(QStringLiteral("floor")).toObject();
+    if (!floor.isEmpty()) {
+        const QJsonObject whole = item.value(QStringLiteral("area")).toObject();
+        const QJsonArray parts = whole.value(QStringLiteral("parts")).toArray();
+        const QJsonObject area = parts.isEmpty() ? whole : parts.first().toObject();
+        const int top = area.value(QStringLiteral("y")).toInt();
+        const int line = floor.value(QStringLiteral("line")).toInt();
+        scene.floorRect = QRect(area.value(QStringLiteral("x")).toInt(), top + line,
+                                area.value(QStringLiteral("width")).toInt(320), 224 - line);
+        scene.floorRam = int(quint32(floor.value(QStringLiteral("ram")).toDouble()) - kRamBase);
+        for (const QJsonValue& block : floor.value(QStringLiteral("blocks")).toArray())
+            scene.floorBlocks.push_back(block.toInt());
+        scene.floorPerRow = std::max(1, floor.value(QStringLiteral("per_row")).toInt());
+    }
     const QJsonObject palettes = documents[Doc::Palettes];
     scene.cram = paletteList(palettes, item.value(QStringLiteral("palette_list")).toString());
     const QString visual = item.value(QStringLiteral("visual_palette")).toString();
     if (!visual.isEmpty()) playPaletteCommand(scene.cram, palettes, visual);
+    // The columns the screen shows when a later load comes stay as drawn;
+    // the ones after it are drawn from its maps.
+    for (const QJsonValue& value : item.value(QStringLiteral("later")).toArray()) {
+        const QJsonObject load = value.toObject();
+        Scene next = scene.later.empty() ? scene : scene.later.back();
+        next.later.clear();
+        next.laterFrom.clear();
+        applyWrites(next, documents, load.value(QStringLiteral("map_writes")).toArray());
+        applyVram(next, documents, load.value(QStringLiteral("vram")).toArray());
+        scene.laterFrom.push_back(load.value(QStringLiteral("camera_x")).toInt() + 320);
+        scene.later.push_back(std::move(next));
+    }
+    for (const QJsonValue& value : item.value(QStringLiteral("arenas")).toArray()) {
+        const QJsonObject arena = value.toObject();
+        Scene fight = scene;
+        fight.later.clear();
+        fight.laterFrom.clear();
+        // The boss runs plane B on its own camera through the fight (Z-Leo's
+        // rise moves it up); drawn still, it lines up with plane A. Planes the
+        // boss streams from its own descriptor replace the stage's.
+        fight.planes[1] = planeOf(planes.at(1));
+        const QJsonArray own = arena.value(QStringLiteral("planes")).toArray();
+        if (!own.isEmpty()) {
+            fight.planes[0] = planeOf(own.at(0));
+            fight.planes[1] = planeOf(own.at(1));
+        }
+        applyWrites(fight, documents, arena.value(QStringLiteral("map_writes")).toArray());
+        applyVram(fight, documents, arena.value(QStringLiteral("vram")).toArray());
+        for (const QJsonValue& command : arena.value(QStringLiteral("palettes")).toArray()) {
+            playPaletteCommand(fight.cram, documents[Doc::Palettes], command.toArray().at(0).toString(),
+                               command.toArray().at(1).toInt());
+        }
+        scene.arenaInline.push_back(arena.value(QStringLiteral("inline")).toBool());
+        scene.arenaRects.push_back(
+            QRect(arena.value(QStringLiteral("x")).toInt(), arena.value(QStringLiteral("y")).toInt(),
+                  arena.value(QStringLiteral("width")).toInt(), arena.value(QStringLiteral("height")).toInt()));
+        scene.arenas.push_back(std::move(fight));
+    }
     return scene;
 }
 
@@ -269,27 +413,7 @@ Scene screenScene(const Documents& documents, int index) {
     scene.ram = QByteArray(kRamSize, '\0');
     const QJsonObject screen = documents[Doc::Screens].value(QStringLiteral("screens")).toArray().at(index).toObject();
     applyWrites(scene, documents, screen.value(QStringLiteral("map_writes")).toArray());
-    for (const QJsonValue& value : screen.value(QStringLiteral("transforms")).toArray()) {
-        const QJsonObject transform = value.toObject();
-        const int at = int(quint32(transform.value(QStringLiteral("ram")).toString().toUInt(nullptr, 0)) - kRamBase);
-        const int words = transform.value(QStringLiteral("groups")).toInt() * 16;
-        const bool rows = transform.value(QStringLiteral("routine")).toString() == QLatin1String("adjust-rows");
-        scene.transforms.append({at, words, rows});
-        for (int word = 0; word < words; ++word) {
-            const int offset = at + word * 2;
-            if (offset < 0 || offset + 1 >= kRamSize) break;
-            int value16 = ramWord(scene.ram, offset);
-            if (rows) {
-                value16 = ((value16 & 0x1FFF) + 0xC180) & 0xFFFF;
-            } else {
-                int tile = value16 & 0x7FF;
-                if (tile) tile = (tile + 0xFF00) & 0x7FF;
-                value16 = ((tile | (value16 & 0x1800)) + 0x6000) & 0xFFFF;
-            }
-            scene.ram[offset] = char(value16 >> 8);
-            scene.ram[offset + 1] = char(value16 & 0xFF);
-        }
-    }
+    applyTransforms(scene, screen.value(QStringLiteral("transforms")).toArray());
     applyVram(scene, documents, screen.value(QStringLiteral("vram")).toArray());
     const QJsonArray planes = screen.value(QStringLiteral("planes")).toArray();
     const QJsonArray cameraX = screen.value(QStringLiteral("camera_x")).toArray();
@@ -328,21 +452,40 @@ Scene screenScene(const Documents& documents, int index) {
     return scene;
 }
 
-QImage renderScene(const Scene& scene, const QRect& area, bool drawA, bool drawB) {
+namespace {
+
+QImage renderPart(const Scene& scene, const QRect& area, bool drawA, bool drawB, QImage* high) {
     QImage image(area.size(), QImage::Format_ARGB32);
     const QRgb backdrop = cramColor(scene.cram.value(scene.backdrop));
     image.fill(backdrop);
-    const auto pixelOf = [&scene](int plane, int x, int y, int* priority) -> int {
-        if (!scene.defined(plane, x, y)) return 0;
-        const megadrive::TileWord word = megadrive::decodeTileWord(scene.nameWord(plane, x, y));
+    if (high) {
+        *high = QImage(area.size(), QImage::Format_ARGB32);
+        high->fill(Qt::transparent);
+    }
+    // The colour (CRAM index) of a name word's pixel (x & 7, y & 7).
+    const auto wordPixel = [&scene](int nameWord, int x, int y, int* priority) -> int {
+        const megadrive::TileWord word = megadrive::decodeTileWord(nameWord);
         const int px = word.hflip ? 7 - (x & 7) : (x & 7);
-        const int py =
-            word.vflip ? 7 - ((y + scene.planes[plane].yOffset) & 7) : ((y + scene.planes[plane].yOffset) & 7);
+        const int py = word.vflip ? 7 - (y & 7) : (y & 7);
         const int at = word.pattern * 32 + py * 4 + px / 2;
         if (at >= scene.vram.size()) return 0;
         const int value = (px & 1) ? quint8(scene.vram.at(at)) & 15 : quint8(scene.vram.at(at)) >> 4;
         *priority = word.priority ? 1 : 0;
         return value ? word.palette * 16 + value : 0;
+    };
+    const auto pixelOf = [&scene, &wordPixel](int plane, int x, int y, int* priority) -> int {
+        if (!scene.defined(plane, x, y)) return 0;
+        return wordPixel(scene.nameWord(plane, x, y), x, y + scene.planes[plane].yOffset, priority);
+    };
+    // Plane B below a raster split: the floor's blocks, row after row.
+    const auto floorPixel = [&scene, &wordPixel](int x, int y, int* priority) -> int {
+        const int width = scene.floorPerRow * 32;
+        const int fx = ((x - scene.floorRect.x()) % width + width) % width;
+        const int fy = y - scene.floorRect.y();
+        const int index = fy / 32 * scene.floorPerRow + fx / 32;
+        if (index >= scene.floorBlocks.size()) return 0;
+        const int offset = scene.floorRam + scene.floorBlocks[index] * 32 + ((fy >> 3) & 3) * 8 + ((fx >> 3) & 3) * 2;
+        return wordPixel(ramWord(scene.ram, offset), fx, fy, priority);
     };
     for (int sy = 0; sy < area.height(); ++sy) {
         QRgb* line = reinterpret_cast<QRgb*>(image.scanLine(sy));
@@ -350,19 +493,56 @@ QImage renderScene(const Scene& scene, const QRect& area, bool drawA, bool drawB
             const int x = area.x() + sx, y = area.y() + sy;
             int colour[2] = {0, 0}, priority[2] = {0, 0};
             for (int plane = 0; plane < 2; ++plane) {
+                if (plane == 1 && drawB && scene.floorRect.contains(x, y)) {
+                    colour[plane] = floorPixel(x, y, &priority[plane]);
+                    continue;
+                }
                 if (!scene.planes[plane].present || (plane == 0 ? !drawA : !drawB)) continue;
                 const Plane& source = scene.planes[plane];
-                colour[plane] =
-                    pixelOf(plane, (x >> source.shift) + source.origin.x(), y + source.origin.y(), &priority[plane]);
+                int planeX = (x >> source.shift) + source.origin.x();
+                if (source.fixedX >= 0) planeX = source.fixedX + ((planeX - source.fixedX) % 512 + 512) % 512;
+                if (source.wrap > 0) planeX = ((planeX % source.wrap) + source.wrap) % source.wrap;
+                colour[plane] = pixelOf(plane, planeX, y + source.origin.y(), &priority[plane]);
             }
             int chosen = 0;
             for (int pass = 1; pass >= 0 && !chosen; --pass) {
                 for (int plane = 0; plane < 2 && !chosen; ++plane) {
-                    if (colour[plane] && priority[plane] == pass) chosen = colour[plane];
+                    if (colour[plane] && priority[plane] == pass) {
+                        chosen = colour[plane];
+                        if (high && pass) reinterpret_cast<QRgb*>(high->scanLine(sy))[sx] = 0xFFFFFFFF;
+                    }
                 }
             }
             if (chosen) line[sx] = cramColor(scene.cram.value(chosen));
         }
+    }
+    return image;
+}
+
+}  // namespace
+
+QImage renderScene(const Scene& scene, const QRect& area, bool drawA, bool drawB, QImage* high) {
+    QImage image = renderPart(scene, area, drawA, drawB, high);
+    // A part drawn over the scene, its priority mask over the scene's.
+    const auto overlay = [&](const Scene& from, const QRect& part) {
+        QImage partHigh;
+        const QImage drawn = renderPart(from, part, drawA, drawB, high ? &partHigh : nullptr);
+        QPainter(&image).drawImage(part.topLeft() - area.topLeft(), drawn);
+        if (high) {
+            QPainter painter(high);
+            painter.setCompositionMode(QPainter::CompositionMode_Source);
+            painter.drawImage(part.topLeft() - area.topLeft(), partHigh);
+        }
+    };
+    for (std::size_t index = 0; index < scene.arenas.size(); ++index) {
+        if (!scene.arenaInline[index]) continue;
+        const QRect part = scene.arenaRects[index].intersected(area);
+        if (!part.isEmpty()) overlay(scene.arenas[index], part);
+    }
+    for (std::size_t index = 0; index < scene.later.size(); ++index) {
+        const int from = std::max(scene.laterFrom[index], area.left());
+        if (from <= area.right())
+            overlay(scene.later[index], QRect(from, area.top(), area.right() + 1 - from, area.height()));
     }
     return image;
 }

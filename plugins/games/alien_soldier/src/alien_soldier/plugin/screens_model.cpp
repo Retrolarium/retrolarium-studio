@@ -38,7 +38,9 @@ QString ScreensModel::screenTitle(const QString& id) {
     if (id == QLatin1String("title")) return rlTr("alien_soldier", "Title");
     if (id == QLatin1String("options")) return rlTr("alien_soldier", "Options");
     if (id == QLatin1String("story")) return rlTr("alien_soldier", "Story");
-    if (id == QLatin1String("password")) return rlTr("alien_soldier", "Password");
+    // The options and password screens load the same maps and art; the
+    // password panel is drawn on plane A, the options' menu as text.
+    if (id == QLatin1String("password")) return rlTr("alien_soldier", "Options and password");
     if (id == QLatin1String("weapon-setup")) return rlTr("alien_soldier", "Weapon setup");
     if (id == QLatin1String("credits-intro")) return rlTr("alien_soldier", "Credits opening");
     if (id == QLatin1String("ending")) return rlTr("alien_soldier", "Ending");

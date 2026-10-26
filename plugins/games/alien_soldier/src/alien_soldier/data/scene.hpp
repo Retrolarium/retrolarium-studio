@@ -11,6 +11,8 @@
 #include <QString>
 #include <QVector>
 
+#include <vector>
+
 // What a stage or a static screen looks like, built from the documents the
 // way the game builds it: the asset lists' decompress-to-RAM writes make the
 // maps, their VRAM loads the tiles, the palette list and the visual loader's
@@ -38,10 +40,14 @@ struct Plane {
     quint32 patterns = 0;
     int yOffset = 0;  // added to Y before the map lookup
     // Where the plane is read from for a scene position (x, y):
-    // ((x >> shift) + origin.x, y + origin.y). A stage's plane B moves at a
-    // quarter of plane A's speed (shift 2).
+    // ((x >> shift) + origin.x, y + origin.y), across modulo `wrap` when
+    // that is set.
     QPoint origin;
     int shift = 0;
+    int wrap = 0;
+    // A plane the stage never streams keeps the 64 cells (512 pixels) the
+    // entry drew from this X, repeated (-1: streamed).
+    int fixedX = -1;
 };
 
 struct RamWrite {
@@ -50,11 +56,15 @@ struct RamWrite {
     int size = 0;
 };
 
-// A title routine that rewrites RAM words after loading (see screens.py).
+// A routine that rewrites map words in RAM after loading (see stages.py and
+// screens.py): adjust-rows makes a word (word & $1FFF) + add; update-indices
+// moves a non-zero tile index by `tiles`, keeps the flip bits and adds `add`.
 struct RamTransform {
     int offset = 0;  // into the RAM image
     int words = 0;
     bool rows = false;  // adjust-rows; else update-indices
+    int add = 0;
+    int tiles = 0;
 };
 
 // The word a map must hold so that the transform turns it into `shown`;
@@ -73,6 +83,27 @@ struct Scene {
     // wide: its address (or -1) and rows.
     int nameTable = -1;
     int nameTableRows = 0;
+    // Maps a stage loads while it runs (stages.json `later`): the scene as
+    // they leave it, and the first scene X drawn from them (a screen past
+    // the camera X that loads them), in order.
+    std::vector<Scene> later;
+    std::vector<int> laterFrom;
+    // The stage's fights elsewhere in the map (stages.json `arenas`), drawn
+    // with the maps, art and colours their boss loads; an inline one is shown
+    // with the stage (Z-Leo's), the others apart (Back Stringer's web).
+    std::vector<Scene> arenas;
+    std::vector<QRect> arenaRects;
+    std::vector<bool> arenaInline;
+    // A floor a raster split shows (stages.json `floor`, Epsilon 1's): in
+    // `floorRect` plane B reads rows of `floorPerRow` RAM blocks (4x4 name
+    // words at the RAM offset `floorRam`) instead, repeated across.
+    QRect floorRect;
+    int floorRam = 0;
+    QVector<int> floorBlocks;
+    int floorPerRow = 0;
+
+    // The scene a world X is drawn from: this one or a later load's.
+    const Scene& at(int x) const;
 
     // The map entries a world position (plane coordinates) reads.
     int coarseOffset(int plane, int x, int y) const;  // into ram, or -1
@@ -96,7 +127,10 @@ Scene screenScene(const Documents& documents, int screen);
 
 // Composite both planes (A over B, high priority first, colour 0 clear) of
 // the world area `area` (plane A coordinates; plane B follows its origin).
-QImage renderScene(const Scene& scene, const QRect& area, bool planeA = true, bool planeB = true);
+// `high`, when given, receives a mask of the same size: opaque where a
+// high-priority tile pixel is drawn (low-priority sprites go behind it).
+QImage renderScene(const Scene& scene, const QRect& area, bool planeA = true, bool planeB = true,
+                   QImage* high = nullptr);
 // A scene's name table in VRAM, whole (64 cells by its rows).
 QImage renderNameTable(const Scene& scene);
 int nameTableWord(const Scene& scene, QPoint cell);

@@ -811,6 +811,12 @@ void TileMapEditor::showEvent(QShowEvent* event) {
 }
 
 void TileMapEditor::fitZoom() {
+    if (const int opening = map_->openingZoom(); opening > 0) {
+        setZoom(opening);
+        scroll_->horizontalScrollBar()->setValue(scroll_->horizontalScrollBar()->minimum());
+        emit toolbarChanged();
+        return;
+    }
     const QSize grid = map_->gridSize();
     const QSize cell = map_->cellSize();
     const QMargins frame = map_->renderMargins();

@@ -5,6 +5,7 @@
 #include "sdk/kit_session.hpp"
 
 #include <QHash>
+#include <QJsonArray>
 #include <QJsonObject>
 #include <QRect>
 
@@ -61,6 +62,9 @@ public:
     // Scenes drawn from the current documents (rebuilt after edits).
     const Scene& stage(int index) const;
     const Scene& screen(int index) const;
+    // Counts the times the scenes were dropped: what a view drew from them
+    // holds while this does.
+    quint64 sceneGeneration() const { return sceneGeneration_; }
     int stageCount() const;
     QString stageLabel(int index) const;
 
@@ -72,7 +76,20 @@ public:
     // A stage's area in scene coordinates (empty when the kit gives none)
     // and the scene position its camera starts at.
     QRect stageArea(int stage) const;
+    // The rectangles a stage's camera covers (a run and the column it
+    // climbs), or its area.
+    QVector<QRect> stageParts(int stage) const;
     QPoint stageStart(int stage) const;
+    // The screens a stage's fight moves to elsewhere in the map (stages.json
+    // `arenas`) that are shown apart from the level.
+    QVector<QRect> stageArenas(int stage) const;
+    // A stage whose picture is not where its camera goes (Xi-Tiger's): a
+    // screen apart, left out of the whole level.
+    bool stageApart(int stage) const;
+    // A stage with arenas apart shows each part of its name on its own
+    // ("Viblack / Back Stringer": the stage, then its arena): part 0 is the
+    // stage, part N its N-th arena.
+    QString stagePartLabel(int stage, int part) const;
 
     // Where Play from selected starts: a stage slot the password screen opens.
     int playStage() const { return playStage_; }
@@ -93,7 +110,8 @@ signals:
 
 private:
     AlienSoldierSession() = default;
-    void changed(Doc doc);
+    // `lists` false: a stroke's step, which leaves the views' lists as they are.
+    void changed(Doc doc, bool lists = true);
     void launch(int stage);
     void launchDemo(int demo, bool record);
     void applyRecording(int demo, const QString& path);
@@ -104,6 +122,10 @@ private:
     QString revision_;
     mutable QHash<int, Scene> stages_;
     mutable QHash<int, Scene> screens_;
+    quint64 sceneGeneration_ = 0;
+    // The stage records the scenes were built from (the only part of the
+    // levels document they read).
+    QJsonArray sceneRecords_;
     int playStage_ = 0;
     int demoEditors_ = 0;
     int demo_ = 0;

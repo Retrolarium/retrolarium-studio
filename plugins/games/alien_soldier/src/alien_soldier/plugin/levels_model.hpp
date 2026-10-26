@@ -2,6 +2,9 @@
 
 #include "sdk/editor_model.hpp"
 
+#include <QByteArray>
+#include <QHash>
+#include <QJsonArray>
 #include <QJsonObject>
 #include <QPair>
 
@@ -11,8 +14,10 @@ class AlienSoldierSession;
 
 // A level (a block set) or one stage of it: the part of the coarse map the
 // stage's camera covers (the kit works it out), both planes as the game
-// draws them at the stage's start (plane B with its quarter-speed scroll),
-// and the stage's placed objects. A whole level shows every stage of the set
+// draws them at the stage's start (plane B lined up with plane A), and the
+// stage's placed objects, each in the art it drew when the game spawned it
+// (objects.json's spawns; a marker when none is recorded). A whole level
+// shows every stage of the set
 // on the layout they share, the rest of the map dimmed. Objects move and
 // change in the inspector; the chunks layer paints the coarse map's chunk
 // indices (a cell of 8 pixels stands for the 256-pixel chunk around it).
@@ -20,8 +25,9 @@ class LevelsModel final : public sdk::TileMapModel {
     Q_OBJECT
 
 public:
-    // `stage` -1 is the whole level of block set `set`.
-    LevelsModel(AlienSoldierSession* session, int set, int stage);
+    // `stage` -1 is the whole level of block set `set`; `arena` one of the
+    // stage's arenas (a screen elsewhere in the map, without objects).
+    LevelsModel(AlienSoldierSession* session, int set, int stage, int arena = -1);
 
     QString title() const override;
     sdk::Inspection inspect() const override;
@@ -35,6 +41,8 @@ public:
 
     QSize gridSize() const override;
     QSize cellSize() const override { return {8, 8}; }
+    // A level opens at 2x from its left end, where its first stage starts.
+    int openingZoom() const override { return 8; }
     QVector<sdk::MapLayer> layers() const override;
     QString currentLayer() const override { return layer_; }
     void setCurrentLayer(const QString& id) override;
@@ -73,6 +81,24 @@ private:
     // The placed objects shown, as (stage, index in its spawn list).
     QVector<QPair<int, int>> placements() const;
     QJsonObject placement(int stage, int index) const;
+    // What a placement draws: a mapping block's frame with an object
+    // attribute (frame -1: nothing recorded).
+    struct Sprite {
+        QString block;
+        int frame = -1;
+        int attribute = 0;
+    };
+    Sprite spriteOf(int stage, int index) const;
+    QJsonArray spritePieces(const Sprite& sprite) const;
+    // The rectangle a placement covers around its position: its sprite's
+    // pieces, or a 16-pixel marker.
+    QRect objectRect(int stage, int index) const;
+    // A placement's position in the world.
+    QPoint objectPosition(int stage, int index) const;
+    void drawSprites(QImage& image, const QRect& shown) const;
+    // Both planes of the area shown, each stage's part from its own scene;
+    // kept while the scenes, the area and the planes shown stay.
+    QImage planes(const QRect& shown) const;
     // The coarse map byte a cell's world position reads, and the payload
     // value it is (-1 when no map document holds it).
     int coarseValueIndex(QPoint cell, QString* payload) const;
@@ -81,6 +107,7 @@ private:
     AlienSoldierSession* session_;
     int set_;
     int stage_;
+    int arena_;
     QString layer_ = QStringLiteral("objects");
     QString selected_;
     int brush_ = 0;
@@ -88,6 +115,14 @@ private:
     bool planeB_ = true;
     QJsonObject strokeBefore_;
     quint64 strokeRevision_ = 0;
+    // The stage's VRAM with the tiles it leaves blank filled from a block's
+    // recorded art (what the object loads itself), by "stage/block".
+    mutable QHash<QString, QByteArray> spriteVram_;
+    mutable QImage planes_;
+    mutable QImage planesHigh_;  // where high-priority tiles cover low sprites
+    mutable quint64 planesGeneration_ = 0;
+    mutable QRect planesArea_;
+    mutable int planesShown_ = -1;
 };
 
 }  // namespace rl::alien_soldier
