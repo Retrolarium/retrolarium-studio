@@ -4,6 +4,7 @@
 #include "alien_soldier/plugin/demo_model.hpp"
 #include "alien_soldier/plugin/levels_model.hpp"
 #include "alien_soldier/plugin/metatiles_model.hpp"
+#include "alien_soldier/plugin/object_metatiles_model.hpp"
 #include "alien_soldier/plugin/objects_model.hpp"
 #include "alien_soldier/plugin/palettes_model.hpp"
 #include "alien_soldier/plugin/playtest_model.hpp"
@@ -279,21 +280,37 @@ QVector<sdk::DocumentGroup> AlienSoldierSession::documents(const QString& kind) 
         }
         if (!other.documents.isEmpty()) groups.append(other);
     } else if (kind == QLatin1String("metatiles")) {
-        // The chunks and patterns of each block set, plane B's beside them.
+        // The objects' metatiles by file, then the chunks and patterns of
+        // each block set, plane B's beside plane A's.
+        sdk::DocumentGroup objects = group(tr("Objects"));
+        const bool objectsDirty = documents_.tracked(Doc::Mappings).isDirty();
+        for (const QJsonValue& value : doc(Doc::Objects).value(QStringLiteral("groups")).toArray()) {
+            const QJsonObject item = value.toObject();
+            QStringList blocks;
+            for (const QJsonValue& label : item.value(QStringLiteral("blocks")).toArray()) blocks << label.toString();
+            const int count = int(metatilesOf(documents_, blocks).size());
+            if (count == 0) continue;
+            const QString id = item.value(QStringLiteral("id")).toString();
+            objects.documents.append(entry(QStringLiteral("obj:") + id,
+                                           item.value(QStringLiteral("title")).toString(id),
+                                           tr("%n metatiles", nullptr, count), objectsDirty));
+        }
+        if (!objects.documents.isEmpty()) groups.append(objects);
+        sdk::DocumentGroup levels = group(tr("Levels"));
         const bool dirty = documents_.tracked(Doc::Maps).isDirty();
         const QVector<BlockSet> sets = blockSets();
         for (int set = 0; set < sets.size(); ++set) {
-            sdk::DocumentGroup blocks = group(blockSetLabel(set));
             const Scene& scene = stage(sets[set].stages.first());
             for (int plane = 0; plane < 2; ++plane) {
                 const int chunks = chunkCount(scene, plane);
                 if (chunks == 0) continue;
-                blocks.documents.append(
+                levels.documents.append(
                     entry(QStringLiteral("set-%1-%2").arg(set + 1).arg(QLatin1Char(plane ? 'b' : 'a')),
-                          plane ? tr("Plane B") : tr("Plane A"), tr("%n chunks", nullptr, chunks), dirty));
+                          tr("%1 · %2").arg(blockSetLabel(set), plane ? tr("Plane B") : tr("Plane A")),
+                          tr("%n chunks", nullptr, chunks), dirty));
             }
-            if (!blocks.documents.isEmpty()) groups.append(blocks);
         }
+        if (!levels.documents.isEmpty()) groups.append(levels);
     } else if (kind == QLatin1String("tiles")) {
         // The art by what draws with it (art.json); the player's pieces are
         // one sprite sheet, and screen maps belong to the screens.
@@ -390,7 +407,9 @@ QVector<sdk::DocumentGroup> AlienSoldierSession::documents(const QString& kind) 
         const bool dirty = documents_.tracked(Doc::Mappings).isDirty();
         for (const QJsonValue& value : objects.value(QStringLiteral("groups")).toArray()) {
             const QJsonObject item = value.toObject();
-            sdk::DocumentGroup file = group(item.value(QStringLiteral("id")).toString());
+            // The kit's title for the file ("Back Stringer"), else its name.
+            sdk::DocumentGroup file =
+                group(item.value(QStringLiteral("title")).toString(item.value(QStringLiteral("id")).toString()));
             for (const QJsonValue& label : item.value(QStringLiteral("blocks")).toArray()) {
                 const QJsonObject block = blocks.at(indexOfLabel(blocks, label.toString())).toObject();
                 const int count = block.value(QStringLiteral("mappings")).toArray().size();
@@ -504,6 +523,8 @@ std::unique_ptr<sdk::EditorModel> AlienSoldierSession::openEditor(const QString&
         return std::make_unique<LevelsModel>(this, blockSetOf(stage), stage);
     }
     if (kind == QLatin1String("metatiles")) {
+        if (document.startsWith(QLatin1String("obj:")))
+            return std::make_unique<ObjectMetatilesModel>(this, document.mid(4));
         const int set = setOf();
         return set < 0 ? nullptr : std::make_unique<MetatilesModel>(this, set, document.endsWith(QLatin1String("-b")));
     }
@@ -605,6 +626,16 @@ void AlienSoldierSession::commit(Doc which, const QJsonObject& before, quint64 b
         beforeRevision, tracked.doc, next, text));
 }
 
+void AlienSoldierSession::reportMapOverflow(const QString& source, const MapOverflow& full, bool* reported) {
+    if (*reported) return;
+    *reported = true;
+    report(sdk::Severity::Warning, source,
+           tr("%1 would take %2 bytes compressed, and its slot in the ROM holds %3: the change is not made.")
+               .arg(full.payload)
+               .arg(full.size)
+               .arg(full.capacity));
+}
+
 bool AlienSoldierSession::save(QString* error) {
     bool ok = true;
     for (int index = 0; index < kDocCount; ++index) {
@@ -635,7 +666,8 @@ bool AlienSoldierSession::revert(const QString& kind, const QString& document, Q
     // A view reverts the documents it edits, whole.
     QVector<Doc> docs;
     if (kind == QLatin1String("levels")) docs = {Doc::Levels};
-    else if (kind == QLatin1String("metatiles")) docs = {Doc::Maps};
+    else if (kind == QLatin1String("metatiles"))
+        docs = {document.startsWith(QLatin1String("obj:")) ? Doc::Mappings : Doc::Maps};
     else if (kind == QLatin1String("tiles"))
         docs = {document.startsWith(QLatin1String("c:")) ? Doc::Compressed : Doc::Tiles};
     else if (kind == QLatin1String("palettes")) docs = {Doc::Palettes};

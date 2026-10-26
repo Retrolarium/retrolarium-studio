@@ -18,6 +18,8 @@ studio_enable_warnings(platform_megadrive)
 add_library(alien_soldier_data STATIC
     games/alien_soldier/src/alien_soldier/data/documents.cpp
     games/alien_soldier/src/alien_soldier/data/documents.hpp
+    games/alien_soldier/src/alien_soldier/data/lzss.cpp
+    games/alien_soldier/src/alien_soldier/data/lzss.hpp
     games/alien_soldier/src/alien_soldier/data/scene.cpp
     games/alien_soldier/src/alien_soldier/data/scene.hpp
     games/alien_soldier/src/alien_soldier/data/sprites.cpp
@@ -43,6 +45,8 @@ add_library(alien_soldier_plugin STATIC
     games/alien_soldier/src/alien_soldier/plugin/mapping_canvas.hpp
     games/alien_soldier/src/alien_soldier/plugin/metatiles_model.cpp
     games/alien_soldier/src/alien_soldier/plugin/metatiles_model.hpp
+    games/alien_soldier/src/alien_soldier/plugin/object_metatiles_model.cpp
+    games/alien_soldier/src/alien_soldier/plugin/object_metatiles_model.hpp
     games/alien_soldier/src/alien_soldier/plugin/objects_model.cpp
     games/alien_soldier/src/alien_soldier/plugin/objects_model.hpp
     games/alien_soldier/src/alien_soldier/plugin/palettes_model.cpp

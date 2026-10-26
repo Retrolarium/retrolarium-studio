@@ -499,6 +499,21 @@ sdk::Library LevelsModel::sheet() const {
 
 void LevelsModel::setCurrentLibraryItem(const QString& id) { setCurrentBrush(id.toInt()); }
 
+bool LevelsModel::placeObject(const QString& libraryItem, QPoint cell, QString* error) {
+    bool number = false;
+    const int chunk = libraryItem.toInt(&number);
+    if (layer_ != kChunks || !number) return TileMapModel::placeObject(libraryItem, cell, error);
+    if (!isCellEditable(cell)) {
+        if (error) *error = lockReason(cell);
+        return false;
+    }
+    beginStroke();
+    const bool painted = paintCell(cell, chunk);
+    endStroke();
+    setCurrentBrush(chunk);
+    return painted;
+}
+
 QString LevelsModel::currentLibraryItem() const { return QString::number(brush_); }
 
 int LevelsModel::coarseValueIndex(QPoint cell, QString* payload) const {
@@ -528,6 +543,7 @@ QString LevelsModel::lockReason(QPoint cell) const {
 void LevelsModel::beginStroke() {
     strokeBefore_ = session_->doc(Doc::Maps);
     strokeRevision_ = session_->revision(Doc::Maps);
+    overflowReported_ = false;
 }
 
 bool LevelsModel::paintCell(QPoint cell, int value) {
@@ -539,6 +555,9 @@ bool LevelsModel::paintCell(QPoint cell, int value) {
     if (cellValue(cell) == value) return true;
     try {
         setMapValue(session_->live(Doc::Maps), target, value);
+    } catch (const MapOverflow& full) {
+        session_->reportMapOverflow(QStringLiteral("levels"), full, &overflowReported_);
+        return false;
     } catch (const std::exception&) {
         return false;
     }

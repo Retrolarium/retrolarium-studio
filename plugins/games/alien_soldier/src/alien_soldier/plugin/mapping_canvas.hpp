@@ -10,6 +10,10 @@ namespace rl::alien_soldier {
 
 class AlienSoldierSession;
 
+// "$1A2 · 2×4": a metatile's first tile in VRAM (relative without a known
+// context) and its size in tiles.
+QString metatileLabel(const Metatile& metatile, const SpriteContext& context);
+
 // A canvas showing one sprite mapping, drawn with what its block draws with
 // in the game (objects.json): the views of objects and of animations build
 // on it. Pieces move with the mouse and change in the inspector; a static
@@ -36,11 +40,22 @@ public:
     bool dragPiece(const QString& id, QPoint offset) override;
     void endDrag() override;
 
+    // The object's metatiles (what the pieces of its file draw, see
+    // Metatile), to put into pieces: a click makes the selected piece draw
+    // one, a drag the piece it lands on. The sheet stays while frames change.
+    sdk::Library sheet() const override;
+    QString currentLibraryItem() const override;
+    void setCurrentLibraryItem(const QString& id) override;
+    bool dropItem(const QString& libraryItem, const QString& piece, QString* error) override;
+
 protected:
     // The mapping shown: (block index, mapping index) in the mapping document,
     // or block -1.
     virtual QPair<int, int> mapping() const = 0;
     QString blockLabel() const;
+    // The block whose object the sheet offers the metatiles of: the one
+    // shown.
+    virtual QString objectBlock() const { return blockLabel(); }
     QJsonArray mappingPieces() const;
     QJsonObject pieceObject(int index) const;
     SpriteContext context() const;
@@ -48,6 +63,8 @@ protected:
     void inspectPiece(sdk::Inspection& inspection) const;
     bool setPieceField(const QString& key, const QVariant& value, QString* error);
     void clearPiece() { piece_.clear(); }
+    // Makes a static piece draw `metatile`; dynamic pieces keep their art.
+    bool setPieceMetatile(int index, const Metatile& metatile, QString* error);
 
     AlienSoldierSession* session_;
 

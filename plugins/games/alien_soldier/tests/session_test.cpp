@@ -1,11 +1,15 @@
 // Alien Soldier against a prepared project: every document of every view
 // opens in its editor and inspects, the stages and screens draw, every text
 // record reads back to the same glyphs through the editor's text, and every
-// song and effect has notes on some channel. Reads the project only (the
-// text edits are undone).
+// song and effect has notes on some channel; map sizes are the kit's, the
+// metatiles of objects go into pieces whole, and a map edit that would not
+// fit its slot is refused. Reads the project only (the edits are undone).
 //   alien_soldier_session_test <Alien Soldier project .rlj>
 
+#include "alien_soldier/data/lzss.hpp"
 #include "alien_soldier/data/scene.hpp"
+#include "alien_soldier/data/sprites.hpp"
+#include "alien_soldier/plugin/map_edits.hpp"
 #include "alien_soldier/plugin/session.hpp"
 #include "sdk/editor_model.hpp"
 #include "sdk/game_names.hpp"
@@ -15,6 +19,7 @@
 #include <QFileInfo>
 #include <QImage>
 #include <QSet>
+#include <QUndoStack>
 
 #include <algorithm>
 #include <iostream>
@@ -39,6 +44,17 @@ bool drawn(const QImage& image) {
         }
     }
     return false;
+}
+
+// Deterministic bytes with little to match, as the kit's codec tests make.
+QByteArray noise(int length) {
+    QByteArray out;
+    quint32 value = 1;
+    for (int index = 0; index < length; ++index) {
+        value = (value * 1103515245u + 12345u) & 0x7FFFFFFF;
+        out.append(char((value >> 16) & 0xFF));
+    }
+    return out;
 }
 
 }  // namespace
@@ -209,6 +225,102 @@ int main(int argc, char** argv) {
             }
         }
         expect(screens >= 20, QStringLiteral("only %1 screens").arg(screens));
+
+        // The size the kit's encoder gives a whole stream (lzss.py:
+        // compress(data, blocks=False) is 1418 bytes for these 5006).
+        {
+            QByteArray data;
+            for (int repeat = 0; repeat < 30; ++repeat) data += noise(0x40) + QByteArray(9, char(0xAA));
+            data += QByteArray(0x100, '\0');
+            for (int repeat = 0; repeat < 0x80; ++repeat) data += QByteArray("\x12\x34", 2);
+            for (int index = 0; index < 0x80; ++index) data += QByteArray(1, char(0x11)) + QByteArray(1, char(index));
+            data += noise(0x400) + noise(0x400);
+            expect(data.size() == 5006 && lzssPayloadSize(data) == 1418,
+                   QStringLiteral("the map size estimate is %1, the kit's 1418").arg(lzssPayloadSize(data)));
+            const QJsonArray payloads = session->doc(Doc::Maps).value(QStringLiteral("payloads")).toArray();
+            for (const QJsonValue& value : payloads) {
+                const QJsonObject payload = value.toObject();
+                const int width = payload.value(QStringLiteral("role")).toString() == QLatin1String("patterns") ? 2 : 1;
+                expect(
+                    mapPayloadSize(payload.value(QStringLiteral("values")).toArray(), width) <=
+                        payload.value(QStringLiteral("capacity")).toInt(),
+                    QStringLiteral("%1 does not fit its slot").arg(payload.value(QStringLiteral("label")).toString()));
+            }
+            // Noise in a chunk map does not fit; the edit is refused whole.
+            QJsonObject maps = session->doc(Doc::Maps);
+            const QJsonObject first = payloads.at(0).toObject();
+            const int count = int(first.value(QStringLiteral("values")).toArray().size());
+            MapValue target;
+            target.payload = first.value(QStringLiteral("label")).toString();
+            target.width = first.value(QStringLiteral("role")).toString() == QLatin1String("patterns") ? 2 : 1;
+            bool refused = false;
+            const QByteArray random = noise(count);
+            try {
+                for (int index = 0; index < count; ++index) {
+                    target.index = index;
+                    setMapValue(maps, target, quint8(random.at(index)));
+                }
+            } catch (const MapOverflow& full) {
+                refused = full.size > full.capacity && full.payload == target.payload;
+            }
+            expect(refused, QStringLiteral("a map filled with noise still fits %1").arg(target.payload));
+        }
+
+        // Metatiles: the objects' by file, then the levels' planes.
+        {
+            const QVector<sdk::DocumentGroup> groups = session->documents(QStringLiteral("metatiles"));
+            expect(groups.size() == 2 && !groups[0].documents.isEmpty() && !groups[1].documents.isEmpty() &&
+                       groups[0].documents.first().id.startsWith(QLatin1String("obj:")) &&
+                       groups[1].documents.first().id == QLatin1String("set-1-a"),
+                   QStringLiteral("Metatiles do not list objects, then levels"));
+            for (const sdk::DocumentEntry& entry : groups[0].documents) {
+                std::unique_ptr<sdk::EditorModel> model = session->openEditor(QStringLiteral("metatiles"), entry.id);
+                auto* sheet = qobject_cast<sdk::CompositionModel*>(model.get());
+                expect(sheet && !sheet->pieces().isEmpty() && drawn(sheet->render()),
+                       QStringLiteral("%1 shows no metatiles").arg(entry.id));
+            }
+        }
+
+        // An object's sheet offers its metatiles; one dropped on a piece
+        // makes it draw that metatile (tile and size), in one undo step.
+        {
+            // The first recorded block whose first piece is static, with others to choose.
+            QString block;
+            const QJsonArray all = session->doc(Doc::Mappings).value(QStringLiteral("blocks")).toArray();
+            for (auto it = contexts.begin(); it != contexts.end() && block.isEmpty(); ++it) {
+                const QJsonObject piece = all.at(indexOfLabel(all, it.key()))
+                                              .toObject()
+                                              .value(QStringLiteral("mappings"))
+                                              .toArray()
+                                              .at(0)
+                                              .toObject()
+                                              .value(QStringLiteral("pieces"))
+                                              .toArray()
+                                              .at(0)
+                                              .toObject();
+                Metatile metatile;
+                if (metatileOf(piece, &metatile) &&
+                    metatilesOf(session->docs(), blocksDrawnLike(session->docs(), it.key())).size() > 1)
+                    block = it.key();
+            }
+            expect(!block.isEmpty(), QStringLiteral("no object has metatiles to choose from"));
+            std::unique_ptr<sdk::EditorModel> model = session->openEditor(QStringLiteral("objects"), block);
+            auto* canvas = qobject_cast<sdk::CompositionModel*>(model.get());
+            expect(canvas != nullptr, QStringLiteral("%1 does not open").arg(block));
+            const sdk::Library library = canvas->sheet();
+            expect(library.items.size() > 1, QStringLiteral("%1 offers no metatiles").arg(block));
+            canvas->selectPiece(QStringLiteral("0"));
+            const QString before = canvas->currentLibraryItem();
+            const auto other = std::find_if(library.items.begin(), library.items.end(),
+                                            [&before](const sdk::LibraryItem& item) { return item.id != before; });
+            QString failure;
+            const int steps = session->undoStack()->count();
+            expect(canvas->dropItem(other->id, QStringLiteral("0"), &failure) &&
+                       canvas->currentLibraryItem() == other->id && session->undoStack()->count() == steps + 1,
+                   QStringLiteral("a metatile does not go into a piece: %1").arg(failure));
+            session->undoStack()->undo();
+            expect(canvas->currentLibraryItem() == before, QStringLiteral("undo leaves the piece changed"));
+        }
 
         std::cout << "[OK] " << opened << " documents open, " << stages << " stages draw, " << sprites
                   << " objects draw, " << screens << " screens draw, " << rows << " text records read back, " << notes

@@ -1,5 +1,7 @@
 #include "alien_soldier/plugin/map_edits.hpp"
 
+#include "alien_soldier/data/lzss.hpp"
+
 #include <QJsonArray>
 
 #include <stdexcept>
@@ -29,6 +31,17 @@ MapValue mapValueAt(const QJsonObject& maps, const QJsonObject& screens, const S
     return value;
 }
 
+int mapPayloadSize(const QJsonArray& values, int width) {
+    QByteArray data;
+    data.reserve(int(values.size()) * width);
+    for (const QJsonValue& item : values) {
+        const int stored = item.toInt();
+        if (width == 2) data.append(char(stored >> 8));
+        data.append(char(stored));
+    }
+    return lzssPayloadSize(data);
+}
+
 void setMapValue(QJsonObject& document, const MapValue& value, int number) {
     QJsonArray payloads = document.value(QStringLiteral("payloads")).toArray();
     const int found = indexOfLabel(payloads, value.payload);
@@ -37,6 +50,9 @@ void setMapValue(QJsonObject& document, const MapValue& value, int number) {
     QJsonObject payload = payloads.at(found).toObject();
     QJsonArray values = payload.value(QStringLiteral("values")).toArray();
     values.replace(value.index, number);
+    const int capacity = payload.value(QStringLiteral("capacity")).toInt();
+    const int size = mapPayloadSize(values, value.width);
+    if (capacity > 0 && size > capacity) throw MapOverflow(value.payload, size, capacity);
     payload.insert(QStringLiteral("values"), values);
     payloads.replace(found, payload);
     document.insert(QStringLiteral("payloads"), payloads);

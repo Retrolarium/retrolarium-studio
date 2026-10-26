@@ -44,6 +44,16 @@ QPair<int, int> AnimationsModel::mapping() const {
     return {indexOfLabel(blocks, item.value(QStringLiteral("target")).toString()), 0};
 }
 
+QString AnimationsModel::objectBlock() const {
+    const QString shown = blockLabel();
+    if (!shown.isEmpty()) return shown;
+    for (int index = 0; index < frames().size(); ++index) {
+        const QJsonObject item = entry(index);
+        if (item.value(QStringLiteral("duration")).toInt() != 0) return item.value(QStringLiteral("target")).toString();
+    }
+    return {};
+}
+
 QVector<sdk::CompositionFrame> AnimationsModel::frames() const {
     QVector<sdk::CompositionFrame> result;
     const QJsonArray scripts = session_->doc(Doc::Animations).value(QStringLiteral("scripts")).toArray();

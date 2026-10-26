@@ -3,8 +3,11 @@
 #include "alien_soldier/data/documents.hpp"
 #include "alien_soldier/data/scene.hpp"
 
+#include <QJsonArray>
 #include <QJsonObject>
 #include <QString>
+
+#include <stdexcept>
 
 namespace rl::alien_soldier {
 
@@ -20,7 +23,24 @@ struct MapValue {
 
 MapValue mapValueAt(const QJsonObject& maps, const QJsonObject& screens, const Scene& scene, int offset);
 
-// The document with one map value changed (throws when it cannot be).
+// The bytes a map payload's values compress to (see data/lzss.hpp).
+int mapPayloadSize(const QJsonArray& values, int width);
+
+// A change after which the map no longer compresses into its slot.
+struct MapOverflow : std::runtime_error {
+    MapOverflow(QString payload, int size, int capacity)
+        : std::runtime_error("the map does not fit its slot"),
+          payload(std::move(payload)),
+          size(size),
+          capacity(capacity) {}
+    QString payload;
+    int size;
+    int capacity;
+};
+
+// The document with one map value changed (throws when it cannot be: a
+// MapOverflow when the map would no longer fit its slot, which the kit fills
+// again when it builds).
 void setMapValue(QJsonObject& document, const MapValue& value, int number);
 
 }  // namespace rl::alien_soldier

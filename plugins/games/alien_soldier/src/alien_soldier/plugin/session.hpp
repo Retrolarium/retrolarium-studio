@@ -2,6 +2,7 @@
 
 #include "alien_soldier/data/documents.hpp"
 #include "alien_soldier/data/scene.hpp"
+#include "alien_soldier/plugin/map_edits.hpp"
 #include "sdk/kit_session.hpp"
 
 #include <QHash>
@@ -58,6 +59,9 @@ public:
     bool isDirty(Doc doc) const { return documents_.tracked(doc).isDirty(); }
     void touch(Doc doc);
     void commit(Doc doc, const QJsonObject& before, quint64 beforeRevision, const QString& text);
+    // Tells why a painted map value was refused: the map would no longer
+    // fit its slot (once per stroke; `reported` is the stroke's flag).
+    void reportMapOverflow(const QString& source, const MapOverflow& full, bool* reported);
 
     // Scenes drawn from the current documents (rebuilt after edits).
     const Scene& stage(int index) const;

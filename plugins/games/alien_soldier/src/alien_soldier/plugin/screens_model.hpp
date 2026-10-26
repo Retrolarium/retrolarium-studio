@@ -47,6 +47,8 @@ public:
     void beginStroke() override;
     bool paintCell(QPoint cell, int value) override;
     void endStroke() override;
+    // A tile dragged from the sheet paints the cell it lands on.
+    bool placeObject(const QString& libraryItem, QPoint cell, QString* error) override;
 
 private:
     int index() const;
@@ -65,6 +67,7 @@ private:
     quint64 revisionMaps_ = 0;
     quint64 revisionScreens_ = 0;
     quint64 revisionCompressed_ = 0;
+    bool overflowReported_ = false;
 };
 
 }  // namespace rl::alien_soldier

@@ -37,4 +37,39 @@ void drawMapping(QImage& image, QPoint origin, const QJsonArray& pieces, const D
 // A piece's rectangle relative to the object (the object's flips mirror it).
 QRect pieceRect(const QJsonObject& piece, int attribute);
 
+// An object's metatile: what a static piece draws, its first tile (added to
+// the object's base tile), its size (the size byte's low nibble,
+// (width - 1) << 2 | height - 1) and its palette line (exclusive-ored with
+// the object's). A piece adds a position and flips.
+struct Metatile {
+    int tile = 0;
+    int size = 0;
+    int line = 0;
+
+    QString id() const;
+    // An id() back to the metatile; false for anything else.
+    static bool fromId(const QString& id, Metatile* metatile);
+    bool operator==(const Metatile& other) const {
+        return tile == other.tile && size == other.size && line == other.line;
+    }
+};
+
+// A static piece's metatile; false for a dynamic piece, which carries its own
+// art.
+bool metatileOf(const QJsonObject& piece, Metatile* metatile);
+// The piece drawing `metatile` instead, its position, flips, end mark and
+// the size byte's high nibble kept.
+QJsonObject withMetatile(const QJsonObject& piece, const Metatile& metatile);
+
+// The blocks of `block`'s file (objects.json groups) that draw with what it
+// draws with (art, attribute, colours), in file order: their pieces share
+// metatiles. A block in no group stands alone.
+QStringList blocksDrawnLike(const Documents& documents, const QString& block);
+// The metatiles the blocks' static pieces use, in order of first use, and
+// with `uses` how many pieces use each.
+QVector<Metatile> metatilesOf(const Documents& documents, const QStringList& blocks, QVector<int>* uses = nullptr);
+// `metatile` alone and unflipped, centred in a side x side image.
+QImage metatileImage(const Metatile& metatile, const Documents& documents, const SpriteContext& context,
+                     const QVector<int>& cram, int line, int side);
+
 }  // namespace rl::alien_soldier

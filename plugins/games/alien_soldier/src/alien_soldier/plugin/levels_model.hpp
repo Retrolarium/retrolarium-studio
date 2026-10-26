@@ -61,6 +61,8 @@ public:
     void beginStroke() override;
     bool paintCell(QPoint cell, int value) override;
     void endStroke() override;
+    // A chunk dragged from the sheet paints the coarse cell it lands on.
+    bool placeObject(const QString& libraryItem, QPoint cell, QString* error) override;
 
     QVector<sdk::MapObject> objects() const override;
     QString selectedObject() const override { return selected_; }
@@ -115,6 +117,7 @@ private:
     bool planeB_ = true;
     QJsonObject strokeBefore_;
     quint64 strokeRevision_ = 0;
+    bool overflowReported_ = false;
     // The stage's VRAM with the tiles it leaves blank filled from a block's
     // recorded art (what the object loads itself), by "stage/block".
     mutable QHash<QString, QByteArray> spriteVram_;

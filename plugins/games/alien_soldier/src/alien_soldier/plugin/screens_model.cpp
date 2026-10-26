@@ -13,6 +13,14 @@
 
 namespace rl::alien_soldier {
 
+namespace {
+
+// The screen the game shows: 40 cells by 28.
+constexpr int kScreenColumns = 40;
+constexpr int kScreenRows = 28;
+
+}  // namespace
+
 ScreensModel::ScreensModel(AlienSoldierSession* session, const QString& id)
     : TileMapModel(session), session_(session), id_(id) {
     const Scene& scene = session_->screen(index());
@@ -63,8 +71,9 @@ QString ScreensModel::tableSource() const {
 }
 
 QSize ScreensModel::gridSize() const {
-    if (isTable()) return {64, std::max(1, session_->screen(index()).nameTableRows)};
-    return {40, 28};
+    // A credits scene's name table is 64 cells wide; the screen shows 40.
+    if (isTable()) return {kScreenColumns, std::clamp(session_->screen(index()).nameTableRows, 1, kScreenRows)};
+    return {kScreenColumns, kScreenRows};
 }
 
 int ScreensModel::index() const {
@@ -105,7 +114,26 @@ QVector<sdk::Tool> ScreensModel::tools() const {
 
 QImage ScreensModel::render() const {
     const Scene& scene = session_->screen(index());
-    return scene.nameTable >= 0 ? renderNameTable(scene) : renderScene(scene, QRect(0, 0, 320, 224));
+    if (scene.nameTable < 0) return renderScene(scene, QRect(0, 0, kScreenColumns * 8, kScreenRows * 8));
+    const QSize cells = gridSize();
+    return renderNameTable(scene).copy(0, 0, cells.width() * 8, cells.height() * 8);
+}
+
+bool ScreensModel::placeObject(const QString& libraryItem, QPoint cell, QString* error) {
+    bool number = false;
+    const int tile = libraryItem.toInt(&number);
+    if (!number) return TileMapModel::placeObject(libraryItem, cell, error);
+    if (!isCellEditable(cell)) {
+        if (error) *error = lockReason(cell);
+        return false;
+    }
+    // The brush's line and flips with the dragged tile.
+    const int value = (brush_ & ~0x7FF) | (tile & 0x7FF);
+    beginStroke();
+    const bool painted = paintCell(cell, value);
+    endStroke();
+    setCurrentBrush(value);
+    return painted;
 }
 
 int ScreensModel::wordOffset(QPoint cell) const {
@@ -178,6 +206,7 @@ void ScreensModel::beginStroke() {
     revisionMaps_ = session_->revision(Doc::Maps);
     revisionScreens_ = session_->revision(Doc::Screens);
     revisionCompressed_ = session_->revision(Doc::Compressed);
+    overflowReported_ = false;
 }
 
 bool ScreensModel::paintCell(QPoint cell, int value) {
@@ -220,6 +249,9 @@ bool ScreensModel::paintCell(QPoint cell, int value) {
     }
     try {
         setMapValue(session_->live(target.doc), target, stored);
+    } catch (const MapOverflow& full) {
+        session_->reportMapOverflow(QStringLiteral("screens"), full, &overflowReported_);
+        return false;
     } catch (const std::exception&) {
         return false;
     }

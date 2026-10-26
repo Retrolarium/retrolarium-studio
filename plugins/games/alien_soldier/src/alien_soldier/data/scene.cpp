@@ -386,7 +386,9 @@ Scene stageScene(const Documents& documents, int stage) {
         // The boss runs plane B on its own camera through the fight (Z-Leo's
         // rise moves it up); drawn still, it lines up with plane A. Planes the
         // boss streams from its own descriptor replace the stage's.
-        fight.planes[1] = planeOf(planes.at(1));
+        // A screen apart keeps the stage's plane B as the stage shows it (the
+        // Destroyer Prototype's stars).
+        if (arena.value(QStringLiteral("inline")).toBool()) fight.planes[1] = planeOf(planes.at(1));
         const QJsonArray own = arena.value(QStringLiteral("planes")).toArray();
         if (!own.isEmpty()) {
             fight.planes[0] = planeOf(own.at(0));
@@ -399,9 +401,17 @@ Scene stageScene(const Documents& documents, int stage) {
                                command.toArray().at(1).toInt());
         }
         scene.arenaInline.push_back(arena.value(QStringLiteral("inline")).toBool());
-        scene.arenaRects.push_back(
-            QRect(arena.value(QStringLiteral("x")).toInt(), arena.value(QStringLiteral("y")).toInt(),
-                  arena.value(QStringLiteral("width")).toInt(), arena.value(QStringLiteral("height")).toInt()));
+        // An arena may be shown elsewhere than the map holds it (Z-Leo's
+        // shaft over the room the corridor ends in): its planes read the map
+        // where it is.
+        const QPoint at(arena.value(QStringLiteral("x")).toInt(), arena.value(QStringLiteral("y")).toInt());
+        const QJsonObject shown = arena.value(QStringLiteral("shown")).toObject();
+        const QPoint place = shown.isEmpty() ? at
+                                             : QPoint(shown.value(QStringLiteral("x")).toInt(),
+                                                      shown.value(QStringLiteral("y")).toInt());
+        for (Plane& plane : fight.planes) plane.origin += at - place;
+        scene.arenaRects.push_back(QRect(
+            place, QSize(arena.value(QStringLiteral("width")).toInt(), arena.value(QStringLiteral("height")).toInt())));
         scene.arenas.push_back(std::move(fight));
     }
     return scene;

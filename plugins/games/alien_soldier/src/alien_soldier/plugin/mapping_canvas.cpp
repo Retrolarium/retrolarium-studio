@@ -15,6 +15,15 @@ constexpr int kLastPiece = 0x8000;
 
 }  // namespace
 
+QString metatileLabel(const Metatile& metatile, const SpriteContext& context) {
+    const int tile = context.known ? (metatile.tile + (context.attribute & 0x7FF)) & 0x7FF : metatile.tile;
+    return QStringLiteral("$%1 · %2×%3")
+        .arg(tile, 3, 16, QLatin1Char('0'))
+        .toUpper()
+        .arg(((metatile.size >> 2) & 3) + 1)
+        .arg((metatile.size & 3) + 1);
+}
+
 MappingCanvas::MappingCanvas(AlienSoldierSession* session) : CompositionModel(session), session_(session) {
     paletteList_ = session_->doc(Doc::Stages)
                        .value(QStringLiteral("scenes"))
@@ -188,6 +197,74 @@ void MappingCanvas::inspectPiece(sdk::Inspection& inspection) const {
             ? tr("The piece uploads its own art (%1); its tile and size follow that art.")
                   .arg(piece.value(QStringLiteral("art")).toString())
             : tr("The tile index is added to the object's own; bit 15 ends the mapping and stays as it is.");
+}
+
+sdk::Library MappingCanvas::sheet() const {
+    sdk::Library library;
+    const QString block = objectBlock();
+    if (block.isEmpty()) return library;
+    const SpriteContext shown = spriteContext(session_->docs(), block);
+    const QVector<int> cram = paletteList(session_->doc(Doc::Palettes), paletteList_);
+    library.grid = true;
+    library.columns = 8;
+    library.cell = QSize(32, 32);
+    library.hint =
+        piece_.isEmpty() ? tr("drag a metatile onto a piece") : tr("click: into the piece · or drag onto a piece");
+    for (const Metatile& metatile : metatilesOf(session_->docs(), blocksDrawnLike(session_->docs(), block))) {
+        sdk::LibraryItem item;
+        item.id = metatile.id();
+        item.label = metatileLabel(metatile, shown);
+        item.icon = metatileImage(metatile, session_->docs(), shown, cram, line_, 32);
+        library.items.append(item);
+    }
+    return library;
+}
+
+QString MappingCanvas::currentLibraryItem() const {
+    Metatile metatile;
+    return !piece_.isEmpty() && metatileOf(pieceObject(piece_.toInt()), &metatile) ? metatile.id() : QString();
+}
+
+void MappingCanvas::setCurrentLibraryItem(const QString& id) {
+    Metatile metatile;
+    if (piece_.isEmpty() || id == currentLibraryItem() || !Metatile::fromId(id, &metatile)) return;
+    QString error;
+    setPieceMetatile(piece_.toInt(), metatile, &error);
+}
+
+bool MappingCanvas::dropItem(const QString& libraryItem, const QString& piece, QString* error) {
+    Metatile metatile;
+    if (!Metatile::fromId(libraryItem, &metatile)) return CompositionModel::dropItem(libraryItem, piece, error);
+    selectPiece(piece);
+    return setPieceMetatile(piece.toInt(), metatile, error);
+}
+
+bool MappingCanvas::setPieceMetatile(int index, const Metatile& metatile, QString* error) {
+    const QPair<int, int> shown = mapping();
+    const QJsonObject piece = pieceObject(index);
+    Metatile current;
+    if (shown.first < 0 || piece.isEmpty()) return false;
+    if (!metatileOf(piece, &current)) {
+        if (error) *error = tr("A dynamic piece draws its own art; it keeps it.");
+        return false;
+    }
+    if (current == metatile) return true;
+    return session_->edit(
+        Doc::Mappings, tr("Change sprite piece"),
+        [&](QJsonObject& document) {
+            QJsonArray blocks = document.value(QStringLiteral("blocks")).toArray();
+            QJsonObject block = blocks.at(shown.first).toObject();
+            QJsonArray mappings = block.value(QStringLiteral("mappings")).toArray();
+            QJsonObject item = mappings.at(shown.second).toObject();
+            QJsonArray list = item.value(QStringLiteral("pieces")).toArray();
+            list.replace(index, withMetatile(piece, metatile));
+            item.insert(QStringLiteral("pieces"), list);
+            mappings.replace(shown.second, item);
+            block.insert(QStringLiteral("mappings"), mappings);
+            blocks.replace(shown.first, block);
+            document.insert(QStringLiteral("blocks"), blocks);
+        },
+        error);
 }
 
 bool MappingCanvas::setPieceField(const QString& key, const QVariant& value, QString* error) {

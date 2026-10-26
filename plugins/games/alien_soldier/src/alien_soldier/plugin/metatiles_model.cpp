@@ -103,7 +103,7 @@ sdk::Library MetatilesModel::sheet() const {
     library.hint = tr("pick a pattern, then paint chunk slots");
     library.grid = true;
     library.columns = 8;
-    library.cell = QSize(64, 64);  // the patterns at 2x
+    library.cell = QSize(32, 32);  // a pattern, 4x4 tiles
     const int patterns = std::min(patternCount(scene, plane()), 256);
     for (int pattern = 0; pattern < patterns; ++pattern) {
         sdk::LibraryItem item;
@@ -117,11 +117,27 @@ sdk::Library MetatilesModel::sheet() const {
 
 void MetatilesModel::setCurrentLibraryItem(const QString& id) { setCurrentBrush(id.toInt()); }
 
+bool MetatilesModel::placeObject(const QString& libraryItem, QPoint cell, QString* error) {
+    bool number = false;
+    const int pattern = libraryItem.toInt(&number);
+    if (!number) return TileMapModel::placeObject(libraryItem, cell, error);
+    if (!isCellEditable(cell)) {
+        if (error) *error = lockReason(cell);
+        return false;
+    }
+    beginStroke();
+    const bool painted = paintCell(cell, pattern);
+    endStroke();
+    setCurrentBrush(pattern);
+    return painted;
+}
+
 QString MetatilesModel::currentLibraryItem() const { return QString::number(brush_); }
 
 void MetatilesModel::beginStroke() {
     strokeBefore_ = session_->doc(Doc::Maps);
     strokeRevision_ = session_->revision(Doc::Maps);
+    overflowReported_ = false;
 }
 
 bool MetatilesModel::paintCell(QPoint cell, int value) {
@@ -133,6 +149,9 @@ bool MetatilesModel::paintCell(QPoint cell, int value) {
     if (target.index < 0 || target.doc != Doc::Maps) return false;
     try {
         setMapValue(session_->live(Doc::Maps), target, value);
+    } catch (const MapOverflow& full) {
+        session_->reportMapOverflow(QStringLiteral("metatiles"), full, &overflowReported_);
+        return false;
     } catch (const std::exception&) {
         return false;
     }
@@ -141,6 +160,21 @@ bool MetatilesModel::paintCell(QPoint cell, int value) {
 }
 
 void MetatilesModel::endStroke() { session_->commit(Doc::Maps, strokeBefore_, strokeRevision_, tr("Paint patterns")); }
+
+sdk::Budget MetatilesModel::budget() const {
+    sdk::Budget budget;
+    const int offset = slotOffset(QPoint(0, 0));
+    if (offset < 0) return budget;
+    const MapValue target =
+        mapValueAt(session_->doc(Doc::Maps), session_->doc(Doc::Screens), session_->stage(stage_), offset);
+    if (target.index < 0 || target.doc != Doc::Maps) return budget;
+    const QJsonArray payloads = session_->doc(Doc::Maps).value(QStringLiteral("payloads")).toArray();
+    const QJsonObject payload = payloads.at(indexOfLabel(payloads, target.payload)).toObject();
+    budget.capacity = payload.value(QStringLiteral("capacity")).toInt();
+    budget.used = mapPayloadSize(payload.value(QStringLiteral("values")).toArray(), target.width);
+    budget.text = tr("%1 · %2 of %3 bytes compressed").arg(target.payload).arg(budget.used).arg(budget.capacity);
+    return budget;
+}
 
 QString MetatilesModel::statusText() const {
     return tr("%1 chunks · %2 patterns")

@@ -27,6 +27,8 @@ public:
 
 protected:
     QPair<int, int> mapping() const override;
+    // On a jump, the first frame's object: the sheet does not come and go.
+    QString objectBlock() const override;
 
 private:
     QJsonObject entry(int index) const;

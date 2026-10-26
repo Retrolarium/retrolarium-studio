@@ -21,6 +21,8 @@ public:
     QString title() const override;
     sdk::Inspection inspect() const override;
     QString statusText() const override;
+    // The chunk map's compressed size against its slot.
+    sdk::Budget budget() const override;
     bool isReadOnly() const override;
     QString readOnlyReason() const override;
 
@@ -43,6 +45,8 @@ public:
     void beginStroke() override;
     bool paintCell(QPoint cell, int value) override;
     void endStroke() override;
+    // A pattern dragged from the sheet paints the slot it lands on.
+    bool placeObject(const QString& libraryItem, QPoint cell, QString* error) override;
 
 private:
     int plane() const { return plane_; }
@@ -56,6 +60,7 @@ private:
     int brush_ = 0;
     QJsonObject strokeBefore_;
     quint64 strokeRevision_ = 0;
+    bool overflowReported_ = false;
 };
 
 }  // namespace rl::alien_soldier

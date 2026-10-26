@@ -81,6 +81,103 @@ QRect pieceRect(const QJsonObject& piece, int attribute) {
     return QRect(x, y, width, height);
 }
 
+QString Metatile::id() const { return QStringLiteral("meta:%1:%2:%3").arg(tile).arg(size).arg(line); }
+
+bool Metatile::fromId(const QString& id, Metatile* metatile) {
+    const QStringList parts = id.split(QLatin1Char(':'));
+    if (parts.size() != 4 || parts.at(0) != QLatin1String("meta")) return false;
+    bool ok[3] = {false, false, false};
+    const Metatile parsed{parts.at(1).toInt(&ok[0]), parts.at(2).toInt(&ok[1]), parts.at(3).toInt(&ok[2])};
+    if (!ok[0] || !ok[1] || !ok[2] || parsed.tile < 0 || parsed.tile > 0x7FF || parsed.size < 0 || parsed.size > 15 ||
+        parsed.line < 0 || parsed.line > 3) {
+        return false;
+    }
+    *metatile = parsed;
+    return true;
+}
+
+bool metatileOf(const QJsonObject& piece, Metatile* metatile) {
+    if (piece.contains(QStringLiteral("art"))) return false;
+    const int attributes = piece.value(QStringLiteral("attributes")).toInt();
+    *metatile = {attributes & 0x7FF, piece.value(QStringLiteral("size")).toInt() & 15, (attributes >> 13) & 3};
+    return true;
+}
+
+QJsonObject withMetatile(const QJsonObject& piece, const Metatile& metatile) {
+    QJsonObject changed = piece;
+    const int attributes = piece.value(QStringLiteral("attributes")).toInt();
+    changed.insert(QStringLiteral("attributes"), (attributes & ~0x67FF) | metatile.tile | metatile.line << 13);
+    changed.insert(QStringLiteral("size"), (piece.value(QStringLiteral("size")).toInt() & 0xF0) | metatile.size);
+    return changed;
+}
+
+namespace {
+
+// What a block draws with, without the marks of how the kit found it.
+QJsonObject drawnWith(const Documents& documents, const QString& block) {
+    QJsonObject record = documents[Doc::Objects].value(QStringLiteral("contexts")).toObject().value(block).toObject();
+    record.remove(QStringLiteral("borrowed"));
+    record.remove(QStringLiteral("derived"));
+    return record;
+}
+
+}  // namespace
+
+QStringList blocksDrawnLike(const Documents& documents, const QString& block) {
+    const QJsonObject wanted = drawnWith(documents, block);
+    for (const QJsonValue& value : documents[Doc::Objects].value(QStringLiteral("groups")).toArray()) {
+        const QJsonArray labels = value.toObject().value(QStringLiteral("blocks")).toArray();
+        if (!labels.contains(block)) continue;
+        QStringList found;
+        for (const QJsonValue& label : labels) {
+            if (drawnWith(documents, label.toString()) == wanted) found << label.toString();
+        }
+        return found;
+    }
+    return {block};
+}
+
+QVector<Metatile> metatilesOf(const Documents& documents, const QStringList& blocks, QVector<int>* uses) {
+    QVector<Metatile> found;
+    QVector<int> counts;
+    const QJsonArray all = documents[Doc::Mappings].value(QStringLiteral("blocks")).toArray();
+    for (const QString& label : blocks) {
+        const QJsonArray mappings =
+            all.at(indexOfLabel(all, label)).toObject().value(QStringLiteral("mappings")).toArray();
+        for (const QJsonValue& mapping : mappings) {
+            for (const QJsonValue& piece : mapping.toObject().value(QStringLiteral("pieces")).toArray()) {
+                Metatile metatile;
+                if (!metatileOf(piece.toObject(), &metatile)) continue;
+                const int at = int(found.indexOf(metatile));
+                if (at >= 0) {
+                    ++counts[at];
+                } else {
+                    found.append(metatile);
+                    counts.append(1);
+                }
+            }
+        }
+    }
+    if (uses) *uses = counts;
+    return found;
+}
+
+QImage metatileImage(const Metatile& metatile, const Documents& documents, const SpriteContext& context,
+                     const QVector<int>& cram, int line, int side) {
+    QImage image(side, side, QImage::Format_ARGB32);
+    image.fill(Qt::transparent);
+    const QJsonObject piece{{QStringLiteral("attributes"), 0x8000 | metatile.tile | metatile.line << 13},
+                            {QStringLiteral("size"), metatile.size},
+                            {QStringLiteral("x"), 0},
+                            {QStringLiteral("y"), 0}};
+    // Unflipped, whatever the object's flips.
+    SpriteContext upright = context;
+    upright.attribute &= ~0x1800;
+    const QPoint origin((side - widthOf(metatile.size) * 8) / 2, (side - heightOf(metatile.size) * 8) / 2);
+    drawMapping(image, origin, QJsonArray{piece}, documents, upright, cram, line);
+    return image;
+}
+
 void drawMapping(QImage& image, QPoint origin, const QJsonArray& pieces, const Documents& documents,
                  const SpriteContext& context, const QVector<int>& cram, int line) {
     QPainter painter(&image);
