@@ -16,10 +16,14 @@ studio_enable_warnings(platform_megadrive)
 # Alien Soldier data: the source snapshot's documents and the scenes (VRAM,
 # CRAM and planes) drawn from them. QtCore, plus QtGui for QImage.
 add_library(alien_soldier_data STATIC
+    games/alien_soldier/src/alien_soldier/data/bosses.cpp
+    games/alien_soldier/src/alien_soldier/data/bosses.hpp
     games/alien_soldier/src/alien_soldier/data/documents.cpp
     games/alien_soldier/src/alien_soldier/data/documents.hpp
     games/alien_soldier/src/alien_soldier/data/lzss.cpp
     games/alien_soldier/src/alien_soldier/data/lzss.hpp
+    games/alien_soldier/src/alien_soldier/data/pose_code.cpp
+    games/alien_soldier/src/alien_soldier/data/pose_code.hpp
     games/alien_soldier/src/alien_soldier/data/scene.cpp
     games/alien_soldier/src/alien_soldier/data/scene.hpp
     games/alien_soldier/src/alien_soldier/data/sprites.cpp
@@ -35,6 +39,8 @@ add_library(alien_soldier_plugin STATIC
     games/alien_soldier/src/alien_soldier/plugin/alien_soldier_plugin.hpp
     games/alien_soldier/src/alien_soldier/plugin/animations_model.cpp
     games/alien_soldier/src/alien_soldier/plugin/animations_model.hpp
+    games/alien_soldier/src/alien_soldier/plugin/bosses_model.cpp
+    games/alien_soldier/src/alien_soldier/plugin/bosses_model.hpp
     games/alien_soldier/src/alien_soldier/plugin/demo_model.cpp
     games/alien_soldier/src/alien_soldier/plugin/demo_model.hpp
     games/alien_soldier/src/alien_soldier/plugin/levels_model.cpp

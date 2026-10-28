@@ -2,10 +2,12 @@
 // opens in its editor and inspects, the stages and screens draw, every text
 // record reads back to the same glyphs through the editor's text, and every
 // song and effect has notes on some channel; map sizes are the kit's, the
-// metatiles of objects go into pieces whole, and a map edit that would not
-// fit its slot is refused. Reads the project only (the edits are undone).
+// metatiles of objects go into pieces whole, a map edit that would not fit
+// its slot is refused, and Antroid's animations step as the game steps them.
+// Reads the project only (the edits are undone).
 //   alien_soldier_session_test <Alien Soldier project .rlj>
 
+#include "alien_soldier/data/bosses.hpp"
 #include "alien_soldier/data/lzss.hpp"
 #include "alien_soldier/data/scene.hpp"
 #include "alien_soldier/data/sprites.hpp"
@@ -314,12 +316,51 @@ int main(int argc, char** argv) {
             const auto other = std::find_if(library.items.begin(), library.items.end(),
                                             [&before](const sdk::LibraryItem& item) { return item.id != before; });
             QString failure;
-            const int steps = session->undoStack()->count();
+            const int steps = session->undoStack()->index();
             expect(canvas->dropItem(other->id, QStringLiteral("0"), &failure) &&
-                       canvas->currentLibraryItem() == other->id && session->undoStack()->count() == steps + 1,
+                       canvas->currentLibraryItem() == other->id && session->undoStack()->index() == steps + 1,
                    QStringLiteral("a metatile does not go into a piece: %1").arg(failure));
             session->undoStack()->undo();
             expect(canvas->currentLibraryItem() == before, QStringLiteral("undo leaves the piece changed"));
+        }
+
+        // Antroid: its idle animation's two keyframes of 33 frames each land
+        // on their poses (a step of 1/32 for 33 frames overshoots by one
+        // step, as in the game), and every frame of it draws.
+        {
+            const QVector<sdk::DocumentGroup> groups = session->documents(QStringLiteral("bosses"));
+            const auto antroid = std::find_if(groups.begin(), groups.end(), [](const sdk::DocumentGroup& group) {
+                return group.title == QLatin1String("Antroid");
+            });
+            expect(antroid != groups.end() && antroid->documents.size() > 10,
+                   QStringLiteral("Bosses do not list Antroid's poses and animations"));
+            const QJsonObject boss = bossById(session->docs(), antroid->documents.first().id.mid(6));
+            const QJsonArray rows = session->doc(Doc::Bosses)
+                                        .value(QStringLiteral("poses"))
+                                        .toObject()
+                                        .value(boss.value(QStringLiteral("poses")).toString())
+                                        .toArray();
+            const PoseRun run = poseRun(session->doc(Doc::Bosses), QStringLiteral("Boss_AntroidIdlePoseCommands"));
+            const QVector<int> start = poseValues(rows, 6);
+            const PoseFrames frames = stepPoses(boss, rows, run, start, 1000);
+            expect(run.loops && run.commands.size() == 2 && frames.channels.size() == 66 &&
+                       frames.ends == QVector<int>({32, 65}),
+                   QStringLiteral("Antroid's idle steps %1 frames").arg(frames.channels.size()));
+            const QString document =
+                QStringLiteral("anim:%1:Boss_AntroidIdlePoseCommands").arg(boss.value(QStringLiteral("id")).toString());
+            std::unique_ptr<sdk::EditorModel> model = session->openEditor(QStringLiteral("bosses"), document);
+            auto* canvas = qobject_cast<sdk::CompositionModel*>(model.get());
+            expect(canvas && canvas->frames().size() == 2 && drawn(canvas->render()) && canvas->pieces().size() > 15,
+                   QStringLiteral("Antroid's idle does not draw"));
+            // A channel of the keyframe's pose changes in one undo step.
+            const int steps = session->undoStack()->index();
+            QString failure;
+            expect(canvas->setField(QStringLiteral("channel:0"), 0x40, &failure) &&
+                       session->undoStack()->index() == steps + 1,
+                   QStringLiteral("a pose channel does not change: %1").arg(failure));
+            session->undoStack()->undo();
+            canvas->setViewOption(QStringLiteral("steps"), canvas->viewOptions().last().choices.last());
+            expect(canvas->frames().size() == 66, QStringLiteral("every frame of Antroid's idle is not listed"));
         }
 
         std::cout << "[OK] " << opened << " documents open, " << stages << " stages draw, " << sprites

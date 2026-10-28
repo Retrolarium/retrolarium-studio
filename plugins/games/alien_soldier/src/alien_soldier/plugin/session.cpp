@@ -1,6 +1,7 @@
 #include "alien_soldier/plugin/session.hpp"
 
 #include "alien_soldier/plugin/animations_model.hpp"
+#include "alien_soldier/plugin/bosses_model.hpp"
 #include "alien_soldier/plugin/demo_model.hpp"
 #include "alien_soldier/plugin/levels_model.hpp"
 #include "alien_soldier/plugin/metatiles_model.hpp"
@@ -99,6 +100,7 @@ QVector<sdk::Kind> AlienSoldierSession::kinds() const {
         kind("metatiles", tr("Metatiles"), sdk::EditorType::TileMap, "tileset"),
         kind("palettes", tr("Palettes"), sdk::EditorType::Palette),
         kind("objects", tr("Objects"), sdk::EditorType::Composition, "sprites"),
+        kind("bosses", tr("Bosses"), sdk::EditorType::Composition),
         kind("sprites", tr("Animations"), sdk::EditorType::Composition),
         kind("screens", tr("Screens"), sdk::EditorType::TileMap, "tileset"),
         kind("text", tr("Text"), sdk::EditorType::Table),
@@ -419,6 +421,38 @@ QVector<sdk::DocumentGroup> AlienSoldierSession::documents(const QString& kind) 
             }
             groups.append(file);
         }
+    } else if (kind == QLatin1String("bosses")) {
+        // Each boss with its poses and animations.
+        const QJsonObject document = doc(Doc::Bosses);
+        const QJsonArray sequences = document.value(QStringLiteral("sequences")).toArray();
+        const bool dirty = documents_.tracked(Doc::Bosses).isDirty();
+        for (const QJsonValue& value : document.value(QStringLiteral("bosses")).toArray()) {
+            const QJsonObject boss = value.toObject();
+            const QString id = boss.value(QStringLiteral("id")).toString();
+            const QString name = boss.value(QStringLiteral("title")).toString();
+            sdk::DocumentGroup item = group(name);
+            const int poses = int(document.value(QStringLiteral("poses"))
+                                      .toObject()
+                                      .value(boss.value(QStringLiteral("poses")).toString())
+                                      .toArray()
+                                      .size());
+            const QString counted = boss.value(QStringLiteral("poses")).isNull() ? BossesModel::tr("Set by its code")
+                                                                                 : tr("%n poses", nullptr, poses);
+            item.documents.append(entry(QStringLiteral("poses:") + id, tr("Poses"), counted, dirty));
+            for (const QJsonValue& label : boss.value(QStringLiteral("sequences")).toArray()) {
+                const QJsonArray commands = sequences.at(indexOfLabel(sequences, label.toString()))
+                                                .toObject()
+                                                .value(QStringLiteral("commands"))
+                                                .toArray();
+                const int keys = int(std::count_if(commands.begin(), commands.end(), [](const QJsonValue& command) {
+                    return command.toObject().contains(QStringLiteral("pose"));
+                }));
+                item.documents.append(entry(QStringLiteral("anim:%1:%2").arg(id, label.toString()),
+                                            BossesModel::animationTitle(label.toString(), name),
+                                            tr("%n keyframes", nullptr, keys), dirty));
+            }
+            groups.append(item);
+        }
     } else if (kind == QLatin1String("sprites")) {
         sdk::DocumentGroup scripts = group(tr("Animations"));
         for (const QJsonValue& value : doc(Doc::Animations).value(QStringLiteral("scripts")).toArray()) {
@@ -545,6 +579,7 @@ std::unique_ptr<sdk::EditorModel> AlienSoldierSession::openEditor(const QString&
         return std::make_unique<ObjectsModel>(this, document);
     }
     if (kind == QLatin1String("sprites")) return std::make_unique<AnimationsModel>(this, document);
+    if (kind == QLatin1String("bosses")) return std::make_unique<BossesModel>(this, document);
     if (kind == QLatin1String("screens")) return std::make_unique<ScreensModel>(this, document);
     if (kind == QLatin1String("text")) return std::make_unique<TextModel>(this, document);
     if (kind == QLatin1String("sound")) return std::make_unique<SoundModel>(this, document);
@@ -672,6 +707,7 @@ bool AlienSoldierSession::revert(const QString& kind, const QString& document, Q
         docs = {document.startsWith(QLatin1String("c:")) ? Doc::Compressed : Doc::Tiles};
     else if (kind == QLatin1String("palettes")) docs = {Doc::Palettes};
     else if (kind == QLatin1String("objects")) docs = {Doc::Mappings};
+    else if (kind == QLatin1String("bosses")) docs = {Doc::Bosses};
     else if (kind == QLatin1String("sprites")) docs = {Doc::Animations, Doc::Mappings};
     else if (kind == QLatin1String("screens")) docs = {Doc::Screens};
     else if (kind == QLatin1String("text")) docs = {Doc::Text};

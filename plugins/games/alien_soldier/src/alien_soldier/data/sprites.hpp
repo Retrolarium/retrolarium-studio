@@ -26,6 +26,8 @@ struct SpriteContext {
 };
 
 SpriteContext spriteContext(const Documents& documents, const QString& block);
+// The same from a record of that shape (attribute, loads, palettes).
+SpriteContext spriteContextFrom(const Documents& documents, const QJsonObject& record);
 
 // Draws `pieces` (one mapping of the mappings document) into `image` with
 // the object at `origin`. Static pieces without a known context draw as
@@ -34,7 +36,9 @@ SpriteContext spriteContext(const Documents& documents, const QString& block);
 void drawMapping(QImage& image, QPoint origin, const QJsonArray& pieces, const Documents& documents,
                  const SpriteContext& context, const QVector<int>& cram, int line);
 
-// A piece's rectangle relative to the object (the object's flips mirror it).
+// A piece's rectangle relative to the object (the object's flips mirror it;
+// a static piece mirrored lands a pixel right of a true mirror, as
+// Sprite_RenderMapping places it).
 QRect pieceRect(const QJsonObject& piece, int attribute);
 
 // An object's metatile: what a static piece draws, its first tile (added to

@@ -44,6 +44,8 @@ QString documentPath(Doc doc) {
             return QStringLiteral("content/graphics/objects.json");
         case Doc::Art:
             return QStringLiteral("content/graphics/art.json");
+        case Doc::Bosses:
+            return QStringLiteral("content/graphics/bosses.json");
     }
     return {};
 }
@@ -85,8 +87,11 @@ Documents Documents::load(const QString& snapshot) {
         Tracked& tracked = documents.tracked_[index];
         tracked.path = root.absoluteFilePath(documentPath(doc));
         // A derived document a project lacks (an older kit wrote it) is empty
-        // until the kit reads the source again.
-        tracked.doc = isEditable(doc) || QFileInfo::exists(tracked.path) ? loadJson(tracked.path) : QJsonObject();
+        // until the kit reads the source again; so is the boss document,
+        // which kits before it did not write (the kit adds it on a build).
+        tracked.doc = (isEditable(doc) && doc != Doc::Bosses) || QFileInfo::exists(tracked.path)
+                          ? loadJson(tracked.path)
+                          : QJsonObject();
         tracked.saved = tracked.doc;
         // The kit keeps each document as first exported beside the snapshot
         // (../original/<path>); without it, Revert goes back to the opened one.

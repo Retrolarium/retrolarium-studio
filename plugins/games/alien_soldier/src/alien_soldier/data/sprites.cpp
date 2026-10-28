@@ -46,9 +46,12 @@ void drawTiles(QImage& image, const QRect& rect, const QByteArray& tiles, int fi
 }  // namespace
 
 SpriteContext spriteContext(const Documents& documents, const QString& block) {
+    return spriteContextFrom(
+        documents, documents[Doc::Objects].value(QStringLiteral("contexts")).toObject().value(block).toObject());
+}
+
+SpriteContext spriteContextFrom(const Documents& documents, const QJsonObject& record) {
     SpriteContext context;
-    const QJsonObject record =
-        documents[Doc::Objects].value(QStringLiteral("contexts")).toObject().value(block).toObject();
     if (record.isEmpty()) return context;
     context.known = true;
     context.borrowed = record.value(QStringLiteral("borrowed")).toBool();
@@ -76,7 +79,7 @@ QRect pieceRect(const QJsonObject& piece, int attribute) {
     const int width = widthOf(size) * 8, height = heightOf(size) * 8;
     int x = piece.value(QStringLiteral("x")).toInt(), y = piece.value(QStringLiteral("y")).toInt();
     // The renderer mirrors a piece's offset around the object for its flips.
-    if (attribute & 0x800) x = -x - width;
+    if (attribute & 0x800) x = -x - width + (piece.contains(QStringLiteral("art")) ? 0 : 1);
     if (attribute & 0x1000) y = -y - height;
     return QRect(x, y, width, height);
 }
