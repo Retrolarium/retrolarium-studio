@@ -452,12 +452,26 @@ void CompositionEditor::rebuildFrames() {
     stripLayout_->addStretch(1);
 }
 
+namespace {
+
+// How long one picture of a frame shows while playing.
+int stepDurationMs(const sdk::CompositionModel* model, int frame) {
+    return std::max(1, model->frameDurationMs(frame) / std::max(1, model->playSteps(frame)));
+}
+
+}  // namespace
+
 void CompositionEditor::setPlaying(bool playing) {
     playing_ = playing;
+    playStep_ = 0;
     if (playing_) {
-        timer_->start(composition_->frameDurationMs(composition_->currentFrame()));
+        // From the current frame's first picture on its way.
+        const int current = composition_->currentFrame();
+        composition_->setPlayStep(composition_->playSteps(current) > 1 ? 0 : -1);
+        timer_->start(stepDurationMs(composition_, current));
     } else {
         timer_->stop();
+        composition_->setPlayStep(-1);
     }
     rebuildFrames();
 }
@@ -467,9 +481,17 @@ void CompositionEditor::step() {
     if (!playing_ || count == 0) {
         return;
     }
-    const int next = (composition_->currentFrame() + 1) % count;
+    const int current = composition_->currentFrame();
+    if (playStep_ + 1 < composition_->playSteps(current)) {
+        composition_->setPlayStep(++playStep_);
+        timer_->start(stepDurationMs(composition_, current));
+        return;
+    }
+    const int next = (current + 1) % count;
+    playStep_ = 0;
+    composition_->setPlayStep(composition_->playSteps(next) > 1 ? 0 : -1);
     composition_->setCurrentFrame(next);
-    timer_->start(composition_->frameDurationMs(next));
+    timer_->start(stepDurationMs(composition_, next));
 }
 
 QWidget* CompositionEditor::createToolbar(QWidget* parent) {

@@ -421,24 +421,27 @@ QVector<sdk::DocumentGroup> AlienSoldierSession::documents(const QString& kind) 
             }
             groups.append(file);
         }
+        // The bosses their code alone turns, each as its setup leaves it.
+        sdk::DocumentGroup coded = group(tr("Bosses (code)"));
+        for (const QJsonValue& value : doc(Doc::Bosses).value(QStringLiteral("bosses")).toArray()) {
+            const QJsonObject boss = value.toObject();
+            if (!boss.value(QStringLiteral("poses")).isNull()) continue;
+            coded.documents.append(entry(QStringLiteral("boss:") + boss.value(QStringLiteral("id")).toString(),
+                                         boss.value(QStringLiteral("title")).toString(),
+                                         BossesModel::tr("Set by its code")));
+        }
+        if (!coded.documents.isEmpty()) groups.append(coded);
     } else if (kind == QLatin1String("bosses")) {
-        // Each boss with its poses and animations.
+        // Each boss with a pose table, with its animations.
         const QJsonObject document = doc(Doc::Bosses);
         const QJsonArray sequences = document.value(QStringLiteral("sequences")).toArray();
         const bool dirty = documents_.tracked(Doc::Bosses).isDirty();
         for (const QJsonValue& value : document.value(QStringLiteral("bosses")).toArray()) {
             const QJsonObject boss = value.toObject();
+            if (boss.value(QStringLiteral("poses")).isNull()) continue;
             const QString id = boss.value(QStringLiteral("id")).toString();
             const QString name = boss.value(QStringLiteral("title")).toString();
             sdk::DocumentGroup item = group(name);
-            const int poses = int(document.value(QStringLiteral("poses"))
-                                      .toObject()
-                                      .value(boss.value(QStringLiteral("poses")).toString())
-                                      .toArray()
-                                      .size());
-            const QString counted = boss.value(QStringLiteral("poses")).isNull() ? BossesModel::tr("Set by its code")
-                                                                                 : tr("%n poses", nullptr, poses);
-            item.documents.append(entry(QStringLiteral("poses:") + id, tr("Poses"), counted, dirty));
             for (const QJsonValue& label : boss.value(QStringLiteral("sequences")).toArray()) {
                 const QJsonArray commands = sequences.at(indexOfLabel(sequences, label.toString()))
                                                 .toObject()
@@ -576,10 +579,14 @@ std::unique_ptr<sdk::EditorModel> AlienSoldierSession::openEditor(const QString&
         return command < 0 ? nullptr : std::make_unique<PalettesModel>(this, label, command);
     }
     if (kind == QLatin1String("objects")) {
+        if (document.startsWith(QLatin1String("boss:"))) return std::make_unique<BossesModel>(this, document);
         return std::make_unique<ObjectsModel>(this, document);
     }
     if (kind == QLatin1String("sprites")) return std::make_unique<AnimationsModel>(this, document);
-    if (kind == QLatin1String("bosses")) return std::make_unique<BossesModel>(this, document);
+    if (kind == QLatin1String("bosses")) {
+        if (!document.startsWith(QLatin1String("anim:"))) return nullptr;
+        return std::make_unique<BossesModel>(this, document);
+    }
     if (kind == QLatin1String("screens")) return std::make_unique<ScreensModel>(this, document);
     if (kind == QLatin1String("text")) return std::make_unique<TextModel>(this, document);
     if (kind == QLatin1String("sound")) return std::make_unique<SoundModel>(this, document);

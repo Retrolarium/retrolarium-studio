@@ -333,8 +333,9 @@ int main(int argc, char** argv) {
                 return group.title == QLatin1String("Antroid");
             });
             expect(antroid != groups.end() && antroid->documents.size() > 10,
-                   QStringLiteral("Bosses do not list Antroid's poses and animations"));
-            const QJsonObject boss = bossById(session->docs(), antroid->documents.first().id.mid(6));
+                   QStringLiteral("Bosses do not list Antroid's animations"));
+            const QJsonObject boss =
+                bossById(session->docs(), antroid->documents.first().id.section(QLatin1Char(':'), 1, 1));
             const QJsonArray rows = session->doc(Doc::Bosses)
                                         .value(QStringLiteral("poses"))
                                         .toObject()
@@ -359,8 +360,45 @@ int main(int argc, char** argv) {
                        session->undoStack()->index() == steps + 1,
                    QStringLiteral("a pose channel does not change: %1").arg(failure));
             session->undoStack()->undo();
+            // Played, a keyframe passes through the frames on its way (the
+            // first, round again, from the last pose), one a game frame.
+            expect(canvas->playSteps(0) == 33 && canvas->playSteps(1) == 33 && canvas->frameDurationMs(1) == 33 * 17,
+                   QStringLiteral("Antroid's idle plays %1 and %2 frames between its keyframes")
+                       .arg(canvas->playSteps(0))
+                       .arg(canvas->playSteps(1)));
+            canvas->setCurrentFrame(1);
+            const QImage landed = canvas->render();
+            canvas->setPlayStep(0);
+            const QImage leaving = canvas->render();
+            canvas->setPlayStep(32);
+            const QImage arrived = canvas->render();
+            canvas->setPlayStep(-1);
+            expect(leaving != landed && arrived == landed,
+                   QStringLiteral("Antroid's idle does not play between its keyframes"));
+            canvas->setCurrentFrame(0);
             canvas->setViewOption(QStringLiteral("steps"), canvas->viewOptions().last().choices.last());
             expect(canvas->frames().size() == 66, QStringLiteral("every frame of Antroid's idle is not listed"));
+        }
+
+        // A boss its code alone turns (Deep Strider) is under Objects, one
+        // still as its setup leaves it, and not under Bosses.
+        {
+            const QVector<sdk::DocumentGroup> groups = session->documents(QStringLiteral("objects"));
+            const auto coded = std::find_if(groups.begin(), groups.end(), [](const sdk::DocumentGroup& group) {
+                return group.title == QLatin1String("Bosses (code)");
+            });
+            expect(coded != groups.end() && !coded->documents.isEmpty(),
+                   QStringLiteral("Objects do not list the bosses their code turns"));
+            const auto strider = std::find_if(
+                coded->documents.begin(), coded->documents.end(),
+                [](const sdk::DocumentEntry& entry) { return entry.label == QLatin1String("Deep Strider"); });
+            expect(strider != coded->documents.end(), QStringLiteral("Objects do not list Deep Strider"));
+            std::unique_ptr<sdk::EditorModel> model = session->openEditor(QStringLiteral("objects"), strider->id);
+            auto* canvas = qobject_cast<sdk::CompositionModel*>(model.get());
+            expect(canvas && canvas->isReadOnly() && canvas->frames().size() == 1 && drawn(canvas->render()),
+                   QStringLiteral("Deep Strider does not draw as one still"));
+            for (const sdk::DocumentGroup& group : session->documents(QStringLiteral("bosses")))
+                expect(group.title != QLatin1String("Deep Strider"), QStringLiteral("Bosses list Deep Strider"));
         }
 
         std::cout << "[OK] " << opened << " documents open, " << stages << " stages draw, " << sprites

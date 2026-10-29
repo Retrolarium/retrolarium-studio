@@ -42,6 +42,8 @@ private:
     QHBoxLayout* stripLayout_;
     QTimer* timer_;
     bool playing_ = false;
+    // The picture of the current frame shown while playing (playSteps).
+    int playStep_ = 0;
     // The strip as built: rebuilt only when the frames change, so a frame
     // step while playing keeps the play button under the pointer.
     QStringList stripSignature_;

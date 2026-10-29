@@ -52,11 +52,8 @@ BossesModel::BossesModel(AlienSoldierSession* session, const QString& document)
         mode_ = Mode::Animation;
         bossId_ = parts[1];
         label_ = parts[2];
-    } else if (parts.value(0) == QLatin1String("poses") && parts.size() == 2) {
-        mode_ = Mode::Poses;
+    } else if (parts.value(0) == QLatin1String("boss") && parts.size() == 2) {
         bossId_ = parts[1];
-    } else {
-        stage_ = parts.value(1).toInt();
     }
     connect(session_, &AlienSoldierSession::documentChanged, this, [this](Doc doc) {
         if (doc == Doc::Bosses || doc == Doc::Mappings || doc == Doc::Tiles || doc == Doc::Compressed ||
@@ -67,9 +64,7 @@ BossesModel::BossesModel(AlienSoldierSession* session, const QString& document)
     });
 }
 
-QJsonObject BossesModel::boss() const {
-    return mode_ == Mode::Code ? QJsonObject() : bossById(session_->docs(), bossId_);
-}
+QJsonObject BossesModel::boss() const { return bossById(session_->docs(), bossId_); }
 
 QJsonArray BossesModel::poseRows() const {
     return session_->doc(Doc::Bosses)
@@ -97,8 +92,31 @@ const PoseFrames& BossesModel::stepped() const {
                                         [](const PoseCommand& command) { return !command.sound; });
         if (first != run_.commands.end()) start = poseValues(poseRows(), first->value);
         stepped_ = stepPoses(boss(), poseRows(), run_, start, kMaxFrames);
+        // Round again, the first keyframe turns from the last pose.
+        looped_ = PoseFrames();
+        if (run_.loops && !stepped_.channels.isEmpty()) {
+            QVector<int> end;
+            for (int word : stepped_.channels.last()) end.append(word >> 8);
+            looped_ = stepPoses(boss(), poseRows(), run_, end, kMaxFrames);
+        }
     }
     return stepped_;
+}
+
+BossesModel::Way BossesModel::way(int frame) const {
+    const PoseFrames& frames = stepped();
+    const QVector<int> keys = keyframes();
+    Way found;
+    if (frame < 0 || frame >= keys.size()) return found;
+    if (frame == 0 && !looped_.channels.isEmpty()) {
+        found.frames = &looped_;
+        found.last = looped_.ends.value(keys[0], -1);
+        return found;
+    }
+    found.frames = &frames;
+    found.first = frame > 0 ? frames.ends.value(keys[frame - 1], -1) + 1 : 0;
+    found.last = frames.ends.value(keys[frame], -1);
+    return found;
 }
 
 QVector<int> BossesModel::keyframes() const {
@@ -109,22 +127,21 @@ QVector<int> BossesModel::keyframes() const {
 }
 
 QVector<int> BossesModel::channelsAt(int frame) const {
-    QVector<int> channels;
-    if (mode_ == Mode::Poses) {
-        for (int value : poseValues(poseRows(), frame)) channels.append(value << 8);
-        return channels;
-    }
     const PoseFrames& frames = stepped();
-    if (frames.channels.isEmpty()) return channels;
+    if (frames.channels.isEmpty()) return {};
     if (everyFrame_) return frames.channels.value(std::clamp(frame, 0, int(frames.channels.size()) - 1));
     const QVector<int> keys = keyframes();
     if (frame < 0 || frame >= keys.size()) return frames.channels.last();
     const int end = frames.ends.value(keys[frame], -1);
-    return end < 0 ? frames.channels.last() : frames.channels[end];
+    if (end < 0) return frames.channels.last();
+    // Playing: the frame on the way to the keyframe.
+    const Way path = way(frame);
+    if (playStep_ >= 0 && path.frames && path.last >= path.first)
+        return path.frames->channels.value(std::min(path.last, path.first + playStep_));
+    return frames.channels[end];
 }
 
 int BossesModel::editedPose() const {
-    if (mode_ == Mode::Poses) return frame_;
     if (mode_ != Mode::Animation || everyFrame_) return -1;
     const QVector<int> keys = keyframes();
     return frame_ >= 0 && frame_ < keys.size() ? run().commands[keys[frame_]].value : -1;
@@ -151,17 +168,15 @@ void BossesModel::refresh() {
 }
 
 QString BossesModel::title() const {
-    if (mode_ == Mode::Code) return session_->stageLabel(stage_);
     const QString name = boss().value(QStringLiteral("title")).toString();
-    return mode_ == Mode::Poses ? tr("%1 · poses").arg(name) : tr("%1 · %2").arg(name, animationTitle(label_, name));
+    return mode_ == Mode::Still ? name : tr("%1 · %2").arg(name, animationTitle(label_, name));
 }
 
 QString BossesModel::readOnlyReason() const {
-    return tr("The game draws this boss with its own code: the kit does not read it as a skeleton yet.");
+    return tr("The game's code turns this boss's parts itself; it shows as its setup leaves it.");
 }
 
 QString BossesModel::statusText() const {
-    if (mode_ == Mode::Code) return title();
     const QJsonObject record = boss();
     return tr("%1 · %2 parts · %3 channels")
         .arg(title())
@@ -170,7 +185,7 @@ QString BossesModel::statusText() const {
 }
 
 QVector<sdk::ViewOption> BossesModel::viewOptions() const {
-    if (mode_ == Mode::Code) return {};
+    if (mode_ == Mode::Still) return {};
     QVector<sdk::ViewOption> options;
     const QJsonObject record = boss();
     if (!record.value(QStringLiteral("faces")).isDouble()) {
@@ -189,14 +204,12 @@ QVector<sdk::ViewOption> BossesModel::viewOptions() const {
         side.value = side.choices[stance_.side ? 1 : 0];
         options.append(side);
     }
-    if (mode_ == Mode::Animation) {
-        sdk::ViewOption steps;
-        steps.key = QStringLiteral("steps");
-        steps.label = tr("Shows");
-        steps.choices = QStringList{tr("Keyframes"), tr("Every frame")};
-        steps.value = steps.choices[everyFrame_ ? 1 : 0];
-        options.append(steps);
-    }
+    sdk::ViewOption steps;
+    steps.key = QStringLiteral("steps");
+    steps.label = tr("Shows");
+    steps.choices = QStringList{tr("Keyframes"), tr("Every frame")};
+    steps.value = steps.choices[everyFrame_ ? 1 : 0];
+    options.append(steps);
     return options;
 }
 
@@ -329,25 +342,15 @@ void BossesModel::endDrag() { session_->commit(Doc::Bosses, dragBefore_, dragRev
 
 QVector<sdk::CompositionFrame> BossesModel::frames() const {
     QVector<sdk::CompositionFrame> result;
-    if (mode_ == Mode::Poses) {
+    if (mode_ == Mode::Still) {
         // A boss its code alone turns (Deep Strider) shows as its setup
         // leaves it.
-        if (boss().value(QStringLiteral("poses")).isNull()) {
-            sdk::CompositionFrame frame;
-            frame.id = QStringLiteral("0");
-            frame.label = tr("Set by its code");
-            result.append(frame);
-            return result;
-        }
-        for (int index = 0; index < poseRows().size(); ++index) {
-            sdk::CompositionFrame frame;
-            frame.id = QString::number(index);
-            frame.label = tr("Pose %1").arg(index);
-            result.append(frame);
-        }
+        sdk::CompositionFrame frame;
+        frame.id = QStringLiteral("0");
+        frame.label = tr("Set by its code");
+        result.append(frame);
         return result;
     }
-    if (mode_ != Mode::Animation) return result;
     const PoseRun& commands = run();
     if (everyFrame_) {
         const PoseFrames& frames = stepped();
@@ -386,18 +389,26 @@ void BossesModel::setCurrentFrame(int frame) {
 }
 
 int BossesModel::frameDurationMs(int frame) const {
-    if (mode_ == Mode::Poses) return 400;
-    if (everyFrame_) return kFrameMs;
-    const QVector<int> keys = keyframes();
-    return frame >= 0 && frame < keys.size()
-               ? std::max(1, commandFrames(boss(), run().commands[keys[frame]])) * kFrameMs
-               : kFrameMs;
+    if (mode_ == Mode::Still || everyFrame_) return kFrameMs;
+    return playSteps(frame) * kFrameMs;
+}
+
+int BossesModel::playSteps(int frame) const {
+    if (mode_ != Mode::Animation || everyFrame_) return 1;
+    const Way path = way(frame);
+    return std::max(1, path.last - path.first + 1);
+}
+
+void BossesModel::setPlayStep(int step) {
+    if (step == playStep_) return;
+    playStep_ = step;
+    emit contentChanged();
 }
 
 sdk::Inspection BossesModel::inspect() const {
     sdk::Inspection inspection;
     const QJsonObject record = boss();
-    if (record.isEmpty()) {
+    if (record.isEmpty() || (mode_ == Mode::Still && piece_.isEmpty())) {
         inspection.kicker = tr("Boss");
         inspection.title = title();
         inspection.note = readOnlyReason();
@@ -434,45 +445,41 @@ sdk::Inspection BossesModel::inspect() const {
                                                        QString::number(shown.value(channel) >> 8)));
             }
         }
-        inspection.note =
-            tr("A part sits at the end of its bone from its parent, turned by the channels its joint "
-               "adds up. Drag it to turn its own joint in the pose shown.");
+        inspection.note = mode_ == Mode::Still
+                              ? readOnlyReason()
+                              : tr("A part sits at the end of its bone from its parent, turned by the channels its "
+                                   "joint adds up. Drag it to turn its own joint in the pose shown.");
         return inspection;
     }
-    if (mode_ == Mode::Poses) {
-        inspection.kicker = tr("Boss pose");
-        inspection.title = tr("Pose %1").arg(pose);
-    } else {
-        inspection.kicker = tr("Boss animation");
-        inspection.title = animationTitle(label_, record.value(QStringLiteral("title")).toString());
-        const QVector<int> keys = keyframes();
-        if (pose >= 0 && frame_ < keys.size()) {
-            const PoseCommand& command = run().commands[keys[frame_]];
-            const bool adding = record.value(QStringLiteral("timing")).toString() == QLatin1String("add");
-            sdk::Field target;
-            target.key = QStringLiteral("pose");
-            target.label = tr("Pose");
-            target.type = sdk::Field::Type::Choice;
-            for (int index = 0; index < poseRows().size(); ++index) target.choices << QString::number(index);
-            target.value = QString::number(command.value);
-            inspection.fields = {
-                target,
-                adding ? integerField(QStringLiteral("frames"), tr("Frames over steps"),
-                                      command.frames >= 0x80 ? command.frames - 0x100 : command.frames, -127, 127)
-                       : integerField(QStringLiteral("frames"), tr("Frames"), command.frames, 0, 255),
-                integerField(QStringLiteral("steps"), tr("Steps"), command.steps, 1, 255)};
-        }
-        const QJsonArray sequences = session_->doc(Doc::Bosses).value(QStringLiteral("sequences")).toArray();
-        const QJsonObject sequence = sequences.at(indexOfLabel(sequences, label_)).toObject();
-        const QString end = sequence.value(QStringLiteral("end")).toString();
-        inspection.engineTag = QStringLiteral("alien-soldier.bosses.v1");
-        inspection.engine = {
-            {tr("Label"), label_},
-            {tr("Ends"), end == QLatin1String("loop") ? tr("starts again")
-                         : end == QLatin1String("hold")
-                             ? tr("holds the last pose")
-                             : tr("runs on into %1").arg(sequence.value(QStringLiteral("next")).toString())}};
+    inspection.kicker = tr("Boss animation");
+    inspection.title = animationTitle(label_, record.value(QStringLiteral("title")).toString());
+    const QVector<int> keys = keyframes();
+    if (pose >= 0 && frame_ < keys.size()) {
+        const PoseCommand& command = run().commands[keys[frame_]];
+        const bool adding = record.value(QStringLiteral("timing")).toString() == QLatin1String("add");
+        sdk::Field target;
+        target.key = QStringLiteral("pose");
+        target.label = tr("Pose");
+        target.type = sdk::Field::Type::Choice;
+        for (int index = 0; index < poseRows().size(); ++index) target.choices << QString::number(index);
+        target.value = QString::number(command.value);
+        inspection.fields = {
+            target,
+            adding ? integerField(QStringLiteral("frames"), tr("Frames over steps"),
+                                  command.frames >= 0x80 ? command.frames - 0x100 : command.frames, -127, 127)
+                   : integerField(QStringLiteral("frames"), tr("Frames"), command.frames, 0, 255),
+            integerField(QStringLiteral("steps"), tr("Steps"), command.steps, 1, 255)};
     }
+    const QJsonArray sequences = session_->doc(Doc::Bosses).value(QStringLiteral("sequences")).toArray();
+    const QJsonObject sequence = sequences.at(indexOfLabel(sequences, label_)).toObject();
+    const QString end = sequence.value(QStringLiteral("end")).toString();
+    inspection.engineTag = QStringLiteral("alien-soldier.bosses.v1");
+    inspection.engine = {
+        {tr("Label"), label_},
+        {tr("Ends"), end == QLatin1String("loop") ? tr("starts again")
+                     : end == QLatin1String("hold")
+                         ? tr("holds the last pose")
+                         : tr("runs on into %1").arg(sequence.value(QStringLiteral("next")).toString())}};
     for (int channel = 0; channel < record.value(QStringLiteral("channels")).toInt(); ++channel) {
         if (pose >= 0) {
             inspection.fields.append(integerField(QStringLiteral("channel:%1").arg(channel),
@@ -489,12 +496,9 @@ sdk::Inspection BossesModel::inspect() const {
                           tr("not yet against the game: its own code may place some parts elsewhere")));
     }
     inspection.note =
-        mode_ == Mode::Poses
-            ? tr("A pose is an angle per channel; the boss's pose code adds channels up into its parts' angles. "
-                 "Every animation that goes to this pose changes with it.")
-            : tr("A keyframe steps towards its pose by 1/steps of the way each frame, for frames + 1 frames, from "
-                 "where the last one left off; the canvas shows where it lands. The channels are its pose's, shared "
-                 "with every animation that goes to it. The game's code picks the animation and moves the boss.");
+        tr("A keyframe steps towards its pose by 1/steps of the way each frame, for frames + 1 frames, from "
+           "where the last one left off; the canvas shows where it lands. The channels are its pose's, shared "
+           "with every animation that goes to it. The game's code picks the animation and moves the boss.");
     return inspection;
 }
 
@@ -574,7 +578,7 @@ QString BossesModel::animationTitle(const QString& label, const QString& boss) {
     QString squeezed = boss;
     squeezed.remove(QRegularExpression(QStringLiteral("[^A-Za-z0-9]")));
     if (!squeezed.isEmpty() && name.startsWith(squeezed, Qt::CaseInsensitive)) name = name.mid(squeezed.size());
-    for (const char* tail : {"PoseCommands", "PoseScript", "Commands", "Script"}) {
+    for (const char* tail : {"Poses", "PoseCommands", "PoseScript", "Commands", "Script"}) {
         if (name.endsWith(QLatin1String(tail)) && name.size() > int(qstrlen(tail))) {
             name.chop(int(qstrlen(tail)));
             break;

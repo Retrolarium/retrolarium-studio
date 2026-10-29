@@ -377,6 +377,13 @@ public:
     virtual void setCurrentFrame(int frame);
     virtual int frameDurationMs(int frame) const;
     virtual bool moveFrame(int from, int to, QString* error);
+    // While playing, the pictures a frame passes through on its way (a boss
+    // animation's frames between its keyframes, one a game frame): the
+    // editor shows step 0 to playSteps - 1 in turn over frameDurationMs,
+    // then the next frame. setPlayStep(-1) shows the frame as the strip
+    // has it again.
+    virtual int playSteps(int frame) const;
+    virtual void setPlayStep(int step);
 
     // A library item dropped on a piece (a pattern onto a sprite cell).
     virtual bool dropItem(const QString& libraryItem, const QString& piece, QString* error);

@@ -73,6 +73,9 @@ QVector<PlacedPart> placeBoss(const QJsonObject& boss, const QJsonArray& cosine,
     // The boss's code on the channels: its anchors' places, its parts' angles.
     PoseMachine machine;
     machine.loadTables(boss.value(QStringLiteral("tables")).toObject());
+    // What its setup leaves in its records (Wolf Garopa's leg anchors'
+    // angles, Shellshogun's sword hand), same form.
+    machine.loadTables(boss.value(QStringLiteral("ram")).toObject());
     machine.setAddress(5, slot);
     const quint32 channels = quint32(boss.value(QStringLiteral("channel_base")).toDouble());
     for (int channel = 0; channel < words.size(); ++channel)
@@ -350,8 +353,11 @@ void drawBody(QImage& image, QPoint origin, const QJsonObject& boss, const Sprit
 void drawBoss(QImage& image, QPoint origin, const QJsonObject& boss, const QVector<PlacedPart>& parts,
               const Documents& documents, const SpriteContext& context) {
     // The body's low cells under the sprites, its high cells over the low
-    // sprites, the high sprites over all.
-    if (context.known) drawBody(image, origin, boss, context, false);
+    // sprites, the high sprites over all. A body may ride on a part (the
+    // debug viewer's on its first).
+    const int carrier = boss.value(QStringLiteral("body")).toObject().value(QStringLiteral("part")).toInt();
+    const QPoint bodyOrigin = origin + (carrier > 0 && carrier < parts.size() ? parts.at(carrier).at : QPoint());
+    if (context.known) drawBody(image, bodyOrigin, boss, context, false);
     const QJsonArray records = boss.value(QStringLiteral("parts")).toArray();
     QVector<int> order(parts.size());
     std::iota(order.begin(), order.end(), 0);
@@ -363,7 +369,7 @@ void drawBoss(QImage& image, QPoint origin, const QJsonObject& boss, const QVect
     });
     const QVector<int> cram = context.cram;
     for (const bool high : {false, true}) {
-        if (high && context.known) drawBody(image, origin, boss, context, true);
+        if (high && context.known) drawBody(image, bodyOrigin, boss, context, true);
         for (int at : order) {
             const PlacedPart& part = parts[at];
             if (bool(part.attribute & 0x8000) != high) continue;

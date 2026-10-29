@@ -125,6 +125,8 @@ bool CompositionModel::dragPiece(const QString&, QPoint) { return false; }
 void CompositionModel::endDrag() {}
 void CompositionModel::setCurrentFrame(int) {}
 int CompositionModel::frameDurationMs(int) const { return 100; }
+int CompositionModel::playSteps(int) const { return 1; }
+void CompositionModel::setPlayStep(int) {}
 bool CompositionModel::moveFrame(int, int, QString* error) {
     if (error) {
         *error = tr("Frames cannot be reordered here.");
