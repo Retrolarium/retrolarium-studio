@@ -20,31 +20,51 @@ namespace rl::alien_soldier {
 
 namespace {
 
-// Operand counts of $E0-$FE ($E4 decides its own; see sound.py in the kit).
-int operandCount(const QByteArray& data, int at) {
-    static const int counts[] = {1, 1, 1, 0, -1, 2, 1, 0, 1, 2, 1, 1, 1, 2, 2, 1,
-                                 4, 2, 0, 1, 1,  1, 2, 4, 2, 0, 1, 1, 0, 0, 4};
-    const int opcode = quint8(data.at(at));
-    if (opcode == 0xFF) {
-        static const int extended[] = {4, 1, 1, 2, 0};
-        const int selector = at + 1 < data.size() ? quint8(data.at(at + 1)) : 0;
-        return 1 + (selector < 5 ? extended[selector] : 0);
-    }
-    const int count = counts[opcode - 0xE0];
-    if (count >= 0) return count;
-    return at + 1 < data.size() && quint8(data.at(at + 1)) == 0 ? 1 : 5;
-}
-
 int signedWord(const QByteArray& data, int at) { return qint16((quint8(data.at(at)) << 8) | quint8(data.at(at + 1))); }
 
 const char* kNames[] = {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"};
+
+QString hexId(int id) { return QStringLiteral("$%1").arg(id, 2, 16, QLatin1Char('0')).toUpper(); }
+
+// Runs a kit command that writes a WAV ({"wav": {"path": ...}}) and plays
+// it; `label` names it in the log and in errors.
+void playKitWav(AlienSoldierSession* owner, sdk::ProcessSpec spec, const QString& label) {
+    sdk::Host* host = owner->host();
+    const QString directory = owner->projectDirectory();
+    QPointer<AlienSoldierSession> session = owner;
+    // The model may close before rendering ends; capture values only.
+    host->runProcess(spec, [host, session, directory, label](const sdk::ProcessResult& result) {
+        if (!result.succeeded()) {
+            if (!result.cancelled && session) {
+                session->report(sdk::Severity::Error, QStringLiteral("sound"),
+                                SoundModel::tr("Sound preview failed: %1").arg(sdk::failureText(result)));
+            }
+            return;
+        }
+        const QJsonObject json = QJsonDocument::fromJson(result.standardOutput).object();
+        QString wav = json.value(QStringLiteral("wav")).toObject().value(QStringLiteral("path")).toString();
+        if (QFileInfo(wav).isRelative()) wav = QDir(directory).filePath(wav);
+        if (!QFileInfo(wav).isFile()) {
+            if (session) {
+                session->report(sdk::Severity::Error, QStringLiteral("sound"),
+                                SoundModel::tr("The kit reported no WAV for %1.").arg(label));
+            }
+            return;
+        }
+        host->log(SoundModel::tr("  Playing %1").arg(QDir::toNativeSeparators(wav)));
+        host->playAudio(wav);
+    });
+}
 
 }  // namespace
 
 SoundModel::SoundModel(AlienSoldierSession* session, const QString& label)
     : SequencerModel(session), session_(session), label_(label) {
     connect(session_, &AlienSoldierSession::documentChanged, this, [this](Doc doc) {
-        if (doc == Doc::Sound) emit contentChanged();
+        if (doc == Doc::Sound) {
+            cache_.clear();
+            emit contentChanged();
+        }
     });
 }
 
@@ -103,6 +123,14 @@ QVector<SoundModel::Event> SoundModel::walk(int channel) const {
     QVector<Event> events;
     const QJsonObject item = payload();
     const QByteArray data = bytes();
+    // The kit decodes instruction boundaries, including variable-size commands.
+    // Editable note values do not change those boundaries.
+    QHash<int, int> sizes;
+    for (const QJsonValue& value : item.value(QStringLiteral("instructions")).toArray()) {
+        const QJsonObject instruction = value.toObject();
+        sizes.insert(instruction.value(QStringLiteral("offset")).toInt(-1),
+                     instruction.value(QStringLiteral("size")).toInt());
+    }
     const QJsonObject header = item.value(QStringLiteral("channels")).toArray().at(channel).toObject();
     const int multiplier = std::max(1, item.value(QStringLiteral("tick_multiplier")).toInt(1));
     int at = header.value(QStringLiteral("sequence")).toInt();
@@ -112,29 +140,29 @@ QVector<SoundModel::Event> SoundModel::walk(int channel) const {
     QHash<int, int> loops;
     QSet<QPair<int, int>> jumps;  // (target, call depth) jumped to already
     for (int steps = 0; steps < 20000 && at >= 0 && at < data.size() && events.size() < 4000; ++steps) {
+        const int size = sizes.value(at);
+        if (size <= 0 || size > data.size() - at) break;
         const int opcode = quint8(data.at(at));
         if (opcode < 0x80) {  // a duration: the last note again, held this long
             duration = opcode;
             events.append({-1, at, time, std::max(1, duration * multiplier), note, transpose});
             time += duration * multiplier;
-            at += 1;
+            at += size;
             continue;
         }
         if (opcode < 0xE0) {
             note = opcode;
             Event event{at, -1, time, 0, note, transpose};
-            at += 1;
-            if (at < data.size() && quint8(data.at(at)) < 0x80) {
-                duration = quint8(data.at(at));
-                event.durationOffset = at;
-                at += 1;
+            if (size == 2) {
+                duration = quint8(data.at(at + 1));
+                event.durationOffset = at + 1;
             }
+            at += size;
             event.length = std::max(1, duration * multiplier);
             events.append(event);
             time += duration * multiplier;
             continue;
         }
-        const int size = 1 + operandCount(data, at);
         if (opcode == 0xE3 || opcode == 0xF2) break;
         if (opcode == 0xF9) {
             if (returns.isEmpty()) break;
@@ -285,31 +313,7 @@ void SoundModel::preview() {
     // The kit hears the VGM through the studio's YM2612 renderer.
     const QString renderer = host->toolPath(QStringLiteral("retrolarium-ymfm-renderer"));
     if (!renderer.isEmpty()) spec.environment.insert(QStringLiteral("RETROLARIUM_YMFM_RENDERER"), renderer);
-    const QString directory = session_->projectDirectory();
-    const QString label = label_;
-    QPointer<AlienSoldierSession> session = session_;
-    // The model may close before rendering ends; capture values only.
-    host->runProcess(spec, [host, session, directory, label](const sdk::ProcessResult& result) {
-        if (!result.succeeded()) {
-            if (!result.cancelled && session) {
-                session->report(sdk::Severity::Error, QStringLiteral("sound"),
-                                tr("Sound preview failed: %1").arg(sdk::failureText(result)));
-            }
-            return;
-        }
-        const QJsonObject json = QJsonDocument::fromJson(result.standardOutput).object();
-        QString wav = json.value(QStringLiteral("wav")).toObject().value(QStringLiteral("path")).toString();
-        if (QFileInfo(wav).isRelative()) wav = QDir(directory).filePath(wav);
-        if (!QFileInfo(wav).isFile()) {
-            if (session) {
-                session->report(sdk::Severity::Error, QStringLiteral("sound"),
-                                tr("The kit reported no WAV for %1.").arg(label));
-            }
-            return;
-        }
-        host->log(tr("  Playing %1").arg(QDir::toNativeSeparators(wav)));
-        host->playAudio(wav);
-    });
+    playKitWav(session_, spec, label_);
 }
 
 void SoundModel::stopPreview() {
@@ -360,6 +364,116 @@ sdk::Inspection SoundModel::inspect() const {
         tr("Notes and durations change where the driver reads them; the payload keeps its size and every "
            "instruction its place, and the kit checks the edit before it builds.");
     inspection.engineTag = QStringLiteral("alien-soldier.sound.v1");
+    return inspection;
+}
+
+// ---------------------------------------------------------------- samples
+
+SampleModel::SampleModel(AlienSoldierSession* session, const QString& document)
+    : SequencerModel(session), session_(session) {
+    voice_ = document.section(QLatin1Char(':'), 0, 0) == QLatin1String("voice");
+    id_ = document.section(QLatin1Char(':'), 1, 1).toInt(nullptr, 16);
+}
+
+QString SampleModel::sampleTitle(bool voice, int id) {
+    return voice ? tr("Voice %1").arg(hexId(id)) : tr("Drum %1").arg(hexId(id));
+}
+
+QString SampleModel::title() const { return sampleTitle(voice_, id_); }
+
+QJsonObject SampleModel::descriptor() const {
+    const QString kind = voice_ ? QStringLiteral("voice") : QStringLiteral("music");
+    for (const QJsonValue& value : session_->doc(Doc::Pcm).value(QStringLiteral("descriptors")).toArray()) {
+        const QJsonObject item = value.toObject();
+        if (item.value(QStringLiteral("kind")).toString() == kind && item.value(QStringLiteral("id")).toInt() == id_)
+            return item;
+    }
+    return {};
+}
+
+int SampleModel::sampleBytes() const {
+    const QJsonObject item = descriptor();
+    const QString bank = item.value(QStringLiteral("bank")).toString();
+    for (const QJsonValue& value : session_->doc(Doc::Pcm).value(QStringLiteral("banks")).toArray()) {
+        const QJsonObject entry = value.toObject();
+        if (entry.value(QStringLiteral("label")).toString() == bank) {
+            const QJsonArray samples = entry.value(QStringLiteral("samples")).toArray();
+            return int(samples.at(item.value(QStringLiteral("sample")).toInt()).toString().size() / 2);
+        }
+    }
+    return 0;
+}
+
+QString SampleModel::chipLabel() const { return tr("YM2612 DAC"); }
+
+QVector<sdk::SequencerChannel> SampleModel::channels() const {
+    sdk::SequencerChannel channel;
+    channel.id = QStringLiteral("dac");
+    channel.label = QStringLiteral("DAC");
+    channel.detail = descriptor().value(QStringLiteral("bank")).toString();
+    channel.color = QColor(0xC9, 0x8A, 0x5B);
+    return {channel};
+}
+
+void SampleModel::preview() {
+    sdk::Host* host = session_->host();
+    if (!host || host->isBusy()) return;
+    const QStringList arguments{QStringLiteral("studio"),
+                                QStringLiteral("alien-soldier-sample-preview"),
+                                session_->projectPath(),
+                                QStringLiteral("--kind"),
+                                voice_ ? QStringLiteral("voice") : QStringLiteral("music"),
+                                QStringLiteral("--id"),
+                                QStringLiteral("0x%1").arg(id_, 2, 16, QLatin1Char('0'))};
+    QString error;
+    sdk::ProcessSpec spec = host->kitCommand(arguments, session_->projectDirectory(), &error);
+    if (spec.program.isEmpty()) {
+        session_->report(sdk::Severity::Error, QStringLiteral("sound"), error);
+        return;
+    }
+    spec.label = tr("Render %1").arg(title());
+    playKitWav(session_, spec, title());
+}
+
+void SampleModel::stopPreview() {
+    if (sdk::Host* host = session_->host()) host->stopAudio();
+}
+
+bool SampleModel::previewLoops() const {
+    sdk::Host* host = session_->host();
+    return host && host->audioLoops();
+}
+
+void SampleModel::setPreviewLoops(bool loop) {
+    if (sdk::Host* host = session_->host()) host->setAudioLoop(loop);
+}
+
+sdk::Inspection SampleModel::inspect() const {
+    sdk::Inspection inspection;
+    const QJsonObject item = descriptor();
+    inspection.kicker = voice_ ? tr("Voice") : tr("Drum sample");
+    inspection.title = title();
+    sdk::Field request;
+    request.key = QStringLiteral("request");
+    request.label = voice_ ? tr("Request") : tr("DAC note");
+    request.value = hexId(id_);
+    request.monospace = true;
+    sdk::Field bank;
+    bank.key = QStringLiteral("bank");
+    bank.label = tr("Bank");
+    bank.value = tr("%1, sample %2")
+                     .arg(item.value(QStringLiteral("bank")).toString())
+                     .arg(item.value(QStringLiteral("sample")).toInt());
+    sdk::Field size;
+    size.key = QStringLiteral("bytes");
+    size.label = tr("Size");
+    size.value = tr("%n bytes", nullptr, sampleBytes());
+    inspection.fields = {request, bank, size};
+    inspection.note = voice_ ? tr("The Z80 decodes each byte into two levels and plays them at the pace the voice's "
+                                  "descriptor sets; the game asks for the voice with its request.")
+                             : tr("The Z80 decodes each byte into two levels and plays them at the pace the sample's "
+                                  "descriptor sets; the music's DAC channel plays it with its note.");
+    inspection.engineTag = QStringLiteral("alien-soldier.pcm.v1");
     return inspection;
 }
 

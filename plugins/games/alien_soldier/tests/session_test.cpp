@@ -25,6 +25,7 @@
 
 #include <algorithm>
 #include <iostream>
+#include <optional>
 #include <stdexcept>
 
 using namespace rl;
@@ -116,7 +117,10 @@ int main(int argc, char** argv) {
                         for (int channel = 0; channel < sequencer->channels().size(); ++channel) {
                             found += sequencer->notes(channel).size();
                         }
-                        expect(found > 0, QStringLiteral("%1 has no notes").arg(entry.id));
+                        // A voice or drum sample is one sound, without notes.
+                        const bool sample =
+                            entry.id.startsWith(QLatin1String("voice:")) || entry.id.startsWith(QLatin1String("drum:"));
+                        expect(found > 0 || sample, QStringLiteral("%1 has no notes").arg(entry.id));
                         notes += found;
                     }
                     ++documents;
@@ -378,6 +382,80 @@ int main(int argc, char** argv) {
             canvas->setCurrentFrame(0);
             canvas->setViewOption(QStringLiteral("steps"), canvas->viewOptions().last().choices.last());
             expect(canvas->frames().size() == 66, QStringLiteral("every frame of Antroid's idle is not listed"));
+        }
+
+        // Sound lists the songs, the effects, the voices and the drum
+        // samples apart; a voice opens on its own, ready to listen to.
+        {
+            QStringList titles;
+            const QVector<sdk::DocumentGroup> groups = session->documents(QStringLiteral("sound"));
+            for (const sdk::DocumentGroup& group : groups) titles << group.title;
+            expect(titles == QStringList({QStringLiteral("Music"), QStringLiteral("Sound effects"),
+                                          QStringLiteral("Voices"), QStringLiteral("Drum samples")}),
+                   QStringLiteral("Sound lists %1").arg(titles.join(QStringLiteral(", "))));
+            expect(groups[2].documents.size() == 48 && groups[3].documents.size() == 22,
+                   QStringLiteral("Sound lists %1 voices and %2 drums")
+                       .arg(groups[2].documents.size())
+                       .arg(groups[3].documents.size()));
+            std::unique_ptr<sdk::EditorModel> model =
+                session->openEditor(QStringLiteral("sound"), groups[2].documents.first().id);
+            auto* sample = qobject_cast<sdk::SequencerModel*>(model.get());
+            expect(sample && sample->canPreview() && sample->title() == QLatin1String("Voice $10"),
+                   QStringLiteral("the first voice does not open"));
+        }
+
+        // Sound uses the kit's instruction boundaries, including after editing
+        // notes. Without that metadata it must not guess from the payload bytes.
+        {
+            const auto groups = session->documents(QStringLiteral("sound"));
+            auto model = session->openEditor(QStringLiteral("sound"), groups.first().documents.first().id);
+            auto* sequencer = qobject_cast<sdk::SequencerModel*>(model.get());
+            expect(sequencer, QStringLiteral("the first song does not open"));
+            const QJsonObject before = session->doc(Doc::Sound);
+            QJsonArray payloads = before.value(QStringLiteral("payloads")).toArray();
+            const int index = indexOfLabel(payloads, sequencer->title());
+            QJsonObject payload = payloads.at(index).toObject();
+            const QJsonArray instructions = payload.value(QStringLiteral("instructions")).toArray();
+            expect(!instructions.isEmpty(), QStringLiteral("the song has no decoded instructions"));
+            const int multiplier = std::max(1, payload.value(QStringLiteral("tick_multiplier")).toInt(1));
+            std::optional<sdk::SequencerNote> editable;
+            for (int channel = 0; channel < sequencer->channels().size() && !editable; ++channel) {
+                for (const sdk::SequencerNote& note : sequencer->notes(channel)) {
+                    if (note.pitchEditable && note.lengthEditable && note.length < 127 * multiplier) {
+                        editable = note;
+                        break;
+                    }
+                }
+            }
+            expect(editable.has_value(), QStringLiteral("the song has no editable note duration"));
+
+            payload.remove(QStringLiteral("instructions"));
+            payloads.replace(index, payload);
+            session->live(Doc::Sound).insert(QStringLiteral("payloads"), payloads);
+            session->touch(Doc::Sound);
+            for (int channel = 0; channel < sequencer->channels().size(); ++channel) {
+                expect(sequencer->notes(channel).isEmpty(),
+                       QStringLiteral("sound guessed instruction boundaries without kit metadata"));
+            }
+            session->live(Doc::Sound) = before;
+            session->touch(Doc::Sound);
+
+            sequencer->beginEdit(editable->id);
+            expect(sequencer->editNote(editable->id, editable->pitch, editable->length + multiplier),
+                   QStringLiteral("a decoded note's duration cannot be edited"));
+            const QJsonObject edited =
+                session->doc(Doc::Sound).value(QStringLiteral("payloads")).toArray().at(index).toObject();
+            expect(edited.value(QStringLiteral("instructions")).toArray() == instructions,
+                   QStringLiteral("editing a note changed the decoded instruction boundaries"));
+            const int channel = editable->id.section(QLatin1Char(':'), 0, 0).toInt();
+            const auto notes = sequencer->notes(channel);
+            const auto changed = std::find_if(notes.begin(), notes.end(),
+                                              [&](const sdk::SequencerNote& note) { return note.id == editable->id; });
+            expect(changed != notes.end() && changed->length == editable->length + multiplier,
+                   QStringLiteral("the decoded note does not show its edited duration"));
+            sequencer->endEdit();
+            session->undoStack()->undo();
+            expect(session->doc(Doc::Sound) == before, QStringLiteral("sound duration Undo lost source metadata"));
         }
 
         // A boss its code alone turns (Deep Strider) is under Objects, one

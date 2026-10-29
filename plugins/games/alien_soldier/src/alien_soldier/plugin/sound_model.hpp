@@ -81,4 +81,42 @@ private:
     quint64 editRevision_ = 0;
 };
 
+// One DAC sample on its own: a voice the game asks for (requests $10-$3E:
+// "Alien Soldier", "Let's go") or a drum the music's DAC channel plays
+// (notes $81 on). Listen has the kit write its levels at the Z80's pace.
+class SampleModel final : public sdk::SequencerModel {
+    Q_OBJECT
+
+public:
+    // `document` is "voice:<id>" or "drum:<id>", the id in hexadecimal.
+    SampleModel(AlienSoldierSession* session, const QString& document);
+
+    QString title() const override;
+    sdk::Inspection inspect() const override;
+    QString statusText() const override { return title(); }
+
+    QString chipLabel() const override;
+    QVector<sdk::SequencerChannel> channels() const override;
+    int currentChannel() const override { return 0; }
+    void setCurrentChannel(int) override {}
+    QVector<sdk::SequencerNote> notes(int) const override { return {}; }
+
+    bool canPreview() const override { return descriptor().contains(QStringLiteral("bank")); }
+    void preview() override;
+    void stopPreview() override;
+    bool previewLoops() const override;
+    void setPreviewLoops(bool loop) override;
+
+    // The groups' names for a sample ("Voice $10", "Drum $81").
+    static QString sampleTitle(bool voice, int id);
+
+private:
+    QJsonObject descriptor() const;
+    int sampleBytes() const;
+
+    AlienSoldierSession* session_;
+    bool voice_ = true;
+    int id_ = 0;
+};
+
 }  // namespace rl::alien_soldier

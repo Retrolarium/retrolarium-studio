@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cmath>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -146,6 +147,7 @@ public:
 
     uint32_t output_rate() const { return m_output_rate; }
     const std::vector<int32_t>& pcm() const { return m_pcm; }
+    std::vector<int32_t>& pcm() { return m_pcm; }
 
 private:
     Interface m_interface;
@@ -164,6 +166,23 @@ std::vector<uint8_t> read_file(const std::string& path) {
     std::ifstream input(path, std::ios::binary);
     if (!input) throw std::runtime_error("cannot open input VGM");
     return std::vector<uint8_t>(std::istreambuf_iterator<char>(input), {});
+}
+
+// The console's output is AC-coupled: a high-pass a few hertz up takes off
+// the DC the PSG (whose square waves swing from silence up) and the YM2612's
+// DAC add, and the thump a level change makes with it.
+void remove_dc(std::vector<int32_t>& pcm, uint32_t rate) {
+    constexpr double kCutoffHz = 10.0;
+    const double keep = 1.0 - 2.0 * 3.14159265358979323846 * kCutoffHz / rate;
+    for (int side = 0; side < 2; ++side) {
+        double previous = 0.0, output = 0.0;
+        for (size_t at = side; at < pcm.size(); at += 2) {
+            const double input = pcm[at];
+            output = input - previous + keep * output;
+            previous = input;
+            pcm[at] = int32_t(std::lround(output));
+        }
+    }
 }
 
 void write_wav(const std::string& path, uint32_t rate, const std::vector<int32_t>& source) {
@@ -237,6 +256,7 @@ int main(int argc, char** argv) {
         if (data.size() < 0x30) throw std::runtime_error("truncated VGM file");
         Renderer renderer(read_u32(data, 0x2C), read_u32(data, 0x0C));
         render_vgm(data, renderer);
+        remove_dc(renderer.pcm(), renderer.output_rate());
         write_wav(argv[2], renderer.output_rate(), renderer.pcm());
         std::cout << "[OK] rendered " << renderer.pcm().size() / 2 << " stereo frames at " << renderer.output_rate()
                   << " Hz\n";

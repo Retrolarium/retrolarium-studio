@@ -512,7 +512,23 @@ QVector<sdk::DocumentGroup> AlienSoldierSession::documents(const QString& kind) 
                     entry(label, label, ids.join(QLatin1Char(' ')),
                           payloadDirty(doc(Doc::Sound), savedDoc(Doc::Sound), QStringLiteral("payloads"), label)));
         }
+        // The DAC samples apart: the voices the game asks for, the drums
+        // the music's DAC channel plays.
+        sdk::DocumentGroup voices = group(tr("Voices"));
+        sdk::DocumentGroup drums = group(tr("Drum samples"));
+        for (const QJsonValue& value : doc(Doc::Pcm).value(QStringLiteral("descriptors")).toArray()) {
+            const QJsonObject item = value.toObject();
+            const bool voice = item.value(QStringLiteral("kind")).toString() == QLatin1String("voice");
+            const int id = item.value(QStringLiteral("id")).toInt();
+            const QString number = QString::number(id, 16).toUpper();
+            (voice ? voices : drums)
+                .documents.append(entry(voice ? QStringLiteral("voice:") + number : QStringLiteral("drum:") + number,
+                                        SampleModel::sampleTitle(voice, id),
+                                        item.value(QStringLiteral("bank")).toString()));
+        }
         groups << music << effects;
+        if (!voices.documents.isEmpty()) groups << voices;
+        if (!drums.documents.isEmpty()) groups << drums;
     } else if (kind == QLatin1String("demo")) {
         sdk::DocumentGroup demos = group(tr("Attract demos"));
         const QJsonArray list = doc(Doc::Demos).value(QStringLiteral("demos")).toArray();
@@ -589,7 +605,11 @@ std::unique_ptr<sdk::EditorModel> AlienSoldierSession::openEditor(const QString&
     }
     if (kind == QLatin1String("screens")) return std::make_unique<ScreensModel>(this, document);
     if (kind == QLatin1String("text")) return std::make_unique<TextModel>(this, document);
-    if (kind == QLatin1String("sound")) return std::make_unique<SoundModel>(this, document);
+    if (kind == QLatin1String("sound")) {
+        if (document.startsWith(QLatin1String("voice:")) || document.startsWith(QLatin1String("drum:")))
+            return std::make_unique<SampleModel>(this, document);
+        return std::make_unique<SoundModel>(this, document);
+    }
     if (kind == QLatin1String("demo")) {
         const int demo = document.mid(5).toInt() - 1;
         return demo < 0 || demo > 3 ? nullptr : std::make_unique<DemoModel>(this, demo);
