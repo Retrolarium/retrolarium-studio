@@ -19,6 +19,7 @@
 
 #include <QCoreApplication>
 #include <QFileInfo>
+#include <QJsonArray>
 #include <QImage>
 #include <QSet>
 #include <QUndoStack>
@@ -345,14 +346,14 @@ int main(int argc, char** argv) {
                                         .toObject()
                                         .value(boss.value(QStringLiteral("poses")).toString())
                                         .toArray();
-            const PoseRun run = poseRun(session->doc(Doc::Bosses), QStringLiteral("Boss_AntroidIdlePoseCommands"));
+            const PoseRun run = poseRun(session->doc(Doc::Bosses), QStringLiteral("Boss_AntroidIdlePoses"));
             const QVector<int> start = poseValues(rows, 6);
             const PoseFrames frames = stepPoses(boss, rows, run, start, 1000);
             expect(run.loops && run.commands.size() == 2 && frames.channels.size() == 66 &&
                        frames.ends == QVector<int>({32, 65}),
                    QStringLiteral("Antroid's idle steps %1 frames").arg(frames.channels.size()));
             const QString document =
-                QStringLiteral("anim:%1:Boss_AntroidIdlePoseCommands").arg(boss.value(QStringLiteral("id")).toString());
+                QStringLiteral("anim:%1:Boss_AntroidIdlePoses").arg(boss.value(QStringLiteral("id")).toString());
             std::unique_ptr<sdk::EditorModel> model = session->openEditor(QStringLiteral("bosses"), document);
             auto* canvas = qobject_cast<sdk::CompositionModel*>(model.get());
             expect(canvas && canvas->frames().size() == 2 && drawn(canvas->render()) && canvas->pieces().size() > 15,
@@ -477,6 +478,43 @@ int main(int argc, char** argv) {
                    QStringLiteral("Deep Strider does not draw as one still"));
             for (const sdk::DocumentGroup& group : session->documents(QStringLiteral("bosses")))
                 expect(group.title != QLatin1String("Deep Strider"), QStringLiteral("Bosses list Deep Strider"));
+        }
+
+        // Palettes list places, not bare commands: every place shows only
+        // the lines its commands write and a preview, a boss fight shows its
+        // stage's lines under its own, and every command is in some place.
+        {
+            const QJsonObject palettes = session->doc(Doc::Palettes);
+            QSet<QString> reached;
+            int fights = 0;
+            for (const sdk::DocumentGroup& group : session->documents(QStringLiteral("palettes"))) {
+                for (const sdk::DocumentEntry& entry : group.documents) {
+                    std::unique_ptr<sdk::EditorModel> model = session->openEditor(QStringLiteral("palettes"), entry.id);
+                    auto* palette = qobject_cast<sdk::PaletteModel*>(model.get());
+                    expect(palette != nullptr, QStringLiteral("palette %1 does not open").arg(entry.id));
+                    const QVector<sdk::PaletteRow> rows = palette->rows();
+                    expect(!rows.isEmpty(), QStringLiteral("palette %1 shows no line").arg(entry.id));
+                    for (const sdk::PaletteRow& row : rows) {
+                        expect(std::any_of(row.labels.begin(), row.labels.end(),
+                                           [](const QString& label) { return !label.isEmpty(); }),
+                               QStringLiteral("palette %1 shows an empty line").arg(entry.id));
+                        reached << row.group;
+                    }
+                    const QVector<sdk::PaletteSample> samples = palette->samples();
+                    expect(!samples.isEmpty() && !samples.first().image.isNull(),
+                           QStringLiteral("palette %1 has no preview").arg(entry.id));
+                    if (entry.id.startsWith(QLatin1String("boss:")) && rows.size() > 4) ++fights;
+                }
+            }
+            expect(fights > 0, QStringLiteral("no boss fight shows more than four lines"));
+            for (const QJsonValue& value : palettes.value(QStringLiteral("blocks")).toArray()) {
+                const QString label = value.toObject().value(QStringLiteral("label")).toString();
+                const int commands = int(value.toObject().value(QStringLiteral("commands")).toArray().size());
+                for (int command = 0; command < commands; ++command) {
+                    const QString title = commands > 1 ? QStringLiteral("%1 · %2").arg(label).arg(command + 1) : label;
+                    expect(reached.contains(title), QStringLiteral("no palette place plays %1").arg(title));
+                }
+            }
         }
 
         std::cout << "[OK] " << opened << " documents open, " << stages << " stages draw, " << sprites

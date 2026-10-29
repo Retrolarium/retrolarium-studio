@@ -211,6 +211,9 @@ public:
 };
 
 struct PaletteRow {
+    // Rows that share a group sit under one heading ("Stage list", the
+    // command that writes them); empty: no heading.
+    QString group;
     QString label;  // "BG 0", "Line 1"
     QVector<QColor> colors;
     QStringList labels;  // small value label in each swatch

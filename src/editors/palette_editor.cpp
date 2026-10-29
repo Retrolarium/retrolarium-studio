@@ -299,6 +299,12 @@ void PaletteEditor::rebuild() {
     }
     const int size = widest <= 4 ? 46 : widest <= 10 ? 38 : 30;
     for (int r = 0; r < rows.size(); ++r) {
+        if (!rows.at(r).group.isEmpty() && (r == 0 || rows.at(r - 1).group != rows.at(r).group)) {
+            auto* heading = new ui::Label(rows.at(r).group, ui::Label::Role::Small, rowsBox);
+            heading->setTone(QStringLiteral("muted"));
+            if (r > 0) rowsLayout->addSpacing(6);
+            rowsLayout->addWidget(heading);
+        }
         auto* line = new QWidget(rowsBox);
         auto* lineLayout = new QHBoxLayout(line);
         lineLayout->setContentsMargins(0, 0, 0, 0);

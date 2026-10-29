@@ -383,24 +383,28 @@ QVector<sdk::DocumentGroup> AlienSoldierSession::documents(const QString& kind) 
             if (order.contains(QLatin1String(key))) sorted << QString::fromLatin1(key);
         for (const QString& key : sorted) groups << byGroup.value(key);
     } else if (kind == QLatin1String("palettes")) {
-        sdk::DocumentGroup blocks = group(tr("Palette commands"));
-        // Each command apart, as colour RAM holds it ("label#N").
-        for (const QJsonValue& value : doc(Doc::Palettes).value(QStringLiteral("blocks")).toArray()) {
-            const QJsonObject block = value.toObject();
-            const QString label = block.value(QStringLiteral("label")).toString();
-            const QJsonArray commands = block.value(QStringLiteral("commands")).toArray();
-            const bool dirty =
-                payloadDirty(doc(Doc::Palettes), savedDoc(Doc::Palettes), QStringLiteral("blocks"), label);
-            for (int command = 0; command < commands.size(); ++command) {
-                const int colours =
-                    int(commands.at(command).toObject().value(QStringLiteral("colours")).toArray().size());
-                blocks.documents.append(
-                    entry(QStringLiteral("%1#%2").arg(label).arg(command + 1),
-                          commands.size() > 1 ? QStringLiteral("%1 · %2").arg(label).arg(command + 1) : label,
-                          QString::number(colours), dirty));
+        // Each place the game shows colours, with the commands it plays.
+        const QJsonObject palettes = doc(Doc::Palettes);
+        const QJsonObject saved = savedDoc(Doc::Palettes);
+        const QVector<std::pair<QString, QString>> kinds = {{QStringLiteral("stages"), tr("Stages")},
+                                                            {QStringLiteral("screens"), tr("Screens")},
+                                                            {QStringLiteral("bosses"), tr("Bosses")},
+                                                            {QStringLiteral("lists"), tr("Other palette lists")},
+                                                            {QStringLiteral("commands"), tr("Commands no list plays")}};
+        const QVector<PaletteLocation> places = PalettesModel::locations(this);
+        for (const auto& [key, title] : kinds) {
+            sdk::DocumentGroup section = group(title);
+            for (const PaletteLocation& place : places) {
+                if (place.group != key) continue;
+                bool dirty = false;
+                for (const PaletteStep& step : place.steps)
+                    dirty = dirty || payloadDirty(palettes, saved, QStringLiteral("blocks"), step.block);
+                section.documents.append(entry(place.id, place.title,
+                                               tr("%n lines", nullptr, PalettesModel::lineCount(palettes, place.steps)),
+                                               dirty));
             }
+            if (!section.documents.isEmpty()) groups.append(section);
         }
-        groups.append(blocks);
     } else if (kind == QLatin1String("objects")) {
         // The mapping blocks by the source file that holds them.
         const QJsonObject objects = doc(Doc::Objects);
@@ -589,10 +593,8 @@ std::unique_ptr<sdk::EditorModel> AlienSoldierSession::openEditor(const QString&
         return nullptr;
     }
     if (kind == QLatin1String("palettes")) {
-        // "label#N", or a bare label (the first command) from older views.
-        const QString label = document.section(QLatin1Char('#'), 0, 0);
-        const int command = document.contains(QLatin1Char('#')) ? document.section(QLatin1Char('#'), 1).toInt() - 1 : 0;
-        return command < 0 ? nullptr : std::make_unique<PalettesModel>(this, label, command);
+        // A place, "label#N", or a bare label (the first command) from older views.
+        return std::make_unique<PalettesModel>(this, document);
     }
     if (kind == QLatin1String("objects")) {
         if (document.startsWith(QLatin1String("boss:"))) return std::make_unique<BossesModel>(this, document);
