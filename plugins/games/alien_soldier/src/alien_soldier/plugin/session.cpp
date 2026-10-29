@@ -18,6 +18,7 @@
 #include "sdk/plugin.hpp"
 #include "sdk/snapshot_command.hpp"
 
+#include <QCryptographicHash>
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
@@ -822,6 +823,44 @@ void AlienSoldierSession::attachDemoEditor(int demo, bool attach) {
     demoEditors_ = std::max(0, demoEditors_ + (attach ? 1 : -1));
     if (attach) demo_ = demo;
     if (selectedStart() != before) emit selectedStartChanged();
+}
+
+bool AlienSoldierSession::prepareBuild(BuildStep& step, QString*) {
+    // A build takes minutes; Play and the demos reuse a ROM that is current.
+    step.upToDate = !step.force && buildIsCurrent();
+    return true;
+}
+
+bool AlienSoldierSession::buildIsCurrent() const {
+    const QDir root(project_.directory());
+    const auto sha256 = [](const QString& path) {
+        QFile file(path);
+        if (!file.open(QIODevice::ReadOnly)) return QString();
+        QCryptographicHash hash(QCryptographicHash::Sha256);
+        hash.addData(&file);
+        return QString::fromLatin1(hash.result().toHex());
+    };
+    QFile file(root.filePath(QStringLiteral("build/studio-build-result.json")));
+    if (!file.open(QIODevice::ReadOnly)) return false;
+    const QJsonObject report = QJsonDocument::fromJson(file.readAll()).object();
+    if (report.value(QStringLiteral("schema")).toString() != QLatin1String("retrolarium.studio-build-result") ||
+        report.value(QStringLiteral("status")).toString() != QLatin1String("built")) {
+        return false;
+    }
+    if (report.value(QStringLiteral("project")).toObject().value(QStringLiteral("sha256")).toString() !=
+        sha256(project_.path())) {
+        return false;
+    }
+    for (const QJsonValue& value : report.value(QStringLiteral("documents")).toArray()) {
+        const QJsonObject document = value.toObject();
+        if (document.value(QStringLiteral("sha256")).toString() !=
+            sha256(root.filePath(document.value(QStringLiteral("path")).toString()))) {
+            return false;
+        }
+    }
+    const QJsonObject artifact = report.value(QStringLiteral("artifact")).toObject();
+    return artifact.value(QStringLiteral("sha256")).toString() ==
+           sha256(root.filePath(artifact.value(QStringLiteral("path")).toString()));
 }
 
 void AlienSoldierSession::playDemo(int demo, bool record) {

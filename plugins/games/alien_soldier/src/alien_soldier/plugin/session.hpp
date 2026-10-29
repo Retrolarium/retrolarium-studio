@@ -108,6 +108,9 @@ public:
     // The project's revision ("jp" or "eu").
     QString revisionId() const { return revision_; }
 
+protected:
+    bool prepareBuild(BuildStep& step, QString* error) override;
+
 signals:
     void documentChanged(rl::alien_soldier::Doc doc);
     void playStageChanged();
@@ -119,6 +122,10 @@ private:
     void launch(int stage);
     void launchDemo(int demo, bool record);
     void applyRecording(int demo, const QString& path);
+    // Whether the kit's last build result (build/studio-build-result.json)
+    // was built from the project file and the documents as they are now,
+    // and its ROM is still there.
+    bool buildIsCurrent() const;
     void setDocument(Doc doc, const QJsonObject& value, quint64 revision);
 
     Documents documents_;
