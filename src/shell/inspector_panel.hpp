@@ -36,6 +36,11 @@ private:
     QVBoxLayout* layout_;
     bool rebuildPending_ = false;
     bool engineExpanded_ = false;
+    // What the shown widgets were built from: a model that signals on every
+    // frame of an animation, with the same inspection, keeps them as they
+    // are instead of rebuilding them (which made the panel blink).
+    QByteArray shown_;
+    bool forceRebuild_ = false;
 };
 
 }  // namespace rl::shell

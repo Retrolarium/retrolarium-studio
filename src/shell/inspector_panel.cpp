@@ -13,6 +13,7 @@
 
 #include <QApplication>
 #include <QComboBox>
+#include <QCryptographicHash>
 #include <QDrag>
 #include <QGridLayout>
 #include <QHBoxLayout>
@@ -204,6 +205,7 @@ void InspectorPanel::setModel(sdk::EditorModel* model) {
         disconnect(model_, nullptr, this, nullptr);
     }
     model_ = model;
+    shown_.clear();
     if (model_) {
         connect(model_, &sdk::EditorModel::contentChanged, this, &InspectorPanel::scheduleRebuild);
         connect(model_, &sdk::EditorModel::selectionChanged, this, &InspectorPanel::scheduleRebuild);
@@ -238,6 +240,7 @@ void InspectorPanel::showMessage(const QString& kicker, const QString& title, co
         disconnect(model_, nullptr, this, nullptr);
         model_ = nullptr;
     }
+    shown_.clear();
     clearContent();
     QVBoxLayout* head = nullptr;
     QWidget* box = block(content_, QMargins(14, 14, 14, 16), 10, &head);
@@ -258,11 +261,67 @@ void InspectorPanel::showMessage(const QString& kicker, const QString& title, co
     layout_->addStretch(1);
 }
 
+namespace {
+
+// A digest of everything an inspection shows, and whether its fields can be
+// edited.
+QByteArray signature(const sdk::Inspection& inspection, bool readOnly) {
+    QCryptographicHash hash(QCryptographicHash::Sha1);
+    const auto text = [&hash](const QString& value) {
+        hash.addData(value.toUtf8());
+        hash.addData(QByteArray(1, '\0'));
+    };
+    const auto image = [&hash](const QImage& value) {
+        hash.addData(QByteArray::number(value.width()) + 'x' + QByteArray::number(value.height()));
+        if (!value.isNull()) hash.addData(reinterpret_cast<const char*>(value.constBits()), int(value.sizeInBytes()));
+    };
+    text(readOnly ? QStringLiteral("ro") : QStringLiteral("rw"));
+    text(inspection.kicker);
+    text(inspection.title);
+    for (const sdk::Field& field : inspection.fields) {
+        text(field.key);
+        text(field.label);
+        text(QString::number(int(field.type)));
+        text(field.value.toString());
+        text(field.hint);
+        text(field.choices.join(QLatin1Char('\n')));
+        for (const QImage& icon : field.choiceIcons) image(icon);
+        text(QStringLiteral("%1 %2 %3").arg(field.minimum).arg(field.maximum).arg(field.monospace));
+    }
+    text(inspection.note);
+    text(inspection.library.hint);
+    text(QStringLiteral("%1 %2 %3x%4")
+             .arg(inspection.library.grid)
+             .arg(inspection.library.columns)
+             .arg(inspection.library.cell.width())
+             .arg(inspection.library.cell.height()));
+    for (const sdk::LibraryItem& item : inspection.library.items) {
+        text(item.id);
+        text(item.label);
+        text(item.hint);
+        image(item.icon);
+        text(QStringLiteral("%1x%2").arg(item.cells.width()).arg(item.cells.height()));
+    }
+    for (const sdk::EngineRow& row : inspection.engine) {
+        text(row.key);
+        text(row.value);
+    }
+    text(inspection.engineTag);
+    text(inspection.preview);
+    return hash.result();
+}
+
+}  // namespace
+
 void InspectorPanel::rebuild() {
     if (!model_) {
         return;
     }
     const sdk::Inspection inspection = model_->inspect();
+    const QByteArray digest = signature(inspection, model_->isReadOnly());
+    if (!forceRebuild_ && digest == shown_) return;
+    forceRebuild_ = false;
+    shown_ = digest;
     clearContent();
 
     // Selection: kicker, title, fields, note.
@@ -285,6 +344,8 @@ void InspectorPanel::rebuild() {
                 QString error;
                 if (model && !model->setField(key, value, &error)) {
                     emit fieldRejected(error);
+                    // The field shows what was typed: put the value back.
+                    forceRebuild_ = true;
                     scheduleRebuild();
                 }
             };
