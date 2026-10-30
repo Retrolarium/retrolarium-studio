@@ -41,8 +41,9 @@ public:
     void endDrag() override;
 
     // The object's metatiles (what the pieces of its file draw, see
-    // Metatile), to put into pieces: a click makes the selected piece draw
-    // one, a drag the piece it lands on. The sheet stays while frames change.
+    // Metatile) and the art its file's dynamic pieces upload, to put into
+    // pieces: a click makes the selected piece draw one, a drag the piece it
+    // lands on. The sheet stays while frames change.
     sdk::Library sheet() const override;
     QString currentLibraryItem() const override;
     void setCurrentLibraryItem(const QString& id) override;
@@ -65,6 +66,8 @@ protected:
     void clearPiece() { piece_.clear(); }
     // Makes a static piece draw `metatile`; dynamic pieces keep their art.
     bool setPieceMetatile(int index, const Metatile& metatile, QString* error);
+    // Makes a dynamic piece upload `art` instead, art of its own size.
+    bool setPieceArt(int index, const QString& art, QString* error);
 
     AlienSoldierSession* session_;
 

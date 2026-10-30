@@ -4,6 +4,7 @@
 
 #include <QJsonObject>
 #include <QPainter>
+#include <QSet>
 
 #include <algorithm>
 
@@ -70,6 +71,14 @@ SpriteContext spriteContextFrom(const Documents& documents, const QJsonObject& r
     for (const QJsonValue& value : record.value(QStringLiteral("palettes")).toArray()) {
         const QJsonArray pair = value.toArray();
         playPaletteCommand(context.cram, palettes, pair.at(0).toString(), pair.at(1).toInt());
+    }
+    // Tables the code copies into a line itself (the SEGA logo's colours).
+    for (const QJsonValue& value : record.value(QStringLiteral("tables")).toArray()) {
+        const QJsonObject table = value.toObject();
+        const int line = table.value(QStringLiteral("line")).toInt() & 3;
+        const QJsonArray colours = table.value(QStringLiteral("colours")).toArray();
+        for (int index = 0; index < colours.size() && index < 16; ++index)
+            context.cram[line * 16 + index] = colours.at(index).toInt() & 0xEEE;
     }
     return context;
 }
@@ -177,6 +186,67 @@ QImage metatileImage(const Metatile& metatile, const Documents& documents, const
     SpriteContext upright = context;
     upright.attribute &= ~0x1800;
     const QPoint origin((side - widthOf(metatile.size) * 8) / 2, (side - heightOf(metatile.size) * 8) / 2);
+    drawMapping(image, origin, QJsonArray{piece}, documents, upright, cram, line);
+    return image;
+}
+
+QString PieceArt::id() const { return QStringLiteral("art:") + art; }
+
+bool PieceArt::labelFromId(const QString& id, QString* art) {
+    if (!id.startsWith(QLatin1String("art:")) || id.size() <= 4) return false;
+    *art = id.mid(4);
+    return true;
+}
+
+bool pieceArtOf(const QJsonObject& piece, PieceArt* art) {
+    if (!piece.contains(QStringLiteral("art"))) return false;
+    *art = {piece.value(QStringLiteral("art")).toString(), piece.value(QStringLiteral("size")).toInt() & 15,
+            (piece.value(QStringLiteral("attributes")).toInt() >> 13) & 3};
+    return true;
+}
+
+QStringList groupBlocks(const Documents& documents, const QString& block) {
+    for (const QJsonValue& value : documents[Doc::Objects].value(QStringLiteral("groups")).toArray()) {
+        const QJsonArray labels = value.toObject().value(QStringLiteral("blocks")).toArray();
+        if (!labels.contains(block)) continue;
+        QStringList found;
+        for (const QJsonValue& label : labels) found << label.toString();
+        return found;
+    }
+    return {block};
+}
+
+QVector<PieceArt> pieceArtsOf(const Documents& documents, const QStringList& blocks) {
+    QVector<PieceArt> found;
+    QSet<QString> seen;
+    const QJsonArray all = documents[Doc::Mappings].value(QStringLiteral("blocks")).toArray();
+    for (const QString& label : blocks) {
+        const QJsonArray mappings =
+            all.at(indexOfLabel(all, label)).toObject().value(QStringLiteral("mappings")).toArray();
+        for (const QJsonValue& mapping : mappings) {
+            for (const QJsonValue& piece : mapping.toObject().value(QStringLiteral("pieces")).toArray()) {
+                PieceArt art;
+                if (!pieceArtOf(piece.toObject(), &art) || seen.contains(art.art)) continue;
+                seen.insert(art.art);
+                found.append(art);
+            }
+        }
+    }
+    return found;
+}
+
+QImage pieceArtImage(const PieceArt& art, const Documents& documents, const SpriteContext& context,
+                     const QVector<int>& cram, int line, int side) {
+    QImage image(side, side, QImage::Format_ARGB32);
+    image.fill(Qt::transparent);
+    const QJsonObject piece{{QStringLiteral("attributes"), 0x8000 | art.line << 13},
+                            {QStringLiteral("size"), art.size},
+                            {QStringLiteral("x"), 0},
+                            {QStringLiteral("y"), 0},
+                            {QStringLiteral("art"), art.art}};
+    SpriteContext upright = context;
+    upright.attribute &= ~0x1800;
+    const QPoint origin((side - widthOf(art.size) * 8) / 2, (side - heightOf(art.size) * 8) / 2);
     drawMapping(image, origin, QJsonArray{piece}, documents, upright, cram, line);
     return image;
 }

@@ -22,7 +22,7 @@ struct SpriteContext {
     bool borrowed = false;  // taken from another block of the same file
     int attribute = 0;      // the object's: priority, palette line, flips, base tile
     QByteArray vram;        // 64 KiB with the recorded art loaded
-    QVector<int> cram;      // 64 words the recorded palette blocks write
+    QVector<int> cram;      // 64 words the recorded palette blocks and colour tables write
 };
 
 SpriteContext spriteContext(const Documents& documents, const QString& block);
@@ -74,6 +74,29 @@ QStringList blocksDrawnLike(const Documents& documents, const QString& block);
 QVector<Metatile> metatilesOf(const Documents& documents, const QStringList& blocks, QVector<int>* uses = nullptr);
 // `metatile` alone and unflipped, centred in a side x side image.
 QImage metatileImage(const Metatile& metatile, const Documents& documents, const SpriteContext& context,
+                     const QVector<int>& cram, int line, int side);
+
+// A dynamic piece's art: the payload it uploads, its size (the size byte's
+// low nibble) and its palette line, as a piece of the object's file draws it.
+struct PieceArt {
+    QString art;
+    int size = 0;
+    int line = 0;
+
+    QString id() const;
+    // An id() back to the art's label; false for anything else.
+    static bool labelFromId(const QString& id, QString* art);
+};
+
+// A dynamic piece's art; false for a static piece.
+bool pieceArtOf(const QJsonObject& piece, PieceArt* art);
+// The blocks of `block`'s objects group, in file order (`block` alone when
+// it is in none).
+QStringList groupBlocks(const Documents& documents, const QString& block);
+// The art the blocks' dynamic pieces upload, in order of first use.
+QVector<PieceArt> pieceArtsOf(const Documents& documents, const QStringList& blocks);
+// `art` alone and unflipped, centred in a side x side image.
+QImage pieceArtImage(const PieceArt& art, const Documents& documents, const SpriteContext& context,
                      const QVector<int>& cram, int line, int side);
 
 }  // namespace rl::alien_soldier

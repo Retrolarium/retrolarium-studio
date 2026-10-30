@@ -86,6 +86,8 @@ sdk::Inspection ObjectsModel::inspect() const {
         QStringList colours;
         for (const QJsonValue& value : record.value(QStringLiteral("palettes")).toArray())
             colours << value.toArray().at(0).toString();
+        for (const QJsonValue& value : record.value(QStringLiteral("tables")).toArray())
+            colours << value.toObject().value(QStringLiteral("label")).toString();
         if (!colours.isEmpty()) inspection.fields.append(row(tr("Colours"), colours.join(QStringLiteral(", "))));
         inspection.note = record.value(QStringLiteral("borrowed")).toBool()
                               ? tr("Not seen in play itself: it draws with what another block of its file was seen "

@@ -329,6 +329,54 @@ int main(int argc, char** argv) {
             expect(canvas->currentLibraryItem() == before, QStringLiteral("undo leaves the piece changed"));
         }
 
+        // The hero's pieces upload their own art: the sheet offers its frames'
+        // art; art of the piece's size goes in, other sizes stay out.
+        {
+            const QString block = QStringLiteral("Player_DirectionalSecondarySpriteMapping00");
+            std::unique_ptr<sdk::EditorModel> model = session->openEditor(QStringLiteral("objects"), block);
+            auto* canvas = qobject_cast<sdk::CompositionModel*>(model.get());
+            expect(canvas != nullptr, QStringLiteral("%1 does not open").arg(block));
+            const QVector<PieceArt> arts = pieceArtsOf(session->docs(), groupBlocks(session->docs(), block));
+            const sdk::Library library = canvas->sheet();
+            const int offered = int(std::count_if(library.items.begin(), library.items.end(), [](const auto& item) {
+                return item.id.startsWith(QLatin1String("art:"));
+            }));
+            expect(arts.size() > 10 && offered == arts.size(),
+                   QStringLiteral("the hero's sheet offers %1 of %2 art").arg(offered).arg(arts.size()));
+            canvas->selectPiece(QStringLiteral("0"));
+            PieceArt current;
+            QString art;
+            expect(PieceArt::labelFromId(canvas->currentLibraryItem(), &art),
+                   QStringLiteral("the hero's piece shows no art in the sheet"));
+            for (const PieceArt& item : arts) {
+                if (item.art == art) current = item;
+            }
+            const auto same = std::find_if(arts.begin(), arts.end(), [&](const PieceArt& item) {
+                return item.art != current.art && item.size == current.size;
+            });
+            const auto other =
+                std::find_if(arts.begin(), arts.end(), [&](const PieceArt& item) { return item.size != current.size; });
+            expect(same != arts.end() && other != arts.end(), QStringLiteral("the hero has no art to choose from"));
+            QString failure;
+            const int steps = session->undoStack()->index();
+            expect(!canvas->dropItem(other->id(), QStringLiteral("0"), &failure) && !failure.isEmpty() &&
+                       session->undoStack()->index() == steps,
+                   QStringLiteral("art of another size goes into a dynamic piece"));
+            expect(canvas->dropItem(same->id(), QStringLiteral("0"), &failure) &&
+                       canvas->currentLibraryItem() == same->id() && session->undoStack()->index() == steps + 1,
+                   QStringLiteral("art does not go into a dynamic piece: %1").arg(failure));
+            session->undoStack()->undo();
+            expect(canvas->currentLibraryItem() == current.id(), QStringLiteral("undo leaves the art changed"));
+        }
+
+        // The SEGA logo's colours are a table its code copies into line 2.
+        if (contexts.contains(QStringLiteral("FrontendSegaScreenSpriteMapping"))) {
+            const SpriteContext sega =
+                spriteContext(session->docs(), QStringLiteral("FrontendSegaScreenSpriteMapping"));
+            expect(sega.cram.value(2 * 16 + 1) == 0xEEE && sega.cram.value(2 * 16 + 2) == 0xEC0,
+                   QStringLiteral("the SEGA logo does not draw in its own colours"));
+        }
+
         // Antroid: its idle animation's two keyframes of 33 frames each land
         // on their poses (a step of 1/32 for 33 frames overshoots by one
         // step, as in the game), and every frame of it draws.

@@ -15,6 +15,10 @@ constexpr int kLastPiece = 0x8000;
 
 }  // namespace
 
+QString pieceArtLabel(const PieceArt& art) {
+    return QStringLiteral("%1 · %2×%3").arg(art.art).arg(((art.size >> 2) & 3) + 1).arg((art.size & 3) + 1);
+}
+
 QString metatileLabel(const Metatile& metatile, const SpriteContext& context) {
     const int tile = context.known ? (metatile.tile + (context.attribute & 0x7FF)) & 0x7FF : metatile.tile;
     return QStringLiteral("$%1 · %2×%3")
@@ -194,7 +198,7 @@ void MappingCanvas::inspectPiece(sdk::Inspection& inspection) const {
     }
     inspection.note =
         piece.contains(QStringLiteral("art"))
-            ? tr("The piece uploads its own art (%1); its tile and size follow that art.")
+            ? tr("The piece uploads its own art (%1); drop art of its size from the patterns to change it.")
                   .arg(piece.value(QStringLiteral("art")).toString())
             : tr("The tile index is added to the object's own; bit 15 ends the mapping and stays as it is.");
 }
@@ -217,26 +221,90 @@ sdk::Library MappingCanvas::sheet() const {
         item.icon = metatileImage(metatile, session_->docs(), shown, cram, line_, 32);
         library.items.append(item);
     }
+    // The art the file's dynamic pieces upload (the hero's frames).
+    for (const PieceArt& art : pieceArtsOf(session_->docs(), groupBlocks(session_->docs(), block))) {
+        sdk::LibraryItem item;
+        item.id = art.id();
+        item.label = pieceArtLabel(art);
+        item.icon = pieceArtImage(art, session_->docs(), shown, cram, line_, 32);
+        library.items.append(item);
+    }
     return library;
 }
 
 QString MappingCanvas::currentLibraryItem() const {
+    if (piece_.isEmpty()) return {};
+    const QJsonObject piece = pieceObject(piece_.toInt());
     Metatile metatile;
-    return !piece_.isEmpty() && metatileOf(pieceObject(piece_.toInt()), &metatile) ? metatile.id() : QString();
+    PieceArt art;
+    if (metatileOf(piece, &metatile)) return metatile.id();
+    return pieceArtOf(piece, &art) ? art.id() : QString();
 }
 
 void MappingCanvas::setCurrentLibraryItem(const QString& id) {
-    Metatile metatile;
-    if (piece_.isEmpty() || id == currentLibraryItem() || !Metatile::fromId(id, &metatile)) return;
+    if (piece_.isEmpty() || id == currentLibraryItem()) return;
     QString error;
-    setPieceMetatile(piece_.toInt(), metatile, &error);
+    Metatile metatile;
+    QString art;
+    if (Metatile::fromId(id, &metatile)) {
+        setPieceMetatile(piece_.toInt(), metatile, &error);
+    } else if (PieceArt::labelFromId(id, &art)) {
+        setPieceArt(piece_.toInt(), art, &error);
+    }
 }
 
 bool MappingCanvas::dropItem(const QString& libraryItem, const QString& piece, QString* error) {
     Metatile metatile;
-    if (!Metatile::fromId(libraryItem, &metatile)) return CompositionModel::dropItem(libraryItem, piece, error);
-    selectPiece(piece);
-    return setPieceMetatile(piece.toInt(), metatile, error);
+    QString art;
+    if (Metatile::fromId(libraryItem, &metatile)) {
+        selectPiece(piece);
+        return setPieceMetatile(piece.toInt(), metatile, error);
+    }
+    if (PieceArt::labelFromId(libraryItem, &art)) {
+        selectPiece(piece);
+        return setPieceArt(piece.toInt(), art, error);
+    }
+    return CompositionModel::dropItem(libraryItem, piece, error);
+}
+
+bool MappingCanvas::setPieceArt(int index, const QString& art, QString* error) {
+    const QPair<int, int> shown = mapping();
+    const QJsonObject piece = pieceObject(index);
+    PieceArt current;
+    if (shown.first < 0 || piece.isEmpty()) return false;
+    if (!pieceArtOf(piece, &current)) {
+        if (error) *error = tr("A static piece draws tiles already in VRAM; give it a metatile instead.");
+        return false;
+    }
+    if (current.art == art) return true;
+    const QVector<PieceArt> arts = pieceArtsOf(session_->docs(), groupBlocks(session_->docs(), objectBlock()));
+    const auto found = std::find_if(arts.cbegin(), arts.cend(), [&](const PieceArt& item) { return item.art == art; });
+    if (found == arts.cend() || found->size != current.size) {
+        if (error) {
+            *error = tr("The piece is %1×%2 tiles; it takes only art of that size.")
+                         .arg(((current.size >> 2) & 3) + 1)
+                         .arg((current.size & 3) + 1);
+        }
+        return false;
+    }
+    return session_->edit(
+        Doc::Mappings, tr("Change sprite piece"),
+        [&](QJsonObject& document) {
+            QJsonArray blocks = document.value(QStringLiteral("blocks")).toArray();
+            QJsonObject block = blocks.at(shown.first).toObject();
+            QJsonArray mappings = block.value(QStringLiteral("mappings")).toArray();
+            QJsonObject item = mappings.at(shown.second).toObject();
+            QJsonArray list = item.value(QStringLiteral("pieces")).toArray();
+            QJsonObject changed = piece;
+            changed.insert(QStringLiteral("art"), art);
+            list.replace(index, changed);
+            item.insert(QStringLiteral("pieces"), list);
+            mappings.replace(shown.second, item);
+            block.insert(QStringLiteral("mappings"), mappings);
+            blocks.replace(shown.first, block);
+            document.insert(QStringLiteral("blocks"), blocks);
+        },
+        error);
 }
 
 bool MappingCanvas::setPieceMetatile(int index, const Metatile& metatile, QString* error) {
