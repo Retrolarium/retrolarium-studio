@@ -18,6 +18,7 @@
 #include "sdk/project_file.hpp"
 
 #include <QCoreApplication>
+#include <QElapsedTimer>
 #include <QFileInfo>
 #include <QJsonArray>
 #include <QImage>
@@ -526,6 +527,43 @@ int main(int argc, char** argv) {
                    QStringLiteral("Deep Strider does not draw as one still"));
             for (const sdk::DocumentGroup& group : session->documents(QStringLiteral("bosses")))
                 expect(group.title != QLatin1String("Deep Strider"), QStringLiteral("Bosses list Deep Strider"));
+        }
+
+        // Every boss animation opens and paints at a click's pace: the view
+        // asks its canvas, origin and pieces on every paint.
+        {
+            QElapsedTimer timer;
+            qint64 slowest = 0;
+            QString slow;
+            QStringList stray;
+            for (const sdk::DocumentGroup& group : session->documents(QStringLiteral("bosses"))) {
+                for (const sdk::DocumentEntry& entry : group.documents) {
+                    timer.start();
+                    std::unique_ptr<sdk::EditorModel> model = session->openEditor(QStringLiteral("bosses"), entry.id);
+                    auto* canvas = qobject_cast<sdk::CompositionModel*>(model.get());
+                    expect(canvas != nullptr, QStringLiteral("boss %1 does not open").arg(entry.id));
+                    for (int paint = 0; paint < 5; ++paint) {
+                        canvas->render();
+                        canvas->pieces();
+                        canvas->focusRect();
+                    }
+                    // No part it draws stands far off, where nothing put it
+                    // (Sunset Sting's core at the origin once did).
+                    const QPoint middle = QPoint(canvas->canvasSize().width() / 2, canvas->canvasSize().height() / 2);
+                    for (const sdk::CompositionPiece& piece : canvas->pieces()) {
+                        const QPoint off = piece.pixels.center() - middle;
+                        if (std::abs(off.x()) > 400 || std::abs(off.y()) > 400)
+                            stray << QStringLiteral("%1 %2").arg(entry.id, piece.label);
+                    }
+                    if (timer.elapsed() > slowest) {
+                        slowest = timer.elapsed();
+                        slow = entry.id;
+                    }
+                }
+            }
+            expect(slowest < 3000, QStringLiteral("boss %1 takes %2 ms to open and paint").arg(slow).arg(slowest));
+            expect(stray.isEmpty(),
+                   QStringLiteral("boss parts stand far off: %1").arg(stray.mid(0, 8).join(QStringLiteral(", "))));
         }
 
         // Palettes list places, not bare commands: every place shows only

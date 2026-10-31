@@ -6,6 +6,8 @@
 #include "alien_soldier/plugin/screens_model.hpp"
 #include "alien_soldier/plugin/session.hpp"
 
+#include "sdk/game_names.hpp"
+
 #include <QJsonArray>
 #include <QPainter>
 #include <QSet>
@@ -156,7 +158,7 @@ QVector<PaletteLocation> PalettesModel::locations(const AlienSoldierSession* ses
         PaletteLocation place;
         place.id = QStringLiteral("boss:%1").arg(boss.value(QStringLiteral("id")).toString());
         place.group = QStringLiteral("bosses");
-        place.title = boss.value(QStringLiteral("title")).toString();
+        place.title = bossPreviewTitle(boss);
         place.steps = stepsOf(palettes, boss.value(QStringLiteral("palettes")).toArray());
         if (!place.steps.isEmpty()) result.append(place);
     }
@@ -340,11 +342,11 @@ QVector<sdk::PaletteSample> PalettesModel::samples() const {
         result.append(sample);
     };
     const auto addBoss = [&](const QJsonObject& boss) {
-        BossesModel model(session_, QStringLiteral("boss:%1").arg(boss.value(QStringLiteral("id")).toString()));
         sdk::PaletteSample sample;
-        sample.label = boss.value(QStringLiteral("title")).toString();
+        sample.label = bossPreviewTitle(boss);
         sample.caption = tr("Boss");
-        sample.image = cropped(model.render(), model.focusRect());
+        sample.image = makeBossPreview(session_, boss, true).image;
+        sample.tightFrame = true;
         result.append(sample);
     };
 

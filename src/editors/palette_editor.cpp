@@ -77,8 +77,8 @@ private:
 // cropped.
 class PreviewPane final : public QWidget {
 public:
-    PreviewPane(const QImage& image, int minimumWidth, QWidget* parent)
-        : QWidget(parent), image_(image), minimumWidth_(minimumWidth) {
+    PreviewPane(const QImage& image, int minimumWidth, bool tightFrame, QWidget* parent)
+        : QWidget(parent), image_(image), minimumWidth_(minimumWidth), tightFrame_(tightFrame) {
         // A scene takes the column's height; a sprite sample is only as tall
         // as it shows, from the top, with no empty band above it.
         if (minimumWidth_ > 0 || image_.isNull()) {
@@ -89,6 +89,11 @@ public:
             QSizePolicy policy(QSizePolicy::Expanding, QSizePolicy::Preferred);
             policy.setHeightForWidth(true);
             setSizePolicy(policy);
+            if (tightFrame_) {
+                const int largest = isScene() ? kSceneScale : kMaxSpriteScale;
+                const int scale = std::clamp(kMaxSampleHeight / image_.height(), 1, largest);
+                setMaximumWidth(std::max(280, image_.width() * scale + 32));
+            }
         }
     }
 
@@ -97,7 +102,10 @@ public:
         if (image_.isNull()) return 250;
         return image_.height() * fittedScale(std::max(1, width - 32)) + 32;
     }
-    QSize sizeHint() const override { return hasHeightForWidth() ? QSize(280, heightForWidth(280)) : QSize(280, 250); }
+    QSize sizeHint() const override {
+        const int width = tightFrame_ ? maximumWidth() : 280;
+        return hasHeightForWidth() ? QSize(width, heightForWidth(width)) : QSize(280, 250);
+    }
 
 protected:
     void paintEvent(QPaintEvent*) override {
@@ -148,6 +156,7 @@ private:
 
     QImage image_;
     int minimumWidth_;
+    bool tightFrame_;
 };
 
 // One clickable step of a channel picker.
@@ -283,9 +292,12 @@ void PaletteEditor::rebuild() {
     // Swatch rows.
     const QVector<sdk::PaletteRow> rows = palette_->rows();
     const QPoint current = palette_->currentEntry();
-    // One or two rows fit across the top; from three on the swatches stack
-    // in the left column so the preview starts at the top beside them.
-    const bool stacked = rows.size() > 2;
+    const QVector<sdk::PaletteSample> samples = palette_->samples();
+    // Framed sprite previews stay at the top beside the swatches even when
+    // there are only one or two palette rows.
+    const bool stacked =
+        rows.size() > 2 ||
+        std::any_of(samples.begin(), samples.end(), [](const sdk::PaletteSample& sample) { return sample.tightFrame; });
     QVBoxLayout* swatches = stacked ? side_ : top_;
     top_->parentWidget()->setVisible(!stacked);
     side_->parentWidget()->setVisible(stacked);
@@ -385,7 +397,6 @@ void PaletteEditor::rebuild() {
     left_->addWidget(picker);
 
     // Where it's used: one sample at a time, large, redrawn on every edit.
-    const QVector<sdk::PaletteSample> samples = palette_->samples();
     if (!samples.isEmpty()) {
         QWidget* rightParent = right_->parentWidget();
         int shown = -1;
@@ -424,9 +435,10 @@ void PaletteEditor::rebuild() {
             tabsRow->addStretch(1);
             right_->addLayout(tabsRow);
         }
-        auto* pane = new PreviewPane(samples.at(shown).image, samples.at(shown).minimumWidth, rightParent);
+        auto* pane = new PreviewPane(samples.at(shown).image, samples.at(shown).minimumWidth,
+                                     samples.at(shown).tightFrame, rightParent);
         const bool sprite = pane->hasHeightForWidth();
-        right_->addWidget(pane, sprite ? 0 : 1);
+        right_->addWidget(pane, sprite ? 0 : 1, samples.at(shown).tightFrame ? Qt::AlignHCenter : Qt::Alignment());
         auto* caption = new ui::Label(samples.at(shown).caption, ui::Label::Role::Small, rightParent);
         caption->setTone(QStringLiteral("muted"));
         right_->addWidget(caption);

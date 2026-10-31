@@ -58,10 +58,11 @@ public:
     explicit CompositionCanvas(sdk::CompositionModel* model, QWidget* parent = nullptr);
 
     int zoom() const { return zoom_; }
+    qreal displayZoom() const { return fit_ ? fitZoom_ : zoom_; }
     // A fixed zoom; turns fitting off.
     void setZoom(int zoom);
     // Fitting picks the largest whole zoom at which the focus area fits the
-    // view, never below 1x (the view scrolls then).
+    // view. Reference models may opt into shrinking below 1x.
     bool isFitting() const { return fit_; }
     void setFitting(bool fit);
     void refresh();
@@ -96,6 +97,7 @@ private:
     sdk::CompositionModel* model_;
     QImage image_;
     int zoom_ = 2;
+    qreal fitZoom_ = 1.0;
     bool fit_ = true;
     QRect view_;  // canvas pixels shown; grows, never shrinks
     QString dragging_;

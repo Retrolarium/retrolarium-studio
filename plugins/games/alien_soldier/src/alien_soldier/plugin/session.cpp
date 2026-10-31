@@ -196,7 +196,7 @@ QString AlienSoldierSession::stagePartLabel(int stage, int part) const {
     const QStringList names = name.split(QStringLiteral(" / "));
     if (arenas > 0 && names.size() == arenas + 1 && part >= 0 && part < names.size())
         return tr("Stage %1 · %2").arg(two(stage + 1), names.at(part).trimmed());
-    // One name and one arena: the boss is fought there (Flying-Neo), the
+    // One name and one arena: the boss is fought there (the airborne boss), the
     // stage itself is the run up to it.
     if (arenas == 1 && names.size() == 1 && !name.isEmpty())
         return part == 0 ? tr("Stage %1").arg(two(stage + 1)) : stageLabel(stage);
@@ -414,7 +414,7 @@ QVector<sdk::DocumentGroup> AlienSoldierSession::documents(const QString& kind) 
         const bool dirty = documents_.tracked(Doc::Mappings).isDirty();
         for (const QJsonValue& value : objects.value(QStringLiteral("groups")).toArray()) {
             const QJsonObject item = value.toObject();
-            // The kit's title for the file ("Back Stringer"), else its name.
+            // The kit's title for the file ("the extended-reach boss"), else its name.
             sdk::DocumentGroup file =
                 group(item.value(QStringLiteral("title")).toString(item.value(QStringLiteral("id")).toString()));
             for (const QJsonValue& label : item.value(QStringLiteral("blocks")).toArray()) {

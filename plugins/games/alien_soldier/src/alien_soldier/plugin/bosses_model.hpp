@@ -3,17 +3,28 @@
 #include "alien_soldier/data/bosses.hpp"
 #include "sdk/editor_model.hpp"
 
+#include <QHash>
 #include <QJsonObject>
 
 namespace rl::alien_soldier {
 
 class AlienSoldierSession;
 
+// One game-owned presentation shared by Objects and Palettes. Part IDs remain
+// source indices; their hit areas follow the framed and scaled picture.
+struct BossPreview {
+    QImage image;
+    QVector<sdk::CompositionPiece> pieces;
+};
+
+BossPreview makeBossPreview(AlienSoldierSession* session, const QJsonObject& boss, bool paletteSample = false);
+QString bossPreviewTitle(const QJsonObject& boss);
+
 // A jointed boss (graphics/bosses.json): one of its animations, stepped as
 // the game steps it (its keyframes, or every frame). A part dragged turns its
 // own joint in the pose shown; the inspector edits a pose's channels and an
 // animation's commands. A boss with no pose table (its code alone turns its
-// parts) shows as its setup leaves it, to look at only.
+// parts) uses the shared assembled preview, to inspect only.
 class BossesModel final : public sdk::CompositionModel {
     Q_OBJECT
 
@@ -37,6 +48,7 @@ public:
     QPoint origin() const override;
     QImage render() const override;
     QRect focusRect() const override;
+    bool canShrinkToFit() const override { return mode_ == Mode::Still; }
 
     QVector<sdk::CompositionPiece> pieces() const override;
     QString selectedPiece() const override { return piece_; }
@@ -53,12 +65,16 @@ public:
     void setPlayStep(int step) override;
 
     // A readable name for an animation label: the boss's name and the
-    // closing words left out (Boss_AntroidLeapAttackAPoses of
-    // Antroid reads "Leap attack A").
+    // closing words left out (the corresponding source symbol of
+    // the jointed boss reads "Leap attack A").
     static QString animationTitle(const QString& label, const QString& boss);
 
 private:
     enum class Mode { Animation, Still };
+
+    const BossPreview& preview() const;
+    mutable BossPreview preview_;
+    mutable bool previewReady_ = false;
 
     QJsonObject boss() const;
     QJsonArray poseRows() const;
@@ -101,6 +117,14 @@ private:
     // A looping animation stepped again from where it ends.
     mutable PoseFrames looped_;
     mutable QRect focus_;
+    // The canvas only grows while the view is open, so a drag that reaches
+    // further does not move what is already drawn.
+    mutable QSize canvas_;
+    mutable QString canvasKey_;  // what canvas_ was last fitted to
+    // Whether a part's mapping, as its attribute draws it, leaves any pixel
+    // (by mapping and attribute).
+    mutable QHash<QString, bool> drawsPixels_;
+    bool drawsPixels(const QJsonObject& record, const PlacedPart& part) const;
     mutable SpriteContext context_;
     mutable bool contextReady_ = false;
     QJsonObject dragBefore_;

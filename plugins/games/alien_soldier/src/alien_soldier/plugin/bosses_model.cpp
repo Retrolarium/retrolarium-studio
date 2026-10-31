@@ -1,8 +1,10 @@
 #include "alien_soldier/plugin/bosses_model.hpp"
 
 #include "alien_soldier/plugin/session.hpp"
+#include "sdk/game_names.hpp"
 
 #include <QJsonArray>
+#include <QPainter>
 #include <QRegularExpression>
 
 #include <algorithm>
@@ -43,7 +45,164 @@ sdk::Field readOnlyField(const QString& key, const QString& label, const QString
     return field;
 }
 
+// Boss previews show one still, not the union of an animation's frames.
+// Transparent margins are equal on every side, regardless of the boss origin.
+QRect visiblePixels(const QImage& image) {
+    QRect area;
+    for (int y = 0; y < image.height(); ++y) {
+        const QRgb* row = reinterpret_cast<const QRgb*>(image.constScanLine(y));
+        for (int x = 0; x < image.width(); ++x)
+            if (qAlpha(row[x])) area |= QRect(x, y, 1, 1);
+    }
+    return area;
+}
+
+QImage framed(const QImage& image) {
+    const QRect ink = visiblePixels(image);
+    if (ink.isEmpty()) return image;
+    const QRect crop = ink.adjusted(-8, -8, 8, 8);
+    QImage result(crop.size(), QImage::Format_ARGB32);
+    result.fill(Qt::transparent);
+    QPainter painter(&result);
+    painter.drawImage(-crop.topLeft(), image);
+    return result;
+}
+
+QJsonObject previewSpec(const QJsonObject& boss) {
+    return sdk::gameCatalog("boss_palette_previews")
+        .toObject()
+        .value(QStringLiteral("bosses"))
+        .toObject()
+        .value(boss.value(QStringLiteral("id")).toString())
+        .toObject();
+}
+
 }  // namespace
+
+QString bossPreviewTitle(const QJsonObject& boss) {
+    return previewSpec(boss).value(QStringLiteral("title")).toString(boss.value(QStringLiteral("title")).toString());
+}
+
+BossPreview makeBossPreview(AlienSoldierSession* session, const QJsonObject& boss, bool paletteSample) {
+    QJsonObject spec = previewSpec(boss);
+    if (paletteSample) {
+        const QJsonObject overrides = spec.value(QStringLiteral("palette")).toObject();
+        for (auto item = overrides.begin(); item != overrides.end(); ++item) spec.insert(item.key(), item.value());
+    }
+    const QJsonArray animations = boss.value(QStringLiteral("sequences")).toArray();
+    if (spec.isEmpty() && !boss.value(QStringLiteral("poses")).isNull() && !animations.isEmpty()) {
+        const QString id = boss.value(QStringLiteral("id")).toString();
+        BossesModel model(session, QStringLiteral("anim:%1:%2").arg(id, animations.first().toString()));
+        return {framed(model.render()), {}};
+    }
+    QVector<int> words;
+    QJsonArray values = boss.value(QStringLiteral("neutral_pose")).toArray();
+    const QJsonArray poses = session->doc(Doc::Bosses)
+                                 .value(QStringLiteral("poses"))
+                                 .toObject()
+                                 .value(boss.value(QStringLiteral("poses")).toString())
+                                 .toArray();
+    const int pose = spec.value(QStringLiteral("pose")).toInt(-1);
+    if (pose >= 0 && pose < poses.size()) values = poses.at(pose).toObject().value(QStringLiteral("values")).toArray();
+    for (const QJsonValue& value : values) words.append(value.toInt() << 8);
+    BossStance stance;
+    stance.facing = boss.value(QStringLiteral("faces")).toInt(0x100);
+    QVector<PlacedPart> parts =
+        placeBoss(boss, session->doc(Doc::Bosses).value(QStringLiteral("cosine")).toArray(), words, stance);
+    const SpriteContext context = bossContext(session->docs(), boss);
+    QJsonObject alone = boss;
+    alone.remove(QStringLiteral("body"));
+    const auto pixels = [&](const PlacedPart& part) {
+        const QRect rect = partRect(boss, part, session->docs());
+        if (rect.isEmpty()) return QRect();
+        QImage image(rect.size(), QImage::Format_ARGB32);
+        image.fill(Qt::transparent);
+        drawBoss(image, -rect.topLeft(), alone, {part}, session->docs(), context);
+        return visiblePixels(image).translated(rect.topLeft());
+    };
+    // Game-owned presentation changes affect this copy of the placements only.
+    const QJsonObject positions = spec.value(QStringLiteral("part_positions")).toObject();
+    const QJsonObject offsets = spec.value(QStringLiteral("part_offsets")).toObject();
+    for (PlacedPart& part : parts) {
+        const QString index = QString::number(part.index);
+        if (positions.contains(index)) {
+            const QJsonArray at = positions.value(index).toArray();
+            part.at = QPoint(at.at(0).toInt(), at.at(1).toInt());
+        }
+        const QJsonArray delta = offsets.value(index).toArray();
+        if (delta.size() == 2) part.at += QPoint(delta.at(0).toInt(), delta.at(1).toInt());
+    }
+    for (const QJsonValue& value : spec.value(QStringLiteral("chains")).toArray()) {
+        const QJsonObject chain = value.toObject();
+        const QJsonArray direction = chain.value(QStringLiteral("direction")).toArray();
+        const QPoint step(direction.at(0).toInt(), direction.at(1).toInt());
+        const bool horizontal = step.x() != 0;
+        const int sign = horizontal ? step.x() : step.y();
+        if (std::abs(sign) != 1 || (horizontal && step.y() != 0)) continue;
+        const QRect anchor = pixels(parts.first());
+        int cursor = horizontal ? (sign > 0 ? anchor.right() + 1 : anchor.left() - 1)
+                                : (sign > 0 ? anchor.bottom() + 1 : anchor.top() - 1);
+        for (const QJsonValue& index : chain.value(QStringLiteral("parts")).toArray()) {
+            if (index.toInt(-1) < 0 || index.toInt() >= parts.size()) continue;
+            PlacedPart& part = parts[index.toInt()];
+            const QRect local = pixels(part).translated(-part.at);
+            if (local.isEmpty()) continue;
+            part.at = horizontal ? QPoint(cursor - (sign > 0 ? local.left() : local.right()), -local.center().y())
+                                 : QPoint(-local.center().x(), cursor - (sign > 0 ? local.top() : local.bottom()));
+            cursor += sign * (horizontal ? local.width() : local.height());
+        }
+    }
+    const QJsonArray hidden = spec.value(QStringLiteral("hidden_parts")).toArray();
+    QJsonObject viewBoss = boss;
+    QJsonArray records = boss.value(QStringLiteral("parts")).toArray();
+    for (PlacedPart& part : parts) {
+        if (!hidden.contains(part.index)) continue;
+        part.mapping.clear();
+        QJsonObject record = records.at(part.index).toObject();
+        record.insert(QStringLiteral("kind"), QStringLiteral("none"));
+        records.replace(part.index, record);
+        // Keep the indices stable for plane carriers and depth sorting.
+    }
+    viewBoss.insert(QStringLiteral("parts"), records);
+    const int columns = spec.value(QStringLiteral("body_columns")).toInt();
+    if (columns > 0) {
+        QJsonObject body = viewBoss.value(QStringLiteral("body")).toObject();
+        QJsonArray cells;
+        for (const QJsonValue& value : body.value(QStringLiteral("cells")).toArray()) {
+            const QJsonArray row = value.toArray();
+            QJsonArray shortened;
+            for (int column = 0; column < std::min(columns, row.size()); ++column) shortened.append(row.at(column));
+            cells.append(shortened);
+        }
+        body.insert(QStringLiteral("cells"), cells);
+        viewBoss.insert(QStringLiteral("body"), body);
+    }
+    QRect area = bodyRect(viewBoss);
+    for (const PlacedPart& part : parts) area |= partRect(viewBoss, part, session->docs());
+    if (area.isEmpty()) return {};
+    area = area.adjusted(-8, -8, 8, 8);
+    QImage image(area.size(), QImage::Format_ARGB32);
+    image.fill(Qt::transparent);
+    drawBoss(image, -area.topLeft(), viewBoss, parts, session->docs(), context);
+    const int scale = std::clamp(spec.value(QStringLiteral("pixel_scale")).toInt(1), 1, 8);
+    if (scale > 1) image = image.scaled(image.size() * scale, Qt::KeepAspectRatio, Qt::FastTransformation);
+    BossPreview result;
+    const QRect ink = visiblePixels(image);
+    result.image = framed(image);
+    const QPoint translation = -area.topLeft() * scale - ink.topLeft() + QPoint(8, 8);
+    for (const PlacedPart& part : parts) {
+        if (hidden.contains(part.index)) continue;
+        const QRect bounds = pixels(part);
+        if (bounds.isEmpty()) continue;
+        sdk::CompositionPiece piece;
+        piece.id = QString::number(part.index);
+        piece.label = BossesModel::tr("Part %1").arg(part.index);
+        piece.pixels = QRect(bounds.topLeft() * scale + translation, bounds.size() * scale) & result.image.rect();
+        piece.movable = false;
+        if (!piece.pixels.isEmpty()) result.pieces.append(piece);
+    }
+    return result;
+}
 
 BossesModel::BossesModel(AlienSoldierSession* session, const QString& document)
     : CompositionModel(session), session_(session) {
@@ -59,6 +218,7 @@ BossesModel::BossesModel(AlienSoldierSession* session, const QString& document)
         if (doc == Doc::Bosses || doc == Doc::Mappings || doc == Doc::Tiles || doc == Doc::Compressed ||
             doc == Doc::Palettes) {
             if (doc != Doc::Bosses && doc != Doc::Mappings) contextReady_ = false;
+            previewReady_ = false;
             emit contentChanged();
         }
     });
@@ -153,7 +313,7 @@ QVector<PlacedPart> BossesModel::placed(int frame) const {
 }
 
 BossStance BossesModel::stance() const {
-    // A boss whose code never turns it (Wolf Garopa, its body built facing
+    // A boss whose code never turns it (the mounted boss, its body built facing
     // one way) stands as it is built.
     BossStance kept = stance_;
     const QJsonValue faces = boss().value(QStringLiteral("faces"));
@@ -163,17 +323,19 @@ BossStance BossesModel::stance() const {
 
 void BossesModel::refresh() {
     focus_ = QRect();
+    drawsPixels_.clear();
     emit toolsChanged();
     emit contentChanged();
 }
 
 QString BossesModel::title() const {
-    const QString name = boss().value(QStringLiteral("title")).toString();
+    const QString name =
+        mode_ == Mode::Still ? bossPreviewTitle(boss()) : boss().value(QStringLiteral("title")).toString();
     return mode_ == Mode::Still ? name : tr("%1 · %2").arg(name, animationTitle(label_, name));
 }
 
 QString BossesModel::readOnlyReason() const {
-    return tr("The game's code turns this boss's parts itself; it shows as its setup leaves it.");
+    return tr("The assembled boss is shown in full. Select a part to inspect it.");
 }
 
 QString BossesModel::statusText() const {
@@ -224,19 +386,75 @@ void BossesModel::setViewOption(const QString& key, const QString& value) {
     refresh();
 }
 
+const BossPreview& BossesModel::preview() const {
+    if (!previewReady_) {
+        preview_ = makeBossPreview(session_, boss());
+        previewReady_ = true;
+    }
+    return preview_;
+}
+
 QSize BossesModel::canvasSize() const {
-    const QRect body = bodyRect(boss());
-    const int across = std::max(std::abs(body.left()), std::abs(body.right() + 1));
-    const int down = std::max(std::abs(body.top()), std::abs(body.bottom() + 1)) + 32;
-    return {std::max(512, 2 * across + 64), std::max(512, 2 * down + 64)};
+    if (mode_ == Mode::Still) return preview().image.size();
+    // Every paint asks; the frames are laid out again only when the mappings
+    // or the view change (a pose dragged further grows it when the view
+    // opens again: laying out every frame on each step of a drag is slow).
+    const QString key = QStringLiteral("%1/%2/%3/%4")
+                            .arg(session_->revision(Doc::Mappings))
+                            .arg(everyFrame_)
+                            .arg(stance_.facing)
+                            .arg(stance_.side);
+    if (key == canvasKey_) return canvas_;
+    canvasKey_ = key;
+    const QJsonObject record = boss();
+    QRect area = bodyRect(record);
+    const int count = int(frames().size());
+    for (int frame = 0; frame < std::max(1, count); ++frame) {
+        for (const PlacedPart& part : placed(frame)) {
+            if (drawsPixels(record, part)) area |= partRect(record, part, session_->docs());
+        }
+    }
+    const int across = std::max(std::abs(area.left()), std::abs(area.right() + 1));
+    const int down = std::max(std::abs(area.top()), std::abs(area.bottom() + 1)) + 32;
+    const QSize needed(std::max(512, 2 * across + 64), std::max(512, 2 * down + 64));
+    canvas_ = canvas_.expandedTo(needed);
+    return canvas_;
+}
+
+bool BossesModel::drawsPixels(const QJsonObject& record, const PlacedPart& part) const {
+    const QRect rect = partRect(record, part, session_->docs());
+    if (rect.isEmpty()) return false;
+    const QString key = QStringLiteral("%1/%2/%3").arg(part.index).arg(part.mapping).arg(part.attribute);
+    const auto known = drawsPixels_.constFind(key);
+    if (known != drawsPixels_.constEnd()) return known.value();
+    if (!contextReady_) {
+        context_ = bossContext(session_->docs(), record);
+        contextReady_ = true;
+    }
+    // The part alone: no body plane, no scene behind it.
+    QJsonObject alone = record;
+    alone.remove(QStringLiteral("body"));
+    alone.remove(QStringLiteral("scene"));
+    QImage image(rect.size(), QImage::Format_ARGB32);
+    image.fill(Qt::transparent);
+    drawBoss(image, -rect.topLeft(), alone, {part}, session_->docs(), context_);
+    bool any = false;
+    for (int y = 0; y < image.height() && !any; ++y) {
+        const QRgb* line = reinterpret_cast<const QRgb*>(image.constScanLine(y));
+        for (int x = 0; x < image.width() && !any; ++x) any = qAlpha(line[x]) != 0;
+    }
+    drawsPixels_.insert(key, any);
+    return any;
 }
 
 QPoint BossesModel::origin() const {
+    if (mode_ == Mode::Still) return {-1, -1};
     const QSize size = canvasSize();
     return {size.width() / 2, size.height() / 2 + 32};
 }
 
 QImage BossesModel::render() const {
+    if (mode_ == Mode::Still) return preview().image;
     QImage image(canvasSize(), QImage::Format_ARGB32);
     image.fill(Qt::transparent);
     const QJsonObject record = boss();
@@ -250,6 +468,7 @@ QImage BossesModel::render() const {
 }
 
 QRect BossesModel::focusRect() const {
+    if (mode_ == Mode::Still) return preview().image.rect();
     stepped();
     if (focus_.isEmpty()) {
         const QJsonObject record = boss();
@@ -266,6 +485,7 @@ QRect BossesModel::focusRect() const {
 }
 
 QVector<sdk::CompositionPiece> BossesModel::pieces() const {
+    if (mode_ == Mode::Still) return preview().pieces;
     QVector<sdk::CompositionPiece> result;
     const QJsonObject record = boss();
     if (record.isEmpty()) return result;
@@ -273,7 +493,9 @@ QVector<sdk::CompositionPiece> BossesModel::pieces() const {
     const bool editable = editedPose() >= 0;
     for (const PlacedPart& part : placed(frame_)) {
         const QRect rect = partRect(record, part, session_->docs());
-        if (rect.isEmpty()) continue;
+        // A record that draws nothing (an empty mapping, a part the code
+        // shows later) gets no outline.
+        if (!drawsPixels(record, part)) continue;
         sdk::CompositionPiece piece;
         piece.id = QString::number(part.index);
         piece.label = tr("Part %1").arg(part.index);
@@ -343,11 +565,10 @@ void BossesModel::endDrag() { session_->commit(Doc::Bosses, dragBefore_, dragRev
 QVector<sdk::CompositionFrame> BossesModel::frames() const {
     QVector<sdk::CompositionFrame> result;
     if (mode_ == Mode::Still) {
-        // A boss its code alone turns (Deep Strider) shows as its setup
-        // leaves it.
+        // The same assembled reference image used by Palettes.
         sdk::CompositionFrame frame;
         frame.id = QStringLiteral("0");
-        frame.label = tr("Set by its code");
+        frame.label = tr("Preview");
         result.append(frame);
         return result;
     }

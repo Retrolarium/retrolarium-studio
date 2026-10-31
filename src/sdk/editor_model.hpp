@@ -228,6 +228,9 @@ struct PaletteSample {
     // A scrolling scene may be cut from the right down to this many pixels
     // to show it at a larger scale; 0 shows the whole image.
     int minimumWidth = 0;
+    // A sprite composition keeps its panel close to the framed image,
+    // instead of filling a wide column with unused canvas.
+    bool tightFrame = false;
 };
 
 // Palettes: rows of swatches and a picker for the selected entry, either a
@@ -363,6 +366,9 @@ public:
     virtual QImage render() const = 0;
     virtual QPoint origin() const { return {-1, -1}; }  // drawn as a crosshair
     virtual int defaultZoom() const { return 2; }
+    // Reference pictures can shrink below 1x in Fit; editable canvases keep
+    // whole-pixel zoom and scroll when the picture is larger than the view.
+    virtual bool canShrinkToFit() const { return false; }
     // The part of the canvas worth showing, in canvas pixels: the editor
     // crops to it and zooms it to fit. Defaults to the whole canvas.
     virtual QRect focusRect() const;

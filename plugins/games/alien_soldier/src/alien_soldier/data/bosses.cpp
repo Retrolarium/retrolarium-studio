@@ -73,15 +73,15 @@ QVector<PlacedPart> placeBoss(const QJsonObject& boss, const QJsonArray& cosine,
     // The boss's code on the channels: its anchors' places, its parts' angles.
     PoseMachine machine;
     machine.loadTables(boss.value(QStringLiteral("tables")).toObject());
-    // What its setup leaves in its records (Wolf Garopa's leg anchors'
-    // angles, Shellshogun's sword hand), same form.
+    // What its setup leaves in its records (the mounted boss's leg anchors'
+    // angles, the armoured boss's sword hand), same form.
     machine.loadTables(boss.value(QStringLiteral("ram")).toObject());
     machine.setAddress(5, slot);
     const quint32 channels = quint32(boss.value(QStringLiteral("channel_base")).toDouble());
     for (int channel = 0; channel < words.size(); ++channel)
         machine.writeRam(channels + 4 * channel, 2, words[channel]);
     machine.writeRam(slot + 0x54, 2, quint32(stance.facing));
-    // A boss built of records its code places (Jetsripper's chain, see the
+    // A boss built of records its code places (the linked-chain boss's chain, see the
     // kit's bosses.py) brings its records in its RAM, and places them by a
     // field pair of their own: $40/$44 against the boss's, or $10/$14.
     const bool chain = boss.contains(QStringLiteral("position_field"));
@@ -109,7 +109,7 @@ QVector<PlacedPart> placeBoss(const QJsonObject& boss, const QJsonArray& cosine,
         machine.run(boss.value(QStringLiteral("pose_code")).toArray());
     }
     // Again on the angles the pose code gave: the game runs it after them
-    // (Back Stringer's arms pick their mappings by angle).
+    // (the extended-reach boss's arms pick their mappings by angle).
     machine.setAddress(5, slot);
     machine.run(boss.value(QStringLiteral("anchor_code")).toArray());
     // Then each record runs its own type's routine (Caterpillar's segments
@@ -136,7 +136,7 @@ QVector<PlacedPart> placeBoss(const QJsonObject& boss, const QJsonArray& cosine,
     for (const QJsonValue& value : facing.value(QStringLiteral("set")).toArray()) mirrored.insert(value.toInt());
     for (const QJsonValue& value : facing.value(QStringLiteral("clear")).toArray()) unmirrored.insert(value.toInt());
     const auto cos = [&cosine](int index) { return cosine.at(index & 0xFF).toInt(); };
-    // The slots the renderer walks down the skeleton (Flying-Neo's start at
+    // The slots the renderer walks down the skeleton (the airborne boss's start at
     // its third); the code places the others.
     const QJsonArray traversed = boss.value(QStringLiteral("traversed")).toArray();
     const int first = traversed.isEmpty() ? 1 : traversed.at(0).toInt();
@@ -147,7 +147,7 @@ QVector<PlacedPart> placeBoss(const QJsonObject& boss, const QJsonArray& cosine,
     // Parts the code places (the boss itself, its anchors) first: the
     // renderer reads them before it reaches them.
     QVector<qint32> xs(parts.size(), 0), ys(parts.size(), 0);
-    // Back Stringer's points half a bone past a part's end, which its
+    // the extended-reach boss's points half a bone past a part's end, which its
     // children may hang from instead.
     QVector<qint32> reachXs(parts.size(), 0), reachYs(parts.size(), 0);
     const quint32 field = quint32(boss.value(QStringLiteral("position_field")).toInt(0x40));
@@ -216,8 +216,8 @@ QVector<PlacedPart> placeBoss(const QJsonObject& boss, const QJsonArray& cosine,
         item.attribute = attribute;
         placed.append(item);
     }
-    // The code after the renderer moves parts further (Madam Barbar's
-    // groups by their 16.16 places, Wolf Garopa's horse's head and rider by
+    // The code after the renderer moves parts further (the grouped boss's
+    // groups by their 16.16 places, the mounted boss's horse's head and rider by
     // their pixel places): it runs on the places the bones gave, and may
     // pick mappings too.
     const QJsonArray after = boss.value(QStringLiteral("post_code")).toArray();
@@ -265,10 +265,10 @@ namespace {
 
 // The body's name-table words as plane B shows them: tile, flips and line
 // from each word, the art and colours the boss draws with. The scene behind
-// that its tiles carry round the body (`scene`: Flying-Neo's sky) is left
+// that its tiles carry round the body (`scene`: the airborne boss's sky) is left
 // out: the colour most of the body's outline has, as far as it reaches in
 // from outside. Only the cells of one priority are drawn: the VDP shows a
-// plane's high-priority cells over the sprites below them (Destroyer-Mk2's
+// plane's high-priority cells over the sprites below them (the tiled-body boss's
 // tower over its linked parts).
 void drawBody(QImage& image, QPoint origin, const QJsonObject& boss, const SpriteContext& context, bool high) {
     const QJsonObject body = boss.value(QStringLiteral("body")).toObject();
@@ -334,7 +334,7 @@ void drawBody(QImage& image, QPoint origin, const QJsonObject& boss, const Sprit
     const QPoint corner =
         origin + QPoint(body.value(QStringLiteral("x")).toInt(), body.value(QStringLiteral("y")).toInt());
     // With column scroll the screen's 16-pixel columns move down apart
-    // (Missiray's segments lift its body), the first from `column_x`.
+    // (the column-scroll boss's segments lift its body), the first from `column_x`.
     const QJsonArray columns = body.value(QStringLiteral("columns")).toArray();
     const int columnX = body.value(QStringLiteral("column_x")).toInt();
     for (int y = 0; y < height; ++y) {

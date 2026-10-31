@@ -87,11 +87,11 @@ public:
     // The screens a stage's fight moves to elsewhere in the map (stages.json
     // `arenas`) that are shown apart from the level.
     QVector<QRect> stageArenas(int stage) const;
-    // A stage whose picture is not where its camera goes (Xi-Tiger's): a
+    // A stage whose picture is not where its camera goes (the camera-only encounter's): a
     // screen apart, left out of the whole level.
     bool stageApart(int stage) const;
     // A stage with arenas apart shows each part of its name on its own
-    // ("Viblack / Back Stringer": the stage, then its arena): part 0 is the
+    // ("the stage-backed boss / the extended-reach boss": the stage, then its arena): part 0 is the
     // stage, part N its N-th arena.
     QString stagePartLabel(int stage, int part) const;
 

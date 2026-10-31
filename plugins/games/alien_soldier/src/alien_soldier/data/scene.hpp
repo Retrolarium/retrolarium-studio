@@ -90,7 +90,7 @@ struct Scene {
     std::vector<int> laterFrom;
     // The stage's fights elsewhere in the map (stages.json `arenas`), drawn
     // with the maps, art and colours their boss loads; an inline one is shown
-    // with the stage (Z-Leo's), the others apart (Back Stringer's web).
+    // with the stage (the rising boss's), the others apart (the extended-reach boss's web).
     std::vector<Scene> arenas;
     std::vector<QRect> arenaRects;
     std::vector<bool> arenaInline;
