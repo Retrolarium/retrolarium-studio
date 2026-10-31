@@ -3,7 +3,7 @@
 // record reads back to the same glyphs through the editor's text, and every
 // song and effect has notes on some channel; map sizes are the kit's, the
 // metatiles of objects go into pieces whole, a map edit that would not fit
-// its slot is refused, and Antroid's animations step as the game steps them.
+// its slot is refused, and the jointed boss's animations step as the game steps them.
 // Reads the project only (the edits are undone).
 //   alien_soldier_session_test <Alien Soldier project .rlj>
 
@@ -19,7 +19,10 @@
 
 #include <QCoreApplication>
 #include <QElapsedTimer>
+#include <QDir>
+#include <QFile>
 #include <QFileInfo>
+#include <QJsonDocument>
 #include <QJsonArray>
 #include <QImage>
 #include <QSet>
@@ -51,6 +54,50 @@ bool drawn(const QImage& image) {
     return false;
 }
 
+// Small or solid-colour parts still count as visible hit areas. The scene
+// smoke check above samples every fourth pixel and is unsuitable for these.
+bool hasPixels(const QImage& image) {
+    for (int y = 0; y < image.height(); ++y)
+        for (int x = 0; x < image.width(); ++x)
+            if (qAlpha(image.pixel(x, y))) return true;
+    return false;
+}
+
+QJsonObject referenceFacts(const QString& project, const QString& explicitPath) {
+    QString path = explicitPath;
+    if (path.isEmpty()) {
+        QDir directory = QFileInfo(project).absoluteDir();
+        do {
+            const QString candidate = directory.filePath(QStringLiteral("tests/fixtures/retrolarium.json"));
+            if (QFileInfo(candidate).isFile()) {
+                path = candidate;
+                break;
+            }
+        } while (directory.cdUp());
+    }
+    QFile file(path);
+    expect(file.open(QIODevice::ReadOnly), QStringLiteral("Cannot open independent test references: %1").arg(path));
+    QJsonParseError error;
+    const QJsonObject document = QJsonDocument::fromJson(file.readAll(), &error).object();
+    expect(
+        error.error == QJsonParseError::NoError &&
+            document.value(QStringLiteral("schema")).toString() == QLatin1String("alien-soldier.retrolarium-tests") &&
+            document.value(QStringLiteral("schema_version")).toInt() == 1 &&
+            document.value(QStringLiteral("studio")).isObject(),
+        QStringLiteral("Invalid independent test references: %1").arg(path));
+    return document.value(QStringLiteral("studio")).toObject();
+}
+
+QVector<int> referenceInts(const QJsonValue& value) {
+    expect(value.isArray(), QStringLiteral("An integer reference list is required"));
+    QVector<int> result;
+    for (const QJsonValue& item : value.toArray()) {
+        expect(item.isDouble(), QStringLiteral("A reference list contains a non-number"));
+        result.append(item.toInt());
+    }
+    return result;
+}
+
 // Deterministic bytes with little to match, as the kit's codec tests make.
 QByteArray noise(int length) {
     QByteArray out;
@@ -66,8 +113,8 @@ QByteArray noise(int length) {
 
 int main(int argc, char** argv) {
     QCoreApplication app(argc, argv);
-    if (argc != 2) {
-        std::cerr << "usage: alien_soldier_session_test <Alien Soldier project .rlj>\n";
+    if (argc != 2 && argc != 3) {
+        std::cerr << "usage: alien_soldier_session_test <Alien Soldier project .rlj> [references.json]\n";
         return 2;
     }
     const QString path = QString::fromLocal8Bit(argv[1]);
@@ -76,6 +123,12 @@ int main(int argc, char** argv) {
         return 0;
     }
     try {
+        const QJsonObject facts = referenceFacts(path, argc == 3 ? QString::fromLocal8Bit(argv[2]) : QString());
+        const auto reference = [&facts](const char* key) {
+            const QString name = QString::fromLatin1(key);
+            expect(facts.contains(name), QStringLiteral("Missing test reference: %1").arg(name));
+            return facts.value(name);
+        };
         QString error;
         const sdk::ProjectFile project = sdk::ProjectFile::load(path, &error);
         expect(!project.path().isEmpty(), error);
@@ -132,6 +185,43 @@ int main(int argc, char** argv) {
             expect(documents > 0, QStringLiteral("the %1 view lists nothing").arg(kind.id));
         }
 
+        // Recorded object previews must agree with the independently decoded
+        // assembled boss, including palette commands that share a CRAM line.
+        for (const QJsonValue& value : reference("object_preview_contexts").toArray()) {
+            const QJsonObject item = value.toObject();
+            const QString label = item.value(QStringLiteral("block")).toString();
+            const SpriteContext object = spriteContext(session->docs(), label);
+            const SpriteContext boss =
+                bossContext(session->docs(), bossById(session->docs(), item.value(QStringLiteral("boss")).toString()));
+            expect(object.known && boss.known && object.vram == boss.vram,
+                   QStringLiteral("object %1 uses different art from its assembled boss").arg(label));
+            expect(object.cram == boss.cram,
+                   QStringLiteral("object %1 uses different colours from its assembled boss").arg(label));
+        }
+
+        // Scene sprites use the palette their own initializer loads, not a
+        // later write into the same CRAM line from a different encounter.
+        for (const QJsonValue& value : reference("object_preview_palettes").toArray()) {
+            const QJsonObject item = value.toObject();
+            const QString label = item.value(QStringLiteral("block")).toString();
+            const SpriteContext actual = spriteContext(session->docs(), label);
+            const SpriteContext expected = spriteContextFrom(
+                session->docs(), QJsonObject{{QStringLiteral("attribute"), 0},
+                                             {QStringLiteral("palettes"), item.value(QStringLiteral("commands"))}});
+            expect(actual.known && actual.cram == expected.cram,
+                   QStringLiteral("scene object %1 uses unrelated palette writes").arg(label));
+        }
+
+        for (const QJsonValue& value : reference("object_outline_previews").toArray()) {
+            const QString label = value.toString();
+            expect(!spriteContext(session->docs(), label).known,
+                   QStringLiteral("unverified object %1 borrowed unrelated art").arg(label));
+            auto model = session->openEditor(QStringLiteral("objects"), label);
+            auto* composition = qobject_cast<sdk::CompositionModel*>(model.get());
+            expect(composition && !composition->render().isNull(),
+                   QStringLiteral("unverified object %1 cannot draw its outlines").arg(label));
+        }
+
         int stages = 0;
         for (int index = 0; index < session->stageCount(); ++index) {
             const Scene& scene = session->stage(index);
@@ -140,19 +230,22 @@ int main(int argc, char** argv) {
                    QStringLiteral("stage slot %1 draws nothing").arg(index + 1));
             ++stages;
         }
-        expect(stages > 20, QStringLiteral("only %1 stages draw").arg(stages));
-        // Seven Force's initializer moves its pattern words to high priority
+        expect(stages > reference("minimum_stages").toInt(), QStringLiteral("only %1 stages draw").arg(stages));
+        // the multi-form encounter's initializer moves its pattern words to high priority
         // (adds $8000) before the stage draws.
-        const Scene& sevenForce = session->stage(19);
-        expect(sevenForce.transforms.size() == 1 && sevenForce.transforms.first().add == 0x8000 &&
-                   (quint8(sevenForce.ram.at(sevenForce.transforms.first().offset + 0x20)) & 0x80),
-               QStringLiteral("Seven Force draws its maps unrewritten"));
+        const Scene& priorityStage = session->stage(reference("priority_stage").toInt());
+        expect(priorityStage.transforms.size() == 1 &&
+                   priorityStage.transforms.first().add == reference("priority_add").toInt() &&
+                   (quint8(priorityStage.ram.at(priorityStage.transforms.first().offset + 0x20)) & 0x80),
+               QStringLiteral("the multi-form encounter draws its maps unrewritten"));
 
         // The levels follow the block sets: every stage of a set shows its own
         // part of the layout, and the first stage's objects stand in it.
         const QVector<BlockSet> sets = session->blockSets();
-        expect(sets.size() >= 10, QStringLiteral("only %1 block sets").arg(sets.size()));
-        expect(sets.first().stages == QVector<int>({0, 1, 2, 3}), QStringLiteral("stages 1-4 are not one level"));
+        expect(sets.size() >= reference("minimum_block_sets").toInt(),
+               QStringLiteral("only %1 block sets").arg(sets.size()));
+        expect(sets.first().stages == referenceInts(reference("first_set_stages")),
+               QStringLiteral("stages 1-4 are not one level"));
         for (const BlockSet& set : sets) {
             for (int stage : set.stages) {
                 const QRect area = session->stageArea(stage);
@@ -175,30 +268,36 @@ int main(int argc, char** argv) {
             }
         }
 
-        // Back Stringer's web, where the fight moves after Viblack, is shown
-        // apart; Z-Leo's fight above his stage is part of it.
-        expect(session->stageArenas(15).size() == 1, QStringLiteral("stage 16 lists no arena"));
+        // the extended-reach boss's web, where the fight moves after the stage-backed boss, is shown
+        // apart; the rising boss's fight above his stage is part of it.
+        expect(session->stageArenas(reference("separate_arena_stage").toInt()).size() == 1,
+               QStringLiteral("stage 16 lists no arena"));
         {
             std::unique_ptr<sdk::EditorModel> model =
-                session->openEditor(QStringLiteral("levels"), QStringLiteral("arena-16-1"));
+                session->openEditor(QStringLiteral("levels"), reference("separate_arena_document").toString());
             auto* map = qobject_cast<sdk::TileMapModel*>(model.get());
             expect(map && drawn(map->render()), QStringLiteral("stage 16's arena draws nothing"));
         }
-        expect(session->stageArenas(24).isEmpty() && session->stageParts(24).size() == 2 &&
-                   !session->stage(24).arenas.empty(),
-               QStringLiteral("Z-Leo's fight is not shown with his stage"));
-        // Flying-Neo fights over the train on a screen of its own; Xi-Tiger's
+        expect(session->stageArenas(reference("inline_arena_stage").toInt()).isEmpty() &&
+                   session->stageParts(reference("inline_arena_stage").toInt()).size() ==
+                       reference("inline_parts").toInt() &&
+                   !session->stage(reference("inline_arena_stage").toInt()).arenas.empty(),
+               QStringLiteral("the rising boss's fight is not shown with his stage"));
+        // the airborne boss fights over the train on a screen of its own; the camera-only encounter's
         // stage is a screen apart from the train's run.
-        expect(session->stageArenas(7).size() == 1 && session->stageArenas(7).first().width() > 320,
-               QStringLiteral("Flying-Neo's fight is not a screen apart"));
-        expect(session->stageApart(8) && !session->stageApart(7),
-               QStringLiteral("Xi-Tiger's stage is in the train's run"));
+        expect(session->stageArenas(reference("wide_arena_stage").toInt()).size() == 1 &&
+                   session->stageArenas(reference("wide_arena_stage").toInt()).first().width() > 320,
+               QStringLiteral("the airborne boss's fight is not a screen apart"));
+        expect(session->stageApart(reference("apart_stage").toInt()) &&
+                   !session->stageApart(reference("wide_arena_stage").toInt()),
+               QStringLiteral("the camera-only encounter's stage is in the train's run"));
         // Epsilon 1's floor, below a raster split, closes the bottom of his
         // screen.
         {
-            const Scene& epsilon = session->stage(16);
+            const Scene& epsilon = session->stage(reference("floor_stage").toInt());
             const QImage floor = renderScene(epsilon, epsilon.floorRect);
-            expect(!epsilon.floorRect.isEmpty() && epsilon.floorRect.bottom() == epsilon.floorRect.top() + 23 &&
+            expect(!epsilon.floorRect.isEmpty() &&
+                       epsilon.floorRect.bottom() == epsilon.floorRect.top() + reference("floor_height").toInt() - 1 &&
                        drawn(floor),
                    QStringLiteral("Epsilon 1's floor does not draw"));
         }
@@ -232,7 +331,7 @@ int main(int argc, char** argv) {
                 ++screens;
             }
         }
-        expect(screens >= 20, QStringLiteral("only %1 screens").arg(screens));
+        expect(screens >= reference("minimum_screens").toInt(), QStringLiteral("only %1 screens").arg(screens));
 
         // The size the kit's encoder gives a whole stream (lzss.py:
         // compress(data, blocks=False) is 1418 bytes for these 5006).
@@ -333,7 +432,7 @@ int main(int argc, char** argv) {
         // The hero's pieces upload their own art: the sheet offers its frames'
         // art; art of the piece's size goes in, other sizes stay out.
         {
-            const QString block = QStringLiteral("Player_DirectionalSecondarySpriteMapping00");
+            const QString block = reference("hero_mapping").toString();
             std::unique_ptr<sdk::EditorModel> model = session->openEditor(QStringLiteral("objects"), block);
             auto* canvas = qobject_cast<sdk::CompositionModel*>(model.get());
             expect(canvas != nullptr, QStringLiteral("%1 does not open").arg(block));
@@ -342,7 +441,7 @@ int main(int argc, char** argv) {
             const int offered = int(std::count_if(library.items.begin(), library.items.end(), [](const auto& item) {
                 return item.id.startsWith(QLatin1String("art:"));
             }));
-            expect(arts.size() > 10 && offered == arts.size(),
+            expect(arts.size() > reference("hero_minimum_art").toInt() && offered == arts.size(),
                    QStringLiteral("the hero's sheet offers %1 of %2 art").arg(offered).arg(arts.size()));
             canvas->selectPiece(QStringLiteral("0"));
             PieceArt current;
@@ -371,42 +470,48 @@ int main(int argc, char** argv) {
         }
 
         // The SEGA logo's colours are a table its code copies into line 2.
-        if (contexts.contains(QStringLiteral("FrontendSegaScreenSpriteMapping"))) {
-            const SpriteContext sega =
-                spriteContext(session->docs(), QStringLiteral("FrontendSegaScreenSpriteMapping"));
-            expect(sega.cram.value(2 * 16 + 1) == 0xEEE && sega.cram.value(2 * 16 + 2) == 0xEC0,
+        if (contexts.contains(reference("logo_mapping").toString())) {
+            const SpriteContext sega = spriteContext(session->docs(), reference("logo_mapping").toString());
+            expect(sega.cram.value(reference("logo_palette_line").toInt() * 16 + 1) ==
+                           referenceInts(reference("logo_colours")).at(1) &&
+                       sega.cram.value(reference("logo_palette_line").toInt() * 16 + 2) ==
+                           referenceInts(reference("logo_colours")).at(2),
                    QStringLiteral("the SEGA logo does not draw in its own colours"));
         }
 
-        // Antroid: its idle animation's two keyframes of 33 frames each land
+        // the jointed boss: its idle animation's two keyframes of 33 frames each land
         // on their poses (a step of 1/32 for 33 frames overshoots by one
         // step, as in the game), and every frame of it draws.
         {
             const QVector<sdk::DocumentGroup> groups = session->documents(QStringLiteral("bosses"));
-            const auto antroid = std::find_if(groups.begin(), groups.end(), [](const sdk::DocumentGroup& group) {
-                return group.title == QLatin1String("Antroid");
+            const auto cycleGroup = std::find_if(groups.begin(), groups.end(), [&](const sdk::DocumentGroup& group) {
+                return group.title == reference("idle_title").toString();
             });
-            expect(antroid != groups.end() && antroid->documents.size() > 10,
-                   QStringLiteral("Bosses do not list Antroid's animations"));
+            expect(cycleGroup != groups.end() &&
+                       cycleGroup->documents.size() > reference("idle_minimum_documents").toInt(),
+                   QStringLiteral("Bosses do not list the jointed boss's animations"));
             const QJsonObject boss =
-                bossById(session->docs(), antroid->documents.first().id.section(QLatin1Char(':'), 1, 1));
+                bossById(session->docs(), cycleGroup->documents.first().id.section(QLatin1Char(':'), 1, 1));
             const QJsonArray rows = session->doc(Doc::Bosses)
                                         .value(QStringLiteral("poses"))
                                         .toObject()
                                         .value(boss.value(QStringLiteral("poses")).toString())
                                         .toArray();
-            const PoseRun run = poseRun(session->doc(Doc::Bosses), QStringLiteral("Boss_AntroidIdlePoses"));
-            const QVector<int> start = poseValues(rows, 6);
+            const PoseRun run = poseRun(session->doc(Doc::Bosses), reference("idle_animation").toString());
+            const QVector<int> start = poseValues(rows, reference("idle_initial_pose").toInt());
             const PoseFrames frames = stepPoses(boss, rows, run, start, 1000);
-            expect(run.loops && run.commands.size() == 2 && frames.channels.size() == 66 &&
-                       frames.ends == QVector<int>({32, 65}),
-                   QStringLiteral("Antroid's idle steps %1 frames").arg(frames.channels.size()));
+            expect(run.loops && run.commands.size() == reference("idle_keys").toInt() &&
+                       frames.channels.size() == reference("idle_total_frames").toInt() &&
+                       frames.ends == referenceInts(reference("idle_end_frames")),
+                   QStringLiteral("the jointed boss's idle steps %1 frames").arg(frames.channels.size()));
             const QString document =
-                QStringLiteral("anim:%1:Boss_AntroidIdlePoses").arg(boss.value(QStringLiteral("id")).toString());
+                QStringLiteral("anim:%1:%2")
+                    .arg(boss.value(QStringLiteral("id")).toString(), reference("idle_animation").toString());
             std::unique_ptr<sdk::EditorModel> model = session->openEditor(QStringLiteral("bosses"), document);
             auto* canvas = qobject_cast<sdk::CompositionModel*>(model.get());
-            expect(canvas && canvas->frames().size() == 2 && drawn(canvas->render()) && canvas->pieces().size() > 15,
-                   QStringLiteral("Antroid's idle does not draw"));
+            expect(canvas && canvas->frames().size() == reference("idle_keys").toInt() && drawn(canvas->render()) &&
+                       canvas->pieces().size() > reference("idle_minimum_pieces").toInt(),
+                   QStringLiteral("the jointed boss's idle does not draw"));
             // A channel of the keyframe's pose changes in one undo step.
             const int steps = session->undoStack()->index();
             QString failure;
@@ -416,22 +521,25 @@ int main(int argc, char** argv) {
             session->undoStack()->undo();
             // Played, a keyframe passes through the frames on its way (the
             // first, round again, from the last pose), one a game frame.
-            expect(canvas->playSteps(0) == 33 && canvas->playSteps(1) == 33 && canvas->frameDurationMs(1) == 33 * 17,
-                   QStringLiteral("Antroid's idle plays %1 and %2 frames between its keyframes")
+            expect(canvas->playSteps(0) == referenceInts(reference("idle_key_steps")).at(0) &&
+                       canvas->playSteps(1) == referenceInts(reference("idle_key_steps")).at(1) &&
+                       canvas->frameDurationMs(1) == referenceInts(reference("idle_key_steps")).at(1) * 17,
+                   QStringLiteral("the jointed boss's idle plays %1 and %2 frames between its keyframes")
                        .arg(canvas->playSteps(0))
                        .arg(canvas->playSteps(1)));
             canvas->setCurrentFrame(1);
             const QImage landed = canvas->render();
             canvas->setPlayStep(0);
             const QImage leaving = canvas->render();
-            canvas->setPlayStep(32);
+            canvas->setPlayStep(referenceInts(reference("idle_key_steps")).at(1) - 1);
             const QImage arrived = canvas->render();
             canvas->setPlayStep(-1);
             expect(leaving != landed && arrived == landed,
-                   QStringLiteral("Antroid's idle does not play between its keyframes"));
+                   QStringLiteral("the jointed boss's idle does not play between its keyframes"));
             canvas->setCurrentFrame(0);
             canvas->setViewOption(QStringLiteral("steps"), canvas->viewOptions().last().choices.last());
-            expect(canvas->frames().size() == 66, QStringLiteral("every frame of Antroid's idle is not listed"));
+            expect(canvas->frames().size() == reference("idle_total_frames").toInt(),
+                   QStringLiteral("every frame of the jointed boss's idle is not listed"));
         }
 
         // Sound lists the songs, the effects, the voices and the drum
@@ -443,14 +551,15 @@ int main(int argc, char** argv) {
             expect(titles == QStringList({QStringLiteral("Music"), QStringLiteral("Sound effects"),
                                           QStringLiteral("Voices"), QStringLiteral("Drum samples")}),
                    QStringLiteral("Sound lists %1").arg(titles.join(QStringLiteral(", "))));
-            expect(groups[2].documents.size() == 48 && groups[3].documents.size() == 22,
+            expect(groups[2].documents.size() == reference("voices").toInt() &&
+                       groups[3].documents.size() == reference("drums").toInt(),
                    QStringLiteral("Sound lists %1 voices and %2 drums")
                        .arg(groups[2].documents.size())
                        .arg(groups[3].documents.size()));
             std::unique_ptr<sdk::EditorModel> model =
                 session->openEditor(QStringLiteral("sound"), groups[2].documents.first().id);
             auto* sample = qobject_cast<sdk::SequencerModel*>(model.get());
-            expect(sample && sample->canPreview() && sample->title() == QLatin1String("Voice $10"),
+            expect(sample && sample->canPreview() && sample->title() == reference("first_voice").toString(),
                    QStringLiteral("the first voice does not open"));
         }
 
@@ -508,8 +617,8 @@ int main(int argc, char** argv) {
             expect(session->doc(Doc::Sound) == before, QStringLiteral("sound duration Undo lost source metadata"));
         }
 
-        // A boss its code alone turns (Deep Strider) is under Objects, one
-        // still as its setup leaves it, and not under Bosses.
+        // A boss its code alone turns (the directly driven boss) is under Objects, one
+        // assembled preview shared with Palettes, and not under Bosses.
         {
             const QVector<sdk::DocumentGroup> groups = session->documents(QStringLiteral("objects"));
             const auto coded = std::find_if(groups.begin(), groups.end(), [](const sdk::DocumentGroup& group) {
@@ -517,16 +626,78 @@ int main(int argc, char** argv) {
             });
             expect(coded != groups.end() && !coded->documents.isEmpty(),
                    QStringLiteral("Objects do not list the bosses their code turns"));
-            const auto strider = std::find_if(
+            const auto directEntry = std::find_if(
                 coded->documents.begin(), coded->documents.end(),
-                [](const sdk::DocumentEntry& entry) { return entry.label == QLatin1String("Deep Strider"); });
-            expect(strider != coded->documents.end(), QStringLiteral("Objects do not list Deep Strider"));
-            std::unique_ptr<sdk::EditorModel> model = session->openEditor(QStringLiteral("objects"), strider->id);
+                [&](const sdk::DocumentEntry& entry) { return entry.label == reference("coded_title").toString(); });
+            expect(directEntry != coded->documents.end(),
+                   QStringLiteral("Objects do not list the directly driven boss"));
+            std::unique_ptr<sdk::EditorModel> model = session->openEditor(QStringLiteral("objects"), directEntry->id);
             auto* canvas = qobject_cast<sdk::CompositionModel*>(model.get());
             expect(canvas && canvas->isReadOnly() && canvas->frames().size() == 1 && drawn(canvas->render()),
-                   QStringLiteral("Deep Strider does not draw as one still"));
+                   QStringLiteral("the directly driven boss does not draw as one still"));
+            // Objects and Palettes must agree on every code-driven boss,
+            // including presentation-only offsets, omissions and enlargement.
+            for (const sdk::DocumentEntry& entry : coded->documents) {
+                auto object = session->openEditor(QStringLiteral("objects"), entry.id);
+                auto palette = session->openEditor(QStringLiteral("palettes"), entry.id);
+                auto* composition = qobject_cast<sdk::CompositionModel*>(object.get());
+                auto* colours = qobject_cast<sdk::PaletteModel*>(palette.get());
+                expect(composition && colours, QStringLiteral("shared boss preview does not open: %1").arg(entry.id));
+                const QImage image = composition->render();
+                const QImage sample = colours->samples().first().image;
+                const QJsonObject compact = reference("compact_boss_preview").toObject();
+                if (entry.id.section(QLatin1Char(':'), 1) == compact.value(QStringLiteral("boss")).toString()) {
+                    expect(image.width() >= compact.value(QStringLiteral("object_minimum_width")).toInt() &&
+                               sample.width() <= compact.value(QStringLiteral("palette_maximum_width")).toInt(),
+                           QStringLiteral("the full boss or its compact palette segment is clipped incorrectly"));
+                    const auto pieces = composition->pieces();
+                    expect(std::any_of(pieces.begin(), pieces.end(),
+                                       [&](const sdk::CompositionPiece& piece) {
+                                           return piece.id == compact.value(QStringLiteral("head_part")).toString();
+                                       }),
+                           QStringLiteral("the full boss has lost its detached head"));
+                } else {
+                    expect(image == sample,
+                           QStringLiteral("Objects and Palettes show different boss pictures: %1").arg(entry.id));
+                }
+                expect(composition->canvasSize() == image.size() && composition->focusRect() == image.rect(),
+                       QStringLiteral("boss preview canvas contains unused margins: %1").arg(entry.id));
+                for (const sdk::CompositionPiece& piece : composition->pieces()) {
+                    expect(!piece.movable && !piece.pixels.isEmpty() && image.rect().contains(piece.pixels),
+                           QStringLiteral("boss preview hit area is outside its picture: %1").arg(entry.id));
+                    expect(hasPixels(image.copy(piece.pixels)),
+                           QStringLiteral("boss preview hit area has no visible part: %1").arg(entry.id));
+                }
+            }
+            // Keep an Objects editor open while changing colours elsewhere:
+            // its cached shared preview must repaint, then follow Undo.
+            const QImage beforeColours = canvas->render();
+            expect(session->edit(Doc::Palettes, QStringLiteral("Preview colour check"),
+                                 [](QJsonObject& doc) {
+                                     QJsonArray blocks = doc.value(QStringLiteral("blocks")).toArray();
+                                     for (int b = 0; b < blocks.size(); ++b) {
+                                         QJsonObject block = blocks.at(b).toObject();
+                                         QJsonArray commands = block.value(QStringLiteral("commands")).toArray();
+                                         for (int c = 0; c < commands.size(); ++c) {
+                                             QJsonObject command = commands.at(c).toObject();
+                                             QJsonArray colours = command.value(QStringLiteral("colours")).toArray();
+                                             for (int i = 0; i < colours.size(); ++i)
+                                                 colours.replace(i, colours.at(i).toInt() ^ 0xEEE);
+                                             command.insert(QStringLiteral("colours"), colours);
+                                             commands.replace(c, command);
+                                         }
+                                         block.insert(QStringLiteral("commands"), commands);
+                                         blocks.replace(b, block);
+                                     }
+                                     doc.insert(QStringLiteral("blocks"), blocks);
+                                 }),
+                   QStringLiteral("cannot change preview colours"));
+            expect(canvas->render() != beforeColours, QStringLiteral("Objects keeps stale boss colours"));
+            session->undoStack()->undo();
+            expect(canvas->render() == beforeColours, QStringLiteral("boss preview does not follow colour Undo"));
             for (const sdk::DocumentGroup& group : session->documents(QStringLiteral("bosses")))
-                expect(group.title != QLatin1String("Deep Strider"), QStringLiteral("Bosses list Deep Strider"));
+                expect(group.title != reference("coded_title").toString(),
+                       QStringLiteral("Bosses list the directly driven boss"));
         }
 
         // Every boss animation opens and paints at a click's pace: the view
@@ -548,7 +719,7 @@ int main(int argc, char** argv) {
                         canvas->focusRect();
                     }
                     // No part it draws stands far off, where nothing put it
-                    // (Sunset Sting's core at the origin once did).
+                    // (the radial-chain boss's core at the origin once did).
                     const QPoint middle = QPoint(canvas->canvasSize().width() / 2, canvas->canvasSize().height() / 2);
                     for (const sdk::CompositionPiece& piece : canvas->pieces()) {
                         const QPoint off = piece.pixels.center() - middle;
@@ -589,7 +760,19 @@ int main(int argc, char** argv) {
                     const QVector<sdk::PaletteSample> samples = palette->samples();
                     expect(!samples.isEmpty() && !samples.first().image.isNull(),
                            QStringLiteral("palette %1 has no preview").arg(entry.id));
-                    if (entry.id.startsWith(QLatin1String("boss:")) && rows.size() > 4) ++fights;
+                    if (entry.id.startsWith(QLatin1String("boss:"))) {
+                        const QImage image = samples.first().image.convertToFormat(QImage::Format_ARGB32);
+                        QRect ink;
+                        for (int y = 0; y < image.height(); ++y) {
+                            const QRgb* line = reinterpret_cast<const QRgb*>(image.constScanLine(y));
+                            for (int x = 0; x < image.width(); ++x)
+                                if (qAlpha(line[x])) ink |= QRect(x, y, 1, 1);
+                        }
+                        expect(
+                            !ink.isEmpty() && ink == image.rect().adjusted(8, 8, -8, -8),
+                            QStringLiteral("boss palette %1 has asymmetric margins or clipped pixels").arg(entry.id));
+                        if (rows.size() > 4) ++fights;
+                    }
                 }
             }
             expect(fights > 0, QStringLiteral("no boss fight shows more than four lines"));
