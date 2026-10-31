@@ -580,6 +580,73 @@
     </message>
 </context>
 <context>
+    <name>alien_soldier</name>
+    <message>
+        <source>Alien Soldier</source>
+        <translation>Alien Soldier</translation>
+    </message>
+    <message>
+        <source>Title</source>
+        <translation>Titre</translation>
+    </message>
+    <message>
+        <source>Options</source>
+        <translation>Options</translation>
+    </message>
+    <message>
+        <source>Story</source>
+        <translation>Histoire</translation>
+    </message>
+    <message>
+        <source>Menus and results</source>
+        <translation>Menus et résultats</translation>
+    </message>
+    <message>
+        <source>Stage messages</source>
+        <translation>Messages des niveaux</translation>
+    </message>
+    <message>
+        <source>Boss and ship messages</source>
+        <translation>Messages des boss et du vaisseau</translation>
+    </message>
+    <message>
+        <source>Credits</source>
+        <translation>Générique</translation>
+    </message>
+    <message>
+        <source>Glyph preloads</source>
+        <translation>Glyphes préchargés</translation>
+    </message>
+    <message>
+        <source>Japanese story font</source>
+        <translation>Police japonaise de l’histoire</translation>
+    </message>
+    <message>
+        <source>Results</source>
+        <translation>Résultats</translation>
+    </message>
+    <message>
+        <source>Weapon setup</source>
+        <translation>Choix des armes</translation>
+    </message>
+    <message>
+        <source>Credits opening</source>
+        <translation>Début du générique</translation>
+    </message>
+    <message>
+        <source>Ending</source>
+        <translation>Fin</translation>
+    </message>
+    <message>
+        <source>Credits scene %1</source>
+        <translation>Scène du générique %1</translation>
+    </message>
+    <message>
+        <source>Options and password</source>
+        <translation>Options et mot de passe</translation>
+    </message>
+</context>
+<context>
     <name>castle_excellent</name>
     <message>
         <source>Cannot read %1: %2</source>
@@ -1352,6 +1419,1525 @@
     <message>
         <source>Fruit %1</source>
         <translation>Fruit %1</translation>
+    </message>
+</context>
+<context>
+    <name>rl::alien_soldier::AlienSoldierSession</name>
+    <message>
+        <source>Cannot open the Alien Soldier project: %1</source>
+        <translation>Impossible d’ouvrir le projet Alien Soldier : %1</translation>
+    </message>
+    <message>
+        <source>Mega Drive</source>
+        <translation>Mega Drive</translation>
+    </message>
+    <message>
+        <source>YM2612 + PSG</source>
+        <translation>YM2612 + PSG</translation>
+    </message>
+    <message>
+        <source>Levels</source>
+        <translation>Niveaux</translation>
+    </message>
+    <message>
+        <source>Tiles</source>
+        <translation>Tuiles</translation>
+    </message>
+    <message>
+        <source>Metatiles</source>
+        <translation>Métatuiles</translation>
+    </message>
+    <message>
+        <source>Palettes</source>
+        <translation>Palettes</translation>
+    </message>
+    <message>
+        <source>Animations</source>
+        <translation>Animations</translation>
+    </message>
+    <message>
+        <source>Screens</source>
+        <translation>Écrans</translation>
+    </message>
+    <message>
+        <source>Text</source>
+        <translation>Texte</translation>
+    </message>
+    <message>
+        <source>Sound</source>
+        <translation>Son</translation>
+    </message>
+    <message>
+        <source>Demo</source>
+        <translation>Démo</translation>
+    </message>
+    <message>
+        <source>Playtest</source>
+        <translation>Test</translation>
+    </message>
+    <message>
+        <source>Stage slot %1</source>
+        <translation>Emplacement de niveau %1</translation>
+    </message>
+    <message>
+        <source>Stage %1 · %2</source>
+        <translation>Niveau %1 · %2</translation>
+    </message>
+    <message>
+        <source>no map</source>
+        <translation>pas de carte</translation>
+    </message>
+    <message>
+        <source>Music</source>
+        <translation>Musique</translation>
+    </message>
+    <message>
+        <source>Sound effects</source>
+        <translation>Effets sonores</translation>
+    </message>
+    <message>
+        <source>Attract demos</source>
+        <translation>Démos</translation>
+    </message>
+    <message>
+        <source>Demo %1</source>
+        <translation>Démo %1</translation>
+    </message>
+    <message>
+        <source>Session</source>
+        <translation>Session</translation>
+    </message>
+    <message>
+        <source>Build and run</source>
+        <translation>Compiler et lancer</translation>
+    </message>
+    <message>
+        <source>Cannot save %1: %2</source>
+        <translation>Impossible d’enregistrer %1 : %2</translation>
+    </message>
+    <message>
+        <source>Revert %1</source>
+        <translation>Restaurer %1</translation>
+    </message>
+    <message>
+        <source>Stop recording</source>
+        <translation>Arrêter l’enregistrement</translation>
+    </message>
+    <message>
+        <source>Play demo</source>
+        <translation>Jouer la démo</translation>
+    </message>
+    <message>
+        <source>Plan playtest of %1</source>
+        <translation>Préparer le test de %1</translation>
+    </message>
+    <message>
+        <source>Plan playtest from power-on</source>
+        <translation>Préparer un test depuis l’allumage</translation>
+    </message>
+    <message>
+        <source>Alien Soldier · power-on</source>
+        <translation>Alien Soldier · depuis l’allumage</translation>
+    </message>
+    <message>
+        <source>Plan demo recording</source>
+        <translation>Préparer l’enregistrement de la démo</translation>
+    </message>
+    <message>
+        <source>Plan attract demo</source>
+        <translation>Préparer la démo</translation>
+    </message>
+    <message>
+        <source>Alien Soldier · recording demo %1</source>
+        <translation>Alien Soldier · enregistrement de la démo %1</translation>
+    </message>
+    <message>
+        <source>Alien Soldier · demo %1</source>
+        <translation>Alien Soldier · démo %1</translation>
+    </message>
+    <message>
+        <source>Recording: the demo starts the stage itself, then the controller plays it; it ends after the demo&apos;s time, on Start or on Stop recording.</source>
+        <translation>Enregistrement : la démo lance le niveau elle-même, puis la manette joue ; il s’arrête à la fin du temps de la démo, sur Start ou sur « Arrêter l’enregistrement ».</translation>
+    </message>
+    <message>
+        <source>Nothing was recorded: the demo did not start.</source>
+        <translation>Rien n’a été enregistré : la démo n’a pas commencé.</translation>
+    </message>
+    <message>
+        <source>Cannot write %1.</source>
+        <translation>Impossible d’écrire %1.</translation>
+    </message>
+    <message>
+        <source>Join the recording to demo %1</source>
+        <translation>Joindre l’enregistrement à la démo %1</translation>
+    </message>
+    <message>
+        <source>Record demo %1</source>
+        <translation>Enregistrer la démo %1</translation>
+    </message>
+    <message>
+        <source>Recorded demo %1: %2 steps.</source>
+        <translation>Démo %1 enregistrée : %2 étapes.</translation>
+    </message>
+    <message>
+        <source>Stage %1</source>
+        <translation>Niveau %1</translation>
+    </message>
+    <message>
+        <source>Stages %1–%2</source>
+        <translation>Niveaux %1–%2</translation>
+    </message>
+    <message>
+        <source>Stages %1</source>
+        <translation>Niveaux %1</translation>
+    </message>
+    <message>
+        <source>Whole level</source>
+        <translation>Zone entière</translation>
+    </message>
+    <message>
+        <source>Without a map</source>
+        <translation>Sans carte</translation>
+    </message>
+    <message>
+        <source>Plane B</source>
+        <translation>Plan B</translation>
+    </message>
+    <message>
+        <source>Plane A</source>
+        <translation>Plan A</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n chunks</source>
+        <translation>
+            <numerusform>%n bloc</numerusform>
+            <numerusform>%n blocs</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Objects</source>
+        <translation>Objets</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n frames</source>
+        <translation>
+            <numerusform>%n image</numerusform>
+            <numerusform>%n images</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>%n frames · not seen</source>
+        <translation>
+            <numerusform>%n image · non vu</numerusform>
+            <numerusform>%n images · non vu</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Hero</source>
+        <translation>Héros</translation>
+    </message>
+    <message>
+        <source>Stages</source>
+        <translation>Niveaux</translation>
+    </message>
+    <message>
+        <source>Weapons</source>
+        <translation>Armes</translation>
+    </message>
+    <message>
+        <source>Bosses</source>
+        <translation>Boss</translation>
+    </message>
+    <message>
+        <source>Screens and fonts</source>
+        <translation>Écrans et polices</translation>
+    </message>
+    <message>
+        <source>Credits</source>
+        <translation>Générique</translation>
+    </message>
+    <message>
+        <source>Other</source>
+        <translation>Autres</translation>
+    </message>
+    <message>
+        <source>%1 · arena</source>
+        <translation>%1 · arène</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n metatiles</source>
+        <translation>
+            <numerusform>%n métatuile</numerusform>
+            <numerusform>%n métatuiles</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>%1 · %2</source>
+        <translation>%1 · %2</translation>
+    </message>
+    <message>
+        <source>%1 would take %2 bytes compressed, and its slot in the ROM holds %3: the change is not made.</source>
+        <translation>%1 occuperait %2 octets une fois compressée, et son emplacement dans la ROM en contient %3 : la modification n&apos;est pas appliquée.</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n keyframes</source>
+        <translation>
+            <numerusform>%n image clé</numerusform>
+            <numerusform>%n images clés</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Bosses (code)</source>
+        <translation>Boss (code)</translation>
+    </message>
+    <message>
+        <source>Voices</source>
+        <translation>Voix</translation>
+    </message>
+    <message>
+        <source>Drum samples</source>
+        <translation>Échantillons de batterie</translation>
+    </message>
+    <message>
+        <source>Other palette lists</source>
+        <translation>Autres listes de palettes</translation>
+    </message>
+    <message>
+        <source>Commands no list plays</source>
+        <translation>Commandes hors listes</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n lines</source>
+        <translation>
+            <numerusform>%n ligne</numerusform>
+            <numerusform>%n lignes</numerusform>
+        </translation>
+    </message>
+</context>
+<context>
+    <name>rl::alien_soldier::AnimationsModel</name>
+    <message>
+        <source>→ %1</source>
+        <translation>→ %1</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n calls</source>
+        <translation>
+            <numerusform>%n appel</numerusform>
+            <numerusform>%n appels</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>jump</source>
+        <translation>saut</translation>
+    </message>
+    <message>
+        <source>%1 · entry %2 of %3</source>
+        <translation>%1 · entrée %2 sur %3</translation>
+    </message>
+    <message>
+        <source>Animation</source>
+        <translation>Animation</translation>
+    </message>
+    <message>
+        <source>Mapping</source>
+        <translation>Mapping</translation>
+    </message>
+    <message>
+        <source>Jumps to</source>
+        <translation>Saute à</translation>
+    </message>
+    <message>
+        <source>Duration</source>
+        <translation>Durée</translation>
+    </message>
+    <message>
+        <source>Change animation</source>
+        <translation>Modifier l’animation</translation>
+    </message>
+    <message>
+        <source>A frame lasts 1 to 65535 calls; a jump stays a jump.</source>
+        <translation>Une image dure de 1 à 65535 appels ; un saut reste un saut.</translation>
+    </message>
+    <message>
+        <source>hold</source>
+        <translation>tenir</translation>
+    </message>
+    <message>
+        <source>holds the frame for good</source>
+        <translation>garde l’image pour de bon</translation>
+    </message>
+    <message>
+        <source>A frame lasts its duration in calls of the animation reader; a duration whose low byte is $80 or more holds the frame for good, which is how a script ends. An entry stays a frame or a jump.</source>
+        <translation>Une image dure sa durée en appels du lecteur d’animation ; une durée dont l’octet bas vaut $80 ou plus garde l’image pour de bon, c’est ainsi qu’un script se termine. Une entrée reste une image ou un saut.</translation>
+    </message>
+</context>
+<context>
+    <name>rl::alien_soldier::BossesModel</name>
+    <message>
+        <source>%1 · %2</source>
+        <translation>%1 · %2</translation>
+    </message>
+    <message>
+        <source>%1 · %2 parts · %3 channels</source>
+        <translation>%1 · %2 pièces · %3 canaux</translation>
+    </message>
+    <message>
+        <source>Faces</source>
+        <translation>Regarde</translation>
+    </message>
+    <message>
+        <source>Left</source>
+        <translation>à gauche</translation>
+    </message>
+    <message>
+        <source>Right</source>
+        <translation>à droite</translation>
+    </message>
+    <message>
+        <source>Sides</source>
+        <translation>Côtés</translation>
+    </message>
+    <message>
+        <source>As built</source>
+        <translation>telle quelle</translation>
+    </message>
+    <message>
+        <source>Swapped</source>
+        <translation>inversés</translation>
+    </message>
+    <message>
+        <source>Shows</source>
+        <translation>Affiche</translation>
+    </message>
+    <message>
+        <source>Keyframes</source>
+        <translation>images clés</translation>
+    </message>
+    <message>
+        <source>Every frame</source>
+        <translation>chaque image</translation>
+    </message>
+    <message>
+        <source>Part %1</source>
+        <translation>Pièce %1</translation>
+    </message>
+    <message>
+        <source>Turn boss joint</source>
+        <translation>Tourner l&apos;articulation du boss</translation>
+    </message>
+    <message>
+        <source>Pose %1</source>
+        <translation>Pose %1</translation>
+    </message>
+    <message>
+        <source>pose %1</source>
+        <translation>pose %1</translation>
+    </message>
+    <message>
+        <source>sound %1</source>
+        <translation>son %1</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n frames</source>
+        <translation>
+            <numerusform>%n image</numerusform>
+            <numerusform>%n images</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Boss</source>
+        <translation>Boss</translation>
+    </message>
+    <message>
+        <source>Boss part</source>
+        <translation>Pièce du boss</translation>
+    </message>
+    <message>
+        <source>Draws</source>
+        <translation>Dessine</translation>
+    </message>
+    <message>
+        <source>Hangs from</source>
+        <translation>Accrochée à</translation>
+    </message>
+    <message>
+        <source>the boss itself</source>
+        <translation>le boss lui-même</translation>
+    </message>
+    <message>
+        <source>part %1</source>
+        <translation>pièce %1</translation>
+    </message>
+    <message>
+        <source>Bone</source>
+        <translation>Os</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n pixels</source>
+        <translation>
+            <numerusform>%n pixel</numerusform>
+            <numerusform>%n pixels</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Depth</source>
+        <translation>Profondeur</translation>
+    </message>
+    <message>
+        <source>Joint (channel %1)</source>
+        <translation>Articulation (canal %1)</translation>
+    </message>
+    <message>
+        <source>A part sits at the end of its bone from its parent, turned by the channels its joint adds up. Drag it to turn its own joint in the pose shown.</source>
+        <translation>Une pièce se trouve au bout de son os depuis son parent, tournée par les canaux que son articulation additionne. Faites-la glisser pour tourner son articulation dans la pose affichée.</translation>
+    </message>
+    <message>
+        <source>Boss animation</source>
+        <translation>Animation du boss</translation>
+    </message>
+    <message>
+        <source>Pose</source>
+        <translation>Pose</translation>
+    </message>
+    <message>
+        <source>Frames</source>
+        <translation>Images</translation>
+    </message>
+    <message>
+        <source>Steps</source>
+        <translation>Pas</translation>
+    </message>
+    <message>
+        <source>Label</source>
+        <translation>Étiquette</translation>
+    </message>
+    <message>
+        <source>Ends</source>
+        <translation>Fin</translation>
+    </message>
+    <message>
+        <source>starts again</source>
+        <translation>recommence</translation>
+    </message>
+    <message>
+        <source>holds the last pose</source>
+        <translation>reste sur la dernière pose</translation>
+    </message>
+    <message>
+        <source>runs on into %1</source>
+        <translation>enchaîne sur %1</translation>
+    </message>
+    <message>
+        <source>Channel %1</source>
+        <translation>Canal %1</translation>
+    </message>
+    <message>
+        <source>A keyframe steps towards its pose by 1/steps of the way each frame, for frames + 1 frames, from where the last one left off; the canvas shows where it lands. The channels are its pose&apos;s, shared with every animation that goes to it. The game&apos;s code picks the animation and moves the boss.</source>
+        <translation>Une image clé avance vers sa pose de 1/pas du chemin à chaque image, pendant images + 1 images, depuis là où la précédente s&apos;est arrêtée ; le canevas montre où elle aboutit. Les canaux sont ceux de sa pose, partagés avec toute animation qui y va. Le code du jeu choisit l&apos;animation et déplace le boss.</translation>
+    </message>
+    <message>
+        <source>A channel holds 0-255.</source>
+        <translation>Un canal contient 0 à 255.</translation>
+    </message>
+    <message>
+        <source>Change boss pose</source>
+        <translation>Modifier la pose du boss</translation>
+    </message>
+    <message>
+        <source>Frames 0-255 but 128, steps 1-255, a pose the table holds.</source>
+        <translation>Images 0 à 255 sauf 128, pas 1 à 255, une pose de la table.</translation>
+    </message>
+    <message>
+        <source>Change boss animation</source>
+        <translation>Modifier l&apos;animation du boss</translation>
+    </message>
+    <message>
+        <source>Frames over steps</source>
+        <translation>Images en plus des pas</translation>
+    </message>
+    <message>
+        <source>Frames over steps run -127 to 127.</source>
+        <translation>Images en plus des pas : de -127 à 127.</translation>
+    </message>
+    <message>
+        <source>Checked</source>
+        <translation>Vérifié</translation>
+    </message>
+    <message>
+        <source>not yet against the game: its own code may place some parts elsewhere</source>
+        <translation>pas encore comparé au jeu : son propre code peut placer certaines pièces ailleurs</translation>
+    </message>
+    <message>
+        <source>Set by its code</source>
+        <translation>Fixée par son code</translation>
+    </message>
+    <message>
+        <source>The game&apos;s code turns this boss&apos;s parts itself; it shows as its setup leaves it.</source>
+        <translation>Le code du jeu fait lui-même tourner les pièces de ce boss ; il est montré tel que sa mise en place le laisse.</translation>
+    </message>
+</context>
+<context>
+    <name>rl::alien_soldier::DemoModel</name>
+    <message>
+        <source>Demo %1</source>
+        <translation>Démo %1</translation>
+    </message>
+    <message>
+        <source>Step</source>
+        <translation>Étape</translation>
+    </message>
+    <message>
+        <source>Frames</source>
+        <translation>Images</translation>
+    </message>
+    <message>
+        <source>Buttons held</source>
+        <translation>Boutons maintenus</translation>
+    </message>
+    <message>
+        <source>Newly pressed</source>
+        <translation>Nouvellement pressés</translation>
+    </message>
+    <message>
+        <source>Starts at</source>
+        <translation>Commence à</translation>
+    </message>
+    <message>
+        <source>idle</source>
+        <translation>inactif</translation>
+    </message>
+    <message>
+        <source>A step lasts 1-65535 frames.</source>
+        <translation>Une étape dure de 1 à 65535 images.</translation>
+    </message>
+    <message>
+        <source>Buttons are UP, DOWN, LEFT, RIGHT, A, B, C and START.</source>
+        <translation>Les boutons sont UP, DOWN, LEFT, RIGHT, A, B, C et START.</translation>
+    </message>
+    <message>
+        <source>Edit demo %1 step %2</source>
+        <translation>Modifier l’étape %2 de la démo %1</translation>
+    </message>
+    <message>
+        <source>%1 steps, %2 s · %3 / %4 bytes</source>
+        <translation>%1 étapes, %2 s · %3 / %4 octets</translation>
+    </message>
+    <message>
+        <source>Loop demo</source>
+        <translation>Démo en boucle</translation>
+    </message>
+    <message>
+        <source>Build and play the demo over and over, as the console plays it after the title</source>
+        <translation>Compiler et jouer la démo en boucle, comme la console après le titre</translation>
+    </message>
+    <message>
+        <source>Stop recording</source>
+        <translation>Arrêter l’enregistrement</translation>
+    </message>
+    <message>
+        <source>Finish the recording and keep it as the demo</source>
+        <translation>Terminer l’enregistrement et le garder comme démo</translation>
+    </message>
+    <message>
+        <source>Record</source>
+        <translation>Enregistrer</translation>
+    </message>
+    <message>
+        <source>Play the demo&apos;s stage with your controller; what you play becomes the demo</source>
+        <translation>Jouer le niveau de la démo à la manette ; ce que vous jouez devient la démo</translation>
+    </message>
+    <message>
+        <source>Record a new demo %1?</source>
+        <translation>Enregistrer une nouvelle démo %1 ?</translation>
+    </message>
+    <message>
+        <source>The demo starts %1 itself, then you play with your controller. After the demo&apos;s time, on Start or on Stop recording, what you played replaces the current steps (%2 of them). Undo brings them back.</source>
+        <translation>La démo lance %1 elle-même, puis vous jouez à la manette. À la fin du temps de la démo, ou quand vous appuyez sur Start ou sur Arrêter l’enregistrement, ce que vous avez joué remplace les étapes actuelles (%2). Annuler les rétablit.</translation>
+    </message>
+    <message>
+        <source>Attract demo %1</source>
+        <translation>Démo %1</translation>
+    </message>
+    <message>
+        <source>Idle start</source>
+        <translation>Attente initiale</translation>
+    </message>
+    <message>
+        <source>Step %1</source>
+        <translation>Étape %1</translation>
+    </message>
+    <message>
+        <source>Stage</source>
+        <translation>Niveau</translation>
+    </message>
+    <message>
+        <source>After the title has idled the game plays its four demos in turn, each for %1 frames or until Start. A step holds its buttons for its frames; newly pressed buttons are the ones the game sees go down on its first frame. The steps press Start on the title and C on the weapon setup themselves. Write buttons as words, e.g. RIGHT C.</source>
+        <translation>Après une attente sur le titre, le jeu joue ses quatre démos à tour de rôle, chacune pendant %1 images ou jusqu’à Start. Une étape maintient ses boutons pendant ses images ; les boutons nouvellement pressés sont ceux que le jeu voit s’enfoncer à sa première image. Les étapes pressent elles-mêmes Start sur le titre et C au choix des armes. Écrivez les boutons en mots, par ex. RIGHT C.</translation>
+    </message>
+    <message>
+        <source>Change demo %1 stage</source>
+        <translation>Changer le niveau de la démo %1</translation>
+    </message>
+</context>
+<context>
+    <name>rl::alien_soldier::LevelsModel</name>
+    <message>
+        <source>This stage slot applies no stage record.</source>
+        <translation>Cet emplacement de niveau n’applique aucun enregistrement de niveau.</translation>
+    </message>
+    <message>
+        <source>Objects</source>
+        <translation>Objets</translation>
+    </message>
+    <message>
+        <source>Chunks</source>
+        <translation>Blocs</translation>
+    </message>
+    <message>
+        <source>Select</source>
+        <translation>Sélection</translation>
+    </message>
+    <message>
+        <source>Paint chunks</source>
+        <translation>Peindre des blocs</translation>
+    </message>
+    <message>
+        <source>Pick a chunk</source>
+        <translation>Choisir un bloc</translation>
+    </message>
+    <message>
+        <source>Select and move</source>
+        <translation>Sélectionner et déplacer</translation>
+    </message>
+    <message>
+        <source>Plane A</source>
+        <translation>Plan A</translation>
+    </message>
+    <message>
+        <source>Plane B</source>
+        <translation>Plan B</translation>
+    </message>
+    <message>
+        <source>%1 · object %2</source>
+        <translation>%1 · objet %2</translation>
+    </message>
+    <message>
+        <source>Move object</source>
+        <translation>Déplacer l’objet</translation>
+    </message>
+    <message>
+        <source>Chunk %1</source>
+        <translation>Bloc %1</translation>
+    </message>
+    <message>
+        <source>pick a chunk, then paint the coarse map</source>
+        <translation>choisissez un bloc, puis peignez la carte grossière</translation>
+    </message>
+    <message>
+        <source>No map is loaded here.</source>
+        <translation>Aucune carte n’est chargée ici.</translation>
+    </message>
+    <message>
+        <source>%1 is not an editable map.</source>
+        <translation>%1 n’est pas une carte modifiable.</translation>
+    </message>
+    <message>
+        <source>Object</source>
+        <translation>Objet</translation>
+    </message>
+    <message>
+        <source>X</source>
+        <translation>X</translation>
+    </message>
+    <message>
+        <source>Y</source>
+        <translation>Y</translation>
+    </message>
+    <message>
+        <source>Type</source>
+        <translation>Type</translation>
+    </message>
+    <message>
+        <source>Parameter</source>
+        <translation>Paramètre</translation>
+    </message>
+    <message>
+        <source>First slot</source>
+        <translation>Premier emplacement</translation>
+    </message>
+    <message>
+        <source>Last slot</source>
+        <translation>Dernier emplacement</translation>
+    </message>
+    <message>
+        <source>%1 · easy only</source>
+        <translation>%1 · facile seulement</translation>
+    </message>
+    <message>
+        <source>%1 · hard only</source>
+        <translation>%1 · difficile seulement</translation>
+    </message>
+    <message>
+        <source>Stage</source>
+        <translation>Niveau</translation>
+    </message>
+    <message>
+        <source>Record</source>
+        <translation>Enregistrement</translation>
+    </message>
+    <message>
+        <source>Palettes</source>
+        <translation>Palettes</translation>
+    </message>
+    <message>
+        <source>A number from 0 to 65535.</source>
+        <translation>Un nombre de 0 à 65535.</translation>
+    </message>
+    <message>
+        <source>Change object</source>
+        <translation>Modifier l’objet</translation>
+    </message>
+    <message>
+        <source>Change stage</source>
+        <translation>Modifier le niveau</translation>
+    </message>
+    <message>
+        <source>%1 · whole level</source>
+        <translation>%1 · zone entière</translation>
+    </message>
+    <message>
+        <source>The type picks the object&apos;s handler (a multiple of 4); bit 1 keeps it to the easy game, bit 0 to the hard one. X is in the world, Y on the screen (from 128); the object appears when the camera comes within a screen of it. The number of objects is the stage&apos;s own.</source>
+        <translation>Le type choisit le gestionnaire de l’objet (un multiple de 4) ; le bit 1 le réserve au jeu facile, le bit 0 au jeu difficile. X est dans le monde, Y à l’écran (à partir de 128) ; l’objet apparaît quand la caméra arrive à un écran de lui. Le nombre d’objets est propre au niveau.</translation>
+    </message>
+    <message>
+        <source>Level</source>
+        <translation>Zone</translation>
+    </message>
+    <message>
+        <source>Block set</source>
+        <translation>Jeu de blocs</translation>
+    </message>
+    <message>
+        <source>Maps</source>
+        <translation>Cartes</translation>
+    </message>
+    <message>
+        <source>The stage record sets where the cameras and the player start and how its planes enter; the kit refuses values its readers do not index. The stage shows the part of the level its camera covers, from its start to the next stage&apos;s arena.</source>
+        <translation>L’enregistrement du niveau fixe où commencent les caméras et le joueur et comment entrent ses plans ; le kit refuse les valeurs que ses lecteurs n’indexent pas. Le niveau montre la partie de la zone que parcourt sa caméra, de son départ à l’arène du niveau suivant.</translation>
+    </message>
+    <message>
+        <source>The stages of a level load the same chunks and patterns and share one coarse map. Each starts at its marked line; what no stage&apos;s camera reaches is left out.</source>
+        <translation>Les niveaux d’une zone chargent les mêmes blocs et motifs et partagent une carte d’ensemble. Chacun commence à sa ligne marquée ; ce que la caméra d’aucun niveau n’atteint n’est pas affiché.</translation>
+    </message>
+</context>
+<context>
+    <name>rl::alien_soldier::MappingCanvas</name>
+    <message>
+        <source>Piece %1</source>
+        <translation>Pièce %1</translation>
+    </message>
+    <message>
+        <source>Move sprite piece</source>
+        <translation>Déplacer la pièce de sprite</translation>
+    </message>
+    <message>
+        <source>Colours</source>
+        <translation>Couleurs</translation>
+    </message>
+    <message>
+        <source>Line</source>
+        <translation>Ligne</translation>
+    </message>
+    <message>
+        <source>Sprite piece</source>
+        <translation>Pièce de sprite</translation>
+    </message>
+    <message>
+        <source>X</source>
+        <translation>X</translation>
+    </message>
+    <message>
+        <source>Y</source>
+        <translation>Y</translation>
+    </message>
+    <message>
+        <source>Attributes</source>
+        <translation>Attributs</translation>
+    </message>
+    <message>
+        <source>Size</source>
+        <translation>Taille</translation>
+    </message>
+    <message>
+        <source>The tile index is added to the object&apos;s own; bit 15 ends the mapping and stays as it is.</source>
+        <translation>L’indice de tuile s’ajoute à celui de l’objet ; le bit 15 termine le mapping et reste tel quel.</translation>
+    </message>
+    <message>
+        <source>The end mark (and a dynamic piece&apos;s tile) stay as they are.</source>
+        <translation>La marque de fin (et la tuile d’une pièce dynamique) restent telles quelles.</translation>
+    </message>
+    <message>
+        <source>Change sprite piece</source>
+        <translation>Modifier la pièce de sprite</translation>
+    </message>
+    <message>
+        <source>click: into the piece · or drag onto a piece</source>
+        <translation>clic : dans la pièce · ou faites glisser sur une pièce</translation>
+    </message>
+    <message>
+        <source>drag a metatile onto a piece</source>
+        <translation>faites glisser une métatuile sur une pièce</translation>
+    </message>
+    <message>
+        <source>A dynamic piece draws its own art; it keeps it.</source>
+        <translation>Une pièce dynamique dessine son propre graphisme et le garde.</translation>
+    </message>
+    <message>
+        <source>The piece uploads its own art (%1); drop art of its size from the patterns to change it.</source>
+        <translation>La pièce charge son propre graphisme (%1) ; pour le changer, faites glisser depuis les motifs un graphisme de même taille.</translation>
+    </message>
+    <message>
+        <source>A static piece draws tiles already in VRAM; give it a metatile instead.</source>
+        <translation>Une pièce statique dessine des tuiles déjà en VRAM ; donnez-lui plutôt une métatuile.</translation>
+    </message>
+    <message>
+        <source>The piece is %1×%2 tiles; it takes only art of that size.</source>
+        <translation>La pièce fait %1×%2 tuiles ; elle n&apos;accepte qu&apos;un graphisme de cette taille.</translation>
+    </message>
+</context>
+<context>
+    <name>rl::alien_soldier::MetatilesModel</name>
+    <message>
+        <source>This stage slot loads no map.</source>
+        <translation>Cet emplacement de niveau ne charge aucune carte.</translation>
+    </message>
+    <message>
+        <source>Paint patterns (right button picks)</source>
+        <translation>Peindre des motifs (le bouton droit choisit)</translation>
+    </message>
+    <message>
+        <source>Pick a pattern</source>
+        <translation>Choisir un motif</translation>
+    </message>
+    <message>
+        <source>There is no chunk here.</source>
+        <translation>Il n’y a pas de bloc ici.</translation>
+    </message>
+    <message>
+        <source>No map document holds this chunk.</source>
+        <translation>Aucun document de carte ne contient ce bloc.</translation>
+    </message>
+    <message>
+        <source>pick a pattern, then paint chunk slots</source>
+        <translation>choisissez un motif, puis peignez les cases du bloc</translation>
+    </message>
+    <message>
+        <source>Paint patterns</source>
+        <translation>Peindre des motifs</translation>
+    </message>
+    <message>
+        <source>%1 chunks · %2 patterns</source>
+        <translation>%1 blocs · %2 motifs</translation>
+    </message>
+    <message>
+        <source>Chunks</source>
+        <translation>Blocs</translation>
+    </message>
+    <message>
+        <source>Pattern</source>
+        <translation>Motif</translation>
+    </message>
+    <message>
+        <source>%1 · %2</source>
+        <translation>%1 · %2</translation>
+    </message>
+    <message>
+        <source>Plane B</source>
+        <translation>Plan B</translation>
+    </message>
+    <message>
+        <source>Plane A</source>
+        <translation>Plan A</translation>
+    </message>
+    <message>
+        <source>A chunk is 8x8 patterns and a pattern 4x4 tiles. Every stage of the level draws with these chunks; the build compresses each map again into its slot.</source>
+        <translation>Un bloc fait 8×8 motifs et un motif 4×4 tuiles. Tous les niveaux de la zone se dessinent avec ces blocs ; la compilation recompresse chaque carte dans son emplacement.</translation>
+    </message>
+    <message>
+        <source>%1 · %2 of %3 bytes compressed</source>
+        <translation>%1 · %2 sur %3 octets compressés</translation>
+    </message>
+</context>
+<context>
+    <name>rl::alien_soldier::ObjectMetatilesModel</name>
+    <message numerus="yes">
+        <source>%1 · %n metatiles</source>
+        <translation>
+            <numerusform>%1 · %n métatuile</numerusform>
+            <numerusform>%1 · %n métatuiles</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Object metatiles</source>
+        <translation>Métatuiles de l&apos;objet</translation>
+    </message>
+    <message>
+        <source>What the pieces of this object&apos;s frames draw: a first tile, a size and a palette line. Select one to change it in every frame that uses it; Objects and Animations put them into pieces from their sheet.</source>
+        <translation>Ce que dessinent les pièces des images de cet objet : une première tuile, une taille et une ligne de palette. Sélectionnez-en une pour la modifier dans toutes les images qui l&apos;utilisent ; Objets et Animations les placent dans des pièces depuis leur planche.</translation>
+    </message>
+    <message>
+        <source>Object metatile</source>
+        <translation>Métatuile de l&apos;objet</translation>
+    </message>
+    <message>
+        <source>First tile</source>
+        <translation>Première tuile</translation>
+    </message>
+    <message>
+        <source>Width</source>
+        <translation>Largeur</translation>
+    </message>
+    <message>
+        <source>Height</source>
+        <translation>Hauteur</translation>
+    </message>
+    <message>
+        <source>Palette line</source>
+        <translation>Ligne de palette</translation>
+    </message>
+    <message>
+        <source>Used by</source>
+        <translation>Utilisée par</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n pieces</source>
+        <translation>
+            <numerusform>%n pièce</numerusform>
+            <numerusform>%n pièces</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Every piece of %1 that draws this metatile changes with it. Its tiles run down each column, then right, from the first tile; the sheet on the right picks the first tile.</source>
+        <translation>Chaque pièce de %1 qui dessine cette métatuile change avec elle. Ses tuiles descendent chaque colonne, puis vers la droite, à partir de la première ; la planche de droite choisit la première tuile.</translation>
+    </message>
+    <message>
+        <source>Change metatile</source>
+        <translation>Modifier la métatuile</translation>
+    </message>
+    <message>
+        <source>select a metatile</source>
+        <translation>sélectionnez une métatuile</translation>
+    </message>
+    <message>
+        <source>click: the metatile starts at this tile</source>
+        <translation>clic : la métatuile commence à cette tuile</translation>
+    </message>
+</context>
+<context>
+    <name>rl::alien_soldier::ObjectsModel</name>
+    <message>
+        <source>Frame %1</source>
+        <translation>Image %1</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n pieces</source>
+        <translation>
+            <numerusform>%n pièce</numerusform>
+            <numerusform>%n pièces</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>%1 · frame %2 of %3</source>
+        <translation>%1 · image %2 sur %3</translation>
+    </message>
+    <message>
+        <source>Object</source>
+        <translation>Objet</translation>
+    </message>
+    <message>
+        <source>The game repository records nothing this object draws with yet, so its pieces show as outlines in the view&apos;s colours.</source>
+        <translation>Le dépôt du jeu ne note pas encore avec quoi cet objet se dessine : ses pièces s’affichent en contours, dans les couleurs de la vue.</translation>
+    </message>
+    <message>
+        <source>Attribute</source>
+        <translation>Attribut</translation>
+    </message>
+    <message>
+        <source>Base tile</source>
+        <translation>Tuile de base</translation>
+    </message>
+    <message>
+        <source>Palette line</source>
+        <translation>Ligne de palette</translation>
+    </message>
+    <message>
+        <source>Art at %1</source>
+        <translation>Graphismes à %1</translation>
+    </message>
+    <message>
+        <source>Colours</source>
+        <translation>Couleurs</translation>
+    </message>
+    <message>
+        <source>Not seen in play itself: it draws with what another block of its file was seen with. The tiles change with the art they come from.</source>
+        <translation>Pas vu en jeu lui-même : il se dessine avec ce qu’utilisait un autre bloc de son fichier. Les tuiles changent avec les graphismes dont elles viennent.</translation>
+    </message>
+    <message>
+        <source>Drawn with the attribute, art and colours the game was seen using for it. The tiles change with the art they come from.</source>
+        <translation>Dessiné avec l’attribut, les graphismes et les couleurs que le jeu utilisait pour lui. Les tuiles changent avec les graphismes dont elles viennent.</translation>
+    </message>
+    <message>
+        <source>Animations</source>
+        <translation>Animations</translation>
+    </message>
+    <message>
+        <source>none</source>
+        <translation>aucune</translation>
+    </message>
+</context>
+<context>
+    <name>rl::alien_soldier::PalettesModel</name>
+    <message>
+        <source>9-bit RGB · 0–7 per channel</source>
+        <translation>RGB 9 bits · 0–7 par canal</translation>
+    </message>
+    <message>
+        <source>Red</source>
+        <translation>Rouge</translation>
+    </message>
+    <message>
+        <source>Green</source>
+        <translation>Vert</translation>
+    </message>
+    <message>
+        <source>Blue</source>
+        <translation>Bleu</translation>
+    </message>
+    <message>
+        <source>Change colour</source>
+        <translation>Modifier la couleur</translation>
+    </message>
+    <message>
+        <source>Stage start</source>
+        <translation>Début du niveau</translation>
+    </message>
+    <message>
+        <source>Screen</source>
+        <translation>Écran</translation>
+    </message>
+    <message>
+        <source>%1 · line %2, entry %3</source>
+        <translation>%1 · ligne %2, entrée %3</translation>
+    </message>
+    <message>
+        <source>Palette commands</source>
+        <translation>Commandes de palette</translation>
+    </message>
+    <message>
+        <source>CRAM word</source>
+        <translation>Mot CRAM</translation>
+    </message>
+    <message>
+        <source>Line %1</source>
+        <translation>Ligne %1</translation>
+    </message>
+    <message>
+        <source>This command does not write that colour.</source>
+        <translation>Cette commande n’écrit pas cette couleur.</translation>
+    </message>
+    <message>
+        <source>Stages %1–%2</source>
+        <translation>Niveaux %1–%2</translation>
+    </message>
+    <message>
+        <source>Stages %1</source>
+        <translation>Niveaux %1</translation>
+    </message>
+    <message>
+        <source>Boss</source>
+        <translation>Boss</translation>
+    </message>
+    <message>
+        <source>Object</source>
+        <translation>Objet</translation>
+    </message>
+    <message>
+        <source>No view draws with these colours yet; the code plays them itself.</source>
+        <translation>Aucune vue ne dessine encore avec ces couleurs ; le code du jeu les charge lui-même.</translation>
+    </message>
+    <message>
+        <source>Command</source>
+        <translation>Commande</translation>
+    </message>
+    <message>
+        <source>A place&apos;s colours are the commands it plays, in order, each writing its colours from its destination on; only the lines they write are shown. A command several places play changes in all of them. Which places play it is fixed, and so is the number of colours.</source>
+        <translation>Les couleurs d&apos;un lieu sont les commandes qu&apos;il exécute, dans l&apos;ordre ; chacune écrit ses couleurs à partir de sa destination. Seules les lignes qu&apos;elles écrivent sont montrées. Une commande exécutée par plusieurs lieux change dans tous. Les lieux qui l&apos;exécutent sont fixes, comme le nombre de couleurs.</translation>
+    </message>
+</context>
+<context>
+    <name>rl::alien_soldier::PlaytestModel</name>
+    <message>
+        <source>Start at</source>
+        <translation>Commencer à</translation>
+    </message>
+    <message>
+        <source>Session</source>
+        <translation>Session</translation>
+    </message>
+    <message>
+        <source>Core</source>
+        <translation>Cœur</translation>
+    </message>
+    <message>
+        <source>Start</source>
+        <translation>Début</translation>
+    </message>
+    <message>
+        <source>Build</source>
+        <translation>Compiler</translation>
+    </message>
+    <message>
+        <source>not built yet</source>
+        <translation>pas encore compilé</translation>
+    </message>
+    <message>
+        <source>Play from selected saves the project, builds the ROM with the kit and starts the selected stage in MAME inside this view: the title and story are skipped and the stage&apos;s password is entered for you. Play starts the game from power-on. Opening a stage in Levels selects it.</source>
+        <translation>Jouer depuis la sélection enregistre le projet, compile la ROM avec le kit et lance le niveau sélectionné dans MAME au sein de cette vue : le titre et l’histoire sont passés et le mot de passe du niveau est saisi pour vous. Jouer lance le jeu depuis l’allumage. Ouvrir un niveau dans Niveaux le sélectionne.</translation>
+    </message>
+    <message>
+        <source>not found</source>
+        <translation>introuvable</translation>
+    </message>
+    <message>
+        <source>Playtest · %1</source>
+        <translation>Test · %1</translation>
+    </message>
+    <message>
+        <source>Build and run</source>
+        <translation>Compiler et lancer</translation>
+    </message>
+</context>
+<context>
+    <name>rl::alien_soldier::SampleModel</name>
+    <message>
+        <source>Voice %1</source>
+        <translation>Voix %1</translation>
+    </message>
+    <message>
+        <source>Drum %1</source>
+        <translation>Batterie %1</translation>
+    </message>
+    <message>
+        <source>YM2612 DAC</source>
+        <translation>DAC du YM2612</translation>
+    </message>
+    <message>
+        <source>Render %1</source>
+        <translation>Rendre %1</translation>
+    </message>
+    <message>
+        <source>Voice</source>
+        <translation>Voix</translation>
+    </message>
+    <message>
+        <source>Drum sample</source>
+        <translation>Échantillon de batterie</translation>
+    </message>
+    <message>
+        <source>Request</source>
+        <translation>Requête</translation>
+    </message>
+    <message>
+        <source>DAC note</source>
+        <translation>Note DAC</translation>
+    </message>
+    <message>
+        <source>Bank</source>
+        <translation>Banque</translation>
+    </message>
+    <message>
+        <source>%1, sample %2</source>
+        <translation>%1, échantillon %2</translation>
+    </message>
+    <message>
+        <source>Size</source>
+        <translation>Taille</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n bytes</source>
+        <translation>
+            <numerusform>%n octet</numerusform>
+            <numerusform>%n octets</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>The Z80 decodes each byte into two levels and plays them at the pace the voice&apos;s descriptor sets; the game asks for the voice with its request.</source>
+        <translation>Le Z80 décompose chaque octet en deux niveaux et les joue au rythme que fixe le descripteur de la voix ; le jeu demande la voix par sa requête.</translation>
+    </message>
+    <message>
+        <source>The Z80 decodes each byte into two levels and plays them at the pace the sample&apos;s descriptor sets; the music&apos;s DAC channel plays it with its note.</source>
+        <translation>Le Z80 décompose chaque octet en deux niveaux et les joue au rythme que fixe le descripteur de l&apos;échantillon ; le canal DAC de la musique le joue avec sa note.</translation>
+    </message>
+</context>
+<context>
+    <name>rl::alien_soldier::ScreensModel</name>
+    <message>
+        <source>Plane A</source>
+        <translation>Plan A</translation>
+    </message>
+    <message>
+        <source>Plane B</source>
+        <translation>Plan B</translation>
+    </message>
+    <message>
+        <source>Paint tiles (right button picks)</source>
+        <translation>Peindre des tuiles (le bouton droit choisit)</translation>
+    </message>
+    <message>
+        <source>Pick a tile</source>
+        <translation>Choisir une tuile</translation>
+    </message>
+    <message>
+        <source>The plane shows nothing here.</source>
+        <translation>Le plan n’affiche rien ici.</translation>
+    </message>
+    <message>
+        <source>No map document holds this tile.</source>
+        <translation>Aucun document de carte ne contient cette tuile.</translation>
+    </message>
+    <message>
+        <source>Tile %1 · line %2</source>
+        <translation>Tuile %1 · ligne %2</translation>
+    </message>
+    <message>
+        <source>pick a tile; the brush keeps its line and flips</source>
+        <translation>choisissez une tuile ; le pinceau garde sa ligne et ses retournements</translation>
+    </message>
+    <message>
+        <source>Paint screen</source>
+        <translation>Peindre l’écran</translation>
+    </message>
+    <message>
+        <source>%1 · brush tile %2, line %3</source>
+        <translation>%1 · pinceau : tuile %2, ligne %3</translation>
+    </message>
+    <message>
+        <source>Brush</source>
+        <translation>Pinceau</translation>
+    </message>
+    <message>
+        <source>Tile</source>
+        <translation>Tuile</translation>
+    </message>
+    <message>
+        <source>Palette line</source>
+        <translation>Ligne de palette</translation>
+    </message>
+    <message>
+        <source>Flip across</source>
+        <translation>Retourner horizontalement</translation>
+    </message>
+    <message>
+        <source>Flip down</source>
+        <translation>Retourner verticalement</translation>
+    </message>
+    <message>
+        <source>In front</source>
+        <translation>Devant</translation>
+    </message>
+    <message>
+        <source>Two routines adjust the title&apos;s tiles after loading; the screen shows them adjusted, and painting writes the word the map holds.</source>
+        <translation>Deux routines ajustent les tuiles du titre après le chargement ; l’écran les montre ajustées, et peindre écrit le mot que contient la carte.</translation>
+    </message>
+    <message>
+        <source>Unknown field.</source>
+        <translation>Champ inconnu.</translation>
+    </message>
+</context>
+<context>
+    <name>rl::alien_soldier::SoundModel</name>
+    <message>
+        <source>YM2612 + PSG</source>
+        <translation>YM2612 + PSG</translation>
+    </message>
+    <message>
+        <source>DAC</source>
+        <translation>DAC</translation>
+    </message>
+    <message>
+        <source>Noise</source>
+        <translation>Bruit</translation>
+    </message>
+    <message>
+        <source>PSG %1</source>
+        <translation>PSG %1</translation>
+    </message>
+    <message>
+        <source>FM %1</source>
+        <translation>FM %1</translation>
+    </message>
+    <message>
+        <source>Edit note</source>
+        <translation>Modifier une note</translation>
+    </message>
+    <message>
+        <source>Render %1</source>
+        <translation>Rendre %1</translation>
+    </message>
+    <message>
+        <source>Sound preview failed: %1</source>
+        <translation>Échec de l’aperçu du son : %1</translation>
+    </message>
+    <message>
+        <source>The kit reported no WAV for %1.</source>
+        <translation>Le kit n’a renvoyé aucun WAV pour %1.</translation>
+    </message>
+    <message>
+        <source>  Playing %1</source>
+        <translation>  Lecture de %1</translation>
+    </message>
+    <message>
+        <source>%1 bytes · fixed</source>
+        <translation>%1 octets · fixe</translation>
+    </message>
+    <message>
+        <source>%1 · %2</source>
+        <translation>%1 · %2</translation>
+    </message>
+    <message>
+        <source>Music</source>
+        <translation>Musique</translation>
+    </message>
+    <message>
+        <source>Sound effect</source>
+        <translation>Effet sonore</translation>
+    </message>
+    <message>
+        <source>Requests</source>
+        <translation>Requêtes</translation>
+    </message>
+    <message>
+        <source>Tempo</source>
+        <translation>Tempo</translation>
+    </message>
+    <message>
+        <source>FM instruments</source>
+        <translation>Instruments FM</translation>
+    </message>
+    <message>
+        <source>Notes and durations change where the driver reads them; the payload keeps its size and every instruction its place, and the kit checks the edit before it builds.</source>
+        <translation>Les notes et les durées changent là où le pilote les lit ; les données gardent leur taille et chaque instruction sa place, et le kit vérifie la modification avant de compiler.</translation>
+    </message>
+</context>
+<context>
+    <name>rl::alien_soldier::TextModel</name>
+    <message>
+        <source>The font has no “%1”; type its glyph as [$NN].</source>
+        <translation>La police n’a pas de « %1 » ; tapez son glyphe sous la forme [$NN].</translation>
+    </message>
+    <message>
+        <source>The record holds %1 glyphs, not %2.</source>
+        <translation>L’enregistrement contient %1 glyphes, pas %2.</translation>
+    </message>
+    <message>
+        <source>Record</source>
+        <translation>Enregistrement</translation>
+    </message>
+    <message>
+        <source>Text</source>
+        <translation>Texte</translation>
+    </message>
+    <message>
+        <source>Glyphs</source>
+        <translation>Glyphes</translation>
+    </message>
+    <message>
+        <source>Bytes</source>
+        <translation>Octets</translation>
+    </message>
+    <message>
+        <source>Change text</source>
+        <translation>Modifier le texte</translation>
+    </message>
+    <message>
+        <source>%1 · record %2 of %3</source>
+        <translation>%1 · enregistrement %2 sur %3</translation>
+    </message>
+    <message>
+        <source>Delay</source>
+        <translation>Délai</translation>
+    </message>
+    <message>
+        <source>Shared font</source>
+        <translation>Police commune</translation>
+    </message>
+    <message>
+        <source>%1, glyphs %2 to %3. A text keeps its number of glyphs; the bytes the reader needs (terminators, positions, counts) stay as they are.</source>
+        <translation>%1, glyphes %2 à %3. Un texte garde son nombre de glyphes ; les octets dont le lecteur a besoin (terminateurs, positions, compteurs) restent tels quels.</translation>
+    </message>
+    <message>
+        <source>A delay is 0 to 127.</source>
+        <translation>Un délai va de 0 à 127.</translation>
+    </message>
+</context>
+<context>
+    <name>rl::alien_soldier::TilesModel</name>
+    <message>
+        <source>Paint tile</source>
+        <translation>Peindre la tuile</translation>
+    </message>
+    <message>
+        <source>Fill tile</source>
+        <translation>Remplir la tuile</translation>
+    </message>
+    <message>
+        <source>%1 · slot of %2 bytes</source>
+        <translation>%1 · emplacement de %2 octets</translation>
+    </message>
+    <message>
+        <source>Colours</source>
+        <translation>Couleurs</translation>
+    </message>
+    <message>
+        <source>Line</source>
+        <translation>Ligne</translation>
+    </message>
+    <message>
+        <source>%1 · tile %2 of %3</source>
+        <translation>%1 · tuile %2 sur %3</translation>
+    </message>
+    <message>
+        <source>Compressed art</source>
+        <translation>Graphismes compressés</translation>
+    </message>
+    <message>
+        <source>Art</source>
+        <translation>Graphismes</translation>
+    </message>
+    <message>
+        <source>Tile</source>
+        <translation>Tuile</translation>
+    </message>
+    <message>
+        <source>%1 of %2</source>
+        <translation>%1 sur %2</translation>
+    </message>
+    <message>
+        <source>Pen</source>
+        <translation>Encre</translation>
+    </message>
+    <message>
+        <source>The build compresses the edited tiles again; they must fit the payload&apos;s slot, or the build says so.</source>
+        <translation>La compilation recompresse les tuiles modifiées ; elles doivent tenir dans l’emplacement des données, sinon la compilation le signale.</translation>
+    </message>
+    <message>
+        <source>The payload keeps its size and its blocks.</source>
+        <translation>Les données gardent leur taille et leurs blocs.</translation>
+    </message>
+    <message>
+        <source>As in the game</source>
+        <translation>Comme dans le jeu</translation>
     </message>
 </context>
 <context>
@@ -5067,11 +6653,11 @@
     </message>
     <message>
         <source>Mega Drive</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">Mega Drive</translation>
     </message>
     <message>
         <source>YM2612 + PSG</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">YM2612 + PSG</translation>
     </message>
     <message>
         <source>Rounds %1–%2</source>

@@ -580,6 +580,73 @@
     </message>
 </context>
 <context>
+    <name>alien_soldier</name>
+    <message>
+        <source>Alien Soldier</source>
+        <translation>Alien Soldier</translation>
+    </message>
+    <message>
+        <source>Title</source>
+        <translation>タイトル</translation>
+    </message>
+    <message>
+        <source>Options</source>
+        <translation>オプション</translation>
+    </message>
+    <message>
+        <source>Story</source>
+        <translation>ストーリー</translation>
+    </message>
+    <message>
+        <source>Menus and results</source>
+        <translation>メニューとリザルト</translation>
+    </message>
+    <message>
+        <source>Stage messages</source>
+        <translation>ステージのメッセージ</translation>
+    </message>
+    <message>
+        <source>Boss and ship messages</source>
+        <translation>ボスと船のメッセージ</translation>
+    </message>
+    <message>
+        <source>Credits</source>
+        <translation>クレジット</translation>
+    </message>
+    <message>
+        <source>Glyph preloads</source>
+        <translation>先読みグリフ</translation>
+    </message>
+    <message>
+        <source>Japanese story font</source>
+        <translation>ストーリーの日本語フォント</translation>
+    </message>
+    <message>
+        <source>Results</source>
+        <translation>リザルト</translation>
+    </message>
+    <message>
+        <source>Weapon setup</source>
+        <translation>武器セレクト</translation>
+    </message>
+    <message>
+        <source>Credits opening</source>
+        <translation>クレジットの始まり</translation>
+    </message>
+    <message>
+        <source>Ending</source>
+        <translation>エンディング</translation>
+    </message>
+    <message>
+        <source>Credits scene %1</source>
+        <translation>クレジットの場面 %1</translation>
+    </message>
+    <message>
+        <source>Options and password</source>
+        <translation>オプションとパスワード</translation>
+    </message>
+</context>
+<context>
     <name>castle_excellent</name>
     <message>
         <source>Cannot read %1: %2</source>
@@ -1352,6 +1419,1512 @@
     <message>
         <source>Fruit %1</source>
         <translation>フルーツ %1</translation>
+    </message>
+</context>
+<context>
+    <name>rl::alien_soldier::AlienSoldierSession</name>
+    <message>
+        <source>Cannot open the Alien Soldier project: %1</source>
+        <translation>Alien Soldier のプロジェクトを開けません: %1</translation>
+    </message>
+    <message>
+        <source>Mega Drive</source>
+        <translation>Mega Drive</translation>
+    </message>
+    <message>
+        <source>YM2612 + PSG</source>
+        <translation>YM2612 + PSG</translation>
+    </message>
+    <message>
+        <source>Levels</source>
+        <translation>ステージ</translation>
+    </message>
+    <message>
+        <source>Tiles</source>
+        <translation>タイル</translation>
+    </message>
+    <message>
+        <source>Metatiles</source>
+        <translation>メタタイル</translation>
+    </message>
+    <message>
+        <source>Palettes</source>
+        <translation>パレット</translation>
+    </message>
+    <message>
+        <source>Animations</source>
+        <translation>アニメーション</translation>
+    </message>
+    <message>
+        <source>Screens</source>
+        <translation>画面</translation>
+    </message>
+    <message>
+        <source>Text</source>
+        <translation>テキスト</translation>
+    </message>
+    <message>
+        <source>Sound</source>
+        <translation>サウンド</translation>
+    </message>
+    <message>
+        <source>Demo</source>
+        <translation>デモ</translation>
+    </message>
+    <message>
+        <source>Playtest</source>
+        <translation>テストプレイ</translation>
+    </message>
+    <message>
+        <source>Stage slot %1</source>
+        <translation>ステージ枠 %1</translation>
+    </message>
+    <message>
+        <source>Stage %1 · %2</source>
+        <translation>ステージ %1 · %2</translation>
+    </message>
+    <message>
+        <source>no map</source>
+        <translation>マップなし</translation>
+    </message>
+    <message>
+        <source>Music</source>
+        <translation>音楽</translation>
+    </message>
+    <message>
+        <source>Sound effects</source>
+        <translation>効果音</translation>
+    </message>
+    <message>
+        <source>Attract demos</source>
+        <translation>デモ</translation>
+    </message>
+    <message>
+        <source>Demo %1</source>
+        <translation>デモ %1</translation>
+    </message>
+    <message>
+        <source>Session</source>
+        <translation>セッション</translation>
+    </message>
+    <message>
+        <source>Build and run</source>
+        <translation>ビルドして実行</translation>
+    </message>
+    <message>
+        <source>Cannot save %1: %2</source>
+        <translation>%1 を保存できません: %2</translation>
+    </message>
+    <message>
+        <source>Revert %1</source>
+        <translation>%1 を元に戻す</translation>
+    </message>
+    <message>
+        <source>Stop recording</source>
+        <translation>記録を停止</translation>
+    </message>
+    <message>
+        <source>Play demo</source>
+        <translation>デモを再生</translation>
+    </message>
+    <message>
+        <source>Plan playtest of %1</source>
+        <translation>%1 のテストプレイを準備</translation>
+    </message>
+    <message>
+        <source>Plan playtest from power-on</source>
+        <translation>電源投入からのテストプレイを準備</translation>
+    </message>
+    <message>
+        <source>Alien Soldier · power-on</source>
+        <translation>Alien Soldier · 電源投入から</translation>
+    </message>
+    <message>
+        <source>Plan demo recording</source>
+        <translation>デモの記録を準備</translation>
+    </message>
+    <message>
+        <source>Plan attract demo</source>
+        <translation>デモを準備</translation>
+    </message>
+    <message>
+        <source>Alien Soldier · recording demo %1</source>
+        <translation>Alien Soldier · デモ %1 を記録中</translation>
+    </message>
+    <message>
+        <source>Alien Soldier · demo %1</source>
+        <translation>Alien Soldier · デモ %1</translation>
+    </message>
+    <message>
+        <source>Recording: the demo starts the stage itself, then the controller plays it; it ends after the demo&apos;s time, on Start or on Stop recording.</source>
+        <translation>記録中：デモがステージを自動で始め、その後はコントローラーで操作します。デモの時間が過ぎるか、Start か「記録を停止」で終わります。</translation>
+    </message>
+    <message>
+        <source>Nothing was recorded: the demo did not start.</source>
+        <translation>何も記録されませんでした。デモが始まりませんでした。</translation>
+    </message>
+    <message>
+        <source>Cannot write %1.</source>
+        <translation>%1 に書き込めません。</translation>
+    </message>
+    <message>
+        <source>Join the recording to demo %1</source>
+        <translation>記録をデモ %1 につなぐ</translation>
+    </message>
+    <message>
+        <source>Record demo %1</source>
+        <translation>デモ %1 を記録</translation>
+    </message>
+    <message>
+        <source>Recorded demo %1: %2 steps.</source>
+        <translation>デモ %1 を記録しました: %2 ステップ。</translation>
+    </message>
+    <message>
+        <source>Stage %1</source>
+        <translation>ステージ %1</translation>
+    </message>
+    <message>
+        <source>Stages %1–%2</source>
+        <translation>ステージ %1–%2</translation>
+    </message>
+    <message>
+        <source>Stages %1</source>
+        <translation>ステージ %1</translation>
+    </message>
+    <message>
+        <source>Whole level</source>
+        <translation>レベル全体</translation>
+    </message>
+    <message>
+        <source>Without a map</source>
+        <translation>マップなし</translation>
+    </message>
+    <message>
+        <source>Plane B</source>
+        <translation>プレーン B</translation>
+    </message>
+    <message>
+        <source>Plane A</source>
+        <translation>プレーン A</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n chunks</source>
+        <translation>
+            <numerusform>%n チャンク</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Objects</source>
+        <translation>オブジェクト</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n frames</source>
+        <translation>
+            <numerusform>%n フレーム</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>%n frames · not seen</source>
+        <translation>
+            <numerusform>%n フレーム · 未確認</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Hero</source>
+        <translation>主人公</translation>
+    </message>
+    <message>
+        <source>Stages</source>
+        <translation>ステージ</translation>
+    </message>
+    <message>
+        <source>Weapons</source>
+        <translation>武器</translation>
+    </message>
+    <message>
+        <source>Bosses</source>
+        <translation>ボス</translation>
+    </message>
+    <message>
+        <source>Screens and fonts</source>
+        <translation>画面とフォント</translation>
+    </message>
+    <message>
+        <source>Credits</source>
+        <translation>クレジット</translation>
+    </message>
+    <message>
+        <source>Other</source>
+        <translation>その他</translation>
+    </message>
+    <message>
+        <source>%1 · arena</source>
+        <translation>%1 · アリーナ</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n metatiles</source>
+        <translation>
+            <numerusform>%n 個のメタタイル</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>%1 · %2</source>
+        <translation>%1 · %2</translation>
+    </message>
+    <message>
+        <source>%1 would take %2 bytes compressed, and its slot in the ROM holds %3: the change is not made.</source>
+        <translation>%1 は圧縮すると %2 バイトになりますが、ROM 内の領域は %3 バイトです。変更は行われません。</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n keyframes</source>
+        <translation>
+            <numerusform>%n キーフレーム</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Bosses (code)</source>
+        <translation>ボス（コード）</translation>
+    </message>
+    <message>
+        <source>Voices</source>
+        <translation>ボイス</translation>
+    </message>
+    <message>
+        <source>Drum samples</source>
+        <translation>ドラムサンプル</translation>
+    </message>
+    <message>
+        <source>Other palette lists</source>
+        <translation>その他のパレットリスト</translation>
+    </message>
+    <message>
+        <source>Commands no list plays</source>
+        <translation>リスト外のコマンド</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n lines</source>
+        <translation>
+            <numerusform>%n 行</numerusform>
+        </translation>
+    </message>
+</context>
+<context>
+    <name>rl::alien_soldier::AnimationsModel</name>
+    <message>
+        <source>→ %1</source>
+        <translation>→ %1</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n calls</source>
+        <translation>
+            <numerusform>%n 回</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>jump</source>
+        <translation>ジャンプ</translation>
+    </message>
+    <message>
+        <source>%1 · entry %2 of %3</source>
+        <translation>%1 · エントリ %2 / %3</translation>
+    </message>
+    <message>
+        <source>Animation</source>
+        <translation>アニメーション</translation>
+    </message>
+    <message>
+        <source>Mapping</source>
+        <translation>マッピング</translation>
+    </message>
+    <message>
+        <source>Jumps to</source>
+        <translation>ジャンプ先</translation>
+    </message>
+    <message>
+        <source>Duration</source>
+        <translation>長さ</translation>
+    </message>
+    <message>
+        <source>Change animation</source>
+        <translation>アニメーションを変更</translation>
+    </message>
+    <message>
+        <source>A frame lasts 1 to 65535 calls; a jump stays a jump.</source>
+        <translation>フレームの長さは 1〜65535 回です。ジャンプはジャンプのままです。</translation>
+    </message>
+    <message>
+        <source>hold</source>
+        <translation>保持</translation>
+    </message>
+    <message>
+        <source>holds the frame for good</source>
+        <translation>このフレームを最後まで保持</translation>
+    </message>
+    <message>
+        <source>A frame lasts its duration in calls of the animation reader; a duration whose low byte is $80 or more holds the frame for good, which is how a script ends. An entry stays a frame or a jump.</source>
+        <translation>フレームはアニメーション読み取り処理の呼び出し回数で長さが決まります。下位バイトが $80 以上の長さはフレームを最後まで保持し、スクリプトはこうして終わります。エントリはフレームかジャンプのままです。</translation>
+    </message>
+</context>
+<context>
+    <name>rl::alien_soldier::BossesModel</name>
+    <message>
+        <source>%1 · %2</source>
+        <translation>%1 · %2</translation>
+    </message>
+    <message>
+        <source>%1 · %2 parts · %3 channels</source>
+        <translation>%1 · パーツ %2 · チャンネル %3</translation>
+    </message>
+    <message>
+        <source>Faces</source>
+        <translation>向き</translation>
+    </message>
+    <message>
+        <source>Left</source>
+        <translation>左</translation>
+    </message>
+    <message>
+        <source>Right</source>
+        <translation>右</translation>
+    </message>
+    <message>
+        <source>Sides</source>
+        <translation>左右</translation>
+    </message>
+    <message>
+        <source>As built</source>
+        <translation>初期配置</translation>
+    </message>
+    <message>
+        <source>Swapped</source>
+        <translation>入れ替え</translation>
+    </message>
+    <message>
+        <source>Shows</source>
+        <translation>表示</translation>
+    </message>
+    <message>
+        <source>Keyframes</source>
+        <translation>キーフレーム</translation>
+    </message>
+    <message>
+        <source>Every frame</source>
+        <translation>全フレーム</translation>
+    </message>
+    <message>
+        <source>Part %1</source>
+        <translation>パーツ %1</translation>
+    </message>
+    <message>
+        <source>Turn boss joint</source>
+        <translation>ボスの関節を回転</translation>
+    </message>
+    <message>
+        <source>Pose %1</source>
+        <translation>ポーズ %1</translation>
+    </message>
+    <message>
+        <source>pose %1</source>
+        <translation>ポーズ %1</translation>
+    </message>
+    <message>
+        <source>sound %1</source>
+        <translation>効果音 %1</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n frames</source>
+        <translation>
+            <numerusform>%n フレーム</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Boss</source>
+        <translation>ボス</translation>
+    </message>
+    <message>
+        <source>Boss part</source>
+        <translation>ボスのパーツ</translation>
+    </message>
+    <message>
+        <source>Draws</source>
+        <translation>描画</translation>
+    </message>
+    <message>
+        <source>Hangs from</source>
+        <translation>親</translation>
+    </message>
+    <message>
+        <source>the boss itself</source>
+        <translation>ボス本体</translation>
+    </message>
+    <message>
+        <source>part %1</source>
+        <translation>パーツ %1</translation>
+    </message>
+    <message>
+        <source>Bone</source>
+        <translation>ボーン</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n pixels</source>
+        <translation>
+            <numerusform>%n ピクセル</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Depth</source>
+        <translation>奥行き</translation>
+    </message>
+    <message>
+        <source>Joint (channel %1)</source>
+        <translation>関節(チャンネル %1)</translation>
+    </message>
+    <message>
+        <source>A part sits at the end of its bone from its parent, turned by the channels its joint adds up. Drag it to turn its own joint in the pose shown.</source>
+        <translation>パーツは親からのボーンの先にあり、関節が合計するチャンネル分だけ回転します。ドラッグすると、表示中のポーズでその関節を回せます。</translation>
+    </message>
+    <message>
+        <source>Boss animation</source>
+        <translation>ボスのアニメーション</translation>
+    </message>
+    <message>
+        <source>Pose</source>
+        <translation>ポーズ</translation>
+    </message>
+    <message>
+        <source>Frames</source>
+        <translation>フレーム</translation>
+    </message>
+    <message>
+        <source>Steps</source>
+        <translation>ステップ</translation>
+    </message>
+    <message>
+        <source>Label</source>
+        <translation>ラベル</translation>
+    </message>
+    <message>
+        <source>Ends</source>
+        <translation>終了</translation>
+    </message>
+    <message>
+        <source>starts again</source>
+        <translation>最初から繰り返す</translation>
+    </message>
+    <message>
+        <source>holds the last pose</source>
+        <translation>最後のポーズで止まる</translation>
+    </message>
+    <message>
+        <source>runs on into %1</source>
+        <translation>%1 へ続く</translation>
+    </message>
+    <message>
+        <source>Channel %1</source>
+        <translation>チャンネル %1</translation>
+    </message>
+    <message>
+        <source>A keyframe steps towards its pose by 1/steps of the way each frame, for frames + 1 frames, from where the last one left off; the canvas shows where it lands. The channels are its pose&apos;s, shared with every animation that goes to it. The game&apos;s code picks the animation and moves the boss.</source>
+        <translation>キーフレームは前のキーフレームの終わりから、毎フレーム道のりの 1/ステップずつ、フレーム + 1 フレームの間ポーズへ近づきます。キャンバスには到達位置が表示されます。チャンネルはそのポーズのもので、そこへ向かう全アニメーションと共有されます。どのアニメーションを使いボスをどう動かすかはゲームのコードが決めます。</translation>
+    </message>
+    <message>
+        <source>A channel holds 0-255.</source>
+        <translation>チャンネルは 0〜255 です。</translation>
+    </message>
+    <message>
+        <source>Change boss pose</source>
+        <translation>ボスのポーズを変更</translation>
+    </message>
+    <message>
+        <source>Frames 0-255 but 128, steps 1-255, a pose the table holds.</source>
+        <translation>フレームは 128 を除く 0〜255、ステップは 1〜255、ポーズは表にあるもの。</translation>
+    </message>
+    <message>
+        <source>Change boss animation</source>
+        <translation>ボスのアニメーションを変更</translation>
+    </message>
+    <message>
+        <source>Frames over steps</source>
+        <translation>ステップ超過フレーム</translation>
+    </message>
+    <message>
+        <source>Frames over steps run -127 to 127.</source>
+        <translation>ステップ超過フレームは -127〜127 です。</translation>
+    </message>
+    <message>
+        <source>Checked</source>
+        <translation>確認</translation>
+    </message>
+    <message>
+        <source>not yet against the game: its own code may place some parts elsewhere</source>
+        <translation>まだゲームと照合していません。ボス独自のコードが一部のパーツを別の位置に置く場合があります</translation>
+    </message>
+    <message>
+        <source>Set by its code</source>
+        <translation>コードが決める</translation>
+    </message>
+    <message>
+        <source>The game&apos;s code turns this boss&apos;s parts itself; it shows as its setup leaves it.</source>
+        <translation>このボスのパーツはゲームのコード自体が回します。初期設定が残した状態で表示します。</translation>
+    </message>
+</context>
+<context>
+    <name>rl::alien_soldier::DemoModel</name>
+    <message>
+        <source>Demo %1</source>
+        <translation>デモ %1</translation>
+    </message>
+    <message>
+        <source>Step</source>
+        <translation>ステップ</translation>
+    </message>
+    <message>
+        <source>Frames</source>
+        <translation>フレーム</translation>
+    </message>
+    <message>
+        <source>Buttons held</source>
+        <translation>押しているボタン</translation>
+    </message>
+    <message>
+        <source>Newly pressed</source>
+        <translation>押した瞬間のボタン</translation>
+    </message>
+    <message>
+        <source>Starts at</source>
+        <translation>開始位置</translation>
+    </message>
+    <message>
+        <source>idle</source>
+        <translation>待機</translation>
+    </message>
+    <message>
+        <source>A step lasts 1-65535 frames.</source>
+        <translation>ステップの長さは 1〜65535 フレームです。</translation>
+    </message>
+    <message>
+        <source>Buttons are UP, DOWN, LEFT, RIGHT, A, B, C and START.</source>
+        <translation>ボタンは UP、DOWN、LEFT、RIGHT、A、B、C、START です。</translation>
+    </message>
+    <message>
+        <source>Edit demo %1 step %2</source>
+        <translation>デモ %1 のステップ %2 を編集</translation>
+    </message>
+    <message>
+        <source>%1 steps, %2 s · %3 / %4 bytes</source>
+        <translation>%1 ステップ、%2 秒 · %3 / %4 バイト</translation>
+    </message>
+    <message>
+        <source>Loop demo</source>
+        <translation>デモをループ</translation>
+    </message>
+    <message>
+        <source>Build and play the demo over and over, as the console plays it after the title</source>
+        <translation>タイトルの後のゲーム機と同じように、デモをビルドして繰り返し再生します</translation>
+    </message>
+    <message>
+        <source>Stop recording</source>
+        <translation>記録を停止</translation>
+    </message>
+    <message>
+        <source>Finish the recording and keep it as the demo</source>
+        <translation>記録を終えてデモとして保存します</translation>
+    </message>
+    <message>
+        <source>Record</source>
+        <translation>記録</translation>
+    </message>
+    <message>
+        <source>Play the demo&apos;s stage with your controller; what you play becomes the demo</source>
+        <translation>デモのステージをコントローラーで遊びます。遊んだ内容がデモになります</translation>
+    </message>
+    <message>
+        <source>Record a new demo %1?</source>
+        <translation>新しいデモ %1 を記録しますか？</translation>
+    </message>
+    <message>
+        <source>The demo starts %1 itself, then you play with your controller. After the demo&apos;s time, on Start or on Stop recording, what you played replaces the current steps (%2 of them). Undo brings them back.</source>
+        <translation>デモが %1 を自動で始め、その後はコントローラーで遊びます。デモの時間が過ぎるか、Start か「記録を停止」を押すと、遊んだ内容が現在のステップ（%2 個）と置き換わります。元に戻すで復元できます。</translation>
+    </message>
+    <message>
+        <source>Attract demo %1</source>
+        <translation>デモ %1</translation>
+    </message>
+    <message>
+        <source>Idle start</source>
+        <translation>最初の待機</translation>
+    </message>
+    <message>
+        <source>Step %1</source>
+        <translation>ステップ %1</translation>
+    </message>
+    <message>
+        <source>Stage</source>
+        <translation>ステージ</translation>
+    </message>
+    <message>
+        <source>After the title has idled the game plays its four demos in turn, each for %1 frames or until Start. A step holds its buttons for its frames; newly pressed buttons are the ones the game sees go down on its first frame. The steps press Start on the title and C on the weapon setup themselves. Write buttons as words, e.g. RIGHT C.</source>
+        <translation>タイトルでしばらく待つと、ゲームは 4 つのデモを順に再生します。それぞれ %1 フレームか Start まで続きます。ステップは自分のフレーム数のあいだボタンを押し続けます。押した瞬間のボタンは、その最初のフレームでゲームが押下を検出するボタンです。タイトルの Start と武器選択の C はステップ自身が押します。ボタンは単語で書きます（例: RIGHT C）。</translation>
+    </message>
+    <message>
+        <source>Change demo %1 stage</source>
+        <translation>デモ %1 のステージを変更</translation>
+    </message>
+</context>
+<context>
+    <name>rl::alien_soldier::LevelsModel</name>
+    <message>
+        <source>This stage slot applies no stage record.</source>
+        <translation>このステージ枠はステージレコードを適用しません。</translation>
+    </message>
+    <message>
+        <source>Objects</source>
+        <translation>オブジェクト</translation>
+    </message>
+    <message>
+        <source>Chunks</source>
+        <translation>チャンク</translation>
+    </message>
+    <message>
+        <source>Select</source>
+        <translation>選択</translation>
+    </message>
+    <message>
+        <source>Paint chunks</source>
+        <translation>チャンクを塗る</translation>
+    </message>
+    <message>
+        <source>Pick a chunk</source>
+        <translation>チャンクを選ぶ</translation>
+    </message>
+    <message>
+        <source>Select and move</source>
+        <translation>選択・移動</translation>
+    </message>
+    <message>
+        <source>Plane A</source>
+        <translation>プレーン A</translation>
+    </message>
+    <message>
+        <source>Plane B</source>
+        <translation>プレーン B</translation>
+    </message>
+    <message>
+        <source>%1 · object %2</source>
+        <translation>%1 · オブジェクト %2</translation>
+    </message>
+    <message>
+        <source>Move object</source>
+        <translation>オブジェクトを移動</translation>
+    </message>
+    <message>
+        <source>Chunk %1</source>
+        <translation>チャンク %1</translation>
+    </message>
+    <message>
+        <source>pick a chunk, then paint the coarse map</source>
+        <translation>チャンクを選んで粗いマップに塗ります</translation>
+    </message>
+    <message>
+        <source>No map is loaded here.</source>
+        <translation>ここにはマップが読み込まれていません。</translation>
+    </message>
+    <message>
+        <source>%1 is not an editable map.</source>
+        <translation>%1 は編集できるマップではありません。</translation>
+    </message>
+    <message>
+        <source>Object</source>
+        <translation>オブジェクト</translation>
+    </message>
+    <message>
+        <source>X</source>
+        <translation>X</translation>
+    </message>
+    <message>
+        <source>Y</source>
+        <translation>Y</translation>
+    </message>
+    <message>
+        <source>Type</source>
+        <translation>タイプ</translation>
+    </message>
+    <message>
+        <source>Parameter</source>
+        <translation>パラメータ</translation>
+    </message>
+    <message>
+        <source>First slot</source>
+        <translation>最初のスロット</translation>
+    </message>
+    <message>
+        <source>Last slot</source>
+        <translation>最後のスロット</translation>
+    </message>
+    <message>
+        <source>%1 · easy only</source>
+        <translation>%1 · イージーのみ</translation>
+    </message>
+    <message>
+        <source>%1 · hard only</source>
+        <translation>%1 · ハードのみ</translation>
+    </message>
+    <message>
+        <source>Stage</source>
+        <translation>ステージ</translation>
+    </message>
+    <message>
+        <source>Record</source>
+        <translation>レコード</translation>
+    </message>
+    <message>
+        <source>Palettes</source>
+        <translation>パレット</translation>
+    </message>
+    <message>
+        <source>A number from 0 to 65535.</source>
+        <translation>0〜65535 の数値。</translation>
+    </message>
+    <message>
+        <source>Change object</source>
+        <translation>オブジェクトを変更</translation>
+    </message>
+    <message>
+        <source>Change stage</source>
+        <translation>ステージを変更</translation>
+    </message>
+    <message>
+        <source>%1 · whole level</source>
+        <translation>%1 · レベル全体</translation>
+    </message>
+    <message>
+        <source>The type picks the object&apos;s handler (a multiple of 4); bit 1 keeps it to the easy game, bit 0 to the hard one. X is in the world, Y on the screen (from 128); the object appears when the camera comes within a screen of it. The number of objects is the stage&apos;s own.</source>
+        <translation>タイプはオブジェクトの処理ルーチンを選びます（4 の倍数）。ビット 1 はイージーのみ、ビット 0 はハードのみに出します。X はワールド上、Y は画面上（128 から）の位置です。カメラが 1 画面分まで近づくとオブジェクトが現れます。オブジェクトの数はステージごとに決まっています。</translation>
+    </message>
+    <message>
+        <source>Level</source>
+        <translation>レベル</translation>
+    </message>
+    <message>
+        <source>Block set</source>
+        <translation>ブロックセット</translation>
+    </message>
+    <message>
+        <source>Maps</source>
+        <translation>マップ</translation>
+    </message>
+    <message>
+        <source>The stage record sets where the cameras and the player start and how its planes enter; the kit refuses values its readers do not index. The stage shows the part of the level its camera covers, from its start to the next stage&apos;s arena.</source>
+        <translation>ステージレコードは、カメラとプレイヤーの開始位置と、プレーンの入り方を決めます。読み取り処理が参照しない値はキットが拒否します。ステージには、カメラが通るレベルの部分（開始位置から次のステージのアリーナまで）が表示されます。</translation>
+    </message>
+    <message>
+        <source>The stages of a level load the same chunks and patterns and share one coarse map. Each starts at its marked line; what no stage&apos;s camera reaches is left out.</source>
+        <translation>レベル内のステージは同じチャンクとパターンを読み込み、ひとつの全体マップを共有します。各ステージは印の線から始まります。どのステージのカメラも届かない部分は表示されません。</translation>
+    </message>
+</context>
+<context>
+    <name>rl::alien_soldier::MappingCanvas</name>
+    <message>
+        <source>Piece %1</source>
+        <translation>パーツ %1</translation>
+    </message>
+    <message>
+        <source>Move sprite piece</source>
+        <translation>スプライトのパーツを移動</translation>
+    </message>
+    <message>
+        <source>Colours</source>
+        <translation>色</translation>
+    </message>
+    <message>
+        <source>Line</source>
+        <translation>ライン</translation>
+    </message>
+    <message>
+        <source>Sprite piece</source>
+        <translation>スプライトのパーツ</translation>
+    </message>
+    <message>
+        <source>X</source>
+        <translation>X</translation>
+    </message>
+    <message>
+        <source>Y</source>
+        <translation>Y</translation>
+    </message>
+    <message>
+        <source>Attributes</source>
+        <translation>属性</translation>
+    </message>
+    <message>
+        <source>Size</source>
+        <translation>サイズ</translation>
+    </message>
+    <message>
+        <source>The tile index is added to the object&apos;s own; bit 15 ends the mapping and stays as it is.</source>
+        <translation>タイル番号はオブジェクト自身の番号に加算されます。ビット 15 はマッピングの終わりを示し、そのまま残ります。</translation>
+    </message>
+    <message>
+        <source>The end mark (and a dynamic piece&apos;s tile) stay as they are.</source>
+        <translation>終端マーク（と動的パーツのタイル）はそのまま残ります。</translation>
+    </message>
+    <message>
+        <source>Change sprite piece</source>
+        <translation>スプライトのパーツを変更</translation>
+    </message>
+    <message>
+        <source>click: into the piece · or drag onto a piece</source>
+        <translation>クリック: パーツに入れる · またはパーツにドラッグ</translation>
+    </message>
+    <message>
+        <source>drag a metatile onto a piece</source>
+        <translation>メタタイルをパーツにドラッグ</translation>
+    </message>
+    <message>
+        <source>A dynamic piece draws its own art; it keeps it.</source>
+        <translation>動的パーツは自前のグラフィックを描くため、そのまま残ります。</translation>
+    </message>
+    <message>
+        <source>The piece uploads its own art (%1); drop art of its size from the patterns to change it.</source>
+        <translation>このパーツは自前のグラフィック（%1）を転送します。変更するには、同じサイズのグラフィックをパターンからドラッグしてください。</translation>
+    </message>
+    <message>
+        <source>A static piece draws tiles already in VRAM; give it a metatile instead.</source>
+        <translation>静的パーツは VRAM にあるタイルを描きます。代わりにメタタイルを指定してください。</translation>
+    </message>
+    <message>
+        <source>The piece is %1×%2 tiles; it takes only art of that size.</source>
+        <translation>このパーツは %1×%2 タイルです。同じサイズのグラフィックしか使えません。</translation>
+    </message>
+</context>
+<context>
+    <name>rl::alien_soldier::MetatilesModel</name>
+    <message>
+        <source>This stage slot loads no map.</source>
+        <translation>このステージ枠はマップを読み込みません。</translation>
+    </message>
+    <message>
+        <source>Paint patterns (right button picks)</source>
+        <translation>パターンを塗る（右ボタンで取得）</translation>
+    </message>
+    <message>
+        <source>Pick a pattern</source>
+        <translation>パターンを選ぶ</translation>
+    </message>
+    <message>
+        <source>There is no chunk here.</source>
+        <translation>ここにはチャンクがありません。</translation>
+    </message>
+    <message>
+        <source>No map document holds this chunk.</source>
+        <translation>このチャンクを持つマップ文書はありません。</translation>
+    </message>
+    <message>
+        <source>pick a pattern, then paint chunk slots</source>
+        <translation>パターンを選んでチャンクの枠に塗ります</translation>
+    </message>
+    <message>
+        <source>Paint patterns</source>
+        <translation>パターンを塗る</translation>
+    </message>
+    <message>
+        <source>%1 chunks · %2 patterns</source>
+        <translation>チャンク %1 · パターン %2</translation>
+    </message>
+    <message>
+        <source>Chunks</source>
+        <translation>チャンク</translation>
+    </message>
+    <message>
+        <source>Pattern</source>
+        <translation>パターン</translation>
+    </message>
+    <message>
+        <source>%1 · %2</source>
+        <translation>%1 · %2</translation>
+    </message>
+    <message>
+        <source>Plane B</source>
+        <translation>プレーン B</translation>
+    </message>
+    <message>
+        <source>Plane A</source>
+        <translation>プレーン A</translation>
+    </message>
+    <message>
+        <source>A chunk is 8x8 patterns and a pattern 4x4 tiles. Every stage of the level draws with these chunks; the build compresses each map again into its slot.</source>
+        <translation>チャンクは 8×8 パターン、パターンは 4×4 タイルです。レベル内のすべてのステージがこのチャンクで描かれます。ビルドは各マップを自分の枠に再圧縮します。</translation>
+    </message>
+    <message>
+        <source>%1 · %2 of %3 bytes compressed</source>
+        <translation>%1 · 圧縮後 %2 / %3 バイト</translation>
+    </message>
+</context>
+<context>
+    <name>rl::alien_soldier::ObjectMetatilesModel</name>
+    <message numerus="yes">
+        <source>%1 · %n metatiles</source>
+        <translation>
+            <numerusform>%1 · %n 個のメタタイル</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Object metatiles</source>
+        <translation>オブジェクトのメタタイル</translation>
+    </message>
+    <message>
+        <source>What the pieces of this object&apos;s frames draw: a first tile, a size and a palette line. Select one to change it in every frame that uses it; Objects and Animations put them into pieces from their sheet.</source>
+        <translation>このオブジェクトのフレームのパーツが描くもの：先頭タイル、サイズ、パレット行。選ぶと、それを使うすべてのフレームで変更できます。オブジェクトとアニメーションでは、パレットからパーツに配置します。</translation>
+    </message>
+    <message>
+        <source>Object metatile</source>
+        <translation>オブジェクトのメタタイル</translation>
+    </message>
+    <message>
+        <source>First tile</source>
+        <translation>先頭タイル</translation>
+    </message>
+    <message>
+        <source>Width</source>
+        <translation>幅</translation>
+    </message>
+    <message>
+        <source>Height</source>
+        <translation>高さ</translation>
+    </message>
+    <message>
+        <source>Palette line</source>
+        <translation>パレット行</translation>
+    </message>
+    <message>
+        <source>Used by</source>
+        <translation>使用数</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n pieces</source>
+        <translation>
+            <numerusform>%n パーツ</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Every piece of %1 that draws this metatile changes with it. Its tiles run down each column, then right, from the first tile; the sheet on the right picks the first tile.</source>
+        <translation>このメタタイルを描く %1 のすべてのパーツが一緒に変わります。タイルは先頭から各列を下へ、次に右へ並びます。先頭タイルは右のパレットで選びます。</translation>
+    </message>
+    <message>
+        <source>Change metatile</source>
+        <translation>メタタイルを変更</translation>
+    </message>
+    <message>
+        <source>select a metatile</source>
+        <translation>メタタイルを選択</translation>
+    </message>
+    <message>
+        <source>click: the metatile starts at this tile</source>
+        <translation>クリック: メタタイルをこのタイルから始める</translation>
+    </message>
+</context>
+<context>
+    <name>rl::alien_soldier::ObjectsModel</name>
+    <message>
+        <source>Frame %1</source>
+        <translation>フレーム %1</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n pieces</source>
+        <translation>
+            <numerusform>%n パーツ</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>%1 · frame %2 of %3</source>
+        <translation>%1 · フレーム %2 / %3</translation>
+    </message>
+    <message>
+        <source>Object</source>
+        <translation>オブジェクト</translation>
+    </message>
+    <message>
+        <source>The game repository records nothing this object draws with yet, so its pieces show as outlines in the view&apos;s colours.</source>
+        <translation>このオブジェクトの描画に使うものはまだゲームのリポジトリに記録されていないため、パーツは表示の色で輪郭として表示されます。</translation>
+    </message>
+    <message>
+        <source>Attribute</source>
+        <translation>属性</translation>
+    </message>
+    <message>
+        <source>Base tile</source>
+        <translation>基準タイル</translation>
+    </message>
+    <message>
+        <source>Palette line</source>
+        <translation>パレット行</translation>
+    </message>
+    <message>
+        <source>Art at %1</source>
+        <translation>%1 のグラフィック</translation>
+    </message>
+    <message>
+        <source>Colours</source>
+        <translation>色</translation>
+    </message>
+    <message>
+        <source>Not seen in play itself: it draws with what another block of its file was seen with. The tiles change with the art they come from.</source>
+        <translation>ゲーム中では確認されていません。同じファイルの別のブロックで確認されたものを使って描画します。タイルは元のグラフィックと一緒に変わります。</translation>
+    </message>
+    <message>
+        <source>Drawn with the attribute, art and colours the game was seen using for it. The tiles change with the art they come from.</source>
+        <translation>ゲームが実際に使っていた属性、グラフィック、色で描画しています。タイルは元のグラフィックと一緒に変わります。</translation>
+    </message>
+    <message>
+        <source>Animations</source>
+        <translation>アニメーション</translation>
+    </message>
+    <message>
+        <source>none</source>
+        <translation>なし</translation>
+    </message>
+</context>
+<context>
+    <name>rl::alien_soldier::PalettesModel</name>
+    <message>
+        <source>9-bit RGB · 0–7 per channel</source>
+        <translation>9 ビット RGB · 各チャンネル 0–7</translation>
+    </message>
+    <message>
+        <source>Red</source>
+        <translation>赤</translation>
+    </message>
+    <message>
+        <source>Green</source>
+        <translation>緑</translation>
+    </message>
+    <message>
+        <source>Blue</source>
+        <translation>青</translation>
+    </message>
+    <message>
+        <source>Change colour</source>
+        <translation>色を変更</translation>
+    </message>
+    <message>
+        <source>Stage start</source>
+        <translation>ステージ開始</translation>
+    </message>
+    <message>
+        <source>Screen</source>
+        <translation>画面</translation>
+    </message>
+    <message>
+        <source>%1 · line %2, entry %3</source>
+        <translation>%1 · ライン %2、エントリ %3</translation>
+    </message>
+    <message>
+        <source>Palette commands</source>
+        <translation>パレットコマンド</translation>
+    </message>
+    <message>
+        <source>CRAM word</source>
+        <translation>CRAM のワード</translation>
+    </message>
+    <message>
+        <source>Line %1</source>
+        <translation>ライン %1</translation>
+    </message>
+    <message>
+        <source>This command does not write that colour.</source>
+        <translation>このコマンドはその色を書き込みません。</translation>
+    </message>
+    <message>
+        <source>Stages %1–%2</source>
+        <translation>ステージ %1–%2</translation>
+    </message>
+    <message>
+        <source>Stages %1</source>
+        <translation>ステージ %1</translation>
+    </message>
+    <message>
+        <source>Boss</source>
+        <translation>ボス</translation>
+    </message>
+    <message>
+        <source>Object</source>
+        <translation>オブジェクト</translation>
+    </message>
+    <message>
+        <source>No view draws with these colours yet; the code plays them itself.</source>
+        <translation>この色で描くビューはまだありません。ゲームのコード自身が読み込みます。</translation>
+    </message>
+    <message>
+        <source>Command</source>
+        <translation>コマンド</translation>
+    </message>
+    <message>
+        <source>A place&apos;s colours are the commands it plays, in order, each writing its colours from its destination on; only the lines they write are shown. A command several places play changes in all of them. Which places play it is fixed, and so is the number of colours.</source>
+        <translation>場所の色は、その場所が順に実行するコマンドで決まります。各コマンドは書き込み先から自分の色を書き込みます。表示されるのは書き込まれる行だけです。複数の場所が使うコマンドは、すべての場所で変わります。どの場所が実行するかと色の数は変えられません。</translation>
+    </message>
+</context>
+<context>
+    <name>rl::alien_soldier::PlaytestModel</name>
+    <message>
+        <source>Start at</source>
+        <translation>開始位置</translation>
+    </message>
+    <message>
+        <source>Session</source>
+        <translation>セッション</translation>
+    </message>
+    <message>
+        <source>Core</source>
+        <translation>コア</translation>
+    </message>
+    <message>
+        <source>Start</source>
+        <translation>開始</translation>
+    </message>
+    <message>
+        <source>Build</source>
+        <translation>ビルド</translation>
+    </message>
+    <message>
+        <source>not built yet</source>
+        <translation>未ビルド</translation>
+    </message>
+    <message>
+        <source>Play from selected saves the project, builds the ROM with the kit and starts the selected stage in MAME inside this view: the title and story are skipped and the stage&apos;s password is entered for you. Play starts the game from power-on. Opening a stage in Levels selects it.</source>
+        <translation>「選択位置からプレイ」はプロジェクトを保存し、キットで ROM をビルドして、選んだステージをこのビューの MAME で開始します。タイトルとストーリーは飛ばされ、ステージのパスワードは自動で入力されます。「プレイ」は電源投入からゲームを始めます。「ステージ」でステージを開くと選択されます。</translation>
+    </message>
+    <message>
+        <source>not found</source>
+        <translation>見つかりません</translation>
+    </message>
+    <message>
+        <source>Playtest · %1</source>
+        <translation>テストプレイ · %1</translation>
+    </message>
+    <message>
+        <source>Build and run</source>
+        <translation>ビルドして実行</translation>
+    </message>
+</context>
+<context>
+    <name>rl::alien_soldier::SampleModel</name>
+    <message>
+        <source>Voice %1</source>
+        <translation>ボイス %1</translation>
+    </message>
+    <message>
+        <source>Drum %1</source>
+        <translation>ドラム %1</translation>
+    </message>
+    <message>
+        <source>YM2612 DAC</source>
+        <translation>YM2612 DAC</translation>
+    </message>
+    <message>
+        <source>Render %1</source>
+        <translation>%1 をレンダリング</translation>
+    </message>
+    <message>
+        <source>Voice</source>
+        <translation>ボイス</translation>
+    </message>
+    <message>
+        <source>Drum sample</source>
+        <translation>ドラムサンプル</translation>
+    </message>
+    <message>
+        <source>Request</source>
+        <translation>リクエスト</translation>
+    </message>
+    <message>
+        <source>DAC note</source>
+        <translation>DAC ノート</translation>
+    </message>
+    <message>
+        <source>Bank</source>
+        <translation>バンク</translation>
+    </message>
+    <message>
+        <source>%1, sample %2</source>
+        <translation>%1、サンプル %2</translation>
+    </message>
+    <message>
+        <source>Size</source>
+        <translation>サイズ</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n bytes</source>
+        <translation>
+            <numerusform>%n バイト</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>The Z80 decodes each byte into two levels and plays them at the pace the voice&apos;s descriptor sets; the game asks for the voice with its request.</source>
+        <translation>Z80 は各バイトを 2 つのレベルに分解し、ボイスのディスクリプタが決める速さで再生します。ゲームはリクエストでボイスを呼び出します。</translation>
+    </message>
+    <message>
+        <source>The Z80 decodes each byte into two levels and plays them at the pace the sample&apos;s descriptor sets; the music&apos;s DAC channel plays it with its note.</source>
+        <translation>Z80 は各バイトを 2 つのレベルに分解し、サンプルのディスクリプタが決める速さで再生します。音楽の DAC チャンネルがノートでそれを鳴らします。</translation>
+    </message>
+</context>
+<context>
+    <name>rl::alien_soldier::ScreensModel</name>
+    <message>
+        <source>Plane A</source>
+        <translation>プレーン A</translation>
+    </message>
+    <message>
+        <source>Plane B</source>
+        <translation>プレーン B</translation>
+    </message>
+    <message>
+        <source>Paint tiles (right button picks)</source>
+        <translation>タイルを塗る（右ボタンで取得）</translation>
+    </message>
+    <message>
+        <source>Pick a tile</source>
+        <translation>タイルを選ぶ</translation>
+    </message>
+    <message>
+        <source>The plane shows nothing here.</source>
+        <translation>このプレーンはここに何も表示しません。</translation>
+    </message>
+    <message>
+        <source>No map document holds this tile.</source>
+        <translation>このタイルを持つマップ文書はありません。</translation>
+    </message>
+    <message>
+        <source>Tile %1 · line %2</source>
+        <translation>タイル %1 · ライン %2</translation>
+    </message>
+    <message>
+        <source>pick a tile; the brush keeps its line and flips</source>
+        <translation>タイルを選びます。ブラシのラインと反転はそのままです</translation>
+    </message>
+    <message>
+        <source>Paint screen</source>
+        <translation>画面を描く</translation>
+    </message>
+    <message>
+        <source>%1 · brush tile %2, line %3</source>
+        <translation>%1 · ブラシ: タイル %2、ライン %3</translation>
+    </message>
+    <message>
+        <source>Brush</source>
+        <translation>ブラシ</translation>
+    </message>
+    <message>
+        <source>Tile</source>
+        <translation>タイル</translation>
+    </message>
+    <message>
+        <source>Palette line</source>
+        <translation>パレットライン</translation>
+    </message>
+    <message>
+        <source>Flip across</source>
+        <translation>左右反転</translation>
+    </message>
+    <message>
+        <source>Flip down</source>
+        <translation>上下反転</translation>
+    </message>
+    <message>
+        <source>In front</source>
+        <translation>手前</translation>
+    </message>
+    <message>
+        <source>Two routines adjust the title&apos;s tiles after loading; the screen shows them adjusted, and painting writes the word the map holds.</source>
+        <translation>タイトルのタイルは読み込み後に 2 つの処理で調整されます。画面には調整後の状態が表示され、描くとマップが持つワードが書き込まれます。</translation>
+    </message>
+    <message>
+        <source>Unknown field.</source>
+        <translation>不明なフィールドです。</translation>
+    </message>
+</context>
+<context>
+    <name>rl::alien_soldier::SoundModel</name>
+    <message>
+        <source>YM2612 + PSG</source>
+        <translation>YM2612 + PSG</translation>
+    </message>
+    <message>
+        <source>DAC</source>
+        <translation>DAC</translation>
+    </message>
+    <message>
+        <source>Noise</source>
+        <translation>ノイズ</translation>
+    </message>
+    <message>
+        <source>PSG %1</source>
+        <translation>PSG %1</translation>
+    </message>
+    <message>
+        <source>FM %1</source>
+        <translation>FM %1</translation>
+    </message>
+    <message>
+        <source>Edit note</source>
+        <translation>音符を編集</translation>
+    </message>
+    <message>
+        <source>Render %1</source>
+        <translation>%1 をレンダリング</translation>
+    </message>
+    <message>
+        <source>Sound preview failed: %1</source>
+        <translation>サウンドのプレビューに失敗しました: %1</translation>
+    </message>
+    <message>
+        <source>The kit reported no WAV for %1.</source>
+        <translation>キットは %1 の WAV を返しませんでした。</translation>
+    </message>
+    <message>
+        <source>  Playing %1</source>
+        <translation>  %1 を再生中</translation>
+    </message>
+    <message>
+        <source>%1 bytes · fixed</source>
+        <translation>%1 バイト · 固定</translation>
+    </message>
+    <message>
+        <source>%1 · %2</source>
+        <translation>%1 · %2</translation>
+    </message>
+    <message>
+        <source>Music</source>
+        <translation>音楽</translation>
+    </message>
+    <message>
+        <source>Sound effect</source>
+        <translation>効果音</translation>
+    </message>
+    <message>
+        <source>Requests</source>
+        <translation>リクエスト</translation>
+    </message>
+    <message>
+        <source>Tempo</source>
+        <translation>テンポ</translation>
+    </message>
+    <message>
+        <source>FM instruments</source>
+        <translation>FM 音色</translation>
+    </message>
+    <message>
+        <source>Notes and durations change where the driver reads them; the payload keeps its size and every instruction its place, and the kit checks the edit before it builds.</source>
+        <translation>音符と長さは、ドライバが読む位置で変わります。データのサイズと各命令の位置は変わらず、キットはビルド前に編集を確認します。</translation>
+    </message>
+</context>
+<context>
+    <name>rl::alien_soldier::TextModel</name>
+    <message>
+        <source>The font has no “%1”; type its glyph as [$NN].</source>
+        <translation>フォントに「%1」はありません。グリフを [$NN] と入力してください。</translation>
+    </message>
+    <message>
+        <source>The record holds %1 glyphs, not %2.</source>
+        <translation>このレコードのグリフは %1 個で、%2 個ではありません。</translation>
+    </message>
+    <message>
+        <source>Record</source>
+        <translation>レコード</translation>
+    </message>
+    <message>
+        <source>Text</source>
+        <translation>テキスト</translation>
+    </message>
+    <message>
+        <source>Glyphs</source>
+        <translation>グリフ</translation>
+    </message>
+    <message>
+        <source>Bytes</source>
+        <translation>バイト</translation>
+    </message>
+    <message>
+        <source>Change text</source>
+        <translation>テキストを変更</translation>
+    </message>
+    <message>
+        <source>%1 · record %2 of %3</source>
+        <translation>%1 · レコード %2 / %3</translation>
+    </message>
+    <message>
+        <source>Delay</source>
+        <translation>ディレイ</translation>
+    </message>
+    <message>
+        <source>Shared font</source>
+        <translation>共通フォント</translation>
+    </message>
+    <message>
+        <source>%1, glyphs %2 to %3. A text keeps its number of glyphs; the bytes the reader needs (terminators, positions, counts) stay as they are.</source>
+        <translation>%1、グリフ %2〜%3。テキストのグリフ数は変わりません。読み取り処理に必要なバイト（終端、位置、個数）はそのまま残ります。</translation>
+    </message>
+    <message>
+        <source>A delay is 0 to 127.</source>
+        <translation>ディレイは 0〜127 です。</translation>
+    </message>
+</context>
+<context>
+    <name>rl::alien_soldier::TilesModel</name>
+    <message>
+        <source>Paint tile</source>
+        <translation>タイルを描く</translation>
+    </message>
+    <message>
+        <source>Fill tile</source>
+        <translation>タイルを塗りつぶす</translation>
+    </message>
+    <message>
+        <source>%1 · slot of %2 bytes</source>
+        <translation>%1 · %2 バイトの枠</translation>
+    </message>
+    <message>
+        <source>Colours</source>
+        <translation>色</translation>
+    </message>
+    <message>
+        <source>Line</source>
+        <translation>ライン</translation>
+    </message>
+    <message>
+        <source>%1 · tile %2 of %3</source>
+        <translation>%1 · タイル %2 / %3</translation>
+    </message>
+    <message>
+        <source>Compressed art</source>
+        <translation>圧縮グラフィック</translation>
+    </message>
+    <message>
+        <source>Art</source>
+        <translation>グラフィック</translation>
+    </message>
+    <message>
+        <source>Tile</source>
+        <translation>タイル</translation>
+    </message>
+    <message>
+        <source>%1 of %2</source>
+        <translation>%1 / %2</translation>
+    </message>
+    <message>
+        <source>Pen</source>
+        <translation>色番号</translation>
+    </message>
+    <message>
+        <source>The build compresses the edited tiles again; they must fit the payload&apos;s slot, or the build says so.</source>
+        <translation>ビルドは編集したタイルを再圧縮します。データの枠に収まらなければ、ビルドがそう知らせます。</translation>
+    </message>
+    <message>
+        <source>The payload keeps its size and its blocks.</source>
+        <translation>データのサイズとブロックは変わりません。</translation>
+    </message>
+    <message>
+        <source>As in the game</source>
+        <translation>ゲーム通り</translation>
     </message>
 </context>
 <context>
@@ -5051,11 +6624,11 @@
     </message>
     <message>
         <source>Mega Drive</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">Mega Drive</translation>
     </message>
     <message>
         <source>YM2612 + PSG</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">YM2612 + PSG</translation>
     </message>
     <message>
         <source>Rounds %1–%2</source>

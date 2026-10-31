@@ -580,6 +580,73 @@
     </message>
 </context>
 <context>
+    <name>alien_soldier</name>
+    <message>
+        <source>Alien Soldier</source>
+        <translation>Alien Soldier</translation>
+    </message>
+    <message>
+        <source>Title</source>
+        <translation>Титульный экран</translation>
+    </message>
+    <message>
+        <source>Options</source>
+        <translation>Опции</translation>
+    </message>
+    <message>
+        <source>Story</source>
+        <translation>Сюжет</translation>
+    </message>
+    <message>
+        <source>Menus and results</source>
+        <translation>Меню и итоги</translation>
+    </message>
+    <message>
+        <source>Stage messages</source>
+        <translation>Сообщения этапов</translation>
+    </message>
+    <message>
+        <source>Boss and ship messages</source>
+        <translation>Сообщения боссов и корабля</translation>
+    </message>
+    <message>
+        <source>Credits</source>
+        <translation>Титры</translation>
+    </message>
+    <message>
+        <source>Glyph preloads</source>
+        <translation>Предзагрузка глифов</translation>
+    </message>
+    <message>
+        <source>Japanese story font</source>
+        <translation>Японский шрифт сюжета</translation>
+    </message>
+    <message>
+        <source>Results</source>
+        <translation>Итоги</translation>
+    </message>
+    <message>
+        <source>Weapon setup</source>
+        <translation>Выбор оружия</translation>
+    </message>
+    <message>
+        <source>Credits opening</source>
+        <translation>Начало титров</translation>
+    </message>
+    <message>
+        <source>Ending</source>
+        <translation>Концовка</translation>
+    </message>
+    <message>
+        <source>Credits scene %1</source>
+        <translation>Сцена титров %1</translation>
+    </message>
+    <message>
+        <source>Options and password</source>
+        <translation>Опции и пароль</translation>
+    </message>
+</context>
+<context>
     <name>castle_excellent</name>
     <message>
         <source>Cannot read %1: %2</source>
@@ -1352,6 +1419,1538 @@
     <message>
         <source>Fruit %1</source>
         <translation>Фрукт %1</translation>
+    </message>
+</context>
+<context>
+    <name>rl::alien_soldier::AlienSoldierSession</name>
+    <message>
+        <source>Cannot open the Alien Soldier project: %1</source>
+        <translation>Не удаётся открыть проект Alien Soldier: %1</translation>
+    </message>
+    <message>
+        <source>Mega Drive</source>
+        <translation>Mega Drive</translation>
+    </message>
+    <message>
+        <source>YM2612 + PSG</source>
+        <translation>YM2612 + PSG</translation>
+    </message>
+    <message>
+        <source>Levels</source>
+        <translation>Уровни</translation>
+    </message>
+    <message>
+        <source>Tiles</source>
+        <translation>Тайлы</translation>
+    </message>
+    <message>
+        <source>Metatiles</source>
+        <translation>Метатайлы</translation>
+    </message>
+    <message>
+        <source>Palettes</source>
+        <translation>Палитры</translation>
+    </message>
+    <message>
+        <source>Animations</source>
+        <translation>Анимации</translation>
+    </message>
+    <message>
+        <source>Screens</source>
+        <translation>Экраны</translation>
+    </message>
+    <message>
+        <source>Text</source>
+        <translation>Текст</translation>
+    </message>
+    <message>
+        <source>Sound</source>
+        <translation>Звук</translation>
+    </message>
+    <message>
+        <source>Demo</source>
+        <translation>Демо</translation>
+    </message>
+    <message>
+        <source>Playtest</source>
+        <translation>Тест</translation>
+    </message>
+    <message>
+        <source>Stage slot %1</source>
+        <translation>Ячейка этапа %1</translation>
+    </message>
+    <message>
+        <source>Stage %1 · %2</source>
+        <translation>Этап %1 · %2</translation>
+    </message>
+    <message>
+        <source>no map</source>
+        <translation>нет карты</translation>
+    </message>
+    <message>
+        <source>Music</source>
+        <translation>Музыка</translation>
+    </message>
+    <message>
+        <source>Sound effects</source>
+        <translation>Звуковые эффекты</translation>
+    </message>
+    <message>
+        <source>Attract demos</source>
+        <translation>Демо</translation>
+    </message>
+    <message>
+        <source>Demo %1</source>
+        <translation>Демо %1</translation>
+    </message>
+    <message>
+        <source>Session</source>
+        <translation>Сеанс</translation>
+    </message>
+    <message>
+        <source>Build and run</source>
+        <translation>Собрать и запустить</translation>
+    </message>
+    <message>
+        <source>Cannot save %1: %2</source>
+        <translation>Не удаётся сохранить %1: %2</translation>
+    </message>
+    <message>
+        <source>Revert %1</source>
+        <translation>Вернуть %1</translation>
+    </message>
+    <message>
+        <source>Stop recording</source>
+        <translation>Остановить запись</translation>
+    </message>
+    <message>
+        <source>Play demo</source>
+        <translation>Играть демо</translation>
+    </message>
+    <message>
+        <source>Plan playtest of %1</source>
+        <translation>Подготовка теста: %1</translation>
+    </message>
+    <message>
+        <source>Plan playtest from power-on</source>
+        <translation>Подготовка теста с включения</translation>
+    </message>
+    <message>
+        <source>Alien Soldier · power-on</source>
+        <translation>Alien Soldier · с включения</translation>
+    </message>
+    <message>
+        <source>Plan demo recording</source>
+        <translation>Подготовка записи демо</translation>
+    </message>
+    <message>
+        <source>Plan attract demo</source>
+        <translation>Подготовка демо</translation>
+    </message>
+    <message>
+        <source>Alien Soldier · recording demo %1</source>
+        <translation>Alien Soldier · запись демо %1</translation>
+    </message>
+    <message>
+        <source>Alien Soldier · demo %1</source>
+        <translation>Alien Soldier · демо %1</translation>
+    </message>
+    <message>
+        <source>Recording: the demo starts the stage itself, then the controller plays it; it ends after the demo&apos;s time, on Start or on Stop recording.</source>
+        <translation>Запись: демо само запускает этап, затем играет контроллер; запись заканчивается по истечении времени демо, по Start или по «Остановить запись».</translation>
+    </message>
+    <message>
+        <source>Nothing was recorded: the demo did not start.</source>
+        <translation>Ничего не записано: демо не началось.</translation>
+    </message>
+    <message>
+        <source>Cannot write %1.</source>
+        <translation>Не удаётся записать %1.</translation>
+    </message>
+    <message>
+        <source>Join the recording to demo %1</source>
+        <translation>Присоединение записи к демо %1</translation>
+    </message>
+    <message>
+        <source>Record demo %1</source>
+        <translation>Запись демо %1</translation>
+    </message>
+    <message>
+        <source>Recorded demo %1: %2 steps.</source>
+        <translation>Демо %1 записано, шагов: %2.</translation>
+    </message>
+    <message>
+        <source>Stage %1</source>
+        <translation>Этап %1</translation>
+    </message>
+    <message>
+        <source>Stages %1–%2</source>
+        <translation>Этапы %1–%2</translation>
+    </message>
+    <message>
+        <source>Stages %1</source>
+        <translation>Этапы %1</translation>
+    </message>
+    <message>
+        <source>Whole level</source>
+        <translation>Весь уровень</translation>
+    </message>
+    <message>
+        <source>Without a map</source>
+        <translation>Без карты</translation>
+    </message>
+    <message>
+        <source>Plane B</source>
+        <translation>Плоскость B</translation>
+    </message>
+    <message>
+        <source>Plane A</source>
+        <translation>Плоскость A</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n chunks</source>
+        <translation>
+            <numerusform>%n чанк</numerusform>
+            <numerusform>%n чанка</numerusform>
+            <numerusform>%n чанков</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Objects</source>
+        <translation>Объекты</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n frames</source>
+        <translation>
+            <numerusform>%n кадр</numerusform>
+            <numerusform>%n кадра</numerusform>
+            <numerusform>%n кадров</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>%n frames · not seen</source>
+        <translation>
+            <numerusform>%n кадр · не встречен</numerusform>
+            <numerusform>%n кадра · не встречен</numerusform>
+            <numerusform>%n кадров · не встречен</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Hero</source>
+        <translation>Герой</translation>
+    </message>
+    <message>
+        <source>Stages</source>
+        <translation>Этапы</translation>
+    </message>
+    <message>
+        <source>Weapons</source>
+        <translation>Оружие</translation>
+    </message>
+    <message>
+        <source>Bosses</source>
+        <translation>Боссы</translation>
+    </message>
+    <message>
+        <source>Screens and fonts</source>
+        <translation>Экраны и шрифты</translation>
+    </message>
+    <message>
+        <source>Credits</source>
+        <translation>Титры</translation>
+    </message>
+    <message>
+        <source>Other</source>
+        <translation>Прочее</translation>
+    </message>
+    <message>
+        <source>%1 · arena</source>
+        <translation>%1 · арена</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n metatiles</source>
+        <translation>
+            <numerusform>%n метатайл</numerusform>
+            <numerusform>%n метатайла</numerusform>
+            <numerusform>%n метатайлов</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>%1 · %2</source>
+        <translation>%1 · %2</translation>
+    </message>
+    <message>
+        <source>%1 would take %2 bytes compressed, and its slot in the ROM holds %3: the change is not made.</source>
+        <translation>%1 после сжатия заняла бы %2 байт, а её место в ROM вмещает %3: изменение не внесено.</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n keyframes</source>
+        <translation>
+            <numerusform>%n ключевой кадр</numerusform>
+            <numerusform>%n ключевых кадра</numerusform>
+            <numerusform>%n ключевых кадров</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Bosses (code)</source>
+        <translation>Боссы (код)</translation>
+    </message>
+    <message>
+        <source>Voices</source>
+        <translation>Голоса</translation>
+    </message>
+    <message>
+        <source>Drum samples</source>
+        <translation>Сэмплы ударных</translation>
+    </message>
+    <message>
+        <source>Other palette lists</source>
+        <translation>Другие списки палитр</translation>
+    </message>
+    <message>
+        <source>Commands no list plays</source>
+        <translation>Команды вне списков</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n lines</source>
+        <translation>
+            <numerusform>%n строка</numerusform>
+            <numerusform>%n строки</numerusform>
+            <numerusform>%n строк</numerusform>
+        </translation>
+    </message>
+</context>
+<context>
+    <name>rl::alien_soldier::AnimationsModel</name>
+    <message>
+        <source>→ %1</source>
+        <translation>→ %1</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n calls</source>
+        <translation>
+            <numerusform>%n вызов</numerusform>
+            <numerusform>%n вызова</numerusform>
+            <numerusform>%n вызовов</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>jump</source>
+        <translation>переход</translation>
+    </message>
+    <message>
+        <source>%1 · entry %2 of %3</source>
+        <translation>%1 · запись %2 из %3</translation>
+    </message>
+    <message>
+        <source>Animation</source>
+        <translation>Анимация</translation>
+    </message>
+    <message>
+        <source>Mapping</source>
+        <translation>Раскладка</translation>
+    </message>
+    <message>
+        <source>Jumps to</source>
+        <translation>Переход к</translation>
+    </message>
+    <message>
+        <source>Duration</source>
+        <translation>Длительность</translation>
+    </message>
+    <message>
+        <source>Change animation</source>
+        <translation>Изменение анимации</translation>
+    </message>
+    <message>
+        <source>A frame lasts 1 to 65535 calls; a jump stays a jump.</source>
+        <translation>Кадр длится от 1 до 65535 вызовов; переход остаётся переходом.</translation>
+    </message>
+    <message>
+        <source>hold</source>
+        <translation>держать</translation>
+    </message>
+    <message>
+        <source>holds the frame for good</source>
+        <translation>держит кадр навсегда</translation>
+    </message>
+    <message>
+        <source>A frame lasts its duration in calls of the animation reader; a duration whose low byte is $80 or more holds the frame for good, which is how a script ends. An entry stays a frame or a jump.</source>
+        <translation>Кадр длится столько вызовов процедуры анимации, какова его длительность; длительность с младшим байтом $80 и больше держит кадр навсегда — так заканчивается скрипт. Запись остаётся кадром или переходом.</translation>
+    </message>
+</context>
+<context>
+    <name>rl::alien_soldier::BossesModel</name>
+    <message>
+        <source>%1 · %2</source>
+        <translation>%1 · %2</translation>
+    </message>
+    <message>
+        <source>%1 · %2 parts · %3 channels</source>
+        <translation>%1 · частей: %2 · каналов: %3</translation>
+    </message>
+    <message>
+        <source>Faces</source>
+        <translation>Смотрит</translation>
+    </message>
+    <message>
+        <source>Left</source>
+        <translation>влево</translation>
+    </message>
+    <message>
+        <source>Right</source>
+        <translation>вправо</translation>
+    </message>
+    <message>
+        <source>Sides</source>
+        <translation>Стороны</translation>
+    </message>
+    <message>
+        <source>As built</source>
+        <translation>как собран</translation>
+    </message>
+    <message>
+        <source>Swapped</source>
+        <translation>переставлены</translation>
+    </message>
+    <message>
+        <source>Shows</source>
+        <translation>Показ</translation>
+    </message>
+    <message>
+        <source>Keyframes</source>
+        <translation>ключевые кадры</translation>
+    </message>
+    <message>
+        <source>Every frame</source>
+        <translation>каждый кадр</translation>
+    </message>
+    <message>
+        <source>Part %1</source>
+        <translation>Часть %1</translation>
+    </message>
+    <message>
+        <source>Turn boss joint</source>
+        <translation>Поворот сустава босса</translation>
+    </message>
+    <message>
+        <source>Pose %1</source>
+        <translation>Поза %1</translation>
+    </message>
+    <message>
+        <source>pose %1</source>
+        <translation>поза %1</translation>
+    </message>
+    <message>
+        <source>sound %1</source>
+        <translation>звук %1</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n frames</source>
+        <translation>
+            <numerusform>%n кадр</numerusform>
+            <numerusform>%n кадра</numerusform>
+            <numerusform>%n кадров</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Boss</source>
+        <translation>Босс</translation>
+    </message>
+    <message>
+        <source>Boss part</source>
+        <translation>Часть босса</translation>
+    </message>
+    <message>
+        <source>Draws</source>
+        <translation>Рисует</translation>
+    </message>
+    <message>
+        <source>Hangs from</source>
+        <translation>Крепится к</translation>
+    </message>
+    <message>
+        <source>the boss itself</source>
+        <translation>самому боссу</translation>
+    </message>
+    <message>
+        <source>part %1</source>
+        <translation>части %1</translation>
+    </message>
+    <message>
+        <source>Bone</source>
+        <translation>Кость</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n pixels</source>
+        <translation>
+            <numerusform>%n пиксель</numerusform>
+            <numerusform>%n пикселя</numerusform>
+            <numerusform>%n пикселей</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Depth</source>
+        <translation>Глубина</translation>
+    </message>
+    <message>
+        <source>Joint (channel %1)</source>
+        <translation>Сустав (канал %1)</translation>
+    </message>
+    <message>
+        <source>A part sits at the end of its bone from its parent, turned by the channels its joint adds up. Drag it to turn its own joint in the pose shown.</source>
+        <translation>Часть сидит на конце своей кости, идущей от родителя, и повёрнута на сумму каналов своего сустава. Перетащите её, чтобы повернуть её сустав в показанной позе.</translation>
+    </message>
+    <message>
+        <source>Boss animation</source>
+        <translation>Анимация босса</translation>
+    </message>
+    <message>
+        <source>Pose</source>
+        <translation>Поза</translation>
+    </message>
+    <message>
+        <source>Frames</source>
+        <translation>Кадры</translation>
+    </message>
+    <message>
+        <source>Steps</source>
+        <translation>Шаги</translation>
+    </message>
+    <message>
+        <source>Label</source>
+        <translation>Метка</translation>
+    </message>
+    <message>
+        <source>Ends</source>
+        <translation>Конец</translation>
+    </message>
+    <message>
+        <source>starts again</source>
+        <translation>начинается заново</translation>
+    </message>
+    <message>
+        <source>holds the last pose</source>
+        <translation>остаётся в последней позе</translation>
+    </message>
+    <message>
+        <source>runs on into %1</source>
+        <translation>переходит в %1</translation>
+    </message>
+    <message>
+        <source>Channel %1</source>
+        <translation>Канал %1</translation>
+    </message>
+    <message>
+        <source>A keyframe steps towards its pose by 1/steps of the way each frame, for frames + 1 frames, from where the last one left off; the canvas shows where it lands. The channels are its pose&apos;s, shared with every animation that goes to it. The game&apos;s code picks the animation and moves the boss.</source>
+        <translation>Ключевой кадр каждый кадр сдвигается к своей позе на 1/«шаги» пути, всего «кадры» + 1 кадров, начиная с того места, где остановился предыдущий; на холсте видно, где он заканчивается. Каналы принадлежат его позе и общие для всех анимаций, которые в неё идут. Какую анимацию показать и как двигать босса, решает код игры.</translation>
+    </message>
+    <message>
+        <source>A channel holds 0-255.</source>
+        <translation>Канал вмещает 0–255.</translation>
+    </message>
+    <message>
+        <source>Change boss pose</source>
+        <translation>Изменение позы босса</translation>
+    </message>
+    <message>
+        <source>Frames 0-255 but 128, steps 1-255, a pose the table holds.</source>
+        <translation>Кадры 0–255, кроме 128, шаги 1–255, поза из таблицы.</translation>
+    </message>
+    <message>
+        <source>Change boss animation</source>
+        <translation>Изменение анимации босса</translation>
+    </message>
+    <message>
+        <source>Frames over steps</source>
+        <translation>Кадры сверх шагов</translation>
+    </message>
+    <message>
+        <source>Frames over steps run -127 to 127.</source>
+        <translation>Кадры сверх шагов: от −127 до 127.</translation>
+    </message>
+    <message>
+        <source>Checked</source>
+        <translation>Проверка</translation>
+    </message>
+    <message>
+        <source>not yet against the game: its own code may place some parts elsewhere</source>
+        <translation>пока не сверен с игрой: собственный код босса может ставить часть деталей иначе</translation>
+    </message>
+    <message>
+        <source>Set by its code</source>
+        <translation>Задаётся кодом</translation>
+    </message>
+    <message>
+        <source>The game&apos;s code turns this boss&apos;s parts itself; it shows as its setup leaves it.</source>
+        <translation>Части этого босса поворачивает сам код игры; он показан таким, каким его оставляет начальная настройка.</translation>
+    </message>
+</context>
+<context>
+    <name>rl::alien_soldier::DemoModel</name>
+    <message>
+        <source>Demo %1</source>
+        <translation>Демо %1</translation>
+    </message>
+    <message>
+        <source>Step</source>
+        <translation>Шаг</translation>
+    </message>
+    <message>
+        <source>Frames</source>
+        <translation>Кадры</translation>
+    </message>
+    <message>
+        <source>Buttons held</source>
+        <translation>Удерживаемые кнопки</translation>
+    </message>
+    <message>
+        <source>Newly pressed</source>
+        <translation>Только что нажатые</translation>
+    </message>
+    <message>
+        <source>Starts at</source>
+        <translation>Начинается с</translation>
+    </message>
+    <message>
+        <source>idle</source>
+        <translation>простой</translation>
+    </message>
+    <message>
+        <source>A step lasts 1-65535 frames.</source>
+        <translation>Шаг длится 1–65535 кадров.</translation>
+    </message>
+    <message>
+        <source>Buttons are UP, DOWN, LEFT, RIGHT, A, B, C and START.</source>
+        <translation>Кнопки: UP, DOWN, LEFT, RIGHT, A, B, C и START.</translation>
+    </message>
+    <message>
+        <source>Edit demo %1 step %2</source>
+        <translation>Правка шага %2 демо %1</translation>
+    </message>
+    <message>
+        <source>%1 steps, %2 s · %3 / %4 bytes</source>
+        <translation>%1 шагов, %2 с · %3 / %4 байт</translation>
+    </message>
+    <message>
+        <source>Loop demo</source>
+        <translation>Демо по кругу</translation>
+    </message>
+    <message>
+        <source>Build and play the demo over and over, as the console plays it after the title</source>
+        <translation>Собрать и проигрывать демо снова и снова, как приставка после титульного экрана</translation>
+    </message>
+    <message>
+        <source>Stop recording</source>
+        <translation>Остановить запись</translation>
+    </message>
+    <message>
+        <source>Finish the recording and keep it as the demo</source>
+        <translation>Закончить запись и сохранить её как демо</translation>
+    </message>
+    <message>
+        <source>Record</source>
+        <translation>Записать</translation>
+    </message>
+    <message>
+        <source>Play the demo&apos;s stage with your controller; what you play becomes the demo</source>
+        <translation>Сыграть этап демо контроллером; сыгранное станет демо</translation>
+    </message>
+    <message>
+        <source>Record a new demo %1?</source>
+        <translation>Записать новое демо %1?</translation>
+    </message>
+    <message>
+        <source>The demo starts %1 itself, then you play with your controller. After the demo&apos;s time, on Start or on Stop recording, what you played replaces the current steps (%2 of them). Undo brings them back.</source>
+        <translation>Демо само запускает %1, затем вы играете контроллером. По истечении времени демо, по Start или по «Остановить запись» сыгранное заменит текущие шаги (их %2). Отмена вернёт их.</translation>
+    </message>
+    <message>
+        <source>Attract demo %1</source>
+        <translation>Демо %1</translation>
+    </message>
+    <message>
+        <source>Idle start</source>
+        <translation>Начальный простой</translation>
+    </message>
+    <message>
+        <source>Step %1</source>
+        <translation>Шаг %1</translation>
+    </message>
+    <message>
+        <source>Stage</source>
+        <translation>Этап</translation>
+    </message>
+    <message>
+        <source>After the title has idled the game plays its four demos in turn, each for %1 frames or until Start. A step holds its buttons for its frames; newly pressed buttons are the ones the game sees go down on its first frame. The steps press Start on the title and C on the weapon setup themselves. Write buttons as words, e.g. RIGHT C.</source>
+        <translation>После простоя на титульном экране игра по очереди показывает четыре демо, каждое %1 кадров или до нажатия Start. Шаг держит свои кнопки в течение своих кадров; только что нажатые — те, что игра видит нажатыми в его первом кадре. Start на титульном экране и C при выборе оружия шаги нажимают сами. Кнопки пишутся словами, например RIGHT C.</translation>
+    </message>
+    <message>
+        <source>Change demo %1 stage</source>
+        <translation>Смена этапа демо %1</translation>
+    </message>
+</context>
+<context>
+    <name>rl::alien_soldier::LevelsModel</name>
+    <message>
+        <source>This stage slot applies no stage record.</source>
+        <translation>Эта ячейка этапа не применяет запись этапа.</translation>
+    </message>
+    <message>
+        <source>Objects</source>
+        <translation>Объекты</translation>
+    </message>
+    <message>
+        <source>Chunks</source>
+        <translation>Чанки</translation>
+    </message>
+    <message>
+        <source>Select</source>
+        <translation>Выбор</translation>
+    </message>
+    <message>
+        <source>Paint chunks</source>
+        <translation>Рисовать чанками</translation>
+    </message>
+    <message>
+        <source>Pick a chunk</source>
+        <translation>Выбрать чанк</translation>
+    </message>
+    <message>
+        <source>Select and move</source>
+        <translation>Выделять и двигать</translation>
+    </message>
+    <message>
+        <source>Plane A</source>
+        <translation>Плоскость A</translation>
+    </message>
+    <message>
+        <source>Plane B</source>
+        <translation>Плоскость B</translation>
+    </message>
+    <message>
+        <source>%1 · object %2</source>
+        <translation>%1 · объект %2</translation>
+    </message>
+    <message>
+        <source>Move object</source>
+        <translation>Перемещение объекта</translation>
+    </message>
+    <message>
+        <source>Chunk %1</source>
+        <translation>Чанк %1</translation>
+    </message>
+    <message>
+        <source>pick a chunk, then paint the coarse map</source>
+        <translation>выберите чанк, затем рисуйте по крупной карте</translation>
+    </message>
+    <message>
+        <source>No map is loaded here.</source>
+        <translation>Здесь не загружена карта.</translation>
+    </message>
+    <message>
+        <source>%1 is not an editable map.</source>
+        <translation>%1 — не редактируемая карта.</translation>
+    </message>
+    <message>
+        <source>Object</source>
+        <translation>Объект</translation>
+    </message>
+    <message>
+        <source>X</source>
+        <translation>X</translation>
+    </message>
+    <message>
+        <source>Y</source>
+        <translation>Y</translation>
+    </message>
+    <message>
+        <source>Type</source>
+        <translation>Тип</translation>
+    </message>
+    <message>
+        <source>Parameter</source>
+        <translation>Параметр</translation>
+    </message>
+    <message>
+        <source>First slot</source>
+        <translation>Первый слот</translation>
+    </message>
+    <message>
+        <source>Last slot</source>
+        <translation>Последний слот</translation>
+    </message>
+    <message>
+        <source>%1 · easy only</source>
+        <translation>%1 · только лёгкий</translation>
+    </message>
+    <message>
+        <source>%1 · hard only</source>
+        <translation>%1 · только сложный</translation>
+    </message>
+    <message>
+        <source>Stage</source>
+        <translation>Этап</translation>
+    </message>
+    <message>
+        <source>Record</source>
+        <translation>Запись этапа</translation>
+    </message>
+    <message>
+        <source>Palettes</source>
+        <translation>Палитры</translation>
+    </message>
+    <message>
+        <source>A number from 0 to 65535.</source>
+        <translation>Число от 0 до 65535.</translation>
+    </message>
+    <message>
+        <source>Change object</source>
+        <translation>Изменение объекта</translation>
+    </message>
+    <message>
+        <source>Change stage</source>
+        <translation>Изменение этапа</translation>
+    </message>
+    <message>
+        <source>%1 · whole level</source>
+        <translation>%1 · весь уровень</translation>
+    </message>
+    <message>
+        <source>The type picks the object&apos;s handler (a multiple of 4); bit 1 keeps it to the easy game, bit 0 to the hard one. X is in the world, Y on the screen (from 128); the object appears when the camera comes within a screen of it. The number of objects is the stage&apos;s own.</source>
+        <translation>Тип выбирает обработчик объекта (кратный 4); бит 1 оставляет объект только в лёгкой игре, бит 0 — только в сложной. X — координата в мире, Y — на экране (от 128); объект появляется, когда камера подходит к нему на экран. Число объектов у этапа своё.</translation>
+    </message>
+    <message>
+        <source>Level</source>
+        <translation>Уровень</translation>
+    </message>
+    <message>
+        <source>Block set</source>
+        <translation>Набор блоков</translation>
+    </message>
+    <message>
+        <source>Maps</source>
+        <translation>Карты</translation>
+    </message>
+    <message>
+        <source>The stage record sets where the cameras and the player start and how its planes enter; the kit refuses values its readers do not index. The stage shows the part of the level its camera covers, from its start to the next stage&apos;s arena.</source>
+        <translation>Запись этапа задаёт, где начинают камеры и игрок и как входят его плоскости; кит отвергает значения, которые процедуры чтения не индексируют. Этап показывает ту часть уровня, которую проходит его камера: от старта до арены следующего этапа.</translation>
+    </message>
+    <message>
+        <source>The stages of a level load the same chunks and patterns and share one coarse map. Each starts at its marked line; what no stage&apos;s camera reaches is left out.</source>
+        <translation>Этапы уровня загружают одни и те же чанки и паттерны и делят одну общую карту. Каждый начинается со своей отмеченной линии; то, куда не доходит камера ни одного этапа, не показано.</translation>
+    </message>
+</context>
+<context>
+    <name>rl::alien_soldier::MappingCanvas</name>
+    <message>
+        <source>Piece %1</source>
+        <translation>Часть %1</translation>
+    </message>
+    <message>
+        <source>Move sprite piece</source>
+        <translation>Перемещение части спрайта</translation>
+    </message>
+    <message>
+        <source>Colours</source>
+        <translation>Цвета</translation>
+    </message>
+    <message>
+        <source>Line</source>
+        <translation>Строка</translation>
+    </message>
+    <message>
+        <source>Sprite piece</source>
+        <translation>Часть спрайта</translation>
+    </message>
+    <message>
+        <source>X</source>
+        <translation>X</translation>
+    </message>
+    <message>
+        <source>Y</source>
+        <translation>Y</translation>
+    </message>
+    <message>
+        <source>Attributes</source>
+        <translation>Атрибуты</translation>
+    </message>
+    <message>
+        <source>Size</source>
+        <translation>Размер</translation>
+    </message>
+    <message>
+        <source>The tile index is added to the object&apos;s own; bit 15 ends the mapping and stays as it is.</source>
+        <translation>Номер тайла прибавляется к номеру самого объекта; бит 15 завершает раскладку и не меняется.</translation>
+    </message>
+    <message>
+        <source>The end mark (and a dynamic piece&apos;s tile) stay as they are.</source>
+        <translation>Метка конца (и тайл динамической части) остаются как есть.</translation>
+    </message>
+    <message>
+        <source>Change sprite piece</source>
+        <translation>Изменение части спрайта</translation>
+    </message>
+    <message>
+        <source>click: into the piece · or drag onto a piece</source>
+        <translation>щелчок — в часть · или перетащите на часть</translation>
+    </message>
+    <message>
+        <source>drag a metatile onto a piece</source>
+        <translation>перетащите метатайл на часть</translation>
+    </message>
+    <message>
+        <source>A dynamic piece draws its own art; it keeps it.</source>
+        <translation>Динамическая часть рисует свою графику и сохраняет её.</translation>
+    </message>
+    <message>
+        <source>The piece uploads its own art (%1); drop art of its size from the patterns to change it.</source>
+        <translation>Часть загружает собственную графику (%1); чтобы сменить её, перетащите из паттернов графику того же размера.</translation>
+    </message>
+    <message>
+        <source>A static piece draws tiles already in VRAM; give it a metatile instead.</source>
+        <translation>Статическая часть рисует тайлы, уже лежащие в VRAM; дайте ей метатайл.</translation>
+    </message>
+    <message>
+        <source>The piece is %1×%2 tiles; it takes only art of that size.</source>
+        <translation>Часть размером %1×%2 тайла; ей подходит только графика такого же размера.</translation>
+    </message>
+</context>
+<context>
+    <name>rl::alien_soldier::MetatilesModel</name>
+    <message>
+        <source>This stage slot loads no map.</source>
+        <translation>Эта ячейка этапа не загружает карту.</translation>
+    </message>
+    <message>
+        <source>Paint patterns (right button picks)</source>
+        <translation>Рисовать паттернами (правая кнопка — выбор)</translation>
+    </message>
+    <message>
+        <source>Pick a pattern</source>
+        <translation>Выбрать паттерн</translation>
+    </message>
+    <message>
+        <source>There is no chunk here.</source>
+        <translation>Здесь нет чанка.</translation>
+    </message>
+    <message>
+        <source>No map document holds this chunk.</source>
+        <translation>Ни один документ карты не содержит этот чанк.</translation>
+    </message>
+    <message>
+        <source>pick a pattern, then paint chunk slots</source>
+        <translation>выберите паттерн, затем рисуйте по ячейкам чанка</translation>
+    </message>
+    <message>
+        <source>Paint patterns</source>
+        <translation>Рисовать паттернами</translation>
+    </message>
+    <message>
+        <source>%1 chunks · %2 patterns</source>
+        <translation>чанков: %1 · паттернов: %2</translation>
+    </message>
+    <message>
+        <source>Chunks</source>
+        <translation>Чанки</translation>
+    </message>
+    <message>
+        <source>Pattern</source>
+        <translation>Паттерн</translation>
+    </message>
+    <message>
+        <source>%1 · %2</source>
+        <translation>%1 · %2</translation>
+    </message>
+    <message>
+        <source>Plane B</source>
+        <translation>Плоскость B</translation>
+    </message>
+    <message>
+        <source>Plane A</source>
+        <translation>Плоскость A</translation>
+    </message>
+    <message>
+        <source>A chunk is 8x8 patterns and a pattern 4x4 tiles. Every stage of the level draws with these chunks; the build compresses each map again into its slot.</source>
+        <translation>Чанк — это 8×8 паттернов, паттерн — 4×4 тайла. Этими чанками рисуются все этапы уровня; сборка заново сжимает каждую карту в её слот.</translation>
+    </message>
+    <message>
+        <source>%1 · %2 of %3 bytes compressed</source>
+        <translation>%1 · %2 из %3 байт после сжатия</translation>
+    </message>
+</context>
+<context>
+    <name>rl::alien_soldier::ObjectMetatilesModel</name>
+    <message numerus="yes">
+        <source>%1 · %n metatiles</source>
+        <translation>
+            <numerusform>%1 · %n метатайл</numerusform>
+            <numerusform>%1 · %n метатайла</numerusform>
+            <numerusform>%1 · %n метатайлов</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Object metatiles</source>
+        <translation>Метатайлы объекта</translation>
+    </message>
+    <message>
+        <source>What the pieces of this object&apos;s frames draw: a first tile, a size and a palette line. Select one to change it in every frame that uses it; Objects and Animations put them into pieces from their sheet.</source>
+        <translation>То, что рисуют части кадров этого объекта: первый тайл, размер и строка палитры. Выберите метатайл, чтобы изменить его во всех кадрах, где он есть; «Объекты» и «Анимации» ставят метатайлы в части со своей палитры.</translation>
+    </message>
+    <message>
+        <source>Object metatile</source>
+        <translation>Метатайл объекта</translation>
+    </message>
+    <message>
+        <source>First tile</source>
+        <translation>Первый тайл</translation>
+    </message>
+    <message>
+        <source>Width</source>
+        <translation>Ширина</translation>
+    </message>
+    <message>
+        <source>Height</source>
+        <translation>Высота</translation>
+    </message>
+    <message>
+        <source>Palette line</source>
+        <translation>Строка палитры</translation>
+    </message>
+    <message>
+        <source>Used by</source>
+        <translation>Используют</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n pieces</source>
+        <translation>
+            <numerusform>%n часть</numerusform>
+            <numerusform>%n части</numerusform>
+            <numerusform>%n частей</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Every piece of %1 that draws this metatile changes with it. Its tiles run down each column, then right, from the first tile; the sheet on the right picks the first tile.</source>
+        <translation>Вместе с ним меняются все части %1, которые его рисуют. Тайлы идут от первого вниз по столбцу, затем вправо; первый тайл выбирается на палитре справа.</translation>
+    </message>
+    <message>
+        <source>Change metatile</source>
+        <translation>Изменение метатайла</translation>
+    </message>
+    <message>
+        <source>select a metatile</source>
+        <translation>выберите метатайл</translation>
+    </message>
+    <message>
+        <source>click: the metatile starts at this tile</source>
+        <translation>щелчок — метатайл начнётся с этого тайла</translation>
+    </message>
+</context>
+<context>
+    <name>rl::alien_soldier::ObjectsModel</name>
+    <message>
+        <source>Frame %1</source>
+        <translation>Кадр %1</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n pieces</source>
+        <translation>
+            <numerusform>%n часть</numerusform>
+            <numerusform>%n части</numerusform>
+            <numerusform>%n частей</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>%1 · frame %2 of %3</source>
+        <translation>%1 · кадр %2 из %3</translation>
+    </message>
+    <message>
+        <source>Object</source>
+        <translation>Объект</translation>
+    </message>
+    <message>
+        <source>The game repository records nothing this object draws with yet, so its pieces show as outlines in the view&apos;s colours.</source>
+        <translation>Репозиторий игры пока не записал, чем рисуется этот объект, поэтому его части показаны контурами в цветах вида.</translation>
+    </message>
+    <message>
+        <source>Attribute</source>
+        <translation>Атрибут</translation>
+    </message>
+    <message>
+        <source>Base tile</source>
+        <translation>Базовый тайл</translation>
+    </message>
+    <message>
+        <source>Palette line</source>
+        <translation>Строка палитры</translation>
+    </message>
+    <message>
+        <source>Art at %1</source>
+        <translation>Графика в %1</translation>
+    </message>
+    <message>
+        <source>Colours</source>
+        <translation>Цвета</translation>
+    </message>
+    <message>
+        <source>Not seen in play itself: it draws with what another block of its file was seen with. The tiles change with the art they come from.</source>
+        <translation>Сам в игре не встречен: рисуется тем, с чем был замечен другой блок из того же файла. Тайлы меняются вместе с графикой, из которой взяты.</translation>
+    </message>
+    <message>
+        <source>Drawn with the attribute, art and colours the game was seen using for it. The tiles change with the art they come from.</source>
+        <translation>Нарисован с тем атрибутом, графикой и цветами, с которыми его рисовала игра. Тайлы меняются вместе с графикой, из которой взяты.</translation>
+    </message>
+    <message>
+        <source>Animations</source>
+        <translation>Анимации</translation>
+    </message>
+    <message>
+        <source>none</source>
+        <translation>нет</translation>
+    </message>
+</context>
+<context>
+    <name>rl::alien_soldier::PalettesModel</name>
+    <message>
+        <source>9-bit RGB · 0–7 per channel</source>
+        <translation>9-битный RGB · 0–7 на канал</translation>
+    </message>
+    <message>
+        <source>Red</source>
+        <translation>Красный</translation>
+    </message>
+    <message>
+        <source>Green</source>
+        <translation>Зелёный</translation>
+    </message>
+    <message>
+        <source>Blue</source>
+        <translation>Синий</translation>
+    </message>
+    <message>
+        <source>Change colour</source>
+        <translation>Изменение цвета</translation>
+    </message>
+    <message>
+        <source>Stage start</source>
+        <translation>Начало этапа</translation>
+    </message>
+    <message>
+        <source>Screen</source>
+        <translation>Экран</translation>
+    </message>
+    <message>
+        <source>%1 · line %2, entry %3</source>
+        <translation>%1 · строка %2, запись %3</translation>
+    </message>
+    <message>
+        <source>Palette commands</source>
+        <translation>Команды палитры</translation>
+    </message>
+    <message>
+        <source>CRAM word</source>
+        <translation>Слово CRAM</translation>
+    </message>
+    <message>
+        <source>Line %1</source>
+        <translation>Строка %1</translation>
+    </message>
+    <message>
+        <source>This command does not write that colour.</source>
+        <translation>Эта команда не пишет этот цвет.</translation>
+    </message>
+    <message>
+        <source>Stages %1–%2</source>
+        <translation>Этапы %1–%2</translation>
+    </message>
+    <message>
+        <source>Stages %1</source>
+        <translation>Этапы %1</translation>
+    </message>
+    <message>
+        <source>Boss</source>
+        <translation>Босс</translation>
+    </message>
+    <message>
+        <source>Object</source>
+        <translation>Объект</translation>
+    </message>
+    <message>
+        <source>No view draws with these colours yet; the code plays them itself.</source>
+        <translation>Этими цветами пока не рисует ни один вид: их включает сам код игры.</translation>
+    </message>
+    <message>
+        <source>Command</source>
+        <translation>Команда</translation>
+    </message>
+    <message>
+        <source>A place&apos;s colours are the commands it plays, in order, each writing its colours from its destination on; only the lines they write are shown. A command several places play changes in all of them. Which places play it is fixed, and so is the number of colours.</source>
+        <translation>Цвета места — это команды, которые оно выполняет по порядку; каждая пишет свои цвета начиная со своего адреса назначения. Показаны только строки, которые они пишут. Команда, общая для нескольких мест, меняется во всех сразу. Какие места её выполняют, неизменно, как и число цветов.</translation>
+    </message>
+</context>
+<context>
+    <name>rl::alien_soldier::PlaytestModel</name>
+    <message>
+        <source>Start at</source>
+        <translation>Начать с</translation>
+    </message>
+    <message>
+        <source>Session</source>
+        <translation>Сеанс</translation>
+    </message>
+    <message>
+        <source>Core</source>
+        <translation>Ядро</translation>
+    </message>
+    <message>
+        <source>Start</source>
+        <translation>Начало</translation>
+    </message>
+    <message>
+        <source>Build</source>
+        <translation>Собрать</translation>
+    </message>
+    <message>
+        <source>not built yet</source>
+        <translation>ещё не собран</translation>
+    </message>
+    <message>
+        <source>Play from selected saves the project, builds the ROM with the kit and starts the selected stage in MAME inside this view: the title and story are skipped and the stage&apos;s password is entered for you. Play starts the game from power-on. Opening a stage in Levels selects it.</source>
+        <translation>«Играть с выбранного» сохраняет проект, собирает ROM китом и запускает выбранный этап в MAME прямо в этом виде: титульный экран и сюжет пропускаются, а пароль этапа вводится за вас. «Играть» запускает игру с включения. Открытие этапа в «Уровнях» выбирает его.</translation>
+    </message>
+    <message>
+        <source>not found</source>
+        <translation>не найден</translation>
+    </message>
+    <message>
+        <source>Playtest · %1</source>
+        <translation>Тест · %1</translation>
+    </message>
+    <message>
+        <source>Build and run</source>
+        <translation>Собрать и запустить</translation>
+    </message>
+</context>
+<context>
+    <name>rl::alien_soldier::SampleModel</name>
+    <message>
+        <source>Voice %1</source>
+        <translation>Голос %1</translation>
+    </message>
+    <message>
+        <source>Drum %1</source>
+        <translation>Ударные %1</translation>
+    </message>
+    <message>
+        <source>YM2612 DAC</source>
+        <translation>ЦАП YM2612</translation>
+    </message>
+    <message>
+        <source>Render %1</source>
+        <translation>Рендер %1</translation>
+    </message>
+    <message>
+        <source>Voice</source>
+        <translation>Голос</translation>
+    </message>
+    <message>
+        <source>Drum sample</source>
+        <translation>Сэмпл ударных</translation>
+    </message>
+    <message>
+        <source>Request</source>
+        <translation>Запрос</translation>
+    </message>
+    <message>
+        <source>DAC note</source>
+        <translation>Нота DAC</translation>
+    </message>
+    <message>
+        <source>Bank</source>
+        <translation>Банк</translation>
+    </message>
+    <message>
+        <source>%1, sample %2</source>
+        <translation>%1, сэмпл %2</translation>
+    </message>
+    <message>
+        <source>Size</source>
+        <translation>Размер</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n bytes</source>
+        <translation>
+            <numerusform>%n байт</numerusform>
+            <numerusform>%n байта</numerusform>
+            <numerusform>%n байт</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>The Z80 decodes each byte into two levels and plays them at the pace the voice&apos;s descriptor sets; the game asks for the voice with its request.</source>
+        <translation>Z80 раскладывает каждый байт на два уровня и проигрывает их в темпе, который задаёт дескриптор голоса; игра вызывает голос его запросом.</translation>
+    </message>
+    <message>
+        <source>The Z80 decodes each byte into two levels and plays them at the pace the sample&apos;s descriptor sets; the music&apos;s DAC channel plays it with its note.</source>
+        <translation>Z80 раскладывает каждый байт на два уровня и проигрывает их в темпе, который задаёт дескриптор сэмпла; канал DAC в музыке играет его своей нотой.</translation>
+    </message>
+</context>
+<context>
+    <name>rl::alien_soldier::ScreensModel</name>
+    <message>
+        <source>Plane A</source>
+        <translation>Плоскость A</translation>
+    </message>
+    <message>
+        <source>Plane B</source>
+        <translation>Плоскость B</translation>
+    </message>
+    <message>
+        <source>Paint tiles (right button picks)</source>
+        <translation>Рисовать тайлами (правая кнопка — выбор)</translation>
+    </message>
+    <message>
+        <source>Pick a tile</source>
+        <translation>Выбрать тайл</translation>
+    </message>
+    <message>
+        <source>The plane shows nothing here.</source>
+        <translation>Плоскость здесь ничего не показывает.</translation>
+    </message>
+    <message>
+        <source>No map document holds this tile.</source>
+        <translation>Ни один документ карты не содержит этот тайл.</translation>
+    </message>
+    <message>
+        <source>Tile %1 · line %2</source>
+        <translation>Тайл %1 · строка %2</translation>
+    </message>
+    <message>
+        <source>pick a tile; the brush keeps its line and flips</source>
+        <translation>выберите тайл; кисть сохраняет свою строку и отражения</translation>
+    </message>
+    <message>
+        <source>Paint screen</source>
+        <translation>Рисование экрана</translation>
+    </message>
+    <message>
+        <source>%1 · brush tile %2, line %3</source>
+        <translation>%1 · кисть: тайл %2, строка %3</translation>
+    </message>
+    <message>
+        <source>Brush</source>
+        <translation>Кисть</translation>
+    </message>
+    <message>
+        <source>Tile</source>
+        <translation>Тайл</translation>
+    </message>
+    <message>
+        <source>Palette line</source>
+        <translation>Строка палитры</translation>
+    </message>
+    <message>
+        <source>Flip across</source>
+        <translation>Отразить поперёк</translation>
+    </message>
+    <message>
+        <source>Flip down</source>
+        <translation>Отразить вниз</translation>
+    </message>
+    <message>
+        <source>In front</source>
+        <translation>Спереди</translation>
+    </message>
+    <message>
+        <source>Two routines adjust the title&apos;s tiles after loading; the screen shows them adjusted, and painting writes the word the map holds.</source>
+        <translation>Две процедуры поправляют тайлы титульного экрана после загрузки; экран показывает их поправленными, а рисование пишет слово, которое хранит карта.</translation>
+    </message>
+    <message>
+        <source>Unknown field.</source>
+        <translation>Неизвестное поле.</translation>
+    </message>
+</context>
+<context>
+    <name>rl::alien_soldier::SoundModel</name>
+    <message>
+        <source>YM2612 + PSG</source>
+        <translation>YM2612 + PSG</translation>
+    </message>
+    <message>
+        <source>DAC</source>
+        <translation>DAC</translation>
+    </message>
+    <message>
+        <source>Noise</source>
+        <translation>Шум</translation>
+    </message>
+    <message>
+        <source>PSG %1</source>
+        <translation>PSG %1</translation>
+    </message>
+    <message>
+        <source>FM %1</source>
+        <translation>FM %1</translation>
+    </message>
+    <message>
+        <source>Edit note</source>
+        <translation>Правка ноты</translation>
+    </message>
+    <message>
+        <source>Render %1</source>
+        <translation>Рендер %1</translation>
+    </message>
+    <message>
+        <source>Sound preview failed: %1</source>
+        <translation>Прослушивание звука не удалось: %1</translation>
+    </message>
+    <message>
+        <source>The kit reported no WAV for %1.</source>
+        <translation>Кит не вернул WAV для %1.</translation>
+    </message>
+    <message>
+        <source>  Playing %1</source>
+        <translation>  Играет %1</translation>
+    </message>
+    <message>
+        <source>%1 bytes · fixed</source>
+        <translation>%1 байт · неизменно</translation>
+    </message>
+    <message>
+        <source>%1 · %2</source>
+        <translation>%1 · %2</translation>
+    </message>
+    <message>
+        <source>Music</source>
+        <translation>Музыка</translation>
+    </message>
+    <message>
+        <source>Sound effect</source>
+        <translation>Звуковой эффект</translation>
+    </message>
+    <message>
+        <source>Requests</source>
+        <translation>Запросы</translation>
+    </message>
+    <message>
+        <source>Tempo</source>
+        <translation>Темп</translation>
+    </message>
+    <message>
+        <source>FM instruments</source>
+        <translation>FM-инструменты</translation>
+    </message>
+    <message>
+        <source>Notes and durations change where the driver reads them; the payload keeps its size and every instruction its place, and the kit checks the edit before it builds.</source>
+        <translation>Ноты и длительности меняются там, где их читает драйвер; данные сохраняют размер, а каждая инструкция — своё место, и кит проверяет правку перед сборкой.</translation>
+    </message>
+</context>
+<context>
+    <name>rl::alien_soldier::TextModel</name>
+    <message>
+        <source>The font has no “%1”; type its glyph as [$NN].</source>
+        <translation>В шрифте нет «%1»; введите его глиф как [$NN].</translation>
+    </message>
+    <message>
+        <source>The record holds %1 glyphs, not %2.</source>
+        <translation>Запись вмещает %1 глифов, а не %2.</translation>
+    </message>
+    <message>
+        <source>Record</source>
+        <translation>Запись</translation>
+    </message>
+    <message>
+        <source>Text</source>
+        <translation>Текст</translation>
+    </message>
+    <message>
+        <source>Glyphs</source>
+        <translation>Глифы</translation>
+    </message>
+    <message>
+        <source>Bytes</source>
+        <translation>Байты</translation>
+    </message>
+    <message>
+        <source>Change text</source>
+        <translation>Изменение текста</translation>
+    </message>
+    <message>
+        <source>%1 · record %2 of %3</source>
+        <translation>%1 · запись %2 из %3</translation>
+    </message>
+    <message>
+        <source>Delay</source>
+        <translation>Задержка</translation>
+    </message>
+    <message>
+        <source>Shared font</source>
+        <translation>Общий шрифт</translation>
+    </message>
+    <message>
+        <source>%1, glyphs %2 to %3. A text keeps its number of glyphs; the bytes the reader needs (terminators, positions, counts) stay as they are.</source>
+        <translation>%1, глифы с %2 по %3. Текст сохраняет число глифов; байты, нужные процедуре чтения (концы, позиции, счётчики), остаются как есть.</translation>
+    </message>
+    <message>
+        <source>A delay is 0 to 127.</source>
+        <translation>Задержка — от 0 до 127.</translation>
+    </message>
+</context>
+<context>
+    <name>rl::alien_soldier::TilesModel</name>
+    <message>
+        <source>Paint tile</source>
+        <translation>Рисование тайла</translation>
+    </message>
+    <message>
+        <source>Fill tile</source>
+        <translation>Заливка тайла</translation>
+    </message>
+    <message>
+        <source>%1 · slot of %2 bytes</source>
+        <translation>%1 · слот на %2 байт</translation>
+    </message>
+    <message>
+        <source>Colours</source>
+        <translation>Цвета</translation>
+    </message>
+    <message>
+        <source>Line</source>
+        <translation>Строка</translation>
+    </message>
+    <message>
+        <source>%1 · tile %2 of %3</source>
+        <translation>%1 · тайл %2 из %3</translation>
+    </message>
+    <message>
+        <source>Compressed art</source>
+        <translation>Сжатая графика</translation>
+    </message>
+    <message>
+        <source>Art</source>
+        <translation>Графика</translation>
+    </message>
+    <message>
+        <source>Tile</source>
+        <translation>Тайл</translation>
+    </message>
+    <message>
+        <source>%1 of %2</source>
+        <translation>%1 из %2</translation>
+    </message>
+    <message>
+        <source>Pen</source>
+        <translation>Перо</translation>
+    </message>
+    <message>
+        <source>The build compresses the edited tiles again; they must fit the payload&apos;s slot, or the build says so.</source>
+        <translation>Сборка заново сжимает изменённые тайлы; они должны поместиться в слот данных, иначе сборка сообщит об этом.</translation>
+    </message>
+    <message>
+        <source>The payload keeps its size and its blocks.</source>
+        <translation>Данные сохраняют свой размер и свои блоки.</translation>
+    </message>
+    <message>
+        <source>As in the game</source>
+        <translation>Как в игре</translation>
     </message>
 </context>
 <context>

@@ -580,6 +580,73 @@
     </message>
 </context>
 <context>
+    <name>alien_soldier</name>
+    <message>
+        <source>Alien Soldier</source>
+        <translation>Alien Soldier</translation>
+    </message>
+    <message>
+        <source>Title</source>
+        <translation>标题</translation>
+    </message>
+    <message>
+        <source>Options</source>
+        <translation>选项</translation>
+    </message>
+    <message>
+        <source>Story</source>
+        <translation>故事</translation>
+    </message>
+    <message>
+        <source>Menus and results</source>
+        <translation>菜单与结算</translation>
+    </message>
+    <message>
+        <source>Stage messages</source>
+        <translation>关卡消息</translation>
+    </message>
+    <message>
+        <source>Boss and ship messages</source>
+        <translation>头目与飞船消息</translation>
+    </message>
+    <message>
+        <source>Credits</source>
+        <translation>制作人员名单</translation>
+    </message>
+    <message>
+        <source>Glyph preloads</source>
+        <translation>预载字形</translation>
+    </message>
+    <message>
+        <source>Japanese story font</source>
+        <translation>故事日文字体</translation>
+    </message>
+    <message>
+        <source>Results</source>
+        <translation>结算</translation>
+    </message>
+    <message>
+        <source>Weapon setup</source>
+        <translation>武器选择</translation>
+    </message>
+    <message>
+        <source>Credits opening</source>
+        <translation>片尾开场</translation>
+    </message>
+    <message>
+        <source>Ending</source>
+        <translation>结局</translation>
+    </message>
+    <message>
+        <source>Credits scene %1</source>
+        <translation>片尾场景 %1</translation>
+    </message>
+    <message>
+        <source>Options and password</source>
+        <translation>选项与密码</translation>
+    </message>
+</context>
+<context>
     <name>castle_excellent</name>
     <message>
         <source>Cannot read %1: %2</source>
@@ -1352,6 +1419,1512 @@
     <message>
         <source>Fruit %1</source>
         <translation>水果 %1</translation>
+    </message>
+</context>
+<context>
+    <name>rl::alien_soldier::AlienSoldierSession</name>
+    <message>
+        <source>Cannot open the Alien Soldier project: %1</source>
+        <translation>无法打开 Alien Soldier 项目：%1</translation>
+    </message>
+    <message>
+        <source>Mega Drive</source>
+        <translation>Mega Drive</translation>
+    </message>
+    <message>
+        <source>YM2612 + PSG</source>
+        <translation>YM2612 + PSG</translation>
+    </message>
+    <message>
+        <source>Levels</source>
+        <translation>关卡</translation>
+    </message>
+    <message>
+        <source>Tiles</source>
+        <translation>图块</translation>
+    </message>
+    <message>
+        <source>Metatiles</source>
+        <translation>元图块</translation>
+    </message>
+    <message>
+        <source>Palettes</source>
+        <translation>调色板</translation>
+    </message>
+    <message>
+        <source>Animations</source>
+        <translation>动画</translation>
+    </message>
+    <message>
+        <source>Screens</source>
+        <translation>画面</translation>
+    </message>
+    <message>
+        <source>Text</source>
+        <translation>文本</translation>
+    </message>
+    <message>
+        <source>Sound</source>
+        <translation>声音</translation>
+    </message>
+    <message>
+        <source>Demo</source>
+        <translation>演示</translation>
+    </message>
+    <message>
+        <source>Playtest</source>
+        <translation>试玩</translation>
+    </message>
+    <message>
+        <source>Stage slot %1</source>
+        <translation>关卡槽 %1</translation>
+    </message>
+    <message>
+        <source>Stage %1 · %2</source>
+        <translation>关卡 %1 · %2</translation>
+    </message>
+    <message>
+        <source>no map</source>
+        <translation>无地图</translation>
+    </message>
+    <message>
+        <source>Music</source>
+        <translation>音乐</translation>
+    </message>
+    <message>
+        <source>Sound effects</source>
+        <translation>音效</translation>
+    </message>
+    <message>
+        <source>Attract demos</source>
+        <translation>演示</translation>
+    </message>
+    <message>
+        <source>Demo %1</source>
+        <translation>演示 %1</translation>
+    </message>
+    <message>
+        <source>Session</source>
+        <translation>会话</translation>
+    </message>
+    <message>
+        <source>Build and run</source>
+        <translation>构建并运行</translation>
+    </message>
+    <message>
+        <source>Cannot save %1: %2</source>
+        <translation>无法保存 %1：%2</translation>
+    </message>
+    <message>
+        <source>Revert %1</source>
+        <translation>还原 %1</translation>
+    </message>
+    <message>
+        <source>Stop recording</source>
+        <translation>停止录制</translation>
+    </message>
+    <message>
+        <source>Play demo</source>
+        <translation>播放演示</translation>
+    </message>
+    <message>
+        <source>Plan playtest of %1</source>
+        <translation>准备试玩 %1</translation>
+    </message>
+    <message>
+        <source>Plan playtest from power-on</source>
+        <translation>准备从开机开始试玩</translation>
+    </message>
+    <message>
+        <source>Alien Soldier · power-on</source>
+        <translation>Alien Soldier · 开机</translation>
+    </message>
+    <message>
+        <source>Plan demo recording</source>
+        <translation>准备录制演示</translation>
+    </message>
+    <message>
+        <source>Plan attract demo</source>
+        <translation>准备演示</translation>
+    </message>
+    <message>
+        <source>Alien Soldier · recording demo %1</source>
+        <translation>Alien Soldier · 正在录制演示 %1</translation>
+    </message>
+    <message>
+        <source>Alien Soldier · demo %1</source>
+        <translation>Alien Soldier · 演示 %1</translation>
+    </message>
+    <message>
+        <source>Recording: the demo starts the stage itself, then the controller plays it; it ends after the demo&apos;s time, on Start or on Stop recording.</source>
+        <translation>录制中：演示会自行开始关卡，之后由手柄操作；演示时间结束、按 Start 或点“停止录制”时结束。</translation>
+    </message>
+    <message>
+        <source>Nothing was recorded: the demo did not start.</source>
+        <translation>没有录到任何内容：演示没有开始。</translation>
+    </message>
+    <message>
+        <source>Cannot write %1.</source>
+        <translation>无法写入 %1。</translation>
+    </message>
+    <message>
+        <source>Join the recording to demo %1</source>
+        <translation>将录制内容接入演示 %1</translation>
+    </message>
+    <message>
+        <source>Record demo %1</source>
+        <translation>录制演示 %1</translation>
+    </message>
+    <message>
+        <source>Recorded demo %1: %2 steps.</source>
+        <translation>已录制演示 %1：%2 个步骤。</translation>
+    </message>
+    <message>
+        <source>Stage %1</source>
+        <translation>关卡 %1</translation>
+    </message>
+    <message>
+        <source>Stages %1–%2</source>
+        <translation>关卡 %1–%2</translation>
+    </message>
+    <message>
+        <source>Stages %1</source>
+        <translation>关卡 %1</translation>
+    </message>
+    <message>
+        <source>Whole level</source>
+        <translation>整个关卡组</translation>
+    </message>
+    <message>
+        <source>Without a map</source>
+        <translation>无地图</translation>
+    </message>
+    <message>
+        <source>Plane B</source>
+        <translation>平面 B</translation>
+    </message>
+    <message>
+        <source>Plane A</source>
+        <translation>平面 A</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n chunks</source>
+        <translation>
+            <numerusform>%n 个区块</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Objects</source>
+        <translation>物件</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n frames</source>
+        <translation>
+            <numerusform>%n 帧</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>%n frames · not seen</source>
+        <translation>
+            <numerusform>%n 帧 · 未见</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Hero</source>
+        <translation>主角</translation>
+    </message>
+    <message>
+        <source>Stages</source>
+        <translation>关卡</translation>
+    </message>
+    <message>
+        <source>Weapons</source>
+        <translation>武器</translation>
+    </message>
+    <message>
+        <source>Bosses</source>
+        <translation>头目</translation>
+    </message>
+    <message>
+        <source>Screens and fonts</source>
+        <translation>画面与字体</translation>
+    </message>
+    <message>
+        <source>Credits</source>
+        <translation>制作人员名单</translation>
+    </message>
+    <message>
+        <source>Other</source>
+        <translation>其他</translation>
+    </message>
+    <message>
+        <source>%1 · arena</source>
+        <translation>%1 · 战斗场地</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n metatiles</source>
+        <translation>
+            <numerusform>%n 个元图块</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>%1 · %2</source>
+        <translation>%1 · %2</translation>
+    </message>
+    <message>
+        <source>%1 would take %2 bytes compressed, and its slot in the ROM holds %3: the change is not made.</source>
+        <translation>%1 压缩后将占 %2 字节，而它在 ROM 中的空间只有 %3 字节：未进行此更改。</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n keyframes</source>
+        <translation>
+            <numerusform>%n 个关键帧</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Bosses (code)</source>
+        <translation>头目（代码）</translation>
+    </message>
+    <message>
+        <source>Voices</source>
+        <translation>语音</translation>
+    </message>
+    <message>
+        <source>Drum samples</source>
+        <translation>鼓采样</translation>
+    </message>
+    <message>
+        <source>Other palette lists</source>
+        <translation>其他调色板列表</translation>
+    </message>
+    <message>
+        <source>Commands no list plays</source>
+        <translation>列表之外的命令</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n lines</source>
+        <translation>
+            <numerusform>%n 行</numerusform>
+        </translation>
+    </message>
+</context>
+<context>
+    <name>rl::alien_soldier::AnimationsModel</name>
+    <message>
+        <source>→ %1</source>
+        <translation>→ %1</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n calls</source>
+        <translation>
+            <numerusform>%n 次调用</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>jump</source>
+        <translation>跳转</translation>
+    </message>
+    <message>
+        <source>%1 · entry %2 of %3</source>
+        <translation>%1 · 条目 %2 / %3</translation>
+    </message>
+    <message>
+        <source>Animation</source>
+        <translation>动画</translation>
+    </message>
+    <message>
+        <source>Mapping</source>
+        <translation>映射</translation>
+    </message>
+    <message>
+        <source>Jumps to</source>
+        <translation>跳转到</translation>
+    </message>
+    <message>
+        <source>Duration</source>
+        <translation>时值</translation>
+    </message>
+    <message>
+        <source>Change animation</source>
+        <translation>修改动画</translation>
+    </message>
+    <message>
+        <source>A frame lasts 1 to 65535 calls; a jump stays a jump.</source>
+        <translation>一帧持续 1 到 65535 次调用；跳转保持为跳转。</translation>
+    </message>
+    <message>
+        <source>hold</source>
+        <translation>保持</translation>
+    </message>
+    <message>
+        <source>holds the frame for good</source>
+        <translation>永久停留在这一帧</translation>
+    </message>
+    <message>
+        <source>A frame lasts its duration in calls of the animation reader; a duration whose low byte is $80 or more holds the frame for good, which is how a script ends. An entry stays a frame or a jump.</source>
+        <translation>一帧持续的动画读取例程调用次数即其时长；低字节为 $80 或以上的时长会永久停留在这一帧，脚本就是这样结束的。条目保持为帧或跳转。</translation>
+    </message>
+</context>
+<context>
+    <name>rl::alien_soldier::BossesModel</name>
+    <message>
+        <source>%1 · %2</source>
+        <translation>%1 · %2</translation>
+    </message>
+    <message>
+        <source>%1 · %2 parts · %3 channels</source>
+        <translation>%1 · %2 个部件 · %3 个通道</translation>
+    </message>
+    <message>
+        <source>Faces</source>
+        <translation>朝向</translation>
+    </message>
+    <message>
+        <source>Left</source>
+        <translation>左</translation>
+    </message>
+    <message>
+        <source>Right</source>
+        <translation>右</translation>
+    </message>
+    <message>
+        <source>Sides</source>
+        <translation>左右</translation>
+    </message>
+    <message>
+        <source>As built</source>
+        <translation>初始</translation>
+    </message>
+    <message>
+        <source>Swapped</source>
+        <translation>互换</translation>
+    </message>
+    <message>
+        <source>Shows</source>
+        <translation>显示</translation>
+    </message>
+    <message>
+        <source>Keyframes</source>
+        <translation>关键帧</translation>
+    </message>
+    <message>
+        <source>Every frame</source>
+        <translation>每一帧</translation>
+    </message>
+    <message>
+        <source>Part %1</source>
+        <translation>部件 %1</translation>
+    </message>
+    <message>
+        <source>Turn boss joint</source>
+        <translation>旋转首领关节</translation>
+    </message>
+    <message>
+        <source>Pose %1</source>
+        <translation>姿势 %1</translation>
+    </message>
+    <message>
+        <source>pose %1</source>
+        <translation>姿势 %1</translation>
+    </message>
+    <message>
+        <source>sound %1</source>
+        <translation>音效 %1</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n frames</source>
+        <translation>
+            <numerusform>%n 帧</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Boss</source>
+        <translation>首领</translation>
+    </message>
+    <message>
+        <source>Boss part</source>
+        <translation>首领部件</translation>
+    </message>
+    <message>
+        <source>Draws</source>
+        <translation>绘制</translation>
+    </message>
+    <message>
+        <source>Hangs from</source>
+        <translation>挂在</translation>
+    </message>
+    <message>
+        <source>the boss itself</source>
+        <translation>首领本身</translation>
+    </message>
+    <message>
+        <source>part %1</source>
+        <translation>部件 %1</translation>
+    </message>
+    <message>
+        <source>Bone</source>
+        <translation>骨骼</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n pixels</source>
+        <translation>
+            <numerusform>%n 像素</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Depth</source>
+        <translation>深度</translation>
+    </message>
+    <message>
+        <source>Joint (channel %1)</source>
+        <translation>关节(通道 %1)</translation>
+    </message>
+    <message>
+        <source>A part sits at the end of its bone from its parent, turned by the channels its joint adds up. Drag it to turn its own joint in the pose shown.</source>
+        <translation>部件位于从父部件伸出的骨骼末端，按其关节累加的通道旋转。拖动它可在当前姿势中旋转其关节。</translation>
+    </message>
+    <message>
+        <source>Boss animation</source>
+        <translation>首领动画</translation>
+    </message>
+    <message>
+        <source>Pose</source>
+        <translation>姿势</translation>
+    </message>
+    <message>
+        <source>Frames</source>
+        <translation>帧数</translation>
+    </message>
+    <message>
+        <source>Steps</source>
+        <translation>步数</translation>
+    </message>
+    <message>
+        <source>Label</source>
+        <translation>标签</translation>
+    </message>
+    <message>
+        <source>Ends</source>
+        <translation>结束</translation>
+    </message>
+    <message>
+        <source>starts again</source>
+        <translation>重新开始</translation>
+    </message>
+    <message>
+        <source>holds the last pose</source>
+        <translation>停在最后的姿势</translation>
+    </message>
+    <message>
+        <source>runs on into %1</source>
+        <translation>接着进入 %1</translation>
+    </message>
+    <message>
+        <source>Channel %1</source>
+        <translation>通道 %1</translation>
+    </message>
+    <message>
+        <source>A keyframe steps towards its pose by 1/steps of the way each frame, for frames + 1 frames, from where the last one left off; the canvas shows where it lands. The channels are its pose&apos;s, shared with every animation that goes to it. The game&apos;s code picks the animation and moves the boss.</source>
+        <translation>关键帧从上一个停下的位置开始，每帧向其姿势移动 1/步数 的距离，持续 帧数 + 1 帧；画布显示其落点。通道属于其姿势，与所有指向该姿势的动画共享。由游戏代码选择动画并移动首领。</translation>
+    </message>
+    <message>
+        <source>A channel holds 0-255.</source>
+        <translation>通道取值为 0-255。</translation>
+    </message>
+    <message>
+        <source>Change boss pose</source>
+        <translation>修改首领姿势</translation>
+    </message>
+    <message>
+        <source>Frames 0-255 but 128, steps 1-255, a pose the table holds.</source>
+        <translation>帧数 0-255(128 除外)，步数 1-255，姿势须在表中。</translation>
+    </message>
+    <message>
+        <source>Change boss animation</source>
+        <translation>修改首领动画</translation>
+    </message>
+    <message>
+        <source>Frames over steps</source>
+        <translation>超出步数的帧</translation>
+    </message>
+    <message>
+        <source>Frames over steps run -127 to 127.</source>
+        <translation>超出步数的帧为 -127 到 127。</translation>
+    </message>
+    <message>
+        <source>Checked</source>
+        <translation>已核对</translation>
+    </message>
+    <message>
+        <source>not yet against the game: its own code may place some parts elsewhere</source>
+        <translation>尚未与游戏核对：其自身代码可能把部分部件放在别处</translation>
+    </message>
+    <message>
+        <source>Set by its code</source>
+        <translation>由代码设定</translation>
+    </message>
+    <message>
+        <source>The game&apos;s code turns this boss&apos;s parts itself; it shows as its setup leaves it.</source>
+        <translation>这个头目的部件由游戏代码自己转动；按其初始设置留下的样子显示。</translation>
+    </message>
+</context>
+<context>
+    <name>rl::alien_soldier::DemoModel</name>
+    <message>
+        <source>Demo %1</source>
+        <translation>演示 %1</translation>
+    </message>
+    <message>
+        <source>Step</source>
+        <translation>步骤</translation>
+    </message>
+    <message>
+        <source>Frames</source>
+        <translation>帧</translation>
+    </message>
+    <message>
+        <source>Buttons held</source>
+        <translation>按住的按键</translation>
+    </message>
+    <message>
+        <source>Newly pressed</source>
+        <translation>新按下</translation>
+    </message>
+    <message>
+        <source>Starts at</source>
+        <translation>开始于</translation>
+    </message>
+    <message>
+        <source>idle</source>
+        <translation>空闲</translation>
+    </message>
+    <message>
+        <source>A step lasts 1-65535 frames.</source>
+        <translation>一步持续 1–65535 帧。</translation>
+    </message>
+    <message>
+        <source>Buttons are UP, DOWN, LEFT, RIGHT, A, B, C and START.</source>
+        <translation>按键为 UP、DOWN、LEFT、RIGHT、A、B、C 和 START。</translation>
+    </message>
+    <message>
+        <source>Edit demo %1 step %2</source>
+        <translation>编辑演示 %1 的步骤 %2</translation>
+    </message>
+    <message>
+        <source>%1 steps, %2 s · %3 / %4 bytes</source>
+        <translation>%1 个步骤，%2 秒 · %3 / %4 字节</translation>
+    </message>
+    <message>
+        <source>Loop demo</source>
+        <translation>循环演示</translation>
+    </message>
+    <message>
+        <source>Build and play the demo over and over, as the console plays it after the title</source>
+        <translation>像主机在标题画面之后那样，构建并反复播放演示</translation>
+    </message>
+    <message>
+        <source>Stop recording</source>
+        <translation>停止录制</translation>
+    </message>
+    <message>
+        <source>Finish the recording and keep it as the demo</source>
+        <translation>结束录制并将其保存为演示</translation>
+    </message>
+    <message>
+        <source>Record</source>
+        <translation>录制</translation>
+    </message>
+    <message>
+        <source>Play the demo&apos;s stage with your controller; what you play becomes the demo</source>
+        <translation>用手柄玩演示的关卡；你玩的内容会成为演示</translation>
+    </message>
+    <message>
+        <source>Record a new demo %1?</source>
+        <translation>录制新的演示 %1？</translation>
+    </message>
+    <message>
+        <source>The demo starts %1 itself, then you play with your controller. After the demo&apos;s time, on Start or on Stop recording, what you played replaces the current steps (%2 of them). Undo brings them back.</source>
+        <translation>演示会自行开始 %1，之后由你用手柄操作。演示时间结束、或你按下 Start 或“停止录制”时，你的操作会替换当前步骤（%2 个）。撤销可以恢复。</translation>
+    </message>
+    <message>
+        <source>Attract demo %1</source>
+        <translation>演示 %1</translation>
+    </message>
+    <message>
+        <source>Idle start</source>
+        <translation>开头空闲</translation>
+    </message>
+    <message>
+        <source>Step %1</source>
+        <translation>步骤 %1</translation>
+    </message>
+    <message>
+        <source>Stage</source>
+        <translation>关卡</translation>
+    </message>
+    <message>
+        <source>After the title has idled the game plays its four demos in turn, each for %1 frames or until Start. A step holds its buttons for its frames; newly pressed buttons are the ones the game sees go down on its first frame. The steps press Start on the title and C on the weapon setup themselves. Write buttons as words, e.g. RIGHT C.</source>
+        <translation>标题画面闲置一段时间后，游戏会依次播放四段演示，每段持续 %1 帧或直到按下 Start。每一步在其帧数内按住各自的按键；新按下的按键是游戏在该步第一帧检测到按下的按键。标题画面的 Start 和武器选择时的 C 由步骤自行按下。按键用单词书写，例如 RIGHT C。</translation>
+    </message>
+    <message>
+        <source>Change demo %1 stage</source>
+        <translation>修改演示 %1 的关卡</translation>
+    </message>
+</context>
+<context>
+    <name>rl::alien_soldier::LevelsModel</name>
+    <message>
+        <source>This stage slot applies no stage record.</source>
+        <translation>此关卡槽不应用关卡记录。</translation>
+    </message>
+    <message>
+        <source>Objects</source>
+        <translation>物件</translation>
+    </message>
+    <message>
+        <source>Chunks</source>
+        <translation>区块</translation>
+    </message>
+    <message>
+        <source>Select</source>
+        <translation>选择</translation>
+    </message>
+    <message>
+        <source>Paint chunks</source>
+        <translation>绘制区块</translation>
+    </message>
+    <message>
+        <source>Pick a chunk</source>
+        <translation>选取区块</translation>
+    </message>
+    <message>
+        <source>Select and move</source>
+        <translation>选择并移动</translation>
+    </message>
+    <message>
+        <source>Plane A</source>
+        <translation>平面 A</translation>
+    </message>
+    <message>
+        <source>Plane B</source>
+        <translation>平面 B</translation>
+    </message>
+    <message>
+        <source>%1 · object %2</source>
+        <translation>%1 · 物件 %2</translation>
+    </message>
+    <message>
+        <source>Move object</source>
+        <translation>移动物件</translation>
+    </message>
+    <message>
+        <source>Chunk %1</source>
+        <translation>区块 %1</translation>
+    </message>
+    <message>
+        <source>pick a chunk, then paint the coarse map</source>
+        <translation>选取区块，然后在粗略地图上绘制</translation>
+    </message>
+    <message>
+        <source>No map is loaded here.</source>
+        <translation>此处未加载地图。</translation>
+    </message>
+    <message>
+        <source>%1 is not an editable map.</source>
+        <translation>%1 不是可编辑的地图。</translation>
+    </message>
+    <message>
+        <source>Object</source>
+        <translation>物件</translation>
+    </message>
+    <message>
+        <source>X</source>
+        <translation>X</translation>
+    </message>
+    <message>
+        <source>Y</source>
+        <translation>Y</translation>
+    </message>
+    <message>
+        <source>Type</source>
+        <translation>类型</translation>
+    </message>
+    <message>
+        <source>Parameter</source>
+        <translation>参数</translation>
+    </message>
+    <message>
+        <source>First slot</source>
+        <translation>首个槽位</translation>
+    </message>
+    <message>
+        <source>Last slot</source>
+        <translation>末个槽位</translation>
+    </message>
+    <message>
+        <source>%1 · easy only</source>
+        <translation>%1 · 仅简单</translation>
+    </message>
+    <message>
+        <source>%1 · hard only</source>
+        <translation>%1 · 仅困难</translation>
+    </message>
+    <message>
+        <source>Stage</source>
+        <translation>关卡</translation>
+    </message>
+    <message>
+        <source>Record</source>
+        <translation>记录</translation>
+    </message>
+    <message>
+        <source>Palettes</source>
+        <translation>调色板</translation>
+    </message>
+    <message>
+        <source>A number from 0 to 65535.</source>
+        <translation>0 到 65535 之间的数。</translation>
+    </message>
+    <message>
+        <source>Change object</source>
+        <translation>修改物件</translation>
+    </message>
+    <message>
+        <source>Change stage</source>
+        <translation>修改关卡</translation>
+    </message>
+    <message>
+        <source>%1 · whole level</source>
+        <translation>%1 · 整个关卡组</translation>
+    </message>
+    <message>
+        <source>The type picks the object&apos;s handler (a multiple of 4); bit 1 keeps it to the easy game, bit 0 to the hard one. X is in the world, Y on the screen (from 128); the object appears when the camera comes within a screen of it. The number of objects is the stage&apos;s own.</source>
+        <translation>类型决定物件的处理例程（4 的倍数）；第 1 位让它只出现在简单模式，第 0 位只出现在困难模式。X 是世界坐标，Y 是屏幕坐标（从 128 起）；镜头接近到一屏以内时物件出现。物件数量由关卡本身决定。</translation>
+    </message>
+    <message>
+        <source>Level</source>
+        <translation>关卡组</translation>
+    </message>
+    <message>
+        <source>Block set</source>
+        <translation>区块组</translation>
+    </message>
+    <message>
+        <source>Maps</source>
+        <translation>地图</translation>
+    </message>
+    <message>
+        <source>The stage record sets where the cameras and the player start and how its planes enter; the kit refuses values its readers do not index. The stage shows the part of the level its camera covers, from its start to the next stage&apos;s arena.</source>
+        <translation>关卡记录决定镜头和玩家的起始位置以及各平面如何进入；读取例程不会索引的值会被工具包拒绝。关卡显示其镜头经过的关卡组部分：从起点到下一关的竞技场。</translation>
+    </message>
+    <message>
+        <source>The stages of a level load the same chunks and patterns and share one coarse map. Each starts at its marked line; what no stage&apos;s camera reaches is left out.</source>
+        <translation>关卡组内的关卡载入相同的区块和图案，并共用一张总图。每个关卡从各自标记的线开始；任何关卡的镜头都到不了的部分不会显示。</translation>
+    </message>
+</context>
+<context>
+    <name>rl::alien_soldier::MappingCanvas</name>
+    <message>
+        <source>Piece %1</source>
+        <translation>部件 %1</translation>
+    </message>
+    <message>
+        <source>Move sprite piece</source>
+        <translation>移动精灵部件</translation>
+    </message>
+    <message>
+        <source>Colours</source>
+        <translation>颜色</translation>
+    </message>
+    <message>
+        <source>Line</source>
+        <translation>行</translation>
+    </message>
+    <message>
+        <source>Sprite piece</source>
+        <translation>精灵部件</translation>
+    </message>
+    <message>
+        <source>X</source>
+        <translation>X</translation>
+    </message>
+    <message>
+        <source>Y</source>
+        <translation>Y</translation>
+    </message>
+    <message>
+        <source>Attributes</source>
+        <translation>属性</translation>
+    </message>
+    <message>
+        <source>Size</source>
+        <translation>大小</translation>
+    </message>
+    <message>
+        <source>The tile index is added to the object&apos;s own; bit 15 ends the mapping and stays as it is.</source>
+        <translation>图块编号会加上物件自身的编号；第 15 位表示映射结束，保持不变。</translation>
+    </message>
+    <message>
+        <source>The end mark (and a dynamic piece&apos;s tile) stay as they are.</source>
+        <translation>结束标记（以及动态部件的图块）保持不变。</translation>
+    </message>
+    <message>
+        <source>Change sprite piece</source>
+        <translation>修改精灵部件</translation>
+    </message>
+    <message>
+        <source>click: into the piece · or drag onto a piece</source>
+        <translation>单击：放入部件 · 或拖到部件上</translation>
+    </message>
+    <message>
+        <source>drag a metatile onto a piece</source>
+        <translation>将元图块拖到部件上</translation>
+    </message>
+    <message>
+        <source>A dynamic piece draws its own art; it keeps it.</source>
+        <translation>动态部件绘制自己的图像，并保持不变。</translation>
+    </message>
+    <message>
+        <source>The piece uploads its own art (%1); drop art of its size from the patterns to change it.</source>
+        <translation>该部件上传自己的图像（%1）；要更换，请从图案中拖入同样大小的图像。</translation>
+    </message>
+    <message>
+        <source>A static piece draws tiles already in VRAM; give it a metatile instead.</source>
+        <translation>静态部件绘制已在 VRAM 中的图块；请改为给它指定元图块。</translation>
+    </message>
+    <message>
+        <source>The piece is %1×%2 tiles; it takes only art of that size.</source>
+        <translation>该部件为 %1×%2 个图块，只能使用同样大小的图像。</translation>
+    </message>
+</context>
+<context>
+    <name>rl::alien_soldier::MetatilesModel</name>
+    <message>
+        <source>This stage slot loads no map.</source>
+        <translation>此关卡槽不加载地图。</translation>
+    </message>
+    <message>
+        <source>Paint patterns (right button picks)</source>
+        <translation>绘制图案（右键取样）</translation>
+    </message>
+    <message>
+        <source>Pick a pattern</source>
+        <translation>选取图案</translation>
+    </message>
+    <message>
+        <source>There is no chunk here.</source>
+        <translation>此处没有区块。</translation>
+    </message>
+    <message>
+        <source>No map document holds this chunk.</source>
+        <translation>没有地图文档包含此区块。</translation>
+    </message>
+    <message>
+        <source>pick a pattern, then paint chunk slots</source>
+        <translation>选取图案，然后绘制区块格</translation>
+    </message>
+    <message>
+        <source>Paint patterns</source>
+        <translation>绘制图案</translation>
+    </message>
+    <message>
+        <source>%1 chunks · %2 patterns</source>
+        <translation>%1 个区块 · %2 个图案</translation>
+    </message>
+    <message>
+        <source>Chunks</source>
+        <translation>区块</translation>
+    </message>
+    <message>
+        <source>Pattern</source>
+        <translation>图案</translation>
+    </message>
+    <message>
+        <source>%1 · %2</source>
+        <translation>%1 · %2</translation>
+    </message>
+    <message>
+        <source>Plane B</source>
+        <translation>平面 B</translation>
+    </message>
+    <message>
+        <source>Plane A</source>
+        <translation>平面 A</translation>
+    </message>
+    <message>
+        <source>A chunk is 8x8 patterns and a pattern 4x4 tiles. Every stage of the level draws with these chunks; the build compresses each map again into its slot.</source>
+        <translation>一个区块由 8×8 个图案组成，一个图案由 4×4 个图块组成。关卡组内所有关卡都用这些区块绘制；构建时会把每张地图重新压缩回原槽位。</translation>
+    </message>
+    <message>
+        <source>%1 · %2 of %3 bytes compressed</source>
+        <translation>%1 · 压缩后 %2 / %3 字节</translation>
+    </message>
+</context>
+<context>
+    <name>rl::alien_soldier::ObjectMetatilesModel</name>
+    <message numerus="yes">
+        <source>%1 · %n metatiles</source>
+        <translation>
+            <numerusform>%1 · %n 个元图块</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Object metatiles</source>
+        <translation>物件的元图块</translation>
+    </message>
+    <message>
+        <source>What the pieces of this object&apos;s frames draw: a first tile, a size and a palette line. Select one to change it in every frame that uses it; Objects and Animations put them into pieces from their sheet.</source>
+        <translation>此物件各帧部件所绘制的内容：首个图块、尺寸和调色板行。选中一个即可在所有使用它的帧中修改；“物件”和“动画”从各自的图板将其放入部件。</translation>
+    </message>
+    <message>
+        <source>Object metatile</source>
+        <translation>物件元图块</translation>
+    </message>
+    <message>
+        <source>First tile</source>
+        <translation>首个图块</translation>
+    </message>
+    <message>
+        <source>Width</source>
+        <translation>宽度</translation>
+    </message>
+    <message>
+        <source>Height</source>
+        <translation>高度</translation>
+    </message>
+    <message>
+        <source>Palette line</source>
+        <translation>调色板行</translation>
+    </message>
+    <message>
+        <source>Used by</source>
+        <translation>使用者</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n pieces</source>
+        <translation>
+            <numerusform>%n 个部件</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>Every piece of %1 that draws this metatile changes with it. Its tiles run down each column, then right, from the first tile; the sheet on the right picks the first tile.</source>
+        <translation>%1 中绘制此元图块的每个部件都会随之改变。其图块从首个图块起沿每列向下排列，再向右；首个图块在右侧图板中选择。</translation>
+    </message>
+    <message>
+        <source>Change metatile</source>
+        <translation>修改元图块</translation>
+    </message>
+    <message>
+        <source>select a metatile</source>
+        <translation>选择一个元图块</translation>
+    </message>
+    <message>
+        <source>click: the metatile starts at this tile</source>
+        <translation>单击：元图块从此图块开始</translation>
+    </message>
+</context>
+<context>
+    <name>rl::alien_soldier::ObjectsModel</name>
+    <message>
+        <source>Frame %1</source>
+        <translation>帧 %1</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n pieces</source>
+        <translation>
+            <numerusform>%n 个部件</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>%1 · frame %2 of %3</source>
+        <translation>%1 · 第 %2 帧，共 %3 帧</translation>
+    </message>
+    <message>
+        <source>Object</source>
+        <translation>物件</translation>
+    </message>
+    <message>
+        <source>The game repository records nothing this object draws with yet, so its pieces show as outlines in the view&apos;s colours.</source>
+        <translation>游戏仓库尚未记录这个物件用什么绘制，所以它的部件以视图颜色的轮廓显示。</translation>
+    </message>
+    <message>
+        <source>Attribute</source>
+        <translation>属性</translation>
+    </message>
+    <message>
+        <source>Base tile</source>
+        <translation>基准图块</translation>
+    </message>
+    <message>
+        <source>Palette line</source>
+        <translation>调色板行</translation>
+    </message>
+    <message>
+        <source>Art at %1</source>
+        <translation>%1 处的图形</translation>
+    </message>
+    <message>
+        <source>Colours</source>
+        <translation>颜色</translation>
+    </message>
+    <message>
+        <source>Not seen in play itself: it draws with what another block of its file was seen with. The tiles change with the art they come from.</source>
+        <translation>游戏中未见到它本身：它用同一文件中另一个块被见到时所用的内容绘制。图块会随来源图形一起改变。</translation>
+    </message>
+    <message>
+        <source>Drawn with the attribute, art and colours the game was seen using for it. The tiles change with the art they come from.</source>
+        <translation>按游戏实际使用的属性、图形和颜色绘制。图块会随来源图形一起改变。</translation>
+    </message>
+    <message>
+        <source>Animations</source>
+        <translation>动画</translation>
+    </message>
+    <message>
+        <source>none</source>
+        <translation>无</translation>
+    </message>
+</context>
+<context>
+    <name>rl::alien_soldier::PalettesModel</name>
+    <message>
+        <source>9-bit RGB · 0–7 per channel</source>
+        <translation>9 位 RGB · 每通道 0–7</translation>
+    </message>
+    <message>
+        <source>Red</source>
+        <translation>红</translation>
+    </message>
+    <message>
+        <source>Green</source>
+        <translation>绿</translation>
+    </message>
+    <message>
+        <source>Blue</source>
+        <translation>蓝</translation>
+    </message>
+    <message>
+        <source>Change colour</source>
+        <translation>修改颜色</translation>
+    </message>
+    <message>
+        <source>Stage start</source>
+        <translation>关卡开始</translation>
+    </message>
+    <message>
+        <source>Screen</source>
+        <translation>画面</translation>
+    </message>
+    <message>
+        <source>%1 · line %2, entry %3</source>
+        <translation>%1 · 第 %2 行，条目 %3</translation>
+    </message>
+    <message>
+        <source>Palette commands</source>
+        <translation>调色板命令</translation>
+    </message>
+    <message>
+        <source>CRAM word</source>
+        <translation>CRAM 字</translation>
+    </message>
+    <message>
+        <source>Line %1</source>
+        <translation>第 %1 行</translation>
+    </message>
+    <message>
+        <source>This command does not write that colour.</source>
+        <translation>此命令不写入该颜色。</translation>
+    </message>
+    <message>
+        <source>Stages %1–%2</source>
+        <translation>关卡 %1–%2</translation>
+    </message>
+    <message>
+        <source>Stages %1</source>
+        <translation>关卡 %1</translation>
+    </message>
+    <message>
+        <source>Boss</source>
+        <translation>首领</translation>
+    </message>
+    <message>
+        <source>Object</source>
+        <translation>对象</translation>
+    </message>
+    <message>
+        <source>No view draws with these colours yet; the code plays them itself.</source>
+        <translation>还没有视图用这些颜色绘制；由游戏代码自己加载。</translation>
+    </message>
+    <message>
+        <source>Command</source>
+        <translation>命令</translation>
+    </message>
+    <message>
+        <source>A place&apos;s colours are the commands it plays, in order, each writing its colours from its destination on; only the lines they write are shown. A command several places play changes in all of them. Which places play it is fixed, and so is the number of colours.</source>
+        <translation>一个地方的颜色就是它依次执行的命令；每条命令从它的目标地址开始写入自己的颜色。只显示它们写入的行。多个地方共用的命令会在所有地方一起改变。哪些地方执行它以及颜色数量都是固定的。</translation>
+    </message>
+</context>
+<context>
+    <name>rl::alien_soldier::PlaytestModel</name>
+    <message>
+        <source>Start at</source>
+        <translation>开始于</translation>
+    </message>
+    <message>
+        <source>Session</source>
+        <translation>会话</translation>
+    </message>
+    <message>
+        <source>Core</source>
+        <translation>核心</translation>
+    </message>
+    <message>
+        <source>Start</source>
+        <translation>开始</translation>
+    </message>
+    <message>
+        <source>Build</source>
+        <translation>构建</translation>
+    </message>
+    <message>
+        <source>not built yet</source>
+        <translation>尚未构建</translation>
+    </message>
+    <message>
+        <source>Play from selected saves the project, builds the ROM with the kit and starts the selected stage in MAME inside this view: the title and story are skipped and the stage&apos;s password is entered for you. Play starts the game from power-on. Opening a stage in Levels selects it.</source>
+        <translation>“从所选处游玩”会保存项目、用工具包构建 ROM，并在此视图内的 MAME 中启动所选关卡：标题和故事会被跳过，关卡密码会自动输入。“游玩”从开机开始运行游戏。在“关卡”中打开一个关卡即可选中它。</translation>
+    </message>
+    <message>
+        <source>not found</source>
+        <translation>未找到</translation>
+    </message>
+    <message>
+        <source>Playtest · %1</source>
+        <translation>试玩 · %1</translation>
+    </message>
+    <message>
+        <source>Build and run</source>
+        <translation>构建并运行</translation>
+    </message>
+</context>
+<context>
+    <name>rl::alien_soldier::SampleModel</name>
+    <message>
+        <source>Voice %1</source>
+        <translation>语音 %1</translation>
+    </message>
+    <message>
+        <source>Drum %1</source>
+        <translation>鼓 %1</translation>
+    </message>
+    <message>
+        <source>YM2612 DAC</source>
+        <translation>YM2612 DAC</translation>
+    </message>
+    <message>
+        <source>Render %1</source>
+        <translation>渲染 %1</translation>
+    </message>
+    <message>
+        <source>Voice</source>
+        <translation>语音</translation>
+    </message>
+    <message>
+        <source>Drum sample</source>
+        <translation>鼓采样</translation>
+    </message>
+    <message>
+        <source>Request</source>
+        <translation>请求</translation>
+    </message>
+    <message>
+        <source>DAC note</source>
+        <translation>DAC 音符</translation>
+    </message>
+    <message>
+        <source>Bank</source>
+        <translation>库</translation>
+    </message>
+    <message>
+        <source>%1, sample %2</source>
+        <translation>%1，采样 %2</translation>
+    </message>
+    <message>
+        <source>Size</source>
+        <translation>大小</translation>
+    </message>
+    <message numerus="yes">
+        <source>%n bytes</source>
+        <translation>
+            <numerusform>%n 字节</numerusform>
+        </translation>
+    </message>
+    <message>
+        <source>The Z80 decodes each byte into two levels and plays them at the pace the voice&apos;s descriptor sets; the game asks for the voice with its request.</source>
+        <translation>Z80 把每个字节分解为两个电平，按语音描述符设定的速度播放；游戏用请求调用该语音。</translation>
+    </message>
+    <message>
+        <source>The Z80 decodes each byte into two levels and plays them at the pace the sample&apos;s descriptor sets; the music&apos;s DAC channel plays it with its note.</source>
+        <translation>Z80 把每个字节分解为两个电平，按采样描述符设定的速度播放；音乐的 DAC 声道用音符播放它。</translation>
+    </message>
+</context>
+<context>
+    <name>rl::alien_soldier::ScreensModel</name>
+    <message>
+        <source>Plane A</source>
+        <translation>平面 A</translation>
+    </message>
+    <message>
+        <source>Plane B</source>
+        <translation>平面 B</translation>
+    </message>
+    <message>
+        <source>Paint tiles (right button picks)</source>
+        <translation>绘制图块（右键取样）</translation>
+    </message>
+    <message>
+        <source>Pick a tile</source>
+        <translation>选取图块</translation>
+    </message>
+    <message>
+        <source>The plane shows nothing here.</source>
+        <translation>该平面在此处不显示任何内容。</translation>
+    </message>
+    <message>
+        <source>No map document holds this tile.</source>
+        <translation>没有地图文档包含此图块。</translation>
+    </message>
+    <message>
+        <source>Tile %1 · line %2</source>
+        <translation>图块 %1 · 第 %2 行</translation>
+    </message>
+    <message>
+        <source>pick a tile; the brush keeps its line and flips</source>
+        <translation>选取图块；画笔保留其行和翻转</translation>
+    </message>
+    <message>
+        <source>Paint screen</source>
+        <translation>绘制画面</translation>
+    </message>
+    <message>
+        <source>%1 · brush tile %2, line %3</source>
+        <translation>%1 · 画笔：图块 %2，第 %3 行</translation>
+    </message>
+    <message>
+        <source>Brush</source>
+        <translation>画笔</translation>
+    </message>
+    <message>
+        <source>Tile</source>
+        <translation>图块</translation>
+    </message>
+    <message>
+        <source>Palette line</source>
+        <translation>调色板行</translation>
+    </message>
+    <message>
+        <source>Flip across</source>
+        <translation>水平翻转</translation>
+    </message>
+    <message>
+        <source>Flip down</source>
+        <translation>垂直翻转</translation>
+    </message>
+    <message>
+        <source>In front</source>
+        <translation>前景</translation>
+    </message>
+    <message>
+        <source>Two routines adjust the title&apos;s tiles after loading; the screen shows them adjusted, and painting writes the word the map holds.</source>
+        <translation>两个例程会在载入后调整标题画面的图块；画面显示调整后的结果，绘制时写入的是地图中保存的字。</translation>
+    </message>
+    <message>
+        <source>Unknown field.</source>
+        <translation>未知字段。</translation>
+    </message>
+</context>
+<context>
+    <name>rl::alien_soldier::SoundModel</name>
+    <message>
+        <source>YM2612 + PSG</source>
+        <translation>YM2612 + PSG</translation>
+    </message>
+    <message>
+        <source>DAC</source>
+        <translation>DAC</translation>
+    </message>
+    <message>
+        <source>Noise</source>
+        <translation>噪音</translation>
+    </message>
+    <message>
+        <source>PSG %1</source>
+        <translation>PSG %1</translation>
+    </message>
+    <message>
+        <source>FM %1</source>
+        <translation>FM %1</translation>
+    </message>
+    <message>
+        <source>Edit note</source>
+        <translation>编辑音符</translation>
+    </message>
+    <message>
+        <source>Render %1</source>
+        <translation>渲染 %1</translation>
+    </message>
+    <message>
+        <source>Sound preview failed: %1</source>
+        <translation>声音预览失败：%1</translation>
+    </message>
+    <message>
+        <source>The kit reported no WAV for %1.</source>
+        <translation>工具包没有为 %1 返回 WAV。</translation>
+    </message>
+    <message>
+        <source>  Playing %1</source>
+        <translation>  正在播放 %1</translation>
+    </message>
+    <message>
+        <source>%1 bytes · fixed</source>
+        <translation>%1 字节 · 固定</translation>
+    </message>
+    <message>
+        <source>%1 · %2</source>
+        <translation>%1 · %2</translation>
+    </message>
+    <message>
+        <source>Music</source>
+        <translation>音乐</translation>
+    </message>
+    <message>
+        <source>Sound effect</source>
+        <translation>音效</translation>
+    </message>
+    <message>
+        <source>Requests</source>
+        <translation>请求</translation>
+    </message>
+    <message>
+        <source>Tempo</source>
+        <translation>速度</translation>
+    </message>
+    <message>
+        <source>FM instruments</source>
+        <translation>FM 音色</translation>
+    </message>
+    <message>
+        <source>Notes and durations change where the driver reads them; the payload keeps its size and every instruction its place, and the kit checks the edit before it builds.</source>
+        <translation>音符和时值在驱动读取它们的位置修改；数据保持大小，每条指令保持位置，工具包会在构建前检查修改。</translation>
+    </message>
+</context>
+<context>
+    <name>rl::alien_soldier::TextModel</name>
+    <message>
+        <source>The font has no “%1”; type its glyph as [$NN].</source>
+        <translation>字体中没有“%1”；请把字形写成 [$NN]。</translation>
+    </message>
+    <message>
+        <source>The record holds %1 glyphs, not %2.</source>
+        <translation>该记录容纳 %1 个字形，而不是 %2 个。</translation>
+    </message>
+    <message>
+        <source>Record</source>
+        <translation>记录</translation>
+    </message>
+    <message>
+        <source>Text</source>
+        <translation>文本</translation>
+    </message>
+    <message>
+        <source>Glyphs</source>
+        <translation>字形</translation>
+    </message>
+    <message>
+        <source>Bytes</source>
+        <translation>字节</translation>
+    </message>
+    <message>
+        <source>Change text</source>
+        <translation>修改文本</translation>
+    </message>
+    <message>
+        <source>%1 · record %2 of %3</source>
+        <translation>%1 · 记录 %2 / %3</translation>
+    </message>
+    <message>
+        <source>Delay</source>
+        <translation>延迟</translation>
+    </message>
+    <message>
+        <source>Shared font</source>
+        <translation>通用字体</translation>
+    </message>
+    <message>
+        <source>%1, glyphs %2 to %3. A text keeps its number of glyphs; the bytes the reader needs (terminators, positions, counts) stay as they are.</source>
+        <translation>%1，字形 %2 到 %3。文本保持字形数量不变；读取例程需要的字节（结束符、位置、计数）保持不变。</translation>
+    </message>
+    <message>
+        <source>A delay is 0 to 127.</source>
+        <translation>延迟为 0 到 127。</translation>
+    </message>
+</context>
+<context>
+    <name>rl::alien_soldier::TilesModel</name>
+    <message>
+        <source>Paint tile</source>
+        <translation>绘制图块</translation>
+    </message>
+    <message>
+        <source>Fill tile</source>
+        <translation>填充图块</translation>
+    </message>
+    <message>
+        <source>%1 · slot of %2 bytes</source>
+        <translation>%1 · %2 字节槽位</translation>
+    </message>
+    <message>
+        <source>Colours</source>
+        <translation>颜色</translation>
+    </message>
+    <message>
+        <source>Line</source>
+        <translation>行</translation>
+    </message>
+    <message>
+        <source>%1 · tile %2 of %3</source>
+        <translation>%1 · 图块 %2 / %3</translation>
+    </message>
+    <message>
+        <source>Compressed art</source>
+        <translation>压缩图形</translation>
+    </message>
+    <message>
+        <source>Art</source>
+        <translation>图形</translation>
+    </message>
+    <message>
+        <source>Tile</source>
+        <translation>图块</translation>
+    </message>
+    <message>
+        <source>%1 of %2</source>
+        <translation>%1 / %2</translation>
+    </message>
+    <message>
+        <source>Pen</source>
+        <translation>色笔</translation>
+    </message>
+    <message>
+        <source>The build compresses the edited tiles again; they must fit the payload&apos;s slot, or the build says so.</source>
+        <translation>构建时会重新压缩编辑过的图块；它们必须放得进数据槽位，否则构建会报告。</translation>
+    </message>
+    <message>
+        <source>The payload keeps its size and its blocks.</source>
+        <translation>数据保持其大小和分块。</translation>
+    </message>
+    <message>
+        <source>As in the game</source>
+        <translation>与游戏一致</translation>
     </message>
 </context>
 <context>
@@ -5051,11 +6624,11 @@
     </message>
     <message>
         <source>Mega Drive</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">Mega Drive</translation>
     </message>
     <message>
         <source>YM2612 + PSG</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">YM2612 + PSG</translation>
     </message>
     <message>
         <source>Rounds %1–%2</source>

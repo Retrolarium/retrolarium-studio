@@ -2,6 +2,115 @@
 <!DOCTYPE TS>
 <TS version="2.1" language="en">
 <context>
+    <name>rl::alien_soldier::AlienSoldierSession</name>
+    <message numerus="yes">
+        <source>%n chunks</source>
+        <translation>
+            <numerusform>%n chunk</numerusform>
+            <numerusform>%n chunks</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>%n frames</source>
+        <translation>
+            <numerusform>%n frame</numerusform>
+            <numerusform>%n frames</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>%n frames · not seen</source>
+        <translation>
+            <numerusform>%n frame · not seen</numerusform>
+            <numerusform>%n frames · not seen</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>%n metatiles</source>
+        <translation type="unfinished">
+            <numerusform></numerusform>
+            <numerusform></numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>%n keyframes</source>
+        <translation type="unfinished">
+            <numerusform></numerusform>
+            <numerusform></numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>%n lines</source>
+        <translation type="unfinished">
+            <numerusform>%n line</numerusform>
+            <numerusform>%n lines</numerusform>
+        </translation>
+    </message>
+</context>
+<context>
+    <name>rl::alien_soldier::AnimationsModel</name>
+    <message numerus="yes">
+        <source>%n calls</source>
+        <translation>
+            <numerusform>%n call</numerusform>
+            <numerusform>%n calls</numerusform>
+        </translation>
+    </message>
+</context>
+<context>
+    <name>rl::alien_soldier::BossesModel</name>
+    <message numerus="yes">
+        <source>%n frames</source>
+        <translation type="unfinished">
+            <numerusform>%n frame</numerusform>
+            <numerusform>%n frames</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>%n pixels</source>
+        <translation type="unfinished">
+            <numerusform></numerusform>
+            <numerusform></numerusform>
+        </translation>
+    </message>
+</context>
+<context>
+    <name>rl::alien_soldier::ObjectMetatilesModel</name>
+    <message numerus="yes">
+        <source>%1 · %n metatiles</source>
+        <translation type="unfinished">
+            <numerusform></numerusform>
+            <numerusform></numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>%n pieces</source>
+        <translation type="unfinished">
+            <numerusform>%n piece</numerusform>
+            <numerusform>%n pieces</numerusform>
+        </translation>
+    </message>
+</context>
+<context>
+    <name>rl::alien_soldier::ObjectsModel</name>
+    <message numerus="yes">
+        <source>%n pieces</source>
+        <translation>
+            <numerusform>%n piece</numerusform>
+            <numerusform>%n pieces</numerusform>
+        </translation>
+    </message>
+</context>
+<context>
+    <name>rl::alien_soldier::SampleModel</name>
+    <message numerus="yes">
+        <source>%n bytes</source>
+        <translation type="unfinished">
+            <numerusform>%n byte</numerusform>
+            <numerusform>%n bytes</numerusform>
+        </translation>
+    </message>
+</context>
+<context>
     <name>rl::castle_excellent::CastleExcellentMusicModel</name>
     <message numerus="yes">
         <source>%n frames</source>
