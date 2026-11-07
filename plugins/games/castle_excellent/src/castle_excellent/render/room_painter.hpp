@@ -25,6 +25,15 @@ struct CastleExcellentSprite {
     int y = 0;
 };
 
+// A runtime object created from a room-cell marker, not a static object
+// record. Its marker stays in the editable document; only the preview erases it.
+struct CastleExcellentCellObject {
+    QPoint cell;
+    int runtimeType = 0;
+    QVector<CastleExcellentSprite> sprites;
+    QRect bounds;
+};
+
 // Draws Castle Excellent rooms as the game does: each logical cell is two background
 // tiles (the second pattern table), coloured by the attribute bytes the
 // room loader writes; static objects are 8x16 sprites of their metasprite.
@@ -55,6 +64,7 @@ public:
     QImage player() const;
     // Pixels an object covers; a dot-sized box when it has no picture.
     QRect bounds(const CastleExcellentObject& object) const;
+    QVector<CastleExcellentCellObject> cellObjects(const QVector<int>& cells) const;
     QImage objectIcon(int type) const;  // cropped to its sprites, transparent around
     void drawObject(QImage& image, const CastleExcellentObject& object) const;
     int runtimeType(int encodedType) const;
@@ -63,6 +73,7 @@ public:
 
 private:
     int pixel(int tile, int x, int y) const;
+    QVector<CastleExcellentSprite> runtimeSprites(int runtime, int x, int y) const;
 
     QVector<quint8> chr_;
     QVector<int> palette_;

@@ -85,6 +85,10 @@ public:
 
     QSize sizeHint() const override;
     QRect mapRect() const;
+    bool copyObjectToClipboard();
+    // canvasPosition may be outside the map: the model then uses the
+    // copied object's original position, including across rooms.
+    bool pasteObjectFromClipboard(QPoint canvasPosition);
 
 signals:
     void zoomRequested(int delta, QPoint anchor);  // anchor: the mouse, canvas coordinates

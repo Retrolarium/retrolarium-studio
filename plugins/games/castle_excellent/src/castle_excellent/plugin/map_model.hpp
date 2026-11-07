@@ -10,7 +10,7 @@ class CastleExcellentSession;
 
 // The whole castle-excellent: the 100 rooms on the game's fixed 10 by 10 grid (room
 // n sits at column (n-1) % 10, row (n-1) / 10; up and down are n -/+ 10),
-// each drawn as the room editor draws it, scaled down to fit. Selecting a room
+// each drawn at native resolution; the canvas fits and zooms it. Selecting a room
 // makes it the start of Play from selected; Open room edits it.
 class CastleExcellentMapModel final : public sdk::TileMapModel {
     Q_OBJECT
@@ -22,8 +22,7 @@ public:
     sdk::Inspection inspect() const override;
     QString statusText() const override;
     QString startPoint() const override;
-    QVector<sdk::ViewOption> viewOptions() const override;
-    void setViewOption(const QString& key, const QString& value) override;
+    bool wheelZoomWithoutModifier() const override { return true; }
     QVector<sdk::EditorAction> actions() const override;
     void triggerAction(const QString& id) override;
     void activateObject(const QString& id) override;
@@ -46,10 +45,8 @@ private:
 
     CastleExcellentSession* session_;
     int selected_ = -1;  // room number, 1-100
-    int divisor_ = 4;    // rooms drawn at 1/divisor of their size
     mutable QImage image_;
     mutable quint64 imageRevision_ = ~quint64(0);
-    mutable int imageDivisor_ = 0;
     mutable QString imageStart_;
 };
 

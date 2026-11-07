@@ -18,26 +18,7 @@ CastleExcellentMapModel::CastleExcellentMapModel(CastleExcellentSession* session
 }
 
 QSize CastleExcellentMapModel::cellSize() const {
-    return {CastleExcellentPainter::kCellWidth * 20 / divisor_, CastleExcellentPainter::kCellHeight * 20 / divisor_};
-}
-
-QVector<sdk::ViewOption> CastleExcellentMapModel::viewOptions() const {
-    sdk::ViewOption scale;
-    scale.key = QStringLiteral("scale");
-    scale.label = tr("Scale");
-    scale.value = divisor_ == 1 ? QStringLiteral("1") : QStringLiteral("1/%1").arg(divisor_);
-    scale.choices = QStringList{QStringLiteral("1/4"), QStringLiteral("1/2"), QStringLiteral("1")};
-    return {scale};
-}
-
-void CastleExcellentMapModel::setViewOption(const QString& key, const QString& value) {
-    if (key != QLatin1String("scale")) return;
-    const int divisor = value == QLatin1String("1/4") ? 4 : value == QLatin1String("1/2") ? 2 : 1;
-    if (divisor != divisor_) {
-        divisor_ = divisor;
-        emit contentChanged();
-        emit toolsChanged();
-    }
+    return {CastleExcellentPainter::kCellWidth * 20, CastleExcellentPainter::kCellHeight * 20};
 }
 
 int CastleExcellentMapModel::roomIndex(int number) const {
@@ -54,8 +35,7 @@ QVector<sdk::Tool> CastleExcellentMapModel::tools() const {
 
 QImage CastleExcellentMapModel::render() const {
     const QString startKey = session_->selectedStart();
-    if (imageRevision_ == session_->revision() && imageDivisor_ == divisor_ && imageStart_ == startKey &&
-        !image_.isNull()) {
+    if (imageRevision_ == session_->revision() && imageStart_ == startKey && !image_.isNull()) {
         return image_;
     }
     imageStart_ = startKey;
@@ -64,7 +44,7 @@ QImage CastleExcellentMapModel::render() const {
     QImage image(kColumns * kRoomWidth, kRows * kRoomHeight, QImage::Format_RGB32);
     image.fill(Qt::black);
     QPainter painter(&image);
-    painter.setRenderHint(QPainter::SmoothPixmapTransform);
+    painter.setRenderHint(QPainter::SmoothPixmapTransform, false);
     const CastleExcellentLevels& levels = session_->levels();
     const CastleExcellentPainter& art = session_->painter();
     for (int r = 0; r < levels.roomCount(); ++r) {
@@ -78,7 +58,7 @@ QImage CastleExcellentMapModel::render() const {
     const CastleExcellentStart start = session_->start();
     if (start.placed && start.room >= 1 && start.room <= kColumns * kRows) {
         const QPoint origin(((start.room - 1) % kColumns) * kRoomWidth, ((start.room - 1) / kColumns) * kRoomHeight);
-        painter.drawImage(QRect(origin + start.pixel / divisor_, QSize(16, 16) / divisor_), art.player());
+        painter.drawImage(QRect(origin + start.pixel, QSize(16, 16)), art.player());
     }
     // Room borders, faint, so the grid reads at any zoom.
     painter.setPen(QColor(255, 255, 255, 40));
@@ -87,7 +67,6 @@ QImage CastleExcellentMapModel::render() const {
     painter.end();
     image_ = image;
     imageRevision_ = session_->revision();
-    imageDivisor_ = divisor_;
     return image_;
 }
 

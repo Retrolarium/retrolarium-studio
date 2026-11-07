@@ -12,9 +12,6 @@ namespace rl::castle_excellent {
 
 namespace {
 
-constexpr int kObjectStreamBytes = 2449;  // $EF6B-$F8FC: three bytes per object, $FF after each room
-constexpr int kStateBytes = 141;          // one persistent bit per object, per room rounded to bytes
-
 // What every room's objects take together, with `objects` for `room`: the
 // shared record stream and the saved-state bits (the kit's own sums).
 struct ObjectTotals {
@@ -361,9 +358,10 @@ void CastleExcellentRoomModel::endDrag() {
 
 bool CastleExcellentRoomModel::commitObjects(const QVector<CastleExcellentObject>& objects, const QString& text,
                                              QString* error) {
-    if (objects.size() > kMaximumObjects) {
+    if (objects.size() > session_->objectLimits().perRoom) {
         if (error) {
-            *error = tr("A room holds at most %1 objects; the game keeps them in a fixed pool.").arg(kMaximumObjects);
+            *error = tr("A room holds at most %1 objects; the game keeps them in a fixed pool.")
+                         .arg(session_->objectLimits().perRoom);
         }
         return false;
     }
@@ -371,20 +369,29 @@ bool CastleExcellentRoomModel::commitObjects(const QVector<CastleExcellentObject
     // fits the room may still not fit the game.
     const ObjectTotals totals = objectTotals(session_->levels(), room_, objects.size());
     if (objects.size() > session_->levels().objects(room_).size()) {
-        if (totals.stream > kObjectStreamBytes) {
+        const int generated = session_->painter().cellObjects(roomCells()).size();
+        if (objects.size() + generated > session_->objectLimits().perRoom) {
+            if (error)
+                *error = tr("This room needs %1 object slots, including %2 from cells; the limit is %3.")
+                             .arg(objects.size() + generated)
+                             .arg(generated)
+                             .arg(session_->objectLimits().perRoom);
+            return false;
+        }
+        if (totals.stream > session_->objectLimits().streamBytes) {
             if (error) {
                 *error = tr("All rooms share %1 bytes of objects; this would need %2. Delete an object in any room "
                             "first.")
-                             .arg(kObjectStreamBytes)
+                             .arg(session_->objectLimits().streamBytes)
                              .arg(totals.stream);
             }
             return false;
         }
-        if (totals.state > kStateBytes) {
+        if (totals.state > session_->objectLimits().stateBytes) {
             if (error) {
                 *error = tr("All rooms share %1 bytes of saved object state; this would need %2. Delete an object "
                             "in any room first.")
-                             .arg(kStateBytes)
+                             .arg(session_->objectLimits().stateBytes)
                              .arg(totals.state);
             }
             return false;
@@ -453,6 +460,90 @@ bool CastleExcellentRoomModel::removeObject(const QString& id, QString* error) {
     return commitObjects(list, tr("Delete %1 from %2").arg(label, title()), error);
 }
 
+QJsonObject CastleExcellentRoomModel::copyMapObject(const QString& id) const {
+    const int index = objectIndex(id);
+    if (layer_ != QLatin1String("objects") || index < 0) return {};
+    const CastleExcellentObject object = roomObjects().at(index);
+    return {{QStringLiteral("schema"), QStringLiteral("retrolarium.castle-excellent-object")},
+            {QStringLiteral("schema_version"), 1},
+            {QStringLiteral("encoded_type"), object.type},
+            {QStringLiteral("x"), object.x},
+            {QStringLiteral("y"), object.y}};
+}
+
+bool CastleExcellentRoomModel::pasteMapObject(const QJsonObject& payload, QPoint preferredCell, QString* error) {
+    auto fail = [&](const QString& message) {
+        if (error) *error = message;
+        return false;
+    };
+    if (layer_ != QLatin1String("objects") || isReadOnly()) {
+        return fail(tr("Switch to Objects to paste an object."));
+    }
+    auto integer = [&](const char* name, int maximum) {
+        const QJsonValue value = payload.value(QString::fromLatin1(name));
+        const int number = value.toInt(-1);
+        return value.isDouble() && value.toDouble() == number && number >= 0 && number <= maximum ? number : -1;
+    };
+    const QSize grid = gridSize();
+    const int type = integer("encoded_type", session_->levels().encodedTypeCount() - 1);
+    const int x = integer("x", grid.width() - 1);
+    const int y = integer("y", grid.height() - 1);
+    if (payload.value(QStringLiteral("schema")).toString() != QLatin1String("retrolarium.castle-excellent-object") ||
+        integer("schema_version", 1) != 1 || type < 0 || x < 0 || y < 0) {
+        return fail(tr("The clipboard does not contain a compatible Castle object."));
+    }
+    if (!QRect(QPoint(), grid).contains(preferredCell)) preferredCell = QPoint(x, y);
+    QVector<QPoint> positions;
+    for (int row = 0; row < grid.height(); ++row) {
+        for (int column = 0; column < grid.width(); ++column) positions << QPoint(column, row);
+    }
+    // Stable ordering makes repeated pastes predictable; the nearest free
+    // footprint wins, including when the preferred cell itself is occupied.
+    std::stable_sort(positions.begin(), positions.end(), [&](QPoint a, QPoint b) {
+        return (a - preferredCell).manhattanLength() < (b - preferredCell).manhattanLength();
+    });
+    QVector<CastleExcellentObject> list = roomObjects();
+    const QVector<int> cells = roomCells();
+    const auto generated = session_->painter().cellObjects(cells);
+    const QRect map(QPoint(), QSize(grid.width() * 16, grid.height() * 8));
+    for (QPoint position : positions) {
+        const CastleExcellentObject object{type, position.x(), position.y()};
+        const QRect bounds = session_->painter().bounds(object);
+        if (!map.contains(bounds)) continue;
+        bool empty = true;
+        for (int row = bounds.top() / 8; row <= bounds.bottom() / 8 && empty; ++row) {
+            for (int column = bounds.left() / 16; column <= bounds.right() / 16; ++column) {
+                const int cell = cells.value(row * grid.width() + column, -1);
+                // Air and water are empty space; do not insert into walls,
+                // doors, spikes, shafts or objects spawned by room tiles.
+                if (cell != 0x53 && cell != 0x16) {
+                    empty = false;
+                    break;
+                }
+            }
+        }
+        if (!empty) continue;
+        for (const CastleExcellentObject& existing : list) {
+            if (bounds.intersects(session_->painter().bounds(existing))) {
+                empty = false;
+                break;
+            }
+        }
+        for (const auto& platform : generated) {
+            if (bounds.intersects(platform.bounds)) {
+                empty = false;
+                break;
+            }
+        }
+        if (!empty || (hasStart() && bounds.intersects(QRect(session_->start().pixel, QSize(16, 16))))) continue;
+        list << object;
+        if (!commitObjects(list, tr("Paste an object into %1").arg(title()), error)) return false;
+        selectObject(QStringLiteral("object:%1").arg(list.size() - 1));
+        return true;
+    }
+    return fail(tr("There is no empty space for this object in the room."));
+}
+
 sdk::Library CastleExcellentRoomModel::objectLibrary() const {
     sdk::Library library;
     if (sheetRevision_ != session_->revision()) {
@@ -488,15 +579,17 @@ sdk::Library CastleExcellentRoomModel::objectLibrary() const {
 sdk::Budget CastleExcellentRoomModel::budget() const {
     const ObjectTotals totals = objectTotals(session_->levels(), room_, roomObjects().size());
     sdk::Budget budget;
-    budget.used = roomObjects().size();
-    budget.capacity = kMaximumObjects;
-    budget.text = tr("this room %1 / %2 objects · all rooms: stream %3 / %4 B, saved state %5 / %6 B")
-                      .arg(roomObjects().size())
-                      .arg(kMaximumObjects)
+    const int generated = session_->painter().cellObjects(roomCells()).size();
+    budget.used = roomObjects().size() + generated;
+    budget.capacity = session_->objectLimits().perRoom;
+    budget.text = tr("this room %1 / %2 objects (%7 from cells) · all rooms: stream %3 / %4 B, saved state %5 / %6 B")
+                      .arg(budget.used)
+                      .arg(session_->objectLimits().perRoom)
                       .arg(totals.stream)
-                      .arg(kObjectStreamBytes)
+                      .arg(session_->objectLimits().streamBytes)
                       .arg(totals.state)
-                      .arg(kStateBytes);
+                      .arg(session_->objectLimits().stateBytes)
+                      .arg(generated);
     return budget;
 }
 
@@ -561,7 +654,7 @@ sdk::Inspection CastleExcellentRoomModel::inspect() const {
     inspection.title = title();
     const QVector<int> cells = roomCells();
     inspection.fields = {readOnly(QStringLiteral("objects"), tr("Objects"),
-                                  QStringLiteral("%1 / %2").arg(roomObjects().size()).arg(kMaximumObjects)),
+                                  QStringLiteral("%1 / %2").arg(budget().used).arg(session_->objectLimits().perRoom)),
                          readOnly(QStringLiteral("brush"), tr("Cell brush"), hex(brush_))};
     inspection.note = layer_ == QLatin1String("cells")
                           ? tr("Paint cells with the sheet's pattern; the right button takes a cell. "

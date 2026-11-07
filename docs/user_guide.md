@@ -122,6 +122,32 @@ Every game lists the same views, in this order, where the game has them:
 Every edit is one undo step; Save writes the changed documents; Revert returns a
 document to how it came from the source.
 
+## Room objects
+
+The map editor keeps the selected Cells or Objects layer when you open another
+room of the same game.
+
+In Castle Excellent, select an object and press Ctrl+C to copy it, then Ctrl+V
+to paste it in this room or another room. The copy appears in the nearest empty
+space to the mouse pointer. When the pointer is outside the room canvas, the
+search starts at the copied object's original coordinates. The whole object must
+fit without overlapping walls or another object. Each paste is one undo step and
+respects the game's object and storage limits. Delete removes the selected
+object.
+
+Castle Excellent elevators, moving platforms and pulley-controlled lift parts
+are drawn at their room-entry positions in both the room editor and the castle
+overview. They come from the Cells layer, so move their marker cells there; they
+are not extra static object records. The object-slot counter includes them, and
+Build refuses rooms whose static and cell-created objects together exceed the
+runtime limit.
+
+The Castle Excellent overview opens fitted to the viewport and keeps every room
+at native resolution. Turn the mouse wheel to zoom into the point under the
+pointer; drag with the middle mouse button to pan. The Zoom control changes the
+same scale. Pixels stay sharp at whole-number zooms, and selecting or
+double-clicking a room still selects or opens that room at any scale.
+
 ## Games
 
 | Game              | Notes                                                                                                                                                                                                                                                                                                                                                                                  |

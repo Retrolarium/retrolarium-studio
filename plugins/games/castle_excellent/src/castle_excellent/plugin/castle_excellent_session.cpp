@@ -87,6 +87,13 @@ std::unique_ptr<CastleExcellentSession> CastleExcellentSession::open(const sdk::
         session->levelsPath_ = project.resolve(levels);
         session->graphicsPath_ = project.resolve(graphics);
         session->state_.levels = CastleExcellentLevels::load(session->levelsPath_);
+        const QString repository = project.string(QStringLiteral("source.repository"));
+        if (!repository.isEmpty()) {
+            const QJsonObject profile =
+                loadJsonObject(project.resolve(repository + QStringLiteral("/config/game_profile.json")));
+            session->objectLimits_ =
+                CastleExcellentObjectLimits::fromProfile(profile, session->state_.levels.revision());
+        }
         session->state_.graphics = nes::Bundle::load(session->graphicsPath_);
         const QString demo = tabDocument(project, QStringLiteral("castle-excellent.demo@1"));
         if (!demo.isEmpty()) {

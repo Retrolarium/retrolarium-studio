@@ -4,6 +4,7 @@
 #include "editors/mime.hpp"
 #include "editors/zoom_anchor.hpp"
 #include "sdk/editor_model.hpp"
+#include "sdk/map_object_clipboard.hpp"
 #include "theme/paint.hpp"
 #include "theme/theme.hpp"
 #include "theme/typography.hpp"
@@ -11,6 +12,10 @@
 #include "widgets/segmented_control.hpp"
 #include "widgets/view_chip.hpp"
 
+#include <QApplication>
+#include <QClipboard>
+#include <QCursor>
+#include <QJsonDocument>
 #include <QDragEnterEvent>
 #include <QHBoxLayout>
 #include <QHash>
@@ -64,6 +69,11 @@ QString& lastTool() {
     static QString tool;
     return tool;
 }
+QHash<QString, QString>& lastLayers() {
+    static QHash<QString, QString> layers;
+    return layers;
+}
+QString layerKey(const sdk::TileMapModel* model) { return QString::fromLatin1(model->metaObject()->className()); }
 struct Pick {
     std::optional<int> brush;
     QString item;
@@ -392,12 +402,46 @@ void MapCanvas::mouseReleaseEvent(QMouseEvent* event) {
 void MapCanvas::leaveEvent(QEvent*) { setHoverCell(QPoint(-1, -1)); }
 
 void MapCanvas::wheelEvent(QWheelEvent* event) {
-    if (event->modifiers() & Qt::ControlModifier) {
-        emit zoomRequested(event->angleDelta().y() > 0 ? 1 : -1, event->position().toPoint());
+    const int delta = event->angleDelta().y();
+    if (delta != 0 && ((event->modifiers() & Qt::ControlModifier) || model_->wheelZoomWithoutModifier())) {
+        emit zoomRequested(delta > 0 ? 1 : -1, event->position().toPoint());
         event->accept();
         return;
     }
     event->ignore();
+}
+
+bool MapCanvas::copyObjectToClipboard() {
+    const auto* copier = dynamic_cast<const sdk::MapObjectClipboard*>(model_);
+    if (!copier) return false;
+    const QJsonObject object = copier->copyMapObject(model_->selectedObject());
+    if (object.isEmpty()) return false;
+    auto* mime = new QMimeData;
+    mime->setData(kMapObjectMime, QJsonDocument(object).toJson(QJsonDocument::Compact));
+    QApplication::clipboard()->setMimeData(mime);
+    return true;
+}
+
+bool MapCanvas::pasteObjectFromClipboard(QPoint canvasPosition) {
+    auto* copier = dynamic_cast<sdk::MapObjectClipboard*>(model_);
+    if (!copier || model_->isReadOnly()) return false;
+    const QMimeData* mime = QApplication::clipboard()->mimeData();
+    if (!mime || !mime->hasFormat(kMapObjectMime)) return false;
+    const QByteArray data = mime->data(kMapObjectMime);
+    if (data.size() > 65536) return false;
+    QJsonParseError parseError;
+    const QJsonDocument document = QJsonDocument::fromJson(data, &parseError);
+    if (!document.isObject()) {
+        emit actionFailed(tr("The clipboard object is invalid."));
+        return false;
+    }
+    const QPoint preferred = mapRect().contains(canvasPosition) ? cellAt(canvasPosition) : QPoint(-1, -1);
+    QString error;
+    if (!copier->pasteMapObject(document.object(), preferred, &error)) {
+        if (!error.isEmpty()) emit actionFailed(error);
+        return false;
+    }
+    return true;
 }
 
 void MapCanvas::keyPressEvent(QKeyEvent* event) {
@@ -594,6 +638,13 @@ TileMapEditor::TileMapEditor(sdk::TileMapModel* model, QWidget* parent)
     scroll_->setWidgetResizable(true);
     scroll_->setWidget(canvas_);
     scroll_->setProperty("surface", QStringLiteral("canvas"));
+    const QString rememberedLayer = lastLayers().value(layerKey(map_));
+    for (const sdk::MapLayer& layer : map_->layers()) {
+        if (layer.id == rememberedLayer) {
+            map_->setCurrentLayer(layer.id);
+            break;
+        }
+    }
     // The last pick on this kind of map, before the sheet shows its own.
     pickLayer_ = map_->currentLayer();
     restorePick();
@@ -639,6 +690,18 @@ TileMapEditor::TileMapEditor(sdk::TileMapModel* model, QWidget* parent)
     split->setStretchFactor(1, 0);
     layout->addWidget(split);
 
+    // Window shortcuts also work after the room list takes focus. Native
+    // text fields retain their own standard copy/paste via ShortcutOverride.
+    if (dynamic_cast<sdk::MapObjectClipboard*>(map_)) {
+        auto* copy = new QShortcut(QKeySequence::Copy, this);
+        connect(copy, &QShortcut::activated, canvas_, [this] { canvas_->copyObjectToClipboard(); });
+        auto* paste = new QShortcut(QKeySequence::Paste, this);
+        connect(paste, &QShortcut::activated, canvas_, [this] {
+            const QPoint cursor = canvas_->mapFromGlobal(QCursor::pos());
+            canvas_->pasteObjectFromClipboard(canvas_->visibleRegion().contains(cursor) ? cursor : QPoint(-1, -1));
+        });
+    }
+
     // Esc anywhere in the window puts the Add or Paint tool down: the Select
     // tool comes back and the picked item no longer follows the cursor.
     // Only while one of them is on, so Esc keeps its other uses.
@@ -658,7 +721,7 @@ TileMapEditor::TileMapEditor(sdk::TileMapModel* model, QWidget* parent)
     canvas_->setTool(tool_);
     updatePlacePreview();
 
-    // Ctrl+wheel zooms about the mouse: the picture under it stays put.
+    // Wheel zooms about the mouse; the model decides whether Ctrl is needed.
     connect(canvas_, &MapCanvas::zoomRequested, this, [this](int delta, QPoint anchor) {
         const int next = zoomStep(zoom(), delta);
         zoomKeepingPoint(
@@ -688,6 +751,7 @@ TileMapEditor::TileMapEditor(sdk::TileMapModel* model, QWidget* parent)
 
 void TileMapEditor::rememberPick() {
     if (restoring_) return;
+    lastLayers().insert(layerKey(map_), map_->currentLayer());
     bool otherLayer = false;
     if (map_->currentLayer() != pickLayer_) {
         // Another layer: its own last pick comes back first.

@@ -118,6 +118,9 @@ public:
     // The zoom to open at, in quarters (8 is 2x), with the view at the map's
     // left edge; 0 opens fitted to the map.
     virtual int openingZoom() const { return 0; }
+    // Overview maps can use an unmodified wheel for zoom; other maps scroll
+    // normally and require Ctrl+wheel to zoom.
+    virtual bool wheelZoomWithoutModifier() const { return false; }
 
     virtual QVector<MapLayer> layers() const { return {}; }
     virtual QString currentLayer() const { return {}; }

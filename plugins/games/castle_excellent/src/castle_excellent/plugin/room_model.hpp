@@ -2,6 +2,7 @@
 
 #include "castle_excellent/data/levels.hpp"
 #include "sdk/editor_model.hpp"
+#include "sdk/map_object_clipboard.hpp"
 
 #include <QHash>
 
@@ -15,7 +16,7 @@ class CastleExcellentSession;
 // The Cells layer paints cell types from the sheet beside the room; the
 // Objects layer moves, adds and removes the room's static objects and the
 // start marker that "Play from selected" puts the player at.
-class CastleExcellentRoomModel final : public sdk::TileMapModel {
+class CastleExcellentRoomModel final : public sdk::TileMapModel, public sdk::MapObjectClipboard {
     Q_OBJECT
 
 public:
@@ -58,6 +59,8 @@ public:
     void endDrag() override;
     bool placeObject(const QString& libraryItem, QPoint cell, QString* error) override;
     bool removeObject(const QString& id, QString* error) override;
+    QJsonObject copyMapObject(const QString& id) const override;
+    bool pasteMapObject(const QJsonObject& object, QPoint preferredCell, QString* error) override;
 
     static constexpr int kMaximumObjects = 24;
 

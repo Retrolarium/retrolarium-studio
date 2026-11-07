@@ -1,6 +1,7 @@
 #pragma once
 
 #include "castle_excellent/data/levels.hpp"
+#include "castle_excellent/data/object_limits.hpp"
 #include "castle_excellent/render/room_painter.hpp"
 #include "nes/editors.hpp"
 #include "sdk/kit_session.hpp"
@@ -70,6 +71,7 @@ public:
     QVector<sdk::PaletteSample> paletteSamples(const QString& table) const override;
     QStringList paletteRowLabels(const QString& table) const override;
 
+    const CastleExcellentObjectLimits& objectLimits() const { return objectLimits_; }
     const CastleExcellentLevels& levels() const { return state_.levels; }
     const CastleExcellentLevels& savedLevels() const { return saved_.levels; }
     const CastleExcellentArt& art() const { return art_; }
@@ -122,6 +124,7 @@ private:
     // added and opens `kind`/`document`.
     void upgradeDocuments(const QString& kind, const QString& document);
 
+    CastleExcellentObjectLimits objectLimits_;
     QString levelsPath_;
     QString graphicsPath_;
     QString demoPath_;

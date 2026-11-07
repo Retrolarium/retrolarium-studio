@@ -50,6 +50,20 @@ CastleExcellentPainter::CastleExcellentPainter(const CastleExcellentLevels& leve
     for (const CastleExcellentObjectPreview& preview : levels.objectPreviews()) {
         previews_.insert(preview.runtimeType, preview);
     }
+    // Draw*LiftSprite / DrawFloatingPlatformSprite use these offsets from
+    // ObjectSpriteFrameRecords, 64 bytes after the descriptor arena begins.
+    // Older projects have the descriptors but omit these runtime previews.
+    const QVector<CastleExcellentObjectPreview> generated{{0xA1, 64 + 0x122, {0, 8}},
+                                                          {0xA2, 64 + 0x11A, {0, 8, 16, 24}},
+                                                          {0xA3, 64 + 0x12A, {0, 8}},
+                                                          {0xA4, 64 + 0x12E, {0, 8}},
+                                                          {0xA5, 64 + 0x132, {0, 8}}};
+    for (const auto& preview : generated) {
+        if (!previews_.contains(preview.runtimeType) &&
+            preview.descriptorOffset + preview.xOffsets.size() * 2 <= descriptors_.size()) {
+            previews_.insert(preview.runtimeType, preview);
+        }
+    }
 }
 
 QColor CastleExcellentPainter::color(int index) const {
@@ -175,18 +189,58 @@ QImage CastleExcellentPainter::player() const {
 int CastleExcellentPainter::runtimeType(int encodedType) const { return runtimeTypes_.value(encodedType, -1); }
 
 QVector<CastleExcellentSprite> CastleExcellentPainter::sprites(const CastleExcellentObject& object) const {
-    QVector<CastleExcellentSprite> result;
     const int runtime = runtimeType(object.type);
+    return runtimeSprites(runtime, object.x * kCellWidth + (runtime >= 0x90 && runtime <= 0x95 ? 4 : 0),
+                          object.y * kCellHeight);
+}
+
+QVector<CastleExcellentSprite> CastleExcellentPainter::runtimeSprites(int runtime, int baseX, int baseY) const {
+    QVector<CastleExcellentSprite> result;
     const auto found = previews_.constFind(runtime);
     if (runtime < 0 || found == previews_.constEnd()) {
         return result;
     }
-    const int baseX = object.x * kCellWidth + (runtime >= 0x90 && runtime <= 0x95 ? 4 : 0);
-    const int baseY = object.y * kCellHeight;
     for (int i = 0; i < found->xOffsets.size(); ++i) {
         const int d = found->descriptorOffset + i * 2;
         result << CastleExcellentSprite{descriptors_.value(d), descriptors_.value(d + 1), baseX + found->xOffsets.at(i),
                                         baseY};
+    }
+    return result;
+}
+
+namespace {
+int runtimeForCell(int type) {
+    switch (type) {
+        case 0x4B:
+            return 0xA1;  // narrow lift
+        case 0x4D:
+            return 0xA2;  // wide lift
+        case 0x51:
+            return 0xA3;  // floating platform
+        case 0x49:
+            return 0xA4;  // pulley-controlled lift, upper part
+        case 0x4A:
+            return 0xA5;  // pulley-controlled lift, lower part
+        default:
+            return -1;
+    }
+}
+}  // namespace
+
+QVector<CastleExcellentCellObject> CastleExcellentPainter::cellObjects(const QVector<int>& cells) const {
+    QVector<CastleExcellentCellObject> result;
+    for (int index = 0; index < std::min(cells.size(), width_ * height_); ++index) {
+        const int runtime = runtimeForCell(cells.at(index));
+        if (runtime < 0) continue;
+        CastleExcellentCellObject object;
+        object.cell = QPoint(index % width_, index / width_);
+        object.runtimeType = runtime;
+        object.sprites = runtimeSprites(runtime, object.cell.x() * kCellWidth, object.cell.y() * kCellHeight);
+        for (const CastleExcellentSprite& s : object.sprites) object.bounds |= QRect(s.x, s.y, 8, 16);
+        if (object.bounds.isEmpty()) {
+            object.bounds = QRect(object.cell.x() * kCellWidth, object.cell.y() * kCellHeight, kCellWidth, kCellHeight);
+        }
+        result << object;
     }
     return result;
 }
@@ -219,18 +273,26 @@ void CastleExcellentPainter::drawObject(QImage& image, const CastleExcellentObje
 
 QImage CastleExcellentPainter::room(const QVector<int>& cells, const QVector<CastleExcellentObject>& objects) const {
     QImage image(width_ * kCellWidth, height_ * kCellHeight, QImage::Format_RGB32);
-    const QVector<int> palettes = cellPalettes(cells);
+    const auto generated = cellObjects(cells);
+    QVector<int> background = cells;
+    for (const auto& object : generated) background[object.cell.y() * width_ + object.cell.x()] = 0x53;
+    const QVector<int> palettes = cellPalettes(background);
     {
         QPainter painter(&image);
         for (int y = 0; y < height_; ++y) {
             for (int x = 0; x < width_; ++x) {
                 const int index = y * width_ + x;
-                painter.drawImage(x * kCellWidth, y * kCellHeight, cell(cells.value(index), palettes.value(index)));
+                painter.drawImage(x * kCellWidth, y * kCellHeight,
+                                  cell(background.value(index), palettes.value(index)));
             }
         }
     }
     for (const CastleExcellentObject& object : objects) {
         drawObject(image, object);
+    }
+    QPainter painter(&image);
+    for (const auto& object : generated) {
+        for (const auto& s : object.sprites) painter.drawImage(s.x, s.y, sprite(s));
     }
     return image;
 }

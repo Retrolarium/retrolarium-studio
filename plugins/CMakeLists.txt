@@ -421,6 +421,18 @@ add_executable(alien_soldier_session_test
 target_link_libraries(alien_soldier_session_test PRIVATE alien_soldier_plugin)
 studio_add_test(alien_soldier_session_test games:alien_soldier_src/.retrolarium/jp/alien-soldier-jp.rlj)
 
+add_executable(castle_excellent_room_edit_test
+    games/castle_excellent/tests/room_edit_test.cpp
+)
+target_link_libraries(castle_excellent_room_edit_test PRIVATE castle_excellent_plugin studio_editors)
+studio_add_test(castle_excellent_room_edit_test)
+
+add_executable(castle_excellent_object_limits_test
+    games/castle_excellent/tests/object_limits_test.cpp
+)
+target_link_libraries(castle_excellent_object_limits_test PRIVATE castle_excellent_plugin)
+studio_add_test(castle_excellent_object_limits_test)
+
 add_executable(castle_excellent_music_retune_test
     games/castle_excellent/tests/music_retune_test.cpp
 )
