@@ -83,10 +83,27 @@ the new game.
 
 `release.py notes` validates the ZIP's native files against its build record and
 writes `SHA256SUMS.txt` and `release-notes.md` from the actual ZIP, setup and
-`BUILD-INFO.txt`. Upload those exact files with a new version tag. Existing
-release assets have their own hashes and provenance; update their description if
-replacing those files. A release body must describe its own packaged versions
-rather than the latest source tree.
+`BUILD-INFO.txt`.
+
+Upload only these three files as GitHub release assets:
+
+- `RetrolariumStudio-<version>-setup.exe`;
+- `RetrolariumStudio-<version>-win64.zip`;
+- `SHA256SUMS.txt`, covering those exact installer and ZIP files.
+
+Use `release-notes.md` as the release description, not as an attached asset.
+Keep `BUILD-INFO.txt` and `native-build.json` inside the installer and ZIP; do
+not upload them separately. Build logs, test reports and other technical files
+also stay out of the release assets.
+
+Publish `SHA256SUMS.txt` for every release, including older releases when their
+published files can be verified. Derive its hashes from the actual published
+binaries or their verified GitHub asset digests. Adding a checksum file does not
+require replacing existing installers or ZIPs.
+
+If published binaries are replaced, update both `SHA256SUMS.txt` and the release
+description to match them. A release body must describe its own packaged
+versions rather than the latest source tree.
 
 The default Windows SDK image is `qt5-win-amd64:latest`. `build-win.ps1 -Image`
 selects another compatible SDK, and `-Out` selects an independent build folder.
