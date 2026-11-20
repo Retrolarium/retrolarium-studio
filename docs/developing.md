@@ -90,3 +90,10 @@ rather than the latest source tree.
 
 The default Windows SDK image is `qt5-win-amd64:latest`. `build-win.ps1 -Image`
 selects another compatible SDK, and `-Out` selects an independent build folder.
+
+Scripted interface checks (python tools/autotest/run.py) keep their window off
+the desktop and capture their own screenshots after loading each document. Use
+the SDK's Windows platform backend; setting QT_QPA_PLATFORM=offscreen requires a
+Qt plugin that this Windows SDK does not provide. The standalone --screenshot
+option captures after a fixed delay and does not wait for project preparation;
+use an interface scenario to verify an opened project.

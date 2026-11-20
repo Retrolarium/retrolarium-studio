@@ -202,6 +202,9 @@ int main(int argc, char* argv[]) {
         return app.exec();
     }
 
+    // Scripted interface checks capture the window themselves. Keep them
+    // off the desktop while using the Windows platform and its fonts.
+    if (parser.isSet(autotestOption)) window.setAttribute(Qt::WA_DontShowOnScreen);
     if (exactSize) {
         window.show();
     } else {
