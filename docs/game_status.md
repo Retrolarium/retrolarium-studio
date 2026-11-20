@@ -1,7 +1,23 @@
 # Retrolarium Studio: game status
 
-What each game's integration covers, in detail. The user guide has the short
-version.
+Integration in the current source tree. Alien Soldier requires Studio 0.2.0 or a
+source build. The 0.1.0 downloads contain the earlier six-game native Studio.
+
+| Game                            | Source revisions                              | Build model          |
+| ------------------------------- | --------------------------------------------- | -------------------- |
+| Super Mario Bros.               | JU, PAL, PC10, Vs., FDS, ANN FDS, SMB2 JP FDS | ROM-backed documents |
+| Castle Excellent / Castlequest  | Japan HSP-05, USA                             | ROM-backed documents |
+| Solomon's Key / Solomon no Kagi | USA, Europe, Japan                            | ROM-backed documents |
+| Pac-Man                         | Japan v1.0, v1.1                              | ROM-backed documents |
+| Doraemon                        | Japan original                                | ROM-backed documents |
+| Flicky                          | USA/Europe                                    | Source snapshot      |
+| Alien Soldier                   | Japan, Europe                                 | Source snapshot      |
+
+ROM identities and downloaded source revisions come from the kit's repository
+catalog. A view's capabilities and current allocation limits come from its
+profile and document. The user guide describes opening and backing up projects.
+The expanded Pac-Man and Solomon layouts described below apply to older projects
+whose documents and profiles explicitly support them.
 
 ## Flicky
 
@@ -130,21 +146,24 @@ which never reaches an embedded MAME. Before a launch the runner marks it as
 seen in `cfg/<system>.cfg` (`ui_warnings`, with the features `-listxml`
 reports), so MAME's `skip_warnings` setting skips it.
 
-## Castle Excellent
+## Castle Excellent / Castlequest
 
-Projects from `rldisasm preset` on Castle Excellent (J) or Castlequest (U).
+Source descriptors cover Japan HSP-05 and USA. Rooms exposes cells and static
+objects, copy/paste with collision checks, and cell-created elevators and
+platforms at their entry positions. The room and castle views share runtime
+object-slot limits. The overview supports fitted zoom and middle-button pan.
 
-| Kind     | Editor  | What it does                                                                                                                                                                                                                                                                                             |
-| -------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Rooms    | TileMap | 100 rooms of 20x20 cells (16x8 px, two tiles each) coloured by the attribute bytes the loader writes; Cells layer paints from the cell sheet, Objects layer moves, adds and removes static objects (24 per room, 2449-byte stream, 141 bytes of saved state) and the start marker for Play from selected |
-| Tiles    | Tile    | both CHR banks, sprite and background tables                                                                                                                                                                                                                                                             |
-| Palettes | Palette | room and screen palette tables                                                                                                                                                                                                                                                                           |
-| Text     | Table   | the sub-command menu words (A-Z and blank)                                                                                                                                                                                                                                                               |
-| Sound FX | Table   | the sound-effect parameter bytes                                                                                                                                                                                                                                                                         |
+Other views cover tiles and palettes, screens and text, music track sets, sound
+effects and the title demo. Playtest starts at a selected room. The room model
+enforces shared storage capacities before a save can be built. The room-edit,
+object-limit and music-retuning native tests exercise these operations. Older
+generated projects can still expose the smaller fixed-arena document set
+supported by their own profile.
 
 ## Solomon's Key
 
-Projects from `rldisasm preset` on Solomon's Key (USA or Europe).
+Source-repository projects cover USA, Europe and Japan. Older generated projects
+can also come from `rldisasm preset`.
 
 | Kind            | Editor        | What it does                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | --------------- | ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -167,3 +186,53 @@ Keychain does: the kit (`solomon_expansion`) turns the CNROM image into GxROM
 that also holds every room's item and enemy lists, and small wrappers at the
 same address in both banks switch to it around the two room decoders. The mirror
 enemy sets move into the enemy arena that frees up in bank 1.
+
+## Alien Soldier
+
+Japan and Europe use the same source-backed project model. The game repository's
+`alien_soldier.rlj` creates `.retrolarium/<revision>/alien-soldier-source`. The
+kit owns export, validation and assembly. Studio registers the plugin in its
+built-in registry and links it into the native application.
+
+| View                   | What is available                                                                                                          |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| Levels                 | Shared block-set layouts, per-stage camera extents and spawn records, stage settings, playtest through the password screen |
+| Tiles and Metatiles    | Compressed and plain patterns, 32×32 blocks, chunks and plane maps                                                         |
+| Palettes               | CRAM editing with stage, screen and source-decoded object contexts                                                         |
+| Objects and Animations | Static and dynamic mappings, source-driven animations and composed boss previews                                           |
+| Screens and Text       | Title, story, password/options, ending, credits and supported text records                                                 |
+| Sound                  | Sequence piano roll, instruments, envelopes, DAC samples and driver-based preview                                          |
+| Demo                   | Four attract inputs, playback loops and controller recording                                                               |
+
+Compressed payloads and sequences keep their original storage capacities.
+Mappings without verified art are drawn as outlines. Reader catalogs, stage
+names, art contexts and regression references belong to the game repository.
+
+`alien_soldier_session_test` exercises the prepared JP project and the game's
+independent reference data. The kit has source round-trip, codec, incremental
+build and demo-patching tests. The game's acceptance checks both unchanged ROM
+builds, relocation, and a Japanese MAME attract run. Full-game replay and
+European runtime coverage require additional checks.
+
+See the game's
+[editing guide](https://github.com/RetrolariumLab/alien_soldier_src/blob/main/docs/retrolarium.md)
+and
+[release scope](https://github.com/RetrolariumLab/alien_soldier_src#release-scope).
+
+## Pac-Man
+
+The source descriptor recognizes Japan v1.0 and v1.1. Views cover the maze,
+round tuning, actors, screens, text, graphics, palettes, sound and attract demo.
+Playtest can select a round. Fixed records and encoded payloads retain their
+documented capacities. Older expanded NROM-256 projects remain a separate
+profile capability and are not another recognized input ROM in Open ROM.
+
+## Doraemon
+
+The original Japanese revision exposes World 1 city and underground blocks and
+objects, World 2 routes and enemy spawns, and World 3 underwater rooms with
+persistent objects and spawn schedules. Other views cover graphics, palettes,
+screens, text, four audio drivers, effects and the World 1 demo. Playtest starts
+from a selected block, stage or room. World 3 generation and its mechanical
+route checks are kit operations; ordinary editor saves still enforce the
+document's limits.

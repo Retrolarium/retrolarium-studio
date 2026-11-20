@@ -28,14 +28,14 @@ outright, and the studio cannot run there until it is signed.
 
 ## Where your files are
 
-| What                                                        | Where                                                                                   |
-| ----------------------------------------------------------- | --------------------------------------------------------------------------------------- |
-| The studio, the kit, Python and MAME                        | `%LOCALAPPDATA%\Programs\Retrolarium Studio` (or where you unpacked the zip)            |
-| Downloaded games, your ROM copies and your edits            | `Documents\Retrolarium\<game>`; each version's edits are in its `hack\<version>` folder |
-| The kit's assemblers, unpacked on first use                 | `%LOCALAPPDATA%\Retrolarium\toolchains`                                                 |
-| MAME's settings and saves                                   | `mame\cfg` and `mame\nvram` in the studio's folder                                      |
-| Your Disk System BIOS, if you chose one                     | `mame\roms\fds` in the studio's folder                                                  |
-| The studio's own settings (language, MAME, recent projects) | the registry, `HKEY_CURRENT_USER\Software\Retrolarium`                                  |
+| What                                                        | Where                                                                        |
+| ----------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| The studio, the kit, Python and MAME                        | `%LOCALAPPDATA%\Programs\Retrolarium Studio` (or where you unpacked the zip) |
+| Downloaded games, your ROM copies and your edits            | `Documents\Retrolarium\<repository>`; see the per-game folders below         |
+| The kit's assemblers, unpacked on first use                 | `%LOCALAPPDATA%\Retrolarium\toolchains`                                      |
+| MAME's settings and saves                                   | `mame\cfg` and `mame\nvram` in the studio's folder                           |
+| Your Disk System BIOS, if you chose one                     | `mame\roms\fds` in the studio's folder                                       |
+| The studio's own settings (language, MAME, recent projects) | the registry, `HKEY_CURRENT_USER\Software\Retrolarium`                       |
 
 Updates keep all of these. Uninstalling removes the studio and the unpacked
 assemblers. It also removes your games and settings, but only if you tick that
@@ -64,8 +64,8 @@ disassembly writes them.
 
 The simplest way is File → Open ROM… (Ctrl+Shift+O, or the first button on the
 start screen): choose your ROM and the studio finds its game and version. The
-first time, it downloads the game's disassembly as an archive of its release tag
-from the RetrolariumLab organisation on GitHub (no Git needed) into
+first time, it downloads the game's disassembly at the tag or commit pinned by
+the kit from the RetrolariumLab organisation on GitHub (no Git needed) into
 `Documents\Retrolarium\<repository>`; later it reuses that folder, or any
 disassembly whose `.rlj` you opened before. A ROM the studio does not know (a
 hack, a translation, a bad dump) or a game it cannot edit yet is named as such.
@@ -82,17 +82,29 @@ Pick one:
   version the disassembly builds itself (Pac-Man's expanded NROM-256 layout) is
   built from another version's ROM when you open it; the studio asks for that
   ROM if it is missing.
-- The studio then takes the game's data out of the ROM into `hack/<version>/`:
-  these are the documents you edit. The original ROM is never written; a build
-  lays your edits over it.
+- The studio takes the game's data from the ROM into that revision's workspace.
+  NES games keep editable documents in `hack/<version>/`. Flicky and Alien
+  Soldier keep them inside a source snapshot, described below. A build uses
+  these edited documents to produce a separate ROM.
 - Recent projects remembers the version: reopening it skips the question. File →
   Open another version… asks again.
 
-Each version keeps its own edits. `hack/` and `.retrolarium/` (the studio's
-build folder) are not part of the disassembly's repository: they hold game data.
-To share a hack, use File → Create IPS patch…: the patch applies to the original
-ROM with any IPS patcher. (Flicky keeps its edits in
-`.retrolarium/ue/flicky-source`, a copy of the disassembly it builds in.)
+Each version keeps its own edits. Back up the downloaded game folder, including
+its ROMs and the hidden `.retrolarium` directory. Git does not track these
+private workspaces.
+
+| Games         | Editable documents, relative to the downloaded game folder                |
+| ------------- | ------------------------------------------------------------------------- |
+| NES games     | `hack/<version>/`                                                         |
+| Flicky        | `.retrolarium/ue/flicky-source/content/workspace/`                        |
+| Alien Soldier | `.retrolarium/<version>/alien-soldier-source/content/`, with `jp` or `eu` |
+
+`.retrolarium/<version>/original/` keeps the unedited documents used to restore
+and upgrade a project. Source snapshots also include the assembly and the
+snapshot record the build needs. Preserve the whole workspace when moving it.
+
+To share the result, use File → Create IPS patch…. The patch applies to the
+matching original ROM with an IPS patcher.
 
 A project can also be passed on the command line, optionally with a document:
 `retrolarium-studio.exe game.rlj --document levels/round-01`.
@@ -158,6 +170,21 @@ double-clicking a room still selects or opens that room at any scale.
 | Pac-Man           | the maze, round tables (speed, scatter/chase timing, pellet thresholds, release targets), actors, screens, sound, attract demo, playtest by round; v1.0, v1.1 and the expanded NROM-256 version (a second maze and 8 KiB of sound), which the studio builds from the v1.0 ROM                                                                                                          |
 | Flicky            | rounds and bonus rounds (seesaws, tigers, chick spawn), FM voices and envelopes, screens with movable title sprites, attract demos, playtest by round                                                                                                                                                                                                                                  |
 | Doraemon          | World 1 city and underground (blocks and objects, hidden ones translucent), World 2 routes (enemy spawns, secret item screens), World 3 underwater rooms (persistent objects and each room's spawn schedule), help and title screens, music for four drivers and 93 sound effects, World 1 demo, playtest from a block, stage or room                                                  |
+| Alien Soldier     | Japan/Europe; stage maps and objects, sprite mappings and boss previews, tiles and palettes, screens, text, sound and four attract demos; Studio 0.2.0 or current source                                                                                                                                                                                                               |
+
+Alien Soldier (Studio 0.2.0 or a current source build) supports Japan and
+Europe. Levels groups stages by their shared block sets and shows their camera
+bounds, spawn lists and 32×32 blocks. Play from selected reaches a stage through
+the password screen. Objects and Animations use source art and recorded palette
+contexts. Unverified objects appear as outlines. Sound exposes songs, effects,
+FM instruments, PSG envelopes and DAC samples. Demo edits the four attract
+inputs. Each encoded payload must fit its existing allocation.
+
+The game's
+[editing guide](https://github.com/RetrolariumLab/alien_soldier_src/blob/main/docs/retrolarium.md)
+describes the constraints. Runtime acceptance currently covers the Japanese
+attract sequence on a relocated build. Full-game replay and European runtime
+coverage remain outside that acceptance baseline.
 
 ## Sound effects
 

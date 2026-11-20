@@ -46,6 +46,8 @@ plugins/
     doraemon/  Doraemon: city, underground, World 2 and 3 maps, objects
     flicky/    Flicky (UE): data/ documents and codecs, render/ scene
                renderer, plugin/ session and editor models, tools/ level writer
+    alien_soldier/    Alien Soldier (JP/EU): source-backed documents, stage maps,
+               objects and boss compositions, sprite art, sound and demos
   builtin_plugins.cpp   registers the linked plugins
 resources/   bundled fonts (OFL), the brand set and the Qt resource file
 tools/       Docker build and run scripts
@@ -64,6 +66,13 @@ shell never links a plugin, and only the app links both.
 | `platform_megadrive`                | nothing                                 |
 | `flicky_data`                       | megadrive, Qt Core/Gui                  |
 | `flicky_plugin`                     | flicky_data, sdk                        |
+
+Alien Soldier adds `alien_soldier_data` (Mega Drive formats and Qt Core/Gui) and
+`alien_soldier_plugin` (data and SDK). The kit owns its source snapshot,
+revision ROM hashes and document codecs. The plugin presents the documents and
+describes build, preview and playtest processes through the same host API.
+`alien_soldier_session_test` loads the game repository's prepared JP project;
+the game's reader catalogs and independent references stay in that repository.
 
 ## How a plugin plugs in
 

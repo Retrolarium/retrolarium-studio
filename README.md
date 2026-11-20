@@ -21,6 +21,14 @@ File → Create IPS patch shares the result.
 | Pac-Man                                                                                                  | NES                       |
 | Doraemon                                                                                                 | NES                       |
 | Flicky                                                                                                   | Mega Drive                |
+| Alien Soldier (Japan, Europe)                                                                            | Mega Drive                |
+
+Alien Soldier requires Studio 0.2.0 or a current source build. It offers stage
+maps and objects, tiles, metatiles, palettes, sprite mappings and animations,
+screens, text, music and sound effects, and the four attract demos. Art and
+sound edits retain the original payload capacities. The game's
+[editing guide](https://github.com/RetrolariumLab/alien_soldier_src/blob/main/docs/retrolarium.md)
+describes verified previews and format limits.
 
 The interface is in English, Brazilian Portuguese, Spanish, simplified Chinese,
 Japanese, French, German, Italian, Polish and Russian.
@@ -28,8 +36,9 @@ Japanese, French, German, Italian, Polish and Russian.
 ## Download
 
 Windows 10 or 11 (64-bit). Download the setup program from the Releases page and
-run it; it needs no administrator rights. Everything the studio needs comes with
-it:
+run it; it needs no administrator rights. Check the release's game list and
+version: the older 0.1.0 package supports the six games listed before Alien
+Soldier. Everything the studio needs comes with the package:
 
 - the Retrolarium Kit, which builds the ROMs, and a private Python that runs it;
 - MAME;
