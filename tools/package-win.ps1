@@ -55,6 +55,10 @@ $dirty = [bool]$changes
 if ($dirty -and -not $AllowDirty) {
     throw "Uncommitted changes in the studio, kit or core; commit them first, or pass -AllowDirty to try a package out:`n$($changes -join "`n")"
 }
+$nativeOptions = @()
+if ($AllowDirty) { $nativeOptions += "--allow-dirty" }
+& python (Join-Path $PSScriptRoot "release.py") verify-build $Bin @nativeOptions
+if ($LASTEXITCODE -ne 0) { throw "Rebuild Studio and Core before packaging these sources" }
 $mameCommit = "c662f9ca1900ed7462dc4fe8d338a98e8e4ce3c3"
 
 $package = Join-Path $Out "RetrolariumStudio"
@@ -81,6 +85,7 @@ function Copy-Tree([string]$From, [string]$To, [string[]]$SkipDirectories, [stri
 # builds use, the YM2612 renderer its sound previews play through, and
 # rlcore, the core's codecs the kit runs.
 Copy-Item -LiteralPath (Join-Path $Bin "retrolarium-studio.exe") -Destination $package
+Copy-Item -LiteralPath (Join-Path $Bin "native-build.json") -Destination $package
 $helpers = Join-Path $package "tools"
 New-Item -ItemType Directory -Force -Path $helpers | Out-Null
 foreach ($helper in @("retrolarium-flicky-level-writer.exe", "retrolarium-ymfm-renderer.exe", "rlcore.exe")) {
@@ -159,8 +164,10 @@ if (Test-Path -LiteralPath (Join-Path $mameSource "docs\legal")) {
             Copy-Item -LiteralPath $text.FullName -Destination $target
         }
     }
+} elseif (Test-Path -LiteralPath (Join-Path $mameSource "legal") -PathType Container) {
+    Copy-Tree (Join-Path $mameSource "legal") $mameLegal @() @()
 } else {
-    Write-Warning "No MAME source next to $Mame (docs\legal, 3rdparty): the package is not ready to publish"
+    throw "MAME license texts are missing next to $Mame (docs\legal or legal)"
 }
 
 # Licenses: the studio's own and those of what the package carries
@@ -216,6 +223,18 @@ $cmake = Get-Content -LiteralPath (Join-Path $projectRoot "CMakeLists.txt") -Raw
 $match = [regex]::Match($cmake, "project\([^)]*?VERSION\s+(\d+\.\d+\.\d+)", "Singleline")
 if (-not $match.Success) { throw "No project(VERSION) in CMakeLists.txt" }
 $version = $match.Groups[1].Value
+
+# A parallel edit must not leave copied sources attributed to an earlier commit.
+foreach ($name in $sources.Keys) {
+    $folder = Join-Path $repositoryRoot $sources[$name]
+    $current = (& git -C $folder rev-parse HEAD).Trim()
+    if ($LASTEXITCODE -ne 0 -or $current -ne $commits[$name]) {
+        throw "$name changed during packaging; retry from the intended source commits"
+    }
+    if (-not $AllowDirty -and (& git -C $folder status --porcelain --untracked-files=all -- .)) {
+        throw "$name has new uncommitted changes; retry packaging from a clean checkout"
+    }
+}
 
 # Which sources the package holds, so a binary can be matched to them.
 $bios = Get-Content -LiteralPath (Join-Path $kit "retrolarium_kit\core\opendisksys\manifest.json") -Raw | ConvertFrom-Json

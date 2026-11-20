@@ -1,7 +1,8 @@
 [CmdletBinding()]
 param(
     [string]$QtKit,
-    [string]$Image = "qt5-win-amd64-gpl-enabled:latest",
+    [string]$Image = "qt5-win-amd64:latest",
+    [string]$Out,
     [ValidateRange(1, 8)]
     [int]$BuildJobs = 2,
     [string]$MemoryLimit = "3g",
@@ -43,7 +44,7 @@ if (-not (Test-Path -LiteralPath $toolchain -PathType Leaf)) {
     throw "Qt 5 Windows toolchain not found: $toolchain"
 }
 
-$outputRoot = Join-Path $projectRoot "build\win-amd64"
+$outputRoot = if ($Out) { [IO.Path]::GetFullPath($Out) } else { Join-Path $projectRoot "build\win-amd64" }
 New-Item -ItemType Directory -Force -Path $outputRoot | Out-Null
 
 # The studio builds retrolarium_core from the sibling directory, so the
@@ -67,6 +68,10 @@ cmake --install /out/.cmake-build --prefix /out
 x86_64-w64-mingw32-objdump -p /out/retrolarium-studio.exe | grep 'DLL Name' | sort -u
 '@
 
+$sourceRecord = Join-Path $outputRoot "native-source.json"
+& python (Join-Path $PSScriptRoot "release.py") record-source $sourceRecord
+if ($LASTEXITCODE -ne 0) { throw "Could not record native source state" }
+
 docker run --rm `
     --memory $MemoryLimit `
     --memory-swap $MemoryLimit `
@@ -82,5 +87,8 @@ docker run --rm `
 if ($LASTEXITCODE -ne 0) {
     throw "Retrolarium Studio build failed with exit code $LASTEXITCODE"
 }
+
+& python (Join-Path $PSScriptRoot "release.py") record-build $outputRoot $sourceRecord
+if ($LASTEXITCODE -ne 0) { throw "Could not verify native build provenance" }
 
 Write-Host "Built: $(Join-Path $outputRoot 'retrolarium-studio.exe')"

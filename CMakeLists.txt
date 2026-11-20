@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.21)
 
 project(
     RetrolariumStudio
-    VERSION 0.1.0
+    VERSION 0.2.0
     DESCRIPTION "Configurable resource studio for retro games"
     LANGUAGES CXX
 )

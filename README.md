@@ -61,8 +61,8 @@ to do when Windows warns about that.
 Requires Docker and the static Qt 5.15 SDK for Windows from
 [Longreach Qt](https://github.com/OpenKaryon/longreach-qt) (v0.1.0 or newer),
 cross-compiled with MinGW-w64. Clone it beside this repository and build its
-image `qt5-win-amd64-gpl-enabled` once, which needs GNU make and Python 3.11 or
-newer and takes an hour or more:
+image `qt5-win-amd64` once, which needs GNU make and Python 3.11 or newer and
+takes an hour or more:
 
 ```sh
 git clone --branch v0.1.0 https://github.com/OpenKaryon/longreach-qt.git

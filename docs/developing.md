@@ -58,3 +58,35 @@ The setup program:
 - copies itself into the installation as `Uninstall.exe`, which removes all of
   that again, together with the kit's unpacked assemblers. Your games in
   `Documents\Retrolarium` stay unless you ask.
+
+## Preparing a release
+
+Use clean Studio, Kit and Core checkouts. The native build records their source
+identity and hashes of the app, installer and helpers in
+`build/win-amd64/native-build.json`. Packaging rejects an older executable, a
+changed helper or a native source checkout that changed since the build.
+`-AllowDirty` still permits a local trial package, whose provenance says so.
+
+```powershell
+python ../retrolarium-kit/tools/check_game_repositories.py
+powershell -ExecutionPolicy Bypass -File tools/build-win.ps1 -QtKit path/to/longreach-qt
+powershell -ExecutionPolicy Bypass -File tools/test-win.ps1 -GameSources path/to/prepared-game-repositories
+python -m unittest discover -s tests -p test_release.py
+powershell -ExecutionPolicy Bypass -File tools/package-win.ps1 -Mame path/to/mame/consoles.exe
+python tools/release.py notes build/package
+```
+
+Review the native test output, including every skipped game fixture. Prepare
+fresh Alien Soldier JP/EU projects through the kit's catalog and verify their
+unchanged builds. Exercise editing and reopening before publishing support for
+the new game.
+
+`release.py notes` validates the ZIP's native files against its build record and
+writes `SHA256SUMS.txt` and `release-notes.md` from the actual ZIP, setup and
+`BUILD-INFO.txt`. Upload those exact files with a new version tag. Existing
+release assets have their own hashes and provenance; update their description if
+replacing those files. A release body must describe its own packaged versions
+rather than the latest source tree.
+
+The default Windows SDK image is `qt5-win-amd64:latest`. `build-win.ps1 -Image`
+selects another compatible SDK, and `-Out` selects an independent build folder.
