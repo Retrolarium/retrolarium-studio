@@ -1,12 +1,11 @@
-// The SMB music decoder against the kit's timelines for every SMB1 JU music
+// The SMB music decoder against hand-specified synthetic timelines, or local ROM
 // header (kind, stream byte, tick, duration and period of each event), and
 // the in-place note edits.
-//   smb_music_test <game sources>/smb1_src/tests/retrolarium/smb1_ju_music.json
+//   smb_music_test <music.json>
 
 #include "smb/data/music.hpp"
 
 #include <QCoreApplication>
-#include <QFileInfo>
 #include <QFile>
 #include <QJsonArray>
 #include <QJsonDocument>
@@ -45,12 +44,8 @@ int kindCode(SmbMusicEvent::Kind kind) {
 int main(int argc, char** argv) {
     QCoreApplication app(argc, argv);
     if (argc != 2) {
-        std::cerr << "usage: smb_music_test smb1_ju_music.json\n";
+        std::cerr << "usage: smb_music_test music.json\n";
         return 2;
-    }
-    if (!QFileInfo::exists(QString::fromLocal8Bit(argv[1]))) {
-        std::cout << "skipped: no SMB1 JU music fixture at " << argv[1] << "\n";
-        return 77;  // CTest's SKIP_RETURN_CODE
     }
     try {
         QFile file(QString::fromLocal8Bit(argv[1]));
@@ -58,6 +53,7 @@ int main(int argc, char** argv) {
         const QJsonObject root = QJsonDocument::fromJson(file.readAll()).object();
         const QJsonObject resource = root.value(QStringLiteral("resource")).toObject();
         SmbMusic music = SmbMusic::fromJson(resource);
+        if (music.headers.isEmpty()) fail(QStringLiteral("the fixture has no music headers"));
         if (music.toJson(resource) != resource) fail(QStringLiteral("decoding and writing back changes the resource"));
 
         const QJsonObject expected = root.value(QStringLiteral("timelines")).toObject();
@@ -136,6 +132,36 @@ int main(int argc, char** argv) {
         }
         if (!refused && before.channels.first().events.first().kind == SmbMusicEvent::Kind::Length) {
             fail(QStringLiteral("a length byte took a pitch"));
+        }
+
+        if (root.value(QStringLiteral("provenance")).toObject().value(QStringLiteral("kind")).toString() ==
+            QLatin1String("synthetic")) {
+            if (!music.readersOf(note->offset).contains(QStringLiteral("probe_shared square 2"))) {
+                fail(QStringLiteral("shared stream readers were lost after editing"));
+            }
+            music.setEventLength(QStringLiteral("square2"), 0, 1);
+            if (music.timeline(QStringLiteral("probe_shared")).duration != 3) {
+                fail(QStringLiteral("a shared length edit did not reach the other header"));
+            }
+            music.setBeat(13, 2);
+            if (music.timeline(QStringLiteral("ground_part_1")).channels.last().events.first().beat != 2) {
+                fail(QStringLiteral("a beat edit did not land"));
+            }
+            // Malformed arenas and loops fail with SmbError, rather than
+            // reading outside their vectors or spinning forever.
+            for (int kind = 0; kind < 3; ++kind) {
+                SmbMusic broken = SmbMusic::fromJson(resource);
+                if (kind == 0) broken.arena = {2};  // note before length
+                if (kind == 1) broken.headers[0].stream = broken.arena.size();
+                if (kind == 2) broken.arena[13] = 0;  // noise loop without a beat
+                bool rejected = false;
+                try {
+                    static_cast<void>(broken.timeline(QStringLiteral("ground_part_1")));
+                } catch (const SmbError&) {
+                    rejected = true;
+                }
+                if (!rejected) fail(QStringLiteral("a malformed music stream was accepted"));
+            }
         }
 
         std::cout << music.headers.size() << " headers, " << events << " events match the kit\n";

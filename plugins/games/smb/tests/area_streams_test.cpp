@@ -1,12 +1,9 @@
-// Removing and re-inserting every record of every SMB1 JU area must leave all
-// other records at their page and column, and give back the same stream
-// positions. Reads the areas from the level renderer's golden corpus.
-//   smb_area_streams_test <game sources>/smb1_src/tests/retrolarium/smb1_ju_level_scenes.json
+// Removing and re-inserting records preserves all other page/column positions.
+// Runs on original synthetic areas by default, or a local SMB1 JU corpus.
 
 #include "smb/data/area_streams.hpp"
 
 #include <QCoreApplication>
-#include <QFileInfo>
 #include <QFile>
 #include <QJsonArray>
 #include <QJsonDocument>
@@ -67,16 +64,13 @@ int enemyBytes(const QVector<SmbEnemyRecord>& enemies) {
 int main(int argc, char* argv[]) {
     QCoreApplication application(argc, argv);
     try {
-        if (argc < 2) fail(QStringLiteral("usage: smb_area_streams_test <smb1_ju_level_scenes.json>"));
-        if (!QFileInfo::exists(QString::fromLocal8Bit(argv[1]))) {
-            std::cout << "skipped: no SMB1 JU level corpus at " << argv[1] << "\n";
-            return 77;  // CTest's SKIP_RETURN_CODE
-        }
+        if (argc != 2) fail(QStringLiteral("usage: smb_area_streams_test <levels.json>"));
         QFile source(QString::fromLocal8Bit(argv[1]));
         if (!source.open(QIODevice::ReadOnly)) fail(QStringLiteral("cannot open the corpus"));
-        const QJsonArray areas =
-            QJsonDocument::fromJson(source.readAll()).object().value(QStringLiteral("areas")).toArray();
-        if (areas.size() != 34) fail(QStringLiteral("the corpus does not hold 34 areas"));
+        const QJsonObject root = QJsonDocument::fromJson(source.readAll()).object();
+        const bool synthetic = root.value(QStringLiteral("profile")).toString() == QLatin1String("synthetic");
+        const QJsonArray areas = root.value(QStringLiteral("areas")).toArray();
+        if (areas.size() != (synthetic ? 8 : 34)) fail(QStringLiteral("the corpus has the wrong area count"));
         int checks = 0;
         int unsortedAreas = 0;
         int maxGrowth = 0;
@@ -134,6 +128,7 @@ int main(int argc, char* argv[]) {
                 ++checks;
             }
         }
+        if (checks == 0 || (synthetic && unsortedAreas == 0)) fail(QStringLiteral("record coverage is empty"));
         std::cout << checks << " remove/insert checks passed; " << unsortedAreas
                   << " areas store objects out of column order; largest growth " << maxGrowth << " bytes\n";
     } catch (const std::exception& error) {

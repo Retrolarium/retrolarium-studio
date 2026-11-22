@@ -227,33 +227,35 @@ add_library(smb_plugin STATIC
 target_link_libraries(smb_plugin PUBLIC nes_editors smb_data studio_sdk)
 studio_enable_warnings(smb_plugin)
 
-# The renderer against the kit's output for every SMB1 JU area.
+# Original synthetic documents exercise the same codecs in public CI without
+# game repositories or ROMs. Full ROM-derived comparisons are opt-in; see
+# tools/test_smb_rom.py and docs/testing_smb.md.
 add_executable(smb_level_renderer_golden_test
     games/smb/tests/level_renderer_golden_test.cpp
 )
 target_link_libraries(smb_level_renderer_golden_test PRIVATE smb_data)
-studio_add_test(smb_level_renderer_golden_test games:smb1_src/tests/retrolarium/smb1_ju_level_scenes.json)
+studio_add_test(smb_level_renderer_golden_test tests/fixtures/smb/levels.json)
 
-# Record insertion and removal against every SMB1 JU area.
+# Record insertion and removal, including unsorted columns and page commands.
 add_executable(smb_area_streams_test
     games/smb/tests/area_streams_test.cpp
 )
 target_link_libraries(smb_area_streams_test PRIVATE smb_data)
-studio_add_test(smb_area_streams_test games:smb1_src/tests/retrolarium/smb1_ju_level_scenes.json)
+studio_add_test(smb_area_streams_test tests/fixtures/smb/levels.json)
 
-# Screen packets and text against the SMB1 JU screens.
+# Screen packets and text with original test strings and PPU writes.
 add_executable(smb_screens_test
     games/smb/tests/screens_test.cpp
 )
 target_link_libraries(smb_screens_test PRIVATE smb_data)
-studio_add_test(smb_screens_test games:smb1_src/tests/retrolarium/smb1_ju_screens.json)
+studio_add_test(smb_screens_test tests/fixtures/smb/screens.json)
 
-# The music decoder against the kit's timelines for every SMB1 JU header.
+# Four-channel music, shared streams, edits and a looping noise pattern.
 add_executable(smb_music_test
     games/smb/tests/music_test.cpp
 )
 target_link_libraries(smb_music_test PRIVATE smb_data)
-studio_add_test(smb_music_test games:smb1_src/tests/retrolarium/smb1_ju_music.json)
+studio_add_test(smb_music_test tests/fixtures/smb/music.json)
 
 # Castle Excellent / Castlequest: the room document, its painter and the
 # editor models.
@@ -474,4 +476,4 @@ add_executable(malformed_documents_test
 )
 target_link_libraries(malformed_documents_test PRIVATE smb_data_checked castle_excellent_plugin_checked
     solomon_plugin_checked studio_sdk)
-studio_add_test(malformed_documents_test games:smb1_src/tests/retrolarium/smb1_ju_level_scenes.json)
+studio_add_test(malformed_documents_test)

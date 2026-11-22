@@ -1,14 +1,13 @@
-// The screen-packet and text editing of the SMB plugin against the SMB1 JU
-// screens: decoding and writing back is lossless, the commands project to
+// Screen packets with original synthetic writes and strings, or local ROM data:
+// decoding and writing back is lossless, the commands project to
 // the stored name tables, text fields read as the game shows them, and edits
 // go through the command that writes a cell, the way the kit encodes them.
-//   smb_screens_test <game sources>/smb1_src/tests/retrolarium/smb1_ju_screens.json
+//   smb_screens_test <screens.json>
 
 #include "smb/data/resource_document.hpp"
 #include "smb/data/screens.hpp"
 
 #include <QCoreApplication>
-#include <QFileInfo>
 
 #include <iostream>
 #include <stdexcept>
@@ -38,12 +37,8 @@ void expectThrow(F f, const QString& message) {
 int main(int argc, char** argv) {
     QCoreApplication app(argc, argv);
     if (argc != 2) {
-        std::cerr << "usage: smb_screens_test smb1_ju_screens.json\n";
+        std::cerr << "usage: smb_screens_test screens.json\n";
         return 2;
-    }
-    if (!QFileInfo::exists(QString::fromLocal8Bit(argv[1]))) {
-        std::cout << "skipped: no SMB1 JU screens fixture at " << argv[1] << "\n";
-        return 77;  // CTest's SKIP_RETURN_CODE
     }
     try {
         SmbResourceDocument document = SmbResourceDocument::load(QString::fromLocal8Bit(argv[1]));
@@ -77,7 +72,8 @@ int main(int argc, char** argv) {
             expect(set.toJson(json) == json, id + QStringLiteral(": rewriting every cell changed the resource"));
         }
 
-        // Text as the game shows it.
+        expect(checks > 0, QStringLiteral("the fixture has no screen writes"));
+        // Every configured text slot must contain a string fitting its width.
         QStringList texts;
         for (const SmbTextSlot& slot : textSlots(document)) {
             texts << slotText(document, slot);
@@ -164,13 +160,13 @@ int main(int argc, char** argv) {
             expectThrow([&] { set.setText(field(set, QStringLiteral("game-over")), QStringLiteral("GAME IS OVER")); },
                         QStringLiteral("a longer text was let past the shared range"));
             expect(set.toJson(json) == before, QStringLiteral("a refused text changed the screens"));
-            set.setText(field(set, QStringLiteral("time-up")), QStringLiteral("TIME"));
-            set.setText(field(set, QStringLiteral("game-over")), QStringLiteral("GAME IS OVER"));
+            set.setText(field(set, QStringLiteral("time-up")), QStringLiteral("NEXT"));
+            set.setText(field(set, QStringLiteral("game-over")), QStringLiteral("READY SET GO"));
             expect(set.pool().used == stock.size - 3 + 3, QStringLiteral("the screens did not trade three bytes"));
             const SmbScreenSet reopened = SmbScreenSet::fromJson(set.toJson(json));
-            expect(reopened.text(field(reopened, QStringLiteral("game-over"))) == QLatin1String("GAME IS OVER"),
+            expect(reopened.text(field(reopened, QStringLiteral("game-over"))) == QLatin1String("READY SET GO"),
                    QStringLiteral("the longer text did not survive writing back"));
-            expect(reopened.text(field(reopened, QStringLiteral("time-up"))) == QLatin1String("TIME"),
+            expect(reopened.text(field(reopened, QStringLiteral("time-up"))) == QLatin1String("NEXT"),
                    QStringLiteral("the shorter text did not survive writing back"));
             expect(field(reopened, QStringLiteral("game-over")).width == 12,
                    QStringLiteral("the field width was not written back"));

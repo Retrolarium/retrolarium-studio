@@ -1,0 +1,453 @@
+{
+  "schema": "retrolarium.smb-level-scene-golden",
+  "schema_version": 2,
+  "profile": "synthetic",
+  "provenance": {
+    "kind": "synthetic",
+    "generator": "retrolarium-kit/tools/smb_test_corpus.py",
+    "version": 1
+  },
+  "rendering": "smb1",
+  "level_tables": {
+    "id": "level-tables",
+    "codec": "nes.byte-tables.v1",
+    "tables": {
+      "terrain_metatiles": [
+        41,
+        42,
+        43,
+        44
+      ],
+      "terrain_render_masks": [
+        0,
+        0,
+        0,
+        24,
+        255,
+        31,
+        1,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "block_metatiles": [
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64
+      ],
+      "brick_metatiles": [
+        71,
+        72,
+        73,
+        74,
+        75
+      ],
+      "hole_metatiles": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "mushroom_ledge_start": [
+        81
+      ],
+      "mushroom_ledge_middle": [
+        82
+      ],
+      "mushroom_ledge_end": [
+        83
+      ],
+      "mushroom_stem_top": [
+        84
+      ],
+      "mushroom_stem": [
+        85
+      ],
+      "cannon_top": [
+        91
+      ],
+      "cannon_middle": [
+        92
+      ],
+      "cannon_bottom": [
+        93
+      ],
+      "flagpole_ball": [
+        101
+      ],
+      "flagpole_shaft": [
+        102
+      ],
+      "flagpole_base": [
+        103
+      ]
+    }
+  },
+  "areas": [
+    {
+      "name": "ground_1",
+      "header": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "objects": [
+        [
+          3,
+          4,
+          false,
+          1
+        ],
+        [
+          6,
+          6,
+          false,
+          34
+        ]
+      ],
+      "enemies": [
+        [
+          "page",
+          0,
+          15,
+          false,
+          false,
+          2,
+          0,
+          0
+        ],
+        [
+          "enemy",
+          6,
+          5,
+          false,
+          true,
+          6,
+          0,
+          0
+        ]
+      ],
+      "world": 0,
+      "expected": {
+        "width": 42,
+        "metatile_sha256": "99a574868b75284097ff960dbb5c5ffc176fa613c862576df064fe72e3b9a802",
+        "objects": [
+          [
+            0,
+            0,
+            3,
+            1
+          ],
+          [
+            1,
+            0,
+            6,
+            3
+          ]
+        ],
+        "enemies": [
+          [
+            1,
+            2,
+            38
+          ]
+        ]
+      }
+    },
+    {
+      "name": "ground_2",
+      "header": [
+        0,
+        0,
+        0,
+        1,
+        0,
+        0
+      ],
+      "objects": [
+        [
+          0,
+          4,
+          false,
+          18
+        ]
+      ],
+      "enemies": [],
+      "world": 0,
+      "expected": {
+        "width": 34,
+        "metatile_sha256": "909c955c8d07668793442eb7bb6597498ea7ba17c913deb4e348c55308721288",
+        "objects": [
+          [
+            0,
+            0,
+            0,
+            3
+          ]
+        ],
+        "enemies": []
+      }
+    },
+    {
+      "name": "ground_3",
+      "header": [
+        0,
+        0,
+        0,
+        2,
+        0,
+        0
+      ],
+      "objects": [
+        [
+          0,
+          4,
+          false,
+          18
+        ]
+      ],
+      "enemies": [],
+      "world": 0,
+      "expected": {
+        "width": 34,
+        "metatile_sha256": "04ea981d083129e8758021ce5f96fc441756fee18e2a60641ce21e923e872c5e",
+        "objects": [
+          [
+            0,
+            0,
+            0,
+            3
+          ]
+        ],
+        "enemies": []
+      }
+    },
+    {
+      "name": "ground_4",
+      "header": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "objects": [
+        [
+          10,
+          3,
+          false,
+          1
+        ],
+        [
+          2,
+          5,
+          false,
+          2
+        ],
+        [
+          0,
+          13,
+          false,
+          2
+        ],
+        [
+          1,
+          7,
+          true,
+          3
+        ]
+      ],
+      "enemies": [
+        [
+          "entrance",
+          1,
+          14,
+          false,
+          false,
+          4,
+          2,
+          3
+        ],
+        [
+          "enemy",
+          2,
+          4,
+          true,
+          false,
+          7,
+          0,
+          0
+        ]
+      ],
+      "world": 0,
+      "expected": {
+        "width": 52,
+        "metatile_sha256": "f6ef2aa3d49c4ed89f1f300701972c33a96e058e0238a349ae43bb969efbf6bc",
+        "objects": [
+          [
+            0,
+            0,
+            10,
+            1
+          ],
+          [
+            1,
+            0,
+            2,
+            1
+          ],
+          [
+            2,
+            2,
+            32,
+            1
+          ],
+          [
+            3,
+            3,
+            49,
+            1
+          ]
+        ],
+        "enemies": [
+          [
+            1,
+            1,
+            18
+          ]
+        ]
+      }
+    },
+    {
+      "name": "water_1",
+      "header": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1
+      ],
+      "objects": [],
+      "enemies": [],
+      "world": 0,
+      "expected": {
+        "width": 34,
+        "metatile_sha256": "93a97bdb4c8023c591c5006798bd833d63d14461cf7f2c1df1500d95cee1cda1",
+        "objects": [],
+        "enemies": []
+      }
+    },
+    {
+      "name": "underground_1",
+      "header": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1
+      ],
+      "objects": [],
+      "enemies": [],
+      "world": 0,
+      "expected": {
+        "width": 34,
+        "metatile_sha256": "d48bd8fce19f80e8a102748c86afbc745cf5d3a40cc0afcd8ae4969a947b0a75",
+        "objects": [],
+        "enemies": []
+      }
+    },
+    {
+      "name": "castle_1",
+      "header": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1
+      ],
+      "objects": [],
+      "enemies": [],
+      "world": 0,
+      "expected": {
+        "width": 34,
+        "metatile_sha256": "2a4a9081eebb6cadb1c867569012d0db15dc10d98f7575463058bfda34dfc7ec",
+        "objects": [],
+        "enemies": []
+      }
+    },
+    {
+      "name": "ground_5",
+      "header": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1
+      ],
+      "objects": [
+        [
+          4,
+          12,
+          false,
+          2
+        ]
+      ],
+      "enemies": [],
+      "world": 0,
+      "expected": {
+        "width": 34,
+        "metatile_sha256": "a4b6947bbc44cdbac78d19632e8ad52a1626e4d0e368fbd05c3f87f683753a14",
+        "objects": [
+          [
+            0,
+            0,
+            4,
+            3
+          ]
+        ],
+        "enemies": []
+      }
+    }
+  ]
+}

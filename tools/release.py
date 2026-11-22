@@ -114,6 +114,25 @@ def record_package(package: Path, python_version: str) -> None:
     write(record_path, record)
 
 
+def private_game_data(name: str, data: bytes | None = None) -> bool:
+    """Keep ROMs and locally generated game corpora out of release artifacts."""
+    path = Path(name.replace("\\", "/").lower())
+    if path.suffix in {".nes", ".fds", ".rom", ".sfc", ".smc", ".gen", ".mdrom"}:
+        return True
+    if path.name in {"smb1_ju_level_scenes.json", "smb1_ju_screens.json", "smb1_ju_music.json"}:
+        return True
+    if "smb-rom-corpus" in path.parts or "tests/retrolarium/" in path.as_posix():
+        return True
+    if path.suffix == ".json" and data is not None:
+        try:
+            document = json.loads(data)
+        except (ValueError, UnicodeError):
+            return False
+        if isinstance(document, dict) and isinstance(document.get("provenance"), dict):
+            return document["provenance"].get("kind") == "rom-derived"
+    return False
+
+
 def write_zip(package: Path, output: Path) -> None:
     """The package folder as a ZIP under its own name, reproducibly: sorted
     entries, '/' separators and one fixed time. Empty folders are kept."""
@@ -121,6 +140,8 @@ def write_zip(package: Path, output: Path) -> None:
     for path in package.rglob("*"):
         relative = path.relative_to(package).as_posix()
         if path.is_file():
+            if private_game_data(relative, path.read_bytes() if path.suffix.lower() == ".json" else None):
+                raise ValueError(f"private game data cannot enter a release: {relative}")
             entries.append((relative, path))
         elif path.is_dir() and not any(path.iterdir()):
             entries.append((relative + "/", None))
@@ -268,6 +289,9 @@ def release_notes(out: Path) -> None:
         # the separators actually stored in the archive.
         if any("\\" in entry.orig_filename for entry in bundle.infolist()):
             raise ValueError("release archive has file names with backslashes; build it with release.py zip")
+        for entry in names:
+            if private_game_data(entry, bundle.read(entry) if entry.lower().endswith(".json") else None):
+                raise ValueError(f"private game data cannot enter a release: {entry}")
         info = bundle.read(prefix + "BUILD-INFO.txt").decode("utf-8-sig")
         record = json.loads(bundle.read(prefix + "native-build.json"))
         if record["sources"] != sources() or any(v["changes"] for v in record["sources"].values()):

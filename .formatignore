@@ -1,0 +1,5 @@
+# Canonical deterministic output of retrolarium-kit/tools/smb_test_corpus.py.
+# Regenerate these original synthetic documents instead of reformatting them.
+tests/fixtures/smb/levels.json
+tests/fixtures/smb/screens.json
+tests/fixtures/smb/music.json

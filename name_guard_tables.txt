@@ -1,3 +1,7 @@
 # Files that may hold a literal run of 24 numbers or more, and why
 # (python -m retrolarium_core.name_guard tables).
 plugins/platforms/nes/src/nes/palette.hpp  # the NES PPU's 64 colours (hardware)
+# Original synthetic markers, masks and PPU writes, generated without ROM data
+# by retrolarium-kit/tools/smb_test_corpus.py (see tests/fixtures/smb/README.md).
+tests/fixtures/smb/levels.json
+tests/fixtures/smb/screens.json

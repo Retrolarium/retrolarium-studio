@@ -133,6 +133,30 @@ class NativeProvenanceTests(unittest.TestCase):
         self.assertIn(release.digest(out / "RetrolariumStudio-0.2.0-setup.exe"), checksums)
         self.assertIn(checksums.splitlines()[0].split()[0], (out / "release-notes.md").read_text())
 
+    def test_release_zip_refuses_roms_and_renamed_local_corpora(self) -> None:
+        package = self.make_package()
+        for name, content in (
+            ("game.nes", b"NES\x1a"),
+            ("smb1_ju_music.json", b"{}"),
+            ("renamed.json", b'{"provenance":{"kind":"rom-derived"}}'),
+        ):
+            with self.subTest(name=name):
+                path = package / name
+                path.write_bytes(content)
+                with self.assertRaisesRegex(ValueError, "private game data"):
+                    release.write_zip(package, self.root / "must-not-exist.zip")
+                self.assertFalse((self.root / "must-not-exist.zip").exists())
+                path.unlink()
+
+    def test_release_notes_recheck_an_archive_not_written_by_our_zip_tool(self) -> None:
+        package = self.make_package()
+        out = self.release(package)
+        archive = out / "RetrolariumStudio-0.2.0-win64.zip"
+        with zipfile.ZipFile(archive, "a") as bundle:
+            bundle.writestr("RetrolariumStudio/renamed.json", '{"provenance":{"kind":"rom-derived"}}')
+        with mock.patch.object(release, "STUDIO", self.root), self.assertRaisesRegex(ValueError, "private game data"):
+            release.release_notes(out)
+
     def test_release_notes_come_from_the_changelog(self) -> None:
         notes = (self.release(self.make_package()) / "release-notes.md").read_text()
         self.assertIn("The release's own words.", notes)

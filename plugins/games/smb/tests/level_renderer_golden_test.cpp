@@ -1,7 +1,6 @@
 #include "smb/render/level_renderer.hpp"
 
 #include <QCoreApplication>
-#include <QFileInfo>
 #include <QCryptographicHash>
 #include <QFile>
 #include <QJsonArray>
@@ -97,11 +96,7 @@ int main(int argc, char* argv[]) {
     QCoreApplication application(argc, argv);
     try {
         if (argc < 2) {
-            throw std::runtime_error("usage: smb_level_renderer_golden_test <smb1_ju_level_scenes.json>");
-        }
-        if (!QFileInfo::exists(QString::fromLocal8Bit(argv[1]))) {
-            std::cout << "skipped: no SMB1 JU level corpus at " << argv[1] << "\n";
-            return 77;  // CTest's SKIP_RETURN_CODE
+            throw std::runtime_error("usage: smb_level_renderer_golden_test <levels.json>");
         }
         QFile source(QString::fromLocal8Bit(argv[1]));
         if (!source.open(QIODevice::ReadOnly)) {
@@ -113,12 +108,13 @@ int main(int argc, char* argv[]) {
             throw std::runtime_error("SMB JU golden corpus is not valid JSON");
         }
         const auto root = document.object();
+        const bool synthetic = root[QStringLiteral("profile")].toString() == QStringLiteral("synthetic");
         if (root[QStringLiteral("schema")].toString() != QStringLiteral("retrolarium.smb-level-scene-golden") ||
             root[QStringLiteral("schema_version")].toInt() != 2 ||
-            root[QStringLiteral("profile")].toString() != QStringLiteral("smb1.ju")) {
+            (!synthetic && root[QStringLiteral("profile")].toString() != QStringLiteral("smb1.ju"))) {
             throw std::runtime_error("SMB JU golden corpus identity differs");
         }
-        // The corpus carries the JU level tables the kit reads from the game.
+        // Public tables are invented; local integration tables come from a ROM.
         const QJsonObject tables = root[QStringLiteral("level_tables")].toObject();
         const auto rendering =
             rl::smb::SmbLevelRendering::fromResource(tables, root[QStringLiteral("rendering")].toString());
@@ -165,10 +161,14 @@ int main(int argc, char* argv[]) {
         }
 
         const auto areas = root[QStringLiteral("areas")].toArray();
-        if (areas.size() != 34) {
-            throw std::runtime_error("SMB JU golden corpus does not contain 34 areas");
+        if (areas.size() != (synthetic ? 8 : 34)) {
+            throw std::runtime_error("SMB golden corpus has the wrong area count");
         }
-        auto missingNames = expectedAreaNames();
+        auto missingNames = synthetic ? QSet<QString>{QStringLiteral("ground_1"),      QStringLiteral("ground_2"),
+                                                      QStringLiteral("ground_3"),      QStringLiteral("ground_4"),
+                                                      QStringLiteral("ground_5"),      QStringLiteral("water_1"),
+                                                      QStringLiteral("underground_1"), QStringLiteral("castle_1")}
+                                      : expectedAreaNames();
         for (const auto rawArea : areas) {
             const auto area = rawArea.toObject();
             const QString name = area[QStringLiteral("name")].toString();

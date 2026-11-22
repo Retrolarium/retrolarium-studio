@@ -198,6 +198,10 @@ CI setup helper that installs dependencies; ordinary local test runs use
 `tools/test.py` and an existing SDK. Release builds continue to use the static
 Longreach Qt SDK and the existing release packaging tools.
 
+The SMB native checks use original synthetic fixtures in public CI, and the
+common malformed-document checks require no game corpus. Full ROM comparisons
+are a separate local command: see [SMB test data](docs/testing_smb.md).
+
 ## Core revision in CI
 
 CI checks out the full Core commit recorded in `.github/core-ref`, so rerunning

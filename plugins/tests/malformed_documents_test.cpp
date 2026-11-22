@@ -121,15 +121,18 @@ void projectHeadersHoldUp() {
 
 // SMB: a modifier object before the area's first column, or past it, has
 // no column to modify; the area still renders.
-void smbAreasHoldUp(const QString& corpus) {
-    QFile source(corpus);
-    if (!source.open(QIODevice::ReadOnly)) {
-        std::cout << "SMB part skipped: no level corpus\n";
-        return;
+void smbAreasHoldUp() {
+    // Invented markers: this memory-safety regression needs no game corpus.
+    rl::smb::SmbLevelRendering rendering;
+    rendering.engine = QStringLiteral("smb1");
+    rendering.tables.insert(QStringLiteral("terrain_metatiles"), {41, 42, 43, 44});
+    rendering.tables.insert(QStringLiteral("terrain_render_masks"), {0, 0});
+    for (const auto& table :
+         {qMakePair(QStringLiteral("mushroom_ledge_start"), 81), qMakePair(QStringLiteral("mushroom_ledge_middle"), 82),
+          qMakePair(QStringLiteral("mushroom_ledge_end"), 83), qMakePair(QStringLiteral("mushroom_stem_top"), 84),
+          qMakePair(QStringLiteral("mushroom_stem"), 85)}) {
+        rendering.tables.insert(table.first, {table.second});
     }
-    const QJsonObject root = QJsonDocument::fromJson(source.readAll()).object();
-    const auto rendering = rl::smb::SmbLevelRendering::fromResource(
-        root.value(QStringLiteral("level_tables")).toObject(), root.value(QStringLiteral("rendering")).toString());
     const QVector<int> header{0, 0, 0, 1, 0, 0};
     const QVector<rl::smb::SmbAreaObject> plain{{0, 4, false, 0x12}};
     QVector<rl::smb::SmbAreaObject> malformed{{-1, 14, false, 0x40}, {-100, 14, false, 0x41}};
@@ -149,7 +152,7 @@ int main(int argc, char** argv) {
         castleScreensHoldUp();
         solomonRoomsHoldUp();
         projectHeadersHoldUp();
-        smbAreasHoldUp(argc > 1 ? QString::fromLocal8Bit(argv[1]) : QString());
+        smbAreasHoldUp();
     } catch (const std::exception& error) {
         std::cerr << "FAIL: " << error.what() << '\n';
         return 1;
