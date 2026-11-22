@@ -13,6 +13,16 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
+# Every C++ target, including plugin tests, reads this UTF-8 checkout.
+if(MSVC)
+    add_compile_options("$<$<COMPILE_LANGUAGE:CXX>:/utf-8>")
+endif()
+
+# Keep the Windows SDK from replacing std::min/std::max with macros.
+if(WIN32)
+    add_compile_definitions(NOMINMAX)
+endif()
+
 # The Longreach Qt Windows SDK ships static Qt and a static C++ runtime.
 # CMake does not inherit the final -static flag from the Qt installation.
 if(MINGW)
@@ -23,7 +33,7 @@ find_package(Qt5 5.15 REQUIRED COMPONENTS Core Gui Widgets Svg LinguistTools)
 
 function(studio_enable_warnings target)
     if(MSVC)
-        target_compile_options(${target} PRIVATE /W4 /permissive-)
+        target_compile_options(${target} PRIVATE /W4 /permissive- /utf-8)
     else()
         target_compile_options(${target} PRIVATE -Wall -Wextra -Wpedantic)
     endif()
@@ -233,6 +243,9 @@ function(studio_add_test target)
         else()
             list(APPEND fixtures "${PROJECT_SOURCE_DIR}/${fixture}")
         endif()
+        if(NOT fixture MATCHES "^games:")
+            set(fixture "repo:${fixture}")
+        endif()
         string(APPEND arguments ", \"${fixture}\"")
     endforeach()
     add_test(NAME ${target} COMMAND ${target} ${fixtures})
@@ -336,6 +349,13 @@ install(TARGETS retrolarium-studio RUNTIME DESTINATION .)
 # installation, uninstalls it. tools/package-win.ps1 attaches the payload.
 if(WIN32)
     set(SETUP_MANIFEST "${CMAKE_CURRENT_SOURCE_DIR}/installer/win32/retrolarium-setup.manifest")
+    if(MSVC)
+        # MSVC merges this additional manifest into its generated one. MinGW
+        # embeds it through the .rc file; doing both duplicates resource 1.
+        set(SETUP_MANIFEST_RESOURCE "")
+    else()
+        set(SETUP_MANIFEST_RESOURCE "1 24 \"${SETUP_MANIFEST}\"")
+    endif()
     configure_file(installer/win32/retrolarium-setup.rc.in ${CMAKE_CURRENT_BINARY_DIR}/retrolarium-setup.rc @ONLY)
     add_executable(retrolarium-setup WIN32
         installer/src/installer_package.cpp
@@ -350,6 +370,9 @@ if(WIN32)
         ${studio_qm}
         ${i18n_sources}
     )
+    if(MSVC)
+        target_sources(retrolarium-setup PRIVATE ${SETUP_MANIFEST})
+    endif()
     target_include_directories(retrolarium-setup PRIVATE installer/src)
     target_compile_definitions(retrolarium-setup PRIVATE UNICODE _UNICODE _WIN32_WINNT=0x0601)
     target_link_libraries(retrolarium-setup PRIVATE studio_ui advapi32 ole32 shell32 uuid)

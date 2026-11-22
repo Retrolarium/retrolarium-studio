@@ -355,7 +355,8 @@ local function due(last, every)
     return machine.paused or real_ms() - last >= every
 end
 
--- A hot reload hard-resets the machine and runs this script again: the
+)LUA"
+                             R"LUA(-- A hot reload hard-resets the machine and runs this script again: the
 -- speed chosen, the events counted and the actions taken carry over in _G,
 -- as the studio keeps counting them.
 local speed = _G.retrolarium_speed or 100   -- percent; 0 runs without a limit
@@ -634,7 +635,8 @@ end))
 
 -- The pads for the frame after `done`: the movie's while one plays, else
 -- the ones that frame had before (a rewind runs it again).
-local function pads_of(frame)
+)LUA"
+                             R"LUA(local function pads_of(frame)
     if movie_mode == "play" or movie_mode == "resume" then return log[frame] end
     return inputs[frame]
 end
@@ -967,7 +969,8 @@ local function take_actions()
 end
 
 -- The movie's frame over the picture, as Gens shows it: frame/length while
--- it plays, REC and the frame while it records. Drawn in MAME's frame-done
+)LUA"
+                             R"LUA(-- it plays, REC and the frame while it records. Drawn in MAME's frame-done
 -- callback (a frame notifier is too late), in the screen's pixels.
 -- The input overlay draws pad one: the d-pad as a cross, the other buttons
 -- held as their names; the watch overlay the RAM cells, one a line.

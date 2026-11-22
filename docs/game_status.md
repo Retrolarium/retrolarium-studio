@@ -120,7 +120,8 @@ Projects come from `rldisasm preset <rom>`; every editor reads and writes
 original app's, pinned to the kit's output for all 34 SMB1 JU areas by
 `smb_level_renderer_golden_test`. `smb_area_streams_test` checks the stream
 edits (remove and reinsert every record of every area) against the same scenes;
-`tools\test-win.ps1` runs both with the other SMB tests.
+`python tools/test.py --suite native --bin build/win-amd64` runs both with the
+other SMB tests.
 
 | Kind       | Editor      | State                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | ---------- | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

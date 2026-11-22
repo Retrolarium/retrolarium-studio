@@ -1,13 +1,13 @@
-# Minimal CI: the release tooling's Python tests on Linux and Windows.
 name: CI
-
 on:
   push:
   pull_request:
-
 permissions:
   contents: read
-
+defaults:
+  run:
+    shell: python {0}
+    working-directory: retrolarium-studio
 jobs:
   python:
     name: Python tests (${{ matrix.os }}, Python ${{ matrix.python }})
@@ -19,29 +19,39 @@ jobs:
         python: ["3.11", "3.13"]
     steps:
       - uses: actions/checkout@v4
+        with:
+          path: retrolarium-studio
+      - uses: actions/checkout@v4
+        with:
+          repository: Retrolarium/retrolarium-core
+          path: retrolarium-core
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python }}
-      - name: Run the Python tests
-        run: python -m unittest discover -s tests -p "test_*.py" -v
-
-  # TODO(X-01b): build the studio and run its native tests. The build needs
-  # the static Qt 5.15 MinGW SDK image (qt5-win-amd64) that each developer
-  # makes locally from Longreach Qt (README, "Building from source"; it takes
-  # an hour or more and is not published to a registry), driven by
-  # tools/build-win.ps1. Once that image is available to CI, the job is:
-  #
-  # native:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #       with:
-  #         path: retrolarium-studio
-  #     - uses: actions/checkout@v4
-  #       with:
-  #         repository: Retrolarium/retrolarium-core
-  #         path: retrolarium-core
-  #     - name: Build in the SDK image
-  #       run: <cmake configure, build and install as in tools/build-win.ps1>
-  #     - name: Native tests
-  #       run: <ctest; a test without its game fixture exits 77 and counts as skipped>
+      - name: Unit tests
+        run: |
+          import subprocess, sys
+          subprocess.run([sys.executable, "tools/test.py", "--suite", "python"], check=True)
+  native:
+    name: Native Qt tests (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: retrolarium-studio
+      - uses: actions/checkout@v4
+        with:
+          repository: Retrolarium/retrolarium-core
+          path: retrolarium-core
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Install host Qt, build and run native tests
+        run: |
+          import subprocess, sys
+          subprocess.run([sys.executable, "tools/ci_native.py"], check=True)

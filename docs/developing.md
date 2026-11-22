@@ -73,8 +73,8 @@ changed helper or a native source checkout that changed since the build.
 ```powershell
 python ../retrolarium-kit/tools/check_game_repositories.py
 powershell -ExecutionPolicy Bypass -File tools/build-win.ps1 -QtKit path/to/longreach-qt
-powershell -ExecutionPolicy Bypass -File tools/test-win.ps1 -GameSources path/to/prepared-game-repositories
-python -m unittest discover -s tests -p test_release.py
+python tools/test.py --suite native --bin build/win-amd64 --game-sources path/to/prepared-game-repositories --checks --history
+python tools/test.py --suite python
 powershell -ExecutionPolicy Bypass -File tools/package-win.ps1 -Python path/to/python -Mame path/to/mame/consoles.exe
 python tools/release.py notes build/package
 ```
