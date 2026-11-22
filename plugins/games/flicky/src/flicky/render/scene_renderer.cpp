@@ -618,7 +618,7 @@ QVector<FlickyLevelSceneRenderer::TitleSprite> FlickyLevelSceneRenderer::titleSp
         sprite.index = index;
         sprite.mapping = mapping;
         sprite.position = at;
-        for (const auto& value : sequences_->mapping(mapping).value(QStringLiteral("pieces")).toArray()) {
+        for (const auto& value : sequences_->mapping(mapping).value(QLatin1String("pieces")).toArray()) {
             const auto piece = value.toObject();
             sprite.bounds |= QRect(at.x() - 128 + integer(piece, "x"), at.y() - 128 + integer(piece, "y"),
                                    integer(piece, "width") * tileSize, integer(piece, "height") * tileSize);

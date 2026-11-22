@@ -1140,7 +1140,7 @@ void MainWindow::openGameRepository(const QString& descriptor) {
         }
         const QJsonObject r = QJsonDocument::fromJson(result.standardOutput).object();
         QVector<RevisionChoice> choices;
-        for (const QJsonValue& v : r.value(QStringLiteral("revisions")).toArray()) {
+        for (const QJsonValue& v : r.value(QLatin1String("revisions")).toArray()) {
             const QJsonObject o = v.toObject();
             choices << RevisionChoice{
                 o.value(QStringLiteral("id")).toString(),

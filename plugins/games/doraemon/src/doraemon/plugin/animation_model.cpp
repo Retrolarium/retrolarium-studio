@@ -183,7 +183,7 @@ QVector<DoraemonAnimation> doraemonAnimations() {
         for (const QJsonValue& value : sdk::gameCatalog("world2_animations").toArray()) {
             const QJsonObject foe = value.toObject();
             QVector<int> frames;
-            for (const QJsonValue& frame : foe.value(QStringLiteral("frames")).toArray()) frames << frame.toInt();
+            for (const QJsonValue& frame : foe.value(QLatin1String("frames")).toArray()) frames << frame.toInt();
             list << make(two, "Enemies", foe.value(QStringLiteral("name")).toString(), frames);
         }
         list << make(two, "Frames", rlTr("doraemon", "World 2 · all frames"), run(0, 58), 15);
