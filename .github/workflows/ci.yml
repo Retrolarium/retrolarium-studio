@@ -39,7 +39,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        # Qt 5.15.2 uses stdext iterators removed in MSVC 14.51.
+        # Keep its native Windows build on the compatible VS 2022 toolset.
+        os: [ubuntu-latest, windows-2022]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -53,5 +55,7 @@ jobs:
           python-version: "3.13"
       - name: Install host Qt, build and run native tests
         run: |
-          import subprocess, sys
+          import os, subprocess, sys
+          if sys.platform == "win32":
+              os.environ["CMAKE_GENERATOR"] = "Visual Studio 17 2022"
           subprocess.run([sys.executable, "tools/ci_native.py"], check=True)
