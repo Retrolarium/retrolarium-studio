@@ -6,12 +6,18 @@
 #include <QPointer>
 
 #include <functional>
+#include <memory>
 
 class QProcess;
 
 namespace rl::runtime {
 
+class ProcessTree;
+
 // Runs one external program at a time, streaming its output line by line.
+// The program and everything it starts (the kit's assemblers, a game's
+// scripts) run as one ProcessTree: a cancel, a timeout or an abandon ends
+// all of them, and so does the program's own exit.
 class ProcessRunner final : public QObject {
     Q_OBJECT
 
@@ -29,8 +35,13 @@ public:
     // exiting). Build output still logs the cancel.
     void abandon();
 
-    // Ten minutes, like the kit's own longest steps.
-    static constexpr int kTimeoutMs = 10 * 60 * 1000;
+    // A backstop: the kit limits each of its steps itself, the longest to
+    // 15 minutes (SCRIPT_TIMEOUT and BUILD_TIMEOUT in retrolarium-kit), and
+    // the studio gives it 5 minutes more. Keep the two in sync
+    // (docs/architecture.md, "Timeouts").
+    static constexpr int kTimeoutMs = 20 * 60 * 1000;
+    // For tests: the timeout of the runs started from now on.
+    void setTimeoutMs(int milliseconds) { timeoutMs_ = milliseconds; }
 
 signals:
     void started(const QString& label, const QString& commandLine);
@@ -42,6 +53,8 @@ private:
     void complete(sdk::ProcessResult result);
 
     QProcess* process_ = nullptr;
+    std::unique_ptr<ProcessTree> tree_;
+    int timeoutMs_ = kTimeoutMs;
     sdk::ProcessSpec spec_;
     std::function<void(const sdk::ProcessResult&)> done_;
     QByteArray out_;

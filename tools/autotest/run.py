@@ -42,6 +42,9 @@ def find_studio(given: Path | None) -> Path:
 def environment(studio: Path, home: Path, mame: Path | None) -> dict[str, str]:
     env = dict(os.environ)
     env["RETROLARIUM_STUDIO_HOME"] = str(home)
+    # The scenario's settings answer the studio's questions (Open ROM's
+    # choice, consent to a repository's scripts) only in a test run.
+    env["RETROLARIUM_TEST_HOOKS"] = "1"
     # The kit's own settings (the remembered MAME) stay the run's too.
     env["RETROLARIUM_SETTINGS"] = str(home / "kit-settings.json")
     if not (studio / "kit/rltool.py").is_file():
@@ -59,7 +62,7 @@ def run_rom(studio: Path, rom: Path, out: Path, home: Path, args: argparse.Names
     scenario = {
         "rom": str(rom),
         "output": str(output),
-        "settings": {"openRom/choice": "source"},
+        "settings": {"openRom/choice": "source", "repositoryConsent/choice": "allow"},
         "documents_per_kind": args.documents_per_kind,
         "edits": True,
         "build": True,

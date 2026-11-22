@@ -2,8 +2,14 @@
 
 #include <QWidget>
 
+#include <string>
+
 #ifdef Q_OS_WIN
 #include <windows.h>
+
+#ifndef LOAD_LIBRARY_SEARCH_SYSTEM32
+#define LOAD_LIBRARY_SEARCH_SYSTEM32 0x00000800
+#endif
 #endif
 
 namespace rl::theme {
@@ -23,7 +29,17 @@ using SetWindowAttribute = HRESULT(WINAPI*)(HWND, DWORD, LPCVOID, DWORD);
 // targets, so the function is resolved at run time instead of linked.
 SetWindowAttribute dwmSetWindowAttribute() {
     static const SetWindowAttribute function = [] {
-        HMODULE module = LoadLibraryW(L"dwmapi.dll");
+        // From System32 only, never a dwmapi.dll beside setup.exe in a
+        // download folder. A Windows 7 without KB2533623 refuses the flag:
+        // then the full System32 path.
+        HMODULE module = LoadLibraryExW(L"dwmapi.dll", nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32);
+        if (!module) {
+            wchar_t system[MAX_PATH];
+            const UINT length = GetSystemDirectoryW(system, MAX_PATH);
+            if (length > 0 && length < MAX_PATH - 12) {
+                module = LoadLibraryW((std::wstring(system, length) + L"\\dwmapi.dll").c_str());
+            }
+        }
         return module ? reinterpret_cast<SetWindowAttribute>(
                             reinterpret_cast<void*>(GetProcAddress(module, "DwmSetWindowAttribute")))
                       : nullptr;

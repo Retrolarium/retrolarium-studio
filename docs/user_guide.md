@@ -70,6 +70,11 @@ the kit from the RetrolariumLab organisation on GitHub (no Git needed) into
 disassembly whose `.rlj` you opened before. A ROM the studio does not know (a
 hack, a translation, a bad dump) or a game it cannot edit yet is named as such.
 
+Before it first runs a downloaded disassembly's own Python scripts (to split its
+assets from your ROM and to build the game), the studio asks you, with a link to
+the exact commit on GitHub. It asks again only when the disassembly's files
+change. If you refuse, nothing from the disassembly runs.
+
 A disassembly already on disk opens the same way through its `.rlj`. Open the
 game's `.rlj` (for example `super_mario_bros.rlj` at the top of the disassembly)
 with File → Open project (Ctrl+O). The studio lists the versions the disassembly

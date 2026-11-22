@@ -8,7 +8,7 @@ param(
 # Builds the MAME the studio ships in Docker, with no MSYS2 on the host: the
 # image from tools\mame\Dockerfile cross-compiles the "consoles" subtarget
 # (NES/Famicom, Vs. System, SNES and Mega Drive drivers) of a MAME checkout at
-# the commit tools\mame\build.sh names, unchanged, and writes consoles.exe.
+# the commit tools\mame\COMMIT names, unchanged, and writes consoles.exe.
 #
 #   -Checkout  the MAME checkout (default mame_testing\mame); only read, the
 #              build happens in a clone kept in the Docker volume

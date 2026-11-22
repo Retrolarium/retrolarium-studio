@@ -6,6 +6,7 @@
 #include "smb/data/music.hpp"
 
 #include <QCoreApplication>
+#include <QFileInfo>
 #include <QFile>
 #include <QJsonArray>
 #include <QJsonDocument>
@@ -46,6 +47,10 @@ int main(int argc, char** argv) {
     if (argc != 2) {
         std::cerr << "usage: smb_music_test smb1_ju_music.json\n";
         return 2;
+    }
+    if (!QFileInfo::exists(QString::fromLocal8Bit(argv[1]))) {
+        std::cout << "skipped: no SMB1 JU music fixture at " << argv[1] << "\n";
+        return 77;  // CTest's SKIP_RETURN_CODE
     }
     try {
         QFile file(QString::fromLocal8Bit(argv[1]));

@@ -7,6 +7,7 @@
 #include <QFileInfo>
 
 #include <QMap>
+#include <QSet>
 
 #include <memory>
 #include <stdexcept>
@@ -349,7 +350,15 @@ private:
         return current;
     }
 
-    void ensureTable(QVariantMap&, const QStringList& path) { descend(path, path.size()); }
+    // A [table] header defines its table once (TOML); one made on the way
+    // to a deeper header ([a] after [a.b]) is still free to define.
+    void ensureTable(QVariantMap&, const QStringList& path) {
+        const Table* table = descend(path, path.size());
+        if (defined_.contains(table)) {
+            fail(rlTr("studio", "table '%1' defined twice").arg(path.join('.')));
+        }
+        defined_.insert(table);
+    }
 
     void appendTable(QVariantMap&, const QStringList& path) {
         Table* parent = descend(path, path.size() - 1);
@@ -359,6 +368,7 @@ private:
         }
         entry.isArray = true;
         entry.array.push_back(std::make_shared<Table>());
+        defined_.insert(entry.array.back().get());
     }
 
     void assign(QVariantMap&, const QStringList& path, const QVariant& value, int) {
@@ -389,6 +399,8 @@ private:
     }
 
     TablePtr root_ = std::make_shared<Table>();
+    // The tables a header has defined.
+    QSet<const Table*> defined_;
 
     static constexpr int kMaxArrayDepth = 64;
 

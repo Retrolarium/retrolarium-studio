@@ -6,6 +6,7 @@
 #include "theme/theme.hpp"
 #include "theme/typography.hpp"
 
+#include "frame/dll_search.hpp"
 #include "frame/studio_dialog.hpp"
 #include "sdk/i18n.hpp"
 #include "shell/settings_dialog.hpp"
@@ -76,6 +77,9 @@ QSize parseSize(const QString& text, const QSize& fallback) {
 }  // namespace
 
 int main(int argc, char* argv[]) {
+    // DLLs from System32 and the studio's folder only, never the folder a
+    // project was opened from.
+    rl::frame::restrictDllSearch(true);
     QApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
     QApplication::setAttribute(Qt::AA_UseHighDpiPixmaps);
     QApplication::setHighDpiScaleFactorRoundingPolicy(Qt::HighDpiScaleFactorRoundingPolicy::PassThrough);

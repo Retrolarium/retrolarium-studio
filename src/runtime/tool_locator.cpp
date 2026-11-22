@@ -1,5 +1,6 @@
 #include "runtime/tool_locator.hpp"
 
+#include "runtime/repository_consent.hpp"
 #include "sdk/i18n.hpp"
 
 #include <QCoreApplication>
@@ -47,7 +48,7 @@ QString python() {
         return bundled;
     }
     for (const char* name : {"python", "python3", "py"}) {
-        const QString found = QStandardPaths::findExecutable(QString::fromLatin1(name));
+        const QString found = ToolLocator::findOnPath(QString::fromLatin1(name));
         if (!found.isEmpty()) {
             return found;
         }
@@ -116,8 +117,9 @@ sdk::ProcessSpec ToolLocator::kitCommand(const QStringList& arguments, const QSt
     if (!QFileInfo(kit).isFile()) {
         kit = findInParents(QStringLiteral("retrolarium-kit/rltool.py"));
     }
+    QString rejected;
     if (kit.isEmpty()) {
-        kit = QStandardPaths::findExecutable(QStringLiteral("rltool"));
+        kit = findOnPath(QStringLiteral("rltool"), &rejected);
     }
     if (kit.isEmpty()) {
         if (error) {
@@ -125,6 +127,12 @@ sdk::ProcessSpec ToolLocator::kitCommand(const QStringList& arguments, const QSt
                           "Retrolarium Kit was not found next to the studio. Reinstall "
                           "Retrolarium Studio. (A studio built from source finds the kit "
                           "through RETROLARIUM_KIT.)");
+            if (!rejected.isEmpty()) {
+                *error += QLatin1Char(' ') + rlTr("studio",
+                                                  "Found %1, but only an .exe or rltool.py "
+                                                  "launcher is supported.")
+                                                 .arg(QDir::toNativeSeparators(rejected));
+            }
         }
         return spec;
     }
@@ -142,8 +150,15 @@ sdk::ProcessSpec ToolLocator::kitCommand(const QStringList& arguments, const QSt
         }
         spec.program = interpreter;
         spec.arguments << kit;
-    } else {
+    } else if (isDirectLauncher(kit)) {
         spec.program = kit;
+    } else {
+        // RETROLARIUM_KIT naming a .cmd or .bat: see findOnPath.
+        if (error) {
+            *error = rlTr("studio", "Found %1, but only an .exe or rltool.py launcher is supported.")
+                         .arg(QDir::toNativeSeparators(kit));
+        }
+        return spec;
     }
     spec.arguments += arguments;
     // The kit runs the core's codecs (Nemesis, Enigma) as rlcore: the one
@@ -152,6 +167,9 @@ sdk::ProcessSpec ToolLocator::kitCommand(const QStringList& arguments, const QSt
     if (!core.isEmpty() && qEnvironmentVariableIsEmpty("RETROLARIUM_CORE")) {
         spec.environment.insert(QStringLiteral("RETROLARIUM_CORE"), core);
     }
+    // The downloaded repositories whose scripts the user let run.
+    QSettings settings;
+    RepositoryConsent::apply(settings, &spec);
     return spec;
 }
 
@@ -176,6 +194,34 @@ QString ToolLocator::emulatorPath(const QString& id) {
         return bundled;
     }
     return findInParents(QStringLiteral("emulators/mame/mame/consoles.exe"));
+}
+
+QString ToolLocator::findOnPath(const QString& name, QString* rejected) {
+#ifdef Q_OS_WIN
+    // findExecutable appends PATHEXT (.cmd and .bat among them) to a bare
+    // name, and takes a name ending in .exe as it is.
+    const QString exe = QStandardPaths::findExecutable(name + QStringLiteral(".exe"));
+    if (!exe.isEmpty()) {
+        return exe;
+    }
+    const QString other = QStandardPaths::findExecutable(name);
+    if (!other.isEmpty() && rejected) {
+        *rejected = other;
+    }
+    return {};
+#else
+    Q_UNUSED(rejected);
+    return QStandardPaths::findExecutable(name);
+#endif
+}
+
+bool ToolLocator::isDirectLauncher(const QString& program) {
+#ifdef Q_OS_WIN
+    return QFileInfo(program).suffix().compare(QLatin1String("exe"), Qt::CaseInsensitive) == 0;
+#else
+    Q_UNUSED(program);
+    return true;
+#endif
 }
 
 QString ToolLocator::toolPath(const QString& name) {

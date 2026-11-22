@@ -6,6 +6,7 @@
 //   retrolarium-setup --verify-package <setup.exe>
 //   Uninstall.exe --uninstall
 
+#include "frame/dll_search.hpp"
 #include "installer_package.hpp"
 #include "sdk/languages.hpp"
 #include "setup_window.hpp"
@@ -23,6 +24,9 @@
 #include <shellapi.h>
 
 int main(int argc, char* argv[]) {
+    // Setup is static and runs from wherever it was downloaded to: DLLs come
+    // from System32 only.
+    rl::frame::restrictDllSearch(false);
     // From Windows' wide command line: argv is in the ANSI code page, which
     // cannot hold every folder name.
     QStringList arguments;
@@ -61,6 +65,9 @@ int main(int argc, char* argv[]) {
     QApplication::setHighDpiScaleFactorRoundingPolicy(Qt::HighDpiScaleFactorRoundingPolicy::PassThrough);
     Q_INIT_RESOURCE(studio);
     QApplication app(argc, argv);
+    // Qt's plugins are linked in; none is loaded from the download folder
+    // (the static platform plugin is already chosen by now).
+    QCoreApplication::setLibraryPaths(QStringList());
     QApplication::setApplicationName(QStringLiteral("Retrolarium Studio Setup"));
     // Our titles already name the product: no " - <app>" suffix.
     QApplication::setApplicationDisplayName(QString());

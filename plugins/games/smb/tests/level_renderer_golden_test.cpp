@@ -1,6 +1,7 @@
 #include "smb/render/level_renderer.hpp"
 
 #include <QCoreApplication>
+#include <QFileInfo>
 #include <QCryptographicHash>
 #include <QFile>
 #include <QJsonArray>
@@ -97,6 +98,10 @@ int main(int argc, char* argv[]) {
     try {
         if (argc < 2) {
             throw std::runtime_error("usage: smb_level_renderer_golden_test <smb1_ju_level_scenes.json>");
+        }
+        if (!QFileInfo::exists(QString::fromLocal8Bit(argv[1]))) {
+            std::cout << "skipped: no SMB1 JU level corpus at " << argv[1] << "\n";
+            return 77;  // CTest's SKIP_RETURN_CODE
         }
         QFile source(QString::fromLocal8Bit(argv[1]));
         if (!source.open(QIODevice::ReadOnly)) {

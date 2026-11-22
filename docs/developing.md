@@ -28,7 +28,8 @@ README's "Building from source" shows how to make its image).
 `tools\build-mame-docker.ps1` builds the MAME the package ships the same way:
 MinGW-w64 GCC cross-compiles the "consoles" subtarget (NES/Famicom, Vs. System,
 SNES and Mega Drive drivers) of an unchanged MAME checkout in Docker, from
-`tools\mame\Dockerfile`, and `tools\mame\build.sh` pins the commit.
+`tools\mame\Dockerfile`, at the commit `tools\mame\COMMIT` pins (the one place
+it is named; `tools\build-mame.sh` and packaging read it too).
 `tools\build-mame.sh` builds the same subtarget natively in MSYS2.
 
 ## The package and the installer
@@ -36,11 +37,13 @@ SNES and Mega Drive drivers) of an unchanged MAME checkout in Docker, from
 `tools\package-win.ps1` assembles `build\package\RetrolariumStudio`:
 
 - the studio and the kit;
-- a private Python taken from the CPython that `python` runs, trimmed and
-  isolated;
+- a private Python taken from the CPython installation `-Python` names, trimmed
+  and isolated;
 - MAME with its license texts;
 - every license text `THIRD-PARTY.md` lists;
-- `BUILD-INFO.txt`, which names the commits the package was made from.
+- `BUILD-INFO.txt`, which names the commits the package was made from;
+- `native-build.json`, the native build record, to which packaging adds the
+  private Python's version and hashes and MAME's commit and hash.
 
 It also writes the folder's zip and `RetrolariumStudio-<version>-setup.exe`: the
 installer (`installer/`, in the studio's own frame and style) with that folder
@@ -72,7 +75,7 @@ python ../retrolarium-kit/tools/check_game_repositories.py
 powershell -ExecutionPolicy Bypass -File tools/build-win.ps1 -QtKit path/to/longreach-qt
 powershell -ExecutionPolicy Bypass -File tools/test-win.ps1 -GameSources path/to/prepared-game-repositories
 python -m unittest discover -s tests -p test_release.py
-powershell -ExecutionPolicy Bypass -File tools/package-win.ps1 -Mame path/to/mame/consoles.exe
+powershell -ExecutionPolicy Bypass -File tools/package-win.ps1 -Python path/to/python -Mame path/to/mame/consoles.exe
 python tools/release.py notes build/package
 ```
 
@@ -81,9 +84,13 @@ fresh Alien Soldier JP/EU projects through the kit's catalog and verify their
 unchanged builds. Exercise editing and reopening before publishing support for
 the new game.
 
-`release.py notes` validates the ZIP's native files against its build record and
-writes `SHA256SUMS.txt` and `release-notes.md` from the actual ZIP, setup and
-`BUILD-INFO.txt`.
+`release.py notes` validates the ZIP's native files, Python and MAME against the
+build record, unpacks the setup's payload and checks that it holds exactly the
+ZIP's files, and writes `SHA256SUMS.txt` and `release-notes.md` from the actual
+ZIP, setup and `BUILD-INFO.txt`. The release description starts with the
+version's section of `CHANGELOG.md`: add it before packaging, or `notes` stops.
+`package-win.ps1` writes the ZIP with `release.py zip` (sorted entries, `/` in
+names, one fixed time), so the same package gives the same ZIP.
 
 Upload only these three files as GitHub release assets:
 
@@ -107,6 +114,7 @@ versions rather than the latest source tree.
 
 The default Windows SDK image is `qt5-win-amd64:latest`. `build-win.ps1 -Image`
 selects another compatible SDK, and `-Out` selects an independent build folder.
+The build record names the image the build ran in by its ID.
 
 Scripted interface checks (python tools/autotest/run.py) keep their window off
 the desktop and capture their own screenshots after loading each document. Use

@@ -1,6 +1,7 @@
 #include "runtime/emulator_runner.hpp"
 
 #include "runtime/mame_config.hpp"
+#include "runtime/process_tree.hpp"
 
 #include <QApplication>
 #include <QCryptographicHash>
@@ -10,6 +11,7 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QGuiApplication>
+#include <QHash>
 #include <QKeyEvent>
 #include <QMouseEvent>
 #include <QPainter>
@@ -1792,9 +1794,11 @@ bool EmulatorRunner::writeControl(const sdk::ProcessSpec& spec, const QStringLis
         values << cell.name;
         cells << QStringLiteral("{[==[%1]==], %2, %3}").arg(cell.name).arg(cell.address).arg(cell.length);
     }
-    values << actions << status << movieFile << movie_.header;
+    values << actions << status << movieFile << movie_.header << picture;
     for (const QString& value : values) {
-        if (value.contains(QLatin1String("]==]"))) {
+        // Inside [==[...]==]: a value must not close the string itself, nor
+        // end in "]==", which the closing "]==]" would complete early.
+        if (value.contains(QLatin1String("]==]")) || value.endsWith(QLatin1String("]=="))) {
             *error = tr("a path or setting cannot be quoted for Lua");
             return false;
         }
@@ -1804,26 +1808,44 @@ bool EmulatorRunner::writeControl(const sdk::ProcessSpec& spec, const QStringLis
         *error = file.errorString();
         return false;
     }
-    QString text = QString::fromUtf8(kControlScript);
-    text.replace(QLatin1String("@CART@"), values.at(0))
-        .replace(QLatin1String("@COMMAND@"), values.at(1))
-        .replace(QLatin1String("@KEYS@"), values.at(3))
-        .replace(QLatin1String("@PICTURE@"), picture)
-        .replace(QLatin1String("@PALETTE@"), pens.join(QLatin1Char(',')))
-        .replace(QLatin1String("@READYWHEN@"), values.at(4))
-        .replace(QLatin1String("@READY@"), values.at(2))
-        .replace(QLatin1String("@SCRIPTS@"), scripts.join(QStringLiteral(", ")))
-        .replace(QLatin1String("@ACTIONS@"), actions)
-        .replace(QLatin1String("@STATUS@"), status)
-        .replace(QLatin1String("@MOVIEMODE@"), movieMode)
-        .replace(QLatin1String("@MOVIEFILE@"), movieFile)
-        .replace(QLatin1String("@MOVIESTOPAT@"), QString::number(movie_.stopAt))
-        .replace(QLatin1String("@MOVIECLOSE@"), movie_.closeAtEnd ? QStringLiteral("1") : QString())
-        .replace(QLatin1String("@ENVIRONMENT@"), environment)
-        .replace(QLatin1String("@OVERLAY@"), overlayText(showInput_, showWatch_))
-        .replace(QLatin1String("@WATCH@"), cells.join(QStringLiteral(", ")))
-        // Last: the header holds the user's own words.
-        .replace(QLatin1String("@MOVIEHEADER@"), movie_.header);
+    const QHash<QString, QString> fields{
+        {QStringLiteral("CART"), values.at(0)},
+        {QStringLiteral("COMMAND"), values.at(1)},
+        {QStringLiteral("KEYS"), values.at(3)},
+        {QStringLiteral("PICTURE"), picture},
+        {QStringLiteral("PALETTE"), pens.join(QLatin1Char(','))},
+        {QStringLiteral("READYWHEN"), values.at(4)},
+        {QStringLiteral("READY"), values.at(2)},
+        {QStringLiteral("SCRIPTS"), scripts.join(QStringLiteral(", "))},
+        {QStringLiteral("ACTIONS"), actions},
+        {QStringLiteral("STATUS"), status},
+        {QStringLiteral("MOVIEMODE"), movieMode},
+        {QStringLiteral("MOVIEFILE"), movieFile},
+        {QStringLiteral("MOVIESTOPAT"), QString::number(movie_.stopAt)},
+        {QStringLiteral("MOVIECLOSE"), movie_.closeAtEnd ? QStringLiteral("1") : QString()},
+        {QStringLiteral("ENVIRONMENT"), environment},
+        {QStringLiteral("OVERLAY"), overlayText(showInput_, showWatch_)},
+        {QStringLiteral("WATCH"), cells.join(QStringLiteral(", "))},
+        {QStringLiteral("MOVIEHEADER"), movie_.header},
+    };
+    // One pass over the template: a value (a path, the movie's header) that
+    // holds a placeholder's name is written as it is, not filled in again.
+    static const QRegularExpression placeholder(QStringLiteral("@([A-Z]+)@"));
+    const QString script = QString::fromUtf8(kControlScript);
+    QString text;
+    int copied = 0;
+    QRegularExpressionMatchIterator matches = placeholder.globalMatch(script);
+    while (matches.hasNext()) {
+        const QRegularExpressionMatch match = matches.next();
+        const auto field = fields.constFind(match.captured(1));
+        if (field == fields.constEnd()) {
+            continue;
+        }
+        text += script.mid(copied, match.capturedStart() - copied);
+        text += field.value();
+        copied = match.capturedEnd();
+    }
+    text += script.mid(copied);
     file.write(text.toUtf8());
     return true;
 }
@@ -1999,16 +2021,27 @@ void EmulatorRunner::launchProcess(const sdk::ProcessSpec& spec, const QStringLi
     }
     process_->setProcessEnvironment(environment);
     process_->setProcessChannelMode(QProcess::MergedChannels);
+    logRemainder_.clear();
     connect(process_, &QProcess::readyRead, this, [this] {
-        const QStringList lines = QString::fromLocal8Bit(process_->readAll()).split(QLatin1Char('\n'));
-        for (const QString& line : lines) {
-            if (!line.trimmed().isEmpty()) {
-                append(line.trimmed());
+        // Whole lines only: a line read in two parts is kept until its end.
+        logRemainder_ += process_->readAll();
+        int newline = -1;
+        while ((newline = logRemainder_.indexOf('\n')) >= 0) {
+            const QString line = QString::fromLocal8Bit(logRemainder_.left(newline)).trimmed();
+            logRemainder_.remove(0, newline + 1);
+            if (!line.isEmpty()) {
+                append(line);
             }
         }
     });
     connect(process_, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), this,
             [this](int code, QProcess::ExitStatus status) {
+                // MAME's last line, when it ended without a newline.
+                const QString last = QString::fromLocal8Bit(logRemainder_ + process_->readAll()).trimmed();
+                logRemainder_.clear();
+                for (const QString& line : last.split(QLatin1Char('\n'))) {
+                    if (!line.trimmed().isEmpty()) append(line.trimmed());
+                }
                 sdk::ProcessResult result;
                 result.started = true;
                 result.exitCode = code;
@@ -2022,6 +2055,7 @@ void EmulatorRunner::launchProcess(const sdk::ProcessSpec& spec, const QStringLi
                 movieMode_ = QStringLiteral("none");
                 process_->deleteLater();
                 process_ = nullptr;
+                tree_.reset();
                 paused_ = false;
                 startupTimer_->stop();
                 phase_ = Phase::Idle;
@@ -2048,6 +2082,7 @@ void EmulatorRunner::launchProcess(const sdk::ProcessSpec& spec, const QStringLi
         append(result.error);
         process_->deleteLater();
         process_ = nullptr;
+        tree_.reset();
         startupTimer_->stop();
         statusTimer_->stop();
         controls_ = false;
@@ -2064,7 +2099,12 @@ void EmulatorRunner::launchProcess(const sdk::ProcessSpec& spec, const QStringLi
     append(tr("Starting %1").arg(title_));
     phase_ = Phase::Starting;
     startupChecks_ = 0;
+    tree_ = std::make_unique<ProcessTree>();
+    tree_->prepare(process_);
     process_->start();
+    if (process_ && tree_) {
+        tree_->started(process_);
+    }
     startupTimer_->start();
     if (controls_) {
         statusTimer_->start();
@@ -2114,16 +2154,13 @@ bool EmulatorRunner::reload(const sdk::ProcessSpec& requested, const QString& ca
     }
     // The control script picks the command up within a few frames, mounts
     // the new copy and the machine hard-resets into it.
+    // Replaced in one step: the script never reads a command half written
+    // or finds none between a remove and a rename.
     const QString command = stage_->filePath(QStringLiteral("command.txt"));
-    QFile file(command + QStringLiteral(".tmp"));
-    if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
-        append(tr("Hot reload failed: %1; restarting.").arg(file.errorString()));
+    if (!replaceFile(command, luaPath(cart_).toUtf8() + '\n')) {
+        append(tr("Hot reload failed: %1 could not be written; restarting.").arg(command));
         return false;
     }
-    file.write(luaPath(cart_).toUtf8() + '\n');
-    file.close();
-    QFile::remove(command);
-    QFile::rename(file.fileName(), command);
     // The run the reload replaces ends here, as if stopped: whoever started
     // it (a recording waiting for its end) hears about it.
     auto replaced = std::move(finished_);
@@ -2198,10 +2235,13 @@ bool EmulatorRunner::cancelProbe() {
     if (!probe_) {
         return false;
     }
-    // Its answer, when it comes, belongs to no launch.
+    // Its answer, when it comes, belongs to no launch; the process goes
+    // with it (its handler would return before deleting it).
     QProcess* probe = probe_;
     probe_ = nullptr;
+    probe->disconnect(this);
     probe->kill();
+    probe->deleteLater();
     phase_ = Phase::Idle;
     controls_ = false;
     stage_.reset();
@@ -2236,8 +2276,9 @@ void EmulatorRunner::stop() {
         process_->terminate();
     }
     QPointer<QProcess> process = process_;
-    QTimer::singleShot(kStopGraceMs, this, [process] {
+    QTimer::singleShot(kStopGraceMs, this, [this, process] {
         if (process && process->state() != QProcess::NotRunning) {
+            if (process.data() == process_ && tree_) tree_->terminate();
             process->kill();
         }
     });
@@ -2257,9 +2298,12 @@ void EmulatorRunner::stopNow() {
     } else {
         process_->terminate();
     }
-    if (!process_->waitForFinished(1500)) {
+    // At most a second to end itself, then the job ends MAME and anything
+    // it started: two seconds in all.
+    if (!process_->waitForFinished(1000)) {
+        if (tree_) tree_->terminate();
         process_->kill();
-        process_->waitForFinished(1500);
+        process_->waitForFinished(1000);
     }
     if (process_) {
         // It outlived both waits: let it go, so the next launch neither
@@ -2268,6 +2312,7 @@ void EmulatorRunner::stopNow() {
         stale->disconnect(this);
         stale->deleteLater();
         process_ = nullptr;
+        tree_.reset();
         paused_ = false;
         startupTimer_->stop();
         statusTimer_->stop();

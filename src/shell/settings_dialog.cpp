@@ -1,5 +1,6 @@
 #include "shell/settings_dialog.hpp"
 
+#include "runtime/process_runner.hpp"
 #include "runtime/tool_locator.hpp"
 #include "sdk/languages.hpp"
 #include "theme/typography.hpp"
@@ -13,8 +14,7 @@
 #include <QGridLayout>
 #include <QHBoxLayout>
 #include <QLocale>
-#include <QProcess>
-#include <QProcessEnvironment>
+#include <QPointer>
 #include <QPushButton>
 #include <QSettings>
 #include <QVBoxLayout>
@@ -58,7 +58,8 @@ QString SettingsDialog::language() {
     return isInterfaceLanguage(chosen) ? chosen : systemInterfaceLanguage();
 }
 
-SettingsDialog::SettingsDialog(QWidget* parent) : StudioDialog(tr("Settings"), parent) {
+SettingsDialog::SettingsDialog(QWidget* parent, runtime::ProcessRunner* processes)
+    : StudioDialog(tr("Settings"), parent), processes_(processes) {
     setWindowFlag(Qt::MSWindowsFixedSizeDialogHint, true);
     layout()->setSizeConstraint(QLayout::SetFixedSize);
 
@@ -118,9 +119,9 @@ SettingsDialog::SettingsDialog(QWidget* parent) : StudioDialog(tr("Settings"), p
     bios_ = new ui::Label(QString(), ui::Label::Role::Mono, body());
     bios_->setFixedWidth(340);
     grid->addWidget(bios_, 1, 1);
-    auto* chooseBios = button(tr("Choose…"), body());
-    connect(chooseBios, &QPushButton::clicked, this, &SettingsDialog::chooseBios);
-    grid->addWidget(chooseBios, 1, 2);
+    chooseBios_ = button(tr("Choose…"), body());
+    connect(chooseBios_, &QPushButton::clicked, this, &SettingsDialog::chooseBios);
+    grid->addWidget(chooseBios_, 1, 2);
     content->addLayout(grid);
     auto* biosNote = hint(tr("Famicom Disk System games (Super Mario Bros. 2, the Disk System Super "
                              "Mario Bros.) play on OpenDiskSysROM, a free BIOS that comes with the "
@@ -172,32 +173,42 @@ void SettingsDialog::chooseBios() {
                                                       tr("BIOS dumps (*.rom *.bin);;All files (*)"));
     if (path.isEmpty()) return;
     QString error;
-    const sdk::ProcessSpec spec =
+    sdk::ProcessSpec spec =
         runtime::ToolLocator::kitCommand({QStringLiteral("studio"), QStringLiteral("fds-bios"),
                                           QStringLiteral("--mame"), mame, QStringLiteral("--install"), path},
                                          QFileInfo(mame).absolutePath(), &error);
-    if (!spec.program.isEmpty()) {
-        QProcess process;
-        process.setWorkingDirectory(spec.workingDirectory);
-        QProcessEnvironment environment = QProcessEnvironment::systemEnvironment();
-        environment.insert(QStringLiteral("PYTHONIOENCODING"), QStringLiteral("utf-8"));
-        process.setProcessEnvironment(environment);
-        process.start(spec.program, spec.arguments);
-        if (!process.waitForStarted(10000)) {
-            error = process.errorString();
-        } else if (!process.waitForFinished(30000)) {
-            process.kill();
-            error = tr("The kit did not answer.");
-        } else if (process.exitStatus() != QProcess::NormalExit || process.exitCode() != 0) {
-            error = QString::fromUtf8(process.readAllStandardError()).trimmed();
-            if (error.startsWith(QLatin1String("error: "))) error = error.mid(7);
-            if (error.isEmpty()) error = tr("exit code %1").arg(process.exitCode());
+    if (spec.program.isEmpty() || !processes_) {
+        frame::MessageDialog::inform(this, tr("Settings"), tr("The BIOS was not installed"),
+                                     error.isEmpty() ? tr("The kit is not available here.") : error);
+        return;
+    }
+    if (processes_->isBusy()) {
+        frame::MessageDialog::inform(this, tr("Settings"), tr("The BIOS was not installed"),
+                                     tr("Wait for the running task to finish, then choose the BIOS again."));
+        return;
+    }
+    // Through the studio's runner, not a wait here: the dialog stays live and
+    // the kit gets the studio's environment (RETROLARIUM_CORE).
+    spec.label = tr("Install the Disk System BIOS");
+    chooseBios_->setEnabled(false);
+    bios_->setText(tr("Installing…"));
+    const QPointer<SettingsDialog> self(this);
+    processes_->run(spec, [self](const sdk::ProcessResult& result) {
+        if (!self) return;
+        self->chooseBios_->setEnabled(true);
+        if (!result.succeeded() && !result.cancelled) {
+            // A run stopped by the runner (a timeout) carries its reason.
+            QString problem = result.started ? result.error : QString();
+            if (problem.isEmpty()) {
+                problem = QString::fromUtf8(result.standardError).trimmed();
+                if (problem.startsWith(QLatin1String("error: "))) problem = problem.mid(7);
+            }
+            if (problem.isEmpty()) problem = result.error;
+            if (problem.isEmpty()) problem = tr("exit code %1").arg(result.exitCode);
+            frame::MessageDialog::inform(self, tr("Settings"), tr("The BIOS was not installed"), problem);
         }
-    }
-    if (!error.isEmpty()) {
-        frame::MessageDialog::inform(this, tr("Settings"), tr("The BIOS was not installed"), error);
-    }
-    refresh();
+        if (self) self->refresh();
+    });
 }
 
 }  // namespace rl::shell

@@ -90,6 +90,45 @@ the game's reader catalogs and independent references stay in that repository.
    as an `sdk::ProcessSpec`; the shell runs it, streams stderr to Build output
    and hands stdout back (the kit answers in JSON).
 
+## Kit processes
+
+`runtime::ProcessRunner` runs one kit (or tool) process at a time. On Windows
+the program starts inside a job object (`runtime::ProcessTree`), together with
+everything it starts: the assemblers, a game repository's scripts, an emulator
+the kit drives. Cancelling, a timeout, closing the project and the program's own
+exit end the whole tree, and the job also ends it when the studio itself goes
+down. MAME, which the studio embeds, runs in a tree of its own. Builds for
+development on other systems end only the program itself.
+
+### Consent to a repository's scripts
+
+Open ROM downloads a game's repository, whose own Python scripts (asset split,
+checks, builds) the kit runs. It runs them only with the user's consent, given
+once per repository and content hash. Without it, the kit command exits with
+code 3 and prints one JSON object on stdout:
+
+```json
+{"schema": "retrolarium.consent-needed", "schema_version": 1,
+ "repository": "<name>", "commit": "<40 hex digits>",
+ "content_sha256": "<hex>",
+ "url": "https://github.com/<org>/<repository>/tree/<commit>"}
+```
+
+`MainWindow::runProcess` recognises it for every kit command
+(`runtime::RepositoryConsent`), asks the user with a link to the commit, keeps
+the answer in the studio's settings (`consent/<repository>/<content_sha256>`)
+and runs the same command again; a refusal reaches the caller as a cancel.
+`ToolLocator::kitCommand` passes every hash consented to, comma-separated, in
+`RETROLARIUM_ALLOW_REPOSITORY_SCRIPTS` on each kit run.
+
+### Timeouts
+
+The kit limits each of its steps itself: a repository's split, check or build
+script (`SCRIPT_TIMEOUT`) and an assembler build (`BUILD_TIMEOUT`) get at most
+15 minutes. The studio's `ProcessRunner::kTimeoutMs` is a backstop 5 minutes
+longer, 20 minutes, so the kit reports its own timeout first. Change both sides
+together.
+
 ## Libraries and pattern sheets
 
 A model offers things to place or paint with as an `sdk::Library`. Where it

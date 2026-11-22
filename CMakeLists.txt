@@ -41,6 +41,8 @@ endfunction()
 #   app             entry point, names the plugins     everything
 
 add_library(studio_ui STATIC
+    src/frame/dll_search.cpp
+    src/frame/dll_search.hpp
     src/frame/native_frame.cpp
     src/frame/native_frame.hpp
     src/frame/studio_dialog.cpp
@@ -131,6 +133,12 @@ add_library(studio_runtime STATIC
     src/runtime/mame_config.hpp
     src/runtime/process_runner.cpp
     src/runtime/process_runner.hpp
+    src/runtime/process_tree.cpp
+    src/runtime/process_tree.hpp
+    src/runtime/project_lock.cpp
+    src/runtime/project_lock.hpp
+    src/runtime/repository_consent.cpp
+    src/runtime/repository_consent.hpp
     src/runtime/tool_locator.cpp
     src/runtime/tool_locator.hpp
 )
@@ -228,6 +236,8 @@ function(studio_add_test target)
         string(APPEND arguments ", \"${fixture}\"")
     endforeach()
     add_test(NAME ${target} COMMAND ${target} ${fixtures})
+    # A test whose game fixture is not there exits 77: skipped, not passed.
+    set_tests_properties(${target} PROPERTIES SKIP_RETURN_CODE 77)
     install(TARGETS ${target} RUNTIME DESTINATION .)
     if(arguments)
         string(SUBSTRING "${arguments}" 2 -1 arguments)
@@ -243,6 +253,41 @@ add_executable(tas_editor_test tests/tas_editor_test.cpp)
 target_link_libraries(tas_editor_test PRIVATE studio_shell)
 target_include_directories(tas_editor_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 studio_add_test(tas_editor_test)
+
+# The kit's process runner: one run at a time, done called once, cancel,
+# abandon, the timeout, and (Windows) the children ended with the program.
+add_executable(process_runner_test tests/process_runner_test.cpp)
+target_link_libraries(process_runner_test PRIVATE studio_runtime)
+studio_add_test(process_runner_test tests/data/process_child.py)
+
+# The kit's consent requests for a downloaded repository's scripts, and the
+# consents kept in the settings and passed to the kit.
+add_executable(repository_consent_test tests/repository_consent_test.cpp)
+target_link_libraries(repository_consent_test PRIVATE studio_runtime)
+studio_add_test(repository_consent_test)
+
+# The setup program's payload: reading, checking and unpacking it, and the
+# damaged or hostile packages it refuses (QtCore only, so on every system).
+add_executable(installer_package_test tests/installer_package_test.cpp installer/src/installer_package.cpp)
+target_include_directories(installer_package_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/installer/src)
+target_link_libraries(installer_package_test PRIVATE Qt5::Core)
+studio_enable_warnings(installer_package_test)
+studio_add_test(installer_package_test)
+
+# The project file reader against 100 deterministic mutations of a project.
+add_executable(project_file_fuzz_test tests/project_file_fuzz_test.cpp)
+target_link_libraries(project_file_fuzz_test PRIVATE studio_sdk)
+studio_add_test(project_file_fuzz_test)
+
+# One studio per project: the project lock.
+add_executable(project_lock_test tests/project_lock_test.cpp)
+target_link_libraries(project_lock_test PRIVATE studio_runtime)
+studio_add_test(project_lock_test)
+
+# Where the studio finds the kit, and the launchers it refuses.
+add_executable(tool_locator_test tests/tool_locator_test.cpp)
+target_link_libraries(tool_locator_test PRIVATE studio_runtime)
+studio_add_test(tool_locator_test)
 
 add_executable(retrolarium-studio WIN32
     src/app/main.cpp
@@ -308,6 +353,19 @@ if(WIN32)
     target_include_directories(retrolarium-setup PRIVATE installer/src)
     target_compile_definitions(retrolarium-setup PRIVATE UNICODE _UNICODE _WIN32_WINNT=0x0601)
     target_link_libraries(retrolarium-setup PRIVATE studio_ui advapi32 ole32 shell32 uuid)
+    # The DLLs setup imports load before main() restricts the search: the
+    # image's DependentLoadFlags (LOAD_LIBRARY_SEARCH_SYSTEM32) keep them to
+    # System32. GNU ld has the option from binutils 2.36.
+    if(MINGW)
+        include(CheckLinkerFlag)
+        check_linker_flag(CXX "-Wl,--dependent-load-flag=0x800" STUDIO_LINKER_DEPENDENT_LOAD_FLAG)
+        if(STUDIO_LINKER_DEPENDENT_LOAD_FLAG)
+            target_link_options(retrolarium-setup PRIVATE "-Wl,--dependent-load-flag=0x800")
+        else()
+            message(WARNING "The linker has no --dependent-load-flag (binutils 2.36 or newer): "
+                            "setup's imported DLLs use the default search order.")
+        endif()
+    endif()
     studio_enable_warnings(retrolarium-setup)
     install(TARGETS retrolarium-setup RUNTIME DESTINATION .)
 endif()

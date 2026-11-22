@@ -29,6 +29,8 @@ namespace rl::runtime {
 class AudioPlayer;
 class EmulatorRunner;
 class ProcessRunner;
+class ProjectLock;
+struct ConsentRequest;
 }  // namespace rl::runtime
 
 namespace rl::ui {
@@ -103,6 +105,14 @@ private:
     bool confirmDiscard(bool remembered = true);
     // Asks about the TAS editor's edits not saved; false: cancelled.
     bool confirmMovieEdits();
+    // Asks whether a downloaded repository's scripts may run; true: allowed.
+    bool askRepositoryConsent(const runtime::ConsentRequest& request);
+    // Locks the project at `path` for this studio into `lock` (left null
+    // when the folder takes no lock file); false, said so, when another
+    // studio has it open.
+    bool lockProject(const QString& path, std::unique_ptr<runtime::ProjectLock>* lock);
+    // Whether the project at `path` is held by the lock of the project open here.
+    bool holdsProjectLock(const QString& path) const;
     // The session and undo position the user last chose to discard: asking
     // again before closing it would only repeat the question.
     const sdk::Session* discardedSession_ = nullptr;
@@ -138,8 +148,9 @@ private:
     void openRomFile(const QString& rom);
     // A known game's ROM: its repository, downloaded and set up. Any other
     // ROM (or a known one the user opens as it is): a ROM project.
-    void setUpGameSource(const QString& rom);
-    void openRomAsProject(const QString& rom);
+    // `digest`: the ROM's SHA-256, read once by openRomFile.
+    void setUpGameSource(const QString& rom, const QString& digest);
+    void openRomAsProject(const QString& rom, const QString& digest);
     void rememberRepository(const QString& descriptor);
     // project: the version's project being opened by its own file, which
     // opens as it is when the kit cannot get it ready.
@@ -186,6 +197,8 @@ private:
     std::unique_ptr<editors::EditorView> parkedEditor_;
     QString parkedDocument_;
     runtime::ProcessRunner* processes_ = nullptr;
+    // The open project's lock: one studio per project.
+    std::unique_ptr<runtime::ProjectLock> projectLock_;
     runtime::EmulatorRunner* emulator_ = nullptr;
     runtime::AudioPlayer* audio_ = nullptr;
     QTimer* dirtyTimer_ = nullptr;

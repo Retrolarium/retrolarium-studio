@@ -88,7 +88,11 @@ if ($LASTEXITCODE -ne 0) {
     throw "Retrolarium Studio build failed with exit code $LASTEXITCODE"
 }
 
-& python (Join-Path $PSScriptRoot "release.py") record-build $outputRoot $sourceRecord
+# The SDK image the build ran in, by its ID (a locally built image has no
+# registry digest), goes into the build record.
+$imageId = "$(& docker image inspect --format '{{.Id}}' $Image)".Trim()
+if ($LASTEXITCODE -ne 0 -or -not $imageId) { throw "Could not read the ID of image $Image" }
+& python (Join-Path $PSScriptRoot "release.py") record-build $outputRoot $sourceRecord --qt-image $imageId
 if ($LASTEXITCODE -ne 0) { throw "Could not verify native build provenance" }
 
 Write-Host "Built: $(Join-Path $outputRoot 'retrolarium-studio.exe')"

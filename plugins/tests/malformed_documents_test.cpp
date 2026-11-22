@@ -5,6 +5,7 @@
 
 #include "castle_excellent/data/levels.hpp"
 #include "castle_excellent/plugin/screen_model.hpp"
+#include "sdk/project_file.hpp"
 #include "smb/render/level_renderer.hpp"
 #include "solomon/data/documents.hpp"
 
@@ -100,6 +101,24 @@ void solomonRoomsHoldUp() {
     expect(rooms.block(0, QPoint(7, 0), true), "a block set past a short row is kept");
 }
 
+// Project files: a [table] header given twice is an error, not a merge; a
+// table made on the way to a deeper header, and the tables of each array
+// element, are still free to define.
+void projectHeadersHoldUp() {
+    QString error;
+    const auto parses = [&error](const char* text) {
+        error.clear();
+        return rl::sdk::ProjectFile::parse(QString::fromUtf8(text), QStringLiteral("test.rlj"), &error).isValid();
+    };
+    expect(!parses("[project]\nid = \"a\"\n[project]\nname = \"b\"\n"), "a table defined twice is refused");
+    expect(error.contains(QLatin1String("project")), "the table defined twice is named");
+    expect(parses("[a.b]\nx = 1\n[a]\ny = 2\n"), "a table made by a deeper header may be defined");
+    expect(!parses("[a]\ny = 2\n[a.b]\nx = 1\n[a]\nz = 3\n"), "a table defined before a deeper one is not again");
+    expect(parses("[[rooms]]\n[rooms.size]\nw = 1\n[[rooms]]\n[rooms.size]\nw = 2\n"),
+           "each element of an array of tables defines its own tables");
+    expect(!parses("[[rooms]]\n[rooms]\nw = 1\n"), "an array element is not defined again as a table");
+}
+
 // SMB: a modifier object before the area's first column, or past it, has
 // no column to modify; the area still renders.
 void smbAreasHoldUp(const QString& corpus) {
@@ -129,6 +148,7 @@ int main(int argc, char** argv) {
         castleRoomsHoldUp(dir);
         castleScreensHoldUp();
         solomonRoomsHoldUp();
+        projectHeadersHoldUp();
         smbAreasHoldUp(argc > 1 ? QString::fromLocal8Bit(argv[1]) : QString());
     } catch (const std::exception& error) {
         std::cerr << "FAIL: " << error.what() << '\n';

@@ -1,18 +1,66 @@
 from __future__ import annotations
 
+import hashlib
 import importlib.util
 import json
 from pathlib import Path
+import struct
 import tempfile
 import unittest
 from unittest import mock
 import zipfile
+import zlib
 
 SPEC = importlib.util.spec_from_file_location(
     "studio_release", Path(__file__).resolve().parents[1] / "tools/release.py"
 )
 release = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(release)
+
+CHANGELOG = """# Changelog
+
+## 0.3.0
+
+Not this one.
+
+## 0.2.0
+
+The release's own words.
+
+### Details
+
+Kept with it.
+
+## 0.1.0
+
+Older.
+"""
+
+
+def make_setup(path: Path, package: Path, version: str) -> None:
+    """A setup program as InstallerPackage::create writes it: a stub, every
+    file qCompress-ed, the JSON manifest and the footer."""
+    data = bytearray(b"MZ setup stub")
+    stub_size = len(data)
+    files = []
+    for item in sorted(p for p in package.rglob("*") if p.is_file()):
+        plain = item.read_bytes()
+        packed = len(plain).to_bytes(4, "big") + zlib.compress(plain, 9)
+        files.append(
+            {
+                "path": item.relative_to(package).as_posix(),
+                "offset": len(data),
+                "size": len(plain),
+                "packedSize": len(packed),
+                "sha256": hashlib.sha256(plain).hexdigest(),
+            }
+        )
+        data += packed
+    manifest = json.dumps({"format": 1, "version": version, "stubSize": stub_size, "files": files}).encode()
+    offset = len(data)
+    data += manifest
+    data += release.PAYLOAD_MAGIC + struct.pack("<QQ", offset, len(manifest))
+    path.write_bytes(bytes(data))
 
 
 class NativeProvenanceTests(unittest.TestCase):
@@ -57,25 +105,58 @@ class NativeProvenanceTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "during the native build"):
             release.record_build(self.root, self.source)
 
-    def test_release_hashes_describe_the_written_artifacts(self) -> None:
+    def make_package(self) -> Path:
+        package = self.root / "out/RetrolariumStudio"
+        (package / "tools").mkdir(parents=True)
+        (package / "mame/roms/fds").mkdir(parents=True)
+        (package / "BUILD-INFO.txt").write_text("Retrolarium Studio 0.2.0\nKit: pinned\n")
+        (package / "native-build.json").write_bytes((self.root / "native-build.json").read_bytes())
+        for name in release.NATIVE_FILES:
+            if name != "retrolarium-setup.exe":
+                (package / name).write_bytes((self.root / name).read_bytes())
         (self.root / "CMakeLists.txt").write_text("project(RetrolariumStudio VERSION 0.2.0)")
-        (self.root / "RetrolariumStudio-0.2.0-setup.exe").write_bytes(b"setup payload")
-        archive = self.root / "RetrolariumStudio-0.2.0-win64.zip"
-        with zipfile.ZipFile(archive, "w") as bundle:
-            bundle.writestr("RetrolariumStudio/BUILD-INFO.txt", "Retrolarium Studio 0.2.0\nKit: pinned\n")
-            bundle.write(self.root / "native-build.json", "RetrolariumStudio/native-build.json")
-            for name in release.NATIVE_FILES:
-                if name != "retrolarium-setup.exe":
-                    bundle.write(self.root / name, "RetrolariumStudio/" + name)
+        (self.root / "CHANGELOG.md").write_text(CHANGELOG)
+        return package
+
+    def release(self, package: Path) -> Path:
+        out = package.parent
+        release.write_zip(package, out / "RetrolariumStudio-0.2.0-win64.zip")
+        make_setup(out / "RetrolariumStudio-0.2.0-setup.exe", package, "0.2.0")
         with mock.patch.object(release, "STUDIO", self.root):
-            release.release_notes(self.root)
-        checksums = (self.root / "SHA256SUMS.txt").read_text()
-        self.assertIn(release.digest(archive), checksums)
-        self.assertIn(release.digest(self.root / "RetrolariumStudio-0.2.0-setup.exe"), checksums)
-        self.assertIn(checksums.splitlines()[0].split()[0], (self.root / "release-notes.md").read_text())
+            release.release_notes(out)
+        return out
+
+    def test_release_hashes_describe_the_written_artifacts(self) -> None:
+        out = self.release(self.make_package())
+        checksums = (out / "SHA256SUMS.txt").read_text()
+        self.assertIn(release.digest(out / "RetrolariumStudio-0.2.0-win64.zip"), checksums)
+        self.assertIn(release.digest(out / "RetrolariumStudio-0.2.0-setup.exe"), checksums)
+        self.assertIn(checksums.splitlines()[0].split()[0], (out / "release-notes.md").read_text())
+
+    def test_release_notes_come_from_the_changelog(self) -> None:
+        notes = (self.release(self.make_package()) / "release-notes.md").read_text()
+        self.assertIn("The release's own words.", notes)
+        self.assertIn("Kept with it.", notes)
+        self.assertNotIn("Not this one.", notes)
+        self.assertNotIn("Older.", notes)
+
+    def test_release_needs_a_changelog_section(self) -> None:
+        package = self.make_package()
+        (self.root / "CHANGELOG.md").write_text("# Changelog\n\n## 0.1.0\n\nOlder.\n")
+        with self.assertRaisesRegex(ValueError, "no section for 0.2.0"):
+            self.release(package)
+
+    def test_changelog_sections(self) -> None:
+        self.assertEqual(release.changelog_section(CHANGELOG, "0.1.0"), "Older.")
+        self.assertEqual(release.changelog_section("## [0.2.0] - 2026-11-01\n\nText.\n", "0.2.0"), "Text.")
+        with self.assertRaisesRegex(ValueError, "empty section"):
+            release.changelog_section("## 0.2.0\n\n## 0.1.0\n\nOlder.\n", "0.2.0")
+        with self.assertRaisesRegex(ValueError, "no section"):
+            release.changelog_section(CHANGELOG, "0.2")
 
     def test_release_rejects_a_zip_with_different_native_files(self) -> None:
         (self.root / "CMakeLists.txt").write_text("project(RetrolariumStudio VERSION 0.2.0)")
+        (self.root / "CHANGELOG.md").write_text(CHANGELOG)
         archive = self.root / "RetrolariumStudio-0.2.0-win64.zip"
         with zipfile.ZipFile(archive, "w") as bundle:
             bundle.writestr("RetrolariumStudio/BUILD-INFO.txt", "Retrolarium Studio 0.2.0")
@@ -84,6 +165,120 @@ class NativeProvenanceTests(unittest.TestCase):
         with mock.patch.object(release, "STUDIO", self.root):
             with self.assertRaisesRegex(ValueError, "different native"):
                 release.release_notes(self.root)
+
+    def test_release_rejects_a_zip_with_backslashes(self) -> None:
+        package = self.make_package()
+        out = package.parent
+        archive = out / "RetrolariumStudio-0.2.0-win64.zip"
+        with zipfile.ZipFile(archive, "w") as bundle:
+            for item in sorted(p for p in package.rglob("*") if p.is_file()):
+                # ZipInfo normalizes Windows separators in its constructor.
+                # Assign the raw filename afterwards to make a genuinely bad ZIP.
+                info = zipfile.ZipInfo()
+                info.filename = "RetrolariumStudio\\" + item.relative_to(package).as_posix().replace("/", "\\")
+                bundle.writestr(info, item.read_bytes())
+        make_setup(out / "RetrolariumStudio-0.2.0-setup.exe", package, "0.2.0")
+        with mock.patch.object(release, "STUDIO", self.root):
+            with self.assertRaisesRegex(ValueError, "backslashes"):
+                release.release_notes(out)
+
+    def test_release_rejects_a_setup_with_other_files(self) -> None:
+        package = self.make_package()
+        out = package.parent
+        release.write_zip(package, out / "RetrolariumStudio-0.2.0-win64.zip")
+        (package / "tools/rlcore.exe").write_bytes(b"another rlcore")
+        make_setup(out / "RetrolariumStudio-0.2.0-setup.exe", package, "0.2.0")
+        with mock.patch.object(release, "STUDIO", self.root):
+            with self.assertRaisesRegex(ValueError, "different files, first tools/rlcore.exe"):
+                release.release_notes(out)
+
+    def test_release_rejects_a_setup_of_another_version(self) -> None:
+        package = self.make_package()
+        out = package.parent
+        release.write_zip(package, out / "RetrolariumStudio-0.2.0-win64.zip")
+        make_setup(out / "RetrolariumStudio-0.2.0-setup.exe", package, "0.1.9")
+        with mock.patch.object(release, "STUDIO", self.root):
+            with self.assertRaisesRegex(ValueError, "version 0.1.9"):
+                release.release_notes(out)
+
+    def test_setup_payload_is_checked_file_by_file(self) -> None:
+        package = self.make_package()
+        setup = self.root / "setup.exe"
+        make_setup(setup, package, "0.2.0")
+        version, files = release.read_setup_payload(setup)
+        self.assertEqual(version, "0.2.0")
+        self.assertEqual(files["tools/rlcore.exe"], hashlib.sha256(b"tools/rlcore.exe").hexdigest())
+        data = bytearray(setup.read_bytes())
+        # The first packed file starts after the stub; flipping a byte of its
+        # zlib stream breaks it or its checksum.
+        data[len(b"MZ setup stub") + 10] ^= 0xFF
+        setup.write_bytes(bytes(data))
+        with self.assertRaises((ValueError, zlib.error)):
+            release.read_setup_payload(setup)
+
+    def test_setup_without_payload_is_refused(self) -> None:
+        setup = self.root / "setup.exe"
+        setup.write_bytes(b"MZ just a program" * 4)
+        with self.assertRaisesRegex(ValueError, "no Retrolarium Studio payload"):
+            release.read_setup_payload(setup)
+
+    def test_zip_is_reproducible_with_forward_slashes(self) -> None:
+        package = self.make_package()
+        first = self.root / "first.zip"
+        second = self.root / "second.zip"
+        release.write_zip(package, first)
+        (package / "BUILD-INFO.txt").touch()
+        release.write_zip(package, second)
+        self.assertEqual(first.read_bytes(), second.read_bytes())
+        with zipfile.ZipFile(first) as bundle:
+            names = bundle.namelist()
+            self.assertEqual(names, sorted(names))
+            self.assertIn("RetrolariumStudio/tools/rlcore.exe", names)
+            self.assertIn("RetrolariumStudio/mame/roms/fds/", names)
+            self.assertFalse(any("\\" in name for name in names))
+            self.assertTrue(all(info.date_time == release.ZIP_TIME for info in bundle.infolist()))
+
+    def test_package_record_names_python_and_mame(self) -> None:
+        package = self.make_package()
+        (package / "python").mkdir()
+        (package / "python/python.exe").write_bytes(b"python")
+        (package / "python/python313.dll").write_bytes(b"runtime")
+        (package / "python/python3.dll").write_bytes(b"stable abi")
+        (package / "mame/consoles.exe").write_bytes(b"mame")
+        (self.root / "tools/mame").mkdir(parents=True)
+        (self.root / "tools/mame/COMMIT").write_text("c" * 40 + "\n")
+        with mock.patch.object(release, "STUDIO", self.root):
+            release.record_package(package, "3.13.1")
+            with self.assertRaisesRegex(ValueError, "python312.dll"):
+                release.record_package(package, "3.12.8")
+        record = json.loads((package / "native-build.json").read_text())
+        self.assertEqual(record["package"]["python"]["version"], "3.13.1")
+        self.assertEqual(
+            record["package"]["python"]["files"]["python/python313.dll"], hashlib.sha256(b"runtime").hexdigest()
+        )
+        self.assertEqual(record["package"]["mame"]["commit"], "c" * 40)
+        self.assertEqual(record["package"]["mame"]["files"]["mame/consoles.exe"], hashlib.sha256(b"mame").hexdigest())
+        # release notes check the recorded files against the ZIP.
+        out = self.release(package)
+        (package / "mame/consoles.exe").write_bytes(b"another mame")
+        release.write_zip(package, out / "RetrolariumStudio-0.2.0-win64.zip")
+        make_setup(out / "RetrolariumStudio-0.2.0-setup.exe", package, "0.2.0")
+        with mock.patch.object(release, "STUDIO", self.root):
+            with self.assertRaisesRegex(ValueError, "mame/consoles.exe"):
+                release.release_notes(out)
+
+    def test_mame_commit_has_one_source(self) -> None:
+        commit = (Path(release.__file__).resolve().parents[1] / "tools/mame/COMMIT").read_text().strip()
+        self.assertEqual(release.mame_commit(), commit)
+        for script in ("tools/mame/build.sh", "tools/build-mame.sh", "tools/package-win.ps1"):
+            text = (Path(release.__file__).resolve().parents[1] / script).read_text(encoding="utf-8")
+            self.assertNotIn(commit, text, script)
+
+    def test_build_record_names_the_qt_image(self) -> None:
+        release.record_build(self.root, self.source, "sha256:" + "e" * 64)
+        record = json.loads((self.root / "native-build.json").read_text())
+        self.assertEqual(record["qt_image"], "sha256:" + "e" * 64)
+        release.verify_build(self.root)
 
 
 if __name__ == "__main__":

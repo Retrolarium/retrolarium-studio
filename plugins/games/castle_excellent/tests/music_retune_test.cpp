@@ -55,7 +55,7 @@ int main(int argc, char** argv) {
     const QString path = QString::fromLocal8Bit(argv[1]);
     if (!QFileInfo::exists(path)) {
         std::cout << "skipped: no prepared Castle project at " << path.toStdString() << "\n";
-        return 0;
+        return 77;  // CTest's SKIP_RETURN_CODE
     }
     try {
         QString error;

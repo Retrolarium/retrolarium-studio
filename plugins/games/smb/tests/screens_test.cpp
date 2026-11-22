@@ -8,6 +8,7 @@
 #include "smb/data/screens.hpp"
 
 #include <QCoreApplication>
+#include <QFileInfo>
 
 #include <iostream>
 #include <stdexcept>
@@ -39,6 +40,10 @@ int main(int argc, char** argv) {
     if (argc != 2) {
         std::cerr << "usage: smb_screens_test smb1_ju_screens.json\n";
         return 2;
+    }
+    if (!QFileInfo::exists(QString::fromLocal8Bit(argv[1]))) {
+        std::cout << "skipped: no SMB1 JU screens fixture at " << argv[1] << "\n";
+        return 77;  // CTest's SKIP_RETURN_CODE
     }
     try {
         SmbResourceDocument document = SmbResourceDocument::load(QString::fromLocal8Bit(argv[1]));

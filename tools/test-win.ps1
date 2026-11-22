@@ -53,7 +53,11 @@ foreach ($test in $tests) {
         continue
     }
     & (Join-Path $Bin $test.program) @arguments
-    if ($LASTEXITCODE -ne 0) {
+    # 77: the test found what it needs missing and skipped (CTest's
+    # SKIP_RETURN_CODE); it said why.
+    if ($LASTEXITCODE -eq 77) {
+        Write-Host "skipped"
+    } elseif ($LASTEXITCODE -ne 0) {
         $failed += $test.name
     }
 }

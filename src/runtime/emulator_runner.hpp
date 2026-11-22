@@ -3,6 +3,7 @@
 #include "runtime/mame_config.hpp"
 #include "sdk/types.hpp"
 
+#include <QByteArray>
 #include <QImage>
 #include <QObject>
 #include <QPointer>
@@ -17,6 +18,8 @@ class QTemporaryDir;
 class QTimer;
 
 namespace rl::runtime {
+
+class ProcessTree;
 
 // The native child window MAME draws into (-attach_window). MAME cannot read
 // the keyboard of a window it does not own, so while the surface has focus it
@@ -202,6 +205,10 @@ private:
                 const QString& title, std::function<void(const sdk::ProcessResult&)>& finished);
 
     QProcess* process_ = nullptr;
+    // MAME's output after its last newline, until the line is whole.
+    QByteArray logRemainder_;
+    // MAME and anything it starts, ended together.
+    std::unique_ptr<ProcessTree> tree_;
     // MAME describing the system (-listxml) before a launch goes on.
     QProcess* probe_ = nullptr;
     Phase phase_ = Phase::Idle;

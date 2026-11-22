@@ -473,5 +473,5 @@ add_executable(malformed_documents_test
     tests/malformed_documents_test.cpp
 )
 target_link_libraries(malformed_documents_test PRIVATE smb_data_checked castle_excellent_plugin_checked
-    solomon_plugin_checked)
+    solomon_plugin_checked studio_sdk)
 studio_add_test(malformed_documents_test games:smb1_src/tests/retrolarium/smb1_ju_level_scenes.json)

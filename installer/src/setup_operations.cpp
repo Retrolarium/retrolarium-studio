@@ -190,33 +190,57 @@ void removeShortcuts() {
     QFile::remove(desktopShortcutPath());
 }
 
-bool registerInstallation(const QString& directory, const QString& version, quint64 bytes, QString* error) {
-    QSettings uninstall(writable(kUninstallKey), QSettings::NativeFormat);
-    uninstall.setValue(QStringLiteral("DisplayName"), kProduct);
-    uninstall.setValue(QStringLiteral("DisplayVersion"), version);
-    uninstall.setValue(QStringLiteral("Publisher"), QStringLiteral("Retrolarium"));
-    uninstall.setValue(QStringLiteral("InstallLocation"), nativePath(directory));
-    uninstall.setValue(QStringLiteral("DisplayIcon"), nativePath(QDir(directory).filePath(kStudioName)));
-    uninstall.setValue(
-        QStringLiteral("UninstallString"),
-        QStringLiteral("\"%1\" --uninstall").arg(nativePath(QDir(directory).filePath(kUninstallerName))));
-    uninstall.setValue(QStringLiteral("EstimatedSize"), static_cast<quint32>((bytes + 1023) / 1024));
-    uninstall.setValue(QStringLiteral("NoModify"), 1);
-    uninstall.sync();
+bool keyExists(const QString& key) {
+    HKEY handle = nullptr;
+    if (RegOpenKeyExW(HKEY_CURRENT_USER, key.toStdWString().c_str(), 0, KEY_READ, &handle) != ERROR_SUCCESS) {
+        return false;
+    }
+    RegCloseKey(handle);
+    return true;
+}
 
-    // A game's .rlj opens in the studio.
-    const QString studio = nativePath(QDir(directory).filePath(kStudioName));
-    QSettings extension(writable(kExtensionKey), QSettings::NativeFormat);
-    extension.setValue(QStringLiteral("Default"), kProjectType);
-    extension.sync();
-    QSettings type(writable(kProjectTypeKey), QSettings::NativeFormat);
-    type.setValue(QStringLiteral("Default"), rlTr("setup", "Retrolarium project"));
-    type.setValue(QStringLiteral("DefaultIcon/Default"), studio + QStringLiteral(",0"));
-    type.setValue(QStringLiteral("shell/open/command/Default"),
-                  QStringLiteral("\"%1\" \"%2\"").arg(studio, QStringLiteral("%1")));
-    type.sync();
+bool registerInstallation(const QString& directory, const QString& version, quint64 bytes, QString* error) {
+    // The keys this call creates go again when it fails halfway, newest
+    // first; keys an earlier installation made stay, as they name it.
+    QStringList created;
+    for (const QString& key : {kUninstallKey, kExtensionKey, kProjectTypeKey}) {
+        if (!keyExists(key)) created << key;
+    }
+    bool written = true;
+    {
+        QSettings uninstall(writable(kUninstallKey), QSettings::NativeFormat);
+        uninstall.setValue(QStringLiteral("DisplayName"), kProduct);
+        uninstall.setValue(QStringLiteral("DisplayVersion"), version);
+        uninstall.setValue(QStringLiteral("Publisher"), QStringLiteral("Retrolarium"));
+        uninstall.setValue(QStringLiteral("InstallLocation"), nativePath(directory));
+        uninstall.setValue(QStringLiteral("DisplayIcon"), nativePath(QDir(directory).filePath(kStudioName)));
+        uninstall.setValue(
+            QStringLiteral("UninstallString"),
+            QStringLiteral("\"%1\" --uninstall").arg(nativePath(QDir(directory).filePath(kUninstallerName))));
+        uninstall.setValue(QStringLiteral("EstimatedSize"), static_cast<quint32>((bytes + 1023) / 1024));
+        uninstall.setValue(QStringLiteral("NoModify"), 1);
+        uninstall.sync();
+        written = uninstall.status() == QSettings::NoError;
+    }
+    if (written) {
+        // A game's .rlj opens in the studio.
+        const QString studio = nativePath(QDir(directory).filePath(kStudioName));
+        QSettings extension(writable(kExtensionKey), QSettings::NativeFormat);
+        extension.setValue(QStringLiteral("Default"), kProjectType);
+        extension.sync();
+        QSettings type(writable(kProjectTypeKey), QSettings::NativeFormat);
+        type.setValue(QStringLiteral("Default"), rlTr("setup", "Retrolarium project"));
+        type.setValue(QStringLiteral("DefaultIcon/Default"), studio + QStringLiteral(",0"));
+        type.setValue(QStringLiteral("shell/open/command/Default"),
+                      QStringLiteral("\"%1\" \"%2\"").arg(studio, QStringLiteral("%1")));
+        type.sync();
+        written = extension.status() == QSettings::NoError && type.status() == QSettings::NoError;
+    }
+    if (!written) {
+        for (auto key = created.crbegin(); key != created.crend(); ++key) deleteKey(*key);
+    }
     SHChangeNotify(SHCNE_ASSOCCHANGED, SHCNF_IDLIST, nullptr, nullptr);
-    if (uninstall.status() != QSettings::NoError || type.status() != QSettings::NoError) {
+    if (!written) {
         if (error) *error = rlTr("setup", "Could not register Retrolarium Studio with Windows.");
         return false;
     }

@@ -16,11 +16,15 @@ param(
 # with retrolarium-setup.exe built, the setup program.
 #
 #   -Bin     the built studio (default build\win-amd64)
-#   -Python  a CPython installation to take the private Python from (default:
-#            the one `python` on PATH runs); the kit needs no packages
+#   -Python  the CPython installation to take the private Python from (its
+#            folder with python.exe; required, so the package never takes
+#            whichever Python PATH names); the kit needs no packages
 #   -Mame    consoles.exe (default mame_testing\mame\consoles.exe), built by
 #            tools\build-mame-docker.ps1 (or tools\build-mame.sh in MSYS2)
-#            from the MAME commit named there
+#            from the MAME commit in tools\mame\COMMIT
+#
+# native-build.json in the package also records the private Python's version
+# and hashes and MAME's commit and hash (release.py record-package).
 
 $ErrorActionPreference = "Stop"
 
@@ -30,7 +34,7 @@ if (-not $Bin) { $Bin = Join-Path $projectRoot "build\win-amd64" }
 if (-not $Out) { $Out = Join-Path $projectRoot "build\package" }
 if (-not $Mame) { $Mame = Join-Path $repositoryRoot "mame_testing\mame\consoles.exe" }
 if (-not $Python) {
-    $Python = (& python -c "import sys; print(sys.base_prefix)").Trim()
+    throw "Pass -Python: the CPython installation (the folder with python.exe) the package's private Python comes from."
 }
 
 foreach ($required in @((Join-Path $Bin "retrolarium-studio.exe"), (Join-Path $Python "python.exe"), $Mame)) {
@@ -59,7 +63,7 @@ $nativeOptions = @()
 if ($AllowDirty) { $nativeOptions += "--allow-dirty" }
 & python (Join-Path $PSScriptRoot "release.py") verify-build $Bin @nativeOptions
 if ($LASTEXITCODE -ne 0) { throw "Rebuild Studio and Core before packaging these sources" }
-$mameCommit = "c662f9ca1900ed7462dc4fe8d338a98e8e4ce3c3"
+$mameCommit = (Get-Content -LiteralPath (Join-Path $PSScriptRoot "mame\COMMIT") -Raw).Trim()
 
 $package = Join-Path $Out "RetrolariumStudio"
 if (Test-Path -LiteralPath $package) {
@@ -217,6 +221,8 @@ Get-ChildItem -LiteralPath $kit -Recurse -Directory -Filter "__pycache__" | Remo
 if ($LASTEXITCODE -ne 0) {
     throw "Compiling the private Python's and the kit's bytecode failed"
 }
+$pythonVersion = (& (Join-Path $runtime "python.exe") -c "import platform; print(platform.python_version())").Trim()
+if ($LASTEXITCODE -ne 0 -or -not $pythonVersion) { throw "The private Python does not report its version" }
 
 # project(VERSION ...), the one place the version is set; not cmake_minimum_required's.
 $cmake = Get-Content -LiteralPath (Join-Path $projectRoot "CMakeLists.txt") -Raw
@@ -244,14 +250,21 @@ $info = @(
     "Studio: $($commits['Studio'])",
     "Kit: $($commits['Kit'])",
     "Core: $($commits['Core'])",
-    "MAME: mamedev/mame $mameCommit (tools/build-mame.sh)",
+    "Python: $pythonVersion",
+    "MAME: mamedev/mame $mameCommit (tools/mame/COMMIT)",
     "OpenDiskSysROM: $($bios.commit) ($($bios.source))"
 )
 if ($dirty) { $info += "Built with uncommitted changes (not for publishing)" }
 Set-Content -LiteralPath (Join-Path $package "BUILD-INFO.txt") -Encoding ascii -Value $info
+# The private Python's and MAME's hashes go into the package's build record.
+& python (Join-Path $PSScriptRoot "release.py") record-package $package --python-version $pythonVersion
+if ($LASTEXITCODE -ne 0) { throw "Could not record the package's Python and MAME" }
+# A reproducible zip with '/' in its names (Compress-Archive in Windows
+# PowerShell 5.1 writes '\').
 $zip = Join-Path $Out "RetrolariumStudio-$version-win64.zip"
 if (Test-Path -LiteralPath $zip) { Remove-Item -LiteralPath $zip -Force }
-Compress-Archive -LiteralPath $package -DestinationPath $zip -CompressionLevel Optimal
+& python (Join-Path $PSScriptRoot "release.py") zip $package $zip
+if ($LASTEXITCODE -ne 0) { throw "Writing $zip failed" }
 $size = [math]::Round((Get-Item -LiteralPath $zip).Length / 1MB, 1)
 Write-Host "Packaged: $package"
 Write-Host "Archive: $zip ($size MB)"

@@ -86,7 +86,8 @@ The build installs into `build\win-amd64` what the CMake files install: the app,
 the helper programs plugins need next to it and the plugins' test programs. A
 plugin registers a test with `studio_add_test(target fixture...)` (fixtures
 relative to this directory); CTest runs them on a native build and
-`test-win.ps1` runs them from the generated `tests.json`.
+`test-win.ps1` runs them from the generated `tests.json`. A test whose game
+fixture is missing exits with code 77 and counts as skipped, not passed.
 
 Open a project directly, optionally at a document:
 

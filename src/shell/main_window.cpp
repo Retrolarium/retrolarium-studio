@@ -8,6 +8,8 @@
 #include "runtime/audio_player.hpp"
 #include "runtime/emulator_runner.hpp"
 #include "runtime/process_runner.hpp"
+#include "runtime/project_lock.hpp"
+#include "runtime/repository_consent.hpp"
 #include "runtime/tool_locator.hpp"
 #include "sdk/editor_model.hpp"
 #include "sdk/game_names.hpp"
@@ -81,6 +83,9 @@ namespace rl::shell {
 namespace {
 
 constexpr int kMaxRecent = 8;
+// Open ROM and drag and drop read no larger file (the largest cartridge the
+// studio's systems know is 8 MiB).
+constexpr qint64 kMaxRomSize = 64LL * 1024 * 1024;
 // Run > Speed, in percent (0: no limit).
 constexpr int kSpeeds[] = {10, 25, 50, 75, 100, 150, 200, 300, 400, 0};
 const char* kRecentKey = "recentProjects";
@@ -114,6 +119,10 @@ QString recentLabel(const QString& path) {
     if (name.isEmpty() && project.isValid()) name = project.string(QStringLiteral("game.name"));
     return name.isEmpty() ? QFileInfo(path).fileName() : name;
 }
+
+// Answers the scripted test runs (tools/autotest) keep in the settings count
+// only when the run says so: a user's settings never answer for them.
+bool testHooks() { return qEnvironmentVariable("RETROLARIUM_TEST_HOOKS") == QLatin1String("1"); }
 
 // Where downloaded games and ROM projects go: the user's Documents, or the
 // test run's own home (RETROLARIUM_STUDIO_HOME, tools/autotest).
@@ -369,7 +378,7 @@ void MainWindow::buildMenus() {
     QAction* settings = file->addAction(tr("Settings…"));
     settings->setShortcut(QKeySequence(QStringLiteral("Ctrl+,")));
     connect(settings, &QAction::triggered, this, [this] {
-        SettingsDialog dialog(this);
+        SettingsDialog dialog(this, processes_);
         bool restart = false;
         connect(&dialog, &SettingsDialog::restartRequested, this, [&restart] { restart = true; });
         dialog.exec();
@@ -993,6 +1002,10 @@ bool MainWindow::openProjectFile(const QString& path, bool prepared) {
     // project up to date with it, the game's sources included.
     const QString repository = prepared ? QString() : repositoryDescriptor(project.path());
     if (!repository.isEmpty()) {
+        // Another studio with this version open: the kit leaves it alone.
+        std::unique_ptr<runtime::ProjectLock> probe;
+        if (!holdsProjectLock(project.path()) && !lockProject(project.path(), &probe)) return false;
+        probe.reset();
         prepareRevision(repository, QFileInfo(project.path()).absoluteDir().dirName(), QString(), project.path());
         return true;
     }
@@ -1005,6 +1018,10 @@ bool MainWindow::openProjectFile(const QString& path, bool prepared) {
                        QFileInfo(path).fileName()));
         return false;
     }
+    // One studio per project: the project open here keeps its lock.
+    const bool sameLock = holdsProjectLock(project.path());
+    std::unique_ptr<runtime::ProjectLock> lock;
+    if (!sameLock && !lockProject(project.path(), &lock)) return false;
     // The game's own names (config/names.json in its repository) are in place
     // before the session builds its catalogs; the open project keeps its own
     // if this one does not open.
@@ -1035,7 +1052,9 @@ bool MainWindow::openProjectFile(const QString& path, bool prepared) {
         return false;
     }
 
+    if (sameLock) lock = std::move(projectLock_);
     closeProject();
+    projectLock_ = std::move(lock);
     session_ = std::move(session);
     session_->attachHost(this);
     projectPath_ = project.path();
@@ -1205,13 +1224,17 @@ QString fileSha256(const QString& path) {
     return QString::fromLatin1(hash.result().toHex());
 }
 
-// "nes" for an iNES image, "megadrive" for a cartridge with SEGA at $100,
-// empty for anything else (then only its bytes and header are shown).
+// "nes" for an iNES image, "fds" for a Famicom Disk System image (with the
+// fwNES header or a bare disk side), "megadrive" for a cartridge with SEGA at
+// $100, empty for anything else (then only its bytes and header are shown).
 QString romPlatform(const QString& path) {
     QFile file(path);
     if (!file.open(QIODevice::ReadOnly)) return {};
     const QByteArray head = file.read(0x200);
     if (head.startsWith(QByteArray("NES\x1a", 4))) return QStringLiteral("nes");
+    if (head.startsWith(QByteArray("FDS\x1a", 4)) || head.mid(1, 14) == QByteArray("*NINTENDO-HVC*")) {
+        return QStringLiteral("fds");
+    }
     if (head.size() >= 0x110 && head.mid(0x100, 16).contains("SEGA")) return QStringLiteral("megadrive");
     return {};
 }
@@ -1263,7 +1286,17 @@ bool askSetUpSource(QWidget* parent, const QString& name) {
 }  // namespace
 
 void MainWindow::openRomFile(const QString& rom) {
+    // Checked before anything reads it: a dropped file may be anything.
+    if (QFileInfo(rom).size() > kMaxRomSize) {
+        report(message(sdk::Severity::Error, QStringLiteral("project"),
+                       tr("%1 is larger than %2 MiB: not a ROM the studio opens.")
+                           .arg(QFileInfo(rom).fileName())
+                           .arg(kMaxRomSize / (1024 * 1024)),
+                       QFileInfo(rom).fileName()));
+        return;
+    }
     // A known game whose source was set up from this very ROM opens there.
+    // The ROM's hash is read once and handed on.
     const QString digest = fileSha256(rom);
     const QString source = QSettings().value(QStringLiteral("sourceProjects/") + digest).toString();
     if (!source.isEmpty() && QFileInfo::exists(source)) {
@@ -1273,11 +1306,11 @@ void MainWindow::openRomFile(const QString& rom) {
     // A ROM opened as it is before, or saved from such a project, opens that
     // project again, unless the studio knows the game (then it asks again).
     const QString remembered = QSettings().value(QStringLiteral("romProjects/") + digest).toString();
-    const auto openAsRom = [this, rom, remembered] {
+    const auto openAsRom = [this, rom, digest, remembered] {
         if (!remembered.isEmpty() && QFileInfo::exists(remembered)) {
             openProjectFile(remembered);
         } else {
-            openRomAsProject(rom);
+            openRomAsProject(rom, digest);
         }
     };
     QString error;
@@ -1288,29 +1321,30 @@ void MainWindow::openRomFile(const QString& rom) {
         return;
     }
     spec.label = tr("Identify %1").arg(QFileInfo(rom).fileName());
-    runProcess(spec, [this, rom, openAsRom](const sdk::ProcessResult& result) {
+    runProcess(spec, [this, rom, digest, openAsRom](const sdk::ProcessResult& result) {
         const QJsonArray matches =
             QJsonDocument::fromJson(result.standardOutput).object().value(QStringLiteral("matches")).toArray();
         if (!result.succeeded() || matches.isEmpty()) {
             openAsRom();
             return;
         }
-        // openRom/choice "source" answers for scripted runs (tools/autotest).
-        const bool setUp = QSettings().value(QStringLiteral("openRom/choice")).toString() == QLatin1String("source") ||
+        // openRom/choice "source" answers for scripted runs (tools/autotest,
+        // with RETROLARIUM_TEST_HOOKS=1).
+        const bool setUp = (testHooks() && QSettings().value(QStringLiteral("openRom/choice")).toString() ==
+                                               QLatin1String("source")) ||
                            askSetUpSource(this, matches.first().toObject().value(QStringLiteral("name")).toString());
         if (setUp) {
-            setUpGameSource(rom);
+            setUpGameSource(rom, digest);
         } else {
-            openRomAsProject(rom);
+            openRomAsProject(rom, digest);
         }
     });
 }
 
-void MainWindow::openRomAsProject(const QString& rom) {
+void MainWindow::openRomAsProject(const QString& rom, const QString& digest) {
     // Documents/Retrolarium/ROMs/<name>: the ROM to edit, the original
     // beside it, and the project; the same ROM finds its folder again.
     const QFileInfo info(rom);
-    const QString digest = fileSha256(rom);
     const QDir root(QDir(documentsDirectory()).filePath(QStringLiteral("Retrolarium/ROMs")));
     QString stem = info.completeBaseName();
     stem.replace(QRegularExpression(QStringLiteral(R"([\\/:*?"<>|])")), QStringLiteral("_"));
@@ -1361,7 +1395,7 @@ void MainWindow::openRomAsProject(const QString& rom) {
     openProjectFile(project);
 }
 
-void MainWindow::setUpGameSource(const QString& rom) {
+void MainWindow::setUpGameSource(const QString& rom, const QString& digest) {
     // Downloaded games go where the user finds them: their edits live there.
     const QString games = QDir(documentsDirectory()).filePath(QStringLiteral("Retrolarium"));
     QStringList arguments{QStringLiteral("studio"), QStringLiteral("open-rom"), rom, QStringLiteral("--games"), games};
@@ -1376,7 +1410,7 @@ void MainWindow::setUpGameSource(const QString& rom) {
         return;
     }
     spec.label = tr("Open %1").arg(name);
-    runProcess(spec, [this, name, rom](const sdk::ProcessResult& result) {
+    runProcess(spec, [this, name, rom, digest](const sdk::ProcessResult& result) {
         if (!result.succeeded()) {
             if (!result.cancelled) {
                 frame::MessageDialog::inform(this, tr("Open ROM"), tr("The game could not be opened"),
@@ -1398,13 +1432,13 @@ void MainWindow::setUpGameSource(const QString& rom) {
                                name));
             }
             // Set up: this ROM opens its source from now on, without asking.
-            QSettings().setValue(QStringLiteral("sourceProjects/") + fileSha256(rom),
+            QSettings().setValue(QStringLiteral("sourceProjects/") + digest,
                                  r.value(QStringLiteral("project")).toString());
             openProjectFile(r.value(QStringLiteral("project")).toString(), true);
         } else {
             // A game the studio has no editors for, or a ROM it does not
             // know after all: it opens as it is.
-            openRomAsProject(rom);
+            openRomAsProject(rom, digest);
         }
     });
 }
@@ -1529,17 +1563,18 @@ void MainWindow::resetRevision() {
 void MainWindow::createPatch() {
     if (!session_ || isBusy()) return;
     QString error;
-    if (session_->isModified() && !session_->save(&error)) {
-        report(message(sdk::Severity::Error, QStringLiteral("project"), error, QFileInfo(projectPath_).fileName()));
-        return;
-    }
-    QString error2;
-    const sdk::ProjectFile project = sdk::ProjectFile::load(projectPath_, &error2);
+    const sdk::ProjectFile project = sdk::ProjectFile::load(projectPath_, &error);
     const QString suggested =
         QDir(QDir::homePath()).filePath(project.string(QStringLiteral("project.id")) + QStringLiteral(".ips"));
     const QString output =
         QFileDialog::getSaveFileName(this, tr("Create IPS patch"), suggested, tr("IPS patches (*.ips)"));
-    if (output.isEmpty()) return;
+    // The edits are saved for the patch only once it is asked for.
+    if (output.isEmpty() || !session_) return;
+    error.clear();
+    if (session_->isModified() && !session_->save(&error)) {
+        report(message(sdk::Severity::Error, QStringLiteral("project"), error, QFileInfo(projectPath_).fileName()));
+        return;
+    }
     sdk::ProcessSpec spec = kitCommand(
         {QStringLiteral("studio"), QStringLiteral("patch"), projectPath_, QStringLiteral("--output"), output},
         QFileInfo(projectPath_).absolutePath(), &error);
@@ -1578,6 +1613,7 @@ void MainWindow::closeProject() {
     audio_->stop();
     releaseEditor();
     session_.reset();
+    projectLock_.reset();
     discardedSession_ = nullptr;
     projectPath_.clear();
     kind_.clear();
@@ -1681,7 +1717,30 @@ void MainWindow::closeEvent(QCloseEvent* event) {
     }
     processes_->abandon();
     emulator_->stopNow();
+    // A restart opens the project again before this studio has quit.
+    projectLock_.reset();
     event->accept();
+}
+
+bool MainWindow::holdsProjectLock(const QString& path) const {
+    return projectLock_ && projectLock_->path() == runtime::ProjectLock::lockPath(path);
+}
+
+bool MainWindow::lockProject(const QString& path, std::unique_ptr<runtime::ProjectLock>* lock) {
+    bool held = false;
+    qint64 owner = 0;
+    *lock = runtime::ProjectLock::acquire(path, &held, &owner);
+    if (*lock || !held) {
+        return true;
+    }
+    frame::MessageDialog::inform(
+        this, tr("Open project"), tr("The project is already open in another Retrolarium Studio window"),
+        owner > 0 ? tr("Studio (process %1) has %2 open. Switch to that window, or close the project there "
+                       "first.")
+                        .arg(QString::number(owner), QDir::toNativeSeparators(path))
+                  : tr("Another studio has %1 open. Switch to that window, or close the project there first.")
+                        .arg(QDir::toNativeSeparators(path)));
+    return false;
 }
 
 void MainWindow::rememberRecent(const QString& path) {
@@ -2045,7 +2104,11 @@ void MainWindow::saveAll() {
     } else {
         report(message(sdk::Severity::Error, QStringLiteral("save"), error, QString()));
     }
-    if (tasEditor_ && tasEditor_->isModified()) tasEditor_->save();
+    if (tasEditor_ && tasEditor_->isModified() && !tasEditor_->save()) {
+        report(message(sdk::Severity::Error, QStringLiteral("save"),
+                       tr("The movie in the TAS editor was not saved; its window says why."),
+                       QFileInfo(tasEditor_->origin()).fileName()));
+    }
     updateDirtyState();
     documents_->updateGroups(session_->documents(kind_));
 }
@@ -2068,7 +2131,62 @@ void MainWindow::revertDocument() {
 // ---------------------------------------------------------------- host services
 
 void MainWindow::runProcess(const sdk::ProcessSpec& spec, std::function<void(const sdk::ProcessResult&)> done) {
-    processes_->run(spec, std::move(done));
+    // A downloaded repository's scripts run only with the user's consent:
+    // the kit asks for it (runtime::RepositoryConsent), the studio asks the
+    // user and, allowed, runs the same command again. Refused, the caller
+    // hears of a cancel.
+    processes_->run(spec, [this, spec, done = std::move(done)](const sdk::ProcessResult& result) mutable {
+        runtime::ConsentRequest request;
+        if (!runtime::RepositoryConsent::parse(result, &request)) {
+            if (done) done(result);
+            return;
+        }
+        const QString variable = QString::fromLatin1(runtime::RepositoryConsent::kEnvironmentVariable);
+        if (spec.environment.value(variable).split(QLatin1Char(',')).contains(request.contentSha256)) {
+            // Asked again with the consent passed: no second question.
+            sdk::ProcessResult failed = result;
+            failed.error = tr("The kit did not accept the consent to run the scripts of %1.").arg(request.repository);
+            if (done) done(failed);
+            return;
+        }
+        QSettings settings;
+        if (!runtime::RepositoryConsent::allows(settings, request) && !askRepositoryConsent(request)) {
+            log(tr("  The scripts of %1 were not run.").arg(request.repository));
+            sdk::ProcessResult refused = result;
+            refused.cancelled = true;
+            if (done) done(refused);
+            return;
+        }
+        runtime::RepositoryConsent::record(settings, request);
+        sdk::ProcessSpec again = spec;
+        runtime::RepositoryConsent::apply(settings, &again);
+        runProcess(again, std::move(done));
+    });
+}
+
+bool MainWindow::askRepositoryConsent(const runtime::ConsentRequest& request) {
+    // repositoryConsent/choice "allow" answers for scripted runs (tools/autotest).
+    if (testHooks() &&
+        QSettings().value(QStringLiteral("repositoryConsent/choice")).toString() == QLatin1String("allow")) {
+        return true;
+    }
+    enum Answer { Refuse, Allow, View };
+    for (;;) {
+        frame::MessageDialog ask(
+            tr("Run the game's scripts"), tr("Run the scripts of %1?").arg(request.repository),
+            tr("Studio will run Python scripts from this repository to build the game. They come from %1 "
+               "(commit %2) and run with your rights on this computer. Allow them only if you trust "
+               "this repository; the studio asks again when its files change.")
+                .arg(request.url, request.commit.left(12)),
+            this);
+        ask.addButton(tr("View on GitHub"), View);
+        ask.addButton(tr("Don't run"), Refuse);
+        ask.addButton(tr("Run scripts"), Allow, true);
+        ask.setCancelResult(Refuse);
+        const int answer = ask.exec();
+        if (answer != View) return answer == Allow;
+        QDesktopServices::openUrl(QUrl(request.url));
+    }
 }
 
 bool MainWindow::isBusy() const { return processes_->isBusy(); }

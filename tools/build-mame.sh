@@ -1,12 +1,12 @@
 #!/bin/bash
-# Builds the MAME the studio ships: mamedev/mame at the commit below, unchanged,
-# as a "consoles" subtarget with only the NES/Famicom, Vs. System, SNES and
-# Mega Drive drivers (Vs. System for Vs. Super Mario Bros.). The result is consoles.exe in the checkout, which
+# Builds the MAME the studio ships: mamedev/mame at the commit in
+# tools/mame/COMMIT, unchanged, as a "consoles" subtarget with only the
+# NES/Famicom, Vs. System, SNES and Mega Drive drivers (Vs. System for Vs. Super Mario Bros.). The result is consoles.exe in the checkout, which
 # tools/package-win.ps1 takes (-Mame) together with the checkout's license
 # texts (docs/legal, 3rdparty).
 #
 #   git clone https://github.com/mamedev/mame.git
-#   git -C mame checkout c662f9ca1900ed7462dc4fe8d338a98e8e4ce3c3
+#   git -C mame checkout "$(cat tools/mame/COMMIT)"
 #   MSYSTEM=UCRT64 /path/to/msys64/usr/bin/bash -lc "/path/to/tools/build-mame.sh /path/to/mame"
 #
 # It runs in an MSYS2 UCRT64 shell with MAME's build tools installed (see
@@ -15,7 +15,7 @@
 # MSYS2 terminal does not inherit it.
 set -e
 
-MAME_COMMIT=c662f9ca1900ed7462dc4fe8d338a98e8e4ce3c3
+MAME_COMMIT=$(tr -d '[:space:]' <"$(dirname "$0")/mame/COMMIT")
 checkout=${1:?usage: build-mame.sh <mame checkout>}
 
 cd "$checkout"

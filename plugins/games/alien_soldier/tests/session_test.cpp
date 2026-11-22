@@ -120,7 +120,7 @@ int main(int argc, char** argv) {
     const QString path = QString::fromLocal8Bit(argv[1]);
     if (!QFileInfo::exists(path)) {
         std::cout << "skipped: no prepared Alien Soldier project at " << path.toStdString() << "\n";
-        return 0;
+        return 77;  // CTest's SKIP_RETURN_CODE
     }
     try {
         const QJsonObject facts = referenceFacts(path, argc == 3 ? QString::fromLocal8Bit(argv[2]) : QString());

@@ -1,5 +1,7 @@
 #include "runtime/process_runner.hpp"
 
+#include "runtime/process_tree.hpp"
+
 #include <QProcess>
 #include <QProcessEnvironment>
 #include <QTimer>
@@ -22,6 +24,7 @@ ProcessRunner::ProcessRunner(QObject* parent) : QObject(parent) {}
 ProcessRunner::~ProcessRunner() {
     if (process_) {
         done_ = {};
+        if (tree_) tree_->terminate();
         process_->kill();
         process_->waitForFinished(2000);
     }
@@ -70,7 +73,7 @@ bool ProcessRunner::run(const sdk::ProcessSpec& spec, std::function<void(const s
                 result.cancelled = cancelled_ && !timedOut_;
                 if (timedOut_) {
                     // A timeout is a failure the caller reports, not a cancel it ignores.
-                    result.error = tr("Timed out after %1 minutes.").arg(kTimeoutMs / 60000);
+                    result.error = tr("Timed out after %1 minutes.").arg(timeoutMs_ / 60000);
                 }
                 complete(result);
             });
@@ -81,16 +84,23 @@ bool ProcessRunner::run(const sdk::ProcessSpec& spec, std::function<void(const s
             complete(result);
         }
     });
-    QTimer::singleShot(kTimeoutMs, process_, [this] {
+    const int timeout = timeoutMs_;
+    QTimer::singleShot(timeout, process_, [this, timeout] {
         if (process_) {
-            emit outputLine(tr("Timed out after %1 minutes.").arg(kTimeoutMs / 60000));
+            emit outputLine(tr("Timed out after %1 minutes.").arg(timeout / 60000));
             timedOut_ = true;
             cancel();
         }
     });
 
     emit started(spec.label, displayCommand(spec));
+    tree_ = std::make_unique<ProcessTree>();
+    tree_->prepare(process_);
     process_->start();
+    // A program that failed to start is complete already (errorOccurred).
+    if (process_ && tree_) {
+        tree_->started(process_);
+    }
     return true;
 }
 
@@ -102,6 +112,8 @@ void ProcessRunner::cancel() {
     process_->terminate();
     QTimer::singleShot(1500, process_, [this] {
         if (process_ && process_->state() != QProcess::NotRunning) {
+            // The program's children go with it.
+            if (tree_) tree_->terminate();
             process_->kill();
         }
     });
@@ -114,9 +126,12 @@ void ProcessRunner::abandon() {
     done_ = {};
     cancelled_ = true;
     timedOut_ = false;
+    if (tree_) tree_->terminate();
     process_->kill();
     // finished arrives from within the wait and completes the run; a
-    // process that outlives it is let go here.
+    // process that outlives it is let go here. The one wait in the UI
+    // thread: a project closing or the studio exiting must not leave the
+    // kit writing its folder; the job has ended the tree already.
     process_->waitForFinished(2000);
     if (process_) {
         sdk::ProcessResult result;
@@ -160,6 +175,8 @@ void ProcessRunner::complete(sdk::ProcessResult result) {
     process_ = nullptr;
     process->disconnect(this);
     process->deleteLater();
+    // Whatever the program left running in its tree ends with it.
+    tree_.reset();
     auto done = std::move(done_);
     done_ = {};
     emit finished(spec_.label, result);

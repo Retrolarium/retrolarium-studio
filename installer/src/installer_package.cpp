@@ -10,6 +10,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QSaveFile>
+#include <QStringList>
 #include <QtEndian>
 
 namespace rl::setup {
@@ -63,7 +64,20 @@ qint64 packageEnd(QFile* file) {
     return start;
 }
 
-// A relative path that stays inside the installation directory.
+// A name Windows keeps for a device (CON, NUL, COM1, ...), also with an
+// extension ("nul.txt"): writing it would reach the device, not a file.
+bool reservedName(const QString& part) {
+    const QString stem = part.section(QLatin1Char('.'), 0, 0).trimmed().toUpper();
+    static const QStringList devices{QStringLiteral("CON"), QStringLiteral("PRN"), QStringLiteral("AUX"),
+                                     QStringLiteral("NUL")};
+    if (devices.contains(stem)) return true;
+    return stem.size() == 4 && (stem.startsWith(QLatin1String("COM")) || stem.startsWith(QLatin1String("LPT"))) &&
+           stem.at(3) >= QLatin1Char('1') && stem.at(3) <= QLatin1Char('9');
+}
+
+// A relative path that stays inside the installation directory and names
+// the same file on Windows as written: no device names, and no part ending
+// in a dot or a space (Windows drops them, so two names could meet).
 bool safePath(const QString& path) {
     if (path.isEmpty() || path.startsWith(QLatin1Char('/')) || path.contains(QLatin1Char('\\')) ||
         path.contains(QLatin1Char(':'))) {
@@ -71,6 +85,7 @@ bool safePath(const QString& path) {
     }
     for (const QString& part : path.split(QLatin1Char('/'))) {
         if (part.isEmpty() || part == QLatin1String(".") || part == QLatin1String("..")) return false;
+        if (part.endsWith(QLatin1Char('.')) || part.endsWith(QLatin1Char(' ')) || reservedName(part)) return false;
     }
     return true;
 }

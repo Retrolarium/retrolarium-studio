@@ -4,7 +4,9 @@
 # between runs, /out where consoles.exe is written.
 set -e
 
-MAME_COMMIT=c662f9ca1900ed7462dc4fe8d338a98e8e4ce3c3
+# tools/mame/COMMIT, copied into the image (Dockerfile): the one place the
+# commit is named, which tools/build-mame.sh and tools/package-win.ps1 read too.
+MAME_COMMIT=$(tr -d '[:space:]' </usr/local/share/retrolarium/mame-commit)
 SOURCES=src/mame/nintendo/nes.cpp,src/mame/nintendo/vsnes.cpp,src/mame/nintendo/snes.cpp,src/mame/sega/mdconsole.cpp
 
 if [ ! -d /build/mame/.git ]; then

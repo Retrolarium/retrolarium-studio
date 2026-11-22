@@ -16,5 +16,6 @@ RUN update-alternatives --set x86_64-w64-mingw32-gcc /usr/bin/x86_64-w64-mingw32
     && update-alternatives --set x86_64-w64-mingw32-g++ /usr/bin/x86_64-w64-mingw32-g++-posix \
     && git config --system --add safe.directory '*'
 
+COPY COMMIT /usr/local/share/retrolarium/mame-commit
 COPY build.sh /usr/local/bin/build-mame
 ENTRYPOINT ["bash", "/usr/local/bin/build-mame"]
