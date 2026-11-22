@@ -12,7 +12,7 @@ namespace rl::runtime {
 //          studio (the installed layout), retrolarium-kit/rltool.py in the
 //          studio's directory or up to six parents, `rltool` on PATH (an
 //          .exe on Windows); rltool.py runs with python/python.exe next to
-//          the studio, else Python on PATH
+//          the studio, else host Python only with RETROLARIUM_DEV=1
 //   mame:  $RETROLARIUM_MAME, the one chosen in Settings, the one the kit
 //          remembers (`rltool movie mame`, in the user settings the kit and
 //          the studio share), <studio>/mame/consoles.exe,
@@ -27,7 +27,8 @@ public:
     static QString emulatorPath(const QString& id);
     static QString toolPath(const QString& name);
 
-    // A program on PATH. On Windows only an .exe is taken: a .cmd or .bat
+    // A program on PATH, only with RETROLARIUM_DEV=1. On Windows only
+    // an .exe is taken: a .cmd or .bat
     // runs through cmd.exe, whose parsing Qt's quoting does not cover, so an
     // argument holding & | ^ % (a ROM's file name) could run commands. A
     // .cmd or .bat found instead is named in `rejected`.

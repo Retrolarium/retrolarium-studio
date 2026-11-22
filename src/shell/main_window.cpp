@@ -11,6 +11,7 @@
 #include "runtime/project_lock.hpp"
 #include "runtime/repository_consent.hpp"
 #include "runtime/tool_locator.hpp"
+#include "runtime/rom_hasher.hpp"
 #include "sdk/editor_model.hpp"
 #include "sdk/game_names.hpp"
 #include "sdk/i18n.hpp"
@@ -45,7 +46,6 @@
 #include <QDropEvent>
 #include <QMimeData>
 #include <QCheckBox>
-#include <QCryptographicHash>
 #include <QDir>
 #include <QFileDialog>
 #include <QFileInfo>
@@ -222,6 +222,27 @@ MainWindow::MainWindow(QWidget* parent) : StudioWindow(parent) {
     processes_ = new runtime::ProcessRunner(this);
     emulator_ = new runtime::EmulatorRunner(this);
     audio_ = new runtime::AudioPlayer(this);
+    romHasher_ = new runtime::RomHasher(this);
+    connect(romHasher_, &runtime::RomHasher::stateChanged, this, [this] {
+        updateActions();
+        updateStatus();
+    });
+    connect(romHasher_, &runtime::RomHasher::finished, this,
+            [this](const QString& rom, const QString& digest, const QString& error, bool tooLarge) {
+                if (tooLarge) {
+                    report(message(sdk::Severity::Error, QStringLiteral("project"),
+                                   tr("%1 is larger than %2 MiB: not a ROM the studio opens.")
+                                       .arg(QFileInfo(rom).fileName())
+                                       .arg(kMaxRomSize / (1024 * 1024)),
+                                   QFileInfo(rom).fileName()));
+                } else if (!error.isEmpty() || digest.isEmpty()) {
+                    report(message(sdk::Severity::Error, QStringLiteral("project"),
+                                   tr("Could not read %1: %2").arg(QFileInfo(rom).fileName(), error),
+                                   QFileInfo(rom).fileName()));
+                } else {
+                    openHashedRom(rom, digest);
+                }
+            });
     setWindowTitle(tr("Retrolarium"));
     titleBar()->setTitle(tr("Retrolarium Studio"));
     setMinimumSize(1280, 780);
@@ -1216,14 +1237,6 @@ void MainWindow::dropEvent(QDropEvent* event) {
 
 namespace {
 
-QString fileSha256(const QString& path) {
-    QFile file(path);
-    if (!file.open(QIODevice::ReadOnly)) return {};
-    QCryptographicHash hash(QCryptographicHash::Sha256);
-    hash.addData(&file);
-    return QString::fromLatin1(hash.result().toHex());
-}
-
 // "nes" for an iNES image, "fds" for a Famicom Disk System image (with the
 // fwNES header or a bare disk side), "megadrive" for a cartridge with SEGA at
 // $100, empty for anything else (then only its bytes and header are shown).
@@ -1286,18 +1299,13 @@ bool askSetUpSource(QWidget* parent, const QString& name) {
 }  // namespace
 
 void MainWindow::openRomFile(const QString& rom) {
-    // Checked before anything reads it: a dropped file may be anything.
-    if (QFileInfo(rom).size() > kMaxRomSize) {
-        report(message(sdk::Severity::Error, QStringLiteral("project"),
-                       tr("%1 is larger than %2 MiB: not a ROM the studio opens.")
-                           .arg(QFileInfo(rom).fileName())
-                           .arg(kMaxRomSize / (1024 * 1024)),
-                       QFileInfo(rom).fileName()));
-        return;
+    if (isBusy()) return;
+    if (romHasher_->start(rom, kMaxRomSize)) {
+        updateStatus(tr("Reading %1...").arg(QFileInfo(rom).fileName()));
     }
-    // A known game whose source was set up from this very ROM opens there.
-    // The ROM's hash is read once and handed on.
-    const QString digest = fileSha256(rom);
+}
+
+void MainWindow::openHashedRom(const QString& rom, const QString& digest) {
     const QString source = QSettings().value(QStringLiteral("sourceProjects/") + digest).toString();
     if (!source.isEmpty() && QFileInfo::exists(source)) {
         openProjectFile(source, true);
@@ -1607,8 +1615,9 @@ void MainWindow::createPatch() {
 void MainWindow::closeProject() {
     inspector_->showMessage(QString(), QString(), QString());
     // A running task's callback belongs to the session about to go.
+    romHasher_->cancel();
     processes_->abandon();
-    emulator_->stopNow();
+    emulator_->abandon();
     emulator_->clearLog();
     audio_->stop();
     releaseEditor();
@@ -1715,6 +1724,7 @@ void MainWindow::closeEvent(QCloseEvent* event) {
         event->ignore();
         return;
     }
+    romHasher_->cancel();
     processes_->abandon();
     emulator_->stopNow();
     // A restart opens the project again before this studio has quit.
@@ -2189,9 +2199,12 @@ bool MainWindow::askRepositoryConsent(const runtime::ConsentRequest& request) {
     }
 }
 
-bool MainWindow::isBusy() const { return processes_->isBusy(); }
+bool MainWindow::isBusy() const { return processes_->isBusy() || romHasher_->isBusy(); }
 
-void MainWindow::cancel() { processes_->cancel(); }
+void MainWindow::cancel() {
+    if (romHasher_->isBusy()) romHasher_->cancel();
+    else processes_->cancel();
+}
 
 sdk::ProcessSpec MainWindow::kitCommand(const QStringList& arguments, const QString& workingDirectory,
                                         QString* error) const {

@@ -20,10 +20,6 @@
         <translation>Lo studio conosce questo gioco. Può preparare il suo sorgente (scaricare il repository del gioco) e aprirlo con gli editor del gioco, oppure aprire la ROM così com&apos;è: i suoi byte, le sue tile, la sua intestazione e un playtest.</translation>
     </message>
     <message>
-        <source>Do not ask again</source>
-        <translation>Non chiedere più</translation>
-    </message>
-    <message>
         <source>Open the ROM</source>
         <translation>Apri la ROM</translation>
     </message>
@@ -1973,8 +1969,12 @@
         <translation>La imposta il suo codice</translation>
     </message>
     <message>
-        <source>The game&apos;s code turns this boss&apos;s parts itself; it shows as its setup leaves it.</source>
-        <translation>È il codice del gioco a ruotare i pezzi di questo boss; è mostrato come lo lascia la sua preparazione.</translation>
+        <source>The assembled boss is shown in full. Select a part to inspect it.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Preview</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -3220,10 +3220,6 @@
 <context>
     <name>rl::castle_excellent::CastleExcellentMapModel</name>
     <message>
-        <source>Scale</source>
-        <translation>Scala</translation>
-    </message>
-    <message>
         <source>Select a room</source>
         <translation>Seleziona una stanza</translation>
     </message>
@@ -3464,10 +3460,6 @@
         <translation>trascina nella stanza, oppure scegli e usa lo strumento Aggiungi</translation>
     </message>
     <message>
-        <source>this room %1 / %2 objects · all rooms: stream %3 / %4 B, saved state %5 / %6 B</source>
-        <translation>questa stanza %1 / %2 oggetti · tutte le stanze: flusso %3 / %4 B, salvataggio %5 / %6 B</translation>
-    </message>
-    <message>
         <source>%1 · %2 objects · %3</source>
         <translation>%1 · %2 oggetti · %3</translation>
     </message>
@@ -3570,6 +3562,30 @@
     <message>
         <source>Play from selected (F4) builds the ROM, enters this room through the game&apos;s own room loader and puts the player here. Delete takes the marker away: the player then starts at the bottom of the room.</source>
         <translation>Gioca dalla selezione (F4) compila la ROM, entra in questa stanza tramite il caricatore di stanze del gioco e mette qui il giocatore. Canc toglie l&apos;indicatore: il giocatore parte allora dal fondo della stanza.</translation>
+    </message>
+    <message>
+        <source>This room needs %1 object slots, including %2 from cells; the limit is %3.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Switch to Objects to paste an object.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>The clipboard does not contain a compatible Castle object.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Paste an object into %1</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>There is no empty space for this object in the room.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>this room %1 / %2 objects (%7 from cells) · all rooms: stream %3 / %4 B, saved state %5 / %6 B</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -5944,6 +5960,10 @@
         <source>Select a piece, or drop a pattern on it</source>
         <translation>Seleziona un pezzo o rilascia un pattern su di esso</translation>
     </message>
+    <message>
+        <source>Select a piece to inspect it</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>rl::editors::EmulatorView</name>
@@ -6139,6 +6159,10 @@
     <message>
         <source>Page %1</source>
         <translation>Pagina %1</translation>
+    </message>
+    <message>
+        <source>The clipboard object is invalid.</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -9628,6 +9652,10 @@
         <source>MAME did not describe %1</source>
         <translation>MAME non ha descritto %1</translation>
     </message>
+    <message>
+        <source>Hot reload failed: %1 could not be written; restarting.</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>rl::runtime::ProcessRunner</name>
@@ -10766,6 +10794,66 @@
         <source>Play from selected (F4) starts here. Click, then click the map to move it, or drag it onto the map.</source>
         <translation>Gioca dalla selezione (F4) parte da qui. Fai clic, poi fai clic sulla mappa per spostarlo, oppure trascinalo sulla mappa.</translation>
     </message>
+    <message>
+        <source>%1 is larger than %2 MiB: not a ROM the studio opens.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Could not read %1: %2</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Reading %1...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>The project is already open in another Retrolarium Studio window</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Studio (process %1) has %2 open. Switch to that window, or close the project there first.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Another studio has %1 open. Switch to that window, or close the project there first.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>The movie in the TAS editor was not saved; its window says why.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>The kit did not accept the consent to run the scripts of %1.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>  The scripts of %1 were not run.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Run the game&apos;s scripts</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Run the scripts of %1?</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Studio will run Python scripts from this repository to build the game. They come from %1 (commit %2) and run with your rights on this computer. Allow them only if you trust this repository; the studio asks again when its files change.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>View on GitHub</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Don&apos;t run</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Run scripts</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>rl::shell::PickMovieDialog</name>
@@ -10975,10 +11063,6 @@
         <translation>Dump del BIOS (*.rom *.bin);;Tutti i file (*)</translation>
     </message>
     <message>
-        <source>The kit did not answer.</source>
-        <translation>Il kit non ha risposto.</translation>
-    </message>
-    <message>
         <source>The BIOS was not installed</source>
         <translation>Il BIOS non è stato installato</translation>
     </message>
@@ -11001,6 +11085,22 @@
     <message>
         <source>Restart now</source>
         <translation>Riavvia ora</translation>
+    </message>
+    <message>
+        <source>The kit is not available here.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Wait for the running task to finish, then choose the BIOS again.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Install the Disk System BIOS</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Installing…</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -15210,10 +15310,6 @@
         <translation>Retrolarium Kit non è stato trovato accanto allo studio. Reinstalla Retrolarium Studio. (Uno studio compilato dai sorgenti trova il kit tramite RETROLARIUM_KIT.)</translation>
     </message>
     <message>
-        <source>The Python that runs the kit was not found next to the studio. Reinstall Retrolarium Studio, or put Python on PATH to run %1.</source>
-        <translation>Il Python con cui funziona il kit non è stato trovato accanto allo studio. Reinstalla Retrolarium Studio oppure aggiungi Python al PATH per eseguire %1.</translation>
-    </message>
-    <message>
         <source>Built from %1 when you open it</source>
         <translation>Compilata da %1 all&apos;apertura</translation>
     </message>
@@ -15240,6 +15336,18 @@
     <message>
         <source>keys nested deeper than %1 tables</source>
         <translation>chiavi annidate oltre %1 tabelle</translation>
+    </message>
+    <message>
+        <source>Found %1, but only an .exe or rltool.py launcher is supported.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>The Python that runs the kit was not found next to the studio. Reinstall Retrolarium Studio. For a source build, set RETROLARIUM_DEV=1 and put Python on PATH to run %1.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>table &apos;%1&apos; defined twice</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 </TS>

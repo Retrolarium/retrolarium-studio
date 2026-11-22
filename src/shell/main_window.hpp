@@ -29,6 +29,7 @@ namespace rl::runtime {
 class AudioPlayer;
 class EmulatorRunner;
 class ProcessRunner;
+class RomHasher;
 class ProjectLock;
 struct ConsentRequest;
 }  // namespace rl::runtime
@@ -146,6 +147,7 @@ private:
     // none is on disk yet, and readies the version the ROM is.
     void openRom();
     void openRomFile(const QString& rom);
+    void openHashedRom(const QString& rom, const QString& digest);
     // A known game's ROM: its repository, downloaded and set up. Any other
     // ROM (or a known one the user opens as it is): a ROM project.
     // `digest`: the ROM's SHA-256, read once by openRomFile.
@@ -197,6 +199,7 @@ private:
     std::unique_ptr<editors::EditorView> parkedEditor_;
     QString parkedDocument_;
     runtime::ProcessRunner* processes_ = nullptr;
+    runtime::RomHasher* romHasher_ = nullptr;
     // The open project's lock: one studio per project.
     std::unique_ptr<runtime::ProjectLock> projectLock_;
     runtime::EmulatorRunner* emulator_ = nullptr;

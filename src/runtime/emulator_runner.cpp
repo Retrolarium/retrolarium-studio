@@ -1410,10 +1410,14 @@ EmulatorRunner::EmulatorRunner(QObject* parent) : QObject(parent), startupTimer_
     statusTimer_ = new QTimer(this);
     statusTimer_->setInterval(kStatusPollMs);
     connect(statusTimer_, &QTimer::timeout, this, &EmulatorRunner::readStatus);
+    movieFlushTimer_ = new QTimer(this);
+    movieFlushTimer_->setInterval(20);
+    connect(movieFlushTimer_, &QTimer::timeout, this, &EmulatorRunner::pollMovieFlush);
 }
 
 EmulatorRunner::~EmulatorRunner() {
     finished_ = {};
+    pending_.reset();
     stopNow();
 }
 
@@ -1874,7 +1878,12 @@ void EmulatorRunner::start(const sdk::ProcessSpec& requested, const QString& tit
         reload(spec, launch.cart, launch.gameScripts, title, finished)) {
         return;
     }
-    stopNow();
+    cancelPending();
+    if (process_ || probe_) {
+        pending_ = std::make_unique<PendingLaunch>(PendingLaunch{requested, title, std::move(finished), movie});
+        beginStop();
+        return;
+    }
     movie_ = movie;
     actions_.clear();
     actionSerial_ = 0;
@@ -2072,6 +2081,7 @@ void EmulatorRunner::launchProcess(const sdk::ProcessSpec& spec, const QStringLi
                 if (surface_) {
                     surface_->update();
                 }
+                notifyStopped();
                 if (finished) {
                     finished(result);
                 }
@@ -2095,6 +2105,7 @@ void EmulatorRunner::launchProcess(const sdk::ProcessSpec& spec, const QStringLi
         auto finished = std::move(finished_);
         finished_ = {};
         emit stateChanged();
+        notifyStopped();
         if (finished) {
             finished(result);
         }
@@ -2213,7 +2224,7 @@ void EmulatorRunner::acknowledgeWarnings(const sdk::ProcessSpec& spec, const QSt
     }
 }
 
-void EmulatorRunner::finishMovie() {
+void EmulatorRunner::finishMovieNow() {
     // MAME embedded in the studio may be ended before its own stop handler
     // runs: a recording is written by the script first, and the studio waits
     // (briefly) until the script says it has done it.
@@ -2252,6 +2263,7 @@ bool EmulatorRunner::cancelProbe() {
     auto finished = std::move(finished_);
     finished_ = {};
     emit stateChanged();
+    notifyStopped();
     if (finished) {
         sdk::ProcessResult result;
         result.cancelled = true;
@@ -2260,38 +2272,103 @@ bool EmulatorRunner::cancelProbe() {
     return true;
 }
 
-void EmulatorRunner::stop() {
-    if (cancelProbe() || !process_ || phase_ == Phase::Stopping) {
+void EmulatorRunner::finishMovie(std::function<void()> done) {
+    if (!controls_ || !process_ || movieMode_ != QLatin1String("record")) {
+        done();
         return;
     }
-    finishMovie();
-    stopping_ = true;
-    if (paused_) {
-        togglePause();
+    sendAction(QStringLiteral("stopmovie"));
+    movieFlushSerial_ = actionSerial_;
+    movieFlushClock_.start();
+    movieFlushed_ = std::move(done);
+    movieFlushTimer_->start();
+    pollMovieFlush();
+}
+
+void EmulatorRunner::pollMovieFlush() {
+    if (!movieFlushed_) {
+        movieFlushTimer_->stop();
+        return;
     }
+    readStatus();
+    const bool acknowledged =
+        actions_.isEmpty() || actions_.first().section(QLatin1Char(' '), 0, 0).toInt() > movieFlushSerial_;
+    const bool timedOut = movieFlushClock_.elapsed() >= kMovieFlushMs;
+    if (!acknowledged && !timedOut) return;
+    movieFlushTimer_->stop();
+    if (!acknowledged) append(tr("The movie may have lost its last seconds: the emulator did not answer."));
+    auto done = std::move(movieFlushed_);
+    movieFlushed_ = {};
+    done();
+}
+
+void EmulatorRunner::cancelPending() {
+    auto pending = std::move(pending_);
+    if (pending && pending->finished) {
+        sdk::ProcessResult result;
+        result.cancelled = true;
+        pending->finished(result);
+    }
+}
+
+void EmulatorRunner::notifyStopped() {
+    movieFlushTimer_->stop();
+    movieFlushed_ = {};
+    stopping_ = false;
+    emit stopped();
+    if (pending_) {
+        QTimer::singleShot(0, this, [this] {
+            if (!pending_ || process_ || probe_) return;
+            auto next = std::move(pending_);
+            start(next->spec, next->title, std::move(next->finished), next->movie);
+        });
+    }
+}
+
+void EmulatorRunner::stop() {
+    cancelPending();
+    beginStop();
+}
+
+void EmulatorRunner::abandon() {
+    finished_ = {};
+    pending_.reset();
+    beginStop();
+}
+
+void EmulatorRunner::beginStop() {
+    if (cancelProbe() || !process_ || phase_ == Phase::Stopping) return;
+    stopping_ = true;
+    if (paused_) togglePause();
     startupTimer_->stop();
     setPhase(Phase::Stopping);
-    // The control script ends MAME at once; a close message would not reach
-    // an embedded MAME, which is ended by force when it lingers.
-    if (controls_) {
-        sendAction(QStringLiteral("exit"));
-    } else {
-        process_->terminate();
-    }
+    QPointer<QProcess> process = process_;
+    finishMovie([this, process] {
+        if (process && process.data() == process_) requestExit();
+    });
+}
+
+void EmulatorRunner::requestExit() {
+    if (!process_) return;
+    if (controls_) sendAction(QStringLiteral("exit"));
+    else process_->terminate();
     QPointer<QProcess> process = process_;
     QTimer::singleShot(kStopGraceMs, this, [this, process] {
-        if (process && process->state() != QProcess::NotRunning) {
-            if (process.data() == process_ && tree_) tree_->terminate();
+        if (process && process.data() == process_ && process->state() != QProcess::NotRunning) {
+            if (tree_) tree_->terminate();
             process->kill();
         }
     });
 }
 
 void EmulatorRunner::stopNow() {
+    pending_.reset();
+    movieFlushTimer_->stop();
+    movieFlushed_ = {};
     if (cancelProbe() || !process_) {
         return;
     }
-    finishMovie();
+    finishMovieNow();
     stopping_ = true;
     if (paused_) {
         togglePause();
@@ -2328,6 +2405,7 @@ void EmulatorRunner::stopNow() {
         auto finished = std::move(finished_);
         finished_ = {};
         emit stateChanged();
+        notifyStopped();
         if (finished) {
             sdk::ProcessResult result;
             result.started = true;

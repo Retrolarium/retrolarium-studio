@@ -121,7 +121,7 @@ build\win-amd64\retrolarium-studio.exe --theme light --size 1600x2700 --screensh
 Bug reports and pull requests are welcome. A change to a game's editor should
 keep a build of the unchanged project byte-identical to the original ROM: the
 kit's tests check that. Interface text goes through `tr()`, and new text needs
-its translations in every `resources/i18n/*.ts` (`tools/update-translations.ps1`
+its translations in every `resources/i18n/*.ts` (`tools/update_translations.py`
 brings them in). Run `make hooks` once per clone: Git then checks every commit
 and push for stop words and runs `make lint` and `make format-check` first (see
 Retrolarium Core's README, "Stop words and Git hooks").
@@ -187,9 +187,9 @@ python tools/test.py --suite native --bin path/to/existing/test-binaries
 
 `--bin` runs an existing `tests.json` suite without rebuilding. Core's native
 suite includes the real Python-to-rlcore round trips. Studio needs Qt 5.15 Core,
-Gui, Widgets, Svg and LinguistTools; `--qt-prefix PATH` selects its SDK and
-supplies Qt's DLL/plugin paths. A native headless Linux Studio run uses Qt's
-offscreen plugin. Windows retains the Windows platform plugin.
+Gui, Widgets, Svg, Concurrent and LinguistTools; `--qt-prefix PATH` selects its
+SDK and supplies Qt's DLL/plugin paths. A native headless Linux Studio run uses
+Qt's offscreen plugin. Windows retains the Windows platform plugin.
 
 GitHub Actions builds and tests native Studio on Windows and Linux as well as
 running Python tests on both. `tools/ci_native.py` prepares a shared host Qt SDK
@@ -197,3 +197,14 @@ for those checks (Windows Qt 5.15.2/MSVC; Linux distribution Qt 5.15). It is a
 CI setup helper that installs dependencies; ordinary local test runs use
 `tools/test.py` and an existing SDK. Release builds continue to use the static
 Longreach Qt SDK and the existing release packaging tools.
+
+## Core revision in CI
+
+CI checks out the full Core commit recorded in `.github/core-ref`, so rerunning
+an older revision uses the same dependency. `python tools/core_pin.py` validates
+and prints the pin. To update it, test the intended Core commit with this
+checkout, put its full lowercase SHA in that file, and commit the update.
+Publish the Core commit before publishing a dependent pin update.
+
+The make entrypoints use `python` on Windows and `python3` elsewhere;
+`make PYTHON=...` selects an explicit interpreter.

@@ -66,7 +66,7 @@ int main(int argc, char* argv[]) {
     Q_INIT_RESOURCE(studio);
     QApplication app(argc, argv);
     // Qt's plugins are linked in; none is loaded from the download folder
-    // (the static platform plugin is already chosen by now).
+    // (Qt 5 QFactoryLoader::update scans directories only with QT_SHARED).
     QCoreApplication::setLibraryPaths(QStringList());
     QApplication::setApplicationName(QStringLiteral("Retrolarium Studio Setup"));
     // Our titles already name the product: no " - <app>" suffix.

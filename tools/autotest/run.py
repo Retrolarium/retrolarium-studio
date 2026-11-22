@@ -49,6 +49,10 @@ def environment(studio: Path, home: Path, mame: Path | None) -> dict[str, str]:
     env["RETROLARIUM_SETTINGS"] = str(home / "kit-settings.json")
     if not (studio / "kit/rltool.py").is_file():
         env.setdefault("RETROLARIUM_KIT", str(STUDIO_ROOT.parent / "retrolarium-kit/rltool.py"))
+        env["RETROLARIUM_DEV"] = "1"
+    else:
+        # Acceptance of the installed package must use only bundled tools.
+        env.pop("RETROLARIUM_DEV", None)
     if mame is not None:
         env["RETROLARIUM_MAME"] = str(mame)
     return env

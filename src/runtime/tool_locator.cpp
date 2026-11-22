@@ -47,6 +47,8 @@ QString python() {
     if (QFileInfo(bundled).isFile()) {
         return bundled;
     }
+    // Host Python discovery is an explicit source-development capability.
+    if (qEnvironmentVariable("RETROLARIUM_DEV") != QLatin1String("1")) return {};
     for (const char* name : {"python", "python3", "py"}) {
         const QString found = ToolLocator::findOnPath(QString::fromLatin1(name));
         if (!found.isEmpty()) {
@@ -142,8 +144,8 @@ sdk::ProcessSpec ToolLocator::kitCommand(const QStringList& arguments, const QSt
             if (error) {
                 *error = rlTr("studio",
                               "The Python that runs the kit was not found next to the "
-                              "studio. Reinstall Retrolarium Studio, or put Python on "
-                              "PATH to run %1.")
+                              "studio. Reinstall Retrolarium Studio. For a source build, "
+                              "set RETROLARIUM_DEV=1 and put Python on PATH to run %1.")
                              .arg(kit);
             }
             return spec;
@@ -197,6 +199,7 @@ QString ToolLocator::emulatorPath(const QString& id) {
 }
 
 QString ToolLocator::findOnPath(const QString& name, QString* rejected) {
+    if (qEnvironmentVariable("RETROLARIUM_DEV") != QLatin1String("1")) return {};
 #ifdef Q_OS_WIN
     // findExecutable appends PATHEXT (.cmd and .bat among them) to a bare
     // name, and takes a name ending in .exe as it is.

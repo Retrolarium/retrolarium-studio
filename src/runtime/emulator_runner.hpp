@@ -1,5 +1,7 @@
 #pragma once
 
+#include <QElapsedTimer>
+
 #include "runtime/mame_config.hpp"
 #include "sdk/types.hpp"
 
@@ -104,6 +106,8 @@ public:
                std::function<void(const sdk::ProcessResult&)> finished, const MovieRequest& movie = {});
     // Asks the emulator to close and returns; it is killed if it lingers.
     void stop();
+    // Discard callbacks that belong to a project being closed, then stop.
+    void abandon();
     // Ends the emulator before returning.
     void stopNow();
     bool togglePause();
@@ -170,6 +174,7 @@ public:
 
 signals:
     void stateChanged();
+    void stopped();
     void outputLine(const QString& line);
     // The movie's frame or mode, the speed or the slot changed.
     void emulationChanged();
@@ -184,7 +189,24 @@ private:
     void sendAction(const QString& verb, const QString& argument = QString());
     void readStatus();
     QString statePath(int slot) const;
-    void finishMovie();
+    void finishMovie(std::function<void()> done);
+    void finishMovieNow();  // Only the bounded application-shutdown path.
+    void pollMovieFlush();
+    void beginStop();
+    void requestExit();
+    void notifyStopped();
+    void cancelPending();
+    struct PendingLaunch {
+        sdk::ProcessSpec spec;
+        QString title;
+        std::function<void(const sdk::ProcessResult&)> finished;
+        MovieRequest movie;
+    };
+    std::unique_ptr<PendingLaunch> pending_;
+    QTimer* movieFlushTimer_;
+    QElapsedTimer movieFlushClock_;
+    int movieFlushSerial_ = 0;
+    std::function<void()> movieFlushed_;
 
     QPointer<EmulatorSurface> surface_;
     void watchStartup();

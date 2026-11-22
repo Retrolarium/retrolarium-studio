@@ -5,14 +5,20 @@ user guide (`user_guide.md`).
 
 ## What a studio from a checkout looks for
 
-The installed studio carries everything next to its program. A studio built from
-source finds its parts like this:
+The installed studio carries everything next to its program. Set
+`RETROLARIUM_DEV=1` when running a source build with host tools. Without that
+explicit flag, Python and Kit launchers are not discovered on PATH (nor is host
+Python discovered through the Windows registry). Installed-package acceptance
+must leave the flag unset.
+
+A studio built from source finds its parts like this:
 
 - **Retrolarium Kit**, which reads and writes the project and builds the ROM:
   the `RETROLARIUM_KIT` environment variable (`rltool` or `rltool.py`),
   `kit/rltool.py` next to the studio, a `../retrolarium-kit/rltool.py` up to six
-  folders above the studio's own folder, then `rltool` on `PATH`. `rltool.py`
-  runs with `python/python.exe` next to the studio, else Python on `PATH`.
+  folders above the studio's own folder, then `rltool` on `PATH` in dev mode.
+  `rltool.py` runs with `python/python.exe` next to the studio, else host Python
+  in dev mode.
 - **MAME** (`consoles.exe`): `RETROLARIUM_MAME`, the one chosen in File →
   Settings, or `mame/consoles.exe` next to the studio.
 - **Game disassemblies**: Open ROM downloads them from the RetrolariumLab
@@ -114,7 +120,34 @@ versions rather than the latest source tree.
 
 The default Windows SDK image is `qt5-win-amd64:latest`. `build-win.ps1 -Image`
 selects another compatible SDK, and `-Out` selects an independent build folder.
-The build record names the image the build ran in by its ID.
+The build record names the image the build ran in by its ID. GNU ld has no LLVM
+lld-style --dependent-load-flag option, including binutils 2.44. The static x64
+MinGW installer supplies its PE load configuration directly. The build runs
+tools/check_setup_binary.py on the emitted EXE and fails unless
+DependentLoadFlags is exactly 0x800 (System32 only). This protects imports
+before main() on Windows 10 RS1 and later; the runtime restriction also remains
+in place.
+
+GNU ld gained load-config directory emission in binutils 2.45; the original
+SDK's 2.30 does not emit it. Before building, prepare_release_sdk.py resolves
+the SDK image ID and prepares a separate cached GNU ld 2.45.1 layer if needed.
+Its upstream source archive SHA-256 is pinned in tools/release-sdk/Dockerfile.
+The first preparation needs network access; Qt, GCC and the base image stay
+intact.
+
+The host CI builds shared Qt with MSVC/GNU and does not replace release
+acceptance. For every candidate, run the static MinGW build above and its
+installed tests.json on Windows, then package and run release.py notes. Check
+the app, helpers and setup import only Windows system DLLs, and test
+install/update/uninstall on a clean Windows account with RETROLARIUM_DEV unset.
+Keep the exact image ID, source commits, logs and skipped fixture list with the
+candidate. Do not publish a dirty package or reuse older binaries.
+
+Static Qt does not scan disk for platform plugins: Qt 5's
+[QFactoryLoader::update](https://github.com/qt/qtbase/blob/v5.15.2/src/corelib/plugin/qfactoryloader.cpp)
+wraps that scan in `QT_SHARED`. Setup uses the linked Windows plugin and clears
+library paths after QApplication construction. The shared host CI SDK needs its
+own platform plugin and is not the standalone installer distribution.
 
 Scripted interface checks (python tools/autotest/run.py) keep their window off
 the desktop and capture their own screenshots after loading each document. Use
@@ -122,3 +155,10 @@ the SDK's Windows platform backend; setting QT_QPA_PLATFORM=offscreen requires a
 Qt plugin that this Windows SDK does not provide. The standalone --screenshot
 option captures after a fixed delay and does not wait for project preparation;
 use an interface scenario to verify an opened project.
+
+## Updating translations
+
+Run `python tools/update_translations.py` with the Longreach image, or pass
+`--qt-prefix path/to/host/Qt` to use that SDK's lupdate. Use `--add locale` to
+add a language. The tool recognizes rlTr as translate, keeps English plural
+forms only, and leaves new translations unfinished for human review.

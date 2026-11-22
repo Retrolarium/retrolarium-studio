@@ -29,7 +29,7 @@ if(MINGW)
     add_link_options(-static $<$<CONFIG:Release>:-s>)
 endif()
 
-find_package(Qt5 5.15 REQUIRED COMPONENTS Core Gui Widgets Svg LinguistTools)
+find_package(Qt5 5.15 REQUIRED COMPONENTS Core Gui Widgets Svg Concurrent LinguistTools)
 
 function(studio_enable_warnings target)
     if(MSVC)
@@ -145,6 +145,8 @@ add_library(studio_runtime STATIC
     src/runtime/process_runner.hpp
     src/runtime/process_tree.cpp
     src/runtime/process_tree.hpp
+    src/runtime/rom_hasher.cpp
+    src/runtime/rom_hasher.hpp
     src/runtime/project_lock.cpp
     src/runtime/project_lock.hpp
     src/runtime/repository_consent.cpp
@@ -152,7 +154,7 @@ add_library(studio_runtime STATIC
     src/runtime/tool_locator.cpp
     src/runtime/tool_locator.hpp
 )
-target_link_libraries(studio_runtime PUBLIC studio_sdk Qt5::Core Qt5::Gui Qt5::Widgets)
+target_link_libraries(studio_runtime PUBLIC studio_sdk Qt5::Core Qt5::Gui Qt5::Widgets Qt5::Concurrent)
 if(WIN32)
     target_link_libraries(studio_runtime PRIVATE winmm)
 endif()
@@ -229,14 +231,14 @@ install(TARGETS rlcore RUNTIME DESTINATION tools)
 
 # Test programs register here with the fixtures they read, as paths
 # relative to this directory. CTest runs them on a native build; the install
-# step writes tests.json, which tools/test-win.ps1 runs the Windows build by.
+# step writes tests.json, which tools/test.py runs on every host.
 enable_testing()
 set_property(GLOBAL PROPERTY STUDIO_TESTS "")
 function(studio_add_test target)
     set(fixtures "")
     set(arguments "")
     foreach(fixture IN LISTS ARGN)
-        # games:<path> is a project in a game repository; test-win.ps1
+        # games:<path> is a project in a game repository; tools/test.py
         # finds the repositories (-GameSources).
         if(fixture MATCHES "^games:")
             list(APPEND fixtures "${fixture}")
@@ -298,6 +300,14 @@ target_link_libraries(project_lock_test PRIVATE studio_runtime)
 studio_add_test(project_lock_test)
 
 # Where the studio finds the kit, and the launchers it refuses.
+add_executable(emulator_runner_test tests/emulator_runner_test.cpp)
+target_link_libraries(emulator_runner_test PRIVATE studio_runtime)
+studio_add_test(emulator_runner_test tests/data/emulator_child.py)
+
+add_executable(rom_hasher_test tests/rom_hasher_test.cpp)
+target_link_libraries(rom_hasher_test PRIVATE studio_runtime)
+studio_add_test(rom_hasher_test)
+
 add_executable(tool_locator_test tests/tool_locator_test.cpp)
 target_link_libraries(tool_locator_test PRIVATE studio_runtime)
 studio_add_test(tool_locator_test)
@@ -315,7 +325,7 @@ if(WIN32)
     target_sources(retrolarium-studio PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/version.rc)
 endif()
 # Interface translations: resources/i18n holds the .ts files (refreshed with
-# tools/update-translations.ps1); the build compiles them and embeds them
+# tools/update_translations.py); the build compiles them and embeds them
 # with Qt's own translation of its dialogs.
 # English holds only the plural forms of counted text (lupdate -pluralonly).
 set(studio_languages en pt_BR es zh_CN ja fr de it pl ru)
@@ -376,18 +386,14 @@ if(WIN32)
     target_include_directories(retrolarium-setup PRIVATE installer/src)
     target_compile_definitions(retrolarium-setup PRIVATE UNICODE _UNICODE _WIN32_WINNT=0x0601)
     target_link_libraries(retrolarium-setup PRIVATE studio_ui advapi32 ole32 shell32 uuid)
-    # The DLLs setup imports load before main() restricts the search: the
-    # image's DependentLoadFlags (LOAD_LIBRARY_SEARCH_SYSTEM32) keep them to
-    # System32. GNU ld has the option from binutils 2.36.
+    # GNU ld has no --dependent-load-flag option. Supply the PE load config
+    # directly for the static MinGW installer; the build verifies the EXE.
     if(MINGW)
-        include(CheckLinkerFlag)
-        check_linker_flag(CXX "-Wl,--dependent-load-flag=0x800" STUDIO_LINKER_DEPENDENT_LOAD_FLAG)
-        if(STUDIO_LINKER_DEPENDENT_LOAD_FLAG)
-            target_link_options(retrolarium-setup PRIVATE "-Wl,--dependent-load-flag=0x800")
-        else()
-            message(WARNING "The linker has no --dependent-load-flag (binutils 2.36 or newer): "
-                            "setup's imported DLLs use the default search order.")
+        if(NOT CMAKE_SIZEOF_VOID_P EQUAL 8)
+            message(FATAL_ERROR "The standalone MinGW installer requires an x64 SDK")
         endif()
+        target_sources(retrolarium-setup PRIVATE installer/src/load_config.cpp)
+        target_link_options(retrolarium-setup PRIVATE "-Wl,--undefined,_load_config_used")
     endif()
     studio_enable_warnings(retrolarium-setup)
     install(TARGETS retrolarium-setup RUNTIME DESTINATION .)

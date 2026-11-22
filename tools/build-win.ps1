@@ -68,6 +68,10 @@ cmake --install /out/.cmake-build --prefix /out
 x86_64-w64-mingw32-objdump -p /out/retrolarium-studio.exe | grep 'DLL Name' | sort -u
 '@
 
+# Keep Qt/GCC from Longreach; prepare a separate capable GNU linker layer.
+$Image = "$(& python (Join-Path $PSScriptRoot "prepare_release_sdk.py") --image $Image)".Trim()
+if ($LASTEXITCODE -ne 0 -or -not $Image) { throw "Could not prepare the release SDK" }
+
 $sourceRecord = Join-Path $outputRoot "native-source.json"
 & python (Join-Path $PSScriptRoot "release.py") record-source $sourceRecord
 if ($LASTEXITCODE -ne 0) { throw "Could not record native source state" }
@@ -87,6 +91,10 @@ docker run --rm `
 if ($LASTEXITCODE -ne 0) {
     throw "Retrolarium Studio build failed with exit code $LASTEXITCODE"
 }
+
+# Verify the emitted PE field, rather than inferring protection from a flag.
+& python (Join-Path $PSScriptRoot "check_setup_binary.py") (Join-Path $outputRoot "retrolarium-setup.exe")
+if ($LASTEXITCODE -ne 0) { throw "The installer has no System32-only import policy" }
 
 # The SDK image the build ran in, by its ID (a locally built image has no
 # registry digest), goes into the build record.

@@ -20,10 +20,6 @@
         <translation>工作室认识这个游戏。它可以设置游戏的源代码（下载游戏的仓库）并用游戏专用的编辑器打开，或者按原样打开 ROM：字节、图块、文件头和试玩。</translation>
     </message>
     <message>
-        <source>Do not ask again</source>
-        <translation>不再询问</translation>
-    </message>
-    <message>
         <source>Open the ROM</source>
         <translation>打开 ROM</translation>
     </message>
@@ -1964,8 +1960,12 @@
         <translation>由代码设定</translation>
     </message>
     <message>
-        <source>The game&apos;s code turns this boss&apos;s parts itself; it shows as its setup leaves it.</source>
-        <translation>这个头目的部件由游戏代码自己转动；按其初始设置留下的样子显示。</translation>
+        <source>The assembled boss is shown in full. Select a part to inspect it.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Preview</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -3207,10 +3207,6 @@
 <context>
     <name>rl::castle_excellent::CastleExcellentMapModel</name>
     <message>
-        <source>Scale</source>
-        <translation>缩放</translation>
-    </message>
-    <message>
         <source>Select a room</source>
         <translation>选择一个房间</translation>
     </message>
@@ -3450,10 +3446,6 @@
         <translation>拖到房间中，或选中后使用“添加”工具</translation>
     </message>
     <message>
-        <source>this room %1 / %2 objects · all rooms: stream %3 / %4 B, saved state %5 / %6 B</source>
-        <translation>此房间 %1 / %2 个物件 · 全部房间：数据流 %3 / %4 B，存档状态 %5 / %6 B</translation>
-    </message>
-    <message>
         <source>%1 · %2 objects · %3</source>
         <translation>%1 · %2 个物件 · %3</translation>
     </message>
@@ -3556,6 +3548,30 @@
     <message>
         <source>Play from selected (F4) builds the ROM, enters this room through the game&apos;s own room loader and puts the player here. Delete takes the marker away: the player then starts at the bottom of the room.</source>
         <translation>“从所选处游玩”（F4）会构建 ROM，通过游戏自己的房间加载器进入此房间，并把玩家放在这里。按 Delete 移除标记后，玩家会从房间底部开始。</translation>
+    </message>
+    <message>
+        <source>This room needs %1 object slots, including %2 from cells; the limit is %3.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Switch to Objects to paste an object.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>The clipboard does not contain a compatible Castle object.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Paste an object into %1</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>There is no empty space for this object in the room.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>this room %1 / %2 objects (%7 from cells) · all rooms: stream %3 / %4 B, saved state %5 / %6 B</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -5916,6 +5932,10 @@
         <source>Select a piece, or drop a pattern on it</source>
         <translation>选择一个部件，或把图案拖放到上面</translation>
     </message>
+    <message>
+        <source>Select a piece to inspect it</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>rl::editors::EmulatorView</name>
@@ -6111,6 +6131,10 @@
     <message>
         <source>Page %1</source>
         <translation>第 %1 页</translation>
+    </message>
+    <message>
+        <source>The clipboard object is invalid.</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -9582,6 +9606,10 @@
         <source>MAME did not describe %1</source>
         <translation>MAME 没有描述 %1</translation>
     </message>
+    <message>
+        <source>Hot reload failed: %1 could not be written; restarting.</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>rl::runtime::ProcessRunner</name>
@@ -10717,6 +10745,66 @@
         <source>Play from selected (F4) starts here. Click, then click the map to move it, or drag it onto the map.</source>
         <translation>“从所选处游玩”（F4）从这里开始。单击后再单击地图即可移动它，也可以把它拖到地图上。</translation>
     </message>
+    <message>
+        <source>%1 is larger than %2 MiB: not a ROM the studio opens.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Could not read %1: %2</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Reading %1...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>The project is already open in another Retrolarium Studio window</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Studio (process %1) has %2 open. Switch to that window, or close the project there first.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Another studio has %1 open. Switch to that window, or close the project there first.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>The movie in the TAS editor was not saved; its window says why.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>The kit did not accept the consent to run the scripts of %1.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>  The scripts of %1 were not run.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Run the game&apos;s scripts</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Run the scripts of %1?</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Studio will run Python scripts from this repository to build the game. They come from %1 (commit %2) and run with your rights on this computer. Allow them only if you trust this repository; the studio asks again when its files change.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>View on GitHub</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Don&apos;t run</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Run scripts</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>rl::shell::PickMovieDialog</name>
@@ -10926,10 +11014,6 @@
         <translation>BIOS 转储 (*.rom *.bin);;所有文件 (*)</translation>
     </message>
     <message>
-        <source>The kit did not answer.</source>
-        <translation>工具包没有响应。</translation>
-    </message>
-    <message>
         <source>The BIOS was not installed</source>
         <translation>BIOS 未安装</translation>
     </message>
@@ -10952,6 +11036,22 @@
     <message>
         <source>Restart now</source>
         <translation>立即重启</translation>
+    </message>
+    <message>
+        <source>The kit is not available here.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Wait for the running task to finish, then choose the BIOS again.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Install the Disk System BIOS</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Installing…</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -15144,10 +15244,6 @@
         <translation>在工作室旁未找到 Retrolarium Kit。请重新安装 Retrolarium Studio。（从源代码构建的工作室通过 RETROLARIUM_KIT 找到工具包。）</translation>
     </message>
     <message>
-        <source>The Python that runs the kit was not found next to the studio. Reinstall Retrolarium Studio, or put Python on PATH to run %1.</source>
-        <translation>在工作室旁未找到运行工具包的 Python。请重新安装 Retrolarium Studio，或将 Python 加入 PATH 以运行 %1。</translation>
-    </message>
-    <message>
         <source>Built from %1 when you open it</source>
         <translation>打开时由 %1 构建</translation>
     </message>
@@ -15174,6 +15270,18 @@
     <message>
         <source>keys nested deeper than %1 tables</source>
         <translation>键嵌套深度超过 %1 层表</translation>
+    </message>
+    <message>
+        <source>Found %1, but only an .exe or rltool.py launcher is supported.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>The Python that runs the kit was not found next to the studio. Reinstall Retrolarium Studio. For a source build, set RETROLARIUM_DEV=1 and put Python on PATH to run %1.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>table &apos;%1&apos; defined twice</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 </TS>

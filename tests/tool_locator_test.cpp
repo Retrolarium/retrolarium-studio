@@ -50,11 +50,27 @@ int main(int argc, char** argv) {
         return 1;
     }
 
+    const QByteArray previousDev = qgetenv("RETROLARIUM_DEV");
+    qunsetenv("RETROLARIUM_DEV");
+    // A regular installation must not discover a host Python or launcher.
+    expect(ToolLocator::findOnPath(QStringLiteral("python")).isEmpty(), "host Python lookup needs dev mode");
+    expect(ToolLocator::findOnPath(QStringLiteral("rltool")).isEmpty(), "host kit lookup needs dev mode");
     // RETROLARIUM_KIT first: the rltool.py it names is the one that runs.
     const QString script = dir.filePath(QStringLiteral("rltool.py"));
     expect(touch(script), "the kit script is written");
     qputenv("RETROLARIUM_KIT", QDir::toNativeSeparators(script).toLocal8Bit());
     QString error;
+    const rl::sdk::ProcessSpec installed = ToolLocator::kitCommand({}, dir.path(), &error);
+    const QString privatePython =
+        QDir(QCoreApplication::applicationDirPath()).filePath(QStringLiteral("python/python.exe"));
+    if (QFileInfo(privatePython).isFile()) {
+        expect(sameFile(installed.program, privatePython), "the private Python works without dev mode");
+    } else {
+        expect(installed.program.isEmpty() && !error.isEmpty(),
+               "host interpreter discovery is disabled without dev mode");
+    }
+    qputenv("RETROLARIUM_DEV", "1");
+    error.clear();
     const rl::sdk::ProcessSpec spec =
         ToolLocator::kitCommand({QStringLiteral("studio"), QStringLiteral("identify")}, dir.path(), &error);
     if (spec.program.isEmpty()) {
@@ -87,6 +103,9 @@ int main(int argc, char** argv) {
 
     // With an .exe beside them, the .exe is the one.
     expect(touch(path.filePath(QStringLiteral("rltool.exe"))), "the .exe launcher is written");
+    qunsetenv("RETROLARIUM_DEV");
+    expect(ToolLocator::findOnPath(QStringLiteral("rltool")).isEmpty(), "even an exe on PATH needs explicit dev mode");
+    qputenv("RETROLARIUM_DEV", "1");
     expect(sameFile(ToolLocator::findOnPath(QStringLiteral("rltool")), path.filePath(QStringLiteral("rltool.exe"))),
            "the .exe on PATH is taken");
     qputenv("PATH", savedPath);
@@ -102,6 +121,8 @@ int main(int argc, char** argv) {
 #endif
 
     qunsetenv("RETROLARIUM_KIT");
+    if (previousDev.isEmpty()) qunsetenv("RETROLARIUM_DEV");
+    else qputenv("RETROLARIUM_DEV", previousDev);
     if (failures != 0) return 1;
     std::cout << "tool locator: kit order and launcher checks hold\n";
     return 0;
