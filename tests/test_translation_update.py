@@ -3,6 +3,7 @@
 import importlib.util
 from pathlib import Path
 import unittest
+from unittest import mock
 
 spec = importlib.util.spec_from_file_location(
     "translation_update", Path(__file__).resolve().parents[1] / "tools/update_translations.py"
@@ -19,7 +20,7 @@ class TranslationUpdateTests(unittest.TestCase):
             str(prefix / "bin" / ("lupdate.exe" if tool.sys.platform == "win32" else "lupdate")), command[0]
         )
         self.assertIn("translate+=rlTr", command)
-        self.assertIn("-no-obsolete", command)
+        self.assertNotIn("-no-obsolete", command)
         self.assertNotIn("-pluralonly", command)
         self.assertEqual("resources/i18n/retrolarium_studio_ru.ts", command[-1])
 
@@ -33,3 +34,15 @@ class TranslationUpdateTests(unittest.TestCase):
         self.assertNotIn("sh", command)
         with self.assertRaises(ValueError):
             tool.command(Path("checkout"), "../bad")
+
+    def test_posix_docker_writes_as_the_host_user_and_windows_needs_no_uid(self):
+        root = Path("checkout")
+        with (
+            mock.patch.object(tool.os, "name", "posix"),
+            mock.patch.object(tool.os, "getuid", return_value=1234, create=True),
+            mock.patch.object(tool.os, "getgid", return_value=5678, create=True),
+        ):
+            command = tool.command(root, "ru")
+            self.assertEqual("1234:5678", command[command.index("--user") + 1])
+        with mock.patch.object(tool.os, "name", "nt"):
+            self.assertNotIn("--user", tool.command(root, "ru"))

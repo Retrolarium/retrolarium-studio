@@ -162,3 +162,11 @@ Run `python tools/update_translations.py` with the Longreach image, or pass
 `--qt-prefix path/to/host/Qt` to use that SDK's lupdate. Use `--add locale` to
 add a language. The tool recognizes rlTr as translate, keeps English plural
 forms only, and leaves new translations unfinished for human review.
+
+Changed or removed source strings keep their old translations as `vanished`
+entries for translators; they are not included in the compiled catalogs. Do not
+pass `-no-obsolete` during routine updates. Docker updates on POSIX run with the
+host UID/GID so newly added catalogs are owned by the developer. Before a test
+build, complete active translations and run `tests/test_translations.py` to
+check text, plural forms and Qt placeholders. Linguistic and visual review is
+still needed when a translation changes.

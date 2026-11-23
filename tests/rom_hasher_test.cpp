@@ -11,6 +11,9 @@
 
 #include <functional>
 #include <iostream>
+#ifndef Q_OS_WIN
+#include <sys/stat.h>
+#endif
 
 using rl::runtime::RomHasher;
 namespace {
@@ -60,6 +63,15 @@ int main(int argc, char** argv) {
     expect(waitFor([&] { return calls == 2; }) && tooLarge && digest.isEmpty(), "byte limit");
     hasher.start(temporary.filePath(QStringLiteral("absent")), 3);
     expect(waitFor([&] { return calls == 3; }) && !error.isEmpty(), "read error");
+    hasher.start(temporary.path(), 3);
+    expect(waitFor([&] { return calls == 4; }) && !error.isEmpty() && digest.isEmpty(), "directories are refused");
+#ifndef Q_OS_WIN
+    const QString fifo = temporary.filePath(QStringLiteral("fifo.nes"));
+    expect(::mkfifo(QFile::encodeName(fifo).constData(), 0600) == 0, "create a FIFO without a writer");
+    hasher.start(fifo, 3);
+    expect(waitFor([&] { return calls == 5; }) && !error.isEmpty() && !hasher.isBusy(),
+           "FIFO is refused without opening it");
+#endif
 
     auto entered = std::make_shared<QSemaphore>();
     auto release = std::make_shared<QSemaphore>();

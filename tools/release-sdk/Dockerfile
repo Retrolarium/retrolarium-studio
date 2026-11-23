@@ -14,5 +14,13 @@ RUN mkdir /tmp/binutils && cd /tmp/binutils && \
 FROM ${QT_SDK}
 COPY --from=linker /opt/retrolarium-binutils /opt/retrolarium-binutils
 USER root
-RUN ln -sf /opt/retrolarium-binutils/bin/x86_64-w64-mingw32-ld /usr/bin/x86_64-w64-mingw32-ld && \
-    x86_64-w64-mingw32-ld --version | head -1
+RUN compiler_ld="$(x86_64-w64-mingw32-g++ -print-prog-name=ld)" && \
+    compiler_ld="$(command -v "$compiler_ld")" && test -n "$compiler_ld" && \
+    ln -sf /opt/retrolarium-binutils/bin/x86_64-w64-mingw32-ld "$compiler_ld" && \
+    if [ "$compiler_ld" != /usr/bin/x86_64-w64-mingw32-ld ]; then \
+        ln -sf /opt/retrolarium-binutils/bin/x86_64-w64-mingw32-ld /usr/bin/x86_64-w64-mingw32-ld; \
+    fi && \
+    printf 'int main() { return 0; }\n' > /tmp/linker-probe.cpp && \
+    x86_64-w64-mingw32-g++ /tmp/linker-probe.cpp -Wl,--version > /tmp/linker-version.txt && \
+    grep -q 'GNU ld.*2\.45\.1' /tmp/linker-version.txt && \
+    cat /tmp/linker-version.txt && rm -f /tmp/linker-probe.cpp /tmp/linker-version.txt

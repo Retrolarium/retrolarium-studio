@@ -2,6 +2,7 @@
 
 #include <QCryptographicHash>
 #include <QFile>
+#include <QFileInfo>
 #include <QFutureWatcher>
 #include <QtConcurrent/QtConcurrentRun>
 
@@ -16,6 +17,7 @@ RomHasher::~RomHasher() {
 }
 
 RomHasher::Result RomHasher::calculate(const QString& path, qint64 maxBytes, const Cancelled& cancelled) {
+    if (!QFileInfo(path).isFile()) return {{}, tr("The selected path is not a regular file."), false};
     QFile file(path);
     if (!file.open(QIODevice::ReadOnly)) return {{}, file.errorString(), false};
     if (file.size() > maxBytes) return {{}, {}, true};

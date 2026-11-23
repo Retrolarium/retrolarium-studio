@@ -27,6 +27,10 @@
         <source>Set up the source</source>
         <translation>Настроить исходник</translation>
     </message>
+    <message>
+        <source>Do not ask again</source>
+        <translation type="vanished">Больше не спрашивать</translation>
+    </message>
 </context>
 <context>
     <name>Values</name>
@@ -1979,11 +1983,15 @@
     </message>
     <message>
         <source>The assembled boss is shown in full. Select a part to inspect it.</source>
-        <translation type="unfinished"></translation>
+        <translation>Босс показан целиком в собранном виде. Выберите часть, чтобы изучить её.</translation>
     </message>
     <message>
         <source>Preview</source>
-        <translation type="unfinished"></translation>
+        <translation>Просмотр</translation>
+    </message>
+    <message>
+        <source>The game&apos;s code turns this boss&apos;s parts itself; it shows as its setup leaves it.</source>
+        <translation type="vanished">Части этого босса поворачивает сам код игры; он показан таким, каким его оставляет начальная настройка.</translation>
     </message>
 </context>
 <context>
@@ -3288,6 +3296,10 @@
         <source>All 100 rooms where the game puts them: ten to a row, the room above is ten less, the room below ten more. Select a room to start Play from selected there; Open room or a double click edits it.</source>
         <translation>Все 100 комнат там, где их ставит игра: по десять в ряд, комната выше — на десять меньше, ниже — на десять больше. Выберите комнату, чтобы «Играть с выбранного» начинал в ней; «Открыть комнату» или двойной щелчок открывает её для правки.</translation>
     </message>
+    <message>
+        <source>Scale</source>
+        <translation type="vanished">Масштаб</translation>
+    </message>
 </context>
 <context>
     <name>rl::castle_excellent::CastleExcellentMusicModel</name>
@@ -3579,27 +3591,31 @@
     </message>
     <message>
         <source>This room needs %1 object slots, including %2 from cells; the limit is %3.</source>
-        <translation type="unfinished"></translation>
+        <translation>Этой комнате нужно %1 слотов объектов, в том числе %2 из клеток; предел — %3.</translation>
     </message>
     <message>
         <source>Switch to Objects to paste an object.</source>
-        <translation type="unfinished"></translation>
+        <translation>Чтобы вставить объект, переключитесь в раздел «Объекты».</translation>
     </message>
     <message>
         <source>The clipboard does not contain a compatible Castle object.</source>
-        <translation type="unfinished"></translation>
+        <translation>В буфере обмена нет совместимого объекта Castle.</translation>
     </message>
     <message>
         <source>Paste an object into %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Вставить объект в %1</translation>
     </message>
     <message>
         <source>There is no empty space for this object in the room.</source>
-        <translation type="unfinished"></translation>
+        <translation>В комнате нет свободного места для этого объекта.</translation>
     </message>
     <message>
         <source>this room %1 / %2 objects (%7 from cells) · all rooms: stream %3 / %4 B, saved state %5 / %6 B</source>
-        <translation type="unfinished"></translation>
+        <translation>эта комната: %1 / %2 объектов (%7 из клеток) · все комнаты: поток %3 / %4 Б, сохранённое состояние %5 / %6 Б</translation>
+    </message>
+    <message>
+        <source>this room %1 / %2 objects · all rooms: stream %3 / %4 B, saved state %5 / %6 B</source>
+        <translation type="vanished">эта комната %1 / %2 объектов · все комнаты: поток %3 / %4 Б, сохранение %5 / %6 Б</translation>
     </message>
 </context>
 <context>
@@ -5990,7 +6006,7 @@
     </message>
     <message>
         <source>Select a piece to inspect it</source>
-        <translation type="unfinished"></translation>
+        <translation>Выберите часть, чтобы изучить её</translation>
     </message>
 </context>
 <context>
@@ -6190,7 +6206,7 @@
     </message>
     <message>
         <source>The clipboard object is invalid.</source>
-        <translation type="unfinished"></translation>
+        <translation>Объект в буфере обмена некорректен.</translation>
     </message>
 </context>
 <context>
@@ -9700,7 +9716,7 @@
     </message>
     <message>
         <source>Hot reload failed: %1 could not be written; restarting.</source>
-        <translation type="unfinished"></translation>
+        <translation>Горячая перезагрузка не удалась: не удалось записать %1; выполняется перезапуск.</translation>
     </message>
 </context>
 <context>
@@ -9716,6 +9732,13 @@
     <message>
         <source>Timed out after %1 minutes.</source>
         <translation>Прервано по таймауту через %1 мин.</translation>
+    </message>
+</context>
+<context>
+    <name>rl::runtime::RomHasher</name>
+    <message>
+        <source>The selected path is not a regular file.</source>
+        <translation>Выбранный путь не является обычным файлом.</translation>
     </message>
 </context>
 <context>
@@ -10845,63 +10868,67 @@
     </message>
     <message>
         <source>%1 is larger than %2 MiB: not a ROM the studio opens.</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 больше %2 МиБ: Studio не открывает такие ROM.</translation>
     </message>
     <message>
         <source>Could not read %1: %2</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Reading %1...</source>
-        <translation type="unfinished"></translation>
+        <translation>Не удалось прочитать %1: %2</translation>
     </message>
     <message>
         <source>The project is already open in another Retrolarium Studio window</source>
-        <translation type="unfinished"></translation>
+        <translation>Проект уже открыт в другом окне Retrolarium Studio</translation>
     </message>
     <message>
         <source>Studio (process %1) has %2 open. Switch to that window, or close the project there first.</source>
-        <translation type="unfinished"></translation>
+        <translation>В Studio (процесс %1) открыт %2. Переключитесь в это окно или сначала закройте в нём проект.</translation>
     </message>
     <message>
         <source>Another studio has %1 open. Switch to that window, or close the project there first.</source>
-        <translation type="unfinished"></translation>
+        <translation>В другом окне Studio открыт %1. Переключитесь в это окно или сначала закройте в нём проект.</translation>
     </message>
     <message>
         <source>The movie in the TAS editor was not saved; its window says why.</source>
-        <translation type="unfinished"></translation>
+        <translation>Ролик в TAS-редакторе не сохранён; причина указана в его окне.</translation>
     </message>
     <message>
         <source>The kit did not accept the consent to run the scripts of %1.</source>
-        <translation type="unfinished"></translation>
+        <translation>Kit не принял разрешение на запуск скриптов %1.</translation>
     </message>
     <message>
         <source>  The scripts of %1 were not run.</source>
-        <translation type="unfinished"></translation>
+        <translation>  Скрипты %1 не запущены.</translation>
     </message>
     <message>
         <source>Run the game&apos;s scripts</source>
-        <translation type="unfinished"></translation>
+        <translation>Запустить скрипты игры</translation>
     </message>
     <message>
         <source>Run the scripts of %1?</source>
-        <translation type="unfinished"></translation>
+        <translation>Запустить скрипты %1?</translation>
     </message>
     <message>
         <source>Studio will run Python scripts from this repository to build the game. They come from %1 (commit %2) and run with your rights on this computer. Allow them only if you trust this repository; the studio asks again when its files change.</source>
-        <translation type="unfinished"></translation>
+        <translation>Studio запустит скрипты Python из этого репозитория для сборки игры. Их источник — %1 (коммит %2); они выполняются с вашими правами на этом компьютере. Разрешайте запуск только доверенным репозиториям; при изменении файлов Studio запросит разрешение снова.</translation>
     </message>
     <message>
         <source>View on GitHub</source>
-        <translation type="unfinished"></translation>
+        <translation>Открыть на GitHub</translation>
     </message>
     <message>
         <source>Don&apos;t run</source>
-        <translation type="unfinished"></translation>
+        <translation>Не запускать</translation>
     </message>
     <message>
         <source>Run scripts</source>
-        <translation type="unfinished"></translation>
+        <translation>Запустить скрипты</translation>
+    </message>
+    <message>
+        <source>Please wait for the current task to finish…</source>
+        <translation>Дождитесь завершения текущей задачи…</translation>
+    </message>
+    <message>
+        <source>Reading %1…</source>
+        <translation>Чтение %1…</translation>
     </message>
 </context>
 <context>
@@ -11137,19 +11164,23 @@
     </message>
     <message>
         <source>The kit is not available here.</source>
-        <translation type="unfinished"></translation>
+        <translation>Kit здесь недоступен.</translation>
     </message>
     <message>
         <source>Wait for the running task to finish, then choose the BIOS again.</source>
-        <translation type="unfinished"></translation>
+        <translation>Дождитесь завершения текущей задачи, затем выберите BIOS снова.</translation>
     </message>
     <message>
         <source>Install the Disk System BIOS</source>
-        <translation type="unfinished"></translation>
+        <translation>Установить BIOS Disk System</translation>
     </message>
     <message>
         <source>Installing…</source>
-        <translation type="unfinished"></translation>
+        <translation>Установка…</translation>
+    </message>
+    <message>
+        <source>The kit did not answer.</source>
+        <translation type="vanished">Кит не ответил.</translation>
     </message>
 </context>
 <context>
@@ -15405,15 +15436,19 @@
     </message>
     <message>
         <source>Found %1, but only an .exe or rltool.py launcher is supported.</source>
-        <translation type="unfinished"></translation>
+        <translation>Найден %1, но поддерживаются только средства запуска .exe или rltool.py.</translation>
     </message>
     <message>
         <source>The Python that runs the kit was not found next to the studio. Reinstall Retrolarium Studio. For a source build, set RETROLARIUM_DEV=1 and put Python on PATH to run %1.</source>
-        <translation type="unfinished"></translation>
+        <translation>Рядом со Studio не найден Python для запуска Kit. Переустановите Retrolarium Studio. Для сборки из исходников задайте RETROLARIUM_DEV=1 и добавьте Python в PATH, чтобы запустить %1.</translation>
     </message>
     <message>
         <source>table &apos;%1&apos; defined twice</source>
-        <translation type="unfinished"></translation>
+        <translation>таблица «%1» определена дважды</translation>
+    </message>
+    <message>
+        <source>The Python that runs the kit was not found next to the studio. Reinstall Retrolarium Studio, or put Python on PATH to run %1.</source>
+        <translation type="vanished">Python, на котором работает кит, не найден рядом со студией. Переустановите Retrolarium Studio или добавьте Python в PATH, чтобы запустить %1.</translation>
     </message>
 </context>
 </TS>

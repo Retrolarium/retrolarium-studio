@@ -27,6 +27,10 @@
         <source>Set up the source</source>
         <translation>Preparar o código-fonte</translation>
     </message>
+    <message>
+        <source>Do not ask again</source>
+        <translation type="vanished">Não perguntar de novo</translation>
+    </message>
 </context>
 <context>
     <name>Values</name>
@@ -730,7 +734,7 @@
     </message>
     <message>
         <source>Castle Excellent</source>
-        <translation type="unfinished"></translation>
+        <translation>Castle Excellent</translation>
     </message>
     <message>
         <source>Its tunable bytes are in SFX parameters.</source>
@@ -1970,11 +1974,15 @@
     </message>
     <message>
         <source>The assembled boss is shown in full. Select a part to inspect it.</source>
-        <translation type="unfinished"></translation>
+        <translation>O chefe montado é exibido por inteiro. Selecione uma peça para inspecioná-la.</translation>
     </message>
     <message>
         <source>Preview</source>
-        <translation type="unfinished"></translation>
+        <translation>Prévia</translation>
+    </message>
+    <message>
+        <source>The game&apos;s code turns this boss&apos;s parts itself; it shows as its setup leaves it.</source>
+        <translation type="vanished">O próprio código do jogo gira as partes deste chefe; ele aparece como sua preparação o deixa.</translation>
     </message>
 </context>
 <context>
@@ -3275,6 +3283,10 @@
         <source>All 100 rooms where the game puts them: ten to a row, the room above is ten less, the room below ten more. Select a room to start Play from selected there; Open room or a double click edits it.</source>
         <translation>As 100 salas onde o jogo as coloca: dez por fileira, a sala de cima é dez a menos e a de baixo dez a mais. Escolha uma sala para Jogar a partir da seleção começar nela; Abrir sala ou um clique duplo a edita.</translation>
     </message>
+    <message>
+        <source>Scale</source>
+        <translation type="vanished">Escala</translation>
+    </message>
 </context>
 <context>
     <name>rl::castle_excellent::CastleExcellentMusicModel</name>
@@ -3565,27 +3577,31 @@
     </message>
     <message>
         <source>This room needs %1 object slots, including %2 from cells; the limit is %3.</source>
-        <translation type="unfinished"></translation>
+        <translation>Esta sala precisa de %1 espaços para objetos, incluindo %2 das células; o limite é %3.</translation>
     </message>
     <message>
         <source>Switch to Objects to paste an object.</source>
-        <translation type="unfinished"></translation>
+        <translation>Mude para Objetos para colar um objeto.</translation>
     </message>
     <message>
         <source>The clipboard does not contain a compatible Castle object.</source>
-        <translation type="unfinished"></translation>
+        <translation>A área de transferência não contém um objeto Castle compatível.</translation>
     </message>
     <message>
         <source>Paste an object into %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Colar um objeto em %1</translation>
     </message>
     <message>
         <source>There is no empty space for this object in the room.</source>
-        <translation type="unfinished"></translation>
+        <translation>Não há espaço livre para este objeto na sala.</translation>
     </message>
     <message>
         <source>this room %1 / %2 objects (%7 from cells) · all rooms: stream %3 / %4 B, saved state %5 / %6 B</source>
-        <translation type="unfinished"></translation>
+        <translation>esta sala: %1 / %2 objetos (%7 das células) · todas as salas: fluxo %3 / %4 B, estado salvo %5 / %6 B</translation>
+    </message>
+    <message>
+        <source>this room %1 / %2 objects · all rooms: stream %3 / %4 B, saved state %5 / %6 B</source>
+        <translation type="vanished">esta sala %1 / %2 objetos · todas as salas: fluxo %3 / %4 B, estado salvo %5 / %6 B</translation>
     </message>
 </context>
 <context>
@@ -3845,11 +3861,11 @@
     </message>
     <message>
         <source>Castlequest</source>
-        <translation type="unfinished"></translation>
+        <translation>Castlequest</translation>
     </message>
     <message>
         <source>Castle Excellent</source>
-        <translation type="unfinished"></translation>
+        <translation>Castle Excellent</translation>
     </message>
     <message>
         <source>Overview</source>
@@ -5491,11 +5507,11 @@
     </message>
     <message>
         <source>Famicom</source>
-        <translation type="unfinished"></translation>
+        <translation>Famicom</translation>
     </message>
     <message>
         <source>J Rev A</source>
-        <translation type="unfinished"></translation>
+        <translation>J Rev A</translation>
     </message>
     <message>
         <source>Bank %1 · %2</source>
@@ -5962,7 +5978,7 @@
     </message>
     <message>
         <source>Select a piece to inspect it</source>
-        <translation type="unfinished"></translation>
+        <translation>Selecione uma peça para inspecioná-la</translation>
     </message>
 </context>
 <context>
@@ -5985,7 +6001,7 @@
     </message>
     <message>
         <source>Retrolarium Kit</source>
-        <translation type="unfinished"></translation>
+        <translation>Retrolarium Kit</translation>
     </message>
     <message>
         <source>Play from selected</source>
@@ -6162,7 +6178,7 @@
     </message>
     <message>
         <source>The clipboard object is invalid.</source>
-        <translation type="unfinished"></translation>
+        <translation>O objeto na área de transferência é inválido.</translation>
     </message>
 </context>
 <context>
@@ -6673,15 +6689,15 @@
     </message>
     <message>
         <source>Flicky</source>
-        <translation type="unfinished"></translation>
+        <translation>Flicky</translation>
     </message>
     <message>
         <source>Mega Drive</source>
-        <translation type="unfinished">Mega Drive</translation>
+        <translation>Mega Drive</translation>
     </message>
     <message>
         <source>YM2612 + PSG</source>
-        <translation type="unfinished">YM2612 + PSG</translation>
+        <translation>YM2612 + PSG</translation>
     </message>
     <message>
         <source>Rounds %1–%2</source>
@@ -9654,7 +9670,7 @@
     </message>
     <message>
         <source>Hot reload failed: %1 could not be written; restarting.</source>
-        <translation type="unfinished"></translation>
+        <translation>Falha na recarga a quente: não foi possível gravar %1; reiniciando.</translation>
     </message>
 </context>
 <context>
@@ -9670,6 +9686,13 @@
     <message>
         <source>Timed out after %1 minutes.</source>
         <translation>Tempo esgotado depois de %1 minutos.</translation>
+    </message>
+</context>
+<context>
+    <name>rl::runtime::RomHasher</name>
+    <message>
+        <source>The selected path is not a regular file.</source>
+        <translation>O caminho selecionado não é um arquivo comum.</translation>
     </message>
 </context>
 <context>
@@ -9811,7 +9834,7 @@
     </message>
     <message>
         <source>Retrolarium Studio</source>
-        <translation type="unfinished"></translation>
+        <translation>Retrolarium Studio</translation>
     </message>
     <message>
         <source>Version %1 · Qt %2</source>
@@ -10021,11 +10044,11 @@
     <name>rl::shell::MainWindow</name>
     <message>
         <source>Retrolarium</source>
-        <translation type="unfinished"></translation>
+        <translation>Retrolarium</translation>
     </message>
     <message>
         <source>Retrolarium Studio</source>
-        <translation type="unfinished"></translation>
+        <translation>Retrolarium Studio</translation>
     </message>
     <message>
         <source>  %1 cancelled.</source>
@@ -10796,63 +10819,67 @@
     </message>
     <message>
         <source>%1 is larger than %2 MiB: not a ROM the studio opens.</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 excede %2 MiB: o Studio não abre ROMs desse tamanho.</translation>
     </message>
     <message>
         <source>Could not read %1: %2</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Reading %1...</source>
-        <translation type="unfinished"></translation>
+        <translation>Não foi possível ler %1: %2</translation>
     </message>
     <message>
         <source>The project is already open in another Retrolarium Studio window</source>
-        <translation type="unfinished"></translation>
+        <translation>O projeto já está aberto em outra janela do Retrolarium Studio</translation>
     </message>
     <message>
         <source>Studio (process %1) has %2 open. Switch to that window, or close the project there first.</source>
-        <translation type="unfinished"></translation>
+        <translation>O Studio (processo %1) está com %2 aberto. Mude para essa janela ou feche o projeto nela primeiro.</translation>
     </message>
     <message>
         <source>Another studio has %1 open. Switch to that window, or close the project there first.</source>
-        <translation type="unfinished"></translation>
+        <translation>Outro Studio está com %1 aberto. Mude para essa janela ou feche o projeto nela primeiro.</translation>
     </message>
     <message>
         <source>The movie in the TAS editor was not saved; its window says why.</source>
-        <translation type="unfinished"></translation>
+        <translation>O filme no editor TAS não foi salvo; o motivo aparece na janela dele.</translation>
     </message>
     <message>
         <source>The kit did not accept the consent to run the scripts of %1.</source>
-        <translation type="unfinished"></translation>
+        <translation>O kit não aceitou a permissão para executar os scripts de %1.</translation>
     </message>
     <message>
         <source>  The scripts of %1 were not run.</source>
-        <translation type="unfinished"></translation>
+        <translation>  Os scripts de %1 não foram executados.</translation>
     </message>
     <message>
         <source>Run the game&apos;s scripts</source>
-        <translation type="unfinished"></translation>
+        <translation>Executar os scripts do jogo</translation>
     </message>
     <message>
         <source>Run the scripts of %1?</source>
-        <translation type="unfinished"></translation>
+        <translation>Executar os scripts de %1?</translation>
     </message>
     <message>
         <source>Studio will run Python scripts from this repository to build the game. They come from %1 (commit %2) and run with your rights on this computer. Allow them only if you trust this repository; the studio asks again when its files change.</source>
-        <translation type="unfinished"></translation>
+        <translation>O Studio executará scripts Python deste repositório para compilar o jogo. Eles vêm de %1 (commit %2) e são executados com suas permissões neste computador. Permita apenas se confiar no repositório; o Studio perguntará novamente quando os arquivos mudarem.</translation>
     </message>
     <message>
         <source>View on GitHub</source>
-        <translation type="unfinished"></translation>
+        <translation>Ver no GitHub</translation>
     </message>
     <message>
         <source>Don&apos;t run</source>
-        <translation type="unfinished"></translation>
+        <translation>Não executar</translation>
     </message>
     <message>
         <source>Run scripts</source>
-        <translation type="unfinished"></translation>
+        <translation>Executar scripts</translation>
+    </message>
+    <message>
+        <source>Please wait for the current task to finish…</source>
+        <translation>Aguarde a conclusão da tarefa atual…</translation>
+    </message>
+    <message>
+        <source>Reading %1…</source>
+        <translation>Lendo %1…</translation>
     </message>
 </context>
 <context>
@@ -11088,19 +11115,23 @@
     </message>
     <message>
         <source>The kit is not available here.</source>
-        <translation type="unfinished"></translation>
+        <translation>O kit não está disponível aqui.</translation>
     </message>
     <message>
         <source>Wait for the running task to finish, then choose the BIOS again.</source>
-        <translation type="unfinished"></translation>
+        <translation>Aguarde a conclusão da tarefa em andamento e selecione o BIOS novamente.</translation>
     </message>
     <message>
         <source>Install the Disk System BIOS</source>
-        <translation type="unfinished"></translation>
+        <translation>Instalar o BIOS do Disk System</translation>
     </message>
     <message>
         <source>Installing…</source>
-        <translation type="unfinished"></translation>
+        <translation>Instalando…</translation>
+    </message>
+    <message>
+        <source>The kit did not answer.</source>
+        <translation type="vanished">O kit não respondeu.</translation>
     </message>
 </context>
 <context>
@@ -12450,11 +12481,11 @@
     </message>
     <message>
         <source>Super Mario Bros. 2</source>
-        <translation type="unfinished"></translation>
+        <translation>Super Mario Bros. 2</translation>
     </message>
     <message>
         <source>Super Mario Bros.</source>
-        <translation type="unfinished"></translation>
+        <translation>Super Mario Bros.</translation>
     </message>
     <message>
         <source>Pattern tables</source>
@@ -13269,11 +13300,11 @@
     <name>rl::solomon::SolomonPlaytestModel</name>
     <message>
         <source>MAME · nespal</source>
-        <translation type="unfinished"></translation>
+        <translation>MAME · nespal</translation>
     </message>
     <message>
         <source>MAME · nes</source>
-        <translation type="unfinished"></translation>
+        <translation>MAME · nes</translation>
     </message>
     <message>
         <source>Session</source>
@@ -13752,7 +13783,7 @@
     </message>
     <message>
         <source>Solomon&apos;s Key</source>
-        <translation type="unfinished"></translation>
+        <translation>Solomon&apos;s Key</translation>
     </message>
     <message>
         <source>Enemy sets</source>
@@ -14767,7 +14798,7 @@
     </message>
     <message>
         <source>Super Mario Bros.</source>
-        <translation type="unfinished"></translation>
+        <translation>Super Mario Bros.</translation>
     </message>
     <message>
         <source>Power-up</source>
@@ -15030,7 +15061,7 @@
     </message>
     <message>
         <source>Solomon&apos;s Key</source>
-        <translation type="unfinished"></translation>
+        <translation>Solomon&apos;s Key</translation>
     </message>
     <message>
         <source>World %1</source>
@@ -15339,15 +15370,19 @@
     </message>
     <message>
         <source>Found %1, but only an .exe or rltool.py launcher is supported.</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 encontrado, mas apenas inicializadores .exe ou rltool.py são aceitos.</translation>
     </message>
     <message>
         <source>The Python that runs the kit was not found next to the studio. Reinstall Retrolarium Studio. For a source build, set RETROLARIUM_DEV=1 and put Python on PATH to run %1.</source>
-        <translation type="unfinished"></translation>
+        <translation>O Python que executa o kit não foi encontrado ao lado do Studio. Reinstale o Retrolarium Studio. Para compilar a partir dos fontes, defina RETROLARIUM_DEV=1 e adicione o Python ao PATH para executar %1.</translation>
     </message>
     <message>
         <source>table &apos;%1&apos; defined twice</source>
-        <translation type="unfinished"></translation>
+        <translation>a tabela &apos;%1&apos; foi definida duas vezes</translation>
+    </message>
+    <message>
+        <source>The Python that runs the kit was not found next to the studio. Reinstall Retrolarium Studio, or put Python on PATH to run %1.</source>
+        <translation type="vanished">O Python que roda o kit não foi encontrado ao lado do estúdio. Reinstale o Retrolarium Studio ou coloque o Python no PATH para executar %1.</translation>
     </message>
 </context>
 </TS>

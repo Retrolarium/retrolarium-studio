@@ -1,6 +1,7 @@
 """Refresh Qt translation sources with a local SDK or the Longreach image."""
 
 import argparse
+import os
 from pathlib import Path
 import re
 import subprocess
@@ -18,7 +19,6 @@ def command(root, language, qt_prefix=None, image="qt5-win-amd64:latest"):
     args += [
         "-locations",
         "none",
-        "-no-obsolete",
         "-target-language",
         language,
         "src",
@@ -30,10 +30,15 @@ def command(root, language, qt_prefix=None, image="qt5-win-amd64:latest"):
     if qt_prefix is not None:
         executable = "lupdate.exe" if sys.platform == "win32" else "lupdate"
         return [str(qt_prefix / "bin" / executable), *args]
-    return [
+    docker = [
         "docker",
         "run",
         "--rm",
+    ]
+    if os.name == "posix":
+        docker += ["--user", f"{os.getuid()}:{os.getgid()}"]
+    return [
+        *docker,
         "--entrypoint",
         "/usr/local/Qt-5.15/bin/lupdate",
         "--mount",

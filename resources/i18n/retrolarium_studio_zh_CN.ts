@@ -27,6 +27,10 @@
         <source>Set up the source</source>
         <translation>设置源代码</translation>
     </message>
+    <message>
+        <source>Do not ask again</source>
+        <translation type="vanished">不再询问</translation>
+    </message>
 </context>
 <context>
     <name>Values</name>
@@ -730,7 +734,7 @@
     </message>
     <message>
         <source>Castle Excellent</source>
-        <translation type="unfinished"></translation>
+        <translation>Castle Excellent</translation>
     </message>
     <message>
         <source>Its tunable bytes are in SFX parameters.</source>
@@ -1961,11 +1965,15 @@
     </message>
     <message>
         <source>The assembled boss is shown in full. Select a part to inspect it.</source>
-        <translation type="unfinished"></translation>
+        <translation>完整显示组装后的首领。请选择一个部件以查看详情。</translation>
     </message>
     <message>
         <source>Preview</source>
-        <translation type="unfinished"></translation>
+        <translation>预览</translation>
+    </message>
+    <message>
+        <source>The game&apos;s code turns this boss&apos;s parts itself; it shows as its setup leaves it.</source>
+        <translation type="vanished">这个头目的部件由游戏代码自己转动；按其初始设置留下的样子显示。</translation>
     </message>
 </context>
 <context>
@@ -3262,6 +3270,10 @@
         <source>All 100 rooms where the game puts them: ten to a row, the room above is ten less, the room below ten more. Select a room to start Play from selected there; Open room or a double click edits it.</source>
         <translation>全部 100 个房间都在游戏放置它们的位置：每行十个，上方的房间编号小十，下方的大十。选择一个房间，让“从所选处游玩”从那里开始；“打开房间”或双击即可编辑它。</translation>
     </message>
+    <message>
+        <source>Scale</source>
+        <translation type="vanished">缩放</translation>
+    </message>
 </context>
 <context>
     <name>rl::castle_excellent::CastleExcellentMusicModel</name>
@@ -3551,27 +3563,31 @@
     </message>
     <message>
         <source>This room needs %1 object slots, including %2 from cells; the limit is %3.</source>
-        <translation type="unfinished"></translation>
+        <translation>此房间需要 %1 个对象槽位，其中 %2 个来自单元格；上限为 %3。</translation>
     </message>
     <message>
         <source>Switch to Objects to paste an object.</source>
-        <translation type="unfinished"></translation>
+        <translation>请切换到“对象”以粘贴对象。</translation>
     </message>
     <message>
         <source>The clipboard does not contain a compatible Castle object.</source>
-        <translation type="unfinished"></translation>
+        <translation>剪贴板中没有兼容的 Castle 对象。</translation>
     </message>
     <message>
         <source>Paste an object into %1</source>
-        <translation type="unfinished"></translation>
+        <translation>将对象粘贴到 %1</translation>
     </message>
     <message>
         <source>There is no empty space for this object in the room.</source>
-        <translation type="unfinished"></translation>
+        <translation>房间内没有放置此对象的空闲位置。</translation>
     </message>
     <message>
         <source>this room %1 / %2 objects (%7 from cells) · all rooms: stream %3 / %4 B, saved state %5 / %6 B</source>
-        <translation type="unfinished"></translation>
+        <translation>此房间：%1 / %2 个对象（%7 个来自单元格） · 全部房间：数据流 %3 / %4 B，保存状态 %5 / %6 B</translation>
+    </message>
+    <message>
+        <source>this room %1 / %2 objects · all rooms: stream %3 / %4 B, saved state %5 / %6 B</source>
+        <translation type="vanished">此房间 %1 / %2 个物件 · 全部房间：数据流 %3 / %4 B，存档状态 %5 / %6 B</translation>
     </message>
 </context>
 <context>
@@ -3831,11 +3847,11 @@
     </message>
     <message>
         <source>Castlequest</source>
-        <translation type="unfinished"></translation>
+        <translation>Castlequest</translation>
     </message>
     <message>
         <source>Castle Excellent</source>
-        <translation type="unfinished"></translation>
+        <translation>Castle Excellent</translation>
     </message>
     <message>
         <source>Overview</source>
@@ -5469,11 +5485,11 @@
     </message>
     <message>
         <source>Famicom</source>
-        <translation type="unfinished"></translation>
+        <translation>Famicom</translation>
     </message>
     <message>
         <source>J Rev A</source>
-        <translation type="unfinished"></translation>
+        <translation>J Rev A</translation>
     </message>
     <message>
         <source>Bank %1 · %2</source>
@@ -5934,7 +5950,7 @@
     </message>
     <message>
         <source>Select a piece to inspect it</source>
-        <translation type="unfinished"></translation>
+        <translation>请选择一个部件以查看详情</translation>
     </message>
 </context>
 <context>
@@ -5957,7 +5973,7 @@
     </message>
     <message>
         <source>Retrolarium Kit</source>
-        <translation type="unfinished"></translation>
+        <translation>Retrolarium Kit</translation>
     </message>
     <message>
         <source>Play from selected</source>
@@ -6134,7 +6150,7 @@
     </message>
     <message>
         <source>The clipboard object is invalid.</source>
-        <translation type="unfinished"></translation>
+        <translation>剪贴板中的对象无效。</translation>
     </message>
 </context>
 <context>
@@ -6644,15 +6660,15 @@
     </message>
     <message>
         <source>Flicky</source>
-        <translation type="unfinished"></translation>
+        <translation>Flicky</translation>
     </message>
     <message>
         <source>Mega Drive</source>
-        <translation type="unfinished">Mega Drive</translation>
+        <translation>Mega Drive</translation>
     </message>
     <message>
         <source>YM2612 + PSG</source>
-        <translation type="unfinished">YM2612 + PSG</translation>
+        <translation>YM2612 + PSG</translation>
     </message>
     <message>
         <source>Rounds %1–%2</source>
@@ -9608,7 +9624,7 @@
     </message>
     <message>
         <source>Hot reload failed: %1 could not be written; restarting.</source>
-        <translation type="unfinished"></translation>
+        <translation>热重载失败：无法写入 %1；正在重新启动。</translation>
     </message>
 </context>
 <context>
@@ -9624,6 +9640,13 @@
     <message>
         <source>Timed out after %1 minutes.</source>
         <translation>%1 分钟后超时。</translation>
+    </message>
+</context>
+<context>
+    <name>rl::runtime::RomHasher</name>
+    <message>
+        <source>The selected path is not a regular file.</source>
+        <translation>所选路径不是普通文件。</translation>
     </message>
 </context>
 <context>
@@ -9765,7 +9788,7 @@
     </message>
     <message>
         <source>Retrolarium Studio</source>
-        <translation type="unfinished"></translation>
+        <translation>Retrolarium Studio</translation>
     </message>
     <message>
         <source>Version %1 · Qt %2</source>
@@ -9973,11 +9996,11 @@
     <name>rl::shell::MainWindow</name>
     <message>
         <source>Retrolarium</source>
-        <translation type="unfinished"></translation>
+        <translation>Retrolarium</translation>
     </message>
     <message>
         <source>Retrolarium Studio</source>
-        <translation type="unfinished"></translation>
+        <translation>Retrolarium Studio</translation>
     </message>
     <message>
         <source>  %1 cancelled.</source>
@@ -10747,63 +10770,67 @@
     </message>
     <message>
         <source>%1 is larger than %2 MiB: not a ROM the studio opens.</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 超过 %2 MiB：Studio 无法打开此大小的 ROM。</translation>
     </message>
     <message>
         <source>Could not read %1: %2</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Reading %1...</source>
-        <translation type="unfinished"></translation>
+        <translation>无法读取 %1：%2</translation>
     </message>
     <message>
         <source>The project is already open in another Retrolarium Studio window</source>
-        <translation type="unfinished"></translation>
+        <translation>此项目已在另一个 Retrolarium Studio 窗口中打开</translation>
     </message>
     <message>
         <source>Studio (process %1) has %2 open. Switch to that window, or close the project there first.</source>
-        <translation type="unfinished"></translation>
+        <translation>Studio（进程 %1）已打开 %2。请切换到该窗口，或先在其中关闭项目。</translation>
     </message>
     <message>
         <source>Another studio has %1 open. Switch to that window, or close the project there first.</source>
-        <translation type="unfinished"></translation>
+        <translation>另一个 Studio 已打开 %1。请切换到该窗口，或先在其中关闭项目。</translation>
     </message>
     <message>
         <source>The movie in the TAS editor was not saved; its window says why.</source>
-        <translation type="unfinished"></translation>
+        <translation>TAS 编辑器中的录像未保存；原因显示在其窗口中。</translation>
     </message>
     <message>
         <source>The kit did not accept the consent to run the scripts of %1.</source>
-        <translation type="unfinished"></translation>
+        <translation>Kit 未接受运行 %1 脚本的许可。</translation>
     </message>
     <message>
         <source>  The scripts of %1 were not run.</source>
-        <translation type="unfinished"></translation>
+        <translation>  未运行 %1 的脚本。</translation>
     </message>
     <message>
         <source>Run the game&apos;s scripts</source>
-        <translation type="unfinished"></translation>
+        <translation>运行游戏脚本</translation>
     </message>
     <message>
         <source>Run the scripts of %1?</source>
-        <translation type="unfinished"></translation>
+        <translation>运行 %1 的脚本？</translation>
     </message>
     <message>
         <source>Studio will run Python scripts from this repository to build the game. They come from %1 (commit %2) and run with your rights on this computer. Allow them only if you trust this repository; the studio asks again when its files change.</source>
-        <translation type="unfinished"></translation>
+        <translation>Studio 将运行此仓库中的 Python 脚本来构建游戏。它们来自 %1（提交 %2），并以您在此计算机上的权限运行。请仅在信任此仓库时允许；仓库文件更改后，Studio 会再次询问。</translation>
     </message>
     <message>
         <source>View on GitHub</source>
-        <translation type="unfinished"></translation>
+        <translation>在 GitHub 上查看</translation>
     </message>
     <message>
         <source>Don&apos;t run</source>
-        <translation type="unfinished"></translation>
+        <translation>不运行</translation>
     </message>
     <message>
         <source>Run scripts</source>
-        <translation type="unfinished"></translation>
+        <translation>运行脚本</translation>
+    </message>
+    <message>
+        <source>Please wait for the current task to finish…</source>
+        <translation>请等待当前任务完成…</translation>
+    </message>
+    <message>
+        <source>Reading %1…</source>
+        <translation>正在读取 %1…</translation>
     </message>
 </context>
 <context>
@@ -11039,19 +11066,23 @@
     </message>
     <message>
         <source>The kit is not available here.</source>
-        <translation type="unfinished"></translation>
+        <translation>此处无法使用 Kit。</translation>
     </message>
     <message>
         <source>Wait for the running task to finish, then choose the BIOS again.</source>
-        <translation type="unfinished"></translation>
+        <translation>请等待正在运行的任务完成，然后重新选择 BIOS。</translation>
     </message>
     <message>
         <source>Install the Disk System BIOS</source>
-        <translation type="unfinished"></translation>
+        <translation>安装 Disk System BIOS</translation>
     </message>
     <message>
         <source>Installing…</source>
-        <translation type="unfinished"></translation>
+        <translation>正在安装…</translation>
+    </message>
+    <message>
+        <source>The kit did not answer.</source>
+        <translation type="vanished">工具包没有响应。</translation>
     </message>
 </context>
 <context>
@@ -12397,11 +12428,11 @@
     </message>
     <message>
         <source>Super Mario Bros. 2</source>
-        <translation type="unfinished"></translation>
+        <translation>Super Mario Bros. 2</translation>
     </message>
     <message>
         <source>Super Mario Bros.</source>
-        <translation type="unfinished"></translation>
+        <translation>Super Mario Bros.</translation>
     </message>
     <message>
         <source>Pattern tables</source>
@@ -13210,11 +13241,11 @@
     <name>rl::solomon::SolomonPlaytestModel</name>
     <message>
         <source>MAME · nespal</source>
-        <translation type="unfinished"></translation>
+        <translation>MAME · nespal</translation>
     </message>
     <message>
         <source>MAME · nes</source>
-        <translation type="unfinished"></translation>
+        <translation>MAME · nes</translation>
     </message>
     <message>
         <source>Session</source>
@@ -13692,7 +13723,7 @@
     </message>
     <message>
         <source>Solomon&apos;s Key</source>
-        <translation type="unfinished"></translation>
+        <translation>Solomon&apos;s Key</translation>
     </message>
     <message>
         <source>Enemy sets</source>
@@ -14701,7 +14732,7 @@
     </message>
     <message>
         <source>Super Mario Bros.</source>
-        <translation type="unfinished"></translation>
+        <translation>Super Mario Bros.</translation>
     </message>
     <message>
         <source>Power-up</source>
@@ -14964,7 +14995,7 @@
     </message>
     <message>
         <source>Solomon&apos;s Key</source>
-        <translation type="unfinished"></translation>
+        <translation>Solomon&apos;s Key</translation>
     </message>
     <message>
         <source>World %1</source>
@@ -15273,15 +15304,19 @@
     </message>
     <message>
         <source>Found %1, but only an .exe or rltool.py launcher is supported.</source>
-        <translation type="unfinished"></translation>
+        <translation>找到了 %1，但仅支持 .exe 或 rltool.py 启动程序。</translation>
     </message>
     <message>
         <source>The Python that runs the kit was not found next to the studio. Reinstall Retrolarium Studio. For a source build, set RETROLARIUM_DEV=1 and put Python on PATH to run %1.</source>
-        <translation type="unfinished"></translation>
+        <translation>在 Studio 旁未找到运行 Kit 的 Python。请重新安装 Retrolarium Studio。如从源码构建，请设置 RETROLARIUM_DEV=1 并将 Python 加入 PATH，以运行 %1。</translation>
     </message>
     <message>
         <source>table &apos;%1&apos; defined twice</source>
-        <translation type="unfinished"></translation>
+        <translation>表“%1”被重复定义</translation>
+    </message>
+    <message>
+        <source>The Python that runs the kit was not found next to the studio. Reinstall Retrolarium Studio, or put Python on PATH to run %1.</source>
+        <translation type="vanished">在工作室旁未找到运行工具包的 Python。请重新安装 Retrolarium Studio，或将 Python 加入 PATH 以运行 %1。</translation>
     </message>
 </context>
 </TS>

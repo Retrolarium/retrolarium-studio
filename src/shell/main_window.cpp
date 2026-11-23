@@ -1310,9 +1310,12 @@ bool askSetUpSource(QWidget* parent, const QString& name) {
 }  // namespace
 
 void MainWindow::openRomFile(const QString& rom) {
-    if (isBusy()) return;
+    if (isBusy()) {
+        updateStatus(tr("Please wait for the current task to finish…"));
+        return;
+    }
     if (romHasher_->start(rom, kMaxRomSize)) {
-        updateStatus(tr("Reading %1...").arg(QFileInfo(rom).fileName()));
+        updateStatus(tr("Reading %1…").arg(QFileInfo(rom).fileName()));
     }
 }
 

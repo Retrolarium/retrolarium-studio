@@ -26,21 +26,21 @@
     </message>
     <message numerus="yes">
         <source>%n metatiles</source>
-        <translation type="unfinished">
-            <numerusform></numerusform>
-            <numerusform></numerusform>
+        <translation>
+            <numerusform>%n metatile</numerusform>
+            <numerusform>%n metatiles</numerusform>
         </translation>
     </message>
     <message numerus="yes">
         <source>%n keyframes</source>
-        <translation type="unfinished">
-            <numerusform></numerusform>
-            <numerusform></numerusform>
+        <translation>
+            <numerusform>%n keyframe</numerusform>
+            <numerusform>%n keyframes</numerusform>
         </translation>
     </message>
     <message numerus="yes">
         <source>%n lines</source>
-        <translation type="unfinished">
+        <translation>
             <numerusform>%n line</numerusform>
             <numerusform>%n lines</numerusform>
         </translation>
@@ -60,16 +60,16 @@
     <name>rl::alien_soldier::BossesModel</name>
     <message numerus="yes">
         <source>%n frames</source>
-        <translation type="unfinished">
+        <translation>
             <numerusform>%n frame</numerusform>
             <numerusform>%n frames</numerusform>
         </translation>
     </message>
     <message numerus="yes">
         <source>%n pixels</source>
-        <translation type="unfinished">
-            <numerusform></numerusform>
-            <numerusform></numerusform>
+        <translation>
+            <numerusform>%n pixel</numerusform>
+            <numerusform>%n pixels</numerusform>
         </translation>
     </message>
 </context>
@@ -77,14 +77,14 @@
     <name>rl::alien_soldier::ObjectMetatilesModel</name>
     <message numerus="yes">
         <source>%1 · %n metatiles</source>
-        <translation type="unfinished">
-            <numerusform></numerusform>
-            <numerusform></numerusform>
+        <translation>
+            <numerusform>%1 · %n metatile</numerusform>
+            <numerusform>%1 · %n metatiles</numerusform>
         </translation>
     </message>
     <message numerus="yes">
         <source>%n pieces</source>
-        <translation type="unfinished">
+        <translation>
             <numerusform>%n piece</numerusform>
             <numerusform>%n pieces</numerusform>
         </translation>
@@ -104,7 +104,7 @@
     <name>rl::alien_soldier::SampleModel</name>
     <message numerus="yes">
         <source>%n bytes</source>
-        <translation type="unfinished">
+        <translation>
             <numerusform>%n byte</numerusform>
             <numerusform>%n bytes</numerusform>
         </translation>
@@ -151,16 +151,16 @@
     <name>rl::doraemon::DoraemonBehaviorModel</name>
     <message numerus="yes">
         <source>This instruction has %n operand byte(s).</source>
-        <translation type="unfinished">
-            <numerusform></numerusform>
-            <numerusform></numerusform>
+        <translation>
+            <numerusform>This instruction has %n operand byte.</numerusform>
+            <numerusform>This instruction has %n operand bytes.</numerusform>
         </translation>
     </message>
     <message numerus="yes">
         <source>%1 · %n instructions</source>
-        <translation type="unfinished">
-            <numerusform></numerusform>
-            <numerusform></numerusform>
+        <translation>
+            <numerusform>%1 · %n instruction</numerusform>
+            <numerusform>%1 · %n instructions</numerusform>
         </translation>
     </message>
 </context>
@@ -219,9 +219,9 @@
     </message>
     <message numerus="yes">
         <source>%n rows</source>
-        <translation type="unfinished">
-            <numerusform></numerusform>
-            <numerusform></numerusform>
+        <translation>
+            <numerusform>%n row</numerusform>
+            <numerusform>%n rows</numerusform>
         </translation>
     </message>
 </context>
@@ -229,16 +229,16 @@
     <name>rl::doraemon::DoraemonStreamEventsModel</name>
     <message numerus="yes">
         <source>Write %n byte(s) in hexadecimal, such as $2B.</source>
-        <translation type="unfinished">
-            <numerusform></numerusform>
-            <numerusform></numerusform>
+        <translation>
+            <numerusform>Write %n byte in hexadecimal, such as $2B.</numerusform>
+            <numerusform>Write %n bytes in hexadecimal, such as $2B.</numerusform>
         </translation>
     </message>
     <message numerus="yes">
         <source>%1 · %n events</source>
-        <translation type="unfinished">
-            <numerusform></numerusform>
-            <numerusform></numerusform>
+        <translation>
+            <numerusform>%1 · %n event</numerusform>
+            <numerusform>%1 · %n events</numerusform>
         </translation>
     </message>
 </context>
@@ -307,9 +307,9 @@
     <name>rl::nes::RecordTableModel</name>
     <message numerus="yes">
         <source>%1 · %n records</source>
-        <translation type="unfinished">
-            <numerusform></numerusform>
-            <numerusform></numerusform>
+        <translation>
+            <numerusform>%1 · %n record</numerusform>
+            <numerusform>%1 · %n records</numerusform>
         </translation>
     </message>
 </context>
@@ -375,9 +375,9 @@
     </message>
     <message numerus="yes">
         <source>%n rows</source>
-        <translation type="unfinished">
-            <numerusform></numerusform>
-            <numerusform></numerusform>
+        <translation>
+            <numerusform>%n row</numerusform>
+            <numerusform>%n rows</numerusform>
         </translation>
     </message>
 </context>

@@ -24,12 +24,19 @@ def supports_load_config(version: str) -> bool:
     return tuple(map(int, match.groups())) >= (2, 45)
 
 
+def linker_version(image_id: str) -> str:
+    linker = output("run", "--rm", "--entrypoint", "x86_64-w64-mingw32-g++", image_id, "-print-prog-name=ld")
+    if not linker or "\n" in linker:
+        raise ValueError("The SDK compiler did not identify its linker")
+    return output("run", "--rm", "--entrypoint", linker, image_id, "--version")
+
+
 def prepare(image: str) -> str:
     # Resolve first: a tag changing during the build must not change the SDK.
     image_id = output("image", "inspect", "--format", "{{.Id}}", image)
     if not re.fullmatch(r"sha256:[0-9a-f]{64}", image_id):
         raise ValueError("Docker did not return an SDK image ID")
-    version = output("run", "--rm", "--entrypoint", "x86_64-w64-mingw32-ld", image_id, "--version")
+    version = linker_version(image_id)
     if supports_load_config(version):
         return image_id
     base = "retrolarium-studio-sdk-base:" + image_id[7:]
@@ -44,6 +51,8 @@ def prepare(image: str) -> str:
     result = output("image", "inspect", "--format", "{{.Id}}", name)
     if not re.fullmatch(r"sha256:[0-9a-f]{64}", result):
         raise ValueError("Docker did not return the prepared SDK image ID")
+    if not supports_load_config(linker_version(result)):
+        raise ValueError("The prepared SDK compiler still uses an unsupported linker")
     return result
 
 

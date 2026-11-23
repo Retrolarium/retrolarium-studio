@@ -27,6 +27,10 @@
         <source>Set up the source</source>
         <translation>ソースをセットアップ</translation>
     </message>
+    <message>
+        <source>Do not ask again</source>
+        <translation type="vanished">今後は確認しない</translation>
+    </message>
 </context>
 <context>
     <name>Values</name>
@@ -730,7 +734,7 @@
     </message>
     <message>
         <source>Castle Excellent</source>
-        <translation type="unfinished"></translation>
+        <translation>Castle Excellent</translation>
     </message>
     <message>
         <source>Its tunable bytes are in SFX parameters.</source>
@@ -1961,11 +1965,15 @@
     </message>
     <message>
         <source>The assembled boss is shown in full. Select a part to inspect it.</source>
-        <translation type="unfinished"></translation>
+        <translation>組み立てられたボス全体を表示しています。調べる部品を選択してください。</translation>
     </message>
     <message>
         <source>Preview</source>
-        <translation type="unfinished"></translation>
+        <translation>プレビュー</translation>
+    </message>
+    <message>
+        <source>The game&apos;s code turns this boss&apos;s parts itself; it shows as its setup leaves it.</source>
+        <translation type="vanished">このボスのパーツはゲームのコード自体が回します。初期設定が残した状態で表示します。</translation>
     </message>
 </context>
 <context>
@@ -3262,6 +3270,10 @@
         <source>All 100 rooms where the game puts them: ten to a row, the room above is ten less, the room below ten more. Select a room to start Play from selected there; Open room or a double click edits it.</source>
         <translation>ゲームが配置するとおりの全 100 ルームです。1 列に 10 ルーム並び、上のルームは 10 小さく、下のルームは 10 大きい番号です。ルームを選ぶと「選択位置からプレイ」がそこから始まります。「ルームを開く」かダブルクリックで編集します。</translation>
     </message>
+    <message>
+        <source>Scale</source>
+        <translation type="vanished">倍率</translation>
+    </message>
 </context>
 <context>
     <name>rl::castle_excellent::CastleExcellentMusicModel</name>
@@ -3551,27 +3563,31 @@
     </message>
     <message>
         <source>This room needs %1 object slots, including %2 from cells; the limit is %3.</source>
-        <translation type="unfinished"></translation>
+        <translation>この部屋にはオブジェクト用スロットが %1 個必要です（セル由来の %2 個を含む）。上限は %3 個です。</translation>
     </message>
     <message>
         <source>Switch to Objects to paste an object.</source>
-        <translation type="unfinished"></translation>
+        <translation>オブジェクトを貼り付けるには「オブジェクト」に切り替えてください。</translation>
     </message>
     <message>
         <source>The clipboard does not contain a compatible Castle object.</source>
-        <translation type="unfinished"></translation>
+        <translation>クリップボードに互換性のある Castle オブジェクトがありません。</translation>
     </message>
     <message>
         <source>Paste an object into %1</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 にオブジェクトを貼り付け</translation>
     </message>
     <message>
         <source>There is no empty space for this object in the room.</source>
-        <translation type="unfinished"></translation>
+        <translation>部屋にこのオブジェクトを置く空きがありません。</translation>
     </message>
     <message>
         <source>this room %1 / %2 objects (%7 from cells) · all rooms: stream %3 / %4 B, saved state %5 / %6 B</source>
-        <translation type="unfinished"></translation>
+        <translation>この部屋: %1 / %2 オブジェクト（セル由来 %7） · 全部屋: ストリーム %3 / %4 B、保存状態 %5 / %6 B</translation>
+    </message>
+    <message>
+        <source>this room %1 / %2 objects · all rooms: stream %3 / %4 B, saved state %5 / %6 B</source>
+        <translation type="vanished">このルーム %1 / %2 オブジェクト · 全ルーム: ストリーム %3 / %4 B、セーブ状態 %5 / %6 B</translation>
     </message>
 </context>
 <context>
@@ -3831,11 +3847,11 @@
     </message>
     <message>
         <source>Castlequest</source>
-        <translation type="unfinished"></translation>
+        <translation>Castlequest</translation>
     </message>
     <message>
         <source>Castle Excellent</source>
-        <translation type="unfinished"></translation>
+        <translation>Castle Excellent</translation>
     </message>
     <message>
         <source>Overview</source>
@@ -5469,11 +5485,11 @@
     </message>
     <message>
         <source>Famicom</source>
-        <translation type="unfinished"></translation>
+        <translation>Famicom</translation>
     </message>
     <message>
         <source>J Rev A</source>
-        <translation type="unfinished"></translation>
+        <translation>J Rev A</translation>
     </message>
     <message>
         <source>Bank %1 · %2</source>
@@ -5934,7 +5950,7 @@
     </message>
     <message>
         <source>Select a piece to inspect it</source>
-        <translation type="unfinished"></translation>
+        <translation>調べる部品を選択してください</translation>
     </message>
 </context>
 <context>
@@ -5957,7 +5973,7 @@
     </message>
     <message>
         <source>Retrolarium Kit</source>
-        <translation type="unfinished"></translation>
+        <translation>Retrolarium Kit</translation>
     </message>
     <message>
         <source>Play from selected</source>
@@ -6134,7 +6150,7 @@
     </message>
     <message>
         <source>The clipboard object is invalid.</source>
-        <translation type="unfinished"></translation>
+        <translation>クリップボードのオブジェクトが無効です。</translation>
     </message>
 </context>
 <context>
@@ -6644,15 +6660,15 @@
     </message>
     <message>
         <source>Flicky</source>
-        <translation type="unfinished"></translation>
+        <translation>Flicky</translation>
     </message>
     <message>
         <source>Mega Drive</source>
-        <translation type="unfinished">Mega Drive</translation>
+        <translation>Mega Drive</translation>
     </message>
     <message>
         <source>YM2612 + PSG</source>
-        <translation type="unfinished">YM2612 + PSG</translation>
+        <translation>YM2612 + PSG</translation>
     </message>
     <message>
         <source>Rounds %1–%2</source>
@@ -9608,7 +9624,7 @@
     </message>
     <message>
         <source>Hot reload failed: %1 could not be written; restarting.</source>
-        <translation type="unfinished"></translation>
+        <translation>ホットリロードに失敗しました: %1 に書き込めないため再起動します。</translation>
     </message>
 </context>
 <context>
@@ -9624,6 +9640,13 @@
     <message>
         <source>Timed out after %1 minutes.</source>
         <translation>%1 分でタイムアウトしました。</translation>
+    </message>
+</context>
+<context>
+    <name>rl::runtime::RomHasher</name>
+    <message>
+        <source>The selected path is not a regular file.</source>
+        <translation>選択されたパスは通常のファイルではありません。</translation>
     </message>
 </context>
 <context>
@@ -9765,7 +9788,7 @@
     </message>
     <message>
         <source>Retrolarium Studio</source>
-        <translation type="unfinished"></translation>
+        <translation>Retrolarium Studio</translation>
     </message>
     <message>
         <source>Version %1 · Qt %2</source>
@@ -9973,11 +9996,11 @@
     <name>rl::shell::MainWindow</name>
     <message>
         <source>Retrolarium</source>
-        <translation type="unfinished"></translation>
+        <translation>Retrolarium</translation>
     </message>
     <message>
         <source>Retrolarium Studio</source>
-        <translation type="unfinished"></translation>
+        <translation>Retrolarium Studio</translation>
     </message>
     <message>
         <source>  %1 cancelled.</source>
@@ -10747,63 +10770,67 @@
     </message>
     <message>
         <source>%1 is larger than %2 MiB: not a ROM the studio opens.</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 は %2 MiB を超えています。Studio ではこの大きさの ROM を開けません。</translation>
     </message>
     <message>
         <source>Could not read %1: %2</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Reading %1...</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 を読み取れませんでした: %2</translation>
     </message>
     <message>
         <source>The project is already open in another Retrolarium Studio window</source>
-        <translation type="unfinished"></translation>
+        <translation>このプロジェクトは別の Retrolarium Studio ウィンドウで既に開かれています</translation>
     </message>
     <message>
         <source>Studio (process %1) has %2 open. Switch to that window, or close the project there first.</source>
-        <translation type="unfinished"></translation>
+        <translation>Studio（プロセス %1）で %2 が開かれています。そのウィンドウに切り替えるか、先にそこでプロジェクトを閉じてください。</translation>
     </message>
     <message>
         <source>Another studio has %1 open. Switch to that window, or close the project there first.</source>
-        <translation type="unfinished"></translation>
+        <translation>別の Studio で %1 が開かれています。そのウィンドウに切り替えるか、先にそこでプロジェクトを閉じてください。</translation>
     </message>
     <message>
         <source>The movie in the TAS editor was not saved; its window says why.</source>
-        <translation type="unfinished"></translation>
+        <translation>TAS エディターのムービーは保存されませんでした。理由はそのウィンドウに表示されています。</translation>
     </message>
     <message>
         <source>The kit did not accept the consent to run the scripts of %1.</source>
-        <translation type="unfinished"></translation>
+        <translation>Kit が %1 のスクリプト実行の許可を受け付けませんでした。</translation>
     </message>
     <message>
         <source>  The scripts of %1 were not run.</source>
-        <translation type="unfinished"></translation>
+        <translation>  %1 のスクリプトは実行されませんでした。</translation>
     </message>
     <message>
         <source>Run the game&apos;s scripts</source>
-        <translation type="unfinished"></translation>
+        <translation>ゲームのスクリプトを実行</translation>
     </message>
     <message>
         <source>Run the scripts of %1?</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 のスクリプトを実行しますか？</translation>
     </message>
     <message>
         <source>Studio will run Python scripts from this repository to build the game. They come from %1 (commit %2) and run with your rights on this computer. Allow them only if you trust this repository; the studio asks again when its files change.</source>
-        <translation type="unfinished"></translation>
+        <translation>Studio はゲームのビルドのため、このリポジトリの Python スクリプトを実行します。取得元は %1（コミット %2）で、このコンピューター上のあなたの権限で実行されます。信頼できるリポジトリの場合のみ許可してください。ファイルが変更されると Studio は再確認します。</translation>
     </message>
     <message>
         <source>View on GitHub</source>
-        <translation type="unfinished"></translation>
+        <translation>GitHub で表示</translation>
     </message>
     <message>
         <source>Don&apos;t run</source>
-        <translation type="unfinished"></translation>
+        <translation>実行しない</translation>
     </message>
     <message>
         <source>Run scripts</source>
-        <translation type="unfinished"></translation>
+        <translation>スクリプトを実行</translation>
+    </message>
+    <message>
+        <source>Please wait for the current task to finish…</source>
+        <translation>現在の処理が完了するまでお待ちください…</translation>
+    </message>
+    <message>
+        <source>Reading %1…</source>
+        <translation>%1 を読み取り中…</translation>
     </message>
 </context>
 <context>
@@ -11039,19 +11066,23 @@
     </message>
     <message>
         <source>The kit is not available here.</source>
-        <translation type="unfinished"></translation>
+        <translation>ここでは Kit を使用できません。</translation>
     </message>
     <message>
         <source>Wait for the running task to finish, then choose the BIOS again.</source>
-        <translation type="unfinished"></translation>
+        <translation>実行中の処理が完了してから BIOS を再選択してください。</translation>
     </message>
     <message>
         <source>Install the Disk System BIOS</source>
-        <translation type="unfinished"></translation>
+        <translation>Disk System BIOS をインストール</translation>
     </message>
     <message>
         <source>Installing…</source>
-        <translation type="unfinished"></translation>
+        <translation>インストール中…</translation>
+    </message>
+    <message>
+        <source>The kit did not answer.</source>
+        <translation type="vanished">キットが応答しませんでした。</translation>
     </message>
 </context>
 <context>
@@ -12397,11 +12428,11 @@
     </message>
     <message>
         <source>Super Mario Bros. 2</source>
-        <translation type="unfinished"></translation>
+        <translation>Super Mario Bros. 2</translation>
     </message>
     <message>
         <source>Super Mario Bros.</source>
-        <translation type="unfinished"></translation>
+        <translation>Super Mario Bros.</translation>
     </message>
     <message>
         <source>Pattern tables</source>
@@ -13210,11 +13241,11 @@
     <name>rl::solomon::SolomonPlaytestModel</name>
     <message>
         <source>MAME · nespal</source>
-        <translation type="unfinished"></translation>
+        <translation>MAME · nespal</translation>
     </message>
     <message>
         <source>MAME · nes</source>
-        <translation type="unfinished"></translation>
+        <translation>MAME · nes</translation>
     </message>
     <message>
         <source>Session</source>
@@ -13692,7 +13723,7 @@
     </message>
     <message>
         <source>Solomon&apos;s Key</source>
-        <translation type="unfinished"></translation>
+        <translation>Solomon&apos;s Key</translation>
     </message>
     <message>
         <source>Enemy sets</source>
@@ -14701,7 +14732,7 @@
     </message>
     <message>
         <source>Super Mario Bros.</source>
-        <translation type="unfinished"></translation>
+        <translation>Super Mario Bros.</translation>
     </message>
     <message>
         <source>Power-up</source>
@@ -14964,7 +14995,7 @@
     </message>
     <message>
         <source>Solomon&apos;s Key</source>
-        <translation type="unfinished"></translation>
+        <translation>Solomon&apos;s Key</translation>
     </message>
     <message>
         <source>World %1</source>
@@ -15273,15 +15304,19 @@
     </message>
     <message>
         <source>Found %1, but only an .exe or rltool.py launcher is supported.</source>
-        <translation type="unfinished"></translation>
+        <translation>%1 が見つかりましたが、起動用の .exe または rltool.py のみ対応しています。</translation>
     </message>
     <message>
         <source>The Python that runs the kit was not found next to the studio. Reinstall Retrolarium Studio. For a source build, set RETROLARIUM_DEV=1 and put Python on PATH to run %1.</source>
-        <translation type="unfinished"></translation>
+        <translation>Kit を実行する Python が Studio の隣に見つかりません。Retrolarium Studio を再インストールしてください。ソースからビルドする場合は RETROLARIUM_DEV=1 を設定し、%1 を実行できるように Python を PATH に追加してください。</translation>
     </message>
     <message>
         <source>table &apos;%1&apos; defined twice</source>
-        <translation type="unfinished"></translation>
+        <translation>テーブル「%1」が二重に定義されています</translation>
+    </message>
+    <message>
+        <source>The Python that runs the kit was not found next to the studio. Reinstall Retrolarium Studio, or put Python on PATH to run %1.</source>
+        <translation type="vanished">キットを動かす Python がスタジオの隣に見つかりません。Retrolarium Studio を再インストールするか、%1 を実行するために Python を PATH に追加してください。</translation>
     </message>
 </context>
 </TS>
