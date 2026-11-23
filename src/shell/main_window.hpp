@@ -23,7 +23,8 @@ class QHBoxLayout;
 
 namespace rl::editors {
 class EditorView;
-}
+class EditorRetirement;
+}  // namespace rl::editors
 
 namespace rl::runtime {
 class AudioPlayer;
@@ -203,6 +204,7 @@ private:
     // The open project's lock: one studio per project.
     std::unique_ptr<runtime::ProjectLock> projectLock_;
     runtime::EmulatorRunner* emulator_ = nullptr;
+    std::unique_ptr<editors::EditorRetirement> retiringEditors_;
     runtime::AudioPlayer* audio_ = nullptr;
     QTimer* dirtyTimer_ = nullptr;
     QString projectPath_;

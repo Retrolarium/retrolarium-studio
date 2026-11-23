@@ -161,6 +161,8 @@ endif()
 studio_enable_warnings(studio_runtime)
 
 add_library(studio_editors STATIC
+    src/editors/editor_retirement.cpp
+    src/editors/editor_retirement.hpp
     src/editors/composition_editor.cpp
     src/editors/composition_editor.hpp
     src/editors/editor_view.cpp
@@ -299,15 +301,20 @@ add_executable(project_lock_test tests/project_lock_test.cpp)
 target_link_libraries(project_lock_test PRIVATE studio_runtime)
 studio_add_test(project_lock_test)
 
-# Where the studio finds the kit, and the launchers it refuses.
+# Asynchronous stop, movie flush and replacement launches.
 add_executable(emulator_runner_test tests/emulator_runner_test.cpp)
 target_link_libraries(emulator_runner_test PRIVATE studio_runtime)
 studio_add_test(emulator_runner_test tests/data/emulator_child.py)
+
+add_executable(editor_retirement_test tests/editor_retirement_test.cpp)
+target_link_libraries(editor_retirement_test PRIVATE studio_editors)
+studio_add_test(editor_retirement_test tests/data/emulator_child.py)
 
 add_executable(rom_hasher_test tests/rom_hasher_test.cpp)
 target_link_libraries(rom_hasher_test PRIVATE studio_runtime)
 studio_add_test(rom_hasher_test)
 
+# Where the studio finds the kit, and the launchers it refuses.
 add_executable(tool_locator_test tests/tool_locator_test.cpp)
 target_link_libraries(tool_locator_test PRIVATE studio_runtime)
 studio_add_test(tool_locator_test)

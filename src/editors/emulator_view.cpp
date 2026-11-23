@@ -216,13 +216,21 @@ public:
           busy_(new BusyCard(this)) {
         setMinimumHeight(240);
         surface_->hide();
-        runner_->setSurface(surface_);
+        if (runner_->phase() == runtime::EmulatorRunner::Phase::Stopping) {
+            // A previous project's native surface must survive movie flush.
+            // Its owner retires it before this stopped handler is called.
+            connect(runner_, &runtime::EmulatorRunner::stopped, this, [this] {
+                if (!runner_->surface()) runner_->setSurface(surface_);
+            });
+        } else {
+            runner_->setSurface(surface_);
+        }
     }
 
     runtime::EmulatorSurface* surface() const { return surface_; }
 
     void refresh() {
-        surface_->setVisible(runner_->isRunning());
+        surface_->setVisible(runner_->surface() == surface_ && runner_->isRunning());
         layoutSurface();
         // The keyboard goes to the game as soon as it is up.
         const auto phase = runner_->phase();
@@ -347,8 +355,9 @@ EmulatorView::EmulatorView(sdk::EmulatorModel* model, runtime::EmulatorRunner* r
 
 EmulatorView::~EmulatorView() {
     setSidePanel(nullptr);
-    runner_->stopNow();
-    runner_->setSurface(nullptr);
+    // The shell keeps a live view through asynchronous process shutdown.
+    // An old view must never detach the next project's surface.
+    if (runner_->surface() == stage_->surface()) runner_->setSurface(nullptr);
 }
 
 void EmulatorView::setSidePanel(QWidget* panel) {

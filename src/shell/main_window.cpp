@@ -1,5 +1,7 @@
 #include "shell/main_window.hpp"
 
+#include "editors/editor_retirement.hpp"
+
 #include "editors/editor_view.hpp"
 #include "editors/emulator_view.hpp"
 #include "editors/mime.hpp"
@@ -221,6 +223,7 @@ QVector<runtime::WatchCell> watchCells(const QString& repository) {
 MainWindow::MainWindow(QWidget* parent) : StudioWindow(parent) {
     processes_ = new runtime::ProcessRunner(this);
     emulator_ = new runtime::EmulatorRunner(this);
+    retiringEditors_ = std::make_unique<editors::EditorRetirement>(emulator_);
     audio_ = new runtime::AudioPlayer(this);
     romHasher_ = new runtime::RomHasher(this);
     connect(romHasher_, &runtime::RomHasher::stateChanged, this, [this] {
@@ -346,16 +349,24 @@ MainWindow::~MainWindow() {
     processes_->disconnect(this);
     emulator_->disconnect(this);
     processes_->abandon();
+    // Application shutdown is the only synchronous emulator stop. Native
+    // surfaces and their models still exist while its final flush runs.
+    emulator_->stopNow();
     // Views hold raw pointers to the model, the model to the session.
     releaseEditor();
+    retiringEditors_.reset();
     session_.reset();
 }
 
 void MainWindow::releaseEditor() {
-    editor_.reset();
-    model_.reset();
-    parkedEditor_.reset();
-    parkedModel_.reset();
+    for (auto* view : {editor_.get(), parkedEditor_.get()}) {
+        if (view) view->disconnect(this);
+    }
+    for (auto* model : {model_.get(), parkedModel_.get()}) {
+        if (model) model->disconnect(this);
+    }
+    retiringEditors_->release(std::move(editor_), std::move(model_));
+    retiringEditors_->release(std::move(parkedEditor_), std::move(parkedModel_));
     parkedDocument_.clear();
 }
 
@@ -1621,7 +1632,8 @@ void MainWindow::closeProject() {
     emulator_->clearLog();
     audio_->stop();
     releaseEditor();
-    session_.reset();
+    if (session_) session_->disconnect(this);
+    retiringEditors_->releaseSession(std::move(session_));
     projectLock_.reset();
     discardedSession_ = nullptr;
     projectPath_.clear();
@@ -1827,6 +1839,11 @@ void MainWindow::selectDocument(const QString& document) {
     inspector_->showMessage(QString(), QString(), QString());
     if (model_ && model_->type() == sdk::EditorType::Emulator && editor_) {
         editor_->hide();
+        if (parkedEditor_) {
+            parkedEditor_->disconnect(this);
+            parkedModel_->disconnect(this);
+            retiringEditors_->release(std::move(parkedEditor_), std::move(parkedModel_));
+        }
         parkedEditor_ = std::move(editor_);
         parkedModel_ = std::move(model_);
     }
@@ -1841,6 +1858,11 @@ void MainWindow::selectDocument(const QString& document) {
         updateToolbarRow();
     } else {
         model_ = document.isEmpty() ? nullptr : session_->openEditor(kind_, document);
+        if (model_ && model_->type() == sdk::EditorType::Emulator && parkedEditor_) {
+            parkedEditor_->disconnect(this);
+            parkedModel_->disconnect(this);
+            retiringEditors_->release(std::move(parkedEditor_), std::move(parkedModel_));
+        }
         installEditor();
         if (model_ && model_->type() == sdk::EditorType::Emulator) {
             parkedDocument_ = document;
