@@ -8,7 +8,8 @@ param(
     [string]$MemoryLimit = "3g",
     [double]$CpuLimit = 2,
     [ValidateSet("Release", "Debug")]
-    [string]$Configuration = "Release"
+    [string]$Configuration = "Release",
+    [switch]$AllowCoreMismatch
 )
 
 # Cross-compiles Retrolarium Studio with the static Qt 5 MinGW SDK from
@@ -50,6 +51,10 @@ New-Item -ItemType Directory -Force -Path $outputRoot | Out-Null
 # The studio builds retrolarium_core from the sibling directory, so the
 # repository root is mounted and the studio is configured from inside it.
 $repositoryRoot = (Resolve-Path (Join-Path $projectRoot "..")).Path
+$coreOptions = @()
+if ($AllowCoreMismatch) { $coreOptions += "--allow-mismatch" }
+& python (Join-Path $PSScriptRoot "release.py") verify-core-ref @coreOptions
+if ($LASTEXITCODE -ne 0) { throw "The Core checkout does not match the coordinated build pin" }
 $sourceMount = $repositoryRoot -replace "\\", "/"
 $outputMount = $outputRoot -replace "\\", "/"
 $cmakeMount = (Join-Path $QtKit "cmake") -replace "\\", "/"

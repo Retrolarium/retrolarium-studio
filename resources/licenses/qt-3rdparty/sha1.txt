@@ -1,0 +1,5 @@
+Secure Hash Algorithm SHA-1
+License: Public Domain
+Copyright (C) Dominik Reichl <dominik.reichl@t-online.de>
+Copyright (C) 2016 The Qt Company Ltd
+Corresponding source: https://download.qt.io/archive/qt/5.15/5.15.19/single/qt-everywhere-opensource-src-5.15.19.tar.xz

@@ -29,12 +29,20 @@ public:
     QString string(const QString& dottedKey) const { return value(dottedKey).toString(); }
     QVariantList list(const QString& dottedKey) const { return value(dottedKey).toList(); }
 
-    // Absolute path of a file named relative to the project directory.
+    // Absolute path within this project's tree, checked against its real path.
+    // Generated ROM projects
+    // under <game>/.retrolarium/<revision> may also address that game's tree.
+    // Absolute paths, drive paths and escapes through links are refused.
     QString resolve(const QString& relativePath) const;
+    // Recheck immediately before writing, including links changed since open.
+    bool validateEditablePaths(QString* error) const;
+    bool validateWritePath(const QString& path, QString* error) const;
 
 private:
     bool valid_ = false;
     QString path_;
+    QString canonicalDirectory_;
+    QString boundary_;
     QVariantMap root_;
 };
 

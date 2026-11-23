@@ -56,7 +56,9 @@ struct Fixture {
     std::unique_ptr<CastleExcellentSession> session;
     Fixture(int roomLimit = 24, int stateBytes = 228, int streamBytes = 2769, bool detailed = false) {
         QDir root(directory.path());
-        root.mkdir(QStringLiteral("edit"));
+        // Match the layout Kit generates for real ROM projects; writable
+        // documents and the read-only game profile stay in the same game tree.
+        root.mkpath(QStringLiteral(".retrolarium/base"));
         root.mkdir(QStringLiteral("config"));
         QJsonArray rows;
         for (int i = 0; i < 20; ++i) rows.append(repeated(20, 0x53));
@@ -70,7 +72,7 @@ struct Fixture {
             {"object_previews",
              QJsonArray{QJsonObject{{"runtime_type", 0x90}, {"descriptor_offset", 0}, {"x_offsets", QJsonArray{0}}}}},
             {"metasprite_descriptors", QJsonArray{0, 0}}};
-        write(root.filePath("edit/levels.json"),
+        write(root.filePath(".retrolarium/base/levels.json"),
               QJsonObject{
                   {"schema", "retrolarium.castle-excellent-levels"},
                   {"revision", "fixture"},
@@ -94,7 +96,7 @@ struct Fixture {
             palette[1] = 0x30;
             palette[2] = 0x01;
         }
-        write(root.filePath("edit/graphics.json"),
+        write(root.filePath(".retrolarium/base/graphics.json"),
               QJsonObject{
                   {"resources",
                    QJsonArray{
@@ -111,11 +113,12 @@ struct Fixture {
                                                                              {"maximum_per_room", roomLimit}}}}}}});
         const QByteArray project =
             "[project]\nplatform = \"nes\"\nprofile = \"castle-excellent.v1\"\n"
-            "[source]\nrepository = \"..\"\n"
+            "[source]\nrepository = \"../..\"\n"
             "[[workspace.tabs]]\ncodec = \"castle-excellent.prefix-rooms@1\"\ndocument = \"levels.json\"\n"
             "[[workspace.tabs]]\ncodec = \"nes.chr-2bpp.v1\"\ndocument = \"graphics.json\"\n";
         QString error;
-        const auto file = sdk::ProjectFile::parse(QString::fromUtf8(project), root.filePath("edit/test.rlj"), &error);
+        const auto file =
+            sdk::ProjectFile::parse(QString::fromUtf8(project), root.filePath(".retrolarium/base/test.rlj"), &error);
         expect(file.isValid(), "fixture project parses");
         session = CastleExcellentSession::open(file, &error);
         if (!session) throw std::runtime_error(error.toStdString());

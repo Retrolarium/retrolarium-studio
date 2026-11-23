@@ -1,8 +1,6 @@
 #pragma once
 
-// Where the studio's public pages are. The repositories are not published
-// yet; these are the addresses they will have, kept in one place so a move
-// is one edit.
+// The studio's published source, issue tracker and user guide.
 namespace rl::shell::links {
 
 inline constexpr const char* kSource = "https://github.com/Retrolarium/retrolarium-studio";

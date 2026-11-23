@@ -133,6 +133,9 @@ $dll = Get-ChildItem -LiteralPath $Python -Filter "python3*.dll" | Where-Object 
 if (-not $dll) { throw "No python3x.dll in $Python" }
 foreach ($file in @("python.exe", "pythonw.exe", "python3.dll", $dll.Name, "vcruntime140.dll", "vcruntime140_1.dll", "LICENSE.txt")) {
     $source = Join-Path $Python $file
+    if ($file -eq "LICENSE.txt" -and -not (Test-Path -LiteralPath $source -PathType Leaf)) {
+        throw "Missing Python license: $source"
+    }
     if (Test-Path -LiteralPath $source) { Copy-Item -LiteralPath $source -Destination $runtime }
 }
 Copy-Tree (Join-Path $Python "DLLs") (Join-Path $runtime "DLLs") @() `
@@ -150,6 +153,9 @@ Copy-Item -LiteralPath $Mame -Destination $emulator
 $mameSource = Split-Path $Mame -Parent
 foreach ($file in @("COPYING", "README.md")) {
     $source = Join-Path $mameSource $file
+    if ($file -eq "COPYING" -and -not (Test-Path -LiteralPath $source -PathType Leaf)) {
+        throw "Missing MAME license: $source"
+    }
     if (Test-Path -LiteralPath $source) { Copy-Item -LiteralPath $source -Destination $emulator }
 }
 # The studio marks MAME's known-problems screen as seen (an embedded MAME
@@ -180,7 +186,6 @@ Copy-Item -LiteralPath (Join-Path $projectRoot "LICENSE") -Destination (Join-Pat
 Copy-Item -LiteralPath (Join-Path $projectRoot "THIRD-PARTY.md") -Destination $package
 $licenses = Join-Path $package "licenses"
 New-Item -ItemType Directory -Force -Path $licenses | Out-Null
-$core = Join-Path $repositoryRoot "retrolarium-core\third_party"
 foreach ($pair in @(
         @((Join-Path $projectRoot "resources\fonts\OFL-Barlow.txt"), "OFL-Barlow.txt"),
         @((Join-Path $projectRoot "resources\fonts\OFL-IBMPlex.txt"), "OFL-IBMPlex.txt"),
@@ -190,20 +195,11 @@ foreach ($pair in @(
     if (Test-Path -LiteralPath $pair[0] -PathType Leaf) {
         Copy-Item -LiteralPath $pair[0] -Destination (Join-Path $licenses $pair[1])
     } else {
-        Write-Warning "Missing license text $($pair[0]): the package is not ready to publish"
+        throw "Missing license text $($pair[0]): the package is not ready to publish"
     }
 }
-# The libraries Qt builds into the studio (THIRD-PARTY.md lists them).
-$qtThirdParty = Join-Path $licenses "qt-3rdparty"
-New-Item -ItemType Directory -Force -Path $qtThirdParty | Out-Null
-foreach ($name in @("zlib", "libpng", "libjpeg-turbo", "pcre2", "freetype", "harfbuzz", "double-conversion", "md4c")) {
-    $source = Join-Path $projectRoot "resources\licenses\qt-3rdparty\$name.txt"
-    if (Test-Path -LiteralPath $source -PathType Leaf) {
-        Copy-Item -LiteralPath $source -Destination $qtThirdParty
-    } else {
-        Write-Warning "Missing license text $($source): the package is not ready to publish"
-    }
-}
+# Qt notices and the user-facing source map are added from the reviewed
+# manifest by release.py package-notices, after provenance is recorded.
 
 # A smoke check: the private Python runs the kit.
 $check = & (Join-Path $runtime "python.exe") (Join-Path $kit "rltool.py") --help 2>&1
@@ -259,6 +255,8 @@ Set-Content -LiteralPath (Join-Path $package "BUILD-INFO.txt") -Encoding ascii -
 # The private Python's and MAME's hashes go into the package's build record.
 & python (Join-Path $PSScriptRoot "release.py") record-package $package --python-version $pythonVersion
 if ($LASTEXITCODE -ne 0) { throw "Could not record the package's Python and MAME" }
+& python (Join-Path $PSScriptRoot "release.py") package-notices $package --version $version
+if ($LASTEXITCODE -ne 0) { throw "The package is missing required source information or license notices" }
 # A reproducible zip with '/' in its names (Compress-Archive in Windows
 # PowerShell 5.1 writes '\').
 $zip = Join-Path $Out "RetrolariumStudio-$version-win64.zip"

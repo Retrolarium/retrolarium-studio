@@ -1,5 +1,21 @@
-From Qt 5.15.19 (qtbase v5.15.19-lts-lgpl, src/3rdparty/libjpeg/LICENSE):
+LibJPEG-turbo
+License: Independent JPEG Group License and BSD 3-Clause "New" or "Revised" License
+Copyright (C) 2009-2024 D. R. Commander
+Copyright (C) 2015, 2020 Google, Inc.
+Copyright (C) 2019-2020 Arm Limited
+Copyright (C) 2015-2016, 2018 Matthieu Darbois
+Copyright (C) 2011-2016 Siarhei Siamashka
+Copyright (C) 2015 Intel Corporation
+Copyright (C) 2013-2014 Linaro Limited
+Copyright (C) 2013-2014 MIPS Technologies, Inc.
+Copyright (C) 2009, 2012 Pierre Ossman for Cendio AB
+Copyright (C) 2009-2011 Nokia Corporation and/or its subsidiary(-ies)
+Copyright (C) 1999-2006 MIYASAKA Masaru
+Copyright (C) 1999 Ken Murchison
+Copyright (C) 1991-2020 Thomas G. Lane, Guido Vollbeding
+Corresponding source: https://download.qt.io/archive/qt/5.15/5.15.19/single/qt-everywhere-opensource-src-5.15.19.tar.xz
 
+--- LICENSE ---
 libjpeg-turbo Licenses
 ======================
 
@@ -136,8 +152,8 @@ attribution and endorsement protections to other entities.  Thus, it was
 desirable to choose a license that granted us the same protections for new code
 that were granted to the IJG for code derived from their software.
 
-From Qt 5.15.19 (qtbase v5.15.19-lts-lgpl, src/3rdparty/libjpeg/ijg-license.txt):
 
+--- ijg-license.txt ---
 The authors make NO WARRANTY or representation, either express or implied,
 with respect to this software, its quality, accuracy, merchantability, or
 fitness for a particular purpose.  This software is provided "AS IS", and you,

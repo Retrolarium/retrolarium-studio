@@ -1,5 +1,9 @@
-From Qt 5.15.19 (qtbase v5.15.19-lts-lgpl, src/3rdparty/md4c/LICENSE.md):
+MD4C
+License: MIT License
+Copyright © 2016-2024 Martin Mitáš
+Corresponding source: https://download.qt.io/archive/qt/5.15/5.15.19/single/qt-everywhere-opensource-src-5.15.19.tar.xz
 
+--- LICENSE.md ---
 
 # The MIT License (MIT)
 

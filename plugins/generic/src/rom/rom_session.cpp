@@ -153,6 +153,8 @@ std::unique_ptr<sdk::EditorModel> RomSession::openEditor(const QString& kind, co
 }
 
 bool RomSession::save(QString* error) {
+    if (!project_.validateEditablePaths(error)) return false;
+    if (!project_.validateWritePath(romPath_, error)) return false;
     QSaveFile file(romPath_);
     if (!file.open(QIODevice::WriteOnly) || file.write(rom_) != rom_.size() || !file.commit()) {
         if (error) *error = file.errorString();

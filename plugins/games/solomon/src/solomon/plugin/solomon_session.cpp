@@ -512,6 +512,11 @@ bool SolomonSession::editBundle(const QString& text, const std::function<void(ne
 }
 
 bool SolomonSession::save(QString* error) {
+    if (!project_.validateEditablePaths(error)) return false;
+    for (const QString& path :
+         {roomsPath_, artPath_, animationsPath_, presentationPath_, audioPath_, textPath_, graphicsPath_}) {
+        if (!path.isEmpty() && !project_.validateWritePath(path, error)) return false;
+    }
     // Each document counts as saved once written: a save that fails
     // halfway leaves the ones before it saved.
     try {

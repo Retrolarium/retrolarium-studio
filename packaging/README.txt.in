@@ -1,0 +1,49 @@
+Retrolarium Studio {version}
+
+Edit levels, graphics, palettes, text, music, sound effects and demos, then
+play the result in MAME. Windows 10/11, 64-bit. The ZIP runs after unpacking;
+the installer installs for your user without administrator rights.
+
+Supported games: Super Mario Bros. and supported FDS/Vs. variants, Pac-Man,
+Castle Excellent/Castlequest, Doraemon, Solomon's Key, Flicky and Alien Soldier.
+Use your own ROM. No game ROMs or original console BIOS dumps are supplied.
+Internet is needed when a game's source repository is first downloaded.
+Only the exact revisions in the Kit catalog are recognized automatically.
+
+The application is unsigned. Windows/SmartScreen or local security policy
+may show a warning or block it. Check SHA256SUMS.txt from the download first.
+
+Your games, ROM copies and edits normally live in Documents/Retrolarium.
+Saves and movies also use %LOCALAPPDATA%/Retrolarium/Retrolarium Studio.
+Verification records live in %LOCALAPPDATA%/Retrolarium/Kit/verified; a record
+inside a downloaded project never grants trust. Before running a verified
+repository's scripts, Studio asks for consent for its pinned content digest.
+
+User guide: {studio_file_url}/docs/user_guide.md
+Supported ROM revisions and SHA-256: {kit_file_url}/docs/supported_roms.md
+Build instructions: {studio_file_url}/docs/developing.md
+
+Exact corresponding sources for this package:
+Studio: {studio_url}
+Kit (Python sources are also in kit/): {kit_url}
+Core (Python sources are also in kit/): {core_url}
+Longreach Qt SDK recipes and Qt patches: {longreach_url}
+Qt {qt_version} complete source archive: {qt_source_url}
+Qt source archive SHA-256: {qt_source_sha256}
+MAME: {mame_url}
+MAME build recipe: {studio_file_url}/tools/build-mame-docker.ps1
+Python {python_version}: {python_url}
+OpenDiskSysROM: {bios_url}
+
+BUILD-INFO.txt and native-build.json record the exact commits, build inputs
+and binary hashes. This is identified by source commits; new release tags
+are chosen separately and are not assumed from the displayed version.
+
+Studio is GPL-3.0-or-later; see LICENSE.txt. Qt is linked statically. The
+complete Studio/Core sources and SDK recipe above allow rebuilding with
+a modified Qt. See THIRD-PARTY.txt, licenses/, mame/COPYING, mame/legal/,
+python/LICENSE.txt and the Kit component folders for license notices.
+The original LGPL OpenDiskSysROM is used for FDS games; it is not Nintendo's BIOS.
+
+Game titles and characters are trademarks of their respective owners.
+Retrolarium is not made, endorsed or sponsored by those owners.

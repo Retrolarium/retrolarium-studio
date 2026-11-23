@@ -12,6 +12,12 @@
 #include <memory>
 #include <stdexcept>
 #include <vector>
+#ifdef Q_OS_WIN
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <windows.h>
+#endif
 
 namespace rl::sdk {
 
@@ -420,6 +426,72 @@ QVariant lookup(const QVariantMap& root, const QString& dottedKey) {
     return current;
 }
 
+bool within(const QString& path, const QString& root) {
+#ifdef Q_OS_WIN
+    const auto sensitivity = Qt::CaseInsensitive;
+#else
+    const auto sensitivity = Qt::CaseSensitive;
+#endif
+    const QString prefix = root.endsWith(QLatin1Char('/')) ? root : root + QLatin1Char('/');
+    return path.compare(root, sensitivity) == 0 || path.startsWith(prefix, sensitivity);
+}
+
+#ifdef Q_OS_WIN
+std::wstring nativeAbsolute(const QString& path) {
+    QString native = QDir::toNativeSeparators(path);
+    if (!native.startsWith(QStringLiteral("\\\\?\\"))) {
+        native = native.startsWith(QStringLiteral("\\\\")) ? QStringLiteral("\\\\?\\UNC\\") + native.mid(2)
+                                                           : QStringLiteral("\\\\?\\") + native;
+    }
+    return native.toStdWString();
+}
+
+bool existsOrLink(const QString& path) {
+    return GetFileAttributesW(nativeAbsolute(path).c_str()) != INVALID_FILE_ATTRIBUTES;
+}
+
+QString canonicalExisting(const QString& path) {
+    // Qt 5's canonicalFilePath does not reliably expand NTFS junctions.
+    // Follow the actual handle, including long paths and UNC paths.
+    const HANDLE handle = CreateFileW(nativeAbsolute(path).c_str(), FILE_READ_ATTRIBUTES,
+                                      FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, nullptr, OPEN_EXISTING,
+                                      FILE_FLAG_BACKUP_SEMANTICS, nullptr);
+    if (handle == INVALID_HANDLE_VALUE) throw ParseError("A project path cannot be resolved.");
+    using FinalPath = DWORD(WINAPI*)(HANDLE, LPWSTR, DWORD, DWORD);
+    static const auto finalPath =
+        reinterpret_cast<FinalPath>(GetProcAddress(GetModuleHandleW(L"kernel32.dll"), "GetFinalPathNameByHandleW"));
+    const DWORD required = finalPath ? finalPath(handle, nullptr, 0, 0) : 0;
+    std::vector<wchar_t> buffer(required + 1);
+    const DWORD written = required ? finalPath(handle, buffer.data(), static_cast<DWORD>(buffer.size()), 0) : 0;
+    CloseHandle(handle);
+    if (!written || written >= buffer.size()) throw ParseError("A project path cannot be resolved.");
+    QString result = QString::fromWCharArray(buffer.data(), static_cast<int>(written));
+    if (result.startsWith(QStringLiteral("\\\\?\\UNC\\"))) result = QStringLiteral("\\\\") + result.mid(8);
+    else if (result.startsWith(QStringLiteral("\\\\?\\"))) result.remove(0, 4);
+    return QDir::fromNativeSeparators(result);
+}
+#else
+bool existsOrLink(const QString& path) { return QFileInfo::exists(path) || QFileInfo(path).isSymLink(); }
+QString canonicalExisting(const QString& path) { return QFileInfo(path).canonicalFilePath(); }
+#endif
+
+// Resolve the nearest existing ancestor for new output files. Dangling
+// symlinks/junctions are refused instead of treated as new directories.
+QString realPath(QString path) {
+    QStringList missing;
+    while (!existsOrLink(path)) {
+        const QFileInfo info(path);
+        if (info.isSymLink()) throw ParseError("A project path contains a dangling link.");
+        missing.prepend(info.fileName());
+        const QString parent = info.absolutePath();
+        if (parent == path) throw ParseError("A project path cannot be resolved.");
+        path = parent;
+    }
+    const QString canonical = canonicalExisting(path);
+    if (canonical.isEmpty()) throw ParseError("A project path cannot be resolved.");
+    return QDir::cleanPath(QDir(canonical).filePath(missing.join(QLatin1Char('/'))));
+}
+
 }  // namespace
 
 ProjectFile ProjectFile::load(const QString& path, QString* error) {
@@ -439,6 +511,13 @@ ProjectFile ProjectFile::parse(const QString& text, const QString& path, QString
     try {
         Reader reader(text);
         result.root_ = reader.parse();
+        result.canonicalDirectory_ = realPath(result.directory());
+        result.boundary_ = result.canonicalDirectory_;
+        if (!result.string(QStringLiteral("source.repository")).isEmpty()) {
+            result.boundary_ = realPath(QDir(result.canonicalDirectory_).absoluteFilePath(QStringLiteral("../..")));
+        }
+        QString why;
+        if (!result.validateEditablePaths(&why)) throw ParseError(why.toStdString());
         result.valid_ = true;
     } catch (const std::exception& e) {
         if (error) {
@@ -453,7 +532,60 @@ QString ProjectFile::directory() const { return QFileInfo(path_).absolutePath();
 QVariant ProjectFile::value(const QString& dottedKey) const { return lookup(root_, dottedKey); }
 
 QString ProjectFile::resolve(const QString& relativePath) const {
-    return QDir::cleanPath(QDir(directory()).absoluteFilePath(relativePath));
+    if (relativePath.isEmpty() || QDir::isAbsolutePath(relativePath) || relativePath.contains(QLatin1Char(':')) ||
+        relativePath.contains(QLatin1Char('\\'))) {
+        throw ParseError("A project path must be relative to the project.");
+    }
+    const QString own = canonicalDirectory_.isEmpty() ? realPath(directory()) : canonicalDirectory_;
+    const QString boundary = boundary_.isEmpty() ? own : boundary_;
+    const QString repository = string(QStringLiteral("source.repository"));
+    if (!repository.isEmpty()) {
+        const QString workspace = QFileInfo(own).absolutePath();
+        if (repository != QLatin1String("../..") || QFileInfo(workspace).fileName() != QLatin1String(".retrolarium")) {
+            throw ParseError("A repository project must be under <game>/.retrolarium/<revision>.");
+        }
+        if (!within(own, boundary)) throw ParseError("The project is outside its game repository.");
+    }
+    const QString lexical = QDir::cleanPath(QDir(own).absoluteFilePath(relativePath));
+    const QString canonical = realPath(lexical);
+    if (!within(lexical, boundary) || !within(canonical, boundary)) {
+        throw ParseError("A project path leads outside its project tree.");
+    }
+    return lexical;
+}
+
+bool ProjectFile::validateEditablePaths(QString* error) const {
+    try {
+        // Validate the boundary even for a project with no document tabs yet.
+        resolve(QStringLiteral("."));
+        for (const QVariant& value : list(QStringLiteral("workspace.tabs"))) {
+            const QVariantMap tab = value.toMap();
+            if (tab.contains(QStringLiteral("document"))) resolve(tab.value(QStringLiteral("document")).toString());
+        }
+        for (const char* key : {"source.rom", "source.original", "source.manifest", "source.disassembly"}) {
+            const QString relative = string(QString::fromLatin1(key));
+            if (!relative.isEmpty()) resolve(relative);
+        }
+        return true;
+    } catch (const std::exception& exception) {
+        if (error) *error = QString::fromUtf8(exception.what());
+        return false;
+    }
+}
+
+bool ProjectFile::validateWritePath(const QString& path, QString* error) const {
+    try {
+        if (!QDir::isAbsolutePath(path)) throw ParseError("A document write path must be absolute.");
+        const QString normalized = QDir::fromNativeSeparators(path);
+        if (QDir::cleanPath(normalized) != normalized) {
+            throw ParseError("A document write path must not contain parent or redundant components.");
+        }
+        resolve(QDir(canonicalDirectory_).relativeFilePath(path));
+        return true;
+    } catch (const std::exception& exception) {
+        if (error) *error = QString::fromUtf8(exception.what());
+        return false;
+    }
 }
 
 }  // namespace rl::sdk

@@ -2,6 +2,8 @@
 
 import importlib.util
 import json
+import io
+from contextlib import redirect_stdout, redirect_stderr
 from pathlib import Path
 import subprocess
 import tempfile
@@ -80,9 +82,15 @@ class SmbFixtureTests(unittest.TestCase):
                 local.run_suite(directory, directory, {}, 1)
             for name in local.CASES:
                 (directory / (name + (".exe" if local.os.name == "nt" else ""))).touch()
-            with patch.object(local.subprocess, "run", return_value=subprocess.CompletedProcess([], 77)) as run:
+            output = io.StringIO()
+            with (
+                patch.object(local.subprocess, "run", return_value=subprocess.CompletedProcess([], 77)) as run,
+                redirect_stdout(output),
+                redirect_stderr(output),
+            ):
                 self.assertEqual(1, local.run_suite(directory, directory, {}, 1))
                 self.assertEqual(4, run.call_count)
+            self.assertIn("0 passed, 4 failed", output.getvalue())
 
 
 if __name__ == "__main__":

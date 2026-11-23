@@ -1,4 +1,5 @@
 #include "setup_operations.hpp"
+#include "user_data_paths.hpp"
 
 #include "sdk/i18n.hpp"
 
@@ -516,7 +517,15 @@ bool uninstall(const Request& request, const Progress& progress, QString* error,
     }
     if (request.removeUserData) {
         if (progress) progress(90, rlTr("setup", "Removing your games and settings"));
-        if (!gamesDirectory().isEmpty()) removeTree(gamesDirectory());
+        const QStringList data =
+            userDataDirectories(true, shellFolder(CSIDL_PERSONAL), shellFolder(CSIDL_LOCAL_APPDATA));
+        for (const QString& path : data) {
+            if (!removeTree(path) && QFileInfo::exists(path) && warning) {
+                if (!warning->isEmpty()) *warning += QLatin1Char('\n');
+                *warning += rlTr("setup", "Some files stayed in %1: %2. Delete them by hand.")
+                                .arg(nativePath(path), QFileInfo(path).fileName());
+            }
+        }
         deleteKey(kSettingsKey);
         // And the organisation's key, while nothing else is under it.
         RegDeleteKeyW(HKEY_CURRENT_USER, L"Software\\Retrolarium");

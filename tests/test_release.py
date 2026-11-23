@@ -72,6 +72,9 @@ class NativeProvenanceTests(unittest.TestCase):
         self.patch = mock.patch.object(release, "sources", return_value=self.state)
         self.patch.start()
         self.addCleanup(self.patch.stop)
+        core_pin = mock.patch.object(release, "verify_core_ref")
+        core_pin.start()
+        self.addCleanup(core_pin.stop)
         for name in release.NATIVE_FILES:
             path = self.root / name
             path.parent.mkdir(parents=True, exist_ok=True)
@@ -111,12 +114,81 @@ class NativeProvenanceTests(unittest.TestCase):
         (package / "mame/roms/fds").mkdir(parents=True)
         (package / "BUILD-INFO.txt").write_text("Retrolarium Studio 0.2.0\nKit: pinned\n")
         (package / "native-build.json").write_bytes((self.root / "native-build.json").read_bytes())
+        # Real reviewed notice texts, with synthetic source identities.
+        notices = release.qt_notices()
+        record = json.loads((package / "native-build.json").read_text())
+        record["qt_image"] = notices["reviewed_sdk_image"]
+        (package / "native-build.json").write_text(json.dumps(record))
+        patcher = mock.patch.object(release, "qt_notices", return_value=notices)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        notice_folder = package / "licenses/qt-3rdparty"
+        notice_folder.mkdir(parents=True)
+        for entry in notices["components"]:
+            source = Path(release.__file__).resolve().parents[1] / "resources/licenses/qt-3rdparty" / entry["notice"]
+            (notice_folder / entry["notice"]).write_bytes(source.read_bytes())
+        (package / "README.txt").write_text(
+            "Retrolarium Studio 0.2.0\n"
+            + "\n".join(
+                "https://github.com/" + repository + "/tree/" + "a" * 40
+                for repository in (
+                    "Retrolarium/retrolarium-studio",
+                    "Retrolarium/retrolarium-kit",
+                    "Retrolarium/retrolarium-core",
+                    "OpenKaryon/longreach-qt",
+                    "mamedev/mame",
+                )
+            )
+        )
+        for name in (*release.REQUIRED_LICENSES, "THIRD-PARTY.txt"):
+            path = package / name
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text("Synthetic test license\n")
         for name in release.NATIVE_FILES:
             if name != "retrolarium-setup.exe":
                 (package / name).write_bytes((self.root / name).read_bytes())
         (self.root / "CMakeLists.txt").write_text("project(RetrolariumStudio VERSION 0.2.0)")
         (self.root / "CHANGELOG.md").write_text(CHANGELOG)
         return package
+
+    def test_release_requires_readme_matching_the_package_version(self) -> None:
+        package = self.make_package()
+        for content in (None, "Retrolarium Studio 9.9.9\n"):
+            with self.subTest(content=content):
+                path = package / "README.txt"
+                if content is None:
+                    path.unlink()
+                else:
+                    path.write_text(content)
+                with self.assertRaisesRegex(ValueError, "README|version"):
+                    self.release(package)
+
+    def test_release_requires_every_reviewed_qt_notice(self) -> None:
+        package = self.make_package()
+        notice = release.qt_notices()["components"][0]["notice"]
+        (package / "licenses/qt-3rdparty" / notice).unlink()
+        with self.assertRaisesRegex(ValueError, "license"):
+            self.release(package)
+
+    def test_package_readme_names_the_actual_sources_and_missing_licenses_fail(self) -> None:
+        package = self.make_package()
+        (package / "BUILD-INFO.txt").write_text("Retrolarium Studio 0.2.0\nKit: " + "3" * 40 + "\n")
+        record = json.loads((package / "native-build.json").read_text())
+        record["package"] = {"python": {"version": "3.13.1"}, "mame": {"commit": "4" * 40}}
+        (package / "native-build.json").write_text(json.dumps(record))
+        bios = package / "kit/retrolarium_kit/core/opendisksys/manifest.json"
+        bios.parent.mkdir(parents=True, exist_ok=True)
+        bios.write_text(json.dumps({"source": "https://github.com/RetrolariumLab/OpenDiskSysROM", "commit": "5" * 40}))
+        for name in ("Qt-LGPL-3.0", "OFL-Barlow", "OFL-IBMPlex", "mingw-w64-runtime", "ymfm-BSD-3-Clause"):
+            (package / "licenses" / (name + ".txt")).write_text("Synthetic test license\n")
+        release.package_notices(package, "0.2.0")
+        readme = (package / "README.txt").read_text()
+        self.assertIn("retrolarium-kit/tree/" + "3" * 40, readme)
+        self.assertIn("retrolarium-core/tree/" + self.state["Core"]["commit"], readme)
+        self.assertIn("mamedev/mame/tree/" + "4" * 40, readme)
+        (package / "python/LICENSE.txt").unlink()
+        with self.assertRaisesRegex(ValueError, "python/LICENSE.txt"):
+            release.package_notices(package, "0.2.0")
 
     def release(self, package: Path) -> Path:
         out = package.parent
@@ -264,7 +336,7 @@ class NativeProvenanceTests(unittest.TestCase):
 
     def test_package_record_names_python_and_mame(self) -> None:
         package = self.make_package()
-        (package / "python").mkdir()
+        (package / "python").mkdir(exist_ok=True)
         (package / "python/python.exe").write_bytes(b"python")
         (package / "python/python313.dll").write_bytes(b"runtime")
         (package / "python/python3.dll").write_bytes(b"stable abi")
@@ -303,6 +375,20 @@ class NativeProvenanceTests(unittest.TestCase):
         record = json.loads((self.root / "native-build.json").read_text())
         self.assertEqual(record["qt_image"], "sha256:" + "e" * 64)
         release.verify_build(self.root)
+
+
+class CorePinTests(unittest.TestCase):
+    def test_mismatch_requires_explicit_development_override(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / ".github").mkdir()
+            (root / ".github/core-ref").write_text("1" * 40 + "\n")
+            with mock.patch.object(release, "STUDIO", root), mock.patch.object(release, "git", return_value=b"2" * 40):
+                with self.assertRaisesRegex(ValueError, "Core HEAD differs"):
+                    release.verify_core_ref()
+                release.verify_core_ref(allow_mismatch=True)
+            with mock.patch.object(release, "STUDIO", root), mock.patch.object(release, "git", return_value=b"1" * 40):
+                release.verify_core_ref()
 
 
 if __name__ == "__main__":

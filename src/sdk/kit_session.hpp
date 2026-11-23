@@ -4,6 +4,7 @@
 #include "sdk/session.hpp"
 
 #include <QJsonObject>
+#include <QJsonArray>
 #include <QMap>
 #include <QStringList>
 
@@ -15,6 +16,8 @@ namespace rl::sdk {
 // Why a program failed: the last line it wrote to stderr, why it did not
 // start, or its exit code.
 QString failureText(const ProcessResult& result);
+// A failed command or malformed response is not an unrecognized ROM.
+bool identifiedMatches(const ProcessResult& result, QJsonArray* matches);
 // The emulator command a kit plan (JSON on stdout) describes.
 ProcessSpec specFromPlan(const QJsonObject& plan);
 // The document of the project's first enabled workspace tab with `codec`;

@@ -6,6 +6,7 @@
 //   tool_locator_test
 
 #include "runtime/tool_locator.hpp"
+#include "sdk/kit_session.hpp"
 
 #include <QCoreApplication>
 #include <QDir>
@@ -44,6 +45,18 @@ bool sameFile(const QString& a, const QString& b) {
 
 int main(int argc, char** argv) {
     QCoreApplication app(argc, argv);
+    rl::sdk::ProcessResult identified;
+    identified.started = true;
+    identified.exitCode = 0;
+    identified.standardOutput = "{\"matches\":[]}";
+    QJsonArray matches;
+    expect(rl::sdk::identifiedMatches(identified, &matches) && matches.isEmpty(),
+           "an unknown ROM is a successful empty identification");
+    identified.exitCode = 1;
+    expect(!rl::sdk::identifiedMatches(identified, &matches), "a kit failure is not an unknown ROM");
+    identified.exitCode = 0;
+    identified.standardOutput = "not JSON";
+    expect(!rl::sdk::identifiedMatches(identified, &matches), "a damaged kit response is not an unknown ROM");
     QTemporaryDir dir;
     if (!dir.isValid()) {
         std::cerr << "FAIL: no temporary folder\n";

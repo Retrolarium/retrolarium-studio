@@ -9908,7 +9908,7 @@
     </message>
     <message>
         <source>Copyright © 2026 Daniel Oranguthang. Retrolarium Studio is free software under the GNU General Public License, version 3 or any later version, and comes with absolutely no warranty. Its source code is at %1. The components it carries (Qt, MAME, Python, the kit&apos;s assemblers, OpenDiskSysROM and others) keep their own licenses: %2 lists them, and their texts are in the licenses folder next to the program.</source>
-        <translation>Copyright © 2026 Daniel Oranguthang。Retrolarium Studio 是自由软件，依据 GNU 通用公共许可证第 3 版或任何更高版本发布，不提供任何担保。源代码位于 %1。它附带的组件（Qt、MAME、Python、工具包的汇编器、OpenDiskSysROM 等）各自遵循自己的许可证：%2 列出了它们，许可证全文位于程序旁的 licenses 文件夹中。</translation>
+        <translation type="vanished">Copyright © 2026 Daniel Oranguthang。Retrolarium Studio 是自由软件，依据 GNU 通用公共许可证第 3 版或任何更高版本发布，不提供任何担保。源代码位于 %1。它附带的组件（Qt、MAME、Python、工具包的汇编器、OpenDiskSysROM 等）各自遵循自己的许可证：%2 列出了它们，许可证全文位于程序旁的 licenses 文件夹中。</translation>
     </message>
     <message>
         <source>The games are named only to say which ones the studio works with. Their titles and characters are trademarks of their owners, who have not made or endorsed Retrolarium. You need your own copy of each game.</source>
@@ -9933,6 +9933,14 @@
     <message>
         <source>Previous, next state slot</source>
         <translation>上一个、下一个存档槽</translation>
+    </message>
+    <message>
+        <source>Copyright © 2026 Daniel Oranguthang. Retrolarium Studio is free software under the GNU General Public License, version 3 or any later version, and comes with absolutely no warranty. Its source code is at %1. The components it carries (Qt, MAME, Python, the kit&apos;s assemblers, OpenDiskSysROM and others) keep their own licenses: %2 lists them, and their texts are in licenses, mame/legal, python and the kit&apos;s component folders.</source>
+        <translation>Copyright © 2026 Daniel Oranguthang。Retrolarium Studio 是自由软件，依据 GNU 通用公共许可证第 3 版或任何更高版本发布，不提供任何担保。源代码位于 %1。它附带的组件（Qt、MAME、Python、工具包的汇编器、OpenDiskSysROM 等）各自遵循自己的许可证：%2 列出了它们，许可证全文分别位于 licenses、mame/legal、python 和工具包组件目录中。</translation>
+    </message>
+    <message>
+        <source>About Qt</source>
+        <translation>关于 Qt</translation>
     </message>
 </context>
 <context>
@@ -10831,6 +10839,10 @@
     <message>
         <source>Reading %1…</source>
         <translation>正在读取 %1…</translation>
+    </message>
+    <message>
+        <source>Retrolarium Kit returned an invalid identification response.</source>
+        <translation>Retrolarium Kit 返回了无效的识别结果。</translation>
     </message>
 </context>
 <context>

@@ -10,3 +10,5 @@
 *.sh            text eol=lf
 *.cmake         text eol=lf
 CMakeLists.txt  text eol=lf
+# Preserve upstream notice text and the exact bytes covered by its hashes.
+resources/licenses/qt-3rdparty/*.txt text eol=lf whitespace=-blank-at-eol

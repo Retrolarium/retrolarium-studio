@@ -27,6 +27,12 @@ A studio built from source finds its parts like this:
 
 ## Building
 
+The default Core checkout must match `.github/core-ref`, which CI uses as well.
+`-AllowCoreMismatch` is an explicit development override; a public package must
+use the coordinated pin. Native provenance records the actual Core commit and
+working changes. Update source dependency pins after committing Core and before
+selecting the final release commits.
+
 `tools\build-win.ps1` cross-compiles the studio, its helper programs and the
 setup program with the static Qt 5 SDK of
 [Longreach Qt](https://github.com/OpenKaryon/longreach-qt) in Docker (the
@@ -177,3 +183,29 @@ host UID/GID so newly added catalogs are owned by the developer. Before a test
 build, complete active translations and run `tests/test_translations.py` to
 check text, plural forms and Qt placeholders. Linguistic and visual review is
 still needed when a translation changes.
+
+## Qt notices and corresponding sources
+
+`resources/licenses/qt-3rdparty/manifest.json` records the reviewed Qt source
+archive, SDK image ID, Longreach reference and hashes of all retained notices.
+The inventory conservatively covers runtime source attributions in Core, Gui,
+Widgets, Svg and Concurrent, including optional platform code. Notices for
+unused optional components may remain; this avoids relying on linker stripping
+to decide which copyright notices a package needs.
+
+The current inventory was obtained with
+`qtattributionsscanner --output-format json` from the actual static Qt 5.15.19
+SDK, scanning `qtbase/src` and `qtsvg/src` from the exact Qt archive (SHA-256 is
+in the manifest). Recreate it with
+`python tools/update_qt_notices.py --sources PATH --scanner-json FILE --archive-sha256 HASH --sdk-image IMAGE_ID --longreach-commit COMMIT`.
+The tool cross-checks all runtime metadata IDs and recovers `LicenseFiles`
+arrays that the older scanner does not understand, including both JPEG texts.
+Scanner warnings about newer CPE/PURL/comment fields are not taken as evidence
+that a runtime component can be omitted.
+
+`release.py package-notices` writes README.txt and THIRD-PARTY.txt and copies
+all reviewed notices. It refuses missing/changed license texts or an SDK image
+different from the reviewed inventory. Re-audit source/features when replacing
+the SDK. `release.py notes` checks the resulting ZIP again and compares all
+installer payload files with it. BUILD-INFO.txt and native-build.json remain
+inside the package; public download assets remain installer, ZIP and SHA256SUMS.

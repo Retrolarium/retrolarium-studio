@@ -7,6 +7,7 @@
 //   installer_package_test
 
 #include "installer_package.hpp"
+#include "user_data_paths.hpp"
 
 #include <QCoreApplication>
 #include <QCryptographicHash>
@@ -115,6 +116,16 @@ bool reads(const QTemporaryDir& dir, const QByteArray& package, QString* error =
 
 int main(int argc, char** argv) {
     QCoreApplication app(argc, argv);
+    QTemporaryDir dataPaths;
+    const QString documents = dataPaths.path() + QStringLiteral("/Documents");
+    const QString local = dataPaths.path() + QStringLiteral("/Local");
+    expect(rl::setup::userDataDirectories(false, documents, local).isEmpty(), "user data is opt-in");
+    const QStringList selected = rl::setup::userDataDirectories(true, documents, local);
+    expect(selected.contains(local + QStringLiteral("/Retrolarium/Retrolarium Studio")),
+           "saves and movies are selected");
+    expect(selected.contains(local + QStringLiteral("/Retrolarium/Kit/verified")), "verification records are selected");
+    expect(rl::setup::userDataDirectories(true, QString(), QString()).isEmpty(),
+           "missing shell folders never become relative paths");
     QTemporaryDir dir;
     if (!dir.isValid()) {
         std::cerr << "FAIL: no temporary folder\n";

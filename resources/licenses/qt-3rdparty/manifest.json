@@ -1,0 +1,612 @@
+{
+  "qt_version": "5.15.19",
+  "reviewed_sdk_image": "sha256:656a7d4d78ffb88b1976b3b5ffb198e11c4a59cce9e4fcc7856424175c74ced9",
+  "scope": "Conservative notices for runtime sources in Core, Gui, Widgets, Svg and Concurrent; optional/platform-specific components may be unused after static linking.",
+  "source": {
+    "url": "https://download.qt.io/archive/qt/5.15/5.15.19/single/qt-everywhere-opensource-src-5.15.19.tar.xz",
+    "sha256": "173c2326dae138bbb0d98921e9d911e55c00163d93a6db29f294b5e19ff306ae"
+  },
+  "longreach_commit": "3c5142ae3d3dc8a576dc6081fa0d20497663756f",
+  "components": [
+    {
+      "id": "android-native-style",
+      "name": "Native Style for Android",
+      "module": "qtgui",
+      "license": "Apache License 2.0",
+      "license_id": "Apache-2.0",
+      "notice": "android-native-style.txt",
+      "sha256": "8186449b8440345a692ac6b1148b8a36a3d5729c086f58d3aa0653e7679ee347",
+      "source_path": "qtbase/src/3rdparty/android"
+    },
+    {
+      "id": "angle",
+      "name": "ANGLE Library",
+      "module": "qtgui",
+      "license": "BSD 3-clause \"New\" or \"Revised\" License",
+      "license_id": "BSD-3-Clause",
+      "notice": "angle.txt",
+      "sha256": "9300c13a531f0a0813c75e94dba9dcf5b59c5ccf1ca153586ac374e9a4eacd5e",
+      "source_path": "qtbase/src/3rdparty/angle"
+    },
+    {
+      "id": "angle-arrayboundsclamper",
+      "name": "ANGLE: Array Bounds Clamper for WebKit",
+      "module": "qtgui",
+      "license": "BSD 2-clause \"Simplified\" License",
+      "license_id": "BSD-2-Clause",
+      "notice": "angle-arrayboundsclamper.txt",
+      "sha256": "61d61152213e1ef8464522ffe05a51b99b999a914d44d853a95d8da666e6e659",
+      "source_path": "qtbase/src/3rdparty/angle"
+    },
+    {
+      "id": "angle-murmurhash",
+      "name": "ANGLE: Murmurhash",
+      "module": "qtgui",
+      "license": "Public Domain",
+      "license_id": "NONE",
+      "notice": "angle-murmurhash.txt",
+      "sha256": "28f232a5c25754f4e80a57c465559853f3cf755b8799cf97fb19d6e0f4b1de5a",
+      "source_path": "qtbase/src/3rdparty/angle"
+    },
+    {
+      "id": "angle-systeminfo",
+      "name": "ANGLE: Systeminfo",
+      "module": "qtgui",
+      "license": "BSD 2-clause \"Simplified\" License",
+      "license_id": "BSD-2-Clause",
+      "notice": "angle-systeminfo.txt",
+      "sha256": "6af815587591198980152f743e7c6528969463df4d52890a78f85c311c2e376e",
+      "source_path": "qtbase/src/3rdparty/angle"
+    },
+    {
+      "id": "angle-trace_event",
+      "name": "ANGLE: trace_event",
+      "module": "qtgui",
+      "license": "BSD 3-clause \"New\" or \"Revised\" License",
+      "license_id": "BSD-3-Clause",
+      "notice": "angle-trace_event.txt",
+      "sha256": "de885756b10f5b97f5d7927c2da35f48755bc37469e851d0f2235dd3596c1b10",
+      "source_path": "qtbase/src/3rdparty/angle"
+    },
+    {
+      "id": "angle-khronos",
+      "name": "ANGLE: Khronos Headers",
+      "module": "qtgui",
+      "license": "MIT License",
+      "license_id": "MIT",
+      "notice": "angle-khronos.txt",
+      "sha256": "8b216a067820cf4e104f77cf8b2f3111f8e7a80f68d18255bb8b18615831940c",
+      "source_path": "qtbase/src/3rdparty/angle"
+    },
+    {
+      "id": "doubleconversion",
+      "name": "Efficient Binary-Decimal and Decimal-Binary Conversion Routines for IEEE Doubles",
+      "module": "qtcore",
+      "license": "BSD 3-clause \"New\" or \"Revised\" License",
+      "license_id": "BSD-3-Clause",
+      "notice": "double-conversion.txt",
+      "sha256": "8df81f0b6ace3297149c9aa9a4cd98e4ea0613889f6f3697e06fced5fb01b1cf",
+      "source_path": "qtbase/src/3rdparty/double-conversion"
+    },
+    {
+      "id": "easing",
+      "name": "Easing Equations by Robert Penner",
+      "module": "qtcore",
+      "license": "BSD 3-clause \"New\" or \"Revised\" License",
+      "license_id": "BSD-3-Clause",
+      "notice": "easing.txt",
+      "sha256": "bbe53a96e1d7c507d1e4e4d2c7888f009be9e8e0a84ba79b8dbf7183f264199d",
+      "source_path": "qtbase/src/3rdparty/easing"
+    },
+    {
+      "id": "forkfd",
+      "name": "forkfd",
+      "module": "qtcore",
+      "license": "MIT License",
+      "license_id": "MIT",
+      "notice": "forkfd.txt",
+      "sha256": "fa08df2ef0821c06bd2913cc7229934d290fe4b98b860e92d0dce788bd97f98d",
+      "source_path": "qtbase/src/3rdparty/forkfd"
+    },
+    {
+      "id": "freebsd",
+      "name": "FreeBSD strtoll and strtoull",
+      "module": "qtcore",
+      "license": "BSD 3-clause \"New\" or \"Revised\" License",
+      "license_id": "BSD-3-Clause",
+      "notice": "freebsd.txt",
+      "sha256": "0f9c8f8c42cf60e5f4509c8d045171bbfd043dcbf1e22bc7872a2b91c18bcab1",
+      "source_path": "qtbase/src/3rdparty/freebsd"
+    },
+    {
+      "id": "freetype",
+      "name": "Freetype 2",
+      "module": "qtgui",
+      "license": "Freetype Project License or GNU General Public License v2.0 only",
+      "license_id": "FTL OR GPL-2.0",
+      "notice": "freetype.txt",
+      "sha256": "7e6fbc870ccec01947d6f35dc4f79e858fe3cfc5cb4e7d9b03318ed64d6d4bcf",
+      "source_path": "qtbase/src/3rdparty/freetype"
+    },
+    {
+      "id": "freetype-zlib",
+      "name": "Freetype 2 - zlib",
+      "module": "qtgui",
+      "license": "zlib License",
+      "license_id": "Zlib",
+      "notice": "freetype-zlib.txt",
+      "sha256": "1937cf329e4fa9942091b6fad6f12160a914dbbdb6cece58156dd67c039e5cc9",
+      "source_path": "qtbase/src/3rdparty/freetype"
+    },
+    {
+      "id": "freetype-bdf",
+      "name": "Freetype 2 - Bitmap Distribution Format (BDF) support",
+      "module": "qtgui",
+      "license": "MIT License",
+      "license_id": "MIT",
+      "notice": "freetype-bdf.txt",
+      "sha256": "50fcd192908eb38e91f0d44c7ad8759c4631635961160fce2d7fe162196a3650",
+      "source_path": "qtbase/src/3rdparty/freetype"
+    },
+    {
+      "id": "freetype-pcf",
+      "name": "Freetype 2 - Portable Compiled Format (PCF) support",
+      "module": "qtgui",
+      "license": "MIT License and MIT Open Group variant",
+      "license_id": "MIT AND MIT-open-group",
+      "notice": "freetype-pcf.txt",
+      "sha256": "1afcbee7f324c19dc2693c4fc23a728a31a95379cc6562c03073ec51a6c49b30",
+      "source_path": "qtbase/src/3rdparty/freetype"
+    },
+    {
+      "id": "harfbuzz",
+      "name": "HarfBuzz",
+      "module": "qtgui",
+      "license": "MIT License",
+      "license_id": "MIT",
+      "notice": "harfbuzz.txt",
+      "sha256": "94bf0db5ef2dd15f068893db164b21aaf224084477dba1a557e8eef45a969dc8",
+      "source_path": "qtbase/src/3rdparty/harfbuzz"
+    },
+    {
+      "id": "harfbuzz-ng",
+      "name": "HarfBuzz-NG",
+      "module": "qtgui",
+      "license": "MIT License",
+      "license_id": "MIT",
+      "notice": "harfbuzz-ng.txt",
+      "sha256": "bdfe41e003df9250172ae79480c73cb556571f4a54ea4624df8872f45fdcabc5",
+      "source_path": "qtbase/src/3rdparty/harfbuzz-ng"
+    },
+    {
+      "id": "iaccessible2",
+      "name": "IAccessible2 IDL Specification",
+      "module": "qtgui",
+      "license": "BSD 3-clause \"New\" or \"Revised\" License",
+      "license_id": "BSD-3-Clause",
+      "notice": "iaccessible2.txt",
+      "sha256": "4b5bf7b91a35855236ef2b75441dc19039cd760629ae546d714fd828f0ad7737",
+      "source_path": "qtbase/src/3rdparty/iaccessible2"
+    },
+    {
+      "id": "icc-sRGB-color-profile",
+      "name": "sRGB color profile icc file",
+      "module": "qtgui",
+      "license": "International Color Consortium License",
+      "license_id": "ICC License",
+      "notice": "icc-sRGB-color-profile.txt",
+      "sha256": "b7ce5791368ad7da56b58a5cdcea445fec38cb54decfce421707ff7b9e6e7071",
+      "source_path": "qtbase/src/3rdparty/icc"
+    },
+    {
+      "id": "libjpeg",
+      "name": "LibJPEG-turbo",
+      "module": "qtgui",
+      "license": "Independent JPEG Group License and BSD 3-Clause \"New\" or \"Revised\" License",
+      "license_id": "IJG AND BSD-3-Clause",
+      "notice": "libjpeg-turbo.txt",
+      "sha256": "d1ec5f506ac4ff22f288aeb192a13ed102f0e8fb2517fc8e4666c5a3930d87f4",
+      "source_path": "qtbase/src/3rdparty/libjpeg"
+    },
+    {
+      "id": "libpng",
+      "name": "LibPNG",
+      "module": "qtgui",
+      "license": "libpng License and PNG Reference Library version 2",
+      "license_id": "Libpng AND libpng-2.0",
+      "notice": "libpng.txt",
+      "sha256": "37b1058fe65077ae90f3cf7a506e87bc7f36039cf549a9c7e97f32a1e844bae3",
+      "source_path": "qtbase/src/3rdparty/libpng"
+    },
+    {
+      "id": "md4",
+      "name": "MD4",
+      "module": "qtcore",
+      "license": "Public Domain",
+      "license_id": "",
+      "notice": "md4.txt",
+      "sha256": "f1ec69d3ca86164490f862dadb35353539199d076c1589caf3c7f91d9bb516da",
+      "source_path": "qtbase/src/3rdparty/md4"
+    },
+    {
+      "id": "md4c",
+      "name": "MD4C",
+      "module": "qtgui",
+      "license": "MIT License",
+      "license_id": "MIT",
+      "notice": "md4c.txt",
+      "sha256": "84ce8bb8ec018d5c87cf0d4d9569bae2b264e1fed544e2220b68ff09de8f5551",
+      "source_path": "qtbase/src/3rdparty/md4c"
+    },
+    {
+      "id": "md5",
+      "name": "MD5",
+      "module": "qtcore",
+      "license": "Public Domain",
+      "license_id": "",
+      "notice": "md5.txt",
+      "sha256": "a5cef314c2e6451e72d47d280a3161eab30e71893546f02e30569d4eae21c706",
+      "source_path": "qtbase/src/3rdparty/md5"
+    },
+    {
+      "id": "pcre2",
+      "name": "PCRE2",
+      "module": "qtcore",
+      "license": "BSD 3-clause \"New\" or \"Revised\" License with PCRE2 binary-like Packages Exception",
+      "license_id": "LicenseRef-BSD-3-Clause-with-PCRE2-Binary-Like-Packages-Exception",
+      "notice": "pcre2.txt",
+      "sha256": "c1715b067f253e8c1b40da9cba84ae895f5350ad9ceab136ac5cd108dcdb53e4",
+      "source_path": "qtbase/src/3rdparty/pcre2"
+    },
+    {
+      "id": "pcre2-sljit",
+      "name": "PCRE2 - Stack-less Just-In-Time Compiler",
+      "module": "qtcore",
+      "license": "BSD 2-clause \"Simplified\" License",
+      "license_id": "BSD-2-Clause",
+      "notice": "pcre2-sljit.txt",
+      "sha256": "96d68c3378488b5c822e7bdf38355f12874f139bcbf0d020af87eb6448dc910c",
+      "source_path": "qtbase/src/3rdparty/pcre2"
+    },
+    {
+      "id": "pixman",
+      "name": "Pixman",
+      "module": "qtgui",
+      "license": "MIT License",
+      "license_id": "MIT",
+      "notice": "pixman.txt",
+      "sha256": "0a61d9953b0dced55fe059dbf1227f54db7584063ad744818a74feb8c1498557",
+      "source_path": "qtbase/src/3rdparty/pixman"
+    },
+    {
+      "id": "rfc6234",
+      "name": "Secure Hash Algorithms SHA-384 and SHA-512",
+      "module": "qtcore",
+      "license": "BSD 3-clause \"New\" or \"Revised\" License",
+      "license_id": "BSD-3-Clause",
+      "notice": "rfc6234.txt",
+      "sha256": "5b7698502e2d51c2f09aa66d7d85e8126d86468465441520b5910145bd3f4b66",
+      "source_path": "qtbase/src/3rdparty/rfc6234"
+    },
+    {
+      "id": "sha1",
+      "name": "Secure Hash Algorithm SHA-1",
+      "module": "qtcore",
+      "license": "Public Domain",
+      "license_id": "",
+      "notice": "sha1.txt",
+      "sha256": "356ecdd109ef10c1773ed9d802d62e808d94c10f1b58468d3d3036a02dcc2f0d",
+      "source_path": "qtbase/src/3rdparty/sha1"
+    },
+    {
+      "id": "sha3_endian",
+      "name": "Secure Hash Algorithm SHA-3 - brg_endian",
+      "module": "qtcore",
+      "license": "BSD 2-clause \"Simplified\" License",
+      "license_id": "BSD-2-Clause",
+      "notice": "sha3_endian.txt",
+      "sha256": "4e6f7be29ceca22e32f243308706fb85b8fdd40d214033dc3575a14413a11469",
+      "source_path": "qtbase/src/3rdparty/sha3"
+    },
+    {
+      "id": "sha3_keccak",
+      "name": "Secure Hash Algorithm SHA-3 - Keccak",
+      "module": "qtcore",
+      "license": "Creative Commons Zero v1.0 Universal",
+      "license_id": "CC0-1.0",
+      "notice": "sha3_keccak.txt",
+      "sha256": "d8f55cafe10bf02498cf76e009609bae91dd4179e52570c804a0b826b1c712de",
+      "source_path": "qtbase/src/3rdparty/sha3"
+    },
+    {
+      "id": "tinycbor",
+      "name": "TinyCBOR",
+      "module": "qtcore",
+      "license": "MIT License",
+      "license_id": "MIT",
+      "notice": "tinycbor.txt",
+      "sha256": "7215044f2558659048c8b7c598b4b5b4a0d599425b63f784326db8067b240ff6",
+      "source_path": "qtbase/src/3rdparty/tinycbor"
+    },
+    {
+      "id": "VulkanMemoryAllocator",
+      "name": "Vulkan Memory Allocator",
+      "module": "qtgui",
+      "license": "MIT License",
+      "license_id": "MIT",
+      "notice": "VulkanMemoryAllocator.txt",
+      "sha256": "b548fad7efe06b237d20aa6a7c5458d5545b98952a6977cb4a8658b3140a6428",
+      "source_path": "qtbase/src/3rdparty/VulkanMemoryAllocator"
+    },
+    {
+      "id": "vera_font",
+      "name": "Bitstream Vera Font",
+      "module": "qtgui",
+      "license": "Bitstream Vera Font License",
+      "license_id": "urn:dje:license:bitstream",
+      "notice": "vera_font.txt",
+      "sha256": "5289c9e35efd0dedcca7a7e17186116ec7c7192ba960706a8cbf1d721fc4ea28",
+      "source_path": "qtbase/src/3rdparty/wasm"
+    },
+    {
+      "id": "dejayvu",
+      "name": "DejaVu Fonts",
+      "module": "qtgui",
+      "license": "Bitstream Vera Font License",
+      "license_id": "urn:dje:license:bitstream",
+      "notice": "dejayvu.txt",
+      "sha256": "a0938a4e2f7b7c0bf2732750d3b8f8a9c06030ad9bbc084a35e6033e3169b6a4",
+      "source_path": "qtbase/src/3rdparty/wasm"
+    },
+    {
+      "id": "wintab",
+      "name": "Wintab API",
+      "module": "qtgui",
+      "license": "LCS-Telegraphics License",
+      "license_id": "urn:dje:license:lcs-telegraphics",
+      "notice": "wintab.txt",
+      "sha256": "5aff59d6ab510ba4e508b08ddd3b7bf4b2446eafb2b95832f27b4444c7cdda17",
+      "source_path": "qtbase/src/3rdparty/wintab"
+    },
+    {
+      "id": "xcb-xinput",
+      "name": "XCB-XInput",
+      "module": "qtgui",
+      "license": "MIT License",
+      "license_id": "MIT",
+      "notice": "xcb-xinput.txt",
+      "sha256": "ab84e5628528711631e1e37f25be304a874b5eb1dc20adcf648893abd2736a0e",
+      "source_path": "qtbase/src/3rdparty/xcb"
+    },
+    {
+      "id": "zlib",
+      "name": "Data Compression Library (zlib)",
+      "module": "qtcore",
+      "license": "zlib License",
+      "license_id": "Zlib",
+      "notice": "zlib.txt",
+      "sha256": "cadeaf618fa02a6fbb632f27ebf0cc153ecae3b24cb1b67712dec5953a457b3f",
+      "source_path": "qtbase/src/3rdparty/zlib"
+    },
+    {
+      "id": "qbig5codecs",
+      "name": "Text Codecs: Big5, Big5-HKSCS",
+      "module": "qtcore",
+      "license": "BSD 2-clause \"Simplified\" License",
+      "license_id": "BSD-2-Clause",
+      "notice": "qbig5codecs.txt",
+      "sha256": "1a8234d34a68476e369e51539842bcf1eba0887427b547e6bd90be037cd37bf7",
+      "source_path": "qtbase/src/corelib/codecs"
+    },
+    {
+      "id": "qeucjpcodec",
+      "name": "Text Codec: EUC-JP",
+      "module": "qtcore",
+      "license": "BSD 2-clause \"Simplified\" License",
+      "license_id": "BSD-2-Clause",
+      "notice": "qeucjpcodec.txt",
+      "sha256": "c5a2c44995da88b48bdb434787e623f9cbb20704641950bc44de50c661ed7483",
+      "source_path": "qtbase/src/corelib/codecs"
+    },
+    {
+      "id": "qeuckrcodec",
+      "name": "Text Codec: EUC-KR",
+      "module": "qtcore",
+      "license": "BSD 2-clause \"Simplified\" License",
+      "license_id": "BSD-2-Clause",
+      "notice": "qeuckrcodec.txt",
+      "sha256": "2942c1a47e0b8fd7880e3acb60beff1cf01d47553d063c60a2efb4465cc165d5",
+      "source_path": "qtbase/src/corelib/codecs"
+    },
+    {
+      "id": "qjiscodec",
+      "name": "Text Codec: ISO 2022-JP (JIS)",
+      "module": "qtcore",
+      "license": "BSD 2-clause \"Simplified\" License",
+      "license_id": "BSD-2-Clause",
+      "notice": "qjiscodec.txt",
+      "sha256": "cb39d70cbd82058d879168c148596f8c86ada32f054a3628576bd013b3c5708a",
+      "source_path": "qtbase/src/corelib/codecs"
+    },
+    {
+      "id": "qsjiscodec",
+      "name": "Text Codec: Shift-JIS",
+      "module": "qtcore",
+      "license": "BSD 2-clause \"Simplified\" License",
+      "license_id": "BSD-2-Clause",
+      "notice": "qsjiscodec.txt",
+      "sha256": "e1ed301256ddbb7e9deeab71bb9dd1a818f42af09534b9bded01c92c9b219d17",
+      "source_path": "qtbase/src/corelib/codecs"
+    },
+    {
+      "id": "qtsciicodec",
+      "name": "Text Codec: TSCII",
+      "module": "qtcore",
+      "license": "BSD 2-clause \"Simplified\" License",
+      "license_id": "BSD-2-Clause",
+      "notice": "qtsciicodec.txt",
+      "sha256": "d9ac34a35cdfb063206bfda1107734bc88c09658da9c2e818b420561393c2894",
+      "source_path": "qtbase/src/corelib/codecs"
+    },
+    {
+      "id": "qbkcodec",
+      "name": "Text Codec: GBK",
+      "module": "qtcore",
+      "license": "BSD 2-clause \"Simplified\" License",
+      "license_id": "BSD-2-Clause",
+      "notice": "qbkcodec.txt",
+      "sha256": "03e0308ebe77b31be74e3cd1f8fc8b2f40ee2567f726a104e04dd54c03d42366",
+      "source_path": "qtbase/src/corelib/codecs"
+    },
+    {
+      "id": "psl",
+      "name": "The Public Suffix List",
+      "module": "qtcore",
+      "license": "Mozilla Public License 2.0",
+      "license_id": "MPL-2.0",
+      "notice": "psl.txt",
+      "sha256": "9ed99de5251be4bbea63018e46b6ebf79ab722bfbe842a7a055be0ff45c91be4",
+      "source_path": "qtbase/src/corelib/io"
+    },
+    {
+      "id": "qeventdispatcher_cf",
+      "name": "QEventDispatcher on macOS",
+      "module": "qtcore",
+      "license": "BSD 3-clause \"New\" or \"Revised\" License",
+      "license_id": "BSD-3-Clause",
+      "notice": "qeventdispatcher_cf.txt",
+      "sha256": "dc68a8212f9f37c35918f75f5bc64d635ad6f642035a79d992d8599a7e57a597",
+      "source_path": "qtbase/src/corelib/kernel"
+    },
+    {
+      "id": "tika-mimetypes",
+      "name": "Apache Tika MimeType Definitions",
+      "module": "qtcore",
+      "license": "Apache License 2.0",
+      "license_id": "Apache-2.0",
+      "notice": "tika-mimetypes.txt",
+      "sha256": "2b4958c23139b99a3134955f334d3ee1b18f36ada1fcd7117df978bba189c369",
+      "source_path": "qtbase/src/corelib/mimetypes/3rdparty"
+    },
+    {
+      "id": "unicode-character-database",
+      "name": "Unicode Character Database (UCD)",
+      "module": "qtcore",
+      "license": "Unicode License Agreement - Data Files and Software (2016)",
+      "license_id": "Unicode-DFS-2016",
+      "notice": "unicode-character-database.txt",
+      "sha256": "51a911d3599a464ef85336788a59ab5ced683797c7271108c8a0f4895433dd9d",
+      "source_path": "qtbase/src/corelib/text"
+    },
+    {
+      "id": "unicode-cldr",
+      "name": "Unicode Common Locale Data Repository (CLDR)",
+      "module": "qtcore",
+      "license": "Unicode License Agreement - Data Files and Software (2016)",
+      "license_id": "Unicode-DFS-2016",
+      "notice": "unicode-cldr.txt",
+      "sha256": "91765fd09a1d9d894e7c39ab2eef077e623e1410f869e020d95afc44a6ddc240",
+      "source_path": "qtbase/src/corelib/text"
+    },
+    {
+      "id": "opengl-headers",
+      "name": "OpenGL Headers",
+      "module": "qtgui",
+      "license": "MIT License",
+      "license_id": "MIT",
+      "notice": "opengl-headers.txt",
+      "sha256": "88682c3876a4744ff55cfeb11093dcf193c53e9f83f9c4a3cf4e1c7f6ffd14f5",
+      "source_path": "qtbase/src/gui/opengl"
+    },
+    {
+      "id": "opengl-es2-headers",
+      "name": "OpenGL ES 2 Headers",
+      "module": "qtgui",
+      "license": "MIT License",
+      "license_id": "MIT",
+      "notice": "opengl-es2-headers.txt",
+      "sha256": "0705a6a51b57f0e2895d0b4a3ad55a522cf2876327177594eaa41e24dfd94caf",
+      "source_path": "qtbase/src/gui/opengl"
+    },
+    {
+      "id": "grayraster",
+      "name": "Anti-aliasing rasterizer from FreeType 2",
+      "module": "qtgui",
+      "license": "Freetype Project License or GNU General Public License v2.0 only",
+      "license_id": "FTL or GPL-2.0",
+      "notice": "grayraster.txt",
+      "sha256": "8b35368652338010141ee10a376132b9e377a20e5886395088a1e7ad1de689c2",
+      "source_path": "qtbase/src/gui/painting"
+    },
+    {
+      "id": "smooth-scaling-algorithm",
+      "name": "Smooth Scaling Algorithm",
+      "module": "qtgui",
+      "license": "BSD 2-clause \"Simplified\" License and Imlib2 License",
+      "license_id": "BSD-2-Clause AND Imlib2",
+      "notice": "smooth-scaling-algorithm.txt",
+      "sha256": "5f58d1e0e1e7fde205ccf1ca6b558c0d52eb0f0b282aef555e5f64ac066fce1c",
+      "source_path": "qtbase/src/gui/painting"
+    },
+    {
+      "id": "webgradients",
+      "name": "WebGradients",
+      "module": "qtgui",
+      "license": "MIT License",
+      "license_id": "MIT",
+      "notice": "webgradients.txt",
+      "sha256": "aefff62cc94034365586d1d96f12c8d109c1a175798c4e563f54a0bec5a65fb1",
+      "source_path": "qtbase/src/gui/painting"
+    },
+    {
+      "id": "xserverhelper",
+      "name": "X Server helper",
+      "module": "qtgui",
+      "license": "X11 License and Historical Permission Notice and Disclaimer",
+      "license_id": "X11 AND HPND",
+      "notice": "xserverhelper.txt",
+      "sha256": "882bd5aeb571ed77db4165de6c95c145b8a9b1371329001127618a804b022889",
+      "source_path": "qtbase/src/gui/painting"
+    },
+    {
+      "id": "aglfn",
+      "name": "Adobe Glyph List For New Fonts",
+      "module": "qtgui",
+      "license": "BSD 3-Clause \"New\" or \"Revised\" License",
+      "license_id": "BSD-3-Clause",
+      "notice": "aglfn.txt",
+      "sha256": "0f38f490f388aa93a0a498123a93e9504ae7572144826af0f0565341b2cd4447",
+      "source_path": "qtbase/src/gui/text"
+    },
+    {
+      "id": "vulkan-xml-spec",
+      "name": "Vulkan API Registry",
+      "module": "qtgui",
+      "license": "MIT License",
+      "license_id": "MIT",
+      "notice": "vulkan-xml-spec.txt",
+      "sha256": "bfa5624839e7d6573f9b4b9a1895736ced5a39cdcabd2c1594410805c4b48487",
+      "source_path": "qtbase/src/gui/vulkan"
+    },
+    {
+      "id": "cocoa-platform-plugin",
+      "name": "Cocoa Platform Plugin",
+      "module": "qtgui",
+      "license": "BSD 3-clause \"New\" or \"Revised\" License",
+      "license_id": "BSD-3-Clause",
+      "notice": "cocoa-platform-plugin.txt",
+      "sha256": "0ca433952056276dc95ded5cfa4916e3ead6da929daa0c35c008df1625946029",
+      "source_path": "qtbase/src/plugins/platforms/cocoa"
+    },
+    {
+      "id": "xsvg",
+      "name": "XSVG",
+      "module": "qtsvg",
+      "license": "Historical Permission Notice and Disclaimer - sell variant",
+      "license_id": "HPND-sell-variant",
+      "notice": "xsvg.txt",
+      "sha256": "f44a8b14d92d40862ee73f8ed5f7d25327eaf2e73640ce1848e36d0e659f3d09",
+      "source_path": "qtsvg/src/svg"
+    }
+  ]
+}

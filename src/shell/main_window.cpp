@@ -1339,14 +1339,20 @@ void MainWindow::openHashedRom(const QString& rom, const QString& digest) {
     sdk::ProcessSpec spec =
         kitCommand({QStringLiteral("studio"), QStringLiteral("identify"), rom}, QFileInfo(rom).absolutePath(), &error);
     if (spec.program.isEmpty()) {
-        openAsRom();
+        report(message(sdk::Severity::Error, QStringLiteral("kit"), error, rom));
         return;
     }
     spec.label = tr("Identify %1").arg(QFileInfo(rom).fileName());
     runProcess(spec, [this, rom, digest, openAsRom](const sdk::ProcessResult& result) {
-        const QJsonArray matches =
-            QJsonDocument::fromJson(result.standardOutput).object().value(QStringLiteral("matches")).toArray();
-        if (!result.succeeded() || matches.isEmpty()) {
+        QJsonArray matches;
+        if (!sdk::identifiedMatches(result, &matches)) {
+            const QString reason = result.succeeded()
+                                       ? tr("Retrolarium Kit returned an invalid identification response.")
+                                       : sdk::failureText(result);
+            report(message(sdk::Severity::Error, QStringLiteral("kit"), reason, rom));
+            return;
+        }
+        if (matches.isEmpty()) {
             openAsRom();
             return;
         }

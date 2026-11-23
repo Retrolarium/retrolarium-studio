@@ -1,0 +1,4 @@
+ANGLE: Murmurhash
+License: Public Domain
+MurmurHash3 was written by Austin Appleby, and is placed in the public domain. The author hereby disclaims copyright to this source code.
+Corresponding source: https://download.qt.io/archive/qt/5.15/5.15.19/single/qt-everywhere-opensource-src-5.15.19.tar.xz

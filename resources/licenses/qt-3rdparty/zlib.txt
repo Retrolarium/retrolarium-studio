@@ -1,5 +1,9 @@
-From Qt 5.15.19 (qtbase v5.15.19-lts-lgpl, src/3rdparty/zlib/LICENSE):
+Data Compression Library (zlib)
+License: zlib License
+(C) 1995-2024 Jean-loup Gailly and Mark Adler
+Corresponding source: https://download.qt.io/archive/qt/5.15/5.15.19/single/qt-everywhere-opensource-src-5.15.19.tar.xz
 
+--- LICENSE ---
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
   arising from the use of this software.

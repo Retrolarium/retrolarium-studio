@@ -124,7 +124,7 @@ private:
     // Power-on (world 0), or the start world and point past the title.
     void launchWorld(int world);
     void applyRecording(const QString& path);
-    QString world2ViewPath() const;
+    QString world2ViewPath(QString* error = nullptr) const;
     bool loadWorld2View();
     // Asks the kit for the view, then opens `kind`/`document`.
     void computeWorld2View(const QString& kind, const QString& document);

@@ -722,15 +722,15 @@ bool DoraemonSession::editMusic(const QString& label, const QJsonObject& music, 
 }
 
 QString DoraemonSession::writeMusicSnapshot(QString* error) const {
-    const QString path = project_.resolve(QStringLiteral("build/sound-preview/doraemon-music.json"));
-    QDir().mkpath(QFileInfo(path).absolutePath());
     try {
+        const QString path = project_.resolve(QStringLiteral("build/sound-preview/doraemon-music.json"));
+        QDir().mkpath(QFileInfo(path).absolutePath());
         saveJsonObject(path, state_.music);
+        return path;
     } catch (const std::exception& e) {
         if (error) *error = QString::fromUtf8(e.what());
         return {};
     }
-    return path;
 }
 
 QJsonObject DoraemonSession::musicTrace(int driver, int track) {
@@ -755,8 +755,13 @@ QJsonObject DoraemonSession::musicTrace(int driver, int track) {
         report(sdk::Severity::Error, QStringLiteral("sound"), error);
         return {};
     }
-    const QString output =
-        project_.resolve(QStringLiteral("build/sound-preview/trace-%1-%2.json").arg(driver).arg(track));
+    QString output;
+    try {
+        output = project_.resolve(QStringLiteral("build/sound-preview/trace-%1-%2.json").arg(driver).arg(track));
+    } catch (const std::exception& problem) {
+        report(sdk::Severity::Error, QStringLiteral("sound"), QString::fromUtf8(problem.what()));
+        return {};
+    }
     sdk::ProcessSpec spec =
         h->kitCommand({QStringLiteral("audio"), QStringLiteral("trace-doraemon"), project_.path(),
                        QStringLiteral("--document"), document, QStringLiteral("--driver"), QString::number(driver),
@@ -789,6 +794,10 @@ QJsonObject DoraemonSession::musicTrace(int driver, int track) {
 }
 
 bool DoraemonSession::save(QString* error) {
+    if (!project_.validateEditablePaths(error)) return false;
+    for (const QString& path : {bundlePath_, textPath_, musicPath_, demoPath_}) {
+        if (!path.isEmpty() && !project_.validateWritePath(path, error)) return false;
+    }
     // Each document counts as saved once written: a save that fails
     // halfway leaves the ones before it saved.
     try {
@@ -1007,7 +1016,7 @@ void DoraemonSession::upgradeDocuments(const QString& kind, const QString& docum
 
 // ---------------------------------------------------------------- World 2 view
 
-QString DoraemonSession::world2ViewPath() const {
+QString DoraemonSession::world2ViewPath(QString* error) const {
     // Named after what the geometry depends on, so a stale view is never read.
     QCryptographicHash hash(QCryptographicHash::Sha1);
     for (const char* id : {"world2-stage", "world2-branches", "world2-chapters"}) {
@@ -1021,8 +1030,13 @@ QString DoraemonSession::world2ViewPath() const {
                          .toString()
                          .toLatin1());
     }
-    return project_.resolve(
-        QStringLiteral("build/world2-view-%1.json").arg(QString::fromLatin1(hash.result().toHex().left(16))));
+    try {
+        return project_.resolve(
+            QStringLiteral("build/world2-view-%1.json").arg(QString::fromLatin1(hash.result().toHex().left(16))));
+    } catch (const std::exception& problem) {
+        if (error) *error = QString::fromUtf8(problem.what());
+        return {};
+    }
 }
 
 bool DoraemonSession::loadWorld2View() {
@@ -1038,9 +1052,13 @@ bool DoraemonSession::loadWorld2View() {
 void DoraemonSession::computeWorld2View(const QString& kind, const QString& document) {
     sdk::Host* h = host();
     if (!h || h->isBusy()) return;
-    const QString output = world2ViewPath();
-    QDir().mkpath(QFileInfo(output).absolutePath());
     QString error;
+    const QString output = world2ViewPath(&error);
+    if (output.isEmpty()) {
+        report(sdk::Severity::Error, kind, error);
+        return;
+    }
+    QDir().mkpath(QFileInfo(output).absolutePath());
     sdk::ProcessSpec spec = h->kitCommand({QStringLiteral("studio"), QStringLiteral("doraemon-world2-view"),
                                            bundlePath_, QStringLiteral("--output"), output},
                                           project_.directory(), &error);

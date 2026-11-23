@@ -8,6 +8,7 @@ import json
 import os
 from pathlib import Path
 import re
+import shutil
 import struct
 import subprocess
 import zipfile
@@ -28,6 +29,20 @@ NATIVE_FILES = (
     "tools/retrolarium-flicky-level-writer.exe",
     "tools/retrolarium-ymfm-renderer.exe",
     "tools/rlcore.exe",
+)
+REQUIRED_LICENSES = (
+    "LICENSE.txt",
+    "python/LICENSE.txt",
+    "mame/COPYING",
+    "licenses/Qt-LGPL-3.0.txt",
+    "licenses/OFL-Barlow.txt",
+    "licenses/OFL-IBMPlex.txt",
+    "licenses/mingw-w64-runtime.txt",
+    "licenses/ymfm-BSD-3-Clause.txt",
+    "kit/retrolarium_kit/core/toolchains/licenses/AS-GPL-2.0.txt",
+    "kit/retrolarium_kit/core/toolchains/licenses/cc65-Zlib.txt",
+    "kit/retrolarium_kit/core/toolchains/licenses/p2bin-ISC.txt",
+    "kit/retrolarium_kit/core/opendisksys/LICENSE-LGPL-3.0.txt",
 )
 
 
@@ -60,6 +75,104 @@ def sources() -> dict:
 def digest(path: Path) -> str:
     with path.open("rb") as stream:
         return hashlib.file_digest(stream, "sha256").hexdigest()
+
+
+def verify_core_ref(allow_mismatch: bool = False) -> None:
+    expected = (STUDIO / ".github/core-ref").read_text(encoding="utf-8").strip()
+    actual = git(STUDIO.parent / "retrolarium-core", "rev-parse", "HEAD").decode().strip()
+    if not re.fullmatch(r"[0-9a-f]{40}", expected):
+        raise ValueError(".github/core-ref must pin a full Core commit")
+    if actual != expected and not allow_mismatch:
+        raise ValueError(
+            "Core HEAD differs from .github/core-ref; use the coordinated Core, or "
+            "-AllowCoreMismatch for development only"
+        )
+
+
+def qt_notices() -> dict:
+    return json.loads((STUDIO / "resources/licenses/qt-3rdparty/manifest.json").read_text(encoding="utf-8"))
+
+
+def package_notices(package: Path, version: str) -> None:
+    """Copy every reviewed runtime notice and write a user-facing source map."""
+    manifest = qt_notices()
+    folder = package / "licenses/qt-3rdparty"
+    folder.mkdir(parents=True, exist_ok=True)
+    for component in manifest["components"]:
+        source = STUDIO / "resources/licenses/qt-3rdparty" / component["notice"]
+        if digest(source) != component["sha256"]:
+            raise ValueError(f"Qt license text differs from its reviewed manifest: {source.name}")
+        shutil.copy2(source, folder / source.name)
+    write(folder / "manifest.json", manifest)
+    shutil.copy2(STUDIO / "THIRD-PARTY.md", package / "THIRD-PARTY.txt")
+    for name in REQUIRED_LICENSES:
+        if not (package / name).is_file() or not (package / name).stat().st_size:
+            raise ValueError(f"required license is missing: {name}")
+    record = json.loads((package / "native-build.json").read_text(encoding="utf-8"))
+    if record.get("qt_image") != manifest["reviewed_sdk_image"]:
+        raise ValueError("Qt SDK differs from the reviewed attribution inventory; review its sources before packaging")
+    info = (package / "BUILD-INFO.txt").read_text(encoding="utf-8-sig")
+    kit = re.search(r"^Kit:\s*([0-9a-f]{40})\s*$", info, re.M)
+    if kit is None:
+        raise ValueError("BUILD-INFO.txt must name the exact Kit commit")
+    urls = {
+        name.lower() + "_url": "https://github.com/Retrolarium/retrolarium-"
+        + name.lower()
+        + "/tree/"
+        + record["sources"][name]["commit"]
+        for name in ("Studio", "Core")
+    }
+    urls["kit_url"] = "https://github.com/Retrolarium/retrolarium-kit/tree/" + kit.group(1)
+    urls["studio_file_url"] = urls["studio_url"].replace("/tree/", "/blob/")
+    urls["kit_file_url"] = urls["kit_url"].replace("/tree/", "/blob/")
+    bios = json.loads((package / "kit/retrolarium_kit/core/opendisksys/manifest.json").read_text(encoding="utf-8"))
+    python = record["package"]["python"]["version"]
+    text = (
+        (STUDIO / "packaging/README.txt.in")
+        .read_text(encoding="utf-8")
+        .format(
+            version=version,
+            **urls,
+            qt_version=manifest["qt_version"],
+            qt_source_url=manifest["source"]["url"],
+            qt_source_sha256=manifest["source"]["sha256"],
+            longreach_url="https://github.com/OpenKaryon/longreach-qt/tree/" + manifest["longreach_commit"],
+            mame_url="https://github.com/mamedev/mame/tree/" + record["package"]["mame"]["commit"],
+            python_version=python,
+            python_url="https://github.com/python/cpython/tree/v" + python,
+            bios_url=bios["source"].removesuffix(".git").rstrip("/") + "/tree/" + bios["commit"],
+        )
+    )
+    (package / "README.txt").write_text(text, encoding="utf-8")
+
+
+def verify_package_notices(bundle: zipfile.ZipFile, prefix: str, version: str) -> None:
+    try:
+        text = bundle.read(prefix + "README.txt").decode("utf-8-sig")
+        if not text.splitlines() or text.splitlines()[0] != f"Retrolarium Studio {version}":
+            raise ValueError("README.txt has a different package version")
+        for url in (
+            "https://github.com/Retrolarium/retrolarium-studio/tree/",
+            "https://github.com/Retrolarium/retrolarium-kit/tree/",
+            "https://github.com/Retrolarium/retrolarium-core/tree/",
+            "https://github.com/OpenKaryon/longreach-qt/tree/",
+            "https://github.com/mamedev/mame/tree/",
+        ):
+            if not re.search(re.escape(url) + r"[0-9a-f]{40}", text):
+                raise ValueError(f"README.txt has no exact corresponding source: {url}")
+        manifest = qt_notices()
+        record = json.loads(bundle.read(prefix + "native-build.json"))
+        if record.get("qt_image") != manifest["reviewed_sdk_image"]:
+            raise ValueError("Qt SDK differs from the reviewed attribution inventory")
+        for component in manifest["components"]:
+            name = "licenses/qt-3rdparty/" + component["notice"]
+            if hashlib.sha256(bundle.read(prefix + name)).hexdigest() != component["sha256"]:
+                raise ValueError(f"release contains a changed Qt notice: {name}")
+        for name in (*REQUIRED_LICENSES, "THIRD-PARTY.txt"):
+            if not bundle.read(prefix + name).strip():
+                raise ValueError(f"required license is empty: {name}")
+    except KeyError as error:
+        raise ValueError(f"release is missing a required README or license: {error}") from error
 
 
 def write(path: Path, value: dict) -> None:
@@ -275,6 +388,7 @@ def verify_build(bin_dir: Path, allow_dirty: bool = False) -> None:
 
 
 def release_notes(out: Path) -> None:
+    verify_core_ref()
     version = re.search(
         r"project\([^)]*VERSION\s+(\d+\.\d+\.\d+)", (STUDIO / "CMakeLists.txt").read_text(), re.S
     ).group(1)
@@ -313,6 +427,7 @@ def release_notes(out: Path) -> None:
                     raise ValueError(f"release archive contains a different {name} than its record")
         if not info.startswith(f"Retrolarium Studio {version}"):
             raise ValueError("release archive has a different version")
+        verify_package_notices(bundle, prefix, version)
     payload_version, payload = read_setup_payload(setup)
     if payload_version != version:
         raise ValueError(f"{setup.name} carries version {payload_version}, not {version}")
@@ -363,6 +478,11 @@ def main() -> int:
     archive.add_argument("output", type=Path)
     notes = sub.add_parser("notes")
     notes.add_argument("out", type=Path)
+    core_ref = sub.add_parser("verify-core-ref")
+    core_ref.add_argument("--allow-mismatch", action="store_true")
+    notices = sub.add_parser("package-notices")
+    notices.add_argument("package", type=Path)
+    notices.add_argument("--version", required=True)
     args = parser.parse_args()
     try:
         if args.command == "record-source":
@@ -375,6 +495,10 @@ def main() -> int:
             record_package(args.package, args.python_version)
         elif args.command == "zip":
             write_zip(args.package, args.output)
+        elif args.command == "verify-core-ref":
+            verify_core_ref(args.allow_mismatch)
+        elif args.command == "package-notices":
+            package_notices(args.package, args.version)
         else:
             release_notes(args.out)
     except (OSError, ValueError, KeyError, TypeError, zlib.error, subprocess.CalledProcessError) as exc:

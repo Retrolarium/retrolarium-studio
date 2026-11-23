@@ -435,6 +435,10 @@ bool PacmanSession::editBundle(const QString& text, const std::function<void(nes
 }
 
 bool PacmanSession::save(QString* error) {
+    if (!project_.validateEditablePaths(error)) return false;
+    for (const QString& path : {bundlePath_, demoPath_}) {
+        if (!path.isEmpty() && !project_.validateWritePath(path, error)) return false;
+    }
     // Each document counts as saved once written: a save that fails
     // halfway leaves the ones before it saved.
     try {

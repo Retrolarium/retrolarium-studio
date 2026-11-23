@@ -702,11 +702,16 @@ void AlienSoldierSession::reportMapOverflow(const QString& source, const MapOver
 }
 
 bool AlienSoldierSession::save(QString* error) {
+    if (!project_.validateEditablePaths(error)) return false;
     bool ok = true;
     for (int index = 0; index < kDocCount; ++index) {
         const Doc which = static_cast<Doc>(index);
         Tracked& tracked = documents_.tracked(which);
         if (!isEditable(which) || !tracked.isDirty()) continue;
+        if (!project_.validateWritePath(tracked.path, error)) {
+            ok = false;
+            continue;
+        }
         try {
             saveJson(tracked.path, tracked.doc);
             tracked.saved = tracked.doc;

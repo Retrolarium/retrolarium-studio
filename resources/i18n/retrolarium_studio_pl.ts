@@ -10000,7 +10000,7 @@
     </message>
     <message>
         <source>Copyright © 2026 Daniel Oranguthang. Retrolarium Studio is free software under the GNU General Public License, version 3 or any later version, and comes with absolutely no warranty. Its source code is at %1. The components it carries (Qt, MAME, Python, the kit&apos;s assemblers, OpenDiskSysROM and others) keep their own licenses: %2 lists them, and their texts are in the licenses folder next to the program.</source>
-        <translation>Copyright © 2026 Daniel Oranguthang. Retrolarium Studio jest wolnym oprogramowaniem na licencji GNU General Public License w wersji 3 lub dowolnej późniejszej i nie jest objęte żadną gwarancją. Kod źródłowy znajduje się pod adresem %1. Dołączone składniki (Qt, MAME, Python, asemblery zestawu, OpenDiskSysROM i inne) mają własne licencje: wymienia je %2, a ich teksty są w folderze licenses obok programu.</translation>
+        <translation type="vanished">Copyright © 2026 Daniel Oranguthang. Retrolarium Studio jest wolnym oprogramowaniem na licencji GNU General Public License w wersji 3 lub dowolnej późniejszej i nie jest objęte żadną gwarancją. Kod źródłowy znajduje się pod adresem %1. Dołączone składniki (Qt, MAME, Python, asemblery zestawu, OpenDiskSysROM i inne) mają własne licencje: wymienia je %2, a ich teksty są w folderze licenses obok programu.</translation>
     </message>
     <message>
         <source>The games are named only to say which ones the studio works with. Their titles and characters are trademarks of their owners, who have not made or endorsed Retrolarium. You need your own copy of each game.</source>
@@ -10025,6 +10025,14 @@
     <message>
         <source>Previous, next state slot</source>
         <translation>Poprzedni, następny slot stanu</translation>
+    </message>
+    <message>
+        <source>Copyright © 2026 Daniel Oranguthang. Retrolarium Studio is free software under the GNU General Public License, version 3 or any later version, and comes with absolutely no warranty. Its source code is at %1. The components it carries (Qt, MAME, Python, the kit&apos;s assemblers, OpenDiskSysROM and others) keep their own licenses: %2 lists them, and their texts are in licenses, mame/legal, python and the kit&apos;s component folders.</source>
+        <translation>Copyright © 2026 Daniel Oranguthang. Retrolarium Studio jest wolnym oprogramowaniem na licencji GNU General Public License w wersji 3 lub dowolnej późniejszej i nie jest objęte żadną gwarancją. Kod źródłowy znajduje się pod adresem %1. Dołączone składniki (Qt, MAME, Python, asemblery zestawu, OpenDiskSysROM i inne) mają własne licencje: wymienia je %2, a ich teksty znajdują się w licenses, mame/legal, python i folderach składników zestawu.</translation>
+    </message>
+    <message>
+        <source>About Qt</source>
+        <translation>O Qt</translation>
     </message>
 </context>
 <context>
@@ -10929,6 +10937,10 @@
     <message>
         <source>Reading %1…</source>
         <translation>Odczytywanie %1…</translation>
+    </message>
+    <message>
+        <source>Retrolarium Kit returned an invalid identification response.</source>
+        <translation>Retrolarium Kit zwrócił nieprawidłową odpowiedź identyfikacji.</translation>
     </message>
 </context>
 <context>

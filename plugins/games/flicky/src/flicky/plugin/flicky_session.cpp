@@ -782,6 +782,7 @@ void FlickySession::setPreviewPalette(const QString& asset, const QString& palet
 // ---------------------------------------------------------------- saving
 
 bool FlickySession::save(QString* error) {
+    if (!project_.validateEditablePaths(error)) return false;
     const auto failed = [error](const QString& path, const std::exception& e) {
         if (error) {
             *error = tr("Cannot save %1: %2").arg(QFileInfo(path).fileName(), QString::fromUtf8(e.what()));
@@ -797,6 +798,10 @@ bool FlickySession::save(QString* error) {
     bool ok = true;
     const auto write = [&](bool dirty, const QString& path, const std::function<void()>& save) {
         if (!dirty) return true;
+        if (!project_.validateWritePath(path, error)) {
+            ok = false;
+            return false;
+        }
         try {
             save();
             return true;

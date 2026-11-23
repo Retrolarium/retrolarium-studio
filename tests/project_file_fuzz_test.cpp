@@ -8,10 +8,22 @@
 #include "sdk/project_file.hpp"
 
 #include <QCoreApplication>
+#include <QDir>
+#include <QFile>
+#include <QFileInfo>
 #include <QString>
 #include <QStringList>
+#include <QTemporaryDir>
+#ifdef Q_OS_WIN
+#include <windows.h>
+#include <winioctl.h>
+#else
+#include <unistd.h>
+#endif
 
 #include <iostream>
+#include <algorithm>
+#include <string>
 
 namespace {
 
@@ -99,10 +111,110 @@ void parse(const QString& text, const char* what) {
     }
 }
 
+bool directoryLink(const QString& link, const QString& target) {
+#ifdef Q_OS_WIN
+    // A junction needs no symlink privilege or Developer Mode on Windows.
+    const std::wstring nativeLink = QDir::toNativeSeparators(link).toStdWString();
+    const std::wstring nativeTarget = QDir::toNativeSeparators(target).toStdWString();
+    const std::wstring substitute = L"\\??\\" + nativeTarget;
+    struct MountPoint {
+        DWORD tag = IO_REPARSE_TAG_MOUNT_POINT;
+        WORD length = 0, reserved = 0;
+        WORD substituteOffset = 0, substituteLength = 0, printOffset = 0, printLength = 0;
+        wchar_t names[2048]{};
+    } data;
+    if (substitute.size() + nativeTarget.size() + 2 >= 2048) return false;
+    data.substituteLength = static_cast<WORD>(substitute.size() * sizeof(wchar_t));
+    data.printOffset = data.substituteLength + sizeof(wchar_t);
+    data.printLength = static_cast<WORD>(nativeTarget.size() * sizeof(wchar_t));
+    data.length = static_cast<WORD>(8 + data.printOffset + data.printLength + sizeof(wchar_t));
+    std::copy(substitute.begin(), substitute.end(), data.names);
+    std::copy(nativeTarget.begin(), nativeTarget.end(), data.names + data.printOffset / sizeof(wchar_t));
+    if (!CreateDirectoryW(nativeLink.c_str(), nullptr)) return false;
+    const HANDLE handle = CreateFileW(nativeLink.c_str(), GENERIC_WRITE, 0, nullptr, OPEN_EXISTING,
+                                      FILE_FLAG_OPEN_REPARSE_POINT | FILE_FLAG_BACKUP_SEMANTICS, nullptr);
+    DWORD returned = 0;
+    const bool ok =
+        handle != INVALID_HANDLE_VALUE &&
+        DeviceIoControl(handle, FSCTL_SET_REPARSE_POINT, &data, 8 + data.length, nullptr, 0, &returned, nullptr) != 0;
+    if (handle != INVALID_HANDLE_VALUE) CloseHandle(handle);
+    if (!ok) RemoveDirectoryW(nativeLink.c_str());
+    return ok;
+#else
+    return ::symlink(target.toUtf8().constData(), link.toUtf8().constData()) == 0;
+#endif
+}
+
+void pathBoundaries() {
+    QTemporaryDir folder;
+    const QString root = folder.path() + QStringLiteral("/project");
+    QDir().mkpath(root);
+    const QString path = root + QStringLiteral("/project.rlj");
+    const auto expect = [&](const QString& document, bool allowed, const QString& source = QString()) {
+        const QString text =
+            source + QStringLiteral("\n[[workspace.tabs]]\ndocument = '") + document + QStringLiteral("'\n");
+        QString why;
+        const auto project = rl::sdk::ProjectFile::parse(text, path, &why);
+        if (project.isValid() != allowed || (!allowed && why.isEmpty())) {
+            std::cerr << "FAIL: document boundary: " << document.toStdString() << '\n';
+            ++failures;
+        }
+    };
+    expect(QStringLiteral("data/new.json"), true);
+    for (const QString& outside :
+         {QStringLiteral("../outside.json"), QStringLiteral("/outside.json"), QStringLiteral("C:/outside.json"),
+          QStringLiteral("\\\\server\\share\\a.json"), QStringLiteral("data/../../outside.json")}) {
+        expect(outside, false);
+    }
+    // Project metadata cannot expand the root to an arbitrary ancestor.
+    expect(QStringLiteral("../outside.json"), false, QStringLiteral("[source]\nrepository = '../..'\n"));
+    const QString revision = root + QStringLiteral("/.retrolarium/base");
+    QDir().mkpath(revision);
+    QDir().mkpath(root + QStringLiteral("/hack/base"));
+    QString why;
+    const QString generated = QStringLiteral(
+        "[source]\nrepository = '../..'\n[[workspace.tabs]]\ndocument = '../../hack/base/levels.json'\n");
+    const auto project = rl::sdk::ProjectFile::parse(generated, revision + QStringLiteral("/project.rlj"), &why);
+    if (!project.isValid()) {
+        std::cerr << "FAIL: normal generated ROM project: " << why.toStdString() << '\n';
+        ++failures;
+    }
+    QDir().mkpath(folder.path() + QStringLiteral("/outside"));
+    const QString link = root + QStringLiteral("/linked");
+    const QString target = folder.path() + QStringLiteral("/outside");
+    const bool linked = directoryLink(link, target);
+    if (linked) {
+        expect(QStringLiteral("linked/new.json"), false);
+        const auto noTabs = rl::sdk::ProjectFile::parse(QString(), path, &why);
+        if (noTabs.validateWritePath(link + QStringLiteral("/new.json"), &why) ||
+            noTabs.validateWritePath(link + QStringLiteral("/../new.json"), &why) ||
+            !noTabs.validateWritePath(root + QStringLiteral("/new.json"), &why)) {
+            std::cerr << "FAIL: actual write paths must be checked even without matching tab metadata\n";
+            ++failures;
+        }
+        // An opened project's path is rechecked before save, too.
+        const QString text = QStringLiteral("[[workspace.tabs]]\ndocument = 'later/data.json'\n");
+        const auto opened = rl::sdk::ProjectFile::parse(text, path, &why);
+        const QString later = root + QStringLiteral("/later");
+        if (!directoryLink(later, target)) {
+            std::cerr << "FAIL: cannot create the second test directory link\n";
+            ++failures;
+        }
+        if (!opened.isValid() || opened.validateEditablePaths(&why)) {
+            std::cerr << "FAIL: changed link escaped before save\n";
+            ++failures;
+        }
+        std::cout << "project paths: directory links and actual write boundaries checked\n";
+    } else {
+        std::cerr << "SKIP: this filesystem cannot create directory links for the boundary probe\n";
+    }
+}
+
 }  // namespace
 
 int main(int argc, char** argv) {
     QCoreApplication app(argc, argv);
+    pathBoundaries();
     const QString seed = QString::fromUtf8(kSeed);
     QString error;
     if (!rl::sdk::ProjectFile::parse(seed, QStringLiteral("seed.rlj"), &error).isValid()) {

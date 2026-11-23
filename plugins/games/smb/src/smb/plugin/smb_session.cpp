@@ -586,6 +586,10 @@ bool SmbSession::edit(const QString& text, const std::function<void(SmbResourceD
 }
 
 bool SmbSession::save(QString* error) {
+    if (!project_.validateEditablePaths(error)) return false;
+    for (const QString& path : {documentPath_, demoPath_}) {
+        if (!path.isEmpty() && !project_.validateWritePath(path, error)) return false;
+    }
     // Each document counts as saved once written: a save that fails
     // halfway leaves the ones before it saved.
     try {

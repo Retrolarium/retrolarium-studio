@@ -1,0 +1,8 @@
+Wintab API
+License: LCS-Telegraphics License
+Copyright 1991-1998 by LCS/Telegraphics.
+Corresponding source: https://download.qt.io/archive/qt/5.15/5.15.19/single/qt-everywhere-opensource-src-5.15.19.tar.xz
+
+--- LICENSE.txt ---
+The text and information contained in this file may be freely used,
+copied, or distributed without compensation or licensing restrictions.

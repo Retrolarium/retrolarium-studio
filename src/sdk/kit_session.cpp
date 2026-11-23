@@ -14,6 +14,17 @@
 
 namespace rl::sdk {
 
+bool identifiedMatches(const ProcessResult& result, QJsonArray* matches) {
+    if (!result.succeeded()) return false;
+    QJsonParseError error;
+    const QJsonDocument document = QJsonDocument::fromJson(result.standardOutput, &error);
+    if (error.error != QJsonParseError::NoError || !document.isObject()) return false;
+    const QJsonValue value = document.object().value(QStringLiteral("matches"));
+    if (!value.isArray()) return false;
+    *matches = value.toArray();
+    return true;
+}
+
 QString failureText(const ProcessResult& result) {
     if (!result.started) {
         return result.error;
@@ -185,14 +196,19 @@ void KitSession::buildThenPlan(std::function<void(bool)> next, bool force, const
 }
 
 QStringList KitSession::planCommand(const EmulatorPlan& plan, const QString& mame) {
-    QStringList arguments = plan.arguments;
-    arguments << QStringLiteral("--mame") << mame;
-    if (!plan.recordTo.isEmpty()) {
-        const QString recording = project_.resolve(plan.recordTo);
-        QFile::remove(recording);
-        arguments << QStringLiteral("--record") << recording;
+    try {
+        QStringList arguments = plan.arguments;
+        arguments << QStringLiteral("--mame") << mame;
+        if (!plan.recordTo.isEmpty()) {
+            const QString recording = project_.resolve(plan.recordTo);
+            QFile::remove(recording);
+            arguments << QStringLiteral("--record") << recording;
+        }
+        return arguments;
+    } catch (const std::exception& error) {
+        report(Severity::Error, QStringLiteral("playtest"), QString::fromUtf8(error.what()));
+        return {};
     }
-    return arguments;
 }
 
 void KitSession::launchPlanned(EmulatorPlan plan) {
@@ -204,6 +220,7 @@ void KitSession::launchPlanned(EmulatorPlan plan) {
     QStringList withBuild;
     if (!mame.isEmpty() && !(plan.cached && plan.cached(&kept))) {
         withBuild = planCommand(plan, mame);
+        if (withBuild.isEmpty()) return;
     }
     auto answer = std::make_shared<BuiltPlan>();
     buildThenPlan(
@@ -235,7 +252,9 @@ void KitSession::launchPlanned(EmulatorPlan plan) {
                 return;
             }
             QString error;
-            ProcessSpec spec = h->kitCommand(planCommand(plan, mame), project_.directory(), &error);
+            const QStringList arguments = planCommand(plan, mame);
+            if (arguments.isEmpty()) return;
+            ProcessSpec spec = h->kitCommand(arguments, project_.directory(), &error);
             if (spec.program.isEmpty()) {
                 report(Severity::Error, QStringLiteral("playtest"), error);
                 return;
@@ -272,42 +291,49 @@ void KitSession::planned(const EmulatorPlan& plan, const QJsonObject& document) 
 }
 
 void KitSession::startEmulator(const EmulatorPlan& plan, ProcessSpec game) {
-    Host* h = host();
-    if (!h) {
-        return;
-    }
-    if (plan.prepare) {
-        plan.prepare(game);
-    }
-    if (!plan.readyFile.isEmpty()) {
-        // A file from the last run would end the cover at once.
-        game.readyFile = project_.resolve(plan.readyFile);
-        QFile::remove(game.readyFile);
-        game.environment.insert(plan.readyVariable, game.readyFile);
-    }
-    const bool record = !plan.recordTo.isEmpty();
-    if (record) {
-        recording_ = true;
-        emit selectedStartChanged();
-        if (!plan.recordingMessage.isEmpty()) {
-            report(Severity::Info, QStringLiteral("demo"), plan.recordingMessage);
+    const bool previousRecording = recording_;
+    try {
+        Host* h = host();
+        if (!h) {
+            return;
         }
-    }
-    const QString recording = record ? project_.resolve(plan.recordTo) : QString();
-    const auto recorded = plan.recorded;
-    h->launchEmulator(game, plan.title, [this, record, recording, recorded](const ProcessResult& run) {
-        if (run.crashed || (!run.started && !run.error.isEmpty())) {
-            report(Severity::Error, QStringLiteral("playtest"),
-                   run.error.isEmpty() ? tr("The emulator crashed.") : run.error);
+        if (plan.prepare) {
+            plan.prepare(game);
         }
+        if (!plan.readyFile.isEmpty()) {
+            // A file from the last run would end the cover at once.
+            game.readyFile = project_.resolve(plan.readyFile);
+            QFile::remove(game.readyFile);
+            game.environment.insert(plan.readyVariable, game.readyFile);
+        }
+        const bool record = !plan.recordTo.isEmpty();
         if (record) {
-            recording_ = false;
+            recording_ = true;
             emit selectedStartChanged();
-            if (recorded) {
-                recorded(recording);
+            if (!plan.recordingMessage.isEmpty()) {
+                report(Severity::Info, QStringLiteral("demo"), plan.recordingMessage);
             }
         }
-    });
+        const QString recording = record ? project_.resolve(plan.recordTo) : QString();
+        const auto recorded = plan.recorded;
+        h->launchEmulator(game, plan.title, [this, record, recording, recorded](const ProcessResult& run) {
+            if (run.crashed || (!run.started && !run.error.isEmpty())) {
+                report(Severity::Error, QStringLiteral("playtest"),
+                       run.error.isEmpty() ? tr("The emulator crashed.") : run.error);
+            }
+            if (record) {
+                recording_ = false;
+                emit selectedStartChanged();
+                if (recorded) {
+                    recorded(recording);
+                }
+            }
+        });
+    } catch (const std::exception& error) {
+        recording_ = previousRecording;
+        emit selectedStartChanged();
+        report(Severity::Error, QStringLiteral("playtest"), QString::fromUtf8(error.what()));
+    }
 }
 
 void KitSession::runUpgrade(UpgradeStep step) {

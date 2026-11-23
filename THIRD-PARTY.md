@@ -42,7 +42,21 @@ package was made from.
 
 Since Qt is linked statically, the LGPL lets you relink the studio with a
 modified Qt: the studio's complete source is public under the GPL, and
-`README.md` (Building from source) shows how to build it. The packaged Qt is Qt
-5.15.19 built by [Longreach Qt](https://github.com/OpenKaryon/longreach-qt)
-v0.1.0, whose `patches/qt5` holds every change made to Qt, under Qt's own
-licence.
+`README.txt` names the exact corresponding sources and build instructions. The
+packaged Qt is Qt 5.15.19 built by
+[Longreach Qt](https://github.com/OpenKaryon/longreach-qt) v0.1.0, whose
+`patches/qt5` holds every change made to Qt, under Qt's own licence.
+
+The reviewed Qt notice inventory is `licenses/qt-3rdparty/manifest.json`. It
+covers runtime sources in Core, Gui, Widgets, Svg and Concurrent, including the
+Windows platform code. It retains a conservative superset of optional and
+platform-specific source notices; not every listed component is linked into the
+final Windows executable. In addition to the libraries above, it includes
+Unicode data, Public Suffix List (MPL-2.0), CJK/TSCII codecs, TinyCBOR, hash
+implementations, easing, raster/scaling and font helper code, WebGradients,
+Wintab and XSVG. The manifest gives each notice's license, source path and hash.
+
+The complete corresponding Qt sources, including the Public Suffix List copy,
+are in the Qt source archive linked in `README.txt`. This package includes its
+exact SHA-256 and the Longreach build recipe/patch reference. Missing required
+license files stop packaging and release verification.
