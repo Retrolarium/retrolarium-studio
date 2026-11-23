@@ -27,9 +27,21 @@ struct LoadConfig64 {
     std::uint64_t securityCookie;
     std::uint64_t seHandlerTable;
     std::uint64_t seHandlerCount;
+    // Keep the directory through CodeIntegrity. A 112-byte legacy prefix
+    // carries the flag at offset 78 but Windows can ignore that flag: the
+    // live DLL-shadowing regression checks the emitted image, not just bytes.
+    std::uint64_t guardCfCheckFunctionPointer;
+    std::uint64_t guardCfDispatchFunctionPointer;
+    std::uint64_t guardCfFunctionTable;
+    std::uint64_t guardCfFunctionCount;
+    std::uint32_t guardFlags;
+    std::uint16_t codeIntegrityFlags;
+    std::uint16_t codeIntegrityCatalog;
+    std::uint32_t codeIntegrityCatalogOffset;
+    std::uint32_t codeIntegrityReserved;
 };
 static_assert(sizeof(void*) == 8);
-static_assert(sizeof(LoadConfig64) == 112);
+static_assert(sizeof(LoadConfig64) == 160);
 static_assert(offsetof(LoadConfig64, dependentLoadFlags) == 78);
 
 constexpr LoadConfig64 config() {

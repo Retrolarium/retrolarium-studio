@@ -6,6 +6,8 @@ import argparse
 from pathlib import Path
 import struct
 
+MINIMUM_LOAD_CONFIG = 160  # Through CodeIntegrity; the legacy 112-byte prefix is ignored by the loader.
+
 
 def dependent_load_flags(data: bytes) -> int:
     """Read IMAGE_LOAD_CONFIG_DIRECTORY64 without executing the candidate."""
@@ -23,7 +25,7 @@ def dependent_load_flags(data: bytes) -> int:
         if optional_size < 112 + 11 * 8 or struct.unpack_from("<I", data, optional + 108)[0] < 11:
             raise ValueError("no PE load-config directory")
         rva, size = struct.unpack_from("<II", data, optional + 112 + 10 * 8)
-        if not rva or size < 80:
+        if not rva or size < MINIMUM_LOAD_CONFIG:
             raise ValueError("no dependent-load flags")
         table = optional + optional_size
         for index in range(sections):
@@ -31,10 +33,10 @@ def dependent_load_flags(data: bytes) -> int:
             virtual_size, start, raw_size, raw = struct.unpack_from("<IIII", data, header + 8)
             if start <= rva < start + max(virtual_size, raw_size):
                 offset = rva - start
-                if offset + 80 > raw_size or raw + offset + 80 > len(data):
+                if offset + MINIMUM_LOAD_CONFIG > raw_size or raw + offset + MINIMUM_LOAD_CONFIG > len(data):
                     raise ValueError("truncated PE load config")
                 config = raw + offset
-                if struct.unpack_from("<I", data, config)[0] < 80:
+                if struct.unpack_from("<I", data, config)[0] < MINIMUM_LOAD_CONFIG:
                     raise ValueError("short PE load config")
                 return struct.unpack_from("<H", data, config + 78)[0]
         raise ValueError("unmapped PE load config")

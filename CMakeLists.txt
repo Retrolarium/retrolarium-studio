@@ -417,6 +417,38 @@ if(WIN32)
     endif()
     studio_enable_warnings(retrolarium-setup)
     install(TARGETS retrolarium-setup RUNTIME DESTINATION .)
+
+    # Keep the canary DLL in a nested fixture directory, never beside Studio
+    # or other test programs. The harness copies it into its own temporary lab.
+    add_library(setup_version_canary SHARED tests/dll_policy/canary.cpp tests/dll_policy/version.def)
+    set_target_properties(setup_version_canary PROPERTIES OUTPUT_NAME version PREFIX ""
+        ARCHIVE_OUTPUT_NAME setup_canary_import)
+    add_executable(setup_dll_control tests/dll_policy/control.cpp)
+    add_executable(setup_dll_guarded tests/dll_policy/control.cpp)
+    set_target_properties(setup_version_canary setup_dll_control setup_dll_guarded PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/test-fixtures/dll-policy")
+    foreach(probe IN ITEMS setup_dll_control setup_dll_guarded)
+        target_link_libraries(${probe} PRIVATE version)
+        if(MSVC)
+            set_property(TARGET ${probe} PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+        endif()
+    endforeach()
+    if(MSVC)
+        set_property(TARGET setup_version_canary PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+        target_link_options(setup_dll_guarded PRIVATE /DEPENDENTLOADFLAG:0x800)
+    elseif(MINGW)
+        target_sources(setup_dll_guarded PRIVATE installer/src/load_config.cpp)
+        target_link_options(setup_dll_guarded PRIVATE "-Wl,--undefined,_load_config_used")
+        target_link_options(setup_version_canary PRIVATE -static)
+    endif()
+    install(TARGETS setup_version_canary setup_dll_control setup_dll_guarded
+        RUNTIME DESTINATION test-fixtures/dll-policy)
+    add_executable(setup_dll_policy_test tests/setup_dll_policy_test.cpp)
+    set_target_properties(setup_dll_policy_test PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>")
+    target_link_libraries(setup_dll_policy_test PRIVATE Qt5::Core)
+    add_dependencies(setup_dll_policy_test setup_version_canary setup_dll_control setup_dll_guarded)
+    studio_add_test(setup_dll_policy_test)
 endif()
 
 get_property(studio_tests GLOBAL PROPERTY STUDIO_TESTS)

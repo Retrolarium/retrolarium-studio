@@ -128,6 +128,13 @@ DependentLoadFlags is exactly 0x800 (System32 only). This protects imports
 before main() on Windows 10 RS1 and later; the runtime restriction also remains
 in place.
 
+The load-config directory must extend through CodeIntegrity (160 bytes on x64).
+A legacy 112-byte prefix can contain the correct flag while Windows ignores it.
+`check_setup_binary.py` rejects that prefix. The Windows native suite also runs
+a real DLL-shadowing test: an unprotected control must load a local canary
+`version.dll`, and a protected control must start without loading it. The MinGW
+control uses the installer's actual load-config source.
+
 GNU ld gained load-config directory emission in binutils 2.45; the original
 SDK's 2.30 does not emit it. Before building, prepare_release_sdk.py resolves
 the SDK image ID and prepares a separate cached GNU ld 2.45.1 layer if needed.
