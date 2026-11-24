@@ -6,7 +6,12 @@
 namespace rl::setup {
 
 // Pure path selection: tests never touch the registry or real user data.
-inline QStringList userDataDirectories(bool removeData, const QString& documents, const QString& localData) {
+inline QString localUserDataDirectory(const QString& localData) {
+    if (localData.isEmpty() || !QDir::isAbsolutePath(localData) || QDir(localData).isRoot()) return {};
+    return QDir(localData).filePath(QStringLiteral("Retrolarium"));
+}
+
+inline QStringList userDataPaths(bool removeData, const QString& documents, const QString& localData) {
     QStringList paths;
     if (!removeData) return paths;
     const auto append = [&](const QString& base, const QString& suffix) {
@@ -15,8 +20,10 @@ inline QStringList userDataDirectories(bool removeData, const QString& documents
         }
     };
     append(documents, QStringLiteral("Retrolarium"));
-    append(localData, QStringLiteral("Retrolarium/Retrolarium Studio"));
-    append(localData, QStringLiteral("Retrolarium/Kit/verified"));
+    const QString local = localUserDataDirectory(localData);
+    append(local, QStringLiteral("Retrolarium Studio"));
+    append(local, QStringLiteral("Kit/verified"));
+    append(local, QStringLiteral("settings.json"));
     return paths;
 }
 

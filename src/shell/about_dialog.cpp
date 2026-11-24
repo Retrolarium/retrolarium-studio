@@ -155,7 +155,7 @@ AboutDialog::AboutDialog(QWidget* parent) : StudioDialog(tr("About"), parent) {
                      "General Public License, version 3 or any later version, and comes with absolutely no "
                      "warranty. Its source code is at %1. The components it carries (Qt, MAME, Python, the "
                      "kit's assemblers, OpenDiskSysROM and others) keep their own licenses: %2 lists them, and "
-                     "their texts are in licenses, mame/legal, python and the kit's component folders.")
+                     "their texts are in licenses, mame/COPYING, mame/legal, python and the kit's component folders.")
                       .arg(link.arg(QString::fromLatin1(links::kSource), ink,
                                     QString::fromLatin1(links::kSource).section(QLatin1Char('/'), 2)),
                            thirdParty),
@@ -164,7 +164,7 @@ AboutDialog::AboutDialog(QWidget* parent) : StudioDialog(tr("About"), parent) {
     license->setOpenExternalLinks(true);
     license->setFixedWidth(500);
     content->addWidget(license);
-    content->addWidget(paragraph(QStringLiteral("Qt © The Qt Company Ltd and other contributors."), body()));
+    content->addWidget(paragraph(tr("Qt © The Qt Company Ltd and other contributors."), body()));
 
     content->addSpacing(16);
     auto* buttons = new QHBoxLayout;

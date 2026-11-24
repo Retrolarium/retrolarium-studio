@@ -119,12 +119,18 @@ int main(int argc, char** argv) {
     QTemporaryDir dataPaths;
     const QString documents = dataPaths.path() + QStringLiteral("/Documents");
     const QString local = dataPaths.path() + QStringLiteral("/Local");
-    expect(rl::setup::userDataDirectories(false, documents, local).isEmpty(), "user data is opt-in");
-    const QStringList selected = rl::setup::userDataDirectories(true, documents, local);
+    expect(rl::setup::userDataPaths(false, documents, local).isEmpty(), "user data is opt-in");
+    const QStringList selected = rl::setup::userDataPaths(true, documents, local);
     expect(selected.contains(local + QStringLiteral("/Retrolarium/Retrolarium Studio")),
            "saves and movies are selected");
     expect(selected.contains(local + QStringLiteral("/Retrolarium/Kit/verified")), "verification records are selected");
-    expect(rl::setup::userDataDirectories(true, QString(), QString()).isEmpty(),
+    expect(selected.contains(local + QStringLiteral("/Retrolarium/settings.json")), "kit settings are selected");
+    expect(!selected.contains(local + QStringLiteral("/Retrolarium")), "unrelated local data is kept");
+    expect(rl::setup::localUserDataDirectory(QString()).isEmpty() &&
+               rl::setup::localUserDataDirectory(QStringLiteral("relative")).isEmpty() &&
+               rl::setup::localUserDataDirectory(QDir::rootPath()).isEmpty(),
+           "missing, relative and root local folders are not selected");
+    expect(rl::setup::userDataPaths(true, QString(), QString()).isEmpty(),
            "missing shell folders never become relative paths");
     QTemporaryDir dir;
     if (!dir.isValid()) {

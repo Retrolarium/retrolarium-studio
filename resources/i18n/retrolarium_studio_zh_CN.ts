@@ -9936,11 +9936,19 @@
     </message>
     <message>
         <source>Copyright © 2026 Daniel Oranguthang. Retrolarium Studio is free software under the GNU General Public License, version 3 or any later version, and comes with absolutely no warranty. Its source code is at %1. The components it carries (Qt, MAME, Python, the kit&apos;s assemblers, OpenDiskSysROM and others) keep their own licenses: %2 lists them, and their texts are in licenses, mame/legal, python and the kit&apos;s component folders.</source>
-        <translation>Copyright © 2026 Daniel Oranguthang。Retrolarium Studio 是自由软件，依据 GNU 通用公共许可证第 3 版或任何更高版本发布，不提供任何担保。源代码位于 %1。它附带的组件（Qt、MAME、Python、工具包的汇编器、OpenDiskSysROM 等）各自遵循自己的许可证：%2 列出了它们，许可证全文分别位于 licenses、mame/legal、python 和工具包组件目录中。</translation>
+        <translation type="vanished">Copyright © 2026 Daniel Oranguthang。Retrolarium Studio 是自由软件，依据 GNU 通用公共许可证第 3 版或任何更高版本发布，不提供任何担保。源代码位于 %1。它附带的组件（Qt、MAME、Python、工具包的汇编器、OpenDiskSysROM 等）各自遵循自己的许可证：%2 列出了它们，许可证全文分别位于 licenses、mame/legal、python 和工具包组件目录中。</translation>
     </message>
     <message>
         <source>About Qt</source>
         <translation>关于 Qt</translation>
+    </message>
+    <message>
+        <source>Copyright © 2026 Daniel Oranguthang. Retrolarium Studio is free software under the GNU General Public License, version 3 or any later version, and comes with absolutely no warranty. Its source code is at %1. The components it carries (Qt, MAME, Python, the kit&apos;s assemblers, OpenDiskSysROM and others) keep their own licenses: %2 lists them, and their texts are in licenses, mame/COPYING, mame/legal, python and the kit&apos;s component folders.</source>
+        <translation>Copyright © 2026 Daniel Oranguthang。Retrolarium Studio 是自由软件，依据 GNU 通用公共许可证第 3 版或任何更高版本发布，不提供任何担保。源代码位于 %1。它附带的组件（Qt、MAME、Python、工具包的汇编器、OpenDiskSysROM 等）各自遵循自己的许可证：%2 列出了它们，许可证全文分别位于 licenses、mame/COPYING, mame/legal、python 和工具包组件目录中。</translation>
+    </message>
+    <message>
+        <source>Qt © The Qt Company Ltd and other contributors.</source>
+        <translation>Qt © The Qt Company Ltd 及其他贡献者。</translation>
     </message>
 </context>
 <context>
@@ -10843,6 +10851,22 @@
     <message>
         <source>Retrolarium Kit returned an invalid identification response.</source>
         <translation>Retrolarium Kit 返回了无效的识别结果。</translation>
+    </message>
+    <message>
+        <source>Open the ROM without source files?</source>
+        <translation>不使用源文件打开 ROM？</translation>
+    </message>
+    <message>
+        <source>Retrolarium Kit could not identify this ROM: %1
+
+Open it as a regular ROM project without source files?</source>
+        <translation>Retrolarium Kit 无法识别此 ROM：%1
+
+是否将其作为不含源文件的普通 ROM 项目打开？</translation>
+    </message>
+    <message>
+        <source>Open the ROM</source>
+        <translation>打开 ROM</translation>
     </message>
 </context>
 <context>

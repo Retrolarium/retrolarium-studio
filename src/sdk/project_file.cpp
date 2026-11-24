@@ -511,13 +511,17 @@ ProjectFile ProjectFile::parse(const QString& text, const QString& path, QString
     try {
         Reader reader(text);
         result.root_ = reader.parse();
-        result.canonicalDirectory_ = realPath(result.directory());
-        result.boundary_ = result.canonicalDirectory_;
-        if (!result.string(QStringLiteral("source.repository")).isEmpty()) {
-            result.boundary_ = realPath(QDir(result.canonicalDirectory_).absoluteFilePath(QStringLiteral("../..")));
+        // Game descriptors are metadata for Kit, not editable projects. Their
+        // source fields describe game inputs and need not be project documents.
+        if (result.string(QStringLiteral("schema")) != QLatin1String("retrolarium.game")) {
+            result.canonicalDirectory_ = realPath(result.directory());
+            result.boundary_ = result.canonicalDirectory_;
+            if (!result.string(QStringLiteral("source.repository")).isEmpty()) {
+                result.boundary_ = realPath(QDir(result.canonicalDirectory_).absoluteFilePath(QStringLiteral("../..")));
+            }
+            QString why;
+            if (!result.validateEditablePaths(&why)) throw ParseError(why.toStdString());
         }
-        QString why;
-        if (!result.validateEditablePaths(&why)) throw ParseError(why.toStdString());
         result.valid_ = true;
     } catch (const std::exception& e) {
         if (error) {

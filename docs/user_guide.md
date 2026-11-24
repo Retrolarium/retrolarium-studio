@@ -33,6 +33,7 @@ outright, and the studio cannot run there until it is signed.
 | The studio, the kit, Python and MAME                        | `%LOCALAPPDATA%\Programs\Retrolarium Studio` (or where you unpacked the zip) |
 | Downloaded games, your ROM copies and your edits            | `Documents\Retrolarium\<repository>`; see the per-game folders below         |
 | The kit's assemblers, unpacked on first use                 | `%LOCALAPPDATA%\Retrolarium\toolchains`                                      |
+| The kit's own settings (such as MAME)                       | `%LOCALAPPDATA%\Retrolarium\settings.json`                                   |
 | Verified repository records                                 | `%LOCALAPPDATA%\Retrolarium\Kit\verified`                                    |
 | Additional saves and recorded movies                        | `%LOCALAPPDATA%\Retrolarium\Retrolarium Studio`                              |
 | MAME's settings and saves                                   | `mame\cfg` and `mame\nvram` in the studio's folder                           |
@@ -85,8 +86,10 @@ Recognition uses the SHA-256 of the complete file. See the
 [supported revisions and hashes](https://github.com/Retrolarium/retrolarium-kit/blob/main/docs/supported_roms.md).
 Different iNES/fwNES headers or interleaved `.smd` dumps may not match, even
 when their game payload is equivalent. They are not normalized silently. An
-unidentified ROM can open as a generic ROM project; a missing or failed Kit
-instead reports an error in Messages so a tool failure is visible.
+unidentified ROM can open as a generic ROM project. If Kit is missing or
+identification fails, the studio reports the error in Messages and asks whether
+to open the ROM without source files. Choosing Open the ROM opens a regular ROM
+project; Cancel leaves the current project unchanged.
 
 Editable documents stay within the project's tree. A Kit-generated ROM project
 under `<game>/.retrolarium/<revision>` may also edit files in that game's tree,

@@ -8,7 +8,8 @@ namespace rl::sdk {
 
 // A Retrolarium project file (.rlj, TOML). The studio reads only enough to pick
 // the plugin ([project] platform, profile, source_mode); the plugin reads and
-// validates everything else.
+// validates everything else. The same reader accepts retrolarium.game
+// descriptors as metadata for Kit; editable-path validation applies to projects.
 //
 // The reader supports the TOML subset project files use: tables, arrays of
 // tables, dotted table names, basic and literal strings, integers, floats,

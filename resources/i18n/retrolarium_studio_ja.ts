@@ -9936,11 +9936,19 @@
     </message>
     <message>
         <source>Copyright © 2026 Daniel Oranguthang. Retrolarium Studio is free software under the GNU General Public License, version 3 or any later version, and comes with absolutely no warranty. Its source code is at %1. The components it carries (Qt, MAME, Python, the kit&apos;s assemblers, OpenDiskSysROM and others) keep their own licenses: %2 lists them, and their texts are in licenses, mame/legal, python and the kit&apos;s component folders.</source>
-        <translation>Copyright © 2026 Daniel Oranguthang. Retrolarium Studio は GNU General Public License バージョン 3 またはそれ以降のバージョンのもとで配布されるフリーソフトウェアで、いかなる保証もありません。ソースコードは %1 にあります。同梱のコンポーネント（Qt、MAME、Python、キットのアセンブラ、OpenDiskSysROM など）はそれぞれのライセンスに従います。一覧は %2 にあり、ライセンス文は licenses、mame/legal、python、およびキットの各コンポーネントのフォルダーにあります。</translation>
+        <translation type="vanished">Copyright © 2026 Daniel Oranguthang. Retrolarium Studio は GNU General Public License バージョン 3 またはそれ以降のバージョンのもとで配布されるフリーソフトウェアで、いかなる保証もありません。ソースコードは %1 にあります。同梱のコンポーネント（Qt、MAME、Python、キットのアセンブラ、OpenDiskSysROM など）はそれぞれのライセンスに従います。一覧は %2 にあり、ライセンス文は licenses、mame/legal、python、およびキットの各コンポーネントのフォルダーにあります。</translation>
     </message>
     <message>
         <source>About Qt</source>
         <translation>Qt について</translation>
+    </message>
+    <message>
+        <source>Copyright © 2026 Daniel Oranguthang. Retrolarium Studio is free software under the GNU General Public License, version 3 or any later version, and comes with absolutely no warranty. Its source code is at %1. The components it carries (Qt, MAME, Python, the kit&apos;s assemblers, OpenDiskSysROM and others) keep their own licenses: %2 lists them, and their texts are in licenses, mame/COPYING, mame/legal, python and the kit&apos;s component folders.</source>
+        <translation>Copyright © 2026 Daniel Oranguthang. Retrolarium Studio は GNU General Public License バージョン 3 またはそれ以降のバージョンのもとで配布されるフリーソフトウェアで、いかなる保証もありません。ソースコードは %1 にあります。同梱のコンポーネント（Qt、MAME、Python、キットのアセンブラ、OpenDiskSysROM など）はそれぞれのライセンスに従います。一覧は %2 にあり、ライセンス文は licenses、mame/COPYING, mame/legal、python、およびキットの各コンポーネントのフォルダーにあります。</translation>
+    </message>
+    <message>
+        <source>Qt © The Qt Company Ltd and other contributors.</source>
+        <translation>Qt © The Qt Company Ltd およびその他の貢献者。</translation>
     </message>
 </context>
 <context>
@@ -10843,6 +10851,22 @@
     <message>
         <source>Retrolarium Kit returned an invalid identification response.</source>
         <translation>Retrolarium Kit から無効な識別結果が返されました。</translation>
+    </message>
+    <message>
+        <source>Open the ROM without source files?</source>
+        <translation>ソースファイルなしで ROM を開きますか？</translation>
+    </message>
+    <message>
+        <source>Retrolarium Kit could not identify this ROM: %1
+
+Open it as a regular ROM project without source files?</source>
+        <translation>Retrolarium Kit はこの ROM を識別できませんでした: %1
+
+ソースファイルなしの通常の ROM プロジェクトとして開きますか？</translation>
+    </message>
+    <message>
+        <source>Open the ROM</source>
+        <translation>ROM を開く</translation>
     </message>
 </context>
 <context>

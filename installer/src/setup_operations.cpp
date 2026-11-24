@@ -517,14 +517,19 @@ bool uninstall(const Request& request, const Progress& progress, QString* error,
     }
     if (request.removeUserData) {
         if (progress) progress(90, rlTr("setup", "Removing your games and settings"));
-        const QStringList data =
-            userDataDirectories(true, shellFolder(CSIDL_PERSONAL), shellFolder(CSIDL_LOCAL_APPDATA));
+        const QString localData = shellFolder(CSIDL_LOCAL_APPDATA);
+        const QStringList data = userDataPaths(true, shellFolder(CSIDL_PERSONAL), localData);
         for (const QString& path : data) {
             if (!removeTree(path) && QFileInfo::exists(path) && warning) {
                 if (!warning->isEmpty()) *warning += QLatin1Char('\n');
                 *warning += rlTr("setup", "Some files stayed in %1: %2. Delete them by hand.")
                                 .arg(nativePath(path), QFileInfo(path).fileName());
             }
+        }
+        const QString local = localUserDataDirectory(localData);
+        if (!local.isEmpty()) {
+            QDir(local).rmdir(QStringLiteral("Kit"));
+            QDir().rmdir(local);  // Remove these parents only when empty.
         }
         deleteKey(kSettingsKey);
         // And the organisation's key, while nothing else is under it.

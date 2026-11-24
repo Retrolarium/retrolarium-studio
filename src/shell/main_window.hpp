@@ -63,6 +63,8 @@ public:
     // prepared: the kit has just got a game version's project ready.
     bool openProjectFile(const QString& path, bool prepared = false);
     bool hasProject() const { return session_ != nullptr; }
+    // Opens a ROM through the same workflow as the file picker and drag and drop.
+    void openRomFile(const QString& rom);
     // Navigates to a document, as if picked in the rail and document list.
     void showDocument(const QString& kind, const QString& document);
 
@@ -147,7 +149,6 @@ private:
     // Open ROM: the kit finds the ROM's game, downloads its repository when
     // none is on disk yet, and readies the version the ROM is.
     void openRom();
-    void openRomFile(const QString& rom);
     void openHashedRom(const QString& rom, const QString& digest);
     // A known game's ROM: its repository, downloaded and set up. Any other
     // ROM (or a known one the user opens as it is): a ROM project.

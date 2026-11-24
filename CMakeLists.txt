@@ -271,6 +271,12 @@ target_link_libraries(tas_editor_test PRIVATE studio_shell)
 target_include_directories(tas_editor_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 studio_add_test(tas_editor_test)
 
+# Opening a ROM when Kit is unavailable: explicit choice, failures and cancel.
+add_executable(rom_opening_test tests/rom_opening_test.cpp)
+target_link_libraries(rom_opening_test PRIVATE studio_shell rom_plugin)
+studio_enable_warnings(rom_opening_test)
+studio_add_test(rom_opening_test)
+
 # The kit's process runner: one run at a time, done called once, cancel,
 # abandon, the timeout, and (Windows) the children ended with the program.
 add_executable(process_runner_test tests/process_runner_test.cpp)
@@ -290,6 +296,12 @@ target_include_directories(installer_package_test PRIVATE ${CMAKE_CURRENT_SOURCE
 target_link_libraries(installer_package_test PRIVATE Qt5::Core)
 studio_enable_warnings(installer_package_test)
 studio_add_test(installer_package_test)
+
+# Game descriptor metadata is read separately from editable project paths.
+add_executable(project_descriptor_test tests/project_descriptor_test.cpp)
+target_link_libraries(project_descriptor_test PRIVATE studio_sdk)
+studio_enable_warnings(project_descriptor_test)
+studio_add_test(project_descriptor_test)
 
 # The project file reader against 100 deterministic mutations of a project.
 add_executable(project_file_fuzz_test tests/project_file_fuzz_test.cpp)

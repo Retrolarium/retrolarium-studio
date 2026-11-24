@@ -142,7 +142,7 @@ QString repositoryDescriptor(const QString& projectPath) {
     QString error;
     for (const QFileInfo& info : repository.entryInfoList({QStringLiteral("*.rlj")}, QDir::Files)) {
         const sdk::ProjectFile candidate = sdk::ProjectFile::load(info.absoluteFilePath(), &error);
-        if (candidate.string(QStringLiteral("schema")) == QLatin1String("retrolarium.game"))
+        if (candidate.isValid() && candidate.string(QStringLiteral("schema")) == QLatin1String("retrolarium.game"))
             return info.absoluteFilePath();
     }
     return {};
@@ -1335,21 +1335,32 @@ void MainWindow::openHashedRom(const QString& rom, const QString& digest) {
             openRomAsProject(rom, digest);
         }
     };
+    const auto offerRom = [this, rom, openAsRom](const QString& reason) {
+        report(message(sdk::Severity::Error, QStringLiteral("kit"), reason, rom));
+        if (frame::MessageDialog::confirm(this, tr("Open ROM"), tr("Open the ROM without source files?"),
+                                          tr("Retrolarium Kit could not identify this ROM: %1\n\n"
+                                             "Open it as a regular ROM project without source files?")
+                                              .arg(reason),
+                                          tr("Open the ROM"))) {
+            openAsRom();
+        }
+    };
     QString error;
     sdk::ProcessSpec spec =
         kitCommand({QStringLiteral("studio"), QStringLiteral("identify"), rom}, QFileInfo(rom).absolutePath(), &error);
     if (spec.program.isEmpty()) {
-        report(message(sdk::Severity::Error, QStringLiteral("kit"), error, rom));
+        offerRom(error);
         return;
     }
     spec.label = tr("Identify %1").arg(QFileInfo(rom).fileName());
-    runProcess(spec, [this, rom, digest, openAsRom](const sdk::ProcessResult& result) {
+    runProcess(spec, [this, rom, digest, openAsRom, offerRom](const sdk::ProcessResult& result) {
+        if (result.cancelled) return;
         QJsonArray matches;
         if (!sdk::identifiedMatches(result, &matches)) {
             const QString reason = result.succeeded()
                                        ? tr("Retrolarium Kit returned an invalid identification response.")
                                        : sdk::failureText(result);
-            report(message(sdk::Severity::Error, QStringLiteral("kit"), reason, rom));
+            offerRom(reason);
             return;
         }
         if (matches.isEmpty()) {
