@@ -124,6 +124,8 @@ add_library(studio_sdk STATIC
     src/sdk/plugin.hpp
     src/sdk/project_file.cpp
     src/sdk/project_file.hpp
+    src/sdk/project_writer.cpp
+    src/sdk/project_writer.hpp
     src/sdk/session.cpp
     src/sdk/session.hpp
     src/sdk/snapshot_command.hpp
@@ -241,13 +243,22 @@ function(studio_add_test target)
     set(arguments "")
     foreach(fixture IN LISTS ARGN)
         # games:<path> is a project in a game repository; tools/test.py
-        # finds the repositories (-GameSources).
-        if(fixture MATCHES "^games:")
+        # finds the repositories (-GameSources). tool:<target> names an
+        # executable installed in tools/: CTest gets its build-tree path, while
+        # the installed manifest gets the equivalent bin: path.
+        if(fixture MATCHES "^tool:(.+)$")
+            set(tool "${CMAKE_MATCH_1}")
+            if(NOT TARGET ${tool})
+                message(FATAL_ERROR "Unknown test tool target: ${tool}")
+            endif()
+            list(APPEND fixtures "$<TARGET_FILE:${tool}>")
+            set(fixture "bin:tools/$<TARGET_FILE_NAME:${tool}>")
+        elseif(fixture MATCHES "^games:")
             list(APPEND fixtures "${fixture}")
         else()
             list(APPEND fixtures "${PROJECT_SOURCE_DIR}/${fixture}")
         endif()
-        if(NOT fixture MATCHES "^games:")
+        if(NOT fixture MATCHES "^(games|bin):")
             set(fixture "repo:${fixture}")
         endif()
         string(APPEND arguments ", \"${fixture}\"")
@@ -307,6 +318,14 @@ studio_add_test(project_descriptor_test)
 add_executable(project_file_fuzz_test tests/project_file_fuzz_test.cpp)
 target_link_libraries(project_file_fuzz_test PRIVATE studio_sdk)
 studio_add_test(project_file_fuzz_test)
+
+# Failure injection is private to this separately compiled writer test.
+add_executable(project_writer_test tests/project_writer_test.cpp src/sdk/project_writer.cpp)
+target_compile_definitions(project_writer_test PRIVATE RETROLARIUM_PROJECT_WRITER_TEST)
+target_include_directories(project_writer_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(project_writer_test PRIVATE Qt5::Core)
+studio_enable_warnings(project_writer_test)
+studio_add_test(project_writer_test)
 
 # One studio per project: the project lock.
 add_executable(project_lock_test tests/project_lock_test.cpp)

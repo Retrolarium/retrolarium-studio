@@ -30,7 +30,7 @@ add_library(alien_soldier_data STATIC
     games/alien_soldier/src/alien_soldier/data/sprites.hpp
 )
 target_include_directories(alien_soldier_data PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/games/alien_soldier/src)
-target_link_libraries(alien_soldier_data PUBLIC platform_megadrive Qt5::Core Qt5::Gui)
+target_link_libraries(alien_soldier_data PUBLIC platform_megadrive studio_sdk Qt5::Core Qt5::Gui)
 studio_enable_warnings(alien_soldier_data)
 
 # Alien Soldier plugin: the session and the editor models over alien_soldier_data.
@@ -94,7 +94,7 @@ add_library(flicky_data STATIC
     games/flicky/src/flicky/render/scene_renderer.hpp
 )
 target_include_directories(flicky_data PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/games/flicky/src)
-target_link_libraries(flicky_data PUBLIC platform_megadrive Qt5::Core Qt5::Gui)
+target_link_libraries(flicky_data PUBLIC platform_megadrive studio_sdk Qt5::Core Qt5::Gui)
 studio_enable_warnings(flicky_data)
 
 # Flicky plugin: profile, document lists and editor models over flicky_data.
@@ -134,6 +134,13 @@ add_executable(retrolarium-flicky-level-writer
 )
 target_link_libraries(retrolarium-flicky-level-writer PRIVATE flicky_data)
 install(TARGETS retrolarium-flicky-level-writer RUNTIME DESTINATION tools)
+
+# Ordinary CLI coverage, independent of the project-writer security tests.
+add_executable(flicky_level_writer_cli_test games/flicky/tests/level_writer_cli_test.cpp)
+target_link_libraries(flicky_level_writer_cli_test PRIVATE Qt5::Core)
+studio_enable_warnings(flicky_level_writer_cli_test)
+add_dependencies(flicky_level_writer_cli_test retrolarium-flicky-level-writer)
+studio_add_test(flicky_level_writer_cli_test tool:retrolarium-flicky-level-writer)
 
 add_executable(nes_record_table_test
     platforms/nes/tests/record_table_test.cpp

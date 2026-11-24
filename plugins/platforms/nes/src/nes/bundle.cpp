@@ -1,11 +1,11 @@
 #include "nes/bundle.hpp"
 
 #include "sdk/i18n.hpp"
+#include "sdk/project_file.hpp"
 
 #include <QFile>
 #include <QJsonArray>
 #include <QJsonDocument>
-#include <QSaveFile>
 
 namespace rl::nes {
 
@@ -47,15 +47,9 @@ Bundle Bundle::fromJson(const QJsonObject& root) {
     return bundle;
 }
 
-void Bundle::save(const QString& path) const {
-    QSaveFile file(path);
-    if (!file.open(QIODevice::WriteOnly)) {
-        fail(rlTr("nes", "Cannot write %1: %2").arg(path, file.errorString()));
-    }
-    file.write(QJsonDocument(root_).toJson(QJsonDocument::Indented));
-    if (!file.commit()) {
-        fail(rlTr("nes", "Cannot write %1: %2").arg(path, file.errorString()));
-    }
+void Bundle::save(const sdk::ProjectFile& project, const QString& path) const {
+    QString error;
+    if (!project.writeFile(path, QJsonDocument(root_).toJson(QJsonDocument::Indented), &error)) fail(error);
 }
 
 QString Bundle::game() const { return root_.value(QStringLiteral("game")).toString(); }

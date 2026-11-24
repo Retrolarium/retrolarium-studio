@@ -8,7 +8,6 @@
 #include <QFileInfo>
 #include <QJsonArray>
 #include <QJsonDocument>
-#include <QSaveFile>
 
 #include <stdexcept>
 
@@ -78,14 +77,10 @@ QJsonObject loadJsonObject(const QString& path) {
     return document.object();
 }
 
-void saveJsonObject(const QString& path, const QJsonObject& value) {
-    QSaveFile file(path);
-    if (!file.open(QIODevice::WriteOnly)) {
-        throw std::runtime_error(rlTr("studio", "Cannot write %1.").arg(path).toStdString());
-    }
-    file.write(QJsonDocument(value).toJson(QJsonDocument::Indented));
-    if (!file.commit()) {
-        throw std::runtime_error(rlTr("studio", "Cannot write %1.").arg(path).toStdString());
+void saveJsonObject(const ProjectFile& project, const QString& path, const QJsonObject& value) {
+    QString error;
+    if (!project.writeFile(path, QJsonDocument(value).toJson(QJsonDocument::Indented), &error)) {
+        throw std::runtime_error(error.toStdString());
     }
 }
 

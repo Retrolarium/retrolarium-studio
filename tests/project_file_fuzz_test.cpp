@@ -145,6 +145,107 @@ bool directoryLink(const QString& link, const QString& target) {
 #endif
 }
 
+void repositoryPathBoundaries() {
+    QTemporaryDir folder;
+    const QString games = folder.path() + QStringLiteral("/games");
+    const QString game = games + QStringLiteral("/game");
+    const QString revision = game + QStringLiteral("/.retrolarium/revision");
+    QDir().mkpath(revision);
+    QDir().mkpath(games + QStringLiteral("/other"));
+    const QString path = revision + QStringLiteral("/project.rlj");
+    const auto expect = [&](const QString& document, bool allowed) {
+        const QString text = QStringLiteral("[source]\nrepository = '../..'\n[[workspace.tabs]]\ndocument = '") +
+                             document + QStringLiteral("'\n");
+        QString why;
+        const auto project = rl::sdk::ProjectFile::parse(text, path, &why);
+        if (project.isValid() != allowed || (!allowed && why.isEmpty())) {
+            std::cerr << "FAIL: repository boundary: " << document.toStdString() << ": " << why.toStdString() << '\n';
+            ++failures;
+        }
+    };
+    expect(QStringLiteral("../../data/levels.json"), true);
+    expect(QStringLiteral("../../../other/levels.json"), false);
+    expect(QStringLiteral("../../../../outside.json"), false);
+
+    // Ordinary projects retain their own directory as the boundary.
+    const QString ordinaryPath = folder.path() + QStringLiteral("/ordinary/project.rlj");
+    QDir().mkpath(QFileInfo(ordinaryPath).absolutePath());
+    QString why;
+    const auto ordinary = rl::sdk::ProjectFile::parse(
+        QStringLiteral("[[workspace.tabs]]\ndocument = 'data/levels.json'\n"), ordinaryPath, &why);
+    if (!ordinary.isValid()) {
+        std::cerr << "FAIL: ordinary project after repository boundary checks: " << why.toStdString() << '\n';
+        ++failures;
+    }
+}
+
+void portableNames() {
+    QTemporaryDir folder;
+    const QString path = folder.path() + QStringLiteral("/project.rlj");
+    QString why;
+    const auto project = rl::sdk::ProjectFile::parse(QString(), path, &why);
+    if (!project.isValid()) {
+        std::cerr << "FAIL: portable-name fixture: " << why.toStdString() << '\n';
+        ++failures;
+        return;
+    }
+    const auto expect = [&](const QString& relative, bool allowed) {
+        bool resolved = true;
+        try {
+            project.resolve(relative);
+        } catch (const std::exception& exception) {
+            resolved = false;
+            why = QString::fromUtf8(exception.what());
+        }
+        if (resolved != allowed || (!allowed && why.isEmpty())) {
+            std::cerr << "FAIL: portable file name: " << relative.toStdString() << '\n';
+            ++failures;
+        }
+    };
+    for (const QString& relative :
+         {QStringLiteral("docs./a.json"), QStringLiteral("docs /a.json"), QStringLiteral("file."),
+          QStringLiteral("file "), QStringLiteral("nul.json"), QStringLiteral("Com1"), QStringLiteral("lpt9.txt"),
+          QStringLiteral("CONIN$"), QStringLiteral("conout$.json")}) {
+        expect(relative, false);
+    }
+    for (const QString& relative : {QStringLiteral("console.json"), QStringLiteral("nullable.json"),
+                                    QStringLiteral("com10.json"), QStringLiteral("data.normal/file.json")}) {
+        expect(relative, true);
+    }
+}
+
+void projectWrites() {
+    QTemporaryDir folder;
+    const QString root = folder.path() + QStringLiteral("/project");
+    QDir().mkpath(root);
+    QString why;
+    const auto project = rl::sdk::ProjectFile::parse(QString(), root + QStringLiteral("/project.rlj"), &why);
+    const QString document = root + QStringLiteral("/nested/documents/levels.json");
+    if (!project.isValid() || !project.writeFile(document, QByteArray("new contents"), &why)) {
+        std::cerr << "FAIL: nested project write: " << why.toStdString() << '\n';
+        ++failures;
+    }
+    QFile saved(document);
+    if (!saved.open(QIODevice::ReadOnly) || saved.readAll() != QByteArray("new contents")) {
+        std::cerr << "FAIL: saved project contents differ\n";
+        ++failures;
+    }
+
+    const QString outside = folder.path() + QStringLiteral("/outside");
+    QDir().mkpath(outside);
+    const QString link = root + QStringLiteral("/build");
+    if (directoryLink(link, outside)) {
+        const QString redirected = link + QStringLiteral("/demo-steps.json");
+        if (project.writeFile(redirected, QByteArray("must stay inside"), &why) ||
+            QFileInfo::exists(outside + QStringLiteral("/demo-steps.json"))) {
+            std::cerr << "FAIL: redirected project write reached an external directory\n";
+            ++failures;
+        }
+    } else {
+        std::cerr << "SKIP: this filesystem cannot create directory links for the write probe\n";
+    }
+}
+
 void pathBoundaries() {
     QTemporaryDir folder;
     const QString root = folder.path() + QStringLiteral("/project");
@@ -214,7 +315,10 @@ void pathBoundaries() {
 
 int main(int argc, char** argv) {
     QCoreApplication app(argc, argv);
+    repositoryPathBoundaries();
+    portableNames();
     pathBoundaries();
+    projectWrites();
     const QString seed = QString::fromUtf8(kSeed);
     QString error;
     if (!rl::sdk::ProjectFile::parse(seed, QStringLiteral("seed.rlj"), &error).isValid()) {

@@ -2,6 +2,7 @@
 
 #include "nes/editors.hpp"
 #include "sdk/i18n.hpp"
+#include "sdk/kit_session.hpp"
 #include "sdk/plugin.hpp"
 #include "sdk/session.hpp"
 
@@ -48,7 +49,7 @@ public:
 
     bool writeDocument(const QString& path, QString* error) const override {
         try {
-            owner_->bundle().save(path);
+            owner_->bundle().save(static_cast<sdk::KitSession*>(owner_->bundleSession())->project(), path);
             return true;
         } catch (const std::exception& e) {
             if (error) *error = QString::fromUtf8(e.what());
@@ -102,7 +103,6 @@ QStringList SoundEffectModel::arguments(QString* error) const {
                        effect_.key};
     if (data_ && data_->edited()) {
         const QString document = outputPath(QStringLiteral("bundle.json"));
-        QDir().mkpath(QFileInfo(document).absolutePath());
         if (!data_->writeDocument(document, error)) return {};
         result << QStringLiteral("--document") << document;
     }

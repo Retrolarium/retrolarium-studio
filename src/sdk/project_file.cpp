@@ -1,6 +1,7 @@
 #include "sdk/project_file.hpp"
 
 #include "sdk/i18n.hpp"
+#include "sdk/project_writer.hpp"
 
 #include <QDir>
 #include <QFile>
@@ -436,6 +437,22 @@ bool within(const QString& path, const QString& root) {
     return path.compare(root, sensitivity) == 0 || path.startsWith(prefix, sensitivity);
 }
 
+void validatePortableComponents(const QString& relativePath) {
+    static const QSet<QString> devices = {QStringLiteral("CON"), QStringLiteral("PRN"),    QStringLiteral("AUX"),
+                                          QStringLiteral("NUL"), QStringLiteral("CONIN$"), QStringLiteral("CONOUT$")};
+    for (const QString& component : relativePath.split(QLatin1Char('/'))) {
+        if (component == QLatin1String(".") || component == QLatin1String("..")) continue;
+        const QString base = component.section(QLatin1Char('.'), 0, 0).toUpper();
+        const bool numberedDevice = base.size() == 4 && base.at(3).isDigit() && base.at(3) != QLatin1Char('0') &&
+                                    (base.startsWith(QLatin1String("COM")) || base.startsWith(QLatin1String("LPT")));
+        if (component.endsWith(QLatin1Char('.')) || component.endsWith(QLatin1Char(' ')) || devices.contains(base) ||
+            numberedDevice) {
+            throw ParseError(
+                rlTr("studio", "The name '%1' is not supported by Windows file systems.").arg(component).toStdString());
+        }
+    }
+}
+
 #ifdef Q_OS_WIN
 std::wstring nativeAbsolute(const QString& path) {
     QString native = QDir::toNativeSeparators(path);
@@ -464,7 +481,11 @@ QString canonicalExisting(const QString& path) {
     std::vector<wchar_t> buffer(required + 1);
     const DWORD written = required ? finalPath(handle, buffer.data(), static_cast<DWORD>(buffer.size()), 0) : 0;
     CloseHandle(handle);
-    if (!written || written >= buffer.size()) throw ParseError("A project path cannot be resolved.");
+    if (!written || written >= buffer.size()) {
+        throw ParseError(
+            rlTr("studio", "The file system cannot verify project paths. Open the project from a local disk.")
+                .toStdString());
+    }
     QString result = QString::fromWCharArray(buffer.data(), static_cast<int>(written));
     if (result.startsWith(QStringLiteral("\\\\?\\UNC\\"))) result = QStringLiteral("\\\\") + result.mid(8);
     else if (result.startsWith(QStringLiteral("\\\\?\\"))) result.remove(0, 4);
@@ -478,6 +499,9 @@ QString canonicalExisting(const QString& path) { return QFileInfo(path).canonica
 // Resolve the nearest existing ancestor for new output files. Dangling
 // symlinks/junctions are refused instead of treated as new directories.
 QString realPath(QString path) {
+    // Windows does not collapse dot components in extended-length (\\?\) paths.
+    // Normalize before any platform call so repository boundaries stay at <game>.
+    path = QDir::cleanPath(QDir::fromNativeSeparators(path));
     QStringList missing;
     while (!existsOrLink(path)) {
         const QFileInfo info(path);
@@ -540,6 +564,7 @@ QString ProjectFile::resolve(const QString& relativePath) const {
         relativePath.contains(QLatin1Char('\\'))) {
         throw ParseError("A project path must be relative to the project.");
     }
+    validatePortableComponents(relativePath);
     const QString own = canonicalDirectory_.isEmpty() ? realPath(directory()) : canonicalDirectory_;
     const QString boundary = boundary_.isEmpty() ? own : boundary_;
     const QString repository = string(QStringLiteral("source.repository"));
@@ -590,6 +615,11 @@ bool ProjectFile::validateWritePath(const QString& path, QString* error) const {
         if (error) *error = QString::fromUtf8(exception.what());
         return false;
     }
+}
+
+bool ProjectFile::writeFile(const QString& path, const QByteArray& data, QString* error) const {
+    if (!validateWritePath(path, error)) return false;
+    return writeFileWithin(boundary_, path, data, error);
 }
 
 }  // namespace rl::sdk

@@ -1,9 +1,10 @@
 #include "flicky/data/semantics_document.hpp"
 
+#include "sdk/project_file.hpp"
+
 #include <QFile>
 #include <QJsonArray>
 #include <QJsonDocument>
-#include <QSaveFile>
 #include <QSet>
 
 namespace rl::flicky {
@@ -106,12 +107,10 @@ FlickySemanticsDocument FlickySemanticsDocument::fromJson(const QJsonObject& roo
 
 QJsonObject FlickySemanticsDocument::toJson() const { return root_; }
 
-void FlickySemanticsDocument::save(const QString& path) const {
-    QSaveFile file(path);
-    if (!file.open(QIODevice::WriteOnly)) fail(QStringLiteral("cannot save Flicky semantics: ") + path);
+void FlickySemanticsDocument::save(const sdk::ProjectFile& project, const QString& path) const {
     const auto bytes = QJsonDocument(root_).toJson(QJsonDocument::Indented);
-    if (file.write(bytes) != bytes.size() || !file.commit())
-        fail(QStringLiteral("cannot commit Flicky semantics: ") + path);
+    QString error;
+    if (!project.writeFile(path, bytes, &error)) fail(error);
 }
 
 int FlickySemanticsDocument::recordIndex(const QJsonObject& root, const char* section, const QString& id) {

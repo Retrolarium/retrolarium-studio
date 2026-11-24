@@ -9,6 +9,10 @@
 
 #include <array>
 
+namespace rl::sdk {
+class ProjectFile;
+}
+
 namespace rl::smb {
 
 // One area of a levels resource, as the game stores it.
@@ -66,8 +70,8 @@ struct SmbRoute {
 // writes go through whole-resource replacement so unknown keys survive.
 class SmbResourceDocument {
 public:
-    static SmbResourceDocument load(const QString& path);  // throws SmbError
-    void save(const QString& path) const;                  // throws SmbError
+    static SmbResourceDocument load(const QString& path);                   // throws SmbError
+    void save(const sdk::ProjectFile& project, const QString& path) const;  // throws SmbError
 
     const QJsonObject& root() const { return root_; }
     QString game() const;      // "smb1"

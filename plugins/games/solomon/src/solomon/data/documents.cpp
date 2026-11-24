@@ -1,10 +1,10 @@
 #include "solomon/data/documents.hpp"
 
 #include "sdk/i18n.hpp"
+#include "sdk/project_file.hpp"
 
 #include <QFile>
 #include <QJsonDocument>
-#include <QSaveFile>
 
 namespace rl::solomon {
 
@@ -27,14 +27,10 @@ QJsonObject loadJson(const QString& path) {
     return json.object();
 }
 
-void saveJson(const QString& path, const QJsonObject& root) {
-    QSaveFile file(path);
-    if (!file.open(QIODevice::WriteOnly)) {
-        fail(rlTr("solomon", "Cannot write %1: %2").arg(path, file.errorString()));
-    }
-    file.write(QJsonDocument(root).toJson(QJsonDocument::Indented));
-    if (!file.commit()) {
-        fail(rlTr("solomon", "Cannot write %1: %2").arg(path, file.errorString()));
+void saveJson(const sdk::ProjectFile& project, const QString& path, const QJsonObject& root) {
+    QString error;
+    if (!project.writeFile(path, QJsonDocument(root).toJson(QJsonDocument::Indented), &error)) {
+        fail(rlTr("solomon", "Cannot write %1: %2").arg(path, error));
     }
 }
 

@@ -8,7 +8,6 @@
 #include <QFileInfo>
 #include <QJsonArray>
 #include <QJsonDocument>
-#include <QSaveFile>
 
 #include <algorithm>
 #include <utility>
@@ -239,13 +238,12 @@ void PacmanSoundModel::preview() {
     sdk::Host* host = session_->host();
     if (!host || host->isBusy()) return;
     const QString directory = QDir(session_->projectDirectory()).filePath(QStringLiteral("build/sound-preview"));
-    QDir().mkpath(directory);
     const QString document = QDir(directory).filePath(QStringLiteral("pacman-sound.json"));
     const QString wav = QDir(directory).filePath(QStringLiteral("slot-%1.wav").arg(slots_.value(0)));
-    QSaveFile file(document);
-    if (!file.open(QIODevice::WriteOnly) ||
-        file.write(QJsonDocument(session_->bundle().root()).toJson(QJsonDocument::Compact)) < 0 || !file.commit()) {
-        session_->report(sdk::Severity::Error, QStringLiteral("sound"), tr("Cannot write %1.").arg(document));
+    QString writeError;
+    if (!session_->project().writeFile(
+            document, QJsonDocument(session_->bundle().root()).toJson(QJsonDocument::Compact), &writeError)) {
+        session_->report(sdk::Severity::Error, QStringLiteral("sound"), writeError);
         return;
     }
     QStringList arguments{QStringLiteral("audio"),

@@ -724,8 +724,7 @@ bool DoraemonSession::editMusic(const QString& label, const QJsonObject& music, 
 QString DoraemonSession::writeMusicSnapshot(QString* error) const {
     try {
         const QString path = project_.resolve(QStringLiteral("build/sound-preview/doraemon-music.json"));
-        QDir().mkpath(QFileInfo(path).absolutePath());
-        saveJsonObject(path, state_.music);
+        saveJsonObject(project_, path, state_.music);
         return path;
     } catch (const std::exception& e) {
         if (error) *error = QString::fromUtf8(e.what());
@@ -802,19 +801,19 @@ bool DoraemonSession::save(QString* error) {
     // halfway leaves the ones before it saved.
     try {
         if (state_.bundle != saved_.bundle) {
-            state_.bundle.save(bundlePath_);
+            state_.bundle.save(project_, bundlePath_);
             saved_.bundle = state_.bundle;
         }
         if (state_.text != saved_.text && !textPath_.isEmpty()) {
-            saveJsonObject(textPath_, state_.text);
+            saveJsonObject(project_, textPath_, state_.text);
             saved_.text = state_.text;
         }
         if (state_.music != saved_.music && !musicPath_.isEmpty()) {
-            saveJsonObject(musicPath_, state_.music);
+            saveJsonObject(project_, musicPath_, state_.music);
             saved_.music = state_.music;
         }
         if (state_.demo != saved_.demo && !demoPath_.isEmpty()) {
-            saveJsonObject(demoPath_, state_.demo);
+            saveJsonObject(project_, demoPath_, state_.demo);
             saved_.demo = state_.demo;
         }
     } catch (const std::exception& e) {

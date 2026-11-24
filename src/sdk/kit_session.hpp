@@ -25,7 +25,7 @@ ProcessSpec specFromPlan(const QJsonObject& plan);
 QString tabDocument(const ProjectFile& project, const QString& codec);
 // A JSON document holding an object; both throw std::runtime_error.
 QJsonObject loadJsonObject(const QString& path);
-void saveJsonObject(const QString& path, const QJsonObject& value);
+void saveJsonObject(const ProjectFile& project, const QString& path, const QJsonObject& value);
 
 // What the game sessions share: a project file, messages under its name,
 // the kit's build, the kit steps that add documents to a project, and the

@@ -1,9 +1,10 @@
 #include "flicky/data/graphics_document.hpp"
 
+#include "sdk/project_file.hpp"
+
 #include <QFile>
 #include <QJsonArray>
 #include <QJsonDocument>
-#include <QSaveFile>
 
 #include <array>
 
@@ -150,15 +151,10 @@ FlickyGraphicsDocument FlickyGraphicsDocument::fromJson(const QJsonObject& root)
 
 QJsonObject FlickyGraphicsDocument::toJson() const { return root_; }
 
-void FlickyGraphicsDocument::save(const QString& path) const {
-    QSaveFile file(path);
-    if (!file.open(QIODevice::WriteOnly)) {
-        fail(QStringLiteral("cannot save Flicky graphics document: %1").arg(path));
-    }
+void FlickyGraphicsDocument::save(const sdk::ProjectFile& project, const QString& path) const {
     const auto bytes = QJsonDocument(root_).toJson(QJsonDocument::Indented);
-    if (file.write(bytes) != bytes.size() || !file.commit()) {
-        fail(QStringLiteral("cannot commit Flicky graphics document: %1").arg(path));
-    }
+    QString error;
+    if (!project.writeFile(path, bytes, &error)) fail(error);
 }
 
 int FlickyGraphicsDocument::assetIndex(const QString& assetId) {

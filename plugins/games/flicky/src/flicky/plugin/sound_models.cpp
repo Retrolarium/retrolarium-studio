@@ -9,7 +9,6 @@
 #include <QFileInfo>
 #include <QJsonDocument>
 #include <QJsonObject>
-#include <QSaveFile>
 
 #include <algorithm>
 #include <iterator>
@@ -213,14 +212,13 @@ void SoundHeaderModel::preview() {
     if (session_->isSoundDirty()) {
         const QString source = session_->sound().source();
         const QString directory = QDir(session_->projectDirectory()).filePath(QStringLiteral("build/sound-preview"));
-        QDir().mkpath(directory);
         const QString hash =
             QString::fromLatin1(QCryptographicHash::hash(source.toUtf8(), QCryptographicHash::Sha256).toHex().left(12));
         const QString path = QDir(directory).filePath(QStringLiteral(".flicky-unsaved-%1.asm").arg(hash));
-        QSaveFile file(path);
-        if (file.open(QIODevice::WriteOnly)) {
-            file.write(source.toUtf8());
-            file.commit();
+        QString writeError;
+        if (!session_->project().writeFile(path, source.toUtf8(), &writeError)) {
+            host->report({sdk::Severity::Error, QStringLiteral("sound"), writeError, QString()});
+            return;
         }
         arguments << QStringLiteral("--document-override") << path;
     }

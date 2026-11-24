@@ -8,6 +8,10 @@
 
 #include <stdexcept>
 
+namespace rl::sdk {
+class ProjectFile;
+}
+
 namespace rl::flicky {
 
 class FlickySemanticsDocumentError : public std::runtime_error {
@@ -25,7 +29,7 @@ public:
     static FlickySemanticsDocument fromJson(const QJsonObject& root);
 
     [[nodiscard]] QJsonObject toJson() const;
-    void save(const QString& path) const;
+    void save(const sdk::ProjectFile& project, const QString& path) const;
 
     [[nodiscard]] QStringList textIds() const;
     [[nodiscard]] QString textValue(const QString& id) const;

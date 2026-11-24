@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QByteArray>
 #include <QString>
 #include <QVariantList>
 #include <QVariantMap>
@@ -38,6 +39,9 @@ public:
     // Recheck immediately before writing, including links changed since open.
     bool validateEditablePaths(QString* error) const;
     bool validateWritePath(const QString& path, QString* error) const;
+    // Atomically writes a document or project artifact without re-resolving a
+    // mutable path between checking its parent and replacing the file.
+    bool writeFile(const QString& path, const QByteArray& data, QString* error) const;
 
 private:
     bool valid_ = false;

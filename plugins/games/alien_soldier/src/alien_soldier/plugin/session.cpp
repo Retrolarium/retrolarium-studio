@@ -713,7 +713,7 @@ bool AlienSoldierSession::save(QString* error) {
             continue;
         }
         try {
-            saveJson(tracked.path, tracked.doc);
+            saveJson(project_, tracked.path, tracked.doc);
             tracked.saved = tracked.doc;
             tracked.savedRevision = tracked.revision;
         } catch (const std::exception& e) {
@@ -901,22 +901,18 @@ void AlienSoldierSession::applyRecording(int demo, const QString& path) {
     // The kit joins the demo's own start (title and weapon setup) with the
     // recorded steps.
     const QString steps = QDir(project_.directory()).filePath(QStringLiteral("build/demo-steps.json"));
-    {
-        QFile file(steps);
-        if (!file.open(QIODevice::WriteOnly)) {
-            report(sdk::Severity::Error, QStringLiteral("demo"), tr("Cannot write %1.").arg(steps));
-            return;
-        }
-        const QJsonArray current = doc(Doc::Demos)
-                                       .value(QStringLiteral("demos"))
-                                       .toArray()
-                                       .at(demo)
-                                       .toObject()
-                                       .value(QStringLiteral("steps"))
-                                       .toArray();
-        file.write(QJsonDocument(current).toJson(QJsonDocument::Compact));
-    }
+    const QJsonArray current = doc(Doc::Demos)
+                                   .value(QStringLiteral("demos"))
+                                   .toArray()
+                                   .at(demo)
+                                   .toObject()
+                                   .value(QStringLiteral("steps"))
+                                   .toArray();
     QString error;
+    if (!project_.writeFile(steps, QJsonDocument(current).toJson(QJsonDocument::Compact), &error)) {
+        report(sdk::Severity::Error, QStringLiteral("demo"), error);
+        return;
+    }
     sdk::ProcessSpec spec = host()->kitCommand({QStringLiteral("studio"), QStringLiteral("alien-soldier-demo-steps"),
                                                 steps, QStringLiteral("--recording"), path},
                                                project_.directory(), &error);

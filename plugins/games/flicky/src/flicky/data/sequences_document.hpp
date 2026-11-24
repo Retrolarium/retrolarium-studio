@@ -6,6 +6,10 @@
 
 #include <stdexcept>
 
+namespace rl::sdk {
+class ProjectFile;
+}
+
 namespace rl::flicky {
 
 class FlickySequencesDocumentError : public std::runtime_error {
@@ -23,7 +27,7 @@ public:
     static FlickySequencesDocument fromJson(const QJsonObject& root);
 
     [[nodiscard]] QJsonObject toJson() const;
-    void save(const QString& path) const;
+    void save(const sdk::ProjectFile& project, const QString& path) const;
 
     [[nodiscard]] QStringList mappingIds() const;
     [[nodiscard]] QJsonObject mapping(const QString& id) const;

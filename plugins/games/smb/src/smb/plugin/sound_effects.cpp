@@ -58,7 +58,7 @@ public:
 
     bool writeDocument(const QString& path, QString* error) const override {
         try {
-            session_->document().save(path);
+            session_->document().save(session_->project(), path);
             return true;
         } catch (const std::exception& e) {
             if (error) *error = QString::fromUtf8(e.what());

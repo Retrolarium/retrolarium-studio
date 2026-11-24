@@ -1,9 +1,10 @@
 #include "flicky/data/level_document.hpp"
 
+#include "sdk/project_file.hpp"
+
 #include <QFile>
 #include <QJsonArray>
 #include <QJsonDocument>
-#include <QSaveFile>
 #include <QSet>
 
 #include <algorithm>
@@ -386,16 +387,11 @@ QJsonObject FlickyLevelDocument::toJson() const {
     return root;
 }
 
-void FlickyLevelDocument::save(const QString& path) const {
+void FlickyLevelDocument::save(const sdk::ProjectFile& project, const QString& path) const {
     validateCapacity();
-    QSaveFile file(path);
-    if (!file.open(QIODevice::WriteOnly)) {
-        fail(QStringLiteral("cannot save Flicky level document: %1").arg(path));
-    }
     auto bytes = QJsonDocument(toJson()).toJson(QJsonDocument::Indented);
-    if (file.write(bytes) != bytes.size() || !file.commit()) {
-        fail(QStringLiteral("cannot commit Flicky level document: %1").arg(path));
-    }
+    QString error;
+    if (!project.writeFile(path, bytes, &error)) fail(error);
 }
 
 QPair<int, int> FlickyLevelDocument::capacityUsage() const {

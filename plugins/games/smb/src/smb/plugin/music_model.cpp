@@ -501,11 +501,10 @@ void SmbMusicModel::preview() {
     }
     // The kit renders from a bundle file: stage the current document.
     const QString directory = QDir(session_->projectDirectory()).filePath(QStringLiteral("build/sound-preview"));
-    QDir().mkpath(directory);
     const QString document = QDir(directory).filePath(QStringLiteral("smb-resources.json"));
     const QString wav = QDir(directory).filePath(QStringLiteral("%1.wav").arg(header_));
     try {
-        session_->document().save(document);
+        session_->document().save(session_->project(), document);
     } catch (const SmbError& e) {
         sdk::Diagnostic d;
         d.severity = sdk::Severity::Error;

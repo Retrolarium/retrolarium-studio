@@ -1,9 +1,10 @@
 #include "smb/data/resource_document.hpp"
 
+#include "sdk/project_file.hpp"
+
 #include <QFile>
 #include <QJsonArray>
 #include <QJsonDocument>
-#include <QSaveFile>
 
 #include <algorithm>
 
@@ -59,16 +60,12 @@ SmbResourceDocument SmbResourceDocument::load(const QString& path) {
     return document;
 }
 
-void SmbResourceDocument::save(const QString& path) const {
-    QSaveFile file(path);
-    if (!file.open(QIODevice::WriteOnly)) {
-        fail(QStringLiteral("Cannot write %1: %2").arg(path, file.errorString()));
-    }
+void SmbResourceDocument::save(const sdk::ProjectFile& project, const QString& path) const {
     // The same layout the kit and the original app write: four-space indents,
     // keys in order.
-    file.write(QJsonDocument(root_).toJson(QJsonDocument::Indented));
-    if (!file.commit()) {
-        fail(QStringLiteral("Cannot write %1: %2").arg(path, file.errorString()));
+    QString error;
+    if (!project.writeFile(path, QJsonDocument(root_).toJson(QJsonDocument::Indented), &error)) {
+        fail(QStringLiteral("Cannot write %1: %2").arg(path, error));
     }
 }
 

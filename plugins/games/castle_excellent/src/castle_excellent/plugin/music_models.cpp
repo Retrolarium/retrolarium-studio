@@ -7,7 +7,6 @@
 #include <QFileInfo>
 #include <QJsonArray>
 #include <QJsonDocument>
-#include <QSaveFile>
 
 #include <algorithm>
 
@@ -205,13 +204,12 @@ void CastleExcellentMusicModel::preview() {
     sdk::Host* host = session_->host();
     if (!host || host->isBusy()) return;
     const QString directory = QDir(session_->projectDirectory()).filePath(QStringLiteral("build/sound-preview"));
-    QDir().mkpath(directory);
     const QString document = QDir(directory).filePath(QStringLiteral("castle-excellent-music.json"));
     const QString wav = QDir(directory).filePath(QStringLiteral("track-%1.wav").arg(track_));
-    QSaveFile file(document);
-    if (!file.open(QIODevice::WriteOnly) ||
-        file.write(QJsonDocument(session_->music()).toJson(QJsonDocument::Compact)) < 0 || !file.commit()) {
-        report(session_, tr("Cannot write %1.").arg(document));
+    QString writeError;
+    if (!session_->project().writeFile(document, QJsonDocument(session_->music()).toJson(QJsonDocument::Compact),
+                                       &writeError)) {
+        report(session_, writeError);
         return;
     }
     QStringList arguments{QStringLiteral("audio"),
@@ -481,13 +479,12 @@ void CastleExcellentSequenceModel::preview() {
     sdk::Host* host = session_->host();
     if (!host || host->isBusy()) return;
     const QString directory = QDir(session_->projectDirectory()).filePath(QStringLiteral("build/sound-preview"));
-    QDir().mkpath(directory);
     const QString document = QDir(directory).filePath(QStringLiteral("castle-excellent-sequence.json"));
     const QString wav = QDir(directory).filePath(QStringLiteral("sequence-%1.wav").arg(stream_));
-    QSaveFile file(document);
-    if (!file.open(QIODevice::WriteOnly) ||
-        file.write(QJsonDocument(solo(session_->music())).toJson(QJsonDocument::Compact)) < 0 || !file.commit()) {
-        report(session_, tr("Cannot write %1.").arg(document));
+    QString writeError;
+    if (!session_->project().writeFile(document, QJsonDocument(solo(session_->music())).toJson(QJsonDocument::Compact),
+                                       &writeError)) {
+        report(session_, writeError);
         return;
     }
     QString error;

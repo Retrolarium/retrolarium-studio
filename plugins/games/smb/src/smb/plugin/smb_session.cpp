@@ -594,12 +594,12 @@ bool SmbSession::save(QString* error) {
     // halfway leaves the ones before it saved.
     try {
         if (revision_ != savedRevision_) {
-            document_.save(documentPath_);
+            document_.save(project_, documentPath_);
             saved_ = document_;
             savedRevision_ = revision_;
         }
         if (demo_ != savedDemo_ && !demoPath_.isEmpty()) {
-            saveJsonObject(demoPath_, demo_);
+            saveJsonObject(project_, demoPath_, demo_);
             savedDemo_ = demo_;
         }
     } catch (const std::exception& e) {

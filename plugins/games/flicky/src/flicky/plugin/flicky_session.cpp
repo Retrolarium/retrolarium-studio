@@ -811,22 +811,22 @@ bool FlickySession::save(QString* error) {
             return false;
         }
     };
-    if (write(levelsDirty, levelsPath_, [&] { levels_.save(levelsPath_); })) {
+    if (write(levelsDirty, levelsPath_, [&] { levels_.save(project_, levelsPath_); })) {
         savedLevels_ = levels_;
     }
-    if (write(graphics_.isDirty(), graphics_.path, [&] { graphics_.doc->save(graphics_.path); })) {
+    if (write(graphics_.isDirty(), graphics_.path, [&] { graphics_.doc->save(project_, graphics_.path); })) {
         graphics_.saved = *graphics_.doc;
         graphics_.savedRevision = graphics_.revision;
     }
-    if (write(semantics_.isDirty(), semantics_.path, [&] { semantics_.doc->save(semantics_.path); })) {
+    if (write(semantics_.isDirty(), semantics_.path, [&] { semantics_.doc->save(project_, semantics_.path); })) {
         semantics_.saved = *semantics_.doc;
         semantics_.savedRevision = semantics_.revision;
     }
-    if (write(sequences_.isDirty(), sequences_.path, [&] { sequences_.doc->save(sequences_.path); })) {
+    if (write(sequences_.isDirty(), sequences_.path, [&] { sequences_.doc->save(project_, sequences_.path); })) {
         sequences_.saved = *sequences_.doc;
         sequences_.savedRevision = sequences_.revision;
     }
-    if (write(sound_.isDirty(), sound_.path, [&] { sound_.doc->save(sound_.path); })) {
+    if (write(sound_.isDirty(), sound_.path, [&] { sound_.doc->save(project_, sound_.path); })) {
         sound_.saved = *sound_.doc;
         sound_.savedRevision = sound_.revision;
     }
@@ -1257,12 +1257,13 @@ void FlickySession::saveBuildRecord() const {
                                            {QStringLiteral("working_directory"), it->workingDirectory},
                                            {QStringLiteral("environment"), environment}});
     }
-    QFile file(buildRecordPath());
-    if (file.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
-        file.write(QJsonDocument(QJsonObject{{QStringLiteral("inputs"), QString::fromLatin1(builtInputs_.toHex())},
-                                             {QStringLiteral("rom"), builtRom_},
-                                             {QStringLiteral("plans"), plans}})
-                       .toJson());
+    const auto bytes = QJsonDocument(QJsonObject{{QStringLiteral("inputs"), QString::fromLatin1(builtInputs_.toHex())},
+                                                 {QStringLiteral("rom"), builtRom_},
+                                                 {QStringLiteral("plans"), plans}})
+                           .toJson();
+    QString error;
+    if (!project_.writeFile(buildRecordPath(), bytes, &error)) {
+        if (sdk::Host* h = host()) h->report({sdk::Severity::Error, QStringLiteral("build"), error, QString()});
     }
 }
 

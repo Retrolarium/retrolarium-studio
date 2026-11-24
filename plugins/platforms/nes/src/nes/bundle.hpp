@@ -7,6 +7,10 @@
 
 #include <stdexcept>
 
+namespace rl::sdk {
+class ProjectFile;
+}
+
 namespace rl::nes {
 
 class BundleError : public std::runtime_error {
@@ -21,7 +25,7 @@ class Bundle {
 public:
     static Bundle load(const QString& path);  // throws BundleError
     static Bundle fromJson(const QJsonObject& root);
-    void save(const QString& path) const;  // throws BundleError
+    void save(const sdk::ProjectFile& project, const QString& path) const;  // throws BundleError
 
     const QJsonObject& root() const { return root_; }
     QString game() const;

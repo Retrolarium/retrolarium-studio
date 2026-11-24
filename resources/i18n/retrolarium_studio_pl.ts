@@ -15486,5 +15486,13 @@ Otworzyć go jako zwykły projekt ROM bez plików źródłowych?</translation>
         <source>The Python that runs the kit was not found next to the studio. Reinstall Retrolarium Studio, or put Python on PATH to run %1.</source>
         <translation type="vanished">Nie znaleziono obok studia Pythona, na którym działa zestaw. Zainstaluj ponownie Retrolarium Studio albo dodaj Pythona do PATH, aby uruchomić %1.</translation>
     </message>
+    <message>
+        <source>The name &apos;%1&apos; is not supported by Windows file systems.</source>
+        <translation>Nazwa „%1” nie jest obsługiwana przez systemy plików Windows.</translation>
+    </message>
+    <message>
+        <source>The file system cannot verify project paths. Open the project from a local disk.</source>
+        <translation>System plików nie może zweryfikować ścieżek projektu. Otwórz projekt z dysku lokalnego.</translation>
+    </message>
 </context>
 </TS>

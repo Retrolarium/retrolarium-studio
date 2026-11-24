@@ -1,8 +1,9 @@
 #include "flicky/data/sound_document.hpp"
 
+#include "sdk/project_file.hpp"
+
 #include <QFile>
 #include <QRegularExpression>
-#include <QSaveFile>
 #include <QSet>
 
 #include <algorithm>
@@ -290,12 +291,10 @@ FlickySoundDocument::Parsed FlickySoundDocument::parse(const QString& source) {
 
 QString FlickySoundDocument::source() const { return source_; }
 
-void FlickySoundDocument::save(const QString& path) const {
-    QSaveFile file(path);
-    if (!file.open(QIODevice::WriteOnly)) fail(QStringLiteral("cannot save Flicky sound source: ") + path);
+void FlickySoundDocument::save(const sdk::ProjectFile& project, const QString& path) const {
     const auto bytes = source_.toUtf8();
-    if (file.write(bytes) != bytes.size() || !file.commit())
-        fail(QStringLiteral("cannot commit Flicky sound source: ") + path);
+    QString error;
+    if (!project.writeFile(path, bytes, &error)) fail(error);
 }
 
 QStringList FlickySoundDocument::headerIds() const { return parsed_.headerOrder; }

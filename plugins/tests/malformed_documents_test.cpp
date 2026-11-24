@@ -67,7 +67,10 @@ void castleRoomsHoldUp(const QTemporaryDir& dir) {
     expect(levels.cells(0).size() == 400, "short rows read as a whole room");
     levels.setCell(0, QPoint(19, 19), 0);
     const QString saved = dir.filePath(QStringLiteral("saved.json"));
-    levels.save(saved);
+    QString error;
+    const auto project = rl::sdk::ProjectFile::parse(QString(), dir.filePath(QStringLiteral("test.rlj")), &error);
+    expect(project.isValid() && error.isEmpty(), "a temporary project is ready for the saved rooms");
+    levels.save(project, saved);
     QFile written(saved);
     if (!written.open(QIODevice::ReadOnly)) throw std::runtime_error("cannot read the saved rooms");
     const QJsonArray rows = QJsonDocument::fromJson(written.readAll())

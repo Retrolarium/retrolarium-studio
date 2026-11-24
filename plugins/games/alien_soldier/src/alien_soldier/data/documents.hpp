@@ -11,6 +11,10 @@
 // Alien Soldier's documents, as the kit writes them into a project's source
 // snapshot (content/...). Each is JSON; the session keeps them as values, so
 // an edit is a whole-document snapshot.
+namespace rl::sdk {
+class ProjectFile;
+}
+
 namespace rl::alien_soldier {
 
 enum class Doc {
@@ -68,7 +72,7 @@ private:
 };
 
 QJsonObject loadJson(const QString& path);
-void saveJson(const QString& path, const QJsonObject& document);
+void saveJson(const sdk::ProjectFile& project, const QString& path, const QJsonObject& document);
 
 // A list of objects in a document by their "label" key.
 int indexOfLabel(const QJsonArray& items, const QString& label);

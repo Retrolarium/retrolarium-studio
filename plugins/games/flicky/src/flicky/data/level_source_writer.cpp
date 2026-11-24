@@ -1,11 +1,11 @@
 #include "flicky/data/level_source_writer.hpp"
 
 #include "flicky/data/level_document.hpp"
+#include "sdk/project_writer.hpp"
 
 #include <QFile>
 #include <QJsonArray>
 #include <QRegularExpression>
-#include <QSaveFile>
 #include <QStringList>
 
 #include <algorithm>
@@ -92,17 +92,12 @@ QByteArray replacedRange(const QString& path, const QByteArray& start, const QBy
     return bytes;
 }
 
-void writeStagedFile(const QString& path, const QByteArray& bytes) {
-    QSaveFile output(path);
-    if (!output.open(QIODevice::WriteOnly))
-        throw FlickyLevelDocumentError("cannot open staged Flicky source: " + path.toStdString() + ": " +
-                                       output.errorString().toStdString());
-    if (output.write(bytes) != bytes.size())
+void writeStagedFile(const QString& boundary, const QString& path, const QByteArray& bytes) {
+    QString error;
+    if (!sdk::writeFileWithin(boundary, path, bytes, &error)) {
         throw FlickyLevelDocumentError("cannot write staged Flicky source: " + path.toStdString() + ": " +
-                                       output.errorString().toStdString());
-    if (!output.commit())
-        throw FlickyLevelDocumentError("cannot commit staged Flicky source: " + path.toStdString() + ": " +
-                                       output.errorString().toStdString());
+                                       error.toStdString());
+    }
 }
 
 QByteArray bonusPlacementSource(const FlickyLevelDocument& document, const QString& path) {
@@ -189,9 +184,9 @@ void writeFlickyLevelSources(const FlickyLevelDocument& document, const QString&
         replacedRange(specialPath, "Level_SpecialTilePointers:", "Tiger_JumpArcTable:", specialSection(document));
     const auto bonusPath = stagedSource + QStringLiteral("/game/bonus/objects.s");
     const auto bonus = document.hasBonusPlacements() ? bonusPlacementSource(document, bonusPath) : QByteArray{};
-    writeStagedFile(tablesPath, tables);
-    writeStagedFile(specialPath, special);
-    if (document.hasBonusPlacements()) writeStagedFile(bonusPath, bonus);
+    writeStagedFile(stagedSource, tablesPath, tables);
+    writeStagedFile(stagedSource, specialPath, special);
+    if (document.hasBonusPlacements()) writeStagedFile(stagedSource, bonusPath, bonus);
 }
 
 }  // namespace rl::flicky

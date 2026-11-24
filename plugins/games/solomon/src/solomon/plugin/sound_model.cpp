@@ -312,11 +312,10 @@ void SolomonSoundModel::preview() {
     sdk::Host* host = session_->host();
     if (!host || host->isBusy()) return;
     const QString directory = QDir(session_->projectDirectory()).filePath(QStringLiteral("build/sound-preview"));
-    QDir().mkpath(directory);
     const QString document = QDir(directory).filePath(QStringLiteral("solomon-audio.json"));
     const QString wav = QDir(directory).filePath(QStringLiteral("program-%1.wav").arg(program_));
     try {
-        saveJson(document, session_->state().audio);
+        saveJson(session_->project(), document, session_->state().audio);
     } catch (const SolomonError& e) {
         sdk::Diagnostic d;
         d.severity = sdk::Severity::Error;

@@ -1,10 +1,11 @@
 #include "alien_soldier/data/documents.hpp"
 
+#include "sdk/project_file.hpp"
+
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
 #include <QJsonDocument>
-#include <QSaveFile>
 
 #include <stdexcept>
 
@@ -67,16 +68,11 @@ QJsonObject loadJson(const QString& path) {
     return document.object();
 }
 
-void saveJson(const QString& path, const QJsonObject& document) {
-    QSaveFile file(path);
-    if (!file.open(QIODevice::WriteOnly)) {
-        throw std::runtime_error(QStringLiteral("cannot write %1").arg(path).toStdString());
-    }
-    file.write(QJsonDocument(document).toJson(QJsonDocument::Compact));
-    file.write("\n");
-    if (!file.commit()) {
-        throw std::runtime_error(QStringLiteral("cannot write %1").arg(path).toStdString());
-    }
+void saveJson(const sdk::ProjectFile& project, const QString& path, const QJsonObject& document) {
+    QByteArray bytes = QJsonDocument(document).toJson(QJsonDocument::Compact);
+    bytes.append('\n');
+    QString error;
+    if (!project.writeFile(path, bytes, &error)) throw std::runtime_error(error.toStdString());
 }
 
 Documents Documents::load(const QString& snapshot) {

@@ -8,6 +8,10 @@
 #include <array>
 #include <stdexcept>
 
+namespace rl::sdk {
+class ProjectFile;
+}
+
 namespace rl::flicky {
 
 class FlickySoundDocumentError : public std::runtime_error {
@@ -76,7 +80,7 @@ public:
     static FlickySoundDocument fromSource(const QString& source);
 
     [[nodiscard]] QString source() const;
-    void save(const QString& path) const;
+    void save(const sdk::ProjectFile& project, const QString& path) const;
     [[nodiscard]] QStringList headerIds() const;
     [[nodiscard]] FlickySoundHeader header(const QString& id) const;
     [[nodiscard]] QStringList sequenceIds() const;

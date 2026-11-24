@@ -443,11 +443,11 @@ bool PacmanSession::save(QString* error) {
     // halfway leaves the ones before it saved.
     try {
         if (state_.bundle != saved_.bundle) {
-            state_.bundle.save(bundlePath_);
+            state_.bundle.save(project_, bundlePath_);
             saved_.bundle = state_.bundle;
         }
         if (state_.demo != saved_.demo && !demoPath_.isEmpty()) {
-            saveJsonObject(demoPath_, state_.demo);
+            saveJsonObject(project_, demoPath_, state_.demo);
             saved_.demo = state_.demo;
         }
     } catch (const std::exception& e) {

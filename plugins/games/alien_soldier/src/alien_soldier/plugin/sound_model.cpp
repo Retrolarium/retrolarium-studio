@@ -12,7 +12,6 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QPointer>
-#include <QSaveFile>
 
 #include <algorithm>
 
@@ -292,14 +291,13 @@ void SoundModel::preview() {
     if (session_->isDirty(Doc::Sound)) {
         const QByteArray json = QJsonDocument(session_->doc(Doc::Sound)).toJson(QJsonDocument::Compact);
         const QString directory = QDir(session_->projectDirectory()).filePath(QStringLiteral("build/sound-preview"));
-        QDir().mkpath(directory);
         const QString hash =
             QString::fromLatin1(QCryptographicHash::hash(json, QCryptographicHash::Sha256).toHex().left(12));
         const QString path = QDir(directory).filePath(QStringLiteral(".alien-soldier-unsaved-%1.json").arg(hash));
-        QSaveFile file(path);
-        if (file.open(QIODevice::WriteOnly)) {
-            file.write(json);
-            file.commit();
+        QString writeError;
+        if (!session_->project().writeFile(path, json, &writeError)) {
+            session_->report(sdk::Severity::Error, QStringLiteral("sound"), writeError);
+            return;
         }
         arguments << QStringLiteral("--document-override") << path;
     }

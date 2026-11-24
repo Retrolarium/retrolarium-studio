@@ -1,12 +1,12 @@
 #include "castle_excellent/data/levels.hpp"
 
 #include "sdk/i18n.hpp"
+#include "sdk/project_file.hpp"
 
 #include <QFile>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QPoint>
-#include <QSaveFile>
 
 #include <algorithm>
 
@@ -51,14 +51,10 @@ CastleExcellentLevels CastleExcellentLevels::load(const QString& path) {
     return levels;
 }
 
-void CastleExcellentLevels::save(const QString& path) const {
-    QSaveFile file(path);
-    if (!file.open(QIODevice::WriteOnly)) {
-        fail(rlTr("castle_excellent", "Cannot write %1: %2").arg(path, file.errorString()));
-    }
-    file.write(QJsonDocument(root_).toJson(QJsonDocument::Indented));
-    if (!file.commit()) {
-        fail(rlTr("castle_excellent", "Cannot write %1: %2").arg(path, file.errorString()));
+void CastleExcellentLevels::save(const sdk::ProjectFile& project, const QString& path) const {
+    QString error;
+    if (!project.writeFile(path, QJsonDocument(root_).toJson(QJsonDocument::Indented), &error)) {
+        fail(rlTr("castle_excellent", "Cannot write %1: %2").arg(path, error));
     }
 }
 

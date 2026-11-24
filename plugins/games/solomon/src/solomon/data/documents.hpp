@@ -11,6 +11,10 @@
 
 #include <stdexcept>
 
+namespace rl::sdk {
+class ProjectFile;
+}
+
 namespace rl::solomon {
 
 class SolomonError : public std::runtime_error {
@@ -19,7 +23,7 @@ public:
 };
 
 QJsonObject loadJson(const QString& path);  // throws SolomonError
-void saveJson(const QString& path, const QJsonObject& root);
+void saveJson(const sdk::ProjectFile& project, const QString& path, const QJsonObject& root);
 
 constexpr int kWidth = 16;
 constexpr int kHeight = 12;

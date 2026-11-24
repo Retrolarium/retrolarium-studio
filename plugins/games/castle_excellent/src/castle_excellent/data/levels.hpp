@@ -7,6 +7,10 @@
 
 #include <stdexcept>
 
+namespace rl::sdk {
+class ProjectFile;
+}
+
 namespace rl::castle_excellent {
 
 class CastleExcellentError : public std::runtime_error {
@@ -41,7 +45,7 @@ struct CastleExcellentObjectPreview {
 class CastleExcellentLevels {
 public:
     static CastleExcellentLevels load(const QString& path);  // throws CastleExcellentError
-    void save(const QString& path) const;
+    void save(const sdk::ProjectFile& project, const QString& path) const;
 
     int width() const { return width_; }
     int height() const { return height_; }

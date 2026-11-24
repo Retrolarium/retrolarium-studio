@@ -15,6 +15,10 @@
 #include <stdexcept>
 #include <vector>
 
+namespace rl::sdk {
+class ProjectFile;
+}
+
 namespace rl::flicky {
 
 class FlickyLevelDocumentError : public std::runtime_error {
@@ -35,7 +39,7 @@ public:
     [[nodiscard]] QPair<int, int> capacityUsage() const;
     [[nodiscard]] QPair<int, int> capacityLimits() const;
     void validateCapacity() const;
-    void save(const QString& path) const;
+    void save(const sdk::ProjectFile& project, const QString& path) const;
 
     [[nodiscard]] int layoutForRound(int round) const;
     [[nodiscard]] int objectLayoutForRound(int round, const QString& field) const;

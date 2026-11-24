@@ -13,7 +13,6 @@
 #include <QFileInfo>
 #include <QJsonDocument>
 #include <QJsonObject>
-#include <QSaveFile>
 #include <QSettings>
 #include <QStandardPaths>
 #include <QUndoStack>
@@ -155,11 +154,7 @@ std::unique_ptr<sdk::EditorModel> RomSession::openEditor(const QString& kind, co
 bool RomSession::save(QString* error) {
     if (!project_.validateEditablePaths(error)) return false;
     if (!project_.validateWritePath(romPath_, error)) return false;
-    QSaveFile file(romPath_);
-    if (!file.open(QIODevice::WriteOnly) || file.write(rom_) != rom_.size() || !file.commit()) {
-        if (error) *error = file.errorString();
-        return false;
-    }
+    if (!project_.writeFile(romPath_, rom_, error)) return false;
     // The edited ROM, dropped on the studio later, opens this project again.
     const QString digest = QString::fromLatin1(QCryptographicHash::hash(rom_, QCryptographicHash::Sha256).toHex());
     QSettings().setValue(QStringLiteral("romProjects/") + digest, project_.path());
@@ -357,12 +352,11 @@ void RomSession::play() {
     }
     // The bytes as they are now, saved or not.
     const QDir build(QDir(project_.directory()).filePath(QStringLiteral("build")));
-    QDir().mkpath(build.path());
     const QString copy = build.filePath(QStringLiteral("playtest.") + QFileInfo(romPath_).suffix());
-    QSaveFile file(copy);
-    if (!file.open(QIODevice::WriteOnly) || file.write(rom_) != rom_.size() || !file.commit()) {
+    QString writeError;
+    if (!project_.writeFile(copy, rom_, &writeError)) {
         h->report({sdk::Severity::Error, QStringLiteral("playtest"),
-                   tr("Cannot write the ROM to run: %1").arg(file.errorString()), QString()});
+                   tr("Cannot write the ROM to run: %1").arg(writeError), QString()});
         return;
     }
     const QString movies =
