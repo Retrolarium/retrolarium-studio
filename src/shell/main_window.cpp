@@ -252,6 +252,9 @@ MainWindow::MainWindow(QWidget* parent) : StudioWindow(parent) {
     // A ROM or a project dropped on the window opens (see dropEvent).
     setAcceptDrops(true);
     buildMenus();
+    saveAction_->setObjectName(QStringLiteral("file.saveAll"));
+    closeAction_->setObjectName(QStringLiteral("file.closeProject"));
+    buildAction_->setObjectName(QStringLiteral("run.build"));
 
     auto* root = surface("chrome", this);
     auto* layout = new QVBoxLayout(root);
@@ -379,9 +382,11 @@ void MainWindow::buildMenus() {
     QMenu* file = bar->addMenu(tr("File"));
     file->setFont(menuFont);
     QAction* open = file->addAction(tr("Open project…"));
+    open->setObjectName(QStringLiteral("file.openProject"));
     open->setShortcut(QKeySequence::Open);
     connect(open, &QAction::triggered, this, &MainWindow::chooseProject);
     QAction* openRom = file->addAction(tr("Open ROM…"));
+    openRom->setObjectName(QStringLiteral("file.openRom"));
     openRom->setShortcut(QKeySequence(QStringLiteral("Ctrl+Shift+O")));
     connect(openRom, &QAction::triggered, this, &MainWindow::openRom);
     recentMenu_ = file->addMenu(tr("Recent projects"));
@@ -1292,8 +1297,10 @@ bool askSetUpSource(QWidget* parent, const QString& name) {
     text->setFont(theme::font(theme::TextRole::Body, 13.0));
     auto* buttons = new QHBoxLayout;
     auto* asRom = new QPushButton(QObject::tr("Open the ROM"), &dialog);
+    asRom->setObjectName(QStringLiteral("openRomAsBytes"));
     asRom->setAutoDefault(false);
     auto* source = new QPushButton(QObject::tr("Set up the source"), &dialog);
+    source->setObjectName(QStringLiteral("setUpGameSource"));
     source->setDefault(true);
     buttons->addStretch(1);
     buttons->addWidget(asRom);

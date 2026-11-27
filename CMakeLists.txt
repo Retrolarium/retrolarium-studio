@@ -282,6 +282,12 @@ target_link_libraries(tas_editor_test PRIVATE studio_shell)
 target_include_directories(tas_editor_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 studio_add_test(tas_editor_test)
 
+# Inspector library geometry, including the first frame after rebuilding.
+add_executable(inspector_layout_test tests/inspector_layout_test.cpp)
+target_link_libraries(inspector_layout_test PRIVATE studio_shell)
+studio_enable_warnings(inspector_layout_test)
+studio_add_test(inspector_layout_test)
+
 # Opening a ROM when Kit is unavailable: explicit choice, failures and cancel.
 add_executable(rom_opening_test tests/rom_opening_test.cpp)
 target_link_libraries(rom_opening_test PRIVATE studio_shell rom_plugin)
@@ -391,6 +397,25 @@ target_sources(retrolarium-studio PRIVATE ${studio_qm} ${i18n_sources})
 target_link_libraries(retrolarium-studio PRIVATE studio_shell studio_builtin_plugins)
 studio_enable_warnings(retrolarium-studio)
 install(TARGETS retrolarium-studio RUNTIME DESTINATION .)
+
+# A private, opt-in GUI regression. It is neither installed nor registered
+# with CTest: the scenario needs a local ROM and shows real widget windows.
+option(RETROLARIUM_BUILD_GUI_REGRESSION "Build the private real-widget GUI regression" OFF)
+if(RETROLARIUM_BUILD_GUI_REGRESSION)
+    find_package(Qt5 5.15 REQUIRED COMPONENTS Test)
+    add_executable(retrolarium-gui-regression
+        tests/gui_regression.cpp
+        ${studio_qm}
+        ${i18n_sources}
+    )
+    target_compile_definitions(retrolarium-gui-regression PRIVATE RETROLARIUM_STUDIO_VERSION="${PROJECT_VERSION}")
+    target_include_directories(retrolarium-gui-regression PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
+        ${CMAKE_CURRENT_SOURCE_DIR}/plugins
+    )
+    target_link_libraries(retrolarium-gui-regression PRIVATE studio_shell studio_builtin_plugins Qt5::Test)
+    studio_enable_warnings(retrolarium-gui-regression)
+endif()
 
 # The setup program (installer/): an installer in the studio's frame and
 # widgets that carries the package folder after itself and, copied into the

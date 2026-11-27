@@ -97,6 +97,7 @@ ui::Divider* toolbarSeparator(QWidget* parent) {
 // ---------------------------------------------------------------- canvas
 
 MapCanvas::MapCanvas(sdk::TileMapModel* model, QWidget* parent) : QWidget(parent), model_(model) {
+    setObjectName(QStringLiteral("mapCanvas"));
     setMouseTracking(true);
     setAcceptDrops(true);
     setFocusPolicy(Qt::ClickFocus);

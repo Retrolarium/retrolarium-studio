@@ -222,6 +222,7 @@ BottomPanel::BottomPanel(QWidget* parent) : QFrame(parent) {
     stack_->addWidget(scroll);
 
     log_ = new QPlainTextEdit(stack_);
+    log_->setObjectName(QStringLiteral("buildOutput"));
     log_->setProperty("log", true);
     log_->setReadOnly(true);
     log_->setFont(theme::font(theme::TextRole::Mono, 11.5));

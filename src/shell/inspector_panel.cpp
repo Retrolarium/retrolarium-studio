@@ -22,6 +22,7 @@
 #include <QMouseEvent>
 #include <QPainter>
 #include <QScrollArea>
+#include <QScrollBar>
 #include <QTimer>
 #include <QVBoxLayout>
 
@@ -101,6 +102,7 @@ public:
     LibraryTile(const sdk::LibraryItem& item, bool current, QWidget* parent)
         : QWidget(parent), item_(item), current_(current) {
         icon_ = fitted(trimmed(item.icon), QSize(22, 22));
+        setObjectName(QStringLiteral("libraryItem.%1").arg(item.id));
         setFixedHeight(34);
         setCursor(Qt::OpenHandCursor);
         setAttribute(Qt::WA_Hover);
@@ -187,16 +189,11 @@ InspectorPanel::InspectorPanel(QWidget* parent) : QFrame(parent) {
     setProperty("surface", QStringLiteral("panel"));
     auto* outer = new QVBoxLayout(this);
     outer->setContentsMargins(0, 0, 0, 0);
-    auto* scroll = new QScrollArea(this);
-    scroll->setWidgetResizable(true);
-    scroll->setFrameShape(QFrame::NoFrame);
-    scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    content_ = new QWidget(scroll);
-    layout_ = new QVBoxLayout(content_);
-    layout_->setContentsMargins(0, 0, 0, 0);
-    layout_->setSpacing(0);
-    scroll->setWidget(content_);
-    outer->addWidget(scroll);
+    scroll_ = new QScrollArea(this);
+    scroll_->setWidgetResizable(true);
+    scroll_->setFrameShape(QFrame::NoFrame);
+    scroll_->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    outer->addWidget(scroll_);
     showMessage(QString(), QString(), QString());
 }
 
@@ -225,14 +222,28 @@ void InspectorPanel::scheduleRebuild() {
     }
 }
 
-void InspectorPanel::clearContent() {
-    while (QLayoutItem* item = layout_->takeAt(0)) {
-        if (QWidget* widget = item->widget()) {
-            widget->hide();
-            widget->deleteLater();
-        }
-        delete item;
+void InspectorPanel::beginContent() {
+    // Assemble the complete tree while detached. Adding cards to an already
+    // visible scroll widget queues their show/layout events separately and can
+    // publish a frame whose grid has not accounted for the fixed card heights.
+    content_ = new QWidget;
+    layout_ = new QVBoxLayout(content_);
+    layout_->setContentsMargins(0, 0, 0, 0);
+    layout_->setSpacing(0);
+    layout_->setSizeConstraint(QLayout::SetMinAndMaxSize);
+}
+
+void InspectorPanel::publishContent() {
+    const int position = scroll_->verticalScrollBar()->value();
+    layout_->activate();
+    if (QWidget* previous = scroll_->takeWidget()) {
+        previous->hide();
+        previous->deleteLater();
     }
+    // QScrollArea receives the finished grid and its minimum size together:
+    // a long library gets a scrollbar instead of compressing its rows.
+    scroll_->setWidget(content_);
+    scroll_->verticalScrollBar()->setValue(position);
 }
 
 void InspectorPanel::showMessage(const QString& kicker, const QString& title, const QString& note) {
@@ -241,7 +252,7 @@ void InspectorPanel::showMessage(const QString& kicker, const QString& title, co
         model_ = nullptr;
     }
     shown_.clear();
-    clearContent();
+    beginContent();
     QVBoxLayout* head = nullptr;
     QWidget* box = block(content_, QMargins(14, 14, 14, 16), 10, &head);
     if (!kicker.isEmpty()) {
@@ -259,6 +270,7 @@ void InspectorPanel::showMessage(const QString& kicker, const QString& title, co
     }
     layout_->addWidget(box);
     layout_->addStretch(1);
+    publishContent();
 }
 
 namespace {
@@ -322,7 +334,7 @@ void InspectorPanel::rebuild() {
     if (!forceRebuild_ && digest == shown_) return;
     forceRebuild_ = false;
     shown_ = digest;
-    clearContent();
+    beginContent();
 
     // Selection: kicker, title, fields, note.
     QVBoxLayout* head = nullptr;
@@ -460,6 +472,7 @@ void InspectorPanel::rebuild() {
         layout_->addWidget(section);
     }
     layout_->addStretch(1);
+    publishContent();
 }
 
 }  // namespace rl::shell

@@ -25,6 +25,7 @@ namespace rl::editors {
 // ---------------------------------------------------------------- sheet
 
 LibrarySheet::LibrarySheet(QWidget* parent) : QWidget(parent) {
+    setObjectName(QStringLiteral("librarySheet"));
     setMouseTracking(true);
     setCursor(Qt::OpenHandCursor);
     QSizePolicy policy(QSizePolicy::Expanding, QSizePolicy::Preferred);

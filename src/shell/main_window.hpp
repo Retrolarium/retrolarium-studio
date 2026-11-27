@@ -189,8 +189,10 @@ private:
     QString emulatorKind() const;
     void releaseEditor();
 
-    // Drives the window through its own actions in a scripted test run.
+    // Scripted tests may read the same state the window presents. The GUI
+    // regression driver uses this only for assertions and waits, never edits.
     friend class Autotest;
+    friend class GuiRegression;
 
     std::unique_ptr<sdk::Session> session_;
     std::unique_ptr<sdk::EditorModel> model_;

@@ -3,6 +3,7 @@
 #include <QFrame>
 #include <QPointer>
 
+class QScrollArea;
 class QVBoxLayout;
 
 namespace rl::sdk {
@@ -29,11 +30,13 @@ signals:
 private:
     void scheduleRebuild();
     void rebuild();
-    void clearContent();
+    void beginContent();
+    void publishContent();
 
     QPointer<sdk::EditorModel> model_;
-    QWidget* content_;
-    QVBoxLayout* layout_;
+    QScrollArea* scroll_;
+    QWidget* content_ = nullptr;
+    QVBoxLayout* layout_ = nullptr;
     bool rebuildPending_ = false;
     bool engineExpanded_ = false;
     // What the shown widgets were built from: a model that signals on every

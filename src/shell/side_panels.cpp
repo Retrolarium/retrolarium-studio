@@ -37,6 +37,7 @@ void KindRail::setKinds(const QVector<sdk::Kind>& kinds) {
     ids_.clear();
     for (const sdk::Kind& kind : kinds) {
         auto* button = new ui::RailButton(kind.icon, rlValue(kind.label), this);
+        button->setObjectName(QStringLiteral("kind.%1").arg(kind.id));
         button->setAutoExclusive(false);
         group_->addButton(button, buttons_.size());
         layout_->insertWidget(buttons_.size(), button);
@@ -73,6 +74,7 @@ DocumentPanel::DocumentPanel(QWidget* parent) : QFrame(parent) {
     auto* filterLayout = new QVBoxLayout(filterBox);
     filterLayout->setContentsMargins(8, 8, 8, 8);
     filter_ = new QLineEdit(filterBox);
+    filter_->setObjectName(QStringLiteral("documentFilter"));
     filter_->setPlaceholderText(tr("Filter"));
     filter_->setFont(theme::font(theme::TextRole::Body, 12.0));
     filter_->setFixedHeight(26);
@@ -82,6 +84,7 @@ DocumentPanel::DocumentPanel(QWidget* parent) : QFrame(parent) {
     layout->addWidget(filterBox);
 
     list_ = new ui::DocumentList(this);
+    list_->setObjectName(QStringLiteral("documentList"));
     layout->addWidget(list_, 1);
     connect(filter_, &QLineEdit::textChanged, list_, &ui::DocumentList::setFilter);
     connect(list_, &ui::DocumentList::documentActivated, this, [this](const QString& id) {
