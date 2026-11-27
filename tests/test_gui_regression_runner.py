@@ -130,7 +130,7 @@ class GuiRegressionRunnerTests(unittest.TestCase):
         wanted = self.roms / "nested" / "backup-without-a-game-name.bin"
         wanted.parent.mkdir()
         wanted.write_bytes(self.rom_bytes)
-        self.assertEqual(wanted, runner.find_rom(self.roms, self.input_sha256))
+        self.assertEqual(wanted.resolve(), runner.find_rom(self.roms, self.input_sha256))
 
     def test_missing_and_duplicate_exact_hashes_are_unambiguous_input_errors(self):
         with self.assertRaisesRegex(runner.InputError, self.input_sha256):
