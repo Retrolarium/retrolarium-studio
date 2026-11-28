@@ -226,7 +226,7 @@ class GuiRegressionRunnerTests(unittest.TestCase):
         suite = runner.new_run_directory(self.out, identifier)
         case = runner.new_run_directory(suite / "c01-r01", identifier)
         source = case / "home/Documents/Retrolarium/castle_excellent_src"
-        relative = source.relative_to(self.out)
+        relative = source.relative_to(self.out.resolve())
         windows_source = PureWindowsPath("C:/Users/Owner/Documents/Codex/g2", *relative.parts)
         self.assertLessEqual(len(suite.name), 46)
         self.assertLessEqual(len(case.name), 46)
@@ -236,7 +236,7 @@ class GuiRegressionRunnerTests(unittest.TestCase):
             "build/content/src/game/actors/window_girl_and_throwable.s"
         )
         windows_include = PureWindowsPath(
-            "C:/Users/Owner/Documents/Codex/g2", *native_include.relative_to(self.out).parts
+            "C:/Users/Owner/Documents/Codex/g2", *native_include.relative_to(self.out.resolve()).parts
         )
         self.assertLess(len(str(windows_include)), 240)
 

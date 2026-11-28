@@ -123,7 +123,7 @@ class GuiRegressionSuiteTests(unittest.TestCase):
             directories = []
             for call in process.call_args_list:
                 command = call.args[0]
-                self.assertEqual(str(root / "kit"), command[command.index("--kit") + 1])
+                self.assertEqual(str((root / "kit").resolve()), command[command.index("--kit") + 1])
                 directories.append(command[command.index("--out") + 1])
             self.assertNotEqual(*directories)
 
