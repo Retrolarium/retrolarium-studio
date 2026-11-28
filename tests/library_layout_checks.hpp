@@ -1,5 +1,9 @@
 #pragma once
 
+#include "editors/library_sheet.hpp"
+
+#include <algorithm>
+
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QSet>
@@ -48,6 +52,42 @@ inline LibraryLayoutSnapshot inspectLibraryLayout(QWidget* root, const QStringLi
             if (bounds.at(i).second.intersects(bounds.at(j).second)) {
                 result.error =
                     QStringLiteral("Library cards overlap: %1 and %2").arg(bounds.at(i).first, bounds.at(j).first);
+                return result;
+            }
+        }
+    }
+    return result;
+}
+
+// Check the painted grid as well as the inspector's individual card widgets.
+inline LibraryLayoutSnapshot inspectLibrarySheet(const editors::LibrarySheet* sheet, const sdk::Library& expected) {
+    LibraryLayoutSnapshot result;
+    QVector<QRect> bounds;
+    QSet<QString> ids;
+    if (sheet->itemCount() != expected.items.size()) {
+        result.error = QStringLiteral("Library grid item count is stale");
+        return result;
+    }
+    for (int i = 0; i < sheet->itemCount(); ++i) {
+        const QString id = sheet->itemId(i);
+        const QRect rect = sheet->itemRect(i);
+        if (id != expected.items.at(i).id || ids.contains(id))
+            result.error = QStringLiteral("Library grid item IDs are stale or duplicated");
+        ids.insert(id);
+        if (rect.isEmpty() || !sheet->rect().contains(rect))
+            result.error = QStringLiteral("Library grid cell is compressed or outside its content widget");
+        result.cards.append(QJsonObject{{QStringLiteral("id"), id},
+                                        {QStringLiteral("x"), rect.x()},
+                                        {QStringLiteral("y"), rect.y()},
+                                        {QStringLiteral("width"), rect.width()},
+                                        {QStringLiteral("height"), rect.height()}});
+        bounds.append(rect);
+    }
+    std::sort(bounds.begin(), bounds.end(), [](const QRect& a, const QRect& b) { return a.top() < b.top(); });
+    for (int i = 0; i < bounds.size(); ++i) {
+        for (int j = i + 1; j < bounds.size() && bounds[j].top() <= bounds[i].bottom(); ++j) {
+            if (bounds[i].intersects(bounds[j])) {
+                result.error = QStringLiteral("Painted library grid cells overlap");
                 return result;
             }
         }

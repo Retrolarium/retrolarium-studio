@@ -14,6 +14,8 @@
 #include <QMouseEvent>
 #include <QPainter>
 #include <QPointer>
+#include <QResizeEvent>
+#include <QScrollArea>
 #include <QTimer>
 #include <QToolTip>
 #include <QVBoxLayout>
@@ -42,6 +44,7 @@ void LibrarySheet::setItems(const QVector<sdk::LibraryItem>& items, const QStrin
     columns_ = columns;
     cell_ = cell;
     if (resized) {
+        setMinimumHeight(heightForWidth(width()));
         updateGeometry();
     }
     update();
@@ -60,6 +63,20 @@ QSize LibrarySheet::sizeHint() const {
     // Cells at least twice their pixel size, square ones at least 16.
     const int cell = std::max(16, 2 * cell_.width());
     return {columns_ * cell, heightForWidth(columns_ * cell)};
+}
+
+void LibrarySheet::resizeEvent(QResizeEvent* event) {
+    QWidget::resizeEvent(event);
+    // A pattern grid owns all its rows; the surrounding viewport scrolls.
+    // In particular, 8x16 sprite sheets must not be shortened to the pane.
+    const int required = heightForWidth(event->size().width());
+    if (minimumHeight() != required) setMinimumHeight(required);
+}
+
+QRect LibrarySheet::itemRect(int index) const {
+    if (index < 0 || index >= items_.size()) return {};
+    const int width = cellWidth(), height = cellHeight(width);
+    return QRect((index % columns_) * width, (index / columns_) * height, width, height);
 }
 
 int LibrarySheet::indexAt(QPoint pos) const {
@@ -143,7 +160,7 @@ void LibrarySheet::paintEvent(QPaintEvent*) {
     const int height = heightForWidth(width());
     painter.fillRect(QRect(0, 0, cw * columns_, height), t.canvas);
     for (int i = 0; i < items_.size(); ++i) {
-        const QRect r((i % columns_) * cw, (i / columns_) * ch, cw, ch);
+        const QRect r = itemRect(i);
         const QImage& icon = items_.at(i).icon;
         if (!icon.isNull()) {
             // Pixel art at the cell size, crisp.
@@ -159,7 +176,7 @@ void LibrarySheet::paintEvent(QPaintEvent*) {
         painter.fillRect(QRect(0, r * ch, cw * columns_, 1), r % 4 == 0 ? t.lineStrong : t.line);
     }
     for (int i = 0; i < items_.size(); ++i) {
-        const QRect r((i % columns_) * cw, (i / columns_) * ch, cw + 1, ch + 1);
+        const QRect r = itemRect(i).adjusted(0, 0, 1, 1);
         if (items_.at(i).id == current_) {
             theme::paint::hairlineRect(painter, r, t.accent, 2.0);
         } else if (i == hovered_) {
@@ -172,6 +189,7 @@ void LibrarySheet::paintEvent(QPaintEvent*) {
 
 SheetPane::SheetPane(sdk::EditorModel* model, QWidget* parent)
     : QWidget(parent), model_(model), sheet_(new LibrarySheet(this)), refresh_(new QTimer(this)) {
+    sheet_->setProperty("librarySource", QStringLiteral("sheet"));
     setProperty("surface", QStringLiteral("panel"));
     setAttribute(Qt::WA_StyledBackground, true);
     auto* layout = new QVBoxLayout(this);
@@ -183,8 +201,12 @@ SheetPane::SheetPane(sdk::EditorModel* model, QWidget* parent)
     hint_ = new ui::Label(QString(), ui::Label::Role::Meta, this);
     header->addWidget(hint_);
     layout->addLayout(header);
-    layout->addWidget(sheet_);
-    layout->addStretch(1);
+    auto* scroll = new QScrollArea(this);
+    scroll->setObjectName(QStringLiteral("librarySheetScroll"));
+    scroll->setFrameShape(QFrame::NoFrame);
+    scroll->setWidgetResizable(true);
+    scroll->setWidget(sheet_);
+    layout->addWidget(scroll, 1);
 
     QPointer<sdk::EditorModel> guarded = model_;
     sheet_->onPick = [this, guarded](const QString& id) {

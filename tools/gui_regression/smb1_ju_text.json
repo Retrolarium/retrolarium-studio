@@ -1,0 +1,77 @@
+{
+  "schema": "retrolarium.gui-regression",
+  "schema_version": 1,
+  "id": "smb1_ju_text",
+  "game": "smb1",
+  "revision": "ju",
+  "revision_name": "Super Mario Bros. (Japan, USA)",
+  "input_sha256": "f61548fdf1670cffefcc4f0b7bdcdd9eaba0c226e3b74f8666071496988248de",
+  "expected_sha256": "1e2488ba1f6131a9e3ea22a02bc0841fef84b2c6a747c63eef7b17a1d6c304b5",
+  "source": {
+    "repository": "smb1_src",
+    "descriptor": "super_mario_bros.rlj",
+    "commit": "eb8faad337056e074e78ec5f3b496be24e7de761",
+    "content_sha256": "2dc4ea2ad9c9bc1524ef7f2c913ad655dd6e5b405c67692d4e41d8fb61a9d98e",
+    "ref": "tags/source-reconstruction-3.1"
+  },
+  "project": {
+    "name": "Super Mario Bros.",
+    "revision": "JU",
+    "platform": "NES",
+    "codec": "smb.levels.v1",
+    "kind": "text",
+    "document": "all",
+    "editor": "TableEditor"
+  },
+  "edit": {
+    "operation": "table-cell",
+    "row": 0,
+    "column": 2,
+    "old": "LUIGI",
+    "new": "MUIGI"
+  },
+  "artifact": "build/smb1-ju-edited.nes",
+  "flow": [
+    "open_rom_and_prepare_pinned_source_through_gui",
+    "verify_available_tabs_and_open_pinned_document",
+    "edit_exact_pinned_value_through_widgets",
+    "verify_exact_state_and_undo_redo",
+    "switch_documents_and_verify_edit",
+    "save_close_reopen_through_gui_and_verify_edit",
+    "build_fresh_rom_through_toolbar",
+    "compare_sha256_with_manually_reviewed_baseline"
+  ],
+  "timeouts": {
+    "open_s": 900,
+    "editor_s": 120,
+    "save_s": 60,
+    "reopen_s": 120,
+    "build_s": 900
+  },
+  "expected_kinds": [
+    "levels",
+    "world",
+    "graphics",
+    "metatiles",
+    "palettes",
+    "animations",
+    "screens",
+    "text",
+    "sound",
+    "demo",
+    "playtest"
+  ],
+  "switch_documents": ["all"],
+  "baseline": {
+    "method": "Reviewed GUI screenshots and exact semantic persistence; three independent builds equal an independently byte-patched input ROM",
+    "source_locator": "game_profile ui-text second-player-name fixed slot, L to M",
+    "rom_size": 40976,
+    "rom_differences": [
+      {
+        "offset": 2045,
+        "before": 21,
+        "after": 22
+      }
+    ]
+  }
+}

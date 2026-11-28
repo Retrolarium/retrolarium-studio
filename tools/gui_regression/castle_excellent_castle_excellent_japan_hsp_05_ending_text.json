@@ -1,0 +1,85 @@
+{
+  "schema": "retrolarium.gui-regression",
+  "schema_version": 1,
+  "id": "castle_excellent_castle_excellent_japan_hsp_05_ending_text",
+  "game": "castle-excellent",
+  "revision": "castle-excellent-japan-hsp-05",
+  "revision_name": "Castle Excellent (Japan), HSP-05",
+  "input_sha256": "fd6214cdc441070b9edab74b9c31ad16007bd0873e32c0c883de4544ca69f261",
+  "expected_sha256": "9663ebe6e24ed9a4c46f4a122d4b78dac5bf7bcb7ff72bf7f69e98781ad15d98",
+  "source": {
+    "repository": "castle_excellent_src",
+    "descriptor": "castle_excellent.rlj",
+    "ref": "tags/source-reconstruction-3.1",
+    "commit": "eb2c80ef5c1db6affb78b5d5b90f7ca58ddc354a",
+    "content_sha256": "253254504ab95ee8100e042ac106d5dc4634d526954ff292ba269e82780c5997"
+  },
+  "project": {
+    "codec": "castle-excellent.prefix-rooms@1",
+    "name": "Castle Excellent",
+    "platform": "NES",
+    "revision": "J",
+    "kind": "text",
+    "document": "ending",
+    "editor": "TableEditor"
+  },
+  "edit": {
+    "operation": "table-cell",
+    "row": 1,
+    "column": 1,
+    "old": "YOU OVERCAME ALL TROUBLES,",
+    "new": "YOU OVERCAME ALL TROUBLES.",
+    "state_changes": [
+      {
+        "path": ["cells", "1", "2"],
+        "old": "YOU OVERCAME ALL TROUBLES,",
+        "new": "YOU OVERCAME ALL TROUBLES."
+      }
+    ]
+  },
+  "artifact": "build/castle-excellent-castle-excellent-japan-hsp-05-edited.nes",
+  "flow": [
+    "open_rom_and_prepare_pinned_source_through_gui",
+    "verify_available_tabs_and_open_pinned_document",
+    "edit_exact_pinned_value_through_widgets",
+    "verify_exact_state_and_undo_redo",
+    "switch_documents_and_verify_edit",
+    "save_close_reopen_through_gui_and_verify_edit",
+    "build_fresh_rom_through_toolbar",
+    "compare_sha256_with_manually_reviewed_baseline"
+  ],
+  "timeouts": {
+    "open_s": 900,
+    "editor_s": 120,
+    "save_s": 60,
+    "reopen_s": 120,
+    "build_s": 900
+  },
+  "expected_kinds": [
+    "rooms",
+    "graphics",
+    "metatiles",
+    "palettes",
+    "animations",
+    "screens",
+    "text",
+    "sound",
+    "demo",
+    "playtest"
+  ],
+  "switch_documents": ["sub-command-text", "ending"],
+  "artifact_size": 65552,
+  "baseline": {
+    "method": "Explicit manual resource and before/after GUI screenshot review; three independent builds match a separately predicted original-ROM patch",
+    "source_locator": "Fixed ending line comma glyph $08 to period $6F, all letters/spacing unchanged",
+    "rom_size": 65552,
+    "rom_changed_byte_count": 1,
+    "rom_differences": [
+      {
+        "offset": 62636,
+        "before": 8,
+        "after": 111
+      }
+    ]
+  }
+}

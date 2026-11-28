@@ -6,7 +6,7 @@ import importlib.util
 import io
 import json
 import os
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 import tempfile
 import unittest
 from unittest import mock
@@ -80,6 +80,7 @@ class GuiRegressionRunnerTests(unittest.TestCase):
             (repository / self.scenario["source"]["descriptor"]).write_text("synthetic descriptor", encoding="utf-8")
             result = {
                 "status": status,
+                "library_layout_contract": 2,
                 "last_step": "synthetic native result",
                 "stop_reason": "synthetic unit-test result",
                 "actual_sha256": actual if status in ("PASS", "BASELINE_PENDING") else None,
@@ -219,6 +220,25 @@ class GuiRegressionRunnerTests(unittest.TestCase):
         self.assertNotEqual(first, second)
         self.assertTrue(first.is_dir())
         self.assertTrue(second.is_dir())
+
+    def test_long_revision_labels_leave_room_for_windows_build_working_directories(self):
+        identifier = "castle_excellent_castle_excellent_japan_hsp_05_room_cell"
+        suite = runner.new_run_directory(self.out, identifier)
+        case = runner.new_run_directory(suite / "c01-r01", identifier)
+        source = case / "home/Documents/Retrolarium/castle_excellent_src"
+        relative = source.relative_to(self.out)
+        windows_source = PureWindowsPath("C:/Users/Owner/Documents/Codex/g2", *relative.parts)
+        self.assertLessEqual(len(suite.name), 46)
+        self.assertLessEqual(len(case.name), 46)
+        self.assertLess(len(str(windows_source)), 240)
+        native_include = case / (
+            "home/Documents/Retrolarium/flicky_src/.retrolarium/ue/flicky-source/"
+            "build/content/src/game/actors/window_girl_and_throwable.s"
+        )
+        windows_include = PureWindowsPath(
+            "C:/Users/Owner/Documents/Codex/g2", *native_include.relative_to(self.out).parts
+        )
+        self.assertLess(len(str(windows_include)), 240)
 
     def test_missing_input_writes_reports_and_returns_two_without_a_rom(self):
         self.write_scenario()

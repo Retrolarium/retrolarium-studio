@@ -1,0 +1,18 @@
+{
+  "schema": "retrolarium.gui-regression-suite",
+  "schema_version": 1,
+  "id": "flicky_ue",
+  "game": "flicky",
+  "revision": "ue",
+  "required_kinds": ["levels", "tiles", "palettes", "sprites", "screens", "text", "sound"],
+  "excluded_kinds": ["demo", "playtest"],
+  "scenarios": [
+    "flicky_ue_round_collision.json",
+    "flicky_ue_tile_pixel.json",
+    "flicky_ue_round_palette.json",
+    "flicky_ue_spin_delay.json",
+    "flicky_ue_title_sprite_position.json",
+    "flicky_ue_bonus_text.json",
+    "flicky_ue_opening_note.json"
+  ]
+}

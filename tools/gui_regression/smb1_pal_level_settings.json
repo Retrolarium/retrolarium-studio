@@ -1,0 +1,77 @@
+{
+  "schema": "retrolarium.gui-regression",
+  "schema_version": 1,
+  "id": "smb1_pal_level_settings",
+  "game": "smb1",
+  "revision": "pal",
+  "revision_name": "Super Mario Bros. (Europe, Rev A)",
+  "input_sha256": "ec299b990e8bfee8ba46e3f61d63b2e1ae5b8a2e431de84e2e4bbd692dc53586",
+  "expected_sha256": "8564bf3aff93276ec36a833de30140b2bdd72d566cf416074b66a21a83b95b5d",
+  "baseline": {
+    "method": "Reviewed GUI snapshots and serialized resources; three independent builds match a separately byte-patched input ROM",
+    "source_locator": "ground_6 header timer selector bits 01 to 10; other six bits unchanged",
+    "rom_size": 40976,
+    "rom_differences": [
+      {
+        "offset": 9886,
+        "before": 80,
+        "after": 144
+      }
+    ]
+  },
+  "source": {
+    "repository": "smb1_src",
+    "descriptor": "super_mario_bros.rlj",
+    "commit": "eb8faad337056e074e78ec5f3b496be24e7de761",
+    "content_sha256": "2dc4ea2ad9c9bc1524ef7f2c913ad655dd6e5b405c67692d4e41d8fb61a9d98e",
+    "ref": "tags/source-reconstruction-3.1"
+  },
+  "project": {
+    "name": "Super Mario Bros.",
+    "revision": "E",
+    "platform": "NES",
+    "codec": "smb.levels.v1",
+    "kind": "levels",
+    "document": "ground_6",
+    "editor": "TileMapEditor"
+  },
+  "edit": {
+    "operation": "inspector-field",
+    "field": "timer",
+    "old": "400",
+    "new": "300"
+  },
+  "artifact": "build/smb1-pal-edited.nes",
+  "flow": [
+    "open_rom_and_prepare_pinned_source_through_gui",
+    "verify_available_tabs_and_open_pinned_document",
+    "edit_exact_pinned_value_through_widgets",
+    "verify_exact_state_and_undo_redo",
+    "switch_documents_and_verify_edit",
+    "save_close_reopen_through_gui_and_verify_edit",
+    "build_fresh_rom_through_toolbar",
+    "compare_sha256_with_manually_reviewed_baseline"
+  ],
+  "timeouts": {
+    "open_s": 900,
+    "editor_s": 120,
+    "save_s": 60,
+    "reopen_s": 120,
+    "build_s": 900
+  },
+  "expected_kinds": [
+    "levels",
+    "world",
+    "graphics",
+    "metatiles",
+    "palettes",
+    "animations",
+    "screens",
+    "text",
+    "sound",
+    "demo",
+    "playtest"
+  ],
+  "switch_documents": ["ground_1", "ground_6"],
+  "artifact_size": 40976
+}

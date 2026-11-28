@@ -343,6 +343,7 @@ void InspectorPanel::rebuild() {
         head->addWidget(new ui::Label(inspection.kicker, ui::Label::Role::Caps, headBox));
     }
     auto* title = new ui::Label(inspection.title, ui::Label::Role::Title, headBox);
+    title->setObjectName(QStringLiteral("inspector.title"));
     title->setWordWrap(true);
     head->addWidget(title);
 
@@ -365,6 +366,7 @@ void InspectorPanel::rebuild() {
                 QComboBox* combo =
                     grid->addChoice(field.label, field.choices,
                                     std::max(0, field.choices.indexOf(field.value.toString())), field.choiceIcons);
+                combo->setObjectName(QStringLiteral("inspector.field.%1").arg(key));
                 connect(combo, QOverload<int>::of(&QComboBox::activated), this,
                         [combo, apply](int) { apply(combo->currentData()); });
                 continue;
@@ -373,6 +375,7 @@ void InspectorPanel::rebuild() {
                 field.label,
                 field.type == sdk::Field::Type::Choice ? rlValue(field.value.toString()) : field.value.toString(),
                 field.hint);
+            edit->setObjectName(QStringLiteral("inspector.field.%1").arg(key));
             edit->setMonospace(field.monospace);
             const bool editable =
                 !readOnly && (field.type == sdk::Field::Type::Text || field.type == sdk::Field::Type::Integer);
@@ -425,6 +428,7 @@ void InspectorPanel::rebuild() {
         lib->addLayout(header);
         if (inspection.library.grid) {
             auto* sheet = new editors::LibrarySheet(libBox);
+            sheet->setProperty("librarySource", QStringLiteral("inspector"));
             sheet->setItems(inspection.library.items, model_->currentLibraryItem(), inspection.library.columns,
                             inspection.library.cell);
             QPointer<sdk::EditorModel> model = model_;

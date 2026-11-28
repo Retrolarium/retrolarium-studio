@@ -25,6 +25,7 @@ SegmentedControl::SegmentedControl(QWidget* parent)
 
 QToolButton* SegmentedControl::makeButton(const QString& id) {
     auto* button = new QToolButton(this);
+    button->setObjectName(QStringLiteral("segment.%1").arg(id));
     button->setCheckable(true);
     button->setAutoRaise(true);
     button->setProperty("variant", QStringLiteral("segment"));

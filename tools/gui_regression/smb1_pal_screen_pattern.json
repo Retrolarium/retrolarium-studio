@@ -1,0 +1,85 @@
+{
+  "schema": "retrolarium.gui-regression",
+  "schema_version": 1,
+  "id": "smb1_pal_screen_pattern",
+  "game": "smb1",
+  "revision": "pal",
+  "revision_name": "Super Mario Bros. (Europe, Rev A)",
+  "input_sha256": "ec299b990e8bfee8ba46e3f61d63b2e1ae5b8a2e431de84e2e4bbd692dc53586",
+  "expected_sha256": "4c5da5ff2fd1c1afa6eac06c96bb8937929fd1319bf576e37b2caddebbaab0f9",
+  "baseline": {
+    "method": "Reviewed GUI snapshots and both derived status resource views; three independent builds match a separately byte-patched input ROM",
+    "source_locator": "Status packet first PPU command at $2043; first tile follows its three-byte header, M to N",
+    "rom_size": 40976,
+    "rom_differences": [
+      {
+        "offset": 1893,
+        "before": 22,
+        "after": 23
+      }
+    ]
+  },
+  "source": {
+    "repository": "smb1_src",
+    "descriptor": "super_mario_bros.rlj",
+    "commit": "eb8faad337056e074e78ec5f3b496be24e7de761",
+    "content_sha256": "2dc4ea2ad9c9bc1524ef7f2c913ad655dd6e5b405c67692d4e41d8fb61a9d98e",
+    "ref": "tags/source-reconstruction-3.1"
+  },
+  "project": {
+    "name": "Super Mario Bros.",
+    "revision": "E",
+    "platform": "NES",
+    "codec": "smb.levels.v1",
+    "kind": "screens",
+    "document": "game-screen-packets/status",
+    "editor": "TileMapEditor"
+  },
+  "edit": {
+    "operation": "map-brush-cell",
+    "x": 3,
+    "y": 2,
+    "old": 22,
+    "new": 23,
+    "object_labels": [
+      {
+        "id": "cell:67",
+        "old": "3, 2 · $16",
+        "new": "3, 2 · $17"
+      }
+    ]
+  },
+  "artifact": "build/smb1-pal-edited.nes",
+  "flow": [
+    "open_rom_and_prepare_pinned_source_through_gui",
+    "verify_available_tabs_and_open_pinned_document",
+    "edit_exact_pinned_value_through_widgets",
+    "verify_exact_state_and_undo_redo",
+    "switch_documents_and_verify_edit",
+    "save_close_reopen_through_gui_and_verify_edit",
+    "build_fresh_rom_through_toolbar",
+    "compare_sha256_with_manually_reviewed_baseline"
+  ],
+  "timeouts": {
+    "open_s": 900,
+    "editor_s": 120,
+    "save_s": 60,
+    "reopen_s": 120,
+    "build_s": 900
+  },
+  "expected_kinds": [
+    "levels",
+    "world",
+    "graphics",
+    "metatiles",
+    "palettes",
+    "animations",
+    "screens",
+    "text",
+    "sound",
+    "demo",
+    "playtest"
+  ],
+  "switch_documents": ["warp-zone-screen/warp-zone", "game-screen-packets/status"],
+  "artifact_size": 40976
+}

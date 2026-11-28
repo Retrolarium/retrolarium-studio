@@ -1,0 +1,67 @@
+{
+  "schema": "retrolarium.gui-regression",
+  "schema_version": 1,
+  "id": "flicky_ue_tile_pixel",
+  "game": "flicky",
+  "revision": "ue",
+  "revision_name": "Flicky (USA, Europe)",
+  "input_sha256": "4df1a91e08376ae773a6eb8e5abe310f94ca39d8f81583b91a9477fedcb68c11",
+  "expected_sha256": "7719ca77aeb54c9b6c51cbdba78707173237cf79787cadaf9fb0cd6a27a537b7",
+  "source": {
+    "repository": "flicky_src",
+    "descriptor": "flicky.rlj",
+    "ref": "dc47be622a7e4e3984395bf93a1f28742d9ec31d",
+    "commit": "dc47be622a7e4e3984395bf93a1f28742d9ec31d",
+    "content_sha256": "af43c78947e645fe5e5e3fda853762a53c88bfa031a9a931f43ca4f4f582c79b"
+  },
+  "project": {
+    "codec": "flicky-content",
+    "name": "Flicky",
+    "platform": "Mega Drive",
+    "revision": "UE",
+    "kind": "tiles",
+    "document": "sega_tiles",
+    "editor": "TileEditor"
+  },
+  "edit": {
+    "operation": "tile-pixel",
+    "tile": 0,
+    "x": 0,
+    "y": 0,
+    "old": 0,
+    "new": 1
+  },
+  "artifact": "build/flicky-edited.bin",
+  "flow": [
+    "open_rom_and_prepare_pinned_source_through_gui",
+    "verify_available_tabs_and_open_pinned_document",
+    "edit_exact_pinned_value_through_widgets",
+    "verify_exact_state_and_undo_redo",
+    "switch_documents_and_verify_edit",
+    "save_close_reopen_through_gui_and_verify_edit",
+    "build_fresh_rom_through_toolbar",
+    "compare_sha256_with_manually_reviewed_baseline"
+  ],
+  "timeouts": {
+    "open_s": 900,
+    "editor_s": 120,
+    "save_s": 60,
+    "reopen_s": 120,
+    "build_s": 900
+  },
+  "expected_kinds": ["levels", "tiles", "palettes", "sprites", "screens", "text", "sound", "demo", "playtest"],
+  "switch_documents": ["level_tiles", "sega_tiles"],
+  "artifact_size": 131072,
+  "baseline": {
+    "method": "Explicit manual resource and before/after GUI screenshot review; three independent builds match a separately predicted original-ROM patch",
+    "source_locator": "Original 828-byte SEGA Nemesis tile slot independently decoded by bit-string code-table/run reader including XOR rows; only tile 0 pixel (0,0) 0 to 1; shared encoder output independently decoded again, padded with $FF within original allocation; all other tiles and ROM regions preserved; independently recomputed whole-cartridge big-endian header checksum",
+    "rom_size": 131072,
+    "rom_changed_byte_count": 704,
+    "rom_affected_range": {
+      "offset": 398,
+      "size": 1736,
+      "before_sha256": "cb86acb9949a5701bce7ec83d660cdc3140daea4294deb8dfe594bdfd773a484",
+      "after_sha256": "7003e23c6dc467e1821e362f165397b8640f48012a3c3fb392fb66e5301850b8"
+    }
+  }
+}

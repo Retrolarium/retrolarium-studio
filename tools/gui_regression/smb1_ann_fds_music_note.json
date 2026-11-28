@@ -1,0 +1,78 @@
+{
+  "schema": "retrolarium.gui-regression",
+  "schema_version": 1,
+  "id": "smb1_ann_fds_music_note",
+  "game": "smb1",
+  "revision": "ann_fds",
+  "revision_name": "All Night Nippon Super Mario Bros.",
+  "input_sha256": "a762d0a90d16c84b5f2b014816b37675cf5115320be7e815effbb64d91b2014d",
+  "expected_sha256": "793301d61272a20ae0e3d4fd73ba71b7bed451972378047dfe3fc22a6c101074",
+  "source": {
+    "repository": "smb1_src",
+    "descriptor": "super_mario_bros.rlj",
+    "commit": "eb8faad337056e074e78ec5f3b496be24e7de761",
+    "content_sha256": "2dc4ea2ad9c9bc1524ef7f2c913ad655dd6e5b405c67692d4e41d8fb61a9d98e",
+    "ref": "tags/source-reconstruction-3.1"
+  },
+  "project": {
+    "name": "Super Mario Bros.",
+    "revision": "ANN",
+    "platform": "FDS",
+    "codec": "smb.levels.v1",
+    "kind": "sound",
+    "document": "ground_part_1",
+    "editor": "SequencerEditor"
+  },
+  "edit": {
+    "operation": "sequence-note",
+    "channel": "square2",
+    "note": "square2:1",
+    "old": 72,
+    "new": 73
+  },
+  "artifact": "build/smb1-ann_fds-edited.fds",
+  "flow": [
+    "open_rom_and_prepare_pinned_source_through_gui",
+    "verify_available_tabs_and_open_pinned_document",
+    "edit_exact_pinned_value_through_widgets",
+    "verify_exact_state_and_undo_redo",
+    "switch_documents_and_verify_edit",
+    "save_close_reopen_through_gui_and_verify_edit",
+    "build_fresh_rom_through_toolbar",
+    "compare_sha256_with_manually_reviewed_baseline"
+  ],
+  "timeouts": {
+    "open_s": 900,
+    "editor_s": 120,
+    "save_s": 60,
+    "reopen_s": 120,
+    "build_s": 900
+  },
+  "expected_kinds": [
+    "levels",
+    "world",
+    "graphics",
+    "metatiles",
+    "palettes",
+    "animations",
+    "screens",
+    "text",
+    "sound",
+    "demo",
+    "playtest"
+  ],
+  "switch_documents": ["water", "ground_part_1"],
+  "artifact_size": 65500,
+  "baseline": {
+    "method": "Manual source/resource and before/after GUI screenshot review; three independent builds match a separate one-byte ROM oracle",
+    "source_locator": "ground_part_1 first pitched square2 stream byte after length byte; hardware period 22 to 23",
+    "rom_size": 65500,
+    "rom_differences": [
+      {
+        "offset": 40952,
+        "before": 44,
+        "after": 46
+      }
+    ]
+  }
+}

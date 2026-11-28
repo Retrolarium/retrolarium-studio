@@ -1,0 +1,85 @@
+{
+  "schema": "retrolarium.gui-regression",
+  "schema_version": 1,
+  "id": "doraemon_original_opening_note",
+  "game": "doraemon",
+  "revision": "original",
+  "revision_name": "Doraemon (Japan, original revision)",
+  "input_sha256": "6ed579c9c98a1f2db52fd3d2488a491953073e8ace1e3c1dc5884669cecca274",
+  "expected_sha256": "4bf4ae9424dc5136d389a4faa6b95a6e305c6fda021adec9db74a4dce8e52c15",
+  "source": {
+    "repository": "doraemon_src",
+    "descriptor": "doraemon.rlj",
+    "ref": "tags/source-reconstruction-3.1",
+    "commit": "368ca5f0f48d4e83c1dd5e6d91be3ceeeb6cd722",
+    "content_sha256": "e5d3dd4f8f626feb57e72efa27ac5d4c3b44dbe67d3508d65d719191ae0e7896"
+  },
+  "project": {
+    "codec": "doraemon.hierarchy.v1",
+    "name": "Doraemon",
+    "platform": "Famicom",
+    "revision": "J",
+    "kind": "sound",
+    "document": "track:0:0",
+    "editor": "SequencerEditor"
+  },
+  "edit": {
+    "operation": "sequence-note",
+    "channel": "0",
+    "note": "0:0",
+    "old": 60,
+    "new": 61,
+    "state_changes": [
+      {
+        "path": ["channels", "0", "notes", "12", "pitch"],
+        "old": 60,
+        "new": 61
+      }
+    ]
+  },
+  "artifact": "build/doraemon-original-edited.nes",
+  "flow": [
+    "open_rom_and_prepare_pinned_source_through_gui",
+    "verify_available_tabs_and_open_pinned_document",
+    "edit_exact_pinned_value_through_widgets",
+    "verify_exact_state_and_undo_redo",
+    "switch_documents_and_verify_edit",
+    "save_close_reopen_through_gui_and_verify_edit",
+    "build_fresh_rom_through_toolbar",
+    "compare_sha256_with_manually_reviewed_baseline"
+  ],
+  "timeouts": {
+    "open_s": 900,
+    "editor_s": 120,
+    "save_s": 60,
+    "reopen_s": 120,
+    "build_s": 900
+  },
+  "expected_kinds": [
+    "levels",
+    "graphics",
+    "metatiles",
+    "palettes",
+    "animations",
+    "screens",
+    "text",
+    "sound",
+    "demo",
+    "playtest"
+  ],
+  "switch_documents": ["track:0:1", "track:0:0"],
+  "artifact_size": 163856,
+  "baseline": {
+    "method": "Explicit manual resource and before/after GUI screenshot review; three independent builds match a separately predicted original-ROM patch",
+    "source_locator": "Driver 0 track header 0, channel 0 first pitched event reached through declared command grammar; hardware APU table verifies MIDI 60 to 61",
+    "rom_size": 163856,
+    "rom_changed_byte_count": 1,
+    "rom_differences": [
+      {
+        "offset": 31223,
+        "before": 42,
+        "after": 43
+      }
+    ]
+  }
+}

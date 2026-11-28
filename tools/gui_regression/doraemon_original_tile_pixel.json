@@ -1,0 +1,79 @@
+{
+  "schema": "retrolarium.gui-regression",
+  "schema_version": 1,
+  "id": "doraemon_original_tile_pixel",
+  "game": "doraemon",
+  "revision": "original",
+  "revision_name": "Doraemon (Japan, original revision)",
+  "input_sha256": "6ed579c9c98a1f2db52fd3d2488a491953073e8ace1e3c1dc5884669cecca274",
+  "expected_sha256": "73b7f807435a4de9af69f36150889c2967cec831143c0eceede14befbdd1c8cd",
+  "source": {
+    "repository": "doraemon_src",
+    "descriptor": "doraemon.rlj",
+    "ref": "tags/source-reconstruction-3.1",
+    "commit": "368ca5f0f48d4e83c1dd5e6d91be3ceeeb6cd722",
+    "content_sha256": "e5d3dd4f8f626feb57e72efa27ac5d4c3b44dbe67d3508d65d719191ae0e7896"
+  },
+  "project": {
+    "codec": "doraemon.hierarchy.v1",
+    "name": "Doraemon",
+    "platform": "Famicom",
+    "revision": "J",
+    "kind": "graphics",
+    "document": "chr-bank-0/0",
+    "editor": "TileEditor"
+  },
+  "edit": {
+    "operation": "tile-pixel",
+    "tile": 0,
+    "x": 0,
+    "y": 0,
+    "old": 0,
+    "new": 1
+  },
+  "artifact": "build/doraemon-original-edited.nes",
+  "flow": [
+    "open_rom_and_prepare_pinned_source_through_gui",
+    "verify_available_tabs_and_open_pinned_document",
+    "edit_exact_pinned_value_through_widgets",
+    "verify_exact_state_and_undo_redo",
+    "switch_documents_and_verify_edit",
+    "save_close_reopen_through_gui_and_verify_edit",
+    "build_fresh_rom_through_toolbar",
+    "compare_sha256_with_manually_reviewed_baseline"
+  ],
+  "timeouts": {
+    "open_s": 900,
+    "editor_s": 120,
+    "save_s": 60,
+    "reopen_s": 120,
+    "build_s": 900
+  },
+  "expected_kinds": [
+    "levels",
+    "graphics",
+    "metatiles",
+    "palettes",
+    "animations",
+    "screens",
+    "text",
+    "sound",
+    "demo",
+    "playtest"
+  ],
+  "switch_documents": ["chr-bank-0/1", "chr-bank-0/0"],
+  "artifact_size": 163856,
+  "baseline": {
+    "method": "Explicit manual resource and before/after GUI screenshot review; three independent builds match a separately predicted original-ROM patch",
+    "source_locator": "CHR bank 0 tile 0 low-plane bit 7 for pixel (0,0), other bits unchanged",
+    "rom_size": 163856,
+    "rom_changed_byte_count": 1,
+    "rom_differences": [
+      {
+        "offset": 131088,
+        "before": 0,
+        "after": 128
+      }
+    ]
+  }
+}

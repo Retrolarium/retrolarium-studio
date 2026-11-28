@@ -29,6 +29,11 @@ public:
                   QSize cell = QSize(1, 1));
     std::function<void(const QString&)> onPick;
 
+    // The same item geometry used for painting and GUI/accessibility inspection.
+    int itemCount() const { return items_.size(); }
+    QString itemId(int index) const { return items_.value(index).id; }
+    QRect itemRect(int index) const;
+
     bool hasHeightForWidth() const override { return true; }
     int heightForWidth(int width) const override;
     QSize sizeHint() const override;
@@ -40,6 +45,7 @@ protected:
     void mouseMoveEvent(QMouseEvent* event) override;
     void mouseReleaseEvent(QMouseEvent* event) override;
     void paintEvent(QPaintEvent* event) override;
+    void resizeEvent(QResizeEvent* event) override;
 
 private:
     int cellWidth() const;

@@ -126,12 +126,14 @@ public:
     static constexpr int kColumns = 16;
     static constexpr int kShortHeight = 18;  // a row when there are several
 
+    // Geometry shared by painting, hit testing and accessibility/GUI inspection.
+    QRect penRect(int pen) const;
+
 protected:
     void paintEvent(QPaintEvent* event) override;
     void mousePressEvent(QMouseEvent* event) override;
 
 private:
-    QRect penRect(int pen) const;
     int rowHeight() const;
 
     sdk::TileModel* model_;

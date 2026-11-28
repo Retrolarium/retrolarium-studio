@@ -413,6 +413,18 @@ if(RETROLARIUM_BUILD_GUI_REGRESSION)
         ${CMAKE_CURRENT_SOURCE_DIR}/src
         ${CMAKE_CURRENT_SOURCE_DIR}/plugins
     )
+    add_dependencies(retrolarium-gui-regression rlcore retrolarium-flicky-level-writer)
+    # Source GUI runs use the same tool locator as the installed application.
+    add_custom_command(TARGET retrolarium-gui-regression POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:retrolarium-gui-regression>/tools"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "$<TARGET_FILE:rlcore>"
+            "$<TARGET_FILE_DIR:retrolarium-gui-regression>/tools/$<TARGET_FILE_NAME:rlcore>"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "$<TARGET_FILE:retrolarium-flicky-level-writer>"
+            "$<TARGET_FILE_DIR:retrolarium-gui-regression>/tools/$<TARGET_FILE_NAME:retrolarium-flicky-level-writer>"
+        VERBATIM
+    )
     target_link_libraries(retrolarium-gui-regression PRIVATE studio_shell studio_builtin_plugins Qt5::Test)
     studio_enable_warnings(retrolarium-gui-regression)
 endif()

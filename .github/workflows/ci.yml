@@ -31,6 +31,20 @@ jobs:
           repository: Retrolarium/retrolarium-core
           ref: ${{ steps.core_ref.outputs.sha }}
           path: retrolarium-core
+      - name: Read pinned Kit catalog revision
+        id: kit_ref
+        run: |
+          import os, pathlib, re
+          sha = pathlib.Path(".github/kit-ref").read_text(encoding="utf-8").strip()
+          if re.fullmatch(r"[0-9a-f]{40}", sha) is None:
+              raise SystemExit(".github/kit-ref must contain one full lowercase commit SHA")
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as stream:
+              stream.write(f"sha={sha}\n")
+      - uses: actions/checkout@v4
+        with:
+          repository: Retrolarium/retrolarium-kit
+          ref: ${{ steps.kit_ref.outputs.sha }}
+          path: retrolarium-kit
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python }}

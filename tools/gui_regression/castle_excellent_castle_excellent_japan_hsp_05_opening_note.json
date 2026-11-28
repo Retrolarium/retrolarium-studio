@@ -1,0 +1,90 @@
+{
+  "schema": "retrolarium.gui-regression",
+  "schema_version": 1,
+  "id": "castle_excellent_castle_excellent_japan_hsp_05_opening_note",
+  "game": "castle-excellent",
+  "revision": "castle-excellent-japan-hsp-05",
+  "revision_name": "Castle Excellent (Japan), HSP-05",
+  "input_sha256": "fd6214cdc441070b9edab74b9c31ad16007bd0873e32c0c883de4544ca69f261",
+  "expected_sha256": "61f78b235136af7bba42ffc1b2c1fdd59de78ede505920d2b73ed6006316ebbf",
+  "source": {
+    "repository": "castle_excellent_src",
+    "descriptor": "castle_excellent.rlj",
+    "ref": "tags/source-reconstruction-3.1",
+    "commit": "eb2c80ef5c1db6affb78b5d5b90f7ca58ddc354a",
+    "content_sha256": "253254504ab95ee8100e042ac106d5dc4634d526954ff292ba269e82780c5997"
+  },
+  "project": {
+    "codec": "castle-excellent.prefix-rooms@1",
+    "name": "Castle Excellent",
+    "platform": "NES",
+    "revision": "J",
+    "kind": "sound",
+    "document": "track:0",
+    "editor": "SequencerEditor"
+  },
+  "edit": {
+    "operation": "sequence-note",
+    "channel": "pulse1",
+    "note": "0:1",
+    "old": 64,
+    "new": 65,
+    "state_changes": [
+      {
+        "path": ["channels", "0", "notes", "65", "pitch"],
+        "old": 64,
+        "new": 65
+      },
+      {
+        "path": ["channels", "0", "notes", "129", "pitch"],
+        "old": 64,
+        "new": 65
+      }
+    ]
+  },
+  "artifact": "build/castle-excellent-castle-excellent-japan-hsp-05-edited.nes",
+  "flow": [
+    "open_rom_and_prepare_pinned_source_through_gui",
+    "verify_available_tabs_and_open_pinned_document",
+    "edit_exact_pinned_value_through_widgets",
+    "verify_exact_state_and_undo_redo",
+    "switch_documents_and_verify_edit",
+    "save_close_reopen_through_gui_and_verify_edit",
+    "build_fresh_rom_through_toolbar",
+    "compare_sha256_with_manually_reviewed_baseline"
+  ],
+  "timeouts": {
+    "open_s": 900,
+    "editor_s": 120,
+    "save_s": 60,
+    "reopen_s": 120,
+    "build_s": 900
+  },
+  "expected_kinds": [
+    "rooms",
+    "graphics",
+    "metatiles",
+    "palettes",
+    "animations",
+    "screens",
+    "text",
+    "sound",
+    "demo",
+    "playtest"
+  ],
+  "switch_documents": ["track:1", "track:0"],
+  "artifact_size": 65552,
+  "baseline": {
+    "method": "Explicit manual resource and before/after GUI screenshot review; three independent builds match a separately predicted original-ROM patch",
+    "source_locator": "Track 0 pulse 1 stream 0, second note e after t5v9l8o4c becomes f; hardware periods verify MIDI 64 to 65. Arena is full: equal-length natural note preserves every stream/restart/track pointer, playback prefix and unrelated ROM byte.",
+    "rom_size": 65552,
+    "rom_changed_byte_count": 1,
+    "rom_differences": [
+      {
+        "offset": 15360,
+        "before": 101,
+        "after": 102
+      }
+    ]
+  }
+}

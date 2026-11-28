@@ -1,0 +1,79 @@
+{
+  "schema": "retrolarium.gui-regression",
+  "schema_version": 1,
+  "id": "doraemon_original_actor_pattern",
+  "game": "doraemon",
+  "revision": "original",
+  "revision_name": "Doraemon (Japan, original revision)",
+  "input_sha256": "6ed579c9c98a1f2db52fd3d2488a491953073e8ace1e3c1dc5884669cecca274",
+  "expected_sha256": "7b960ee2502c1a0c1ef7ea4203a4db90c4267c2be439342ac8c1fc9ee946be34",
+  "source": {
+    "repository": "doraemon_src",
+    "descriptor": "doraemon.rlj",
+    "ref": "tags/source-reconstruction-3.1",
+    "commit": "368ca5f0f48d4e83c1dd5e6d91be3ceeeb6cd722",
+    "content_sha256": "e5d3dd4f8f626feb57e72efa27ac5d4c3b44dbe67d3508d65d719191ae0e7896"
+  },
+  "project": {
+    "codec": "doraemon.hierarchy.v1",
+    "name": "Doraemon",
+    "platform": "Famicom",
+    "revision": "J",
+    "kind": "animations",
+    "document": "anim:0",
+    "editor": "CompositionEditor"
+  },
+  "edit": {
+    "operation": "composition-field",
+    "frame": 0,
+    "piece": "p:0",
+    "old": "Sprite 1 \u00b7 $00",
+    "new": "Sprite 1 \u00b7 $01",
+    "tile_value": 1
+  },
+  "artifact": "build/doraemon-original-edited.nes",
+  "flow": [
+    "open_rom_and_prepare_pinned_source_through_gui",
+    "verify_available_tabs_and_open_pinned_document",
+    "edit_exact_pinned_value_through_widgets",
+    "verify_exact_state_and_undo_redo",
+    "switch_documents_and_verify_edit",
+    "save_close_reopen_through_gui_and_verify_edit",
+    "build_fresh_rom_through_toolbar",
+    "compare_sha256_with_manually_reviewed_baseline"
+  ],
+  "timeouts": {
+    "open_s": 900,
+    "editor_s": 120,
+    "save_s": 60,
+    "reopen_s": 120,
+    "build_s": 900
+  },
+  "expected_kinds": [
+    "levels",
+    "graphics",
+    "metatiles",
+    "palettes",
+    "animations",
+    "screens",
+    "text",
+    "sound",
+    "demo",
+    "playtest"
+  ],
+  "switch_documents": ["anim:1", "anim:0"],
+  "artifact_size": 163856,
+  "baseline": {
+    "method": "Explicit manual resource and before/after GUI screenshot review; three independent builds match a separately predicted original-ROM patch",
+    "source_locator": "Walk down first frame uses metasprite index 0; record header is three bytes, piece [y,x,tile], first tile offset +5",
+    "rom_size": 163856,
+    "rom_changed_byte_count": 1,
+    "rom_differences": [
+      {
+        "offset": 7622,
+        "before": 0,
+        "after": 1
+      }
+    ]
+  }
+}

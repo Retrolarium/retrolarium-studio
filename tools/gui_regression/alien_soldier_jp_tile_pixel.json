@@ -1,0 +1,81 @@
+{
+  "schema": "retrolarium.gui-regression",
+  "schema_version": 1,
+  "id": "alien_soldier_jp_tile_pixel",
+  "game": "alien-soldier",
+  "revision": "jp",
+  "revision_name": "Alien Soldier (Japan)",
+  "input_sha256": "5613637d267cf8d0bf3ff1e396d7929526cd5221cb8af06349528c8bedced1a0",
+  "expected_sha256": "c84c7f51618585dcdac652a6584232a8d4a8e6781c957bd4342d3e56124caf38",
+  "source": {
+    "repository": "alien_soldier_src",
+    "descriptor": "alien_soldier.rlj",
+    "ref": "5c074f2aec87fbddff94fe52d7912d7689d81a5b",
+    "commit": "5c074f2aec87fbddff94fe52d7912d7689d81a5b",
+    "content_sha256": "7a5feddc99af1fe2a73f87587b3eaebb1539d4a8ce5a6aa3f3fc2d0adedeb563"
+  },
+  "project": {
+    "codec": "source",
+    "name": "Alien Soldier",
+    "platform": "Mega Drive",
+    "revision": "JP",
+    "kind": "tiles",
+    "document": "u:Player_PhoenixDashAttackSpriteArtPiece06",
+    "editor": "TileEditor"
+  },
+  "edit": {
+    "operation": "tile-pixel",
+    "tile": 0,
+    "x": 0,
+    "y": 0,
+    "old": 0,
+    "new": 2
+  },
+  "artifact": "build/alien-soldier-edited.bin",
+  "flow": [
+    "open_rom_and_prepare_pinned_source_through_gui",
+    "verify_available_tabs_and_open_pinned_document",
+    "edit_exact_pinned_value_through_widgets",
+    "verify_exact_state_and_undo_redo",
+    "switch_documents_and_verify_edit",
+    "save_close_reopen_through_gui_and_verify_edit",
+    "build_fresh_rom_through_toolbar",
+    "compare_sha256_with_manually_reviewed_baseline"
+  ],
+  "timeouts": {
+    "open_s": 900,
+    "editor_s": 120,
+    "save_s": 60,
+    "reopen_s": 120,
+    "build_s": 900
+  },
+  "expected_kinds": [
+    "levels",
+    "tiles",
+    "metatiles",
+    "palettes",
+    "objects",
+    "bosses",
+    "sprites",
+    "screens",
+    "text",
+    "sound",
+    "demo",
+    "playtest"
+  ],
+  "switch_documents": ["u:Player_PhoenixDashAttackSpriteArtPiece00", "u:Player_PhoenixDashAttackSpriteArtPiece06"],
+  "artifact_size": 2097152,
+  "baseline": {
+    "method": "Explicit manual resource and before/after GUI screenshot review; three independent builds match a separately predicted original-ROM patch",
+    "source_locator": "Manifest-addressed uncompressed Phoenix Dash piece 06, first counted block; 4bpp tile 0 first high nibble 0 to 2; count and other 63 pixels unchanged; independently recomputed big-endian checksum of [0x200,0x60002) at header $18E",
+    "rom_size": 2097152,
+    "rom_changed_byte_count": 1,
+    "rom_differences": [
+      {
+        "offset": 993320,
+        "before": 0,
+        "after": 32
+      }
+    ]
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "schema": "retrolarium.gui-regression-suite",
+  "schema_version": 1,
+  "id": "castle_excellent_castlequest_usa",
+  "game": "castle-excellent",
+  "revision": "castlequest-usa",
+  "required_kinds": ["rooms", "graphics", "metatiles", "palettes", "animations", "screens", "text", "sound"],
+  "excluded_kinds": ["demo", "playtest"],
+  "scenarios": [
+    "castle_excellent_castlequest_usa_room_cell.json",
+    "castle_excellent_castlequest_usa_tile_pixel.json",
+    "castle_excellent_castlequest_usa_cell_pattern.json",
+    "castle_excellent_castlequest_usa_room_palette.json",
+    "castle_excellent_castlequest_usa_actor_pattern.json",
+    "castle_excellent_castlequest_usa_ending_pattern.json",
+    "castle_excellent_castlequest_usa_ending_text.json",
+    "castle_excellent_castlequest_usa_opening_note.json"
+  ]
+}

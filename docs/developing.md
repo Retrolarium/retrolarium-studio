@@ -170,9 +170,10 @@ option captures after a fixed delay and does not wait for project preparation;
 use an interface scenario to verify an opened project.
 
 The separate [private real-widget GUI regression](gui_regression.md) exercises
-one hash-pinned SMB1 JU edit through visible widgets, save/close/reopen and a
-fresh build. It is opt-in, ROM-dependent and does not replace `tools/autotest`
-or enter general CI.
+ten hash-pinned SMB1 JU edits across nine tabs through visible widgets,
+Undo/Redo, document switching, save/close/reopen and fresh builds. Demo and
+Playtest are excluded. It is opt-in, ROM-dependent and does not replace
+`tools/autotest` or enter general CI.
 
 ## Updating translations
 

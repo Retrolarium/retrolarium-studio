@@ -1,0 +1,78 @@
+{
+  "schema": "retrolarium.gui-regression",
+  "schema_version": 1,
+  "id": "doraemon_original_title_pattern",
+  "game": "doraemon",
+  "revision": "original",
+  "revision_name": "Doraemon (Japan, original revision)",
+  "input_sha256": "6ed579c9c98a1f2db52fd3d2488a491953073e8ace1e3c1dc5884669cecca274",
+  "expected_sha256": "7d51f46d54e860ba45e1dab59ecaa50eb082e17bc181ba5a6e9b6b98402229f8",
+  "source": {
+    "repository": "doraemon_src",
+    "descriptor": "doraemon.rlj",
+    "ref": "tags/source-reconstruction-3.1",
+    "commit": "368ca5f0f48d4e83c1dd5e6d91be3ceeeb6cd722",
+    "content_sha256": "e5d3dd4f8f626feb57e72efa27ac5d4c3b44dbe67d3508d65d719191ae0e7896"
+  },
+  "project": {
+    "codec": "doraemon.hierarchy.v1",
+    "name": "Doraemon",
+    "platform": "Famicom",
+    "revision": "J",
+    "kind": "screens",
+    "document": "title",
+    "editor": "TileMapEditor"
+  },
+  "edit": {
+    "operation": "map-brush-cell",
+    "x": 4,
+    "y": 4,
+    "old": 128,
+    "new": 129
+  },
+  "artifact": "build/doraemon-original-edited.nes",
+  "flow": [
+    "open_rom_and_prepare_pinned_source_through_gui",
+    "verify_available_tabs_and_open_pinned_document",
+    "edit_exact_pinned_value_through_widgets",
+    "verify_exact_state_and_undo_redo",
+    "switch_documents_and_verify_edit",
+    "save_close_reopen_through_gui_and_verify_edit",
+    "build_fresh_rom_through_toolbar",
+    "compare_sha256_with_manually_reviewed_baseline"
+  ],
+  "timeouts": {
+    "open_s": 900,
+    "editor_s": 120,
+    "save_s": 60,
+    "reopen_s": 120,
+    "build_s": 900
+  },
+  "expected_kinds": [
+    "levels",
+    "graphics",
+    "metatiles",
+    "palettes",
+    "animations",
+    "screens",
+    "text",
+    "sound",
+    "demo",
+    "playtest"
+  ],
+  "switch_documents": ["help-1", "title"],
+  "artifact_size": 163856,
+  "baseline": {
+    "method": "Explicit manual resource and before/after GUI screenshot review; three independent builds match a separately predicted original-ROM patch",
+    "source_locator": "Unprotected graphics payload byte at title PPU (4,4); preserve every text packet and header",
+    "rom_size": 163856,
+    "rom_changed_byte_count": 1,
+    "rom_differences": [
+      {
+        "offset": 103003,
+        "before": 128,
+        "after": 129
+      }
+    ]
+  }
+}

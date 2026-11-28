@@ -1,0 +1,85 @@
+{
+  "schema": "retrolarium.gui-regression",
+  "schema_version": 1,
+  "id": "smb1_pc10_screen_pattern",
+  "game": "smb1",
+  "revision": "pc10",
+  "revision_name": "Super Mario Bros. (PlayChoice-10 container)",
+  "input_sha256": "f586afeaaaa7a6cf2e3b69e5b17f2f0f1eb3fd9aa1de1e3e14b75f90dc21ae87",
+  "expected_sha256": "1a6e3b3c072634ad87c30e7412fcbcb54b8fa7028dcddd021974b40fa8c925cd",
+  "source": {
+    "repository": "smb1_src",
+    "descriptor": "super_mario_bros.rlj",
+    "commit": "eb8faad337056e074e78ec5f3b496be24e7de761",
+    "content_sha256": "2dc4ea2ad9c9bc1524ef7f2c913ad655dd6e5b405c67692d4e41d8fb61a9d98e",
+    "ref": "tags/source-reconstruction-3.1"
+  },
+  "project": {
+    "name": "Super Mario Bros.",
+    "revision": "PC10",
+    "platform": "NES",
+    "codec": "smb.levels.v1",
+    "kind": "screens",
+    "document": "game-screen-packets/status",
+    "editor": "TileMapEditor"
+  },
+  "edit": {
+    "operation": "map-brush-cell",
+    "x": 3,
+    "y": 2,
+    "old": 22,
+    "new": 23,
+    "object_labels": [
+      {
+        "id": "cell:67",
+        "old": "3, 2 \u00b7 $16",
+        "new": "3, 2 \u00b7 $17"
+      }
+    ]
+  },
+  "artifact": "build/smb1-pc10-edited.nes",
+  "flow": [
+    "open_rom_and_prepare_pinned_source_through_gui",
+    "verify_available_tabs_and_open_pinned_document",
+    "edit_exact_pinned_value_through_widgets",
+    "verify_exact_state_and_undo_redo",
+    "switch_documents_and_verify_edit",
+    "save_close_reopen_through_gui_and_verify_edit",
+    "build_fresh_rom_through_toolbar",
+    "compare_sha256_with_manually_reviewed_baseline"
+  ],
+  "timeouts": {
+    "open_s": 900,
+    "editor_s": 120,
+    "save_s": 60,
+    "reopen_s": 120,
+    "build_s": 900
+  },
+  "expected_kinds": [
+    "levels",
+    "world",
+    "graphics",
+    "metatiles",
+    "palettes",
+    "animations",
+    "screens",
+    "text",
+    "sound",
+    "demo",
+    "playtest"
+  ],
+  "switch_documents": ["warp-zone-screen/warp-zone", "game-screen-packets/status"],
+  "artifact_size": 49168,
+  "baseline": {
+    "method": "Manual source/resource and before/after GUI screenshot review; three independent builds match a separate one-byte ROM oracle",
+    "source_locator": "Status PPU $2043 first tile, after three header bytes",
+    "rom_size": 49168,
+    "rom_differences": [
+      {
+        "offset": 1893,
+        "before": 22,
+        "after": 23
+      }
+    ]
+  }
+}

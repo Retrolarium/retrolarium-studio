@@ -1,0 +1,89 @@
+{
+  "schema": "retrolarium.gui-regression",
+  "schema_version": 1,
+  "id": "smb1_pal_block",
+  "game": "smb1",
+  "revision": "pal",
+  "revision_name": "Super Mario Bros. (Europe, Rev A)",
+  "input_sha256": "ec299b990e8bfee8ba46e3f61d63b2e1ae5b8a2e431de84e2e4bbd692dc53586",
+  "expected_sha256": "4ce2f310e9e837dea1e3b74b6e37eccaca3978806bc5be8a9866d001d466fcac",
+  "baseline": {
+    "method": "Reviewed GUI snapshots and serialized resources; three independent builds match a separately byte-patched input ROM",
+    "source_locator": "ground_6 pointer slot 8; first object row nibble after the two-byte area header",
+    "rom_size": 40976,
+    "rom_differences": [
+      {
+        "offset": 9888,
+        "before": 7,
+        "after": 6
+      }
+    ]
+  },
+  "source": {
+    "repository": "smb1_src",
+    "descriptor": "super_mario_bros.rlj",
+    "commit": "eb8faad337056e074e78ec5f3b496be24e7de761",
+    "content_sha256": "2dc4ea2ad9c9bc1524ef7f2c913ad655dd6e5b405c67692d4e41d8fb61a9d98e",
+    "ref": "tags/source-reconstruction-3.1"
+  },
+  "project": {
+    "name": "Super Mario Bros.",
+    "revision": "E",
+    "platform": "NES",
+    "codec": "smb.levels.v1",
+    "kind": "levels",
+    "document": "ground_6",
+    "editor": "TileMapEditor"
+  },
+  "edit": {
+    "operation": "move-object-vertical",
+    "object_label": "Question block (coin)",
+    "from": {
+      "x": 16,
+      "y": 7
+    },
+    "to": {
+      "x": 16,
+      "y": 6
+    }
+  },
+  "artifact": "build/smb1-pal-edited.nes",
+  "flow": [
+    "open_rom_through_file_menu_and_qt_dialog",
+    "set_up_source_through_dialog_button",
+    "allow_pinned_repository_scripts_through_dialog_button",
+    "open_levels_ground_6_through_kind_and_document_widgets",
+    "drag_fixed_coin_question_block_from_16_7_to_16_6",
+    "verify_other_objects_and_shared_pool_unchanged",
+    "verify_dirty_state",
+    "save_through_toolbar",
+    "close_through_file_menu",
+    "reopen_through_file_menu_and_qt_dialog",
+    "verify_object_survived",
+    "remove_only_previous_project_artifact",
+    "build_through_toolbar",
+    "compare_sha256_without_approving_a_baseline"
+  ],
+  "timeouts": {
+    "open_s": 900,
+    "editor_s": 120,
+    "save_s": 60,
+    "reopen_s": 120,
+    "build_s": 900
+  },
+  "expected_kinds": [
+    "levels",
+    "world",
+    "graphics",
+    "metatiles",
+    "palettes",
+    "animations",
+    "screens",
+    "text",
+    "sound",
+    "demo",
+    "playtest"
+  ],
+  "switch_documents": ["ground_1", "ground_6"],
+  "artifact_size": 40976
+}

@@ -1,0 +1,32 @@
+{
+  "schema": "retrolarium.gui-regression-suite",
+  "schema_version": 1,
+  "id": "alien_soldier_eu",
+  "game": "alien-soldier",
+  "revision": "eu",
+  "required_kinds": [
+    "levels",
+    "tiles",
+    "metatiles",
+    "palettes",
+    "objects",
+    "bosses",
+    "sprites",
+    "screens",
+    "text",
+    "sound"
+  ],
+  "excluded_kinds": ["demo", "playtest"],
+  "scenarios": [
+    "alien_soldier_eu_stage_enemy_position.json",
+    "alien_soldier_eu_tile_pixel.json",
+    "alien_soldier_eu_object_metatile.json",
+    "alien_soldier_eu_stage_palette.json",
+    "alien_soldier_eu_cursor_position.json",
+    "alien_soldier_eu_boss_hold.json",
+    "alien_soldier_eu_effect_duration.json",
+    "alien_soldier_eu_credits_pattern.json",
+    "alien_soldier_eu_story_text.json",
+    "alien_soldier_eu_opening_note.json"
+  ]
+}

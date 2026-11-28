@@ -915,6 +915,7 @@ QWidget* TileMapEditor::createToolbar(QWidget* parent) {
     const QVector<sdk::MapLayer> layers = map_->layers();
     if (layers.size() > 1) {
         auto* segment = new ui::SegmentedControl(bar);
+        segment->setObjectName(QStringLiteral("mapLayers"));
         for (const sdk::MapLayer& layer : layers) {
             segment->addSegment(layer.label, layer.id);
         }
@@ -928,6 +929,7 @@ QWidget* TileMapEditor::createToolbar(QWidget* parent) {
     const QVector<sdk::Tool> tools = map_->tools();
     if (!tools.isEmpty()) {
         auto* segment = new ui::SegmentedControl(bar);
+        segment->setObjectName(QStringLiteral("mapTools"));
         for (const sdk::Tool& tool : tools) {
             segment->addIconSegment(tool.icon, tool.label, tool.id);
         }
@@ -941,6 +943,7 @@ QWidget* TileMapEditor::createToolbar(QWidget* parent) {
     const QVector<sdk::CellBrush> brushes = map_->brushes();
     if (brushes.size() > 1) {
         auto* segment = new ui::SegmentedControl(bar);
+        segment->setObjectName(QStringLiteral("mapBrushes"));
         for (const sdk::CellBrush& brush : brushes) {
             segment->addSegment(brush.label, QString::number(brush.value));
         }

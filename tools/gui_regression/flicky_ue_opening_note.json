@@ -1,0 +1,72 @@
+{
+  "schema": "retrolarium.gui-regression",
+  "schema_version": 1,
+  "id": "flicky_ue_opening_note",
+  "game": "flicky",
+  "revision": "ue",
+  "revision_name": "Flicky (USA, Europe)",
+  "input_sha256": "4df1a91e08376ae773a6eb8e5abe310f94ca39d8f81583b91a9477fedcb68c11",
+  "expected_sha256": "476419c96383461c6bb3d90354842db9ac2b6b3c7bc4113ff1e476fb7f487d13",
+  "source": {
+    "repository": "flicky_src",
+    "descriptor": "flicky.rlj",
+    "ref": "dc47be622a7e4e3984395bf93a1f28742d9ec31d",
+    "commit": "dc47be622a7e4e3984395bf93a1f28742d9ec31d",
+    "content_sha256": "af43c78947e645fe5e5e3fda853762a53c88bfa031a9a931f43ca4f4f582c79b"
+  },
+  "project": {
+    "codec": "flicky-content",
+    "name": "Flicky",
+    "platform": "Mega Drive",
+    "revision": "UE",
+    "kind": "sound",
+    "document": "header:zMusic81Header",
+    "editor": "SequencerEditor"
+  },
+  "edit": {
+    "operation": "sequence-note",
+    "channel": "1",
+    "note": "1:6",
+    "old": 86,
+    "new": 87
+  },
+  "artifact": "build/flicky-edited.bin",
+  "flow": [
+    "open_rom_and_prepare_pinned_source_through_gui",
+    "verify_available_tabs_and_open_pinned_document",
+    "edit_exact_pinned_value_through_widgets",
+    "verify_exact_state_and_undo_redo",
+    "switch_documents_and_verify_edit",
+    "save_close_reopen_through_gui_and_verify_edit",
+    "build_fresh_rom_through_toolbar",
+    "compare_sha256_with_manually_reviewed_baseline"
+  ],
+  "timeouts": {
+    "open_s": 900,
+    "editor_s": 120,
+    "save_s": 60,
+    "reopen_s": 120,
+    "build_s": 900
+  },
+  "expected_kinds": ["levels", "tiles", "palettes", "sprites", "screens", "text", "sound", "demo", "playtest"],
+  "switch_documents": ["header:zMusic82Header", "header:zMusic81Header"],
+  "artifact_size": 131072,
+  "baseline": {
+    "method": "Explicit manual resource and before/after GUI screenshot review; three independent builds match a separately predicted original-ROM patch",
+    "source_locator": "Manifest-addressed Z80 bank after twelve load-descriptor bytes; independent source-directive sizing verifies every dc.b byte and channel-1 music81 pointer/header; zMusic81FM1 source offset 6 note $D7 to $D8 (editor 86 to 87), duration $0C and transpose $F4/volume $06 preserved; independently recomputed whole-cartridge big-endian header checksum",
+    "rom_size": 131072,
+    "rom_changed_byte_count": 2,
+    "rom_differences": [
+      {
+        "offset": 398,
+        "before": 183,
+        "after": 184
+      },
+      {
+        "offset": 66610,
+        "before": 215,
+        "after": 216
+      }
+    ]
+  }
+}

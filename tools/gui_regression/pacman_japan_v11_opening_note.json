@@ -1,0 +1,67 @@
+{
+  "schema": "retrolarium.gui-regression",
+  "schema_version": 1,
+  "id": "pacman_japan_v11_opening_note",
+  "game": "pacman",
+  "revision": "japan-v11",
+  "revision_name": "Pac-Man Japan v1.1",
+  "input_sha256": "06ed4f706d87940728d623d289caa7fd0abd5c0d6466cb52d4c491ff3b8c0ed9",
+  "expected_sha256": "4e4f19e43dc6fdacb56e5cab61e9681e3983a41139dda15c704fec2aa7113da3",
+  "source": {
+    "repository": "pacman_src",
+    "descriptor": "pacman.rlj",
+    "ref": "tags/source-reconstruction-3.1",
+    "commit": "107a5c6fc5ddc6f549c90d95e9df9a220061f13e",
+    "content_sha256": "ddc5f5fd0371c06f0b5d9ecdc8583cb37e11e84b4be65acfe09ca92fa5fae873"
+  },
+  "project": {
+    "codec": "pacman.maze-rle.v1",
+    "name": "Pac-Man",
+    "platform": "NES",
+    "revision": "J 1.1",
+    "kind": "sound",
+    "document": "tune:0",
+    "editor": "SequencerEditor"
+  },
+  "edit": {
+    "operation": "sequence-note",
+    "channel": "0",
+    "note": "0:0",
+    "old": 60,
+    "new": 61
+  },
+  "artifact": "build/pacman-japan-v11-edited.nes",
+  "flow": [
+    "open_rom_and_prepare_pinned_source_through_gui",
+    "verify_available_tabs_and_open_pinned_document",
+    "edit_exact_pinned_value_through_widgets",
+    "verify_exact_state_and_undo_redo",
+    "switch_documents_and_verify_edit",
+    "save_close_reopen_through_gui_and_verify_edit",
+    "build_fresh_rom_through_toolbar",
+    "compare_sha256_with_manually_reviewed_baseline"
+  ],
+  "timeouts": {
+    "open_s": 900,
+    "editor_s": 120,
+    "save_s": 60,
+    "reopen_s": 120,
+    "build_s": 900
+  },
+  "expected_kinds": ["levels", "graphics", "palettes", "animations", "screens", "text", "sound", "demo", "playtest"],
+  "switch_documents": ["tune:1", "tune:0"],
+  "artifact_size": 24592,
+  "baseline": {
+    "method": "Explicit manual resource and before/after GUI screenshot review; three independent builds match a separately predicted original-ROM patch",
+    "source_locator": "Slot 0 stream pointer plus four prologue bytes; base MIDI 45, semitone high nibble 3 to 4, octave 1 and duration 8 unchanged",
+    "rom_size": 24592,
+    "rom_changed_byte_count": 1,
+    "rom_differences": [
+      {
+        "offset": 13163,
+        "before": 49,
+        "after": 65
+      }
+    ]
+  }
+}

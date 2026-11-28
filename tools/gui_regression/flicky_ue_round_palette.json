@@ -1,0 +1,80 @@
+{
+  "schema": "retrolarium.gui-regression",
+  "schema_version": 1,
+  "id": "flicky_ue_round_palette",
+  "game": "flicky",
+  "revision": "ue",
+  "revision_name": "Flicky (USA, Europe)",
+  "input_sha256": "4df1a91e08376ae773a6eb8e5abe310f94ca39d8f81583b91a9477fedcb68c11",
+  "expected_sha256": "3c8037204aaa234548f72fcaecfb61763c91e78a23599abf75498fb5ffbbbc38",
+  "source": {
+    "repository": "flicky_src",
+    "descriptor": "flicky.rlj",
+    "ref": "dc47be622a7e4e3984395bf93a1f28742d9ec31d",
+    "commit": "dc47be622a7e4e3984395bf93a1f28742d9ec31d",
+    "content_sha256": "af43c78947e645fe5e5e3fda853762a53c88bfa031a9a931f43ca4f4f582c79b"
+  },
+  "project": {
+    "codec": "flicky-content",
+    "name": "Flicky",
+    "platform": "Mega Drive",
+    "revision": "UE",
+    "kind": "palettes",
+    "document": "Level_Palette0",
+    "editor": "PaletteEditor"
+  },
+  "edit": {
+    "operation": "palette-channel",
+    "row": 0,
+    "entry": 1,
+    "channel": 0,
+    "old": 3,
+    "new": 4,
+    "state_changes": [
+      {
+        "path": ["rows", "0", "colors", "1"],
+        "old": "#ff6c0000",
+        "new": "#ff900000"
+      }
+    ]
+  },
+  "artifact": "build/flicky-edited.bin",
+  "flow": [
+    "open_rom_and_prepare_pinned_source_through_gui",
+    "verify_available_tabs_and_open_pinned_document",
+    "edit_exact_pinned_value_through_widgets",
+    "verify_exact_state_and_undo_redo",
+    "switch_documents_and_verify_edit",
+    "save_close_reopen_through_gui_and_verify_edit",
+    "build_fresh_rom_through_toolbar",
+    "compare_sha256_with_manually_reviewed_baseline"
+  ],
+  "timeouts": {
+    "open_s": 900,
+    "editor_s": 120,
+    "save_s": 60,
+    "reopen_s": 120,
+    "build_s": 900
+  },
+  "expected_kinds": ["levels", "tiles", "palettes", "sprites", "screens", "text", "sound", "demo", "playtest"],
+  "switch_documents": ["Level_Palette1", "Level_Palette0"],
+  "artifact_size": 131072,
+  "baseline": {
+    "method": "Explicit manual resource and before/after GUI screenshot review; three independent builds match a separately predicted original-ROM patch",
+    "source_locator": "Unique original Level_Palette0 16-word table from game/round/select_and_setup.s; entry 1 red level 3 to 4, CRAM $006 to $008, green/blue and every other colour preserved; independently recomputed whole-cartridge big-endian header checksum",
+    "rom_size": 131072,
+    "rom_changed_byte_count": 2,
+    "rom_differences": [
+      {
+        "offset": 399,
+        "before": 224,
+        "after": 226
+      },
+      {
+        "offset": 75905,
+        "before": 6,
+        "after": 8
+      }
+    ]
+  }
+}

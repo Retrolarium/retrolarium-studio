@@ -1,0 +1,80 @@
+{
+  "schema": "retrolarium.gui-regression",
+  "schema_version": 1,
+  "id": "alien_soldier_eu_credits_pattern",
+  "game": "alien-soldier",
+  "revision": "eu",
+  "revision_name": "Alien Soldier (Europe)",
+  "input_sha256": "afd4642f78ee1ae3004d630b1228e54a6e51e5dc7a991e1c192d91a41f366f71",
+  "expected_sha256": "ae7b616129ea88ab6bc1d6fd1c78553d28798db5d2c1ba8bfbbcb03474450861",
+  "source": {
+    "repository": "alien_soldier_src",
+    "descriptor": "alien_soldier.rlj",
+    "ref": "5c074f2aec87fbddff94fe52d7912d7689d81a5b",
+    "commit": "5c074f2aec87fbddff94fe52d7912d7689d81a5b",
+    "content_sha256": "7a5feddc99af1fe2a73f87587b3eaebb1539d4a8ce5a6aa3f3fc2d0adedeb563"
+  },
+  "project": {
+    "codec": "source",
+    "name": "Alien Soldier",
+    "platform": "Mega Drive",
+    "revision": "EU",
+    "kind": "screens",
+    "document": "credits-01",
+    "editor": "TileMapEditor"
+  },
+  "edit": {
+    "operation": "map-brush-cell",
+    "x": 14,
+    "y": 6,
+    "old": 8193,
+    "new": 8194,
+    "library_item": "2"
+  },
+  "artifact": "build/alien-soldier-edited.bin",
+  "flow": [
+    "open_rom_and_prepare_pinned_source_through_gui",
+    "verify_available_tabs_and_open_pinned_document",
+    "edit_exact_pinned_value_through_widgets",
+    "verify_exact_state_and_undo_redo",
+    "switch_documents_and_verify_edit",
+    "save_close_reopen_through_gui_and_verify_edit",
+    "build_fresh_rom_through_toolbar",
+    "compare_sha256_with_manually_reviewed_baseline"
+  ],
+  "timeouts": {
+    "open_s": 900,
+    "editor_s": 120,
+    "save_s": 60,
+    "reopen_s": 120,
+    "build_s": 900
+  },
+  "expected_kinds": [
+    "levels",
+    "tiles",
+    "metatiles",
+    "palettes",
+    "objects",
+    "bosses",
+    "sprites",
+    "screens",
+    "text",
+    "sound",
+    "demo",
+    "playtest"
+  ],
+  "switch_documents": ["title", "credits-01"],
+  "artifact_size": 2097152,
+  "baseline": {
+    "method": "Explicit manual resource and before/after GUI screenshot review; three independent builds match a separately predicted original-ROM patch",
+    "source_locator": "64-column Credits_Scene01 name table LZSS slot independently decoded with five game token forms and VRAM boundaries; only word (14,6) $2001 to $2002; shared deterministic encoder output independently decoded again, padded within original slot, all surrounding ROM bytes preserved; independently recomputed big-endian checksum of [0x200,0x200000) at header $18E",
+    "rom_size": 2097152,
+    "rom_changed_byte_count": 390,
+    "rom_affected_range": {
+      "offset": 398,
+      "size": 1379642,
+      "before_sha256": "870502f1d6483667e33d32ed3e5b4027dfed00f19c21ea7fa2cd56a8777e4e22",
+      "after_sha256": "0d190052941bf9553d2734ee22ec9bf54de5e456ef7035384ae1835be5dbada5"
+    }
+  }
+}

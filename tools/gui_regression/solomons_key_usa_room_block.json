@@ -1,0 +1,68 @@
+{
+  "schema": "retrolarium.gui-regression",
+  "schema_version": 1,
+  "id": "solomons_key_usa_room_block",
+  "game": "solomons-key",
+  "revision": "usa",
+  "revision_name": "Solomon's Key (USA)",
+  "input_sha256": "3d9f3bee199a3fbc04bab38e1d9d5cdeae1c6691dcca463a13c25e42f77bb03d",
+  "expected_sha256": "10f22673a37d8c4338942095dc65877b4e7c8931ddd2d3138a8070e248116f21",
+  "source": {
+    "repository": "solomon_no_kagi_src",
+    "descriptor": "solomons_key.rlj",
+    "ref": "tags/source-reconstruction-3.1",
+    "commit": "f1a689b92f3dc1bba43689a91ba51db011ec09e1",
+    "content_sha256": "a9a5a858f9dd00679693de7a330d1af7e018428b784fed0a883f343ba7393ac5"
+  },
+  "project": {
+    "codec": "solomon.rooms@3",
+    "name": "Solomon's Key",
+    "platform": "NES",
+    "revision": "U",
+    "kind": "rooms",
+    "document": "1",
+    "editor": "TileMapEditor"
+  },
+  "edit": {
+    "operation": "map-toolbar-cell",
+    "layer": "blocks",
+    "x": 4,
+    "y": 1,
+    "old": 2,
+    "new": 0
+  },
+  "artifact": "build/solomons-key-usa-edited.nes",
+  "flow": [
+    "open_rom_and_prepare_pinned_source_through_gui",
+    "verify_available_tabs_and_open_pinned_document",
+    "edit_exact_pinned_value_through_widgets",
+    "verify_exact_state_and_undo_redo",
+    "switch_documents_and_verify_edit",
+    "save_close_reopen_through_gui_and_verify_edit",
+    "build_fresh_rom_through_toolbar",
+    "compare_sha256_with_manually_reviewed_baseline"
+  ],
+  "timeouts": {
+    "open_s": 900,
+    "editor_s": 120,
+    "save_s": 60,
+    "reopen_s": 120,
+    "build_s": 900
+  },
+  "expected_kinds": ["rooms", "graphics", "palettes", "animations", "screens", "text", "sound", "demo", "playtest"],
+  "switch_documents": ["2", "1"],
+  "artifact_size": 65552,
+  "baseline": {
+    "method": "Explicit manual resource and before/after GUI screenshot review; three independent builds match a separately predicted original-ROM patch",
+    "source_locator": "Room 1 white block plane, 24 bytes after its brown plane: clear bit (4,1); all other room bits and streams remain fixed",
+    "rom_size": 65552,
+    "rom_changed_byte_count": 1,
+    "rom_differences": [
+      {
+        "offset": 24662,
+        "before": 248,
+        "after": 240
+      }
+    ]
+  }
+}

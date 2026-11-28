@@ -1,0 +1,21 @@
+{
+  "schema": "retrolarium.gui-regression-suite",
+  "schema_version": 1,
+  "id": "smb1_vs_smb",
+  "game": "smb1",
+  "revision": "vs_smb",
+  "required_kinds": ["levels", "world", "graphics", "metatiles", "palettes", "animations", "screens", "text", "sound"],
+  "excluded_kinds": ["demo", "playtest"],
+  "scenarios": [
+    "smb1_vs_smb_block.json",
+    "smb1_vs_smb_level_settings.json",
+    "smb1_vs_smb_world_physics.json",
+    "smb1_vs_smb_sprite_pixel.json",
+    "smb1_vs_smb_metatile.json",
+    "smb1_vs_smb_player_palette.json",
+    "smb1_vs_smb_animation_pattern.json",
+    "smb1_vs_smb_screen_pattern.json",
+    "smb1_vs_smb_text.json",
+    "smb1_vs_smb_music_note.json"
+  ]
+}

@@ -232,6 +232,7 @@ TableEditor::TableEditor(sdk::TableModel* model, QWidget* parent)
     : EditorView(model, parent), table_(model), adapter_(new TableAdapter(model, this)), view_(new QTableView(this)) {
     auto* layout = new QVBoxLayout(this);
     layout->setContentsMargins(0, 0, 0, 0);
+    view_->setObjectName(QStringLiteral("documentTable"));
     view_->setModel(adapter_);
     delegate_ = new TableDelegate(model, view_);
     view_->setItemDelegate(delegate_);

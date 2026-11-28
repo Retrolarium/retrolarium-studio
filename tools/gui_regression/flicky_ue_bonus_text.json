@@ -1,0 +1,72 @@
+{
+  "schema": "retrolarium.gui-regression",
+  "schema_version": 1,
+  "id": "flicky_ue_bonus_text",
+  "game": "flicky",
+  "revision": "ue",
+  "revision_name": "Flicky (USA, Europe)",
+  "input_sha256": "4df1a91e08376ae773a6eb8e5abe310f94ca39d8f81583b91a9477fedcb68c11",
+  "expected_sha256": "b7190c8954d76c8396c62c016698b6081c6d518c30cb10e12ec1e7c19660aefa",
+  "source": {
+    "repository": "flicky_src",
+    "descriptor": "flicky.rlj",
+    "ref": "dc47be622a7e4e3984395bf93a1f28742d9ec31d",
+    "commit": "dc47be622a7e4e3984395bf93a1f28742d9ec31d",
+    "content_sha256": "af43c78947e645fe5e5e3fda853762a53c88bfa031a9a931f43ca4f4f582c79b"
+  },
+  "project": {
+    "codec": "flicky-content",
+    "name": "Flicky",
+    "platform": "Mega Drive",
+    "revision": "UE",
+    "kind": "text",
+    "document": "game-text",
+    "editor": "TableEditor"
+  },
+  "edit": {
+    "operation": "table-cell",
+    "row": 0,
+    "column": 1,
+    "old": "BONUS",
+    "new": "BONUA"
+  },
+  "artifact": "build/flicky-edited.bin",
+  "flow": [
+    "open_rom_and_prepare_pinned_source_through_gui",
+    "verify_available_tabs_and_open_pinned_document",
+    "edit_exact_pinned_value_through_widgets",
+    "verify_exact_state_and_undo_redo",
+    "switch_documents_and_verify_edit",
+    "save_close_reopen_through_gui_and_verify_edit",
+    "build_fresh_rom_through_toolbar",
+    "compare_sha256_with_manually_reviewed_baseline"
+  ],
+  "timeouts": {
+    "open_s": 900,
+    "editor_s": 120,
+    "save_s": 60,
+    "reopen_s": 120,
+    "build_s": 900
+  },
+  "expected_kinds": ["levels", "tiles", "palettes", "sprites", "screens", "text", "sound", "demo", "playtest"],
+  "switch_documents": ["game-text"],
+  "artifact_size": 131072,
+  "baseline": {
+    "method": "Explicit manual resource and before/after GUI screenshot review; three independent builds match a separately predicted original-ROM patch",
+    "source_locator": "Source Bonus_BonusText located uniquely between $C0D4 BONUS and $C0E0 ROUND screen records; fixed five-byte ASCII final S to A, other characters, position headers and terminators preserved; independently recomputed whole-cartridge big-endian header checksum",
+    "rom_size": 131072,
+    "rom_changed_byte_count": 2,
+    "rom_differences": [
+      {
+        "offset": 398,
+        "before": 183,
+        "after": 165
+      },
+      {
+        "offset": 77778,
+        "before": 83,
+        "after": 65
+      }
+    ]
+  }
+}

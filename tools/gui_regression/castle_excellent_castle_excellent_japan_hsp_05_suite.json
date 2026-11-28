@@ -1,0 +1,19 @@
+{
+  "schema": "retrolarium.gui-regression-suite",
+  "schema_version": 1,
+  "id": "castle_excellent_castle_excellent_japan_hsp_05",
+  "game": "castle-excellent",
+  "revision": "castle-excellent-japan-hsp-05",
+  "required_kinds": ["rooms", "graphics", "metatiles", "palettes", "animations", "screens", "text", "sound"],
+  "excluded_kinds": ["demo", "playtest"],
+  "scenarios": [
+    "castle_excellent_castle_excellent_japan_hsp_05_room_cell.json",
+    "castle_excellent_castle_excellent_japan_hsp_05_tile_pixel.json",
+    "castle_excellent_castle_excellent_japan_hsp_05_cell_pattern.json",
+    "castle_excellent_castle_excellent_japan_hsp_05_room_palette.json",
+    "castle_excellent_castle_excellent_japan_hsp_05_actor_pattern.json",
+    "castle_excellent_castle_excellent_japan_hsp_05_ending_pattern.json",
+    "castle_excellent_castle_excellent_japan_hsp_05_ending_text.json",
+    "castle_excellent_castle_excellent_japan_hsp_05_opening_note.json"
+  ]
+}

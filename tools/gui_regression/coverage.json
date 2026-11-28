@@ -1,0 +1,352 @@
+{
+  "schema": "retrolarium.gui-coverage",
+  "schema_version": 1,
+  "excluded_kinds": ["demo", "playtest"],
+  "revisions": [
+    {
+      "game": "pacman",
+      "revision": "japan-v10",
+      "input_sha256": "c67e20d7144dac97ba9d4cef1ad90f13d6504e8492e60a6193c33695d68c4b22",
+      "declaration_source": "plugins/games/pacman/src/pacman/plugin/pacman_session.cpp",
+      "suite": "pacman_japan_v10_suite.json",
+      "required_kinds": ["levels", "graphics", "palettes", "animations", "screens", "text", "sound"],
+      "observed_profile": {
+        "codec": "pacman.maze-rle.v1",
+        "name": "Pac-Man",
+        "platform": "NES",
+        "revision": "J 1.0"
+      }
+    },
+    {
+      "game": "pacman",
+      "revision": "japan-v11",
+      "input_sha256": "06ed4f706d87940728d623d289caa7fd0abd5c0d6466cb52d4c491ff3b8c0ed9",
+      "declaration_source": "plugins/games/pacman/src/pacman/plugin/pacman_session.cpp",
+      "suite": "pacman_japan_v11_suite.json",
+      "required_kinds": ["levels", "graphics", "palettes", "animations", "screens", "text", "sound"],
+      "observed_profile": {
+        "codec": "pacman.maze-rle.v1",
+        "name": "Pac-Man",
+        "platform": "NES",
+        "revision": "J 1.1"
+      }
+    },
+    {
+      "game": "castle-excellent",
+      "revision": "castle-excellent-japan-hsp-05",
+      "input_sha256": "fd6214cdc441070b9edab74b9c31ad16007bd0873e32c0c883de4544ca69f261",
+      "declaration_source": "plugins/games/castle_excellent/src/castle_excellent/plugin/castle_excellent_session.cpp",
+      "suite": "castle_excellent_castle_excellent_japan_hsp_05_suite.json",
+      "required_kinds": ["rooms", "graphics", "metatiles", "palettes", "animations", "screens", "text", "sound"],
+      "observed_profile": {
+        "codec": "castle-excellent.prefix-rooms@1",
+        "name": "Castle Excellent",
+        "platform": "NES",
+        "revision": "J"
+      }
+    },
+    {
+      "game": "castle-excellent",
+      "revision": "castlequest-usa",
+      "input_sha256": "35815cd107289a8273fb46dd7c49247a8217ca4e2a7f235fef3aa54566d0ba8c",
+      "declaration_source": "plugins/games/castle_excellent/src/castle_excellent/plugin/castle_excellent_session.cpp",
+      "suite": "castle_excellent_castlequest_usa_suite.json",
+      "required_kinds": ["rooms", "graphics", "metatiles", "palettes", "animations", "screens", "text", "sound"],
+      "observed_profile": {
+        "codec": "castle-excellent.prefix-rooms@1",
+        "name": "Castlequest",
+        "platform": "NES",
+        "revision": "U"
+      }
+    },
+    {
+      "game": "doraemon",
+      "revision": "original",
+      "input_sha256": "6ed579c9c98a1f2db52fd3d2488a491953073e8ace1e3c1dc5884669cecca274",
+      "declaration_source": "plugins/games/doraemon/src/doraemon/plugin/doraemon_session.cpp",
+      "suite": "doraemon_original_suite.json",
+      "required_kinds": ["levels", "graphics", "metatiles", "palettes", "animations", "screens", "text", "sound"],
+      "observed_profile": {
+        "codec": "doraemon.hierarchy.v1",
+        "name": "Doraemon",
+        "platform": "Famicom",
+        "revision": "J"
+      }
+    },
+    {
+      "game": "smb1",
+      "revision": "ju",
+      "input_sha256": "f61548fdf1670cffefcc4f0b7bdcdd9eaba0c226e3b74f8666071496988248de",
+      "declaration_source": "plugins/games/smb/src/smb/plugin/smb_session.cpp",
+      "suite": "smb1_ju_suite.json",
+      "required_kinds": [
+        "levels",
+        "world",
+        "graphics",
+        "metatiles",
+        "palettes",
+        "animations",
+        "screens",
+        "text",
+        "sound"
+      ],
+      "observed_profile": {
+        "codec": "smb.levels.v1",
+        "name": "Super Mario Bros.",
+        "platform": "NES",
+        "revision": "JU"
+      }
+    },
+    {
+      "game": "smb1",
+      "revision": "pal",
+      "input_sha256": "ec299b990e8bfee8ba46e3f61d63b2e1ae5b8a2e431de84e2e4bbd692dc53586",
+      "declaration_source": "plugins/games/smb/src/smb/plugin/smb_session.cpp",
+      "suite": "smb1_pal_suite.json",
+      "required_kinds": [
+        "levels",
+        "world",
+        "graphics",
+        "metatiles",
+        "palettes",
+        "animations",
+        "screens",
+        "text",
+        "sound"
+      ],
+      "observed_profile": {
+        "codec": "smb.levels.v1",
+        "name": "Super Mario Bros.",
+        "platform": "NES",
+        "revision": "E"
+      }
+    },
+    {
+      "game": "smb1",
+      "revision": "pc10",
+      "input_sha256": "f586afeaaaa7a6cf2e3b69e5b17f2f0f1eb3fd9aa1de1e3e14b75f90dc21ae87",
+      "declaration_source": "plugins/games/smb/src/smb/plugin/smb_session.cpp",
+      "suite": "smb1_pc10_suite.json",
+      "required_kinds": [
+        "levels",
+        "world",
+        "graphics",
+        "metatiles",
+        "palettes",
+        "animations",
+        "screens",
+        "text",
+        "sound"
+      ],
+      "observed_profile": {
+        "codec": "smb.levels.v1",
+        "name": "Super Mario Bros.",
+        "platform": "NES",
+        "revision": "PC10"
+      }
+    },
+    {
+      "game": "smb1",
+      "revision": "vs_smb",
+      "input_sha256": "60098a93322a9e07a2b164a02e5517bc22664ca33f6323c2ae23a62941ad393b",
+      "declaration_source": "plugins/games/smb/src/smb/plugin/smb_session.cpp",
+      "suite": "smb1_vs_smb_suite.json",
+      "required_kinds": [
+        "levels",
+        "world",
+        "graphics",
+        "metatiles",
+        "palettes",
+        "animations",
+        "screens",
+        "text",
+        "sound"
+      ],
+      "observed_profile": {
+        "codec": "smb.levels.v1",
+        "name": "Super Mario Bros.",
+        "platform": "NES",
+        "revision": "VS"
+      }
+    },
+    {
+      "game": "smb1",
+      "revision": "fds_smb",
+      "input_sha256": "56ba4c39fd7f9628bffac4c6ee0d5364f86de36d27c904ffc70f0abc97ae0d3a",
+      "declaration_source": "plugins/games/smb/src/smb/plugin/smb_session.cpp",
+      "suite": "smb1_fds_smb_suite.json",
+      "required_kinds": [
+        "levels",
+        "world",
+        "graphics",
+        "metatiles",
+        "palettes",
+        "animations",
+        "screens",
+        "text",
+        "sound"
+      ],
+      "observed_profile": {
+        "codec": "smb.levels.v1",
+        "name": "Super Mario Bros.",
+        "platform": "NES",
+        "revision": "FDS"
+      },
+      "profile_review": "FDS badge corrected in source; prior GUI inspection showed NES; GUI reinspection pending"
+    },
+    {
+      "game": "smb1",
+      "revision": "ann_fds",
+      "input_sha256": "a762d0a90d16c84b5f2b014816b37675cf5115320be7e815effbb64d91b2014d",
+      "declaration_source": "plugins/games/smb/src/smb/plugin/smb_session.cpp",
+      "suite": "smb1_ann_fds_suite.json",
+      "required_kinds": [
+        "levels",
+        "world",
+        "graphics",
+        "metatiles",
+        "palettes",
+        "animations",
+        "screens",
+        "text",
+        "sound"
+      ],
+      "observed_profile": {
+        "codec": "smb.levels.v1",
+        "name": "Super Mario Bros.",
+        "platform": "FDS",
+        "revision": "ANN"
+      }
+    },
+    {
+      "game": "smb1",
+      "revision": "smb2_jp_fds",
+      "input_sha256": "ff8afb9ae6b705b4e51dbcb193dcebadf4c049800a71003d3a45052648e52eda",
+      "declaration_source": "plugins/games/smb/src/smb/plugin/smb_session.cpp",
+      "suite": "smb1_smb2_jp_fds_suite.json",
+      "required_kinds": [
+        "levels",
+        "world",
+        "graphics",
+        "metatiles",
+        "palettes",
+        "animations",
+        "screens",
+        "text",
+        "sound"
+      ],
+      "observed_profile": {
+        "codec": "smb.levels.v1",
+        "name": "Super Mario Bros. 2",
+        "platform": "FDS",
+        "revision": "J"
+      }
+    },
+    {
+      "game": "solomons-key",
+      "revision": "usa",
+      "input_sha256": "3d9f3bee199a3fbc04bab38e1d9d5cdeae1c6691dcca463a13c25e42f77bb03d",
+      "declaration_source": "plugins/games/solomon/src/solomon/plugin/solomon_session.cpp",
+      "suite": "solomons_key_usa_suite.json",
+      "required_kinds": ["rooms", "graphics", "palettes", "animations", "screens", "text", "sound"],
+      "observed_profile": {
+        "codec": "solomon.rooms@3",
+        "name": "Solomon's Key",
+        "platform": "NES",
+        "revision": "U"
+      }
+    },
+    {
+      "game": "solomons-key",
+      "revision": "europe",
+      "input_sha256": "e8dc7ad587133869eaf6101018be676e9c14c3b97b988d2e96f7e398b5c33acb",
+      "declaration_source": "plugins/games/solomon/src/solomon/plugin/solomon_session.cpp",
+      "suite": "solomons_key_europe_suite.json",
+      "required_kinds": ["rooms", "graphics", "palettes", "animations", "screens", "text", "sound"],
+      "observed_profile": {
+        "codec": "solomon.rooms@3",
+        "name": "Solomon's Key",
+        "platform": "NES",
+        "revision": "E"
+      }
+    },
+    {
+      "game": "solomons-key",
+      "revision": "japan",
+      "input_sha256": "b90bb344eff516863bc5278d9efba7ffd2a83a1e6cf27a6b2a9ab57ec094ae83",
+      "declaration_source": "plugins/games/solomon/src/solomon/plugin/solomon_session.cpp",
+      "suite": "solomons_key_japan_suite.json",
+      "required_kinds": ["rooms", "graphics", "palettes", "animations", "screens", "text", "sound"],
+      "observed_profile": {
+        "codec": "solomon.rooms@3",
+        "name": "Solomon's Key",
+        "platform": "NES",
+        "revision": "J"
+      }
+    },
+    {
+      "game": "flicky",
+      "revision": "ue",
+      "input_sha256": "4df1a91e08376ae773a6eb8e5abe310f94ca39d8f81583b91a9477fedcb68c11",
+      "declaration_source": "plugins/games/flicky/src/flicky/plugin/flicky_session.cpp",
+      "suite": "flicky_ue_suite.json",
+      "required_kinds": ["levels", "tiles", "palettes", "sprites", "screens", "text", "sound"],
+      "observed_profile": {
+        "codec": "flicky-content",
+        "name": "Flicky",
+        "platform": "Mega Drive",
+        "revision": "UE"
+      }
+    },
+    {
+      "game": "alien-soldier",
+      "revision": "jp",
+      "input_sha256": "5613637d267cf8d0bf3ff1e396d7929526cd5221cb8af06349528c8bedced1a0",
+      "declaration_source": "plugins/games/alien_soldier/src/alien_soldier/plugin/session.cpp",
+      "suite": "alien_soldier_jp_suite.json",
+      "required_kinds": [
+        "levels",
+        "tiles",
+        "metatiles",
+        "palettes",
+        "objects",
+        "bosses",
+        "sprites",
+        "screens",
+        "text",
+        "sound"
+      ],
+      "observed_profile": {
+        "codec": "source",
+        "name": "Alien Soldier",
+        "platform": "Mega Drive",
+        "revision": "JP"
+      }
+    },
+    {
+      "game": "alien-soldier",
+      "revision": "eu",
+      "input_sha256": "afd4642f78ee1ae3004d630b1228e54a6e51e5dc7a991e1c192d91a41f366f71",
+      "declaration_source": "plugins/games/alien_soldier/src/alien_soldier/plugin/session.cpp",
+      "suite": "alien_soldier_eu_suite.json",
+      "required_kinds": [
+        "levels",
+        "tiles",
+        "metatiles",
+        "palettes",
+        "objects",
+        "bosses",
+        "sprites",
+        "screens",
+        "text",
+        "sound"
+      ],
+      "observed_profile": {
+        "codec": "source",
+        "name": "Alien Soldier",
+        "platform": "Mega Drive",
+        "revision": "EU"
+      }
+    }
+  ]
+}

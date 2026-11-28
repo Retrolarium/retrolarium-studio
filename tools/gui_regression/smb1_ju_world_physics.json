@@ -1,0 +1,77 @@
+{
+  "schema": "retrolarium.gui-regression",
+  "schema_version": 1,
+  "id": "smb1_ju_world_physics",
+  "game": "smb1",
+  "revision": "ju",
+  "revision_name": "Super Mario Bros. (Japan, USA)",
+  "input_sha256": "f61548fdf1670cffefcc4f0b7bdcdd9eaba0c226e3b74f8666071496988248de",
+  "expected_sha256": "2cde1d718a826ba8631fdf26f8ee1247bb477d3841fa4aa3db3917c147436a31",
+  "source": {
+    "repository": "smb1_src",
+    "descriptor": "super_mario_bros.rlj",
+    "commit": "eb8faad337056e074e78ec5f3b496be24e7de761",
+    "content_sha256": "2dc4ea2ad9c9bc1524ef7f2c913ad655dd6e5b405c67692d4e41d8fb61a9d98e",
+    "ref": "tags/source-reconstruction-3.1"
+  },
+  "project": {
+    "name": "Super Mario Bros.",
+    "revision": "JU",
+    "platform": "NES",
+    "codec": "smb.levels.v1",
+    "kind": "world",
+    "document": "physics",
+    "editor": "TableEditor"
+  },
+  "edit": {
+    "operation": "table-cell",
+    "row": 0,
+    "column": 1,
+    "old": "32",
+    "new": "33"
+  },
+  "artifact": "build/smb1-ju-edited.nes",
+  "flow": [
+    "open_rom_and_prepare_pinned_source_through_gui",
+    "verify_available_tabs_and_open_pinned_document",
+    "edit_exact_pinned_value_through_widgets",
+    "verify_exact_state_and_undo_redo",
+    "switch_documents_and_verify_edit",
+    "save_close_reopen_through_gui_and_verify_edit",
+    "build_fresh_rom_through_toolbar",
+    "compare_sha256_with_manually_reviewed_baseline"
+  ],
+  "timeouts": {
+    "open_s": 900,
+    "editor_s": 120,
+    "save_s": 60,
+    "reopen_s": 120,
+    "build_s": 900
+  },
+  "expected_kinds": [
+    "levels",
+    "world",
+    "graphics",
+    "metatiles",
+    "palettes",
+    "animations",
+    "screens",
+    "text",
+    "sound",
+    "demo",
+    "playtest"
+  ],
+  "switch_documents": ["routes", "actions", "physics"],
+  "baseline": {
+    "method": "Reviewed GUI screenshots and exact semantic persistence; three independent builds equal an independently byte-patched input ROM",
+    "source_locator": "game_profile world.physics_file_offset, jump_gravity first entry",
+    "rom_size": 40976,
+    "rom_differences": [
+      {
+        "offset": 13364,
+        "before": 32,
+        "after": 33
+      }
+    ]
+  }
+}

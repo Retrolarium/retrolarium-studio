@@ -1,0 +1,67 @@
+{
+  "schema": "retrolarium.gui-regression",
+  "schema_version": 1,
+  "id": "flicky_ue_round_collision",
+  "game": "flicky",
+  "revision": "ue",
+  "revision_name": "Flicky (USA, Europe)",
+  "input_sha256": "4df1a91e08376ae773a6eb8e5abe310f94ca39d8f81583b91a9477fedcb68c11",
+  "expected_sha256": "9acca40734cab5e6bbbc692429d87330bf5fdd63464e0a14ab85f22b93eb3c47",
+  "source": {
+    "repository": "flicky_src",
+    "descriptor": "flicky.rlj",
+    "ref": "dc47be622a7e4e3984395bf93a1f28742d9ec31d",
+    "commit": "dc47be622a7e4e3984395bf93a1f28742d9ec31d",
+    "content_sha256": "af43c78947e645fe5e5e3fda853762a53c88bfa031a9a931f43ca4f4f582c79b"
+  },
+  "project": {
+    "codec": "flicky-content",
+    "name": "Flicky",
+    "platform": "Mega Drive",
+    "revision": "UE",
+    "kind": "levels",
+    "document": "round-01",
+    "editor": "TileMapEditor"
+  },
+  "edit": {
+    "operation": "map-toolbar-cell",
+    "layer": "layout",
+    "x": 4,
+    "y": 8,
+    "old": 0,
+    "new": 1
+  },
+  "artifact": "build/flicky-edited.bin",
+  "flow": [
+    "open_rom_and_prepare_pinned_source_through_gui",
+    "verify_available_tabs_and_open_pinned_document",
+    "edit_exact_pinned_value_through_widgets",
+    "verify_exact_state_and_undo_redo",
+    "switch_documents_and_verify_edit",
+    "save_close_reopen_through_gui_and_verify_edit",
+    "build_fresh_rom_through_toolbar",
+    "compare_sha256_with_manually_reviewed_baseline"
+  ],
+  "timeouts": {
+    "open_s": 900,
+    "editor_s": 120,
+    "save_s": 60,
+    "reopen_s": 120,
+    "build_s": 900
+  },
+  "expected_kinds": ["levels", "tiles", "palettes", "sprites", "screens", "text", "sound", "demo", "playtest"],
+  "switch_documents": ["round-02", "round-01"],
+  "artifact_size": 131072,
+  "baseline": {
+    "method": "Explicit manual resource and before/after GUI screenshot review; three independent builds match a separately predicted original-ROM patch",
+    "source_locator": "Unique original 36-layout arena and 48 round pointers relative to verified $10000 game entry; independently decode and row-RLE encode only layout 0 cell (4,8) empty to solid, preserve its entire non-collision tail and all 35 other blocks verbatim, relocate round pointers and retain canonical $FF padding within the fixed 21101-byte arena; independently recomputed whole-cartridge big-endian header checksum",
+    "rom_size": 131072,
+    "rom_changed_byte_count": 2578,
+    "rom_affected_range": {
+      "offset": 399,
+      "size": 112659,
+      "before_sha256": "e93b18325a246c1623d35385bceda797745d31ad4d7daf1c8572af1411bd0b86",
+      "after_sha256": "dd09c1ef4c2ee2040d7ae065c52fb4c6688069a8f3a333626ae30980f8f71328"
+    }
+  }
+}

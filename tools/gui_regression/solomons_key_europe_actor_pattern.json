@@ -1,0 +1,73 @@
+{
+  "schema": "retrolarium.gui-regression",
+  "schema_version": 1,
+  "id": "solomons_key_europe_actor_pattern",
+  "game": "solomons-key",
+  "revision": "europe",
+  "revision_name": "Solomon's Key (Europe)",
+  "input_sha256": "e8dc7ad587133869eaf6101018be676e9c14c3b97b988d2e96f7e398b5c33acb",
+  "expected_sha256": "91189a4479a6a7f57dba841c26350943d34277622da0e23c4382a297da344564",
+  "source": {
+    "repository": "solomon_no_kagi_src",
+    "descriptor": "solomons_key.rlj",
+    "ref": "tags/source-reconstruction-3.1",
+    "commit": "f1a689b92f3dc1bba43689a91ba51db011ec09e1",
+    "content_sha256": "a9a5a858f9dd00679693de7a330d1af7e018428b784fed0a883f343ba7393ac5"
+  },
+  "project": {
+    "codec": "solomon.rooms@3",
+    "name": "Solomon's Key",
+    "platform": "NES",
+    "revision": "E",
+    "kind": "animations",
+    "document": "0:0",
+    "editor": "CompositionEditor"
+  },
+  "edit": {
+    "operation": "composition-inspector",
+    "frame": 0,
+    "piece": "0",
+    "field": "tile",
+    "old": 38,
+    "new": 40
+  },
+  "artifact": "build/solomons-key-europe-edited.nes",
+  "flow": [
+    "open_rom_and_prepare_pinned_source_through_gui",
+    "verify_available_tabs_and_open_pinned_document",
+    "edit_exact_pinned_value_through_widgets",
+    "verify_exact_state_and_undo_redo",
+    "switch_documents_and_verify_edit",
+    "save_close_reopen_through_gui_and_verify_edit",
+    "build_fresh_rom_through_toolbar",
+    "compare_sha256_with_manually_reviewed_baseline"
+  ],
+  "timeouts": {
+    "open_s": 900,
+    "editor_s": 120,
+    "save_s": 60,
+    "reopen_s": 120,
+    "build_s": 900
+  },
+  "expected_kinds": ["rooms", "graphics", "palettes", "animations", "screens", "text", "sound", "demo", "playtest"],
+  "switch_documents": ["0:4", "0:0"],
+  "artifact_size": 65552,
+  "baseline": {
+    "method": "Explicit manual resource and before/after GUI screenshot review; three independent builds match a separately predicted original-ROM patch",
+    "source_locator": "Group 0 linked standing poses: action 0 first left pattern and action 1 mirrored first right pattern 38 to 40; action 2 aliases action 0; every pointer/flag/other frame unchanged",
+    "rom_size": 65552,
+    "rom_changed_byte_count": 2,
+    "rom_differences": [
+      {
+        "offset": 22076,
+        "before": 38,
+        "after": 40
+      },
+      {
+        "offset": 22086,
+        "before": 38,
+        "after": 40
+      }
+    ]
+  }
+}

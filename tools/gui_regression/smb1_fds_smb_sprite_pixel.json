@@ -1,0 +1,79 @@
+{
+  "schema": "retrolarium.gui-regression",
+  "schema_version": 1,
+  "id": "smb1_fds_smb_sprite_pixel",
+  "game": "smb1",
+  "revision": "fds_smb",
+  "revision_name": "Super Mario Bros. (Famicom Disk System reissue)",
+  "input_sha256": "56ba4c39fd7f9628bffac4c6ee0d5364f86de36d27c904ffc70f0abc97ae0d3a",
+  "expected_sha256": "bfbde4f65bd6e6487d1a2118e49d92600c362a35160c66a6ae1c8539815e1866",
+  "source": {
+    "repository": "smb1_src",
+    "descriptor": "super_mario_bros.rlj",
+    "commit": "eb8faad337056e074e78ec5f3b496be24e7de761",
+    "content_sha256": "2dc4ea2ad9c9bc1524ef7f2c913ad655dd6e5b405c67692d4e41d8fb61a9d98e",
+    "ref": "tags/source-reconstruction-3.1"
+  },
+  "project": {
+    "name": "Super Mario Bros.",
+    "revision": "FDS",
+    "platform": "FDS",
+    "codec": "smb.levels.v1",
+    "kind": "graphics",
+    "document": "sprites",
+    "editor": "TileEditor"
+  },
+  "edit": {
+    "operation": "tile-pixel",
+    "tile": 0,
+    "x": 0,
+    "y": 0,
+    "old": 0,
+    "new": 1
+  },
+  "artifact": "build/smb1-fds_smb-edited.fds",
+  "flow": [
+    "open_rom_and_prepare_pinned_source_through_gui",
+    "verify_available_tabs_and_open_pinned_document",
+    "edit_exact_pinned_value_through_widgets",
+    "verify_exact_state_and_undo_redo",
+    "switch_documents_and_verify_edit",
+    "save_close_reopen_through_gui_and_verify_edit",
+    "build_fresh_rom_through_toolbar",
+    "compare_sha256_with_manually_reviewed_baseline"
+  ],
+  "timeouts": {
+    "open_s": 900,
+    "editor_s": 120,
+    "save_s": 60,
+    "reopen_s": 120,
+    "build_s": 900
+  },
+  "expected_kinds": [
+    "levels",
+    "world",
+    "graphics",
+    "metatiles",
+    "palettes",
+    "animations",
+    "screens",
+    "text",
+    "sound",
+    "demo",
+    "playtest"
+  ],
+  "switch_documents": ["background", "sprites"],
+  "artifact_size": 65500,
+  "baseline": {
+    "method": "Manual source/resource and before/after GUI screenshot review; three independent builds match a separate one-byte ROM oracle",
+    "source_locator": "CHR tile 0 low bitplane bit 7; high plane preserved",
+    "rom_size": 65500,
+    "rom_differences": [
+      {
+        "offset": 316,
+        "before": 3,
+        "after": 131
+      }
+    ]
+  }
+}

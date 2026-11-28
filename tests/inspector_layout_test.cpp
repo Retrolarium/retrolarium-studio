@@ -38,6 +38,9 @@ public:
         }
         return result;
     }
+    rl::sdk::Library sheet() const override { return patterns; }
+    rl::sdk::Library patterns;
+
     void selectObject() {
         heading = QStringLiteral("Selected object");
         fields = 2;
@@ -63,10 +66,98 @@ void check(rl::shell::InspectorPanel& panel, const LibraryModel& model, const ch
         ++failures;
     }
 }
+void checkSheetPane() {
+    LibraryModel model;
+    model.patterns.grid = true;
+    model.patterns.columns = 16;
+    model.patterns.cell = QSize(8, 16);
+    for (int i = 0; i < 256; ++i) {
+        rl::sdk::LibraryItem item;
+        item.id = QString::number(i);
+        model.patterns.items.append(item);
+    }
+    rl::editors::SheetPane pane(&model);
+    for (const QSize size : {QSize(420, 400), QSize(240, 320), QSize(640, 800)}) {
+        pane.resize(size);
+        pane.show();
+        QApplication::processEvents();
+        pane.grab();
+        auto* sheet =
+            dynamic_cast<rl::editors::LibrarySheet*>(pane.findChild<QWidget*>(QStringLiteral("librarySheet")));
+        auto* scroll = pane.findChild<QScrollArea*>(QStringLiteral("librarySheetScroll"));
+        if (!sheet || !scroll) {
+            std::cerr << "FAIL: the pattern sheet needs its own scroll viewport\n";
+            ++failures;
+            continue;
+        }
+        const auto snapshot = rl::tests::inspectLibrarySheet(sheet, model.patterns);
+        if (!snapshot.error.isEmpty()) {
+            std::cerr << "FAIL: real SheetPane clips tall sprite patterns\n";
+            ++failures;
+        }
+        if (sheet->heightForWidth(sheet->width()) > scroll->viewport()->height() &&
+            scroll->verticalScrollBar()->maximum() <= 0) {
+            std::cerr << "FAIL: tall patterns need a vertical scroll range\n";
+            ++failures;
+        }
+        scroll->verticalScrollBar()->setValue(scroll->verticalScrollBar()->maximum());
+        pane.grab();
+        const QPoint last = sheet->mapTo(scroll->viewport(), sheet->itemRect(255).center());
+        if (!scroll->viewport()->rect().contains(last)) {
+            std::cerr << "FAIL: the last sprite pattern is unreachable after scrolling\n";
+            ++failures;
+        }
+    }
+}
+
+void checkPaintedGrid() {
+    rl::sdk::Library expected;
+    expected.grid = true;
+    expected.columns = 16;
+    for (int i = 0; i < 80; ++i) {
+        rl::sdk::LibraryItem item;
+        item.id = QString::number(i);
+        expected.items.append(item);
+    }
+    rl::editors::LibrarySheet sheet;
+    for (const QSize shape : {QSize(1, 1), QSize(1, 2), QSize(2, 1)}) {
+        expected.cell = shape;
+        sheet.setItems(expected.items, QString(), expected.columns, shape);
+        sheet.resize(256, sheet.heightForWidth(256));
+        if (!rl::tests::inspectLibrarySheet(&sheet, expected).error.isEmpty()) {
+            std::cerr << "FAIL: a complete painted grid was rejected\n";
+            ++failures;
+        }
+        // Vertical clipping is now prevented by the sheet's minimum height.
+        // An impossibly narrow grid still exercises the verifier's bounds guard.
+        sheet.resize(15, sheet.heightForWidth(15));
+        if (rl::tests::inspectLibrarySheet(&sheet, expected).error.isEmpty()) {
+            std::cerr << "FAIL: clipped library cells were accepted\n";
+            ++failures;
+        }
+    }
+    sheet.resize(256, sheet.heightForWidth(256));
+    auto duplicate = expected;
+    duplicate.items[1].id = duplicate.items[0].id;
+    sheet.setItems(duplicate.items, QString(), duplicate.columns, duplicate.cell);
+    if (rl::tests::inspectLibrarySheet(&sheet, duplicate).error.isEmpty()) {
+        std::cerr << "FAIL: duplicate grid IDs were accepted\n";
+        ++failures;
+    }
+    sheet.setItems(expected.items, QString(), expected.columns, expected.cell);
+    auto stale = expected;
+    stale.items.removeLast();
+    if (rl::tests::inspectLibrarySheet(&sheet, stale).error.isEmpty()) {
+        std::cerr << "FAIL: a stale grid was accepted\n";
+        ++failures;
+    }
+}
 }  // namespace
 
 int main(int argc, char** argv) {
     QApplication app(argc, argv);
+    checkPaintedGrid();
+    checkSheetPane();
     for (const QSize size : {QSize(300, 700), QSize(240, 420), QSize(420, 900)}) {
         LibraryModel model;
         rl::shell::InspectorPanel panel;

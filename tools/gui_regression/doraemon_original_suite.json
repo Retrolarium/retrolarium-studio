@@ -1,0 +1,19 @@
+{
+  "schema": "retrolarium.gui-regression-suite",
+  "schema_version": 1,
+  "id": "doraemon_original",
+  "game": "doraemon",
+  "revision": "original",
+  "required_kinds": ["levels", "graphics", "metatiles", "palettes", "animations", "screens", "text", "sound"],
+  "excluded_kinds": ["demo", "playtest"],
+  "scenarios": [
+    "doraemon_original_city_block.json",
+    "doraemon_original_tile_pixel.json",
+    "doraemon_original_small_block_pattern.json",
+    "doraemon_original_city_palette.json",
+    "doraemon_original_actor_pattern.json",
+    "doraemon_original_title_pattern.json",
+    "doraemon_original_game_over_text.json",
+    "doraemon_original_opening_note.json"
+  ]
+}

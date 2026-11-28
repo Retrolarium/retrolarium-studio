@@ -1,0 +1,79 @@
+{
+  "schema": "retrolarium.gui-regression",
+  "schema_version": 1,
+  "id": "castle_excellent_castlequest_usa_actor_pattern",
+  "game": "castle-excellent",
+  "revision": "castlequest-usa",
+  "revision_name": "Castlequest (USA)",
+  "input_sha256": "35815cd107289a8273fb46dd7c49247a8217ca4e2a7f235fef3aa54566d0ba8c",
+  "expected_sha256": "48ad008cb3aa4848b973bdb50577e2ae4de040876d1e84a93816ebd3c813c425",
+  "source": {
+    "repository": "castle_excellent_src",
+    "descriptor": "castle_excellent.rlj",
+    "ref": "tags/source-reconstruction-3.1",
+    "commit": "eb2c80ef5c1db6affb78b5d5b90f7ca58ddc354a",
+    "content_sha256": "253254504ab95ee8100e042ac106d5dc4634d526954ff292ba269e82780c5997"
+  },
+  "project": {
+    "codec": "castle-excellent.prefix-rooms@1",
+    "name": "Castlequest",
+    "platform": "NES",
+    "revision": "U",
+    "kind": "animations",
+    "document": "anim:0",
+    "editor": "CompositionEditor"
+  },
+  "edit": {
+    "operation": "composition-field",
+    "frame": 0,
+    "piece": "d:0",
+    "old": "Sprite 0 \u00b7 $90",
+    "new": "Sprite 0 \u00b7 $92",
+    "tile_value": 146
+  },
+  "artifact": "build/castle-excellent-castlequest-usa-edited.nes",
+  "flow": [
+    "open_rom_and_prepare_pinned_source_through_gui",
+    "verify_available_tabs_and_open_pinned_document",
+    "edit_exact_pinned_value_through_widgets",
+    "verify_exact_state_and_undo_redo",
+    "switch_documents_and_verify_edit",
+    "save_close_reopen_through_gui_and_verify_edit",
+    "build_fresh_rom_through_toolbar",
+    "compare_sha256_with_manually_reviewed_baseline"
+  ],
+  "timeouts": {
+    "open_s": 900,
+    "editor_s": 120,
+    "save_s": 60,
+    "reopen_s": 120,
+    "build_s": 900
+  },
+  "expected_kinds": [
+    "rooms",
+    "graphics",
+    "metatiles",
+    "palettes",
+    "animations",
+    "screens",
+    "text",
+    "sound",
+    "demo",
+    "playtest"
+  ],
+  "switch_documents": ["anim:1", "anim:0"],
+  "artifact_size": 65552,
+  "baseline": {
+    "method": "Explicit manual resource and before/after GUI screenshot review; three independent builds match a separately predicted original-ROM patch",
+    "source_locator": "Descriptor 0 pattern byte; attribute byte unchanged",
+    "rom_size": 65552,
+    "rom_changed_byte_count": 1,
+    "rom_differences": [
+      {
+        "offset": 13510,
+        "before": 144,
+        "after": 146
+      }
+    ]
+  }
+}

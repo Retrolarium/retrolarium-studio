@@ -51,6 +51,7 @@ QString& lastTileTool() {
 // ---------------------------------------------------------------- atlas
 
 TileAtlas::TileAtlas(sdk::TileModel* model, QWidget* parent) : QWidget(parent), model_(model) {
+    setObjectName(QStringLiteral("tileAtlas"));
     setFocusPolicy(Qt::ClickFocus);
     setCursor(Qt::PointingHandCursor);
     connect(model_, &sdk::EditorModel::contentChanged, this, &TileAtlas::refresh);
@@ -165,6 +166,7 @@ PixelCanvas::PixelCanvas(sdk::TileModel* model, QWidget* parent) : QWidget(paren
     // whole sprite frame) gets smaller pixels still.
     const QSize size = model_->tileSize();
     pixel_ = size.height() > 8 ? std::max(4, std::min(26, 416 / std::max(size.width(), size.height()))) : kPixel;
+    setObjectName(QStringLiteral("pixelCanvas"));
     setMouseTracking(true);
     setCursor(Qt::CrossCursor);
     setFixedSize(sizeHint());
@@ -298,6 +300,7 @@ void PixelCanvas::leaveEvent(QEvent*) {
 // ---------------------------------------------------------------- pens
 
 PenRow::PenRow(sdk::TileModel* model, QWidget* parent) : QWidget(parent), model_(model) {
+    setObjectName(QStringLiteral("tilePens"));
     setCursor(Qt::PointingHandCursor);
     setFixedSize(sizeHint());
     connect(model_, &sdk::EditorModel::selectionChanged, this, qOverload<>(&QWidget::update));

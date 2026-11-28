@@ -96,6 +96,7 @@ CompositionCanvas::CompositionCanvas(sdk::CompositionModel* model, QWidget* pare
     zoom_ = kMinZoom;
     setFocusPolicy(Qt::ClickFocus);
     setMouseTracking(true);
+    setObjectName(QStringLiteral("compositionCanvas"));
     setAcceptDrops(true);
     connect(model_, &sdk::EditorModel::contentChanged, this, &CompositionCanvas::refresh);
     connect(model_, &sdk::EditorModel::selectionChanged, this, qOverload<>(&QWidget::update));
@@ -448,6 +449,7 @@ void CompositionEditor::rebuildFrames() {
     QPointer<sdk::CompositionModel> model = composition_;
     for (int i = 0; i < frames.size(); ++i) {
         auto* card = new FrameCard(frames.at(i), i == current, row);
+        card->setObjectName(QStringLiteral("composition.frame.%1").arg(i));
         card->onClick = [model, i] {
             if (model) model->setCurrentFrame(i);
         };

@@ -1,0 +1,85 @@
+{
+  "schema": "retrolarium.gui-regression",
+  "schema_version": 1,
+  "id": "alien_soldier_eu_opening_note",
+  "game": "alien-soldier",
+  "revision": "eu",
+  "revision_name": "Alien Soldier (Europe)",
+  "input_sha256": "afd4642f78ee1ae3004d630b1228e54a6e51e5dc7a991e1c192d91a41f366f71",
+  "expected_sha256": "4cd90c5dfd3e34627fa420d2f8d68c4946ce4995df0349756bf90f3f8837287f",
+  "source": {
+    "repository": "alien_soldier_src",
+    "descriptor": "alien_soldier.rlj",
+    "ref": "5c074f2aec87fbddff94fe52d7912d7689d81a5b",
+    "commit": "5c074f2aec87fbddff94fe52d7912d7689d81a5b",
+    "content_sha256": "7a5feddc99af1fe2a73f87587b3eaebb1539d4a8ce5a6aa3f3fc2d0adedeb563"
+  },
+  "project": {
+    "codec": "source",
+    "name": "Alien Soldier",
+    "platform": "Mega Drive",
+    "revision": "EU",
+    "kind": "sound",
+    "document": "Sound_BGM_81",
+    "editor": "SequencerEditor"
+  },
+  "edit": {
+    "operation": "sequence-note",
+    "channel": "1",
+    "note": "1:67:48",
+    "old": 64,
+    "new": 65
+  },
+  "artifact": "build/alien-soldier-edited.bin",
+  "flow": [
+    "open_rom_and_prepare_pinned_source_through_gui",
+    "verify_available_tabs_and_open_pinned_document",
+    "edit_exact_pinned_value_through_widgets",
+    "verify_exact_state_and_undo_redo",
+    "switch_documents_and_verify_edit",
+    "save_close_reopen_through_gui_and_verify_edit",
+    "build_fresh_rom_through_toolbar",
+    "compare_sha256_with_manually_reviewed_baseline"
+  ],
+  "timeouts": {
+    "open_s": 900,
+    "editor_s": 120,
+    "save_s": 60,
+    "reopen_s": 120,
+    "build_s": 900
+  },
+  "expected_kinds": [
+    "levels",
+    "tiles",
+    "metatiles",
+    "palettes",
+    "objects",
+    "bosses",
+    "sprites",
+    "screens",
+    "text",
+    "sound",
+    "demo",
+    "playtest"
+  ],
+  "switch_documents": ["Sound_BGM_82", "Sound_BGM_81"],
+  "artifact_size": 2097152,
+  "baseline": {
+    "method": "Explicit manual resource and before/after GUI screenshot review; three independent builds match a separately predicted original-ROM patch",
+    "source_locator": "Original Sound_BGM_81 channel 1 (sequence $30, transpose +1), pinned source byte 67: pitched token $C0 to $C1, editor pitch 64 to 65; following duration 3 and all headers/flow/instruments unchanged; independently recomputed big-endian checksum of [0x200,0x200000) at header $18E",
+    "rom_size": 2097152,
+    "rom_changed_byte_count": 2,
+    "rom_differences": [
+      {
+        "offset": 399,
+        "before": 43,
+        "after": 44
+      },
+      {
+        "offset": 545449,
+        "before": 192,
+        "after": 193
+      }
+    ]
+  }
+}

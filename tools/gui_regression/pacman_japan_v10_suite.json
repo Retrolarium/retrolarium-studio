@@ -1,0 +1,18 @@
+{
+  "schema": "retrolarium.gui-regression-suite",
+  "schema_version": 1,
+  "id": "pacman_japan_v10",
+  "game": "pacman",
+  "revision": "japan-v10",
+  "required_kinds": ["levels", "graphics", "palettes", "animations", "screens", "text", "sound"],
+  "excluded_kinds": ["demo", "playtest"],
+  "scenarios": [
+    "pacman_japan_v10_maze_pellet.json",
+    "pacman_japan_v10_tile_pixel.json",
+    "pacman_japan_v10_title_palette.json",
+    "pacman_japan_v10_actor_pattern.json",
+    "pacman_japan_v10_title_pattern.json",
+    "pacman_japan_v10_menu_text.json",
+    "pacman_japan_v10_opening_note.json"
+  ]
+}

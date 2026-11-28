@@ -1,0 +1,78 @@
+{
+  "schema": "retrolarium.gui-regression",
+  "schema_version": 1,
+  "id": "smb1_smb2_jp_fds_text",
+  "game": "smb1",
+  "revision": "smb2_jp_fds",
+  "revision_name": "Super Mario Bros. 2 / The Lost Levels",
+  "input_sha256": "ff8afb9ae6b705b4e51dbcb193dcebadf4c049800a71003d3a45052648e52eda",
+  "expected_sha256": "830728f14949555a95b0264ac66482d8528cd29a368452464896a27325766639",
+  "source": {
+    "repository": "smb1_src",
+    "descriptor": "super_mario_bros.rlj",
+    "commit": "eb8faad337056e074e78ec5f3b496be24e7de761",
+    "content_sha256": "2dc4ea2ad9c9bc1524ef7f2c913ad655dd6e5b405c67692d4e41d8fb61a9d98e",
+    "ref": "tags/source-reconstruction-3.1"
+  },
+  "project": {
+    "name": "Super Mario Bros. 2",
+    "revision": "J",
+    "platform": "FDS",
+    "codec": "smb.levels.v1",
+    "kind": "text",
+    "document": "all",
+    "editor": "TableEditor"
+  },
+  "edit": {
+    "operation": "table-cell",
+    "row": 0,
+    "column": 2,
+    "old": "MARIO",
+    "new": "NARIO"
+  },
+  "artifact": "build/smb1-smb2_jp_fds-edited.fds",
+  "flow": [
+    "open_rom_and_prepare_pinned_source_through_gui",
+    "verify_available_tabs_and_open_pinned_document",
+    "edit_exact_pinned_value_through_widgets",
+    "verify_exact_state_and_undo_redo",
+    "switch_documents_and_verify_edit",
+    "save_close_reopen_through_gui_and_verify_edit",
+    "build_fresh_rom_through_toolbar",
+    "compare_sha256_with_manually_reviewed_baseline"
+  ],
+  "timeouts": {
+    "open_s": 900,
+    "editor_s": 120,
+    "save_s": 60,
+    "reopen_s": 120,
+    "build_s": 900
+  },
+  "expected_kinds": [
+    "levels",
+    "world",
+    "graphics",
+    "metatiles",
+    "palettes",
+    "animations",
+    "screens",
+    "text",
+    "sound",
+    "demo",
+    "playtest"
+  ],
+  "switch_documents": ["all"],
+  "artifact_size": 65500,
+  "baseline": {
+    "method": "Manual source/resource and before/after GUI screenshot review; three independent builds match a separate one-byte ROM oracle",
+    "source_locator": "Fixed LUIGI to MUIGI name slot for FDS reissue, status MARIO to NARIO for ANN/SMB2",
+    "rom_size": 65500,
+    "rom_differences": [
+      {
+        "offset": 10259,
+        "before": 22,
+        "after": 23
+      }
+    ]
+  }
+}

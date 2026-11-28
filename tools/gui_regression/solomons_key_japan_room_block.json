@@ -1,0 +1,68 @@
+{
+  "schema": "retrolarium.gui-regression",
+  "schema_version": 1,
+  "id": "solomons_key_japan_room_block",
+  "game": "solomons-key",
+  "revision": "japan",
+  "revision_name": "Solomon no Kagi (Japan)",
+  "input_sha256": "b90bb344eff516863bc5278d9efba7ffd2a83a1e6cf27a6b2a9ab57ec094ae83",
+  "expected_sha256": "e67140f774887463a1b802e5af01f15340db4bc6dcebfdbc44b9d11cebd416ed",
+  "source": {
+    "repository": "solomon_no_kagi_src",
+    "descriptor": "solomons_key.rlj",
+    "ref": "tags/source-reconstruction-3.1",
+    "commit": "f1a689b92f3dc1bba43689a91ba51db011ec09e1",
+    "content_sha256": "a9a5a858f9dd00679693de7a330d1af7e018428b784fed0a883f343ba7393ac5"
+  },
+  "project": {
+    "codec": "solomon.rooms@3",
+    "name": "Solomon's Key",
+    "platform": "NES",
+    "revision": "J",
+    "kind": "rooms",
+    "document": "1",
+    "editor": "TileMapEditor"
+  },
+  "edit": {
+    "operation": "map-toolbar-cell",
+    "layer": "blocks",
+    "x": 4,
+    "y": 1,
+    "old": 2,
+    "new": 0
+  },
+  "artifact": "build/solomons-key-japan-edited.nes",
+  "flow": [
+    "open_rom_and_prepare_pinned_source_through_gui",
+    "verify_available_tabs_and_open_pinned_document",
+    "edit_exact_pinned_value_through_widgets",
+    "verify_exact_state_and_undo_redo",
+    "switch_documents_and_verify_edit",
+    "save_close_reopen_through_gui_and_verify_edit",
+    "build_fresh_rom_through_toolbar",
+    "compare_sha256_with_manually_reviewed_baseline"
+  ],
+  "timeouts": {
+    "open_s": 900,
+    "editor_s": 120,
+    "save_s": 60,
+    "reopen_s": 120,
+    "build_s": 900
+  },
+  "expected_kinds": ["rooms", "graphics", "palettes", "animations", "screens", "text", "sound", "demo", "playtest"],
+  "switch_documents": ["2", "1"],
+  "artifact_size": 65552,
+  "baseline": {
+    "method": "Explicit manual resource and before/after GUI screenshot review; three independent builds match a separately predicted original-ROM patch",
+    "source_locator": "Room 1 white block plane, 24 bytes after its brown plane: clear bit (4,1); all other room bits and streams remain fixed",
+    "rom_size": 65552,
+    "rom_changed_byte_count": 1,
+    "rom_differences": [
+      {
+        "offset": 24662,
+        "before": 248,
+        "after": 240
+      }
+    ]
+  }
+}

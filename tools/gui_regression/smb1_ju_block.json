@@ -6,7 +6,7 @@
   "revision": "ju",
   "revision_name": "Super Mario Bros. (Japan, USA)",
   "input_sha256": "f61548fdf1670cffefcc4f0b7bdcdd9eaba0c226e3b74f8666071496988248de",
-  "expected_sha256": null,
+  "expected_sha256": "0b3e037e10e0c416379544db256d5a7d30a78ad423da00aa5daf6db0545d2f3c",
   "source": {
     "repository": "smb1_src",
     "descriptor": "super_mario_bros.rlj",
@@ -57,5 +57,29 @@
     "save_s": 60,
     "reopen_s": 120,
     "build_s": 900
-  }
+  },
+  "baseline": {
+    "method": "Reviewed GUI edit, three clean runs, exact ROM-byte diff and FCEUX frame comparison",
+    "rom_differences": [
+      {
+        "offset": 9888,
+        "before": 7,
+        "after": 6
+      }
+    ]
+  },
+  "expected_kinds": [
+    "levels",
+    "world",
+    "graphics",
+    "metatiles",
+    "palettes",
+    "animations",
+    "screens",
+    "text",
+    "sound",
+    "demo",
+    "playtest"
+  ],
+  "switch_documents": ["ground_1", "ground_6"]
 }

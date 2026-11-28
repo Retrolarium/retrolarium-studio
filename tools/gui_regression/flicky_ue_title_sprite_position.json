@@ -1,0 +1,79 @@
+{
+  "schema": "retrolarium.gui-regression",
+  "schema_version": 1,
+  "id": "flicky_ue_title_sprite_position",
+  "game": "flicky",
+  "revision": "ue",
+  "revision_name": "Flicky (USA, Europe)",
+  "input_sha256": "4df1a91e08376ae773a6eb8e5abe310f94ca39d8f81583b91a9477fedcb68c11",
+  "expected_sha256": "d630a7663c92d33d12c82b7d42be720acf5d8fe1af5597d3b941a90240b282cd",
+  "source": {
+    "repository": "flicky_src",
+    "descriptor": "flicky.rlj",
+    "ref": "dc47be622a7e4e3984395bf93a1f28742d9ec31d",
+    "commit": "dc47be622a7e4e3984395bf93a1f28742d9ec31d",
+    "content_sha256": "af43c78947e645fe5e5e3fda853762a53c88bfa031a9a931f43ca4f4f582c79b"
+  },
+  "project": {
+    "codec": "flicky-content",
+    "name": "Flicky",
+    "platform": "Mega Drive",
+    "revision": "UE",
+    "kind": "screens",
+    "document": "title",
+    "editor": "TileMapEditor"
+  },
+  "edit": {
+    "operation": "inspector-field",
+    "object": "sprite:statics:0",
+    "field": "x",
+    "old": 80,
+    "new": 88,
+    "object_positions": [
+      {
+        "id": "sprite:statics:0",
+        "dx": 1,
+        "dy": 0
+      }
+    ]
+  },
+  "artifact": "build/flicky-edited.bin",
+  "flow": [
+    "open_rom_and_prepare_pinned_source_through_gui",
+    "verify_available_tabs_and_open_pinned_document",
+    "edit_exact_pinned_value_through_widgets",
+    "verify_exact_state_and_undo_redo",
+    "switch_documents_and_verify_edit",
+    "save_close_reopen_through_gui_and_verify_edit",
+    "build_fresh_rom_through_toolbar",
+    "compare_sha256_with_manually_reviewed_baseline"
+  ],
+  "timeouts": {
+    "open_s": 900,
+    "editor_s": 120,
+    "save_s": 60,
+    "reopen_s": 120,
+    "build_s": 900
+  },
+  "expected_kinds": ["levels", "tiles", "palettes", "sprites", "screens", "text", "sound", "demo", "playtest"],
+  "switch_documents": ["sega_tilemap", "title"],
+  "artifact_size": 131072,
+  "baseline": {
+    "method": "Explicit manual resource and before/after GUI screenshot review; three independent builds match a separately predicted original-ROM patch",
+    "source_locator": "Unique six-entry title static-sprite XY word table: first VDP X 208 to 216 (display X 80 to 88 after $80 bias), Y 192 and the other five sprites preserved; independently recomputed whole-cartridge big-endian header checksum",
+    "rom_size": 131072,
+    "rom_changed_byte_count": 2,
+    "rom_differences": [
+      {
+        "offset": 399,
+        "before": 224,
+        "after": 232
+      },
+      {
+        "offset": 74359,
+        "before": 208,
+        "after": 216
+      }
+    ]
+  }
+}

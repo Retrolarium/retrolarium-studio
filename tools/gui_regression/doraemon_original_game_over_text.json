@@ -1,0 +1,78 @@
+{
+  "schema": "retrolarium.gui-regression",
+  "schema_version": 1,
+  "id": "doraemon_original_game_over_text",
+  "game": "doraemon",
+  "revision": "original",
+  "revision_name": "Doraemon (Japan, original revision)",
+  "input_sha256": "6ed579c9c98a1f2db52fd3d2488a491953073e8ace1e3c1dc5884669cecca274",
+  "expected_sha256": "7482c5b295c932bce6c9564a745e65cdca1146630a8e4c6faed93389bd1205b6",
+  "source": {
+    "repository": "doraemon_src",
+    "descriptor": "doraemon.rlj",
+    "ref": "tags/source-reconstruction-3.1",
+    "commit": "368ca5f0f48d4e83c1dd5e6d91be3ceeeb6cd722",
+    "content_sha256": "e5d3dd4f8f626feb57e72efa27ac5d4c3b44dbe67d3508d65d719191ae0e7896"
+  },
+  "project": {
+    "codec": "doraemon.hierarchy.v1",
+    "name": "Doraemon",
+    "platform": "Famicom",
+    "revision": "J",
+    "kind": "text",
+    "document": "messages",
+    "editor": "TableEditor"
+  },
+  "edit": {
+    "operation": "table-cell",
+    "row": 0,
+    "column": 1,
+    "old": "GAME OVER",
+    "new": "GAME OVEA"
+  },
+  "artifact": "build/doraemon-original-edited.nes",
+  "flow": [
+    "open_rom_and_prepare_pinned_source_through_gui",
+    "verify_available_tabs_and_open_pinned_document",
+    "edit_exact_pinned_value_through_widgets",
+    "verify_exact_state_and_undo_redo",
+    "switch_documents_and_verify_edit",
+    "save_close_reopen_through_gui_and_verify_edit",
+    "build_fresh_rom_through_toolbar",
+    "compare_sha256_with_manually_reviewed_baseline"
+  ],
+  "timeouts": {
+    "open_s": 900,
+    "editor_s": 120,
+    "save_s": 60,
+    "reopen_s": 120,
+    "build_s": 900
+  },
+  "expected_kinds": [
+    "levels",
+    "graphics",
+    "metatiles",
+    "palettes",
+    "animations",
+    "screens",
+    "text",
+    "sound",
+    "demo",
+    "playtest"
+  ],
+  "switch_documents": ["credits", "messages"],
+  "artifact_size": 163856,
+  "baseline": {
+    "method": "Explicit manual resource and before/after GUI screenshot review; three independent builds match a separately predicted original-ROM patch",
+    "source_locator": "Fixed bank 3 GAME OVER field, final ASCII character R to A; zero space byte preserved",
+    "rom_size": 163856,
+    "rom_changed_byte_count": 1,
+    "rom_differences": [
+      {
+        "offset": 101015,
+        "before": 82,
+        "after": 65
+      }
+    ]
+  }
+}

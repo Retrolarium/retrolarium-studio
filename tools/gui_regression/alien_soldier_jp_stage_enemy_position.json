@@ -1,0 +1,92 @@
+{
+  "schema": "retrolarium.gui-regression",
+  "schema_version": 1,
+  "id": "alien_soldier_jp_stage_enemy_position",
+  "game": "alien-soldier",
+  "revision": "jp",
+  "revision_name": "Alien Soldier (Japan)",
+  "input_sha256": "5613637d267cf8d0bf3ff1e396d7929526cd5221cb8af06349528c8bedced1a0",
+  "expected_sha256": "14b3768af4338a274b44d9ed17e23ede9d2d696631a802a7cf8a390c760e8723",
+  "source": {
+    "repository": "alien_soldier_src",
+    "descriptor": "alien_soldier.rlj",
+    "ref": "5c074f2aec87fbddff94fe52d7912d7689d81a5b",
+    "commit": "5c074f2aec87fbddff94fe52d7912d7689d81a5b",
+    "content_sha256": "7a5feddc99af1fe2a73f87587b3eaebb1539d4a8ce5a6aa3f3fc2d0adedeb563"
+  },
+  "project": {
+    "codec": "source",
+    "name": "Alien Soldier",
+    "platform": "Mega Drive",
+    "revision": "JP",
+    "kind": "levels",
+    "document": "set-1",
+    "editor": "TileMapEditor"
+  },
+  "edit": {
+    "operation": "inspector-field",
+    "object": "p0.0",
+    "field": "x",
+    "old": 416,
+    "new": 424,
+    "object_positions": [
+      {
+        "id": "p0.0",
+        "dx": 1,
+        "dy": 0
+      }
+    ]
+  },
+  "artifact": "build/alien-soldier-edited.bin",
+  "flow": [
+    "open_rom_and_prepare_pinned_source_through_gui",
+    "verify_available_tabs_and_open_pinned_document",
+    "edit_exact_pinned_value_through_widgets",
+    "verify_exact_state_and_undo_redo",
+    "switch_documents_and_verify_edit",
+    "save_close_reopen_through_gui_and_verify_edit",
+    "build_fresh_rom_through_toolbar",
+    "compare_sha256_with_manually_reviewed_baseline"
+  ],
+  "timeouts": {
+    "open_s": 900,
+    "editor_s": 120,
+    "save_s": 60,
+    "reopen_s": 120,
+    "build_s": 900
+  },
+  "expected_kinds": [
+    "levels",
+    "tiles",
+    "metatiles",
+    "palettes",
+    "objects",
+    "bosses",
+    "sprites",
+    "screens",
+    "text",
+    "sound",
+    "demo",
+    "playtest"
+  ],
+  "switch_documents": ["stage-01", "set-1"],
+  "artifact_size": 2097152,
+  "baseline": {
+    "method": "Explicit manual resource and before/after GUI screenshot review; three independent builds match a separately predicted original-ROM patch",
+    "source_locator": "Unique original Stage1_ObjectSpawnList of six-word (12-byte) placements; first X word 416 to 424, Y/type/parameters/slot limits and all other placements unchanged; independently recomputed big-endian checksum of [0x200,0x60002) at header $18E",
+    "rom_size": 2097152,
+    "rom_changed_byte_count": 2,
+    "rom_differences": [
+      {
+        "offset": 399,
+        "before": 79,
+        "after": 87
+      },
+      {
+        "offset": 107497,
+        "before": 160,
+        "after": 168
+      }
+    ]
+  }
+}

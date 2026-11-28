@@ -9,7 +9,8 @@ runner and no disks are searched beyond --roms. Studio itself prepares the
 pinned game repository through the real GUI. Every invocation gets a new run
 folder; the runner never removes earlier runs or touches another Studio.
 
-Exit codes: 0 PASS, 1 FAIL, 2 MISSING_INPUT, 3 BASELINE_PENDING.
+Exit codes: 0 PASS, 1 FAIL, 2 MISSING_INPUT, 3 BASELINE_PENDING, 4 INSPECTED.
+Inspection captures read-only GUI metadata, never a regression PASS.
 """
 
 from __future__ import annotations
@@ -31,7 +32,7 @@ import uuid
 STUDIO_ROOT = Path(__file__).resolve().parents[2]
 KIT_ROOT = STUDIO_ROOT.parent / "retrolarium-kit"
 CORE_ROOT = STUDIO_ROOT.parent / "retrolarium-core"
-STATUS_EXIT = {"PASS": 0, "FAIL": 1, "MISSING_INPUT": 2, "BASELINE_PENDING": 3}
+STATUS_EXIT = {"PASS": 0, "FAIL": 1, "MISSING_INPUT": 2, "BASELINE_PENDING": 3, "INSPECTED": 4}
 SHA256 = re.compile(r"[0-9a-f]{64}")
 
 
@@ -66,9 +67,53 @@ def load_scenario(path: Path) -> dict:
     expected = scenario.get("expected_sha256")
     if expected is not None and (not isinstance(expected, str) or not SHA256.fullmatch(expected)):
         raise ValueError("expected_sha256 must be null or exactly 64 lowercase hexadecimal digits")
+    size = scenario.get("artifact_size")
+    if size is not None and (type(size) is not int or size <= 0):
+        raise ValueError("artifact_size must be a positive integer when declared")
+    mirrors = scenario.get("mirrored_documents", [])
+    if not isinstance(mirrors, list) or not all(isinstance(item, str) for item in mirrors):
+        raise ValueError("mirrored_documents must be a list of fixed document IDs")
+    if len(set(mirrors)) != len(mirrors) or not set(mirrors) <= set(scenario.get("switch_documents", [])):
+        raise ValueError("every shared document must be visited by the declared navigation")
     for key in ("revision_name", "source", "project", "edit", "artifact", "timeouts"):
         if key not in scenario:
             raise ValueError(f"the scenario has no {key}")
+    edit = scenario["edit"]
+    if not isinstance(edit, dict):
+        raise ValueError("edit must be an object with a fixed GUI operation")
+    library_item = edit.get("library_item")
+    if library_item is not None and (not isinstance(library_item, str) or not library_item):
+        raise ValueError("library_item must be a nonempty fixed card ID")
+    positions = edit.get("object_positions", [])
+    if not isinstance(positions, list):
+        raise ValueError("object_positions must list explicit map-object translations")
+    moved = set()
+    for position in positions:
+        if not isinstance(position, dict) or not isinstance(position.get("id"), str) or not position["id"]:
+            raise ValueError("each object translation needs a fixed ID")
+        if position["id"] in moved:
+            raise ValueError("object translation IDs must be unique")
+        moved.add(position["id"])
+        if any(type(position.get(key)) is not int for key in ("dx", "dy")):
+            raise ValueError("object translations need integer cell deltas")
+        if position["dx"] == position["dy"] == 0:
+            raise ValueError("an object translation must change its position")
+    changes = edit.get("state_changes", [])
+    if not isinstance(changes, list):
+        raise ValueError("state_changes must list fixed coupled snapshot changes")
+    addresses = set()
+    for change in changes:
+        if not isinstance(change, dict):
+            raise ValueError("each state change must be an object")
+        address = change.get("path")
+        if not isinstance(address, list) or not address or not all(isinstance(part, str) and part for part in address):
+            raise ValueError("a coupled state change needs a nonempty string path")
+        address = tuple(address)
+        if address in addresses:
+            raise ValueError("coupled state change paths must be unique")
+        addresses.add(address)
+        if "old" not in change or "new" not in change or change["old"] == change["new"]:
+            raise ValueError("coupled state changes must pin distinct old and new values")
     return scenario
 
 
@@ -105,8 +150,12 @@ def find_rom(roms: Path, expected_sha256: str) -> Path:
 
 def new_run_directory(out: Path, identifier: str) -> Path:
     """Reserve a unique directory without deleting or reusing an earlier run."""
-    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S.%fZ")
-    path = out.resolve() / f"{stamp}-{identifier}-{uuid.uuid4().hex[:12]}"
+    # Both a suite and its case reserve a directory. Leave room for the
+    # deepest native assembler include, not just the source working directory.
+    # Full identities and UTC timestamps remain in reports rather than being
+    # repeated in every component of a Windows build path.
+    label = identifier[:8].rstrip("._-") or "run"
+    path = out.resolve() / f"{label}-{uuid.uuid4().hex[:12]}"
     path.mkdir(parents=True, exist_ok=False)
     return path
 
@@ -132,6 +181,21 @@ def studio_executable(studio: Path) -> Path:
             )
         )
     return next((path for path in candidates if path.is_file()), primary)
+
+
+def build_core_executable(studio: Path) -> Path | None:
+    """Find only the Core CLI belonging to the selected CMake Studio build."""
+    name = "rlcore.exe" if os.name == "nt" else "rlcore"
+    configurations = ("Release", "RelWithDebInfo", "MinSizeRel", "Debug")
+    roots = [studio, studio / ".cmake-build"]
+    if studio.name in configurations:
+        roots.append(studio.parent)
+    for root in roots:
+        for folder in (root / "retrolarium_core", *(root / "retrolarium_core" / item for item in configurations)):
+            candidate = folder / name
+            if candidate.is_file():
+                return candidate.resolve()
+    return None
 
 
 def environment(
@@ -176,6 +240,10 @@ def environment(
     else:
         env["RETROLARIUM_DEV"] = "1"
         env["RETROLARIUM_KIT"] = str((kit or KIT_ROOT) / "rltool.py")
+        if not env.get("RETROLARIUM_CORE"):
+            core = build_core_executable(studio)
+            if core is not None:
+                env["RETROLARIUM_CORE"] = str(core)
     if source_archive is not None:
         # Only an explicit CLI choice may restore this override. Kit still
         # compares the complete unpacked tree with the scenario's pinned hash.
@@ -240,8 +308,13 @@ def run_process(executable: Path, scenario: Path, run_dir: Path, env: dict[str, 
 
 def file_evidence(path: Path) -> dict:
     evidence = {"path": str(path), "exists": path.is_file()}
-    if path.is_file():
-        evidence.update(size=path.stat().st_size, sha256=sha256_file(path))
+    try:
+        if evidence["exists"]:
+            evidence.update(size=path.stat().st_size, sha256=sha256_file(path))
+    except OSError as error:
+        # Diagnostics must not replace the process's original failure if an
+        # executable becomes unreadable while its identity is being recorded.
+        evidence["read_error"] = f"{type(error).__name__}: {error}"
     return evidence
 
 
@@ -292,25 +365,30 @@ def read_json(path: Path) -> dict | list | None:
 
 
 def toolchain_evidence(kit: Path) -> dict:
-    manifest_path = kit / "src/retrolarium_kit/core/toolchains/manifest.json"
+    base = kit / "src/retrolarium_kit/core/toolchains"
+    manifest_path = base / "manifest.json"
     manifest = read_json(manifest_path)
-    evidence = {
-        "manifest": file_evidence(manifest_path),
-        "release": None,
-        "nes_components": [],
-    }
+    host = "windows-x86_64" if os.name == "nt" else "linux-x86_64"
+    evidence = {"manifest": file_evidence(manifest_path), "release": None, "host": host, "suites": {}}
     if isinstance(manifest, dict):
         evidence["release"] = manifest.get("release")
         components = manifest.get("components", {})
-        for name in manifest.get("suites", {}).get("nes", {}).get("components", []):
-            component = components.get(name, {})
-            evidence["nes_components"].append(
-                {
-                    "id": name,
-                    "version": component.get("version"),
-                    "source": component.get("source"),
-                }
-            )
+        for suite, specification in manifest.get("suites", {}).items():
+            entries = []
+            for name in specification.get("components", []):
+                component = components.get(name, {})
+                files = []
+                for item in component.get("hosts", {}).get(host, {}).get("files", []):
+                    if item.get("executable"):
+                        files.append(
+                            dict(file_evidence(base / item["package_path"]), expected_sha256=item.get("sha256"))
+                        )
+                entries.append(
+                    dict(id=name, version=component.get("version"), source=component.get("source"), executables=files)
+                )
+            evidence["suites"][suite] = entries
+    # Retain the original report field for existing report consumers.
+    evidence["nes_components"] = evidence["suites"].get("nes", [])
     return evidence
 
 
@@ -327,6 +405,12 @@ def provenance(studio: Path, kit: Path) -> dict:
             "kind": "packaged" if packaged(studio) else "source",
             "source_version": studio_version(),
             "executable": file_evidence(studio_executable(studio)),
+            "native_helpers": {
+                name: file_evidence(
+                    studio_executable(studio).parent / "tools" / (name + (".exe" if os.name == "nt" else ""))
+                )
+                for name in ("rlcore", "retrolarium-flicky-level-writer")
+            },
             "native_build": file_evidence(native_path),
             "native_build_json": read_json(native_path),
             "build_info": file_evidence(info_path),
@@ -376,6 +460,7 @@ def write_reports(run_dir: Path, report: dict) -> None:
         ("stdout", report.get("process", {}).get("stdout", "")),
         ("stderr", report.get("process", {}).get("stderr", "")),
         ("Events", report.get("events", [])),
+        ("Executables after process exit", report.get("executables_after_process", {})),
         ("Provenance and toolchains", report.get("provenance", {})),
         ("Game source", report.get("game_source", {})),
     ):
@@ -385,7 +470,7 @@ def write_reports(run_dir: Path, report: dict) -> None:
         "<!doctype html><html lang=en><meta charset=utf-8>"
         f"<title>{html.escape(status)} — Studio GUI regression</title><style>"
         "body{font:14px system-ui;background:#16181b;color:#ddd;margin:24px;max-width:1400px}"
-        f".status{{font-size:24px;font-weight:700;color:{'#8bd49c' if status == 'PASS' else '#e5b567' if status == 'BASELINE_PENDING' else '#ef8b8b'}}}"
+        f".status{{font-size:24px;font-weight:700;color:{'#8bd49c' if status == 'PASS' else '#e5b567' if status in ('BASELINE_PENDING', 'INSPECTED') else '#ef8b8b'}}}"
         "table{border-collapse:collapse}th,td{text-align:left;padding:6px 12px;border-bottom:1px solid #333}"
         "code,pre{font-family:Consolas,monospace;overflow-wrap:anywhere}pre{white-space:pre-wrap;background:#101214;padding:12px}"
         "details{margin:12px 0}summary{cursor:pointer;font-weight:600}.gallery{display:flex;flex-wrap:wrap;gap:12px}"
@@ -405,6 +490,7 @@ def environment_report(env: dict[str, str]) -> dict:
         "RETROLARIUM_VERIFIED_HOME",
         "RETROLARIUM_DEV",
         "RETROLARIUM_KIT",
+        "RETROLARIUM_CORE",
         "HOME",
         "USERPROFILE",
         "APPDATA",
@@ -424,7 +510,32 @@ def environment_report(env: dict[str, str]) -> dict:
     return result
 
 
-def validate_result(report: dict, process: dict, expected: str | None, rom: Path, run_dir: Path) -> None:
+def layout_verification_complete(report: dict) -> bool:
+    checks = report.get("library_layout_checks", [])
+    return (
+        report.get("library_layout_contract") == 2
+        and isinstance(checks, list)
+        and all(
+            isinstance(check, dict) and check.get("overlap_free") is True and not check.get("error") for check in checks
+        )
+    )
+
+
+def presentation_verification_complete(report: dict) -> bool:
+    project = report.get("scenario", {}).get("project", {})
+    palette = project.get("kind") == "palettes" or project.get("editor") == "PaletteEditor"
+    return layout_verification_complete(report) and (not palette or report.get("palette_presentation_verified") is True)
+
+
+def validate_result(
+    report: dict,
+    process: dict,
+    expected: str | None,
+    rom: Path,
+    run_dir: Path,
+    inspect: bool = False,
+    artifact_size: int | None = None,
+) -> None:
     """Cross-check the native result, process status, input and optional artifact."""
     try:
         if sha256_file(rom) != report["input_sha256"]:
@@ -446,7 +557,7 @@ def validate_result(report: dict, process: dict, expected: str | None, rom: Path
         )
         return
     status = report.get("status")
-    if status not in ("PASS", "FAIL", "BASELINE_PENDING"):
+    if status not in (("INSPECTED", "FAIL") if inspect else ("PASS", "FAIL", "BASELINE_PENDING")):
         report.update(
             status="FAIL",
             stop_reason=f"Studio produced no valid result.json status (got {status!r}).",
@@ -457,6 +568,10 @@ def validate_result(report: dict, process: dict, expected: str | None, rom: Path
             status="FAIL",
             stop_reason=f"Result status {status} disagrees with process exit code {process['exit']}.",
         )
+        return
+    if status == "INSPECTED":
+        if expected is not None or report.get("actual_sha256") or not report.get("inventory"):
+            report.update(status="FAIL", stop_reason="Invalid read-only inspection report")
         return
     actual = report.get("actual_sha256")
     if status in ("PASS", "BASELINE_PENDING") and (not isinstance(actual, str) or not SHA256.fullmatch(actual)):
@@ -483,10 +598,16 @@ def validate_result(report: dict, process: dict, expected: str | None, rom: Path
         try:
             artifact.relative_to(run_dir.resolve())
             artifact_digest = sha256_file(artifact)
+            actual_size = artifact.stat().st_size
         except (OSError, ValueError) as error:
             report.update(
                 status="FAIL",
                 stop_reason=f"The reported artifact is not readable inside this run: {error}",
+            )
+            return
+        if artifact_size is not None and actual_size != artifact_size:
+            report.update(
+                status="FAIL", stop_reason=f"Built ROM container has {actual_size} bytes; expected {artifact_size}."
             )
             return
         if artifact_digest != actual:
@@ -494,6 +615,14 @@ def validate_result(report: dict, process: dict, expected: str | None, rom: Path
                 status="FAIL",
                 stop_reason="The runner's artifact SHA-256 differs from Studio's result.",
             )
+    elif artifact_size is not None and status in ("PASS", "BASELINE_PENDING"):
+        report.update(status="FAIL", stop_reason="No ROM artifact was reported to check its declared container size.")
+
+    if report.get("status") in ("PASS", "BASELINE_PENDING") and not presentation_verification_complete(report):
+        report.update(
+            status="FAIL",
+            stop_reason="The native report lacks successful library geometry or visible palette verification.",
+        )
 
 
 VERIFY_GAME_SOURCE_PYTHON = r"""
@@ -605,6 +734,9 @@ def main(argv: list[str] | None = None) -> int:
         help="explicit local source ZIP; Kit still verifies its complete unpacked content",
     )
     parser.add_argument("--timeout", type=int, default=2400, help="whole GUI process timeout in seconds")
+    parser.add_argument(
+        "--inspect", action="store_true", help="Read-only tab/document inventory; exit 4, never a regression PASS"
+    )
     args = parser.parse_args(argv)
     if args.timeout <= 0:
         parser.error("--timeout must be positive")
@@ -613,6 +745,10 @@ def main(argv: list[str] | None = None) -> int:
     run_dir = None
     try:
         scenario = load_scenario(args.scenario)
+        if args.inspect != (scenario["edit"].get("operation") == "inspect"):
+            raise ValueError("--inspect must be supplied exactly for an inspection scenario")
+        if args.inspect and scenario["expected_sha256"] is not None:
+            raise ValueError("An inspection cannot approve or compare an output baseline")
         studio = args.studio.resolve()
         kit = effective_kit(studio, args.kit)
         source_archive = args.source_archive.resolve() if args.source_archive else None
@@ -674,11 +810,25 @@ def main(argv: list[str] | None = None) -> int:
         )
         env = environment(studio, home, scratch, kit, source_archive)
         report["environment"] = environment_report(env)
+        if env.get("RETROLARIUM_CORE"):
+            report["configured_core_tool"] = file_evidence(Path(env["RETROLARIUM_CORE"]))
         executable = studio_executable(studio)
         if not executable.is_file():
             raise RuntimeError(f"The opt-in GUI regression executable is missing: {executable}")
         report["last_step"] = "launch the real-widget Studio GUI"
-        process = run_process(executable, effective_path, run_dir, env, args.timeout)
+        try:
+            process = run_process(executable, effective_path, run_dir, env, args.timeout)
+        finally:
+            paths = {"gui_driver": executable}
+            if env.get("RETROLARIUM_CORE"):
+                paths["configured_core"] = Path(env["RETROLARIUM_CORE"])
+            helper = (
+                executable.parent
+                / "tools"
+                / ("retrolarium-flicky-level-writer.exe" if os.name == "nt" else "retrolarium-flicky-level-writer")
+            )
+            paths["flicky_level_writer"] = helper
+            report["executables_after_process"] = {name: file_evidence(path) for name, path in paths.items()}
         report["process"] = process
         native = read_json(run_dir / "result.json")
         if not isinstance(native, dict):
@@ -708,8 +858,10 @@ def main(argv: list[str] | None = None) -> int:
                         report["game_source"]["repository_path"] = str(parent)
                         report["game_source"]["descriptor_file"] = file_evidence(descriptor)
                         break
-        validate_result(report, process, scenario["expected_sha256"], rom, run_dir)
-        if report["status"] in ("PASS", "BASELINE_PENDING"):
+        validate_result(
+            report, process, scenario["expected_sha256"], rom, run_dir, args.inspect, scenario.get("artifact_size")
+        )
+        if report["status"] in ("PASS", "BASELINE_PENDING", "INSPECTED"):
             report["last_step"] = "verify the prepared source with the selected Kit"
             repository = report["game_source"].get("repository_path")
             if not repository:

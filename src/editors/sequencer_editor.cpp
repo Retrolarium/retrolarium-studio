@@ -103,6 +103,7 @@ private:
 
 PianoRoll::PianoRoll(sdk::SequencerModel* model, QScrollArea* scroll, QWidget* parent)
     : QWidget(parent), model_(model), scroll_(scroll) {
+    setObjectName(QStringLiteral("pianoRoll"));
     setFocusPolicy(Qt::ClickFocus);
     setMouseTracking(true);
     connect(model_, &sdk::EditorModel::contentChanged, this, &PianoRoll::refresh);
@@ -352,6 +353,7 @@ void SequencerEditor::rebuildChannels() {
     QPointer<sdk::SequencerModel> model = sequencer_;
     for (int i = 0; i < channels.size(); ++i) {
         auto* row = new ChannelRow(channels.at(i), i == sequencer_->currentChannel(), box);
+        row->setObjectName(QStringLiteral("sequencer.channel.%1").arg(channels.at(i).id));
         const bool muted = channels.at(i).muted;
         row->onSelect = [model, i] {
             if (model) model->setCurrentChannel(i);

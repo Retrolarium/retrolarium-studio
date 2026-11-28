@@ -329,6 +329,7 @@ void PaletteEditor::rebuild() {
         for (int e = 0; e < rows.at(r).colors.size(); ++e) {
             auto* swatch = new Swatch(rows.at(r).colors.at(e), rows.at(r).labels.value(e), current == QPoint(e, r),
                                       size, size, line);
+            swatch->setObjectName(QStringLiteral("palette.entry.%1.%2").arg(r).arg(e));
             swatch->onClick = [model, e, r] {
                 if (model) model->setCurrentEntry(QPoint(e, r));
             };
@@ -355,6 +356,7 @@ void PaletteEditor::rebuild() {
         const int columns = std::max(1, palette_->gamutColumns());
         for (int i = 0; i < gamut.size(); ++i) {
             auto* swatch = new Swatch(gamut.at(i), labels.value(i), i == palette_->currentGamutIndex(), 28, 28, picker);
+            swatch->setObjectName(QStringLiteral("palette.gamut.%1").arg(i));
             swatch->onClick = [model, i, report] {
                 QString error;
                 if (model) report(model->assignGamut(i, &error), error);
@@ -380,6 +382,7 @@ void PaletteEditor::rebuild() {
                 const int v = 255 * level / (levels - 1);
                 const QColor color = c == 0 ? QColor(v, 0, 0) : c == 1 ? QColor(0, v, 0) : QColor(0, 0, v);
                 auto* step = new Step(color, values.value(c, -1) == level, line);
+                step->setObjectName(QStringLiteral("palette.channel.%1.%2").arg(c).arg(level));
                 step->onClick = [model, c, level, report] {
                     QString error;
                     if (model) report(model->setChannel(c, level, &error), error);

@@ -1,0 +1,78 @@
+{
+  "schema": "retrolarium.gui-regression",
+  "schema_version": 1,
+  "id": "castle_excellent_castlequest_usa_cell_pattern",
+  "game": "castle-excellent",
+  "revision": "castlequest-usa",
+  "revision_name": "Castlequest (USA)",
+  "input_sha256": "35815cd107289a8273fb46dd7c49247a8217ca4e2a7f235fef3aa54566d0ba8c",
+  "expected_sha256": "47febc83db626dcb776e95c12e57e7cbf05358da5cea463a7c99e37fa732efb7",
+  "source": {
+    "repository": "castle_excellent_src",
+    "descriptor": "castle_excellent.rlj",
+    "ref": "tags/source-reconstruction-3.1",
+    "commit": "eb2c80ef5c1db6affb78b5d5b90f7ca58ddc354a",
+    "content_sha256": "253254504ab95ee8100e042ac106d5dc4634d526954ff292ba269e82780c5997"
+  },
+  "project": {
+    "codec": "castle-excellent.prefix-rooms@1",
+    "name": "Castlequest",
+    "platform": "NES",
+    "revision": "U",
+    "kind": "metatiles",
+    "document": "cells",
+    "editor": "TileMapEditor"
+  },
+  "edit": {
+    "operation": "map-brush-cell",
+    "x": 0,
+    "y": 0,
+    "old": 2,
+    "new": 3
+  },
+  "artifact": "build/castle-excellent-castlequest-usa-edited.nes",
+  "flow": [
+    "open_rom_and_prepare_pinned_source_through_gui",
+    "verify_available_tabs_and_open_pinned_document",
+    "edit_exact_pinned_value_through_widgets",
+    "verify_exact_state_and_undo_redo",
+    "switch_documents_and_verify_edit",
+    "save_close_reopen_through_gui_and_verify_edit",
+    "build_fresh_rom_through_toolbar",
+    "compare_sha256_with_manually_reviewed_baseline"
+  ],
+  "timeouts": {
+    "open_s": 900,
+    "editor_s": 120,
+    "save_s": 60,
+    "reopen_s": 120,
+    "build_s": 900
+  },
+  "expected_kinds": [
+    "rooms",
+    "graphics",
+    "metatiles",
+    "palettes",
+    "animations",
+    "screens",
+    "text",
+    "sound",
+    "demo",
+    "playtest"
+  ],
+  "switch_documents": ["cells"],
+  "artifact_size": 65552,
+  "baseline": {
+    "method": "Explicit manual resource and before/after GUI screenshot review; three independent builds match a separately predicted original-ROM patch",
+    "source_locator": "Cell 0 left pattern table entry, preserve right tile and attributes",
+    "rom_size": 65552,
+    "rom_changed_byte_count": 1,
+    "rom_differences": [
+      {
+        "offset": 32576,
+        "before": 2,
+        "after": 3
+      }
+    ]
+  }
+}

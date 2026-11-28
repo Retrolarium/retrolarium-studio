@@ -1,0 +1,18 @@
+{
+  "schema": "retrolarium.gui-regression-suite",
+  "schema_version": 1,
+  "id": "solomons_key_europe",
+  "game": "solomons-key",
+  "revision": "europe",
+  "required_kinds": ["rooms", "graphics", "palettes", "animations", "screens", "text", "sound"],
+  "excluded_kinds": ["demo", "playtest"],
+  "scenarios": [
+    "solomons_key_europe_room_block.json",
+    "solomons_key_europe_tile_pixel.json",
+    "solomons_key_europe_room_palette.json",
+    "solomons_key_europe_actor_pattern.json",
+    "solomons_key_europe_title_pattern.json",
+    "solomons_key_europe_hud_text.json",
+    "solomons_key_europe_opening_note.json"
+  ]
+}

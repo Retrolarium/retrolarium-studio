@@ -1,0 +1,87 @@
+{
+  "schema": "retrolarium.gui-regression",
+  "schema_version": 1,
+  "id": "alien_soldier_jp_object_metatile",
+  "game": "alien-soldier",
+  "revision": "jp",
+  "revision_name": "Alien Soldier (Japan)",
+  "input_sha256": "5613637d267cf8d0bf3ff1e396d7929526cd5221cb8af06349528c8bedced1a0",
+  "expected_sha256": "3f5576b17ce252370f5b94004ac7d7dedf5acb52cdab286030247fde1fa44da5",
+  "source": {
+    "repository": "alien_soldier_src",
+    "descriptor": "alien_soldier.rlj",
+    "ref": "5c074f2aec87fbddff94fe52d7912d7689d81a5b",
+    "commit": "5c074f2aec87fbddff94fe52d7912d7689d81a5b",
+    "content_sha256": "7a5feddc99af1fe2a73f87587b3eaebb1539d4a8ce5a6aa3f3fc2d0adedeb563"
+  },
+  "project": {
+    "codec": "source",
+    "name": "Alien Soldier",
+    "platform": "Mega Drive",
+    "revision": "JP",
+    "kind": "metatiles",
+    "document": "obj:options_screen",
+    "editor": "CompositionEditor"
+  },
+  "edit": {
+    "operation": "composition-inspector",
+    "frame": -1,
+    "piece": "0",
+    "field": "tile",
+    "old": 257,
+    "new": 258,
+    "state_changes": [
+      {
+        "path": ["pieces", "0", "label"],
+        "old": "$101 \u00b7 4\u00d73",
+        "new": "$102 \u00b7 4\u00d73"
+      }
+    ]
+  },
+  "artifact": "build/alien-soldier-edited.bin",
+  "flow": [
+    "open_rom_and_prepare_pinned_source_through_gui",
+    "verify_available_tabs_and_open_pinned_document",
+    "edit_exact_pinned_value_through_widgets",
+    "verify_exact_state_and_undo_redo",
+    "switch_documents_and_verify_edit",
+    "save_close_reopen_through_gui_and_verify_edit",
+    "build_fresh_rom_through_toolbar",
+    "compare_sha256_with_manually_reviewed_baseline"
+  ],
+  "timeouts": {
+    "open_s": 900,
+    "editor_s": 120,
+    "save_s": 60,
+    "reopen_s": 120,
+    "build_s": 900
+  },
+  "expected_kinds": [
+    "levels",
+    "tiles",
+    "metatiles",
+    "palettes",
+    "objects",
+    "bosses",
+    "sprites",
+    "screens",
+    "text",
+    "sound",
+    "demo",
+    "playtest"
+  ],
+  "switch_documents": ["obj:password_screen", "obj:options_screen"],
+  "artifact_size": 2097152,
+  "baseline": {
+    "method": "Explicit manual resource and before/after GUI screenshot review; three independent builds match a separately predicted original-ROM patch",
+    "source_locator": "Options-screen shared 4x3 FrontendCursor metatile: all seven six-byte pieces reference pattern $101 and change to $102; each palette/end flag, size, link and signed X/Y preserved; independently recomputed big-endian checksum of [0x200,0x60002) at header $18E",
+    "rom_size": 2097152,
+    "rom_changed_byte_count": 8,
+    "rom_affected_range": {
+      "offset": 399,
+      "size": 41473,
+      "before_sha256": "e10a1a7749fe2e9d3e32b964cd99d7cd3e70567c754d436ac577811c2bcb6fe1",
+      "after_sha256": "5d836e76e806fdd607ff50cd4cfc02ca2d017e74121aa86ff44c1a740dcb80d5"
+    }
+  }
+}

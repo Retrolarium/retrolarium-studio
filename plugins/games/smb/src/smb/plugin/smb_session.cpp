@@ -143,7 +143,8 @@ sdk::Profile SmbSession::profile() const {
     const QString revision = document_.revision();
     sdk::Profile profile;
     profile.name = revision == QLatin1String("smb2_jp_fds") ? tr("Super Mario Bros. 2") : tr("Super Mario Bros.");
-    profile.badge = revision.endsWith(QLatin1String("fds")) ? QStringLiteral("FDS") : QStringLiteral("NES");
+    const bool diskSystem = revision == QLatin1String("fds_smb") || revision.endsWith(QLatin1String("fds"));
+    profile.badge = diskSystem ? QStringLiteral("FDS") : QStringLiteral("NES");
     profile.platform = profile.badge;
     profile.revision = kRevisions.value(revision, revision.toUpper());
     profile.cpu = QStringLiteral("6502");
